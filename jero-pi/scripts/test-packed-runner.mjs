@@ -1,0 +1,113 @@
+#!/usr/bin/env node
+
+import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { basename, dirname, join } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+
+const root = fileURLToPath(new URL("..", import.meta.url));
+const temporary = mkdtempSync(join(tmpdir(), "gentle-pi-packed-runner-"));
+const packDirectory = join(temporary, "pack");
+const installDirectory = join(temporary, "install");
+// Every child inherits only disposable Pi homes, never the operator's settings.
+const agentHome = join(temporary, "agent");
+const piAgentHome = join(temporary, "pi-agent");
+const isolatedEnv = { ...process.env, GENTLE_PI_AGENT_HOME: agentHome, PI_CODING_AGENT_DIR: piAgentHome };
+
+function windowsNpmInvocation() {
+	const candidates = [];
+	if (process.env.npm_execpath !== undefined && /[\\/]npm[\\/]bin[\\/]npm-cli\.js$/i.test(process.env.npm_execpath)) candidates.push(process.env.npm_execpath);
+	for (const executable of new Set([process.execPath, realpathSync(process.execPath)])) candidates.push(join(dirname(executable), "node_modules", "npm", "bin", "npm-cli.js"));
+	const installedCli = candidates.find((path) => existsSync(path));
+	if (installedCli !== undefined) return { file: process.execPath, prefix: [installedCli] };
+	let commandPaths = [];
+	try { commandPaths = execFileSync("where.exe", ["npm"], { encoding: "utf8", windowsHide: true }).split(/\r?\n/).filter(Boolean); }
+	catch { /* fall through to the explicit resolution error */ }
+	for (const path of commandPaths) {
+		if (basename(path).toLowerCase() === "npm.exe") return { file: path, prefix: [] };
+		const cli = join(dirname(path), "node_modules", "npm", "bin", "npm-cli.js");
+		if (existsSync(cli)) return { file: process.execPath, prefix: [cli] };
+	}
+	throw new Error("could not resolve npm-cli.js without a command shell");
+}
+
+function runNpm(arguments_, options) {
+	const invocation = process.platform === "win32" ? windowsNpmInvocation() : { file: "npm", prefix: [] };
+	return execFileSync(invocation.file, [...invocation.prefix, ...arguments_], { ...options, env: isolatedEnv });
+}
+
+try {
+	mkdirSync(packDirectory);
+	mkdirSync(installDirectory);
+	mkdirSync(agentHome);
+	mkdirSync(piAgentHome);
+	const originalSettings = '{ "tuiMode": "regular", "theme": "packed-fixture" }\n';
+	writeFileSync(join(agentHome, "settings.json"), originalSettings);
+	const packed = JSON.parse(runNpm(["pack", "--ignore-scripts", "--json", "--pack-destination", packDirectory], {
+		cwd: root,
+		encoding: "utf8",
+		stdio: ["ignore", "pipe", "inherit"],
+}));
+	if (packed.length !== 1 || typeof packed[0]?.filename !== "string") throw new Error("npm pack did not return one tarball");
+	const tarball = join(packDirectory, packed[0].filename);
+	writeFileSync(join(installDirectory, "package.json"), JSON.stringify({ name: "gentle-pi-packed-runner-test", private: true }), "utf8");
+	runNpm(["install", "--ignore-scripts=false", "--no-audit", "--no-fund", "--package-lock=false", "--omit=dev", "--legacy-peer-deps", tarball], {
+		cwd: installDirectory,
+		stdio: "inherit",
+	});
+	// This is an ordinary npm consumer, not Pi's managed global npm directory.
+	assert.equal(readFileSync(join(agentHome, "settings.json"), "utf8"), originalSettings);
+	assert.deepEqual(readdirSync(agentHome), ["settings.json"]);
+	assert.deepEqual(readdirSync(piAgentHome), []);
+	assert.equal(existsSync(join(installDirectory, ".pi", "settings.json")), false);
+	const packageRoot = join(installDirectory, "node_modules", "gentle-pi");
+	assert.ok(existsSync(join(packageRoot, "scripts", "install-tui-mode-setting.mjs")));
+	const { nativeReviewAbandonAuthorization } = await import(pathToFileURL(join(packageRoot, "runtime", "native-review-cli.mjs")).href);
+	const abandonAuthorization = nativeReviewAbandonAuthorization({
+		lineage: "review-abc",
+		expectedRevision: "revision-9",
+		snapshotIdentity: "snapshot-1",
+		capturedLensResults: ["00-risk.json", "01-refuter.json"],
+		findingsPresent: true,
+		actor: "maintainer",
+		reason: "operator_disposition",
+	});
+	assert.equal(abandonAuthorization, [
+		"gentle-ai.review-abandon-authorization/v2",
+		"lineage=review-abc",
+		"revision=revision-9",
+		"snapshot_identity=snapshot-1",
+		"reason=operator_disposition",
+		"captured_lens_results=00-risk.json,01-refuter.json",
+		"findings_present=true",
+		"actor=maintainer",
+	].join("\n"));
+	assert.ok(!abandonAuthorization.includes("evidence_records_present"));
+	// Accept prerelease pins too: a stable-only pattern here was a second,
+	// silent pin that refused the first prerelease version directory.
+	const versions = readdirSync(join(packageRoot, ".gentle-ai"), { withFileTypes: true }).filter((entry) => entry.isDirectory() && /^v\d+\.\d+\.\d+(?:-[0-9A-Za-z][0-9A-Za-z.]*)?$/.test(entry.name));
+	if (versions.length !== 1) throw new Error("packed install did not contain exactly one package-local Gentle AI version");
+	const executable = join(packageRoot, ".gentle-ai", versions[0].name, process.platform === "win32" ? "gentle-ai.exe" : "gentle-ai");
+	const capabilities = JSON.parse(execFileSync(executable, ["review", "capabilities", "--contract", "gentle-ai.review-integration/v2"], { cwd: installDirectory, encoding: "utf8", env: isolatedEnv }));
+	// Decode with the PACKED consumer's own decoder rather than comparing the
+	// schema string against a list hand-copied into this script. The copy was a
+	// second, silent pin: it accepted only `capabilities/v2`, so the moment the
+	// pinned provider advertised an additive minor this E2E rejected a pairing
+	// that gentle-pi reads correctly, and it would have done so again on the
+	// next minor. Using the shipped decoder makes the assertion what it always
+	// meant to be — the packed consumer can read the packed provider — and it
+	// checks the whole envelope (protocol major/minor, required operations,
+	// gates, projections, advertised schemas, mandatory features, and the
+	// self-reported executable digest) instead of one string.
+	const { decodeReviewCapabilitiesV2 } = await import(pathToFileURL(join(packageRoot, "runtime", "review-integration-v2.mjs")).href);
+	const executableDigest = `sha256:${createHash("sha256").update(readFileSync(executable)).digest("hex")}`;
+	const decoded = decodeReviewCapabilitiesV2(capabilities, executableDigest);
+	if (decoded.contract !== "gentle-ai.review-integration/v2" || decoded.packageVersion !== versions[0].name.slice(1)) throw new Error("package-local Gentle AI returned incompatible capabilities");
+	const packageManifest = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"));
+	process.stdout.write(`packed package E2E passed (gentle-pi ${packageManifest.version ?? "unknown"}; Gentle AI ${decoded.packageVersion ?? "unknown"})\n`);
+} finally {
+	rmSync(temporary, { recursive: true, force: true });
+}
