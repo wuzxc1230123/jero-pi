@@ -94,7 +94,7 @@ test("changesSummary and the widget describe the session at a glance", () => {
 
 	const [line, ...rest] = renderChangesWidget(model, plainTheme, 120);
 	assert.equal(rest.length, 0);
-	assert.match(line, /^✎ 3 files · \+42 −7 · extensions\/jero-shell\.ts · lib\/shell-bar\.ts · tests\/x\.test\.ts {2,}\/jero:changes$/);
+	assert.match(line, /^✎ 3 files · \+42 −7 · extensions\/jero-shell\.ts · lib\/shell\/shell-bar\.ts · tests\/x\.test\.ts {2,}\/jero:changes$/);
 	assert.equal(visibleWidth(line), 120, "the command sits on the right edge");
 });
 
