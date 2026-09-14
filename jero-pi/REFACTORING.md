@@ -118,19 +118,21 @@
 落点：`lib/core/model-routing-authority.ts` + `lib/agents/agent-profiles.ts`。通过率 ≥0.85 且成本显著高时降一档试水；归因细分 blame: build|plan|clarify|spec；按仓库分区统计样本。
 验收：新增单测覆盖 decideAdjustments 等价逻辑（当前仅升档的分支补降档分支）。
 
-### P1-B 并行 build 自动启用（分析五）
+### P1-B 并行 build 自动启用（分析五）——字段已落地，自动启用待用户决策
 
-落点：`assets/agents/sdd-tasks.md` 已有 `depends:`/`files:` 字段 → `extensions/sdd-init.ts` 或 `lib/sdd/sdd-preflight.ts` 在 plan 完成后做文件集无交集 + depends 无环检测，满足则自动启用并行 apply（`lib/agents/agents-runner.ts` 已具备并行子代理能力）。
-验收：夹具 tasks.md（含相交/不相交/有环三例）的判定单测 + 并行 e2e。
+已落地：P0-C 的工作单元 `Files:`/`Depends:` 机器可检字段（冲突检测的输入）。
+**阻塞点**：现行委托契约规定 apply/verify **前台强制**（"background completion is a notification mechanism, not an orchestration resume guarantee"）。自动并行 apply 需要修改该安全策略，属产品决策——两个可选路径：
+- (a) 保守：工作单元图仅用于**串行链的自动排序与边界校验**（无交集+无环检查作为 Review Workload Guard 的一部分，纯确定性校验，不改前台策略）；
+- (b) 激进：为无交集单元开并行例外（需在 `assets/orchestrator-delegation.md` 增加明确的 carve-out 与失败收敛规则）。
+**待用户选择后实施**；夹具三例（相交/不相交/有环）判定单测随实施补齐。
 
-### P1-C 缓存与 e2e（分析六）
+### P1-C 缓存与 e2e（分析六）——缓存项上游已实现
 
-落点：
-1. `lib/sdd/sdd-preflight.ts` installPackageAssets：托管资产按内容哈希缓存，仅变化时重写（配合 `assets/migrations/*.json` 清单）
-2. `extensions/skill-registry.ts`：skills 目录扫描 mtime 缓存
-3. 补 corregir 循环 e2e（与 P0-A 验收合并）
-4. `/jero:doctor` 列出被静默回退的非法配置
-验收：二次加载无 diff 写入；doctor 输出含配置告警段。
+**现状核实**：
+1. `installPackageAssets` 已按 sha256 跳过未变文件（copied/skipped 语义 + 用户编辑保留），无需重做
+2. `skill-registry` 已有 `.atl/.skill-registry.cache.json`（mtime+size+contentHash）缓存
+3. `/jero:doctor` 已诊断无效模型配置（fail + remedy 行）；分析所指"静默回退"在当前代码中已不存在等价物
+剩余：P0-A 验收的 fake-run e2e（corregir→corregir→pasa 三轮状态与工件断言）——建议扩展 `tests/runtime-harness.mjs`，属独立测试基建工作
 
 ### P2-A 领域工程约束（分析七）
 
