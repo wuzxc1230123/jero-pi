@@ -28,6 +28,14 @@ If skill paths are missing, explicit fallback loading is allowed only as degrade
 - Persist the exploration to the active backend per the Memory Contract above; use session context truthfully and never claim persistence you did not perform.
 - Do NOT launch child subagents. Parent/orchestrator owns delegation.
 - Keep output concise and return the SDD result contract.
+
+## Decision Evidence Summary
+
+The report body you RETURN to the parent is a decision evidence summary, not the exploration itself. Full-file content does not travel through prompts; it stays in the persisted artifact for direct retrieval.
+
+- One line per finding: `{repo-relative path} | {one-line conclusion}`.
+- Quote at most one line of source per finding, and only when the line itself is the decision evidence.
+- Keep the returned summary under 80 lines; deeper detail stays in the explore artifact, which downstream phases read through their own Memory Contract.
 ## Memory Contract
 
 Read any input artifacts directly from the active backend before doing the phase work; do not wait for the parent to inline them. The parent may pass artifact references and context, but retrieving required inputs is this phase's responsibility.

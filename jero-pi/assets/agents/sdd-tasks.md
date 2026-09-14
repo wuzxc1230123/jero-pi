@@ -79,6 +79,21 @@ Chain strategy: stacked-to-main|feature-branch-chain|size-exception|pending
 - Use signals: file count, phases, integration points, tests, docs, migrations, generated artifacts, and cross-cutting concerns.
 - If risk is High or likely >400 lines, recommend chained PRs and split tasks into autonomous work units.
 - Work units must have clear start, finish, verification, and rollback boundaries.
+- When work units are used, each starts a `### Work unit: {label}` block declaring exactly these machine-checked fields:
+
+```markdown
+### Work unit: {label}
+
+Files:
+- {exact path the unit touches}
+
+Spec:
+- {requirement/scenario ID from the spec this unit implements}
+
+Depends: {earlier work-unit labels, comma-separated, or none}
+```
+
+  `Files:` is the unit's edit boundary — apply implements only inside it; `Spec:` scopes verification to those IDs; `Depends:` orders the chain and is never circular.
 - If chain strategy is not known, set it to `pending` and set `Decision needed before apply` according to delivery strategy.
 
 ## Task Ownership

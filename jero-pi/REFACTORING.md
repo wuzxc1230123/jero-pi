@@ -97,18 +97,21 @@
 6. `tests/sdd-agent-tools.test.ts`：新增契约钉住测试（六文件交叉断言）
 7. 外部契约不动：`gentle-ai.verify-result/v1` 信封字段逐字保留（由外部二进制 `sdd-verify-validate` 校验，未知字段会被拒绝）
 
-### P0-B RunRecord 信息密度（分析三）
+### P0-B RunRecord 信息密度（分析三）——数据层上游已实现，剩展示层
 
-落点：`lib/metrics/runtime-metrics*.ts` 已有用量管线，扩展为每阶段记录 token/成本/耗时 + 失败原因标签（`test-failure`/`context-exceeded`/`tool-error`/`spec-drift`）。
-验收：`/jero:usage` 能按阶段聚合展示；doctor（`/jero:doctor`）输出瓶颈阶段。
+**现状核实**：v2.6.2 已有完整逐阶段数据层——`lib/metrics/runtime-metrics*.ts` 按 `agent_class`（含全部 SDD 阶段）分桶聚合 input/output/cache/reasoning tokens、launches/responses、duration（request/message 计）、`error_category`（auth/api/rate_limit/...），并经 `contracts/telemetry/runtime-aggregate-v1.schema.json` 上报。分析文档描述的"无成本/耗时/失败原因"是旧版状况。
+**剩余缺口**（后续工作）：
+1. `/jero:doctor`（`extensions/jero-ai.ts` 的 doctor handler）目前只做资产/配置诊断——增加"瓶颈阶段"段：从 RuntimeMetrics 快照输出按 agent_class 的 tokens/duration/error_category 摘要（需打通 jero-agents 的 metrics 实例到 doctor 的只读访问器）
+2. 跨会话留存：指标是会话内的，分析想要的 `jero-runs.jsonl` 级跨 run 归因需要本地持久化层（当前只有脱敏遥测发送）——设计决策：持久化位置与保留策略需用户确认后再做
 
-### P0-C 上下文瘦身（分析二）
+### P0-C 上下文瘦身（分析二）——✅ 已实现（契约层）
 
-落点：
-1. `assets/orchestrator-delegation.md` 与 `assets/agents/sdd-explore.md`：explore→plan 只传"文件路径 + 结论行"的决策证据摘要
-2. verify 产出结构化 JSON findings（复用 P0-A 的 defects[]），verdicto 只消费 JSON + 少量证据
-3. 任务卡切片级化：`assets/agents/sdd-tasks.md` 的 `files:`/`depends:` 字段（P1-B 也依赖）进 apply 输入裁剪
-验收：大 feature 端到端 token 用量对比下降（用 P0-B 的数据证明）。
+已落地：
+1. `assets/agents/sdd-explore.md`：新增 `## Decision Evidence Summary` ——返回给父级的报告体 = `{路径} | {一行结论}`，单条发现至多引用一行源码，摘要 <80 行；全文留在工件内由下游按需读取
+2. `assets/sdd-orchestrator-workflow.md`（Result Contract 段）：explore 只转递摘要；**工作单元切片卡转递**——apply/verify 的切片启动提示词携带该单元 `Files:/Spec:/Depends:` 原文块，子代理按块限定读取与编辑
+3. `assets/agents/sdd-tasks.md`：工作单元必须声明 `### Work unit: {label}` + `Files:`（编辑边界）+ `Spec:`（验证范围 ID）+ `Depends:`（链序，禁环）——机器可检字段，同时是 P1-B 并行冲突检测的输入
+4. verify 结构化 findings（分析二第 2 项）由 P0-A 的 Defect List 覆盖
+5. `tests/sdd-agent-tools.test.ts` 契约钉住（三文件交叉断言）
 
 ### P1-A autotune 降档与归因细分（分析四）
 

@@ -197,6 +197,27 @@ test("failed verification carries a machine-readable defect list relayed by ever
 	assert.match(chainSource, /## Defect List/);
 });
 
+test("explore returns a decision evidence summary and tasks declare machine-checked work units", () => {
+	// jero-pi REFACTORING P0-C: context slimming. Explore findings travel as
+	// path + conclusion lines; work units carry Files/Spec/Depends boundaries
+	// that scope apply/verify reads and enable later parallel-safety checks.
+	const exploreSource = readFileSync(join(assetsAgentsDir, "sdd-explore.md"), "utf8");
+	assert.match(exploreSource, /## Decision Evidence Summary/);
+	assert.match(exploreSource, /\{repo-relative path\} \| \{one-line conclusion\}/);
+	assert.match(exploreSource, /under 80 lines/);
+
+	const tasksSource = readFileSync(join(assetsAgentsDir, "sdd-tasks.md"), "utf8");
+	assert.match(tasksSource, /### Work unit: \{label\}/);
+	for (const field of ["Files:", "Spec:", "Depends:"]) {
+		assert.ok(tasksSource.includes(field), `sdd-tasks.md work units must declare \`${field}\``);
+	}
+	assert.match(tasksSource, /is never circular/);
+
+	const workflowSource = readFileSync(join(repoRoot, "assets", "sdd-orchestrator-workflow.md"), "utf8");
+	assert.match(workflowSource, /relay only the returned Decision Evidence Summary/);
+	assert.match(workflowSource, /carries that unit's exact `### Work unit:` block/);
+});
+
 test("the retired Pi adversarial role agents are not packaged", () => {
 	// gentle-pi#311 P5: the refuter and targeted validator verdicts execute
 	// through Go-owned pi processes via provider-rendered self-contained

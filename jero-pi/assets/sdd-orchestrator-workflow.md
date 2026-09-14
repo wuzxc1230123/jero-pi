@@ -186,6 +186,10 @@ skill_resolution
 
 The parent should synthesize these envelopes, not paste long raw reports unless needed.
 
+For `sdd-explore`, relay only the returned Decision Evidence Summary — never the persisted exploration. The full artifact stays retrievable by downstream children through their own Memory Contract reads.
+
+When a work unit is assigned for apply or verify, the launch prompt carries that unit's exact `### Work unit:` block (`Files:`, `Spec:`, `Depends:`) verbatim from `tasks.md`; the child scopes its reads and edits to it, widening only when the unit touches a shared interface, and states the widening in its report.
+
 ### Key Learnings closing block (routing)
 
 Every installed SDD phase executor agent (`assets/agents/sdd-*.md`) carries the effective `## Key Learnings Closing` contract in its own loaded prompt; this workflow file documents routing only and is not the executor authority. Each phase executor closes its final report text with a `## Key Learnings` block that the Engram memory provider passively extracts. Generic delegated workers receive the same closing instruction via `assets/orchestrator-delegation.md`.
