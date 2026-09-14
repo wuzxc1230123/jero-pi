@@ -63,7 +63,7 @@
 | `pnpm typecheck`（tsc 诊断基线） | 200 项，与上游基线完全一致，零回归 |
 | `pnpm run check:runtime-modules` | 生成物与 lib 源一致 |
 | `check:provider-contract` | 通过（contract 1.2.0，9 条目，2 基线） |
-| `node --test`（排除 3 个 Windows 挂起文件） | 与上游在同一环境下的失败集合逐名对比：**迁移引入的失败全部修复后为 0**；残余失败均为上游在 Windows 同样存在的环境性失败（spawn/IPC 语义、POSIX 可执行位、dev-binary 探测），且 `review-candidate-view`、`review-controller-native-routing`、`review-controller-workspace-root` 三个文件在**上游同样挂起**（已逐文件单跑对照证实） |
+| `node --test`（排除 3 个 Windows 挂起文件） | **2138 测试 / 2031 通过 / 88 失败 / 19 跳过**；与上游在同一环境下的失败集合逐名对比：**迁移独有失败 0**（唯一形差 `/jero:doctor` 与上游 `/gentle:doctor` 为同一测试改名配对，两侧均败）；残余失败均为上游在 Windows 同样存在的环境性失败（spawn/IPC 语义、POSIX 可执行位、dev-binary 探测），且 `review-candidate-view`、`review-controller-native-routing`、`review-controller-workspace-root` 三个文件在**上游同样挂起**（已逐文件单跑对照证实） |
 
 #### 迁移缺陷修复记录（三类系统性问题 + 个案）
 
