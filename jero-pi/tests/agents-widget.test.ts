@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { visibleWidth } from "@earendil-works/pi-tui";
-import { TASK_STATUS, type TaskRecord } from "../lib/agents-protocol.ts";
-import { formatElapsed, renderAgentsCard, widgetExpiryMs, widgetRows, widgetTasks } from "../lib/agents-widget.ts";
-import { stripAnsi } from "../lib/terminal-theme.ts";
+import { TASK_STATUS, type TaskRecord } from "../lib/agents/agents-protocol.ts";
+import { formatElapsed, renderAgentsCard, widgetExpiryMs, widgetRows, widgetTasks } from "../lib/agents/agents-widget.ts";
+import { stripAnsi } from "../lib/core/terminal-theme.ts";
 
 // Gentle Agents widget: the card above the editor that shows what the
 // subagents are doing, drawn from task records only (never from threads).
@@ -46,14 +46,14 @@ test("widgetExpiryMs says how long until the next finished row leaves the card",
 test("renderAgentsCard draws columns for agent, task, and model · tokens · cost · time, with the batch time in the rule", () => {
 	const tasks = [
 		task({ id: "a", status: TASK_STATUS.COMPLETED, startedAt: 1000, endedAt: 26_000 }),
-		task({ id: "b", agent: "sdd-apply", label: "write gentle-shell footer", startedAt: 44_000, tokens: 12_000, cost: 0.09 }),
+		task({ id: "b", agent: "sdd-apply", label: "write jero-shell footer", startedAt: 44_000, tokens: 12_000, cost: 0.09 }),
 	];
 	const lines = renderAgentsCard(tasks, plainTheme, 84, 85_000, { collapsed: false });
 	for (const line of lines) assert.equal(visibleWidth(line), 84, `"${stripAnsi(line)}" is not 84 wide`);
 	const plain = lines.map(stripAnsi);
 	assert.match(plain[0], /^╭─ ❀ Agents · 1 active · 1 done ─+ 1m24s ╮$/);
 	assert.match(plain[1], /^│ ✓  sdd-explore  map footer data sources +claude-sonnet-5 · 34k · \$0\.27 · 25s │$/);
-	assert.match(plain[2], /^│ ◐  sdd-apply    write gentle-shell footer +claude-sonnet-5 · 12k · \$0\.09 · 41s │$/);
+	assert.match(plain[2], /^│ ◐  sdd-apply    write jero-shell footer +claude-sonnet-5 · 12k · \$0\.09 · 41s │$/);
 	assert.match(plain[3], /^╰─+╯$/);
 	assert.deepEqual(renderAgentsCard([], plainTheme, 60, 0, { collapsed: false }), []);
 });

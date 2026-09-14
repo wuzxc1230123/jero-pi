@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { visibleWidth, type TuiMouseEvent } from "@earendil-works/pi-tui";
-import { TASK_EVENT, TASK_STATUS, TaskStore, type TaskRecord } from "../lib/agents-protocol.ts";
-import { AgentsView } from "../lib/agents-view.ts";
-import { stripAnsi } from "../lib/terminal-theme.ts";
+import { TASK_EVENT, TASK_STATUS, TaskStore, type TaskRecord } from "../lib/agents/agents-protocol.ts";
+import { AgentsView } from "../lib/agents/agents-view.ts";
+import { stripAnsi } from "../lib/core/terminal-theme.ts";
 
 const plainTheme = { fg: (_color: string, text: string) => text };
 

@@ -508,8 +508,8 @@ test("ask_user_choice emits a private balanced lifecycle around selection and ca
 	assert.equal(selection.value, "preserve_requested_hash");
 	assert.deepEqual(sequence, ["active", "custom", "inactive"]);
 	assert.deepEqual(selectedRegistration.emittedEvents(), [
-		{ channel: "gentle-pi:ask-user-choice:blocked", data: { active: true } },
-		{ channel: "gentle-pi:ask-user-choice:blocked", data: { active: false } },
+		{ channel: "jero-pi:ask-user-choice:blocked", data: { active: true } },
+		{ channel: "jero-pi:ask-user-choice:blocked", data: { active: false } },
 	]);
 	assert.doesNotMatch(
 		JSON.stringify(selectedRegistration.emittedEvents()),
@@ -526,8 +526,8 @@ test("ask_user_choice emits a private balanced lifecycle around selection and ca
 	);
 	assert.equal(cancelled.details.cancelled, true);
 	assert.deepEqual(cancelledRegistration.emittedEvents(), [
-		{ channel: "gentle-pi:ask-user-choice:blocked", data: { active: true } },
-		{ channel: "gentle-pi:ask-user-choice:blocked", data: { active: false } },
+		{ channel: "jero-pi:ask-user-choice:blocked", data: { active: true } },
+		{ channel: "jero-pi:ask-user-choice:blocked", data: { active: false } },
 	]);
 });
 
@@ -545,8 +545,8 @@ test("ask_user_choice settles its lifecycle after a custom UI error and emits no
 		(error) => error === customError,
 	);
 	assert.deepEqual(failedRegistration.emittedEvents(), [
-		{ channel: "gentle-pi:ask-user-choice:blocked", data: { active: true } },
-		{ channel: "gentle-pi:ask-user-choice:blocked", data: { active: false } },
+		{ channel: "jero-pi:ask-user-choice:blocked", data: { active: true } },
+		{ channel: "jero-pi:ask-user-choice:blocked", data: { active: false } },
 	]);
 
 	const nonTuiRegistration = registerChoiceTool();

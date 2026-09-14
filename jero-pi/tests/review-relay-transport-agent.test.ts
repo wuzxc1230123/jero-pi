@@ -4,13 +4,13 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { __testing } from "../extensions/gentle-ai.ts";
-import { NativeReviewIntegrationError, type NativeReviewCli } from "../lib/native-review-cli.ts";
-import { CandidateViewRegistry } from "../lib/review-candidate-view.ts";
-import type { ReviewCollectInputV3, ReviewStatusV3 } from "../lib/review-integration-v2.ts";
-import type { ReviewHostRelayRequest } from "../lib/review-host-relay.ts";
+import { __testing } from "../extensions/jero-ai.ts";
+import { NativeReviewIntegrationError, type NativeReviewCli } from "../lib/native/native-review-cli.ts";
+import { CandidateViewRegistry } from "../lib/review/review-candidate-view.ts";
+import type { ReviewCollectInputV3, ReviewStatusV3 } from "../lib/review/review-integration-v2.ts";
+import type { ReviewHostRelayRequest } from "../lib/review/review-host-relay.ts";
 
-// Third field failure on the recovered-lineage defect (2026-08-16, gentle-pi
+// Third field failure on the recovered-lineage defect (2026-08-16, jero-pi
 // main 402f9f77 + gentle-ai 2.4.0-main.20278905): STATUS recognises the
 // lineage, the Pi RELAY never runs, no lens is launched, zero mutations.
 //
@@ -36,7 +36,7 @@ const SHA = `sha256:${"1".repeat(64)}`;
 const TRANSPORT_REFUSAL_CODE = "immutable_review_transport_unsupported";
 
 function repository(t: test.TestContext): string {
-	const cwd = mkdtempSync(join(tmpdir(), "gentle-pi-relay-transport-"));
+	const cwd = mkdtempSync(join(tmpdir(), "jero-pi-relay-transport-"));
 	t.after(() => rmSync(cwd, { recursive: true, force: true }));
 	execFileSync("git", ["init", "-b", "main"], { cwd });
 	writeFileSync(join(cwd, "app.ts"), "export const value = 1;\n");

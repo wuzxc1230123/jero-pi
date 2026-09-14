@@ -66,8 +66,8 @@ export async function installTuiModeSetting(options = {}) {
 	catch (error) { if (error.code === "ENOENT") return { changed: false, recognized: false }; throw error; }
 	const installations = [
 		{
-			packageRoot: join(home, "npm", "node_modules", "gentle-pi"),
-			paths: [home, join(home, "npm"), join(home, "npm", "node_modules"), join(home, "npm", "node_modules", "gentle-pi")],
+			packageRoot: join(home, "npm", "node_modules", "jero-pi"),
+			paths: [home, join(home, "npm"), join(home, "npm", "node_modules"), join(home, "npm", "node_modules", "jero-pi")],
 		},
 		{
 			packageRoot: join(home, "git", "github.com", "Gentleman-Programming", "gentle-pi"),

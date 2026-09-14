@@ -2,7 +2,7 @@
 
 ## Intent
 
-gentle-pi’s older gate misroutes 400-line/ordinary pre-PR diffs and can block retries. Port final gentle-ai v1.46.0 behavior via Pi-native contracts/runtime.
+jero-pi’s older gate misroutes 400-line/ordinary pre-PR diffs and can block retries. Port final gentle-ai v1.46.0 behavior via Pi-native contracts/runtime.
 
 ## Scope
 

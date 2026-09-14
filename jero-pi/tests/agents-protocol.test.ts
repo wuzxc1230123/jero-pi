@@ -10,7 +10,7 @@ import {
 	TaskStore,
 	THREAD_ITEM,
 	type TaskRecord,
-} from "../lib/agents-protocol.ts";
+} from "../lib/agents/agents-protocol.ts";
 
 // Gentle Agents protocol: the child pi process streams RPC events; the host
 // normalizes them into small typed deltas, applies them to an append-only

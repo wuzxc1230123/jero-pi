@@ -44,7 +44,7 @@ interface LockRecord {
 }
 
 function withTemporaryRoot<T>(run: (packageRoot: string) => T): T {
-	const packageRoot = mkdtempSync(join(tmpdir(), "gentle-pi-provider-mirror-"));
+	const packageRoot = mkdtempSync(join(tmpdir(), "jero-pi-provider-mirror-"));
 	try {
 		return run(packageRoot);
 	} finally {

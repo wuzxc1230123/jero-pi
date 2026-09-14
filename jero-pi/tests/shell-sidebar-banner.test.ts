@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { visibleWidth } from "@earendil-works/pi-tui";
-import { renderSidebarBanner } from "../lib/shell-sidebar-banner.ts";
+import { renderSidebarBanner } from "../lib/shell/shell-sidebar-banner.ts";
 
 const plain = { fg: (_role: string, text: string) => text, bold: (text: string) => text };
 test("sidebar heading is only the centered literal product label", () => {

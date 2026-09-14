@@ -6,8 +6,8 @@ import { join } from "node:path";
 import test from "node:test";
 import { pathToFileURL } from "node:url";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { createGentleAiExtension } from "../extensions/gentle-ai.ts";
-import type { NativeReviewCli } from "../lib/native-review-cli.ts";
+import { createGentleAiExtension } from "../extensions/jero-ai.ts";
+import type { NativeReviewCli } from "../lib/native/native-review-cli.ts";
 
 // gentle-pi#560 / gentle-ai#4056, #4057: since 2026-08-01 Gentle AI stopped
 // writing a runtime-specific review execution contract into Pi's generated
@@ -121,7 +121,7 @@ test("before_agent_start injects nothing when nativeReviewCli is null", async ()
 
 // gentle-ai R1/R3: a tampered mirrored orchestration/pi.md must never be spliced into the system prompt.
 function tempMirror(text: string, entrySha256: string): string {
-	const root = mkdtempSync(join(tmpdir(), "gentle-pi-mirror-"));
+	const root = mkdtempSync(join(tmpdir(), "jero-pi-mirror-"));
 	const bundleDir = join(root, "v9.9.9", "bundle", "orchestration");
 	mkdirSync(bundleDir, { recursive: true });
 	writeFileSync(join(bundleDir, "pi.md"), text, "utf8");
@@ -136,7 +136,7 @@ test("rejects a tampered mirror, accepts a matching one, and warns once", async 
 	const matching = tempMirror(matchingText, createHash("sha256").update(Buffer.from(matchingText, "utf8")).digest("hex"));
 	try {
 		// Cache-bust: isolate this module's fragment cache from the real-mirror tests above.
-		const cacheBustedUrl = `${pathToFileURL(join(import.meta.dirname, "..", "extensions", "gentle-ai.ts")).href}?tamper=${Math.random()}`;
+		const cacheBustedUrl = `${pathToFileURL(join(import.meta.dirname, "..", "extensions", "jero-ai.ts")).href}?tamper=${Math.random()}`;
 		type Testing = {
 			readMirroredReviewContractFragment: (mirrorRoot?: string) => string | null;
 			loadReviewContractPromptFragment: (ctx: ExtensionContext, mirrorRoot?: string) => string | null;

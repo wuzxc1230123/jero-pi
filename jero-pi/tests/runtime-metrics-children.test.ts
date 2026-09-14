@@ -3,11 +3,11 @@ import test from "node:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { stripTypeScriptTypes } from "node:module";
 import { runInNewContext } from "node:vm";
-import { parseAgentClass } from "../lib/runtime-metrics.ts";
-import { parseAgentDefinition, type AgentDefinition } from "../lib/agents-config.ts";
-import { normalizeRpcEvent, TASK_EVENT } from "../lib/agents-protocol.ts";
-import { ChildComposition, childEvent, classifyBuiltinAgent, launchSelection } from "../lib/runtime-metrics-children.ts";
-import { encodeNativeRuntimeEvent } from "../lib/runtime-metrics-native.ts";
+import { parseAgentClass } from "../lib/metrics/runtime-metrics.ts";
+import { parseAgentDefinition, type AgentDefinition } from "../lib/agents/agents-config.ts";
+import { normalizeRpcEvent, TASK_EVENT } from "../lib/agents/agents-protocol.ts";
+import { ChildComposition, childEvent, classifyBuiltinAgent, launchSelection } from "../lib/metrics/runtime-metrics-children.ts";
+import { encodeNativeRuntimeEvent } from "../lib/metrics/runtime-metrics-native.ts";
 
 const asset = new URL("../assets/agents/gentle-ai-worker.md", import.meta.url);
 const definition = parseAgentDefinition(readFileSync(asset, "utf8"), asset.pathname, "global");
@@ -28,7 +28,7 @@ const event = (taskId = "local-task") => childEvent("local-session", taskId, lau
 test("installed package definitions retain classification after the actual routing transform", () => {
 	// installSddAssets/copyDirectoryFiles copies assets verbatim on first install.
 	// Isolate the real pure routing writer; do not run an installer or read user agents.
-	const source = readFileSync(new URL("../extensions/gentle-ai.ts", import.meta.url), "utf8");
+	const source = readFileSync(new URL("../extensions/jero-ai.ts", import.meta.url), "utf8");
 	const transform = source.match(/function updateFrontmatterRouting\([\s\S]*?\n\}/)?.[0];
 	assert.ok(transform);
 	const route = runInNewContext(`(${stripTypeScriptTypes(transform)})`);

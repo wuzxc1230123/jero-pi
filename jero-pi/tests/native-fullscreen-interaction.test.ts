@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test, { mock } from "node:test";
 import { Container, MouseRegion, type TuiMouseEvent, SelectList, Text } from "@earendil-works/pi-tui";
-import { createNativeFullscreenInteraction } from "../lib/native-fullscreen-interaction.ts";
+import { createNativeFullscreenInteraction } from "../lib/native/native-fullscreen-interaction.ts";
 
 const items = [
 	{ value: "first", label: "First option", description: "A description keeps the list layout realistic." },

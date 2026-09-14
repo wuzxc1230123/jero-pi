@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Define the naming contract for gentle-pi's shipped skills so the repo matches the already-installed collision hotfix, and stays a no-op on the next release for already-patched installs.
+Define the naming contract for jero-pi's shipped skills so the repo matches the already-installed collision hotfix, and stays a no-op on the next release for already-patched installs.
 
 ## ADDED Requirements
 
@@ -15,7 +15,7 @@ The system MUST use `gentle-ai-`-prefixed `name:` values in the frontmatter of t
 
 - GIVEN the repo's `skills/{branch-pr,chained-pr,issue-creation,judgment-day,skill-creator,skill-improver}/SKILL.md` files
 - WHEN their frontmatter `name:` field is read
-- THEN each value equals the corresponding `gentle-ai-`-prefixed name installed at `~/.pi/agent/npm/node_modules/gentle-pi/skills`
+- THEN each value equals the corresponding `gentle-ai-`-prefixed name installed at `~/.pi/agent/npm/node_modules/jero-pi/skills`
 
 #### Scenario: Reinstall is a no-op for patched installs
 
@@ -73,11 +73,11 @@ The system MUST NOT rename the 6 skills' directories; frontmatter `name:` remain
 
 ### Requirement: KNOWN_AGENTS Identifier Namespace Untouched
 
-The system MUST leave `lib/review-triggers.ts`'s `KNOWN_AGENTS` identifier namespace unmodified by this change. Its divergence from the `judgment-day` skill name is a documented, separately-owned concern.
+The system MUST leave `lib/review/review-triggers.ts`'s `KNOWN_AGENTS` identifier namespace unmodified by this change. Its divergence from the `judgment-day` skill name is a documented, separately-owned concern.
 
 #### Scenario: review-triggers untouched
 
-- GIVEN `lib/review-triggers.ts` and `tests/review-triggers.test.ts`
+- GIVEN `lib/review/review-triggers.ts` and `tests/review-triggers.test.ts`
 - WHEN this change is applied
 - THEN neither file is modified
 

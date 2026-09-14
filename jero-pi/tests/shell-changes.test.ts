@@ -19,7 +19,7 @@ import {
 	changesModel,
 	snapshotChanges,
 	type ChangedFile,
-} from "../lib/shell-changes.ts";
+} from "../lib/shell/shell-changes.ts";
 
 // The changes view shows the working tree against HEAD, new files included,
 // so a resumed session sees the same picture as a fresh one.
@@ -88,13 +88,13 @@ test("changesModel sorts files by path and totals the counts", () => {
 });
 
 test("changesSummary and the widget describe the session at a glance", () => {
-	const model = changesModel([file("extensions/gentle-shell.ts", 31, 0, CHANGE_STATUS.ADDED), file("lib/shell-bar.ts", 9, 7), file("tests/x.test.ts", 2, 0)]);
+	const model = changesModel([file("extensions/jero-shell.ts", 31, 0, CHANGE_STATUS.ADDED), file("lib/shell/shell-bar.ts", 9, 7), file("tests/x.test.ts", 2, 0)]);
 	assert.equal(changesSummary(model), "3 files · +42 −7");
 	assert.equal(changesSummary(changesModel([file("a.ts", 1, 0)])), "1 file · +1 −0");
 
 	const [line, ...rest] = renderChangesWidget(model, plainTheme, 120);
 	assert.equal(rest.length, 0);
-	assert.match(line, /^✎ 3 files · \+42 −7 · extensions\/gentle-shell\.ts · lib\/shell-bar\.ts · tests\/x\.test\.ts {2,}\/gentle:changes$/);
+	assert.match(line, /^✎ 3 files · \+42 −7 · extensions\/jero-shell\.ts · lib\/shell-bar\.ts · tests\/x\.test\.ts {2,}\/jero:changes$/);
 	assert.equal(visibleWidth(line), 120, "the command sits on the right edge");
 });
 
@@ -103,7 +103,7 @@ test("renderChangesWidget colors counts by direction and yields nothing when cle
 	const [line] = renderChangesWidget(model, taggedTheme, 400);
 	assert.match(line, /<accent>✎<\/accent>/);
 	assert.match(line, /<success>\+1<\/success> <error>−2<\/error>/);
-	assert.match(line, /<dim>\/gentle:changes<\/dim>$/);
+	assert.match(line, /<dim>\/jero:changes<\/dim>$/);
 	assert.deepEqual(renderChangesWidget(emptyChanges(), plainTheme, 120), []);
 });
 
@@ -111,7 +111,7 @@ test("renderChangesWidget drops the file list before truncating on narrow termin
 	const model = changesModel([file("a/very/long/path/one.ts", 1, 0), file("a/very/long/path/two.ts", 1, 0)]);
 	const [line] = renderChangesWidget(model, plainTheme, 40);
 	assert.equal(visibleWidth(line), 40);
-	assert.match(line, /^✎ 2 files · \+2 −0 +\/gentle:changes$/);
+	assert.match(line, /^✎ 2 files · \+2 −0 +\/jero:changes$/);
 	assert.doesNotMatch(line, /one\.ts/);
 	const [tiny] = renderChangesWidget(model, plainTheme, 20);
 	assert.ok(visibleWidth(tiny) <= 20);
@@ -268,7 +268,7 @@ test("registered roots remain scannable during metadata discovery failure", asyn
 });
 
 test("isolated Git worktrees include preexisting dirty files only after root registration", async (t) => {
-	const temporary = await mkdtemp(join(tmpdir(), "gentle-shell-worktrees-"));
+	const temporary = await mkdtemp(join(tmpdir(), "jero-shell-worktrees-"));
 	// Every repository, linked root and Git configuration belongs to this fixture.
 	t.after(() => rm(temporary, { recursive: true, force: true }));
 	const fixture = await realpath(temporary);

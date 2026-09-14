@@ -57,5 +57,5 @@ coordinate to avoid a rebase conflict on `skills/judgment-day/SKILL.md`.
 ## Phase 4: Verification
 
 - [x] 4.1 Run `pnpm test`; confirm `tests/skill-collision-prefixes.test.ts` (all 6 prefixed assertions + 6 guard assertions) passes GREEN
-- [x] 4.2 Grep repo for the 6 original unprefixed names outside directory paths; confirm no dangling reference remains except the documented out-of-scope files: `scripts/verify-package-files.mjs:38-47`, `lib/review-triggers.ts:69,157`, `tests/review-triggers.test.ts:154,211`, `assets/orchestrator.md:308`
+- [x] 4.2 Grep repo for the 6 original unprefixed names outside directory paths; confirm no dangling reference remains except the documented out-of-scope files: `scripts/verify-package-files.mjs:38-47`, `lib/review/review-triggers.ts:69,157`, `tests/review-triggers.test.ts:154,211`, `assets/orchestrator.md:308`
 - [x] 4.3 Run full `pnpm test` suite; confirm no regressions elsewhere

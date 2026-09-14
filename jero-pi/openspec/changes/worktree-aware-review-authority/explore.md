@@ -6,13 +6,13 @@ Issue #118 is a controller routing problem, not proof that compact candidate ide
 
 ## Verified current behavior and seam
 
-- `extensions/gentle-ai.ts:executeReviewControllerOperation` handles `INSPECT` and `START`.
+- `extensions/jero-ai.ts:executeReviewControllerOperation` handles `INSPECT` and `START`.
 - `INSPECT` calls `inspectReviewAuthorityForController(defaultCwd)`, which calls `inspectLegacyReviewAuthorityV1(defaultCwd)` and `inspectCompactReviewAuthorityV2(defaultCwd)` before any live candidate snapshot is derived. It reports repository-wide compact authority as `terminal` when any shared terminal lineage is present.
 - `START` repeats that same inspection and returns `status: "blocked"` before reaching `startCompactReview` whenever inspection is not clean.
 - The dead-end is therefore before compact START's candidate comparison: controller INSPECT/status routing selects common-directory authority first, so a terminal in one linked worktree blocks the requested worktree before its live binding can be compared.
 - `lib/review-facade.ts:startCompactReview` already captures `captureReviewSnapshot({ cwd: input.cwd, ... })` and its terminal scan compares base tree, initial review tree, genesis paths, and intended-untracked paths. It does not currently compare the complete requested candidate binding, but the confirmed follow-up is that compact START already has the material-difference mechanism; controller routing is the first seam to correct. Do not invent a new worktree identity field without source evidence from the complete binding/receipt contract.
 - `lib/review-facade.ts:discoverCompactReview` and `lib/review-compact-store.ts` resolve the shared Git common-directory authority. This must remain shared so existing receipts remain readable and gate-validatable.
-- `extensions/gentle-ai.ts:durableResetRecoveryRequest` reads `<authority.store_root>/control/reset-state.json` directly. `inspectReviewAuthorityForController` invokes it when legacy inspection returns `reset-in-progress`; absent state currently leaks an untyped filesystem error. `RECOVER` invokes the same helper before `destructiveResetReviewAuthorityV1(..., resume: true)`.
+- `extensions/jero-ai.ts:durableResetRecoveryRequest` reads `<authority.store_root>/control/reset-state.json` directly. `inspectReviewAuthorityForController` invokes it when legacy inspection returns `reset-in-progress`; absent state currently leaks an untyped filesystem error. `RECOVER` invokes the same helper before `destructiveResetReviewAuthorityV1(..., resume: true)`.
 
 ## Smallest correct scope
 
@@ -23,9 +23,9 @@ Issue #118 is a controller routing problem, not proof that compact candidate ide
 
 ## Exact existing symbols and likely tests
 
-- Controller seam: `executeReviewControllerOperation`, `inspectReviewAuthorityForController`, `durableResetRecoveryRequest` in `extensions/gentle-ai.ts`.
+- Controller seam: `executeReviewControllerOperation`, `inspectReviewAuthorityForController`, `durableResetRecoveryRequest` in `extensions/jero-ai.ts`.
 - START/routing: `startCompactReview`, `discoverCompactReview`, `CompactReviewStartBlockedError` in `lib/review-facade.ts`.
-- Candidate capture: `captureReviewSnapshot`, `SnapshotV1`, `discoverReviewUntrackedPaths` in `lib/review-snapshot.ts`.
+- Candidate capture: `captureReviewSnapshot`, `SnapshotV1`, `discoverReviewUntrackedPaths` in `lib/review/review-snapshot.ts`.
 - Shared authority/receipt preservation: `discoverCompactReviewStores`, `CompactReviewStoreV2.loadTerminalReceipt`, `inspectCompactReviewAuthorityV2` in `lib/review-compact-store.ts`.
 - Existing controller coverage: `tests/review-controller.test.ts` (INSPECT/START/RECOVER and reset-state fixtures, especially the reset/recovery cases around lines 858–1017).
 - Existing candidate/worktree coverage: `tests/review-snapshot.test.ts`, `tests/review-repository.test.ts` (linked worktrees resolve one common-directory authority), and `tests/review-facade.test.ts` if present in the branch.

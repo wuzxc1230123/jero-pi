@@ -4,14 +4,14 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync }
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { readReviewConsentLatch, recordReviewConsentLatch, REVIEW_CONSENT_LATCH_SCHEMA } from "../lib/review-consent-latch.ts";
+import { readReviewConsentLatch, recordReviewConsentLatch, REVIEW_CONSENT_LATCH_SCHEMA } from "../lib/review/review-consent-latch.ts";
 
 function git(cwd: string, ...args: string[]): string {
 	return execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
 }
 
 function repository(t: test.TestContext): string {
-	const parent = mkdtempSync(join(tmpdir(), "gentle-pi-review-consent-latch-"));
+	const parent = mkdtempSync(join(tmpdir(), "jero-pi-review-consent-latch-"));
 	const root = join(parent, "repo");
 	mkdirSync(root);
 	git(root, "init", "-b", "main");
@@ -35,10 +35,10 @@ test("recording the latch is one-way: it reads back true, forever, with exact ca
 	assert.equal(readReviewConsentLatch(cwd), true);
 
 	const commonDir = git(cwd, "rev-parse", "--path-format=absolute", "--git-common-dir");
-	const path = join(commonDir, "gentle-pi", "review-consent", "asked.json");
+	const path = join(commonDir, "jero-pi", "review-consent", "asked.json");
 	const bytes = readFileSync(path, "utf8");
 	assert.equal(bytes, `{"schema":"${REVIEW_CONSENT_LATCH_SCHEMA}"}\n`);
-	assert.equal(REVIEW_CONSENT_LATCH_SCHEMA, "gentle-pi.review-consent-asked/v1");
+	assert.equal(REVIEW_CONSENT_LATCH_SCHEMA, "jero-pi.review-consent-asked/v1");
 	if (process.platform !== "win32") assert.equal(statSync(path).mode & 0o777, 0o600);
 
 	// Idempotent: recording again does not throw and the latch stays set.
@@ -48,7 +48,7 @@ test("recording the latch is one-way: it reads back true, forever, with exact ca
 
 test("a linked worktree of the same clone shares one latch via the git common directory", (t) => {
 	const cwd = repository(t);
-	const worktreeParent = mkdtempSync(join(tmpdir(), "gentle-pi-review-consent-latch-worktree-"));
+	const worktreeParent = mkdtempSync(join(tmpdir(), "jero-pi-review-consent-latch-worktree-"));
 	t.after(() => rmSync(worktreeParent, { recursive: true, force: true }));
 	const worktree = join(worktreeParent, "wt");
 	git(cwd, "worktree", "add", "-b", "feature", worktree);
@@ -58,7 +58,7 @@ test("a linked worktree of the same clone shares one latch via the git common di
 });
 
 test("an unresolvable (non-Git) directory throws rather than silently reporting a latch", () => {
-	const outside = mkdtempSync(join(tmpdir(), "gentle-pi-review-consent-latch-not-git-"));
+	const outside = mkdtempSync(join(tmpdir(), "jero-pi-review-consent-latch-not-git-"));
 	try {
 		assert.throws(() => readReviewConsentLatch(outside));
 	} finally {

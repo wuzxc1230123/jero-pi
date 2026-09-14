@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Define the exhaustive first-pass, persisted findings ledger, judge/fix role split, and scoped re-review contract shared by the 4R review lenses (review-risk, review-readability, review-reliability, review-resilience) and judgment-day, replicated across every gentle-pi review surface and enforced by a drift-guard test.
+Define the exhaustive first-pass, persisted findings ledger, judge/fix role split, and scoped re-review contract shared by the 4R review lenses (review-risk, review-readability, review-reliability, review-resilience) and judgment-day, replicated across every jero-pi review surface and enforced by a drift-guard test.
 
 ## ADDED Requirements
 
@@ -133,7 +133,7 @@ The exhaustive-pass, ledger schema, and persistence clauses MUST be embedded ins
 
 ### Requirement: Contract coverage across every review surface
 
-The exhaustive-pass, ledger, judge/fix role split, and scoped re-review contract MUST be present, worded per its role, across every inventoried gentle-pi review surface: the four review-* lens assets, jd-judge-a, jd-judge-b, jd-fix-agent (fix-role clause set only), the judgment-day skill and its reference documents, the orchestrator's 4R review section, and the SDD workflow's Review Workload Guard.
+The exhaustive-pass, ledger, judge/fix role split, and scoped re-review contract MUST be present, worded per its role, across every inventoried jero-pi review surface: the four review-* lens assets, jd-judge-a, jd-judge-b, jd-fix-agent (fix-role clause set only), the judgment-day skill and its reference documents, the orchestrator's 4R review section, and the SDD workflow's Review Workload Guard.
 
 #### Scenario: Every judge surface carries the judge clause set
 

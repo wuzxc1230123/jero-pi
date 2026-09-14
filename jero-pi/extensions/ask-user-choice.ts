@@ -2,11 +2,11 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { DynamicBorder } from "@earendil-works/pi-coding-agent";
 import { Container, Input, isKeyRelease, matchesKey, Text, type KeybindingsManager, type TuiMouseEvent } from "@earendil-works/pi-tui";
 import { type Static, Type } from "typebox";
-import { NativeChoiceList } from "../lib/native-choice-list.ts";
-import { createNativeFullscreenInteraction } from "../lib/native-fullscreen-interaction.ts";
+import { NativeChoiceList } from "../lib/native/native-choice-list.ts";
+import { createNativeFullscreenInteraction } from "../lib/native/native-fullscreen-interaction.ts";
 
 const CHOICE_TOOL_NAME = "ask_user_choice";
-const ASK_USER_CHOICE_BLOCKED_EVENT = "gentle-pi:ask-user-choice:blocked";
+const ASK_USER_CHOICE_BLOCKED_EVENT = "jero-pi:ask-user-choice:blocked";
 
 const ChoiceOptionSchema = Type.Object(
 	{

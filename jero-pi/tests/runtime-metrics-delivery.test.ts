@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import * as delivery from "../lib/runtime-metrics-delivery.ts";
+import * as delivery from "../lib/metrics/runtime-metrics-delivery.ts";
 
 const tick = () => new Promise<void>(resolve => setImmediate(resolve));
 

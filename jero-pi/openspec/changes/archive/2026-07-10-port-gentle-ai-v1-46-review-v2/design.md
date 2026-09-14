@@ -6,7 +6,7 @@ Replace the rule-set gate with a pure typed classifier, keep the Pi hook advisor
 
 ## Interfaces and Routing
 
-`lib/review-triggers.ts` will define `REVIEW_ROUTE`, `REVIEW_LENS`, `TRIVIALITY`, and `EVENT_CEILING` const objects and derive their types. Flat `DiffEvidence`/`ReviewPlan` interfaces feed `classifyReviewRoute(evidence)`.
+`lib/review/review-triggers.ts` will define `REVIEW_ROUTE`, `REVIEW_LENS`, `TRIVIALITY`, and `EVENT_CEILING` const objects and derive their types. Flat `DiffEvidence`/`ReviewPlan` interfaces feed `classifyReviewRoute(evidence)`.
 
 Classification order is deterministic:
 
@@ -31,7 +31,7 @@ bash → collect evidence → classify → notify → confirmCommand → execute
 lenses → parent merges ledger → severe list → 0/1/3 refuters → per-ID votes → fix/re-review ≤2
 ```
 
-`extensions/gentle-ai.ts` will make every review route notify and return `undefined`; the tool hook will always continue to independent `confirmCommand`. Thus review never blocks, while dangerous push/destructive-command denial or confirmation remains authoritative even when advice was emitted.
+`extensions/jero-ai.ts` will make every review route notify and return `undefined`; the tool hook will always continue to independent `confirmCommand`. Thus review never blocks, while dangerous push/destructive-command denial or confirmation remains authoritative even when advice was emitted.
 
 The orchestrator filters the merged ledger to BLOCKER/CRITICAL. No candidates launches zero actors; standard launches one non-parallel general actor; full 4R launches exactly three parallel tasks—correctness, impact/exploitability, reproducibility—with the complete list sent to each. No per-finding or replacement tasks are allowed. Outputs are keyed by finding ID. In standard review, the single general verdict is decisive per finding: `refuted` terminally sets only that row; `stands`, unknown, duplicate, malformed, omitted, or missing verdicts preserve it. In full 4R, votes are independent per finding: at least two of three `refuted` verdicts terminally set only that row; fewer preserve it. WARNING/SUGGESTION become one-time `info` rows.
 

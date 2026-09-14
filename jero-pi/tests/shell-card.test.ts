@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { visibleWidth } from "@earendil-works/pi-tui";
-import { CARD_TONE, renderCard, type Card } from "../lib/shell-card.ts";
-import { stripAnsi } from "../lib/terminal-theme.ts";
+import { CARD_TONE, renderCard, type Card } from "../lib/shell/shell-card.ts";
+import { stripAnsi } from "../lib/core/terminal-theme.ts";
 
 // Cards are how Gentle notices look: the same rounded frame as the prompt,
 // with the title in the notice tone. They collapse to one body line when pi

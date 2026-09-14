@@ -1,14 +1,14 @@
 {
-	"name": "gentle-pi",
-	"version": "2.6.2",
-	"description": "Turn Pi into el Gentleman: a senior-architect development harness with SDD/OpenSpec, subagents, strict TDD evidence, review guardrails, and skill discovery.",
+	"name": "jero-pi",
+	"version": "2.6.2-jero.0",
+	"description": "Pi development harness restructured from gentle-pi v2.6.2: SDD/OpenSpec, subagents, strict TDD evidence, review guardrails, and skill discovery.",
 	"license": "MIT",
 	"type": "module",
 	"keywords": [
 		"pi-package",
 		"pi",
 		"pi-coding-agent",
-		"gentle-pi",
+		"jero-pi",
 		"gentle-ai",
 		"sdd",
 		"openspec",
@@ -18,10 +18,6 @@
 		"ai-coding-agent",
 		"agent-harness"
 	],
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/Gentleman-Programming/gentle-pi.git"
-	},
 	"files": [
 		"assets/",
 		"contracts/",
@@ -52,7 +48,6 @@
 		"typecheck": "node scripts/check-types.mjs"
 	},
 	"pi": {
-		"image": "https://cdn.jsdelivr.net/npm/gentle-pi/assets/gentle-logo-only.png",
 		"extensions": [
 			"./extensions"
 		],

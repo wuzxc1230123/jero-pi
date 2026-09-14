@@ -17,9 +17,9 @@ import {
 	captureReviewSessionIdentity,
 	grantReviewSessionPermission,
 	hasReviewSessionPermission,
-} from "../lib/review-session-standing-permission.ts";
+} from "../lib/review/review-session-standing-permission.ts";
 
-const LIFECYCLE_SYMBOL = Symbol.for("gentle-pi.test.review-session-permission-lifecycle");
+const LIFECYCLE_SYMBOL = Symbol.for("jero-pi.test.review-session-permission-lifecycle");
 
 interface LifecycleEvent {
 	instance: number;
@@ -34,7 +34,7 @@ interface LifecycleState {
 }
 
 function scratch(t: test.TestContext) {
-	const root = realpathSync(mkdtempSync(join(tmpdir(), "gentle-pi-permission-runtime-")));
+	const root = realpathSync(mkdtempSync(join(tmpdir(), "jero-pi-permission-runtime-")));
 	t.after(() => {
 		try { execFileSync("chmod", ["-R", "u+w", root], { stdio: "ignore" }); } catch { /* best effort */ }
 		rmSync(root, { recursive: true, force: true });
@@ -102,11 +102,11 @@ test("actual Pi SDK loader preserves permission only across reload and disposes 
 		else globalState[LIFECYCLE_SYMBOL] = previousLifecycle;
 	});
 
-	const extensionSource = pathToFileURL(join(import.meta.dirname, "..", "extensions", "gentle-ai.ts")).href;
+	const extensionSource = pathToFileURL(join(import.meta.dirname, "..", "extensions", "jero-ai.ts")).href;
 	const extensionPath = join(agentDir, "extensions", "runtime-permission.ts");
 	writeFileSync(extensionPath, `
 import { createGentleAiExtension } from ${JSON.stringify(extensionSource)};
-const lifecycle = globalThis[Symbol.for("gentle-pi.test.review-session-permission-lifecycle")];
+const lifecycle = globalThis[Symbol.for("jero-pi.test.review-session-permission-lifecycle")];
 const instance = ++lifecycle.nextInstance;
 export default function (pi) {
   pi.on("session_start", (event, ctx) => lifecycle.events.push({ instance, type: "start", reason: event.reason, manager: ctx.sessionManager }));
@@ -201,7 +201,7 @@ export default function (pi) {
 
 test("a fresh Node process has no standing permission registry authority", async (t) => {
 	const { cwd } = scratch(t);
-	const moduleUrl = pathToFileURL(join(import.meta.dirname, "..", "lib", "review-session-standing-permission.ts")).href;
+	const moduleUrl = pathToFileURL(join(import.meta.dirname, "..", "lib", "review", "review-session-standing-permission.ts")).href;
 	const script = `
 import { hasReviewSessionPermission } from ${JSON.stringify(moduleUrl)};
 const manager = {};

@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import { spawn as nodeSpawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
-import { AGENT_MODE, type AgentDefinition } from "../lib/agents-config.ts";
-import { AgentRunner, type ChildLike, type RunnerDeps, type TaskRequest } from "../lib/agents-runner.ts";
-import { TASK_STATUS, TaskStore } from "../lib/agents-protocol.ts";
+import { AGENT_MODE, type AgentDefinition } from "../lib/agents/agents-config.ts";
+import { AgentRunner, type ChildLike, type RunnerDeps, type TaskRequest } from "../lib/agents/agents-runner.ts";
+import { TASK_STATUS, TaskStore } from "../lib/agents/agents-protocol.ts";
 
 const fixture = fileURLToPath(new URL("./fixtures/agents-process-child.mjs", import.meta.url));
 const agent: AgentDefinition = { name: "process", description: "test", filePath: "/test.md", scope: "global", instructions: "", model: undefined, thinking: undefined, mode: undefined, tools: [] };

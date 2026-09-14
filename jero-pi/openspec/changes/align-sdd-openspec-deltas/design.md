@@ -2,7 +2,7 @@
 
 ## Decision Summary
 
-Port the accepted `gentle-ai` OpenSpec convention into `gentle-pi`, then harden it with native validation/sync/archive tests where feasible. `gentle-pi` should not install or shell out to external OpenSpec; OpenSpec-compatible behavior is part of the harness contract.
+Port the accepted `gentle-ai` OpenSpec convention into `jero-pi`, then harden it with native validation/sync/archive tests where feasible. `jero-pi` should not install or shell out to external OpenSpec; OpenSpec-compatible behavior is part of the harness contract.
 
 ## Architecture
 
@@ -46,12 +46,12 @@ Update `assets/agents/sdd-archive.md` to include the key rules from `gentle-ai/i
 
 ### Native helpers and tests
 
-`gentle-ai` is mostly prompt-driven. `gentle-pi` should add a small native validation/sync layer or focused test helpers so this behavior is not only prose.
+`gentle-ai` is mostly prompt-driven. `jero-pi` should add a small native validation/sync layer or focused test helpers so this behavior is not only prose.
 
 Candidate TypeScript modules:
 
 ```text
-lib/openspec-deltas.ts
+lib/sdd/openspec-deltas.ts
 lib/openspec-archive.ts
 ```
 
@@ -69,9 +69,9 @@ This can start as internal testable logic without exposing a Pi command. Phase a
 
 Keep non-destructive install behavior by default, but surface drift:
 
-- `/gentle:status` should report stale `.pi/agents/sdd-*.md` or `.pi/chains/sdd-*.chain.md`.
+- `/jero:status` should report stale `.pi/agents/sdd-*.md` or `.pi/chains/sdd-*.chain.md`.
 - Preflight notification can say assets are installed but stale.
-- Force refresh remains explicit via `/gentle:install-sdd --force`.
+- Force refresh remains explicit via `/jero:install-sdd --force`.
 
 Avoid silently overwriting `.pi` because users may customize project agents.
 
@@ -79,7 +79,7 @@ Avoid silently overwriting `.pi` because users may customize project agents.
 
 | Decision                    | Chosen                                 | Alternative                             | Rationale                                                                                      |
 | --------------------------- | -------------------------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| External OpenSpec CLI       | Do not install                         | Add dependency / shell out              | User explicitly wants OpenSpec behavior bundled in `gentle-pi`.                                |
+| External OpenSpec CLI       | Do not install                         | Add dependency / shell out              | User explicitly wants OpenSpec behavior bundled in `jero-pi`.                                |
 | Engram canonical specs      | Do not add                             | Add `sdd/canonical/{domain}/spec` topic | User accepted Engram as working memory only; canonical evolution belongs to file-backed modes. |
 | Prompt-only vs native merge | Add native tests/helpers incrementally | Keep prompt-only                        | Reduces silent data loss in MODIFIED/REMOVED merges.                                           |
 | `.pi` asset drift           | Warn + explicit refresh                | Auto-overwrite                          | Preserves local customizations and reviewability.                                              |
@@ -103,7 +103,7 @@ Avoid silently overwriting `.pi` because users may customize project agents.
 1. Add/port prompt rules and docs first.
 2. Add native parser/apply tests with fixtures.
 3. Add status/preflight drift warning.
-4. Migrate current `gentle-pi` example `gentle-models-effort` from flat `spec.md` to `specs/{domain}/spec.md` or explicitly mark it as legacy.
+4. Migrate current `jero-pi` example `gentle-models-effort` from flat `spec.md` to `specs/{domain}/spec.md` or explicitly mark it as legacy.
 5. Optionally archive this change after verify passes to create canonical `openspec/specs/sdd-openspec/spec.md`.
 
 ## Risks

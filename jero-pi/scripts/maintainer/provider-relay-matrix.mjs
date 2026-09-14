@@ -2,7 +2,7 @@
 // Maintainer provider-relay matrix (gentle-pi#311, first direct work unit).
 //
 // Read-only maintainer harness driving the REAL Pi host relay
-// (lib/review-host-relay.ts#runReviewHostRelaySlot) through explicit
+// (lib/review/review-host-relay.ts#runReviewHostRelaySlot) through explicit
 // maintainer runtime descriptors. Validates an EXACT descriptor shape, uses
 // ONLY declared executables (never re-resolves the production binary), and
 // emits one machine-readable NDJSON verdict per case. Not a production path:
@@ -13,9 +13,9 @@ import { spawn, spawnSync } from "node:child_process";
 import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, isAbsolute, join, resolve } from "node:path";
-import { REVIEW_HOST_RELAY_FAILURE, ReviewHostRelayError, classifyReviewHostRelayRefusal, resolveReviewHostRelaySubmission, runReviewHostRelaySlot } from "../../lib/review-host-relay.ts";
-import { GENTLE_PI_REVIEW_RELAY_CONTRACT, GENTLE_PI_REVIEW_RELAY_CONTRACT_ENV } from "../../lib/review-relay-contract.ts";
-export const DESCRIPTOR_SCHEMA = "gentle-pi.maintainer.provider-relay-descriptor/v1";
+import { REVIEW_HOST_RELAY_FAILURE, ReviewHostRelayError, classifyReviewHostRelayRefusal, resolveReviewHostRelaySubmission, runReviewHostRelaySlot } from "../../lib/review/review-host-relay.ts";
+import { GENTLE_PI_REVIEW_RELAY_CONTRACT, GENTLE_PI_REVIEW_RELAY_CONTRACT_ENV } from "../../lib/review/review-relay-contract.ts";
+export const DESCRIPTOR_SCHEMA = "jero-pi.maintainer.provider-relay-descriptor/v1";
 export const PROVIDER_ROLE_VECTOR_KINDS = Object.freeze(["provider-role-refuter", "provider-role-validator"]);
 export const CASE_KINDS = Object.freeze(["relay-unavailable", "positive-lens", ...PROVIDER_ROLE_VECTOR_KINDS]);
 export const PROVIDER_ROLE_VECTOR_VERB = Object.freeze({ "provider-role-refuter": "capture-refuter", "provider-role-validator": "capture-validation" });
@@ -209,7 +209,7 @@ const missingReason = (executable, label) => `${label} "${executable}" is not an
 // picks an unpredictable name and 0700 keeps it ours, so nothing can race a
 // file into the slot between the mkdtemp and the spawn.
 function unlaunchablePi() {
-	const directory = mkdtempSync(join(tmpdir(), "gentle-pi-maintainer-no-pi-"));
+	const directory = mkdtempSync(join(tmpdir(), "jero-pi-maintainer-no-pi-"));
 	chmodSync(directory, 0o700);
 	return { directory, executable: join(directory, "pi-must-never-launch") };
 }

@@ -29,11 +29,11 @@ Keep review authority repository-wide in the Git common directory, but separate 
 
 | Symbol | Current responsibility | Design change |
 |---|---|---|
-| `executeReviewControllerOperation` in `extensions/gentle-ai.ts` | Routes INSPECT, START, and RECOVER | Separates compatibility blocking from candidate-specific terminal applicability; maps missing reset state to a typed outcome. |
-| `inspectReviewAuthorityForController` in `extensions/gentle-ai.ts` | Combines legacy and compact repository inspection | Keeps repository-wide inventory authoritative and adds terminal-applicability metadata without filtering the inventory. |
-| `durableResetRecoveryRequest` in `extensions/gentle-ai.ts` | Reads and validates `reset-state.json` | Throws a typed error only for an absent file; malformed/integrity errors remain distinct. |
-| `resolveRepositoryAuthorityV1` in `lib/review-repository.ts` | Resolves canonical common-directory authority and validates pinned repository identity | Supplies the explicit `repository_id` and authority-scope tuple for both live and terminal ephemeral bindings; no identity format change. |
-| `captureReviewSnapshot` / `SnapshotV1` in `lib/review-snapshot.ts` | Captures START content, paths, untracked scope, and policy | Remains the single START snapshot. A read-only live-binding helper reuses its candidate-field derivation and adds the resolved `repository_id` without persisting a new identity or snapshot schema. |
+| `executeReviewControllerOperation` in `extensions/jero-ai.ts` | Routes INSPECT, START, and RECOVER | Separates compatibility blocking from candidate-specific terminal applicability; maps missing reset state to a typed outcome. |
+| `inspectReviewAuthorityForController` in `extensions/jero-ai.ts` | Combines legacy and compact repository inspection | Keeps repository-wide inventory authoritative and adds terminal-applicability metadata without filtering the inventory. |
+| `durableResetRecoveryRequest` in `extensions/jero-ai.ts` | Reads and validates `reset-state.json` | Throws a typed error only for an absent file; malformed/integrity errors remain distinct. |
+| `resolveRepositoryAuthorityV1` in `lib/review/review-repository.ts` | Resolves canonical common-directory authority and validates pinned repository identity | Supplies the explicit `repository_id` and authority-scope tuple for both live and terminal ephemeral bindings; no identity format change. |
+| `captureReviewSnapshot` / `SnapshotV1` in `lib/review/review-snapshot.ts` | Captures START content, paths, untracked scope, and policy | Remains the single START snapshot. A read-only live-binding helper reuses its candidate-field derivation and adds the resolved `repository_id` without persisting a new identity or snapshot schema. |
 | `startCompactReview` in `lib/review-facade.ts` | Captures candidate, derives lineage, scans terminal states, creates state | Captures once before applicability, compares repository-bound validated terminal receipts, and handles zero/one/multiple matches deterministically. |
 | `CompactReviewStoreV2.loadTerminalReceipt` | Validates terminal state/receipt equivalence | Supplies receipt/state fields after store resolution has proven repository scope; no store or receipt format change. |
 | `CompactReviewStartBlockedError` | Reports an applicable approved/escalated target | Retained for exactly one applicable terminal. |
@@ -42,7 +42,7 @@ Keep review authority repository-wide in the Git common directory, but separate 
 
 ### 1. Ephemeral live candidate binding
 
-Add an internal, non-persisted view in `lib/review-snapshot.ts`. Repository identity enters this binding explicitly from the ordinary authority resolver; it is not inferred from a worktree root:
+Add an internal, non-persisted view in `lib/review/review-snapshot.ts`. Repository identity enters this binding explicitly from the ordinary authority resolver; it is not inferred from a worktree root:
 
 ```ts
 interface LiveReviewCandidateBinding {
@@ -282,10 +282,10 @@ RECOVER input + UI authorization
 
 | File | Planned change |
 |---|---|
-| `lib/review-snapshot.ts` | Factor shared candidate derivation and expose an ephemeral read-only live binding with explicit resolved `repository_id` for INSPECT. Do not alter `SnapshotV1`. |
+| `lib/review/review-snapshot.ts` | Factor shared candidate derivation and expose an ephemeral read-only live binding with explicit resolved `repository_id` for INSPECT. Do not alter `SnapshotV1`. |
 | `lib/review-facade.ts` | Add authority-context-bound terminal discovery and receipt applicability comparison, policy-bound derived lineage, explicit-lineage mismatch handling, and multiple-match ambiguity handling. |
 | `lib/review-compact-store.ts` | Add a schema-neutral internal/read-only discovery seam that accepts one resolved `RepositoryAuthorityV1` and attaches that context to loaded terminal bindings; retain existing public `cwd` resolution and all persisted formats. |
-| `extensions/gentle-ai.ts` | Add optional INSPECT candidate input, inventory/applicability output separation, START compatibility routing, typed reset-state-unavailable mapping, and controller error mappings. |
+| `extensions/jero-ai.ts` | Add optional INSPECT candidate input, inventory/applicability output separation, START compatibility routing, typed reset-state-unavailable mapping, and controller error mappings. |
 | `tests/review-snapshot.test.ts` | Prove ephemeral capture returns existing fields, is worktree-root aware, and leaves no retained snapshot/authority mutation. |
 | `tests/review-facade.test.ts` | Cover each material binding dimension, policy-derived lineage, explicit lineage mismatch, multiple matches, receipt integrity, and receipt preservation. |
 | `tests/review-controller.test.ts` | Add linked-worktree INSPECT/START integration, bare INSPECT policy-unresolved behavior, compatibility cases, retry idempotency, and missing reset-state outcome/no-mutation assertions. |
@@ -406,7 +406,7 @@ Therefore malformed input can never make implementation appear complete or silen
 
 ## Native status shape and compatibility
 
-Use const-object-derived owner values in `lib/sdd-status.ts`:
+Use const-object-derived owner values in `lib/sdd/sdd-status.ts`:
 
 ```ts
 const SDD_TASK_OWNER = {
@@ -435,7 +435,7 @@ interface SddStatus {
 
 All constructors, including empty and non-authoritative status, populate the additive fields with zero-value progress and an empty error list. Rendered JSON exposes them directly. Human-readable status and phase instructions label the two lists separately so an unchecked parent action is never described as an apply task or verification blocker.
 
-The schema remains `gentle-pi.sdd-status` version 1 because this is an additive response change and the meaning of `taskProgress` is unchanged for every legacy artifact: all unmarked checkboxes still count exactly as before. Existing callers that ignore unknown fields remain compatible. Existing marked artifacts did not have defined semantics, so recognizing the new marker introduces no prior contract break.
+The schema remains `jero-pi.sdd-status` version 1 because this is an additive response change and the meaning of `taskProgress` is unchanged for every legacy artifact: all unmarked checkboxes still count exactly as before. Existing callers that ignore unknown fields remain compatible. Existing marked artifacts did not have defined semantics, so recognizing the new marker introduces no prior contract break.
 
 ### Apply and routing semantics
 
@@ -452,7 +452,7 @@ Compute apply readiness from `taskProgress` only:
 
 `parent-lifecycle` is a parent/orchestrator handoff, not an SDD phase and not proof of review approval. The parent reads `deferredParentActions.unchecked` when present for visibility, but the mandatory boundary does not depend on that list. It applies the existing authority-first lifecycle rules: reuse a valid approved content-bound receipt; explicitly start ordinary bounded review when the receipt is missing; and fail closed for scope-changed, invalidated, escalated, ambiguous, or otherwise invalid authority. Later lifecycle gates validate the same receipt. Status MUST NOT inspect action prose, treat checked or absent markers as authority, mint authority, launch an actor, or mark any parent checkbox complete.
 
-When native status lacks authoritative review-overlay evidence, implementation completion deterministically routes to `parent-lifecycle`; it MUST NOT assume that absence of a parent marker means review is complete. Controller-provided authority may prove an existing receipt reusable, but task text cannot. Pending parent actions remain archive blockers, while absent markers are not permission to archive. Parent actions are not apply blockers and are not reported as unchecked implementation tasks. After receipt approval, independent verification remains required before sync/archive readiness; delivery-gate actions remain deferred until their native gate boundary. This amendment deliberately does not turn `lib/sdd-status.ts` into a lifecycle scheduler or redesign the existing review-authority overlay.
+When native status lacks authoritative review-overlay evidence, implementation completion deterministically routes to `parent-lifecycle`; it MUST NOT assume that absence of a parent marker means review is complete. Controller-provided authority may prove an existing receipt reusable, but task text cannot. Pending parent actions remain archive blockers, while absent markers are not permission to archive. Parent actions are not apply blockers and are not reported as unchecked implementation tasks. After receipt approval, independent verification remains required before sync/archive readiness; delivery-gate actions remain deferred until their native gate boundary. This amendment deliberately does not turn `lib/sdd/sdd-status.ts` into a lifecycle scheduler or redesign the existing review-authority overlay.
 
 Malformed ownership takes precedence over ordinary phase routing. Existing `resolve-review` recovery behavior retains precedence when controller-provided review authority is expected and invalid; neither route is weakened by the ownership split.
 
@@ -528,7 +528,7 @@ For Engram/none modes, the status remains non-authoritative as before. The apply
 | `assets/agents/sdd-apply.md` | Select/complete implementation ownership only, report deferred parent actions, stop on malformed markers, and prohibit all bounded-review/gate ownership. |
 | `assets/agents/sdd-status.md` | Teach read-only status reporting the marker, split progress fields, malformed route, and unconditional post-apply parent handoff when authority is not proven approved. |
 | `assets/support/sdd-status-contract.md` | Define the additive status schema, deterministic ownership/routing contract, and marker-independent review obligation shared by agents and the runtime. |
-| `lib/sdd-status.ts` | Replace `countTasks` with ownership-aware parsing; add status fields/rendering; compute apply completion from separated progress while keeping verify/sync/archive behind authoritative receipt approval and verification readiness. |
+| `lib/sdd/sdd-status.ts` | Replace `countTasks` with ownership-aware parsing; add status fields/rendering; compute apply completion from separated progress while keeping verify/sync/archive behind authoritative receipt approval and verification readiness. |
 | `assets/chains/sdd-full.chain.md` | Yield after every completed apply at the parent lifecycle boundary unless an approved receipt is authoritatively established; do not add a review actor to the chain. |
 | `tests/sdd-status.test.ts` | Add parser, compatibility, malformed, separated progress, marker-independent review routing, authority-state, rendering, and archive-blocker regressions. |
 | `tests/artifact-language.test.ts` | Assert generated agent/support/chain assets carry the ownership boundary and never assign bounded review to apply. |

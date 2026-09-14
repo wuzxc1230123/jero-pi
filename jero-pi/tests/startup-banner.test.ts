@@ -5,7 +5,7 @@ import fs from "node:fs/promises";
 import startup, { readGitBranch } from "../extensions/startup-banner.ts";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { visibleWidth } from "@earendil-works/pi-tui";
-import { stripAnsi } from "../lib/terminal-theme.ts";
+import { stripAnsi } from "../lib/core/terminal-theme.ts";
 
 test("startup branch lookup uses direct git argv and hides its Windows child", async () => {
 	const calls: Array<{ command: string; args: readonly string[]; options: Record<string, unknown> }> = [];

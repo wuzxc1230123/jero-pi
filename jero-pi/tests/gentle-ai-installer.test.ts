@@ -626,7 +626,7 @@ test("Darwin/Linux signed bundles retain their four-field manifest and reusable 
 	assert.equal((await installGentleAi({ ...options, download: async () => { throw new Error("signed bundle must be reused"); } })).installed, false);
 });
 
-test("a pinned asset falls back to its gentle-pi mirror only on download failure, and a stable pin declares no mirror", async () => {
+test("a pinned asset falls back to its jero-pi mirror only on download failure, and a stable pin declares no mirror", async () => {
 	// The mirror fallback is a property of the pinned row, not of the asset
 	// form: a prerelease row carries a mirrorUrl, a stable row never does.
 	// Drive the fallback through an archive-form asset so the same test holds
@@ -726,7 +726,7 @@ test("download bounds stalled headers and bodies with transient retry exhaustion
 		}],
 	] as const) {
 		let attempts = 0;
-		await assert.rejects(() => downloadGentleAiAsset("https://example.invalid/archive", join(tmpdir(), `gentle-pi-stalled-${stage}-${process.pid}`), 1024, 0, { request: (...args: never[]) => { attempts += 1; return request(...args); }, headerTimeoutMs: 1, bodyTimeoutMs: 1, maxAttempts: 2, retryDelayMs: 0 }), new RegExp(`download ${stage} timed out`));
+		await assert.rejects(() => downloadGentleAiAsset("https://example.invalid/archive", join(tmpdir(), `jero-pi-stalled-${stage}-${process.pid}`), 1024, 0, { request: (...args: never[]) => { attempts += 1; return request(...args); }, headerTimeoutMs: 1, bodyTimeoutMs: 1, maxAttempts: 2, retryDelayMs: 0 }), new RegExp(`download ${stage} timed out`));
 		assert.equal(attempts, 2);
 	}
 });
@@ -735,7 +735,7 @@ test("download retries only transient HTTP statuses and exhausts within the atte
 	for (const [status, expectedAttempts] of [[429, 2], [500, 2], [502, 2], [503, 2], [504, 2], [400, 1], [404, 1]] as const) {
 		let attempts = 0;
 		const request = (_url: URL, _options: unknown, callback: (response: PassThrough & { statusCode?: number; headers: Record<string, string> }) => void) => { attempts += 1; const response = Object.assign(new PassThrough(), { statusCode: status, headers: {} }); queueMicrotask(() => { callback(response); response.end(); }); return pendingRequest(); };
-		await assert.rejects(() => downloadGentleAiAsset("https://example.invalid/archive", join(tmpdir(), `gentle-pi-http-${status}-${process.pid}`), 1024, 0, { request, maxAttempts: 2, retryDelayMs: 0 }), new RegExp(`HTTP ${status}`));
+		await assert.rejects(() => downloadGentleAiAsset("https://example.invalid/archive", join(tmpdir(), `jero-pi-http-${status}-${process.pid}`), 1024, 0, { request, maxAttempts: 2, retryDelayMs: 0 }), new RegExp(`HTTP ${status}`));
 		assert.equal(attempts, expectedAttempts, `HTTP ${status}`);
 	}
 });

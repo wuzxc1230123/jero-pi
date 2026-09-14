@@ -26,8 +26,8 @@ Chain strategy: size-exception
 
 ## Phase 1: Seam (Foundation)
 
-- [x] 1.1 `extensions/gentle-ai.ts:52` — add `GENTLE_PI_TEST_ASSETS_DIR` env override: `const ASSETS_DIR = process.env.GENTLE_PI_TEST_ASSETS_DIR ?? join(PACKAGE_ROOT, "assets");`
-- [x] 1.2 `extensions/gentle-ai.ts:2126` — add `getOrchestratorPrompt` to the `__testing` export object.
+- [x] 1.1 `extensions/jero-ai.ts:52` — add `GENTLE_PI_TEST_ASSETS_DIR` env override: `const ASSETS_DIR = process.env.GENTLE_PI_TEST_ASSETS_DIR ?? join(PACKAGE_ROOT, "assets");`
+- [x] 1.2 `extensions/jero-ai.ts:2126` — add `getOrchestratorPrompt` to the `__testing` export object.
 
 ## Phase 2: RED — Failing Tests First
 
@@ -41,18 +41,18 @@ Chain strategy: size-exception
 
 ## Phase 3: Author Core + Lazy Files (GREEN, verbatim moves)
 
-- [x] 3.1 Create `assets/orchestrator-delegation.md`: full Work Routing Ladder examples + Pi Subagent Model Routing, full Delegation Rules table + Mandatory Delegation Triggers detail + Cost/Context Balance + Canonical Workflows + Review Lens Selection, LB2/LB5 (Language Boundary extended), full 4R rationale + `lib/review-triggers.ts` note + verbatim `### Review Execution Contract` body from `:301-312` — byte-identical, no reflow.
+- [x] 3.1 Create `assets/orchestrator-delegation.md`: full Work Routing Ladder examples + Pi Subagent Model Routing, full Delegation Rules table + Mandatory Delegation Triggers detail + Cost/Context Balance + Canonical Workflows + Review Lens Selection, LB2/LB5 (Language Boundary extended), full 4R rationale + `lib/review/review-triggers.ts` note + verbatim `### Review Execution Contract` body from `:301-312` — byte-identical, no reflow.
 - [x] 3.2 Create `assets/orchestrator-memory.md`: verbatim `### SDD phases` table + artifact keys + lifecycle rule from current Memory Contract.
 - [x] 3.3 Create `assets/orchestrator-skills.md`: verbatim Skill Registry Protocol detail + Intent-Driven Skill Discovery body.
 - [x] 3.4 Rewrite `assets/orchestrator.md` core using design Appendix drafted blocks, adjusted for the landed state: Identity Contract pointer (already landed, ~150 B, keep as-is), Language Boundary (LB1 pointer landed + LB3/LB4 verbatim in core + new LB2/LB5 pointer), Work Routing Ladder / Delegation Rules / Memory Contract / Skill Registry / Intent-Driven Skill Discovery / 4R Review Triggers condensed blocks, plus a condensed Review Execution Contract core rendering reconciled against the real `:301-312` text.
 
 ## Phase 4: Wire Placeholders
 
-- [x] 4.1 `extensions/gentle-ai.ts:118-133` — add `getDelegationPath()/getMemoryPath()/getSkillsPath()` (mirror `getSddWorkflowPath`) and 3 `.replaceAll("{{GENTLE_PI_DELEGATION_PATH}}"…)` etc. calls inside the `orchestratorPromptCache` block.
+- [x] 4.1 `extensions/jero-ai.ts:118-133` — add `getDelegationPath()/getMemoryPath()/getSkillsPath()` (mirror `getSddWorkflowPath`) and 3 `.replaceAll("{{GENTLE_PI_DELEGATION_PATH}}"…)` etc. calls inside the `orchestratorPromptCache` block.
 
 ## Phase 5: Repoint Regression Assertion
 
-- [x] 5.1 `tests/gentle-ai.test.ts:40` — repoint ONLY the `assets/orchestrator.md` loop entry to read core + `assets/orchestrator-delegation.md` (union); leave `README.md` and `skills/gentle-ai/SKILL.md` entries unchanged.
+- [x] 5.1 `tests/jero-ai.test.ts:40` — repoint ONLY the `assets/orchestrator.md` loop entry to read core + `assets/orchestrator-delegation.md` (union); leave `README.md` and `skills/gentle-ai/SKILL.md` entries unchanged.
 - [x] 5.2 (discovered, not in original list) — repointed 5 more pre-existing whole-file assertions in `tests/artifact-language.test.ts`, `tests/review-ledger-contract.test.ts`, `tests/persona-single-channel.test.ts` (x3), and `tests/runtime-harness.mjs` that also asserted on `assets/orchestrator.md` content moved to lazy files — see apply-progress.md Deviations.
 
 ## Phase 6: Measure and Verify

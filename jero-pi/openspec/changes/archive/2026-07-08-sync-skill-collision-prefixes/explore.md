@@ -2,9 +2,9 @@
 
 ## Problem
 
-On 2026-07-07 a skill-name collision fix was applied DIRECTLY to the installed package copy (~/.pi/agent/npm/node_modules/gentle-pi/skills), renaming 6 skills' frontmatter `name:` to gentle-ai-prefixed forms: `gentle-ai-branch-pr`, `gentle-ai-chained-pr`, `gentle-ai-issue-creation`, `gentle-ai-judgment-day`, `gentle-ai-skill-creator`, `gentle-ai-skill-improver`. The collision: when both gentle-ai and gentle-pi provide skills to the same Pi runtime, identical names clash.
+On 2026-07-07 a skill-name collision fix was applied DIRECTLY to the installed package copy (~/.pi/agent/npm/node_modules/jero-pi/skills), renaming 6 skills' frontmatter `name:` to gentle-ai-prefixed forms: `gentle-ai-branch-pr`, `gentle-ai-chained-pr`, `gentle-ai-issue-creation`, `gentle-ai-judgment-day`, `gentle-ai-skill-creator`, `gentle-ai-skill-improver`. The collision: when both gentle-ai and jero-pi provide skills to the same Pi runtime, identical names clash.
 
-The repo at /home/gentleman/work/gentle-pi still uses the ORIGINAL names for all 12 skills. Version tags match (0.11.3 installed == repo) but content differs — the next `npm update`/reinstall silently REVERTS the collision fix. This is a live regression trap.
+The repo at /home/gentleman/work/jero-pi still uses the ORIGINAL names for all 12 skills. Version tags match (0.11.3 installed == repo) but content differs — the next `npm update`/reinstall silently REVERTS the collision fix. This is a live regression trap.
 
 ## Verified facts (2026-07-08 audit)
 

@@ -1,8 +1,8 @@
-# Design: Port the review-ledger contract into gentle-pi
+# Design: Port the review-ledger contract into jero-pi
 
 ## Technical Approach
 
-Replicate gentle-ai's battle-tested review-ledger contract into gentle-pi as ONE
+Replicate gentle-ai's battle-tested review-ledger contract into jero-pi as ONE
 conceptual contract. Author a single canonical source at
 `skills/_shared/review-ledger-contract.md` (near-verbatim port of the 97-line
 gentle-ai original, `wc -l` verified), hand-copy its normative clauses into each Pi review surface,
@@ -113,7 +113,7 @@ Orchestrator ──re-review▶ Scoped pass (ledger + fix diff only)
 | `assets/chains/4r-review.chain.md` | Modify (4 lens sections: lines 12, 21, 30, 39) | Replace "If clean, say exactly: `No findings.`" with the canonical empty-ledger-record clause ("If the first pass finds nothing, persist an empty ledger record rather than skip persistence"); document how the `review-*-report.md` file handoff maps to ledger persistence (see Ledger Persistence note below) |
 | `tests/review-ledger-contract.test.ts` | Create | Per-role clause drift-guard (below) |
 
-`skills/_shared/` does not exist yet in gentle-pi (verified: no such directory today); this change CREATES it for the first time via `review-ledger-contract.md`. `skills/skill-registry/SKILL.md:51` already references `skills/_shared/skill-resolver.md` — that is a PRE-EXISTING dangling reference this change does not create or resolve (out of scope; `skill-resolver.md` is not authored here).
+`skills/_shared/` does not exist yet in jero-pi (verified: no such directory today); this change CREATES it for the first time via `review-ledger-contract.md`. `skills/skill-registry/SKILL.md:51` already references `skills/_shared/skill-resolver.md` — that is a PRE-EXISTING dangling reference this change does not create or resolve (out of scope; `skill-resolver.md` is not authored here).
 
 ## Interfaces / Contracts
 
@@ -226,14 +226,14 @@ green.
 - `assets/orchestrator.md` edits are authored as location-agnostic section content;
   `orchestrator-lazy-diet` may relocate the section later — the test asserts content
   presence, not position.
-- **Cross-change test dependency**: `tests/gentle-ai.test.ts:40`
+- **Cross-change test dependency**: `tests/jero-ai.test.ts:40`
   (`"runtime guidance routes review intent to concrete lenses"`) is a
   cross-change dependency — it asserts the union of review-lens names surfaced
   in orchestrator guidance. `orchestrator-lazy-diet`'s open question is
   ANSWERED here: the four `review-*` lens names (`review-risk`,
   `review-readability`, `review-reliability`, `review-resilience`) STAY in the
   orchestrator core summary; they are not trimmed out during the diet, because
-  `tests/gentle-ai.test.ts:40`'s union assertion depends on their presence
+  `tests/jero-ai.test.ts:40`'s union assertion depends on their presence
   there.
 - Only judgment-day BODY content changes here; `sync-skill-collision-prefixes` owns
   the frontmatter `name:` fields. The test must not assert on frontmatter names.

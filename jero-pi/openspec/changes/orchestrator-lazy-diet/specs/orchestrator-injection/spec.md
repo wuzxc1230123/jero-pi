@@ -79,12 +79,12 @@ Content relocated to on-demand lazy files MUST NOT also be injected always-on. L
 
 ### Requirement: Existing Content Assertions Repointed, Not Deleted
 
-Existing tests that assert `assets/orchestrator.md` content (e.g. `tests/gentle-ai.test.ts:40`, which asserts the presence of `review-risk`, `review-reliability`, `review-resilience`, `review-readability`) MUST be repointed to whichever file (core or lazy) now holds that content. The assertions MUST NOT be deleted or weakened.
+Existing tests that assert `assets/orchestrator.md` content (e.g. `tests/jero-ai.test.ts:40`, which asserts the presence of `review-risk`, `review-reliability`, `review-resilience`, `review-readability`) MUST be repointed to whichever file (core or lazy) now holds that content. The assertions MUST NOT be deleted or weakened.
 
 #### Scenario: Review-lens assertion still passes
 
 - GIVEN the 4R/review-lens content moves to a core summary or a lazy review reference file
-- WHEN `tests/gentle-ai.test.ts:40` runs after the split
+- WHEN `tests/jero-ai.test.ts:40` runs after the split
 - THEN it MUST still assert all four review lens names are present in whichever file now carries them
 
 #### Scenario: Assertion not silently removed

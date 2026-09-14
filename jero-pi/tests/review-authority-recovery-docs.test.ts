@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const TECHNICAL_REFERENCE = readFileSync("docs/readme-reference.md", "utf8");
-const CONTROLLER = readFileSync("extensions/gentle-ai.ts", "utf8");
+const CONTROLLER = readFileSync("extensions/jero-ai.ts", "utf8");
 
 test("technical reference documents the narrow published native maintenance contract", () => {
 	assert.match(TECHNICAL_REFERENCE, /abandon.*quarantine-legacy.*reconcile-authority.*explicit v2\.1\.11 maintenance/i);

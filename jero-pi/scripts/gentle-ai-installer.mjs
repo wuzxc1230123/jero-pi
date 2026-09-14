@@ -74,7 +74,7 @@ export class GentleAiInstallerError extends Error {
 export const GENTLE_AI_PENDING_DIGEST = "PENDING-GENTLE-AI-RELEASE-DIGEST";
 
 // A raw prerelease asset is less durable than a signed stable archive, and the
-// install path has no other Darwin/Linux source, so the gentle-pi repository
+// install path has no other Darwin/Linux source, so the jero-pi repository
 // hosts a byte-identical mirror of the pinned prerelease assets under its own
 // release tag. The mirror is only a second download source: every byte from
 // either source must still match the same pinned SHA-256 digests, and a

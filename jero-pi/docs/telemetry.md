@@ -72,7 +72,7 @@ gentle-ai telemetry trigger --json
 
 Rate limiting, enrollment, and every opt-out live entirely in `gentle-ai`; calling the trigger once per session start is safe by construction. A missing binary, an older binary without the `telemetry` verb (which prints `unknown telemetry command` and exits non-zero), or a spawn failure are all treated as "nothing to do" and never affect activation or surface an error to the user.
 
-Install counts for `gentle-pi` and `gentle-engram` come from npm download statistics; neither package emits an install event of its own.
+Install counts for `jero-pi` and `gentle-engram` come from npm download statistics; neither package emits an install event of its own.
 
 ## The trigger contract
 
@@ -82,13 +82,13 @@ Install counts for `gentle-pi` and `gentle-engram` come from npm download statis
 {"schema":"gentle-ai.telemetry-trigger/v1","decision":"enrolled|sent_install|sent_heartbeat|rate_limited|backoff|disabled","source":"<deciding source>"}
 ```
 
-`gentle-ai telemetry status|enable|disable|preview [--json]` exist for the opt-out flow; `status --json` prints `gentle-ai.telemetry-status/v1`. Gentle Pi's `/gentle:telemetry` slash command runs these in the foreground (bounded to 5 s) through the same binary resolver and relays the result.
+`gentle-ai telemetry status|enable|disable|preview [--json]` exist for the opt-out flow; `status --json` prints `gentle-ai.telemetry-status/v1`. Gentle Pi's `/jero:telemetry` slash command runs these in the foreground (bounded to 5 s) through the same binary resolver and relays the result.
 
 ## Opting out
 
 Any of the following disables the nudge or the underlying telemetry:
 
-- `/gentle:telemetry disable` — asks the local `gentle-ai` binary to disable telemetry. `/gentle:telemetry status` and `/gentle:telemetry preview` inspect it without leaving Pi.
+- `/jero:telemetry disable` — asks the local `gentle-ai` binary to disable telemetry. `/jero:telemetry status` and `/jero:telemetry preview` inspect it without leaving Pi.
 - `DO_NOT_TRACK=1` — Gentle Pi does not spawn the trigger at all; `gentle-ai` also honors this standard independently.
 - `GENTLE_AI_TELEMETRY=0` — same effect, `gentle-ai`'s own environment switch.
 - `CI=true` — Gentle Pi does not spawn the trigger in automated/CI runs, since they are not a real usage signal.

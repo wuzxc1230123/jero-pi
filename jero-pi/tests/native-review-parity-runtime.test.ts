@@ -8,21 +8,21 @@ import baseTest from "node:test";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { createGentleAiExtension } from "../extensions/gentle-ai.ts";
+import { createGentleAiExtension } from "../extensions/jero-ai.ts";
 import {
 	GENTLE_AI_DEV_BINARY_ENV,
 	resolveGentleAiBinary,
 	type GentleAiDevBinaryEnvironment,
-} from "../lib/gentle-ai-binary.ts";
-import { NativeReviewCliV216 } from "../lib/native-review-cli.ts";
-import { CandidateViewRegistry } from "../lib/review-candidate-view.ts";
-import { decodeReviewLastEventClosureV1 } from "../lib/review-integration-v2.ts";
+} from "../lib/core/gentle-ai-binary.ts";
+import { NativeReviewCliV216 } from "../lib/native/native-review-cli.ts";
+import { CandidateViewRegistry } from "../lib/review/review-candidate-view.ts";
+import { decodeReviewLastEventClosureV1 } from "../lib/review/review-integration-v2.ts";
 import { decodeReviewLastEventClosureV1 as decodeRuntimeReviewLastEventClosureV1 } from "../runtime/review-integration-v2.mjs";
 import { requireNativeBinary } from "./support/native-binary-gate.ts";
 
 const execFileAsync = promisify(execFile);
 const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)));
-const pinnedBinaryHome = realpathSync(mkdtempSync(join(tmpdir(), "gentle-pi-pinned-runtime-home-")));
+const pinnedBinaryHome = realpathSync(mkdtempSync(join(tmpdir(), "jero-pi-pinned-runtime-home-")));
 const pinnedBinaryEnvironment: GentleAiDevBinaryEnvironment = {
 	env: { ...process.env },
 	home: pinnedBinaryHome,
@@ -77,8 +77,8 @@ interface RegisteredController {
 // intentionally have clone-local mode off, which must never participate in the
 // fixture's lifecycle.
 async function reviewEnabledHome(t: baseTest.TestContext): Promise<string> {
-	const home = await realpath(await mkdtemp(join(tmpdir(), "gentle-pi-review-home-")));
-	const lifecycleCwd = await realpath(await mkdtemp(join(tmpdir(), "gentle-pi-review-lifecycle-")));
+	const home = await realpath(await mkdtemp(join(tmpdir(), "jero-pi-review-home-")));
+	const lifecycleCwd = await realpath(await mkdtemp(join(tmpdir(), "jero-pi-review-lifecycle-")));
 	const xdgConfigHome = join(home, ".config");
 	const xdgDataHome = join(home, ".local", "share");
 	const xdgCacheHome = join(home, ".cache");
@@ -142,7 +142,7 @@ test("registered gentle_review surfaces the package-pinned Pi transport refusal 
 	await reviewEnabledHome(t);
 	const handshakeLessEnvironment = { ...process.env };
 	delete handshakeLessEnvironment.GENTLE_PI_REVIEW_RELAY_CONTRACT;
-	const workspace = await realpath(await mkdtemp(join(tmpdir(), "gentle-pi-v215-symlink-candidate-")));
+	const workspace = await realpath(await mkdtemp(join(tmpdir(), "jero-pi-v215-symlink-candidate-")));
 	const repository = join(workspace, "repository");
 	t.after(async () => {
 		// Candidate views are intentionally read-only. Restore test-workspace write

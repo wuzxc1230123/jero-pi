@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { __testing, createGentleAiExtension } from "../extensions/gentle-ai.ts";
+import { __testing, createGentleAiExtension } from "../extensions/jero-ai.ts";
 import {
 	NATIVE_REVIEW_LEGACY_ALIAS_REPAIR,
 	NATIVE_REVIEW_LEGACY_QUARANTINE,
@@ -14,7 +14,7 @@ import {
 	nativeReviewLegacyQuarantineAuthorization,
 	nativeReviewReconcileAuthorization,
 	type ExecFileAdapter,
-} from "../lib/native-review-cli.ts";
+} from "../lib/native/native-review-cli.ts";
 
 interface QueuedResult { stdout: string; exitCode?: number; }
 
@@ -252,7 +252,7 @@ test("partial maintenance failures preserve the provider audit record and unknow
 });
 
 test("RESET requests native reclaim inputs rather than inventing authority values", async () => {
-	const native = { reclaim: async () => { throw new Error("must not reclaim"); } } as unknown as import("../lib/native-review-cli.ts").NativeReviewCli;
+	const native = { reclaim: async () => { throw new Error("must not reclaim"); } } as unknown as import("../lib/native/native-review-cli.ts").NativeReviewCli;
 	const result = await __testing.executeReviewControllerOperation({ operation: "reset", input: JSON.stringify({ lineage: "only-lineage" }) }, process.cwd(), native);
 	assert.equal(result.outcome, "native-input-required");
 	assert.deepEqual(result.missing_input, ["actor", "reason"]);
@@ -263,7 +263,7 @@ test("RECOVER rejects caller-authored authorization before status, UI, or native
 	let statusCalls = 0;
 	const native = {
 		targetStatus: async () => { statusCalls += 1; throw new Error("must not read status"); },
-	} as unknown as import("../lib/native-review-cli.ts").NativeReviewCli;
+	} as unknown as import("../lib/native/native-review-cli.ts").NativeReviewCli;
 	const result = await __testing.executeReviewControllerOperation({
 		operation: "recover",
 		input: JSON.stringify({ predecessorLineage: "predecessor", expectedPredecessorRevision: "revision", successorLineage: "successor", disposition: "invalidated", actor: "maintainer", reason: "recover", maintainerAuthorization: "caller-authored" }),
@@ -274,7 +274,7 @@ test("RECOVER rejects caller-authored authorization before status, UI, or native
 });
 
 test("RECONCILE_AUTHORITY returns exact missing-input guidance before native mutation", async () => {
-	const native = { reconcileAuthority: async () => { throw new Error("must not reconcile"); } } as unknown as import("../lib/native-review-cli.ts").NativeReviewCli;
+	const native = { reconcileAuthority: async () => { throw new Error("must not reconcile"); } } as unknown as import("../lib/native/native-review-cli.ts").NativeReviewCli;
 	const result = await __testing.executeReviewControllerOperation({ operation: "reconcile-authority", input: JSON.stringify({ predecessorLineage: "predecessor" }) }, process.cwd(), native);
 	assert.equal(result.outcome, "native-input-required");
 	assert.deepEqual(result.missing_input, ["expectedPredecessorRevision", "successorLineage", "expectedSuccessorRevision", "actor", "reason"]);
@@ -313,10 +313,10 @@ function recoveryStatus(options: {
 		authority: { lineageId: options.lineageId ?? "predecessor", revision: options.revision ?? "revision-1" },
 		targetIdentity: options.targetIdentity ?? SHA,
 		raw: { schema: "gentle-ai.review-integration.status/v5" },
-	} as unknown as import("../lib/review-integration-v2.ts").ReviewStatusV3;
+	} as unknown as import("../lib/review/review-integration-v2.ts").ReviewStatusV3;
 }
 
-function registeredController(nativeReviewCli: import("../lib/native-review-cli.ts").NativeReviewCli) {
+function registeredController(nativeReviewCli: import("../lib/native/native-review-cli.ts").NativeReviewCli) {
 	const tools = new Map<string, { execute: (toolCallId: string, params: unknown, signal: AbortSignal | undefined, onUpdate: undefined, ctx: ExtensionContext) => Promise<{ details?: unknown }> }>();
 	createGentleAiExtension({ nativeReviewCli })({
 		on() {},
@@ -364,7 +364,7 @@ test("RECOVER derives a provider-bound authorization, rechecks it, and fails clo
 	const native = {
 		targetStatus: async () => recoveryStatus(),
 		recover: async (request: Record<string, unknown>) => { requests.push(request); return { record: { schema: "gentle-ai.review-recovery/v1", lineage: "successor" } }; },
-	} as unknown as import("../lib/native-review-cli.ts").NativeReviewCli;
+	} as unknown as import("../lib/native/native-review-cli.ts").NativeReviewCli;
 	const input = { predecessorLineage: "predecessor", expectedPredecessorRevision: "revision-1", successorLineage: "successor", disposition: "invalidated", actor: "maintainer", reason: "recover authority" };
 	const result = await __testing.executeReviewControllerOperation({ operation: "recover", input: JSON.stringify(input) }, process.cwd(), native, undefined, undefined, interactiveContext(true));
 	assert.equal(result.mutation_outcome, "committed");
@@ -383,7 +383,7 @@ test("RECOVER derives a provider-bound authorization, rechecks it, and fails clo
 		const blocked = await __testing.executeReviewControllerOperation({ operation: "recover", input: JSON.stringify(input) }, process.cwd(), {
 			targetStatus: async () => status,
 			recover: async () => { throw new Error("must not recover"); },
-		} as unknown as import("../lib/native-review-cli.ts").NativeReviewCli, undefined, undefined, interactiveContext(true));
+		} as unknown as import("../lib/native/native-review-cli.ts").NativeReviewCli, undefined, undefined, interactiveContext(true));
 		assert.equal(blocked.outcome, "native-recovery-status-mismatch");
 		assert.equal(blocked.mutation_outcome, "none");
 	}
@@ -392,7 +392,7 @@ test("RECOVER derives a provider-bound authorization, rechecks it, and fails clo
 	const changed = await __testing.executeReviewControllerOperation({ operation: "recover", input: JSON.stringify(input) }, process.cwd(), {
 		targetStatus: async () => (++reads === 1 ? recoveryStatus() : recoveryStatus({ targetIdentity: `sha256:${"b".repeat(64)}` })),
 		recover: async () => { throw new Error("must not recover"); },
-	} as unknown as import("../lib/native-review-cli.ts").NativeReviewCli, undefined, undefined, interactiveContext(true));
+	} as unknown as import("../lib/native/native-review-cli.ts").NativeReviewCli, undefined, undefined, interactiveContext(true));
 	assert.equal(changed.outcome, "native-recovery-authority-changed");
 	assert.equal(changed.mutation_outcome, "none");
 });
@@ -400,7 +400,7 @@ test("RECOVER derives a provider-bound authorization, rechecks it, and fails clo
 test("RECOVER, RESET, and RECONCILE keep provider inputs and failures authority-scoped", async () => {
 	const recoverMissing = await __testing.executeReviewControllerOperation({ operation: "recover", input: JSON.stringify({ predecessorLineage: "predecessor", disposition: "not-a-disposition" }) }, process.cwd(), {
 		recover: async () => { throw new Error("must not recover"); },
-	} as unknown as import("../lib/native-review-cli.ts").NativeReviewCli);
+	} as unknown as import("../lib/native/native-review-cli.ts").NativeReviewCli);
 	assert.deepEqual(recoverMissing.missing_input, ["expectedPredecessorRevision", "successorLineage", "disposition", "actor", "reason"]);
 
 	const resetUnavailable = await __testing.executeReviewControllerOperation({ operation: "reset", input: JSON.stringify({ lineage: "stuck", actor: "maintainer", reason: "incomplete" }) }, process.cwd(), null);
@@ -409,7 +409,7 @@ test("RECOVER, RESET, and RECONCILE keep provider inputs and failures authority-
 	const reconciliation = { predecessorLineage: "predecessor", expectedPredecessorRevision: "revision-1", successorLineage: "successor", expectedSuccessorRevision: "revision-2", actor: "maintainer", reason: "repair edge" };
 	const completed = await __testing.executeReviewControllerOperation({ operation: "reconcile-authority", input: JSON.stringify(reconciliation) }, process.cwd(), {
 		reconcileAuthority: async (request: Record<string, unknown>) => ({ record: { schema: "gentle-ai.review-reconcile-audit/v1", successor: request.successorLineage } }),
-	} as unknown as import("../lib/native-review-cli.ts").NativeReviewCli);
+	} as unknown as import("../lib/native/native-review-cli.ts").NativeReviewCli);
 	assert.equal(completed.mutation_outcome, "committed");
 	assert.deepEqual(completed.result, { schema: "gentle-ai.review-reconcile-audit/v1", successor: "successor" });
 
@@ -419,7 +419,7 @@ test("RECOVER, RESET, and RECONCILE keep provider inputs and failures authority-
 	]) {
 		const failed = await __testing.executeReviewControllerOperation({ operation: "reconcile-authority", input: JSON.stringify(reconciliation) }, process.cwd(), {
 			reconcileAuthority: async () => { throw error; },
-		} as unknown as import("../lib/native-review-cli.ts").NativeReviewCli);
+		} as unknown as import("../lib/native/native-review-cli.ts").NativeReviewCli);
 		assert.equal(failed.outcome, "native-operation-failed");
 		assert.equal(failed.mutation_outcome, "unknown");
 		assert.equal(failed.next_action, "review.status");
@@ -431,7 +431,7 @@ test("destructive maintenance remains UI-gated and derives authorization at the 
 	const native = {
 		reclaim: async (request: Record<string, unknown>) => { calls.push(request); return { record: { schema: "gentle-ai.review-reclaim-audit/v1" } }; },
 		reconcileAuthority: async (request: Record<string, unknown>) => { calls.push(request); return { record: { schema: "gentle-ai.review-reconcile-audit/v1" } }; },
-	} as unknown as import("../lib/native-review-cli.ts").NativeReviewCli;
+	} as unknown as import("../lib/native/native-review-cli.ts").NativeReviewCli;
 	const controller = registeredController(native);
 	const reset = { operation: "reset", input: JSON.stringify({ repositoryId: "repo", commonDirHash: "a".repeat(64), inventoryHash: "b".repeat(64), confirmation: "DESTROY REVIEW AUTHORITY repo", lineage: "stuck", actor: "maintainer", reason: "incomplete" }) };
 	await assert.rejects(controller.execute("headless", reset, undefined, undefined, { ...interactiveContext(true), hasUI: false } as ExtensionContext), /interactive Pi UI.*fails closed/i);
@@ -456,7 +456,7 @@ test("RECOVER requires a live UI decision and RECOVER_LOCK requires its owner bi
 		targetStatus: async () => recoveryStatus(),
 		recover: async () => ({ record: { schema: "gentle-ai.review-recovery/v1" } }),
 		reclaim: async () => ({ record: { schema: "gentle-ai.review-reclaim-audit/v1" } }),
-	} as unknown as import("../lib/native-review-cli.ts").NativeReviewCli;
+	} as unknown as import("../lib/native/native-review-cli.ts").NativeReviewCli;
 	await assert.rejects(
 		__testing.executeReviewControllerOperation({ operation: "recover", input: JSON.stringify(input) }, process.cwd(), native),
 		/fresh explicit authorization through the interactive Pi UI/,
@@ -484,7 +484,7 @@ test("REPAIR_LEGACY_ALIAS derives its immutable target from fresh native invento
 			entries: [{ version: "legacy-v1", status: "invalid", lineageId: "legacy-alias", revision: SHA, problems: [NATIVE_REVIEW_LEGACY_ALIAS_REPAIR.DIAGNOSTIC] }],
 		}),
 		repairLegacyAlias: async (request: Record<string, unknown>) => { calls.push(request); return { record: { schema: "gentle-ai.review-repair-audit/v1" } }; },
-	} as unknown as import("../lib/native-review-cli.ts").NativeReviewCli;
+	} as unknown as import("../lib/native/native-review-cli.ts").NativeReviewCli;
 	const result = await __testing.executeReviewControllerOperation({ operation: "repair-legacy-alias", input: JSON.stringify({ lineage: "legacy-alias", actor: "maintainer", reason: "repair alias" }) }, process.cwd(), native, undefined, undefined, interactiveContext(true));
 	assert.equal(result.mutation_outcome, "committed");
 	assert.equal(calls[0]?.repository, "/canonical/repository");

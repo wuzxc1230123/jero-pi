@@ -4,8 +4,8 @@ import { mkdtempSync, mkdirSync, rmSync, unlinkSync, writeFileSync } from "node:
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { createReviewEventV1 } from "../lib/review-graph-schema.ts";
-import { ReviewGraphObjectStoreV1, ReviewObjectStoreError, type ReviewObjectStoreFaultPoint } from "../lib/review-object-store.ts";
+import { createReviewEventV1 } from "../lib/review/review-graph-schema.ts";
+import { ReviewGraphObjectStoreV1, ReviewObjectStoreError, type ReviewObjectStoreFaultPoint } from "../lib/review/review-object-store.ts";
 
 const hash = "a".repeat(64);
 

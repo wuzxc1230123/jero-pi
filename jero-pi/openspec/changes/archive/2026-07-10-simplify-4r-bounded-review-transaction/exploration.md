@@ -11,12 +11,12 @@ No current runtime hook launches a reviewer or stores a receipt. Review repetiti
 | Boundary | Current behavior | Required behavior |
 |---|---|---|
 | Post-apply | `assets/sdd-orchestrator-workflow.md` requests fresh-context validation for high-risk phases; `assets/orchestrator*.md` says post-SDD design/apply uses Judgment Day. | Start ordinary 0/1/4 review once when no valid implementation receipt exists. Judgment Day MUST require explicit selection and MUST NOT be an automatic post-SDD promotion. |
-| Pre-commit | `extensions/gentle-ai.ts` classifies the cached/intended tracked diff, emits non-blocking advice, and then preserves independent command safety. | Validate the exact intended commit tree against the receipt. Never route or launch a reviewer. |
+| Pre-commit | `extensions/jero-ai.ts` classifies the cached/intended tracked diff, emits non-blocking advice, and then preserves independent command safety. | Validate the exact intended commit tree against the receipt. Never route or launch a reviewer. |
 | Pre-push | The extension compares `merge-base...HEAD`, emits advice, and separately applies dangerous-command confirmation. | Validate `HEAD^{tree}` and receipt evidence. Never create a new review budget. |
 | Pre-PR | The extension emits advice for the branch diff; parent instructions request a fresh lens or full 4R. | Validate receipt, tree, lineage, and base relationship only. |
 | Release | `skills/release/SKILL.md` requires a fresh review before pushing a code release. | Validate the immutable tag/commit tree and verification evidence. Publication incidents remain separate bounded operational work. |
 
-`lib/review-triggers.ts` currently owns 0/1/4 classification and event ceilings. `extensions/gentle-ai.ts` collects synchronous Git numstat evidence, calls that classifier, and `applyReviewAdvice()` always returns `undefined`. The collection excludes untracked files and can fail open after a two-second Git timeout. These properties are acceptable for advice but cannot authorize a content-addressed receipt.
+`lib/review/review-triggers.ts` currently owns 0/1/4 classification and event ceilings. `extensions/jero-ai.ts` collects synchronous Git numstat evidence, calls that classifier, and `applyReviewAdvice()` always returns `undefined`. The collection excludes untracked files and can fail open after a two-second Git timeout. These properties are acceptable for advice but cannot authorize a content-addressed receipt.
 
 The static `assets/chains/4r-review.chain.md` already invokes each of the four lenses exactly once, but it targets an ambient “current diff” and writes report files. Dynamic parent contracts can then refute, fix, and re-review outside the chain, so the chain's one-pass shape does not enforce one-shot convergence.
 
@@ -57,7 +57,7 @@ These assets still require contract cleanup: change “the same two-round limit�
 - `tests/review-gate.test.ts` explicitly proves advice contains no receipt and never blocks. Replace those assertions with staged-tree/HEAD/base/tag receipt checks, invalidation results, and command-safety composition.
 - `tests/runtime-harness.mjs` currently proves `gh pr create` and review advice remain non-blocking. Repoint it to registered start/status/validate operations, persisted reload, receipt-valid/invalid gate behavior, and unchanged dangerous-command authority.
 - `tests/orchestrator-budget.test.ts` currently requires fresh-review and advice-only wording in the always-on prompt. Repoint those load-bearing assertions to one-shot start, conditional exactly-once scoped validation, one final verification, explicit Judgment Day selection, and receipt-only gates.
-- `tests/gentle-ai.test.ts` should continue to reject a generic `reviewer` name, but its lifecycle guidance assertions must accept receipt validation instead of unconditional fresh review.
+- `tests/jero-ai.test.ts` should continue to reject a generic `reviewer` name, but its lifecycle guidance assertions must accept receipt validation instead of unconditional fresh review.
 - `tests/openspec-deltas.test.ts` must cover the canonical routing/orchestration delta while distinguishing the ordinary terminal validator from iterative Judgment Day re-judgment.
 - `tests/sdd-agent-tools.test.ts` and `tests/package-manifest.test.ts` should preserve the package-managed refuter's exact read-only tool boundary while updating its output/role contract; they do not justify retaining three refuter calls.
 - Archived OpenSpec changes and migration fixtures are audit history and MUST NOT be rewritten. Live tests must stop treating archived iterative ordinary 4R as the current product contract.
@@ -68,11 +68,11 @@ Use shared snapshot, persistence, hashing, and receipt infrastructure with two d
 
 | Component | Responsibility | Suggested location |
 |---|---|---|
-| Snapshot builder | Build a complete content-addressed target including staged, unstaged, deleted, renamed, and non-ignored untracked content without mutating the real index. | New `lib/review-snapshot.ts` |
-| Transaction store/core | Atomic Git-dir persistence, lineage/generation identity, revisions, idempotency keys, canonical hashes, evidence, and receipts. | New `lib/review-transaction.ts` |
-| Ordinary policy | Authorize one 0/1/4 lens set, freeze findings, authorize at most one selective refuter batch and one fix batch, require exactly one terminal scoped validator when a fix occurs, then require one final verification and `approved | escalated`. | Separate reducer/policy in `lib/review-transaction.ts` or a focused sibling module |
+| Snapshot builder | Build a complete content-addressed target including staged, unstaged, deleted, renamed, and non-ignored untracked content without mutating the real index. | New `lib/review/review-snapshot.ts` |
+| Transaction store/core | Atomic Git-dir persistence, lineage/generation identity, revisions, idempotency keys, canonical hashes, evidence, and receipts. | New `lib/review/review-transaction.ts` |
+| Ordinary policy | Authorize one 0/1/4 lens set, freeze findings, authorize at most one selective refuter batch and one fix batch, require exactly one terminal scoped validator when a fix occurs, then require one final verification and `approved | escalated`. | Separate reducer/policy in `lib/review/review-transaction.ts` or a focused sibling module |
 | Judgment Day policy | Require explicit mode selection, authorize exactly two blind judges, and allow at most two scoped fix/re-judgment rounds. | Separate reducer/policy sharing the transaction core |
-| Pi adapter/gates | Register explicit start/update/validate/status operations and replace lifecycle advice with receipt checks while preserving dangerous-command ordering. | `extensions/gentle-ai.ts` plus focused helpers |
+| Pi adapter/gates | Register explicit start/update/validate/status operations and replace lifecycle advice with receipt checks while preserving dangerous-command ordering. | `extensions/jero-ai.ts` plus focused helpers |
 | Review actors | Return bounded structured results only; the terminal ordinary validator receives only frozen IDs and the fix diff and cannot mint findings, request fixes, launch actors, or iterate. No actor may mint receipts, change mode, or reset lineage counters. | Existing package-owned actors plus a dedicated scoped-validator contract |
 
 #### Mode-specific state machines
@@ -139,10 +139,10 @@ Gate outcomes are `allow | scope-changed | escalated`. `require-scoped-review` i
 
 #### Runtime and canonical specifications
 
-- `lib/review-triggers.ts` — retain start-time 0/1/4 classification; remove lifecycle event ceilings.
-- `lib/review-snapshot.ts` (new) — complete temporary-index/object snapshots and exact gate trees.
-- `lib/review-transaction.ts` (new) — schemas, disjoint mode policies, conditional terminal-validator authorization, budgets, frozen findings, evidence, named receipt trees, explicit new-lineage creation, and atomic Git-dir store.
-- `extensions/gentle-ai.ts` — transaction operations/commands and receipt validation before independent command safety.
+- `lib/review/review-triggers.ts` — retain start-time 0/1/4 classification; remove lifecycle event ceilings.
+- `lib/review/review-snapshot.ts` (new) — complete temporary-index/object snapshots and exact gate trees.
+- `lib/review/review-transaction.ts` (new) — schemas, disjoint mode policies, conditional terminal-validator authorization, budgets, frozen findings, evidence, named receipt trees, explicit new-lineage creation, and atomic Git-dir store.
+- `extensions/jero-ai.ts` — transaction operations/commands and receipt validation before independent command safety.
 - `package.json`, `pnpm-lock.yaml` — direct TypeBox dependency and a tested minimum Pi peer version if typed APIs require it.
 - `openspec/specs/review-routing/spec.md` — start-only route classification and receipt-only lifecycle behavior.
 - `openspec/specs/review-orchestration/spec.md` — ordinary bounded validation and explicit iterative Judgment Day as separate requirements.
@@ -158,12 +158,12 @@ Gate outcomes are `allow | scope-changed | escalated`. `require-scoped-review` i
 - `assets/agents/review-refuter.md` — inferential-only single batch and three-way output.
 - `assets/chains/4r-review.chain.md` — one-shot snapshot compatibility wrapper.
 - `skills/judgment-day/SKILL.md`, its reference, and `assets/agents/jd-*` — preserve explicit two-judge/two-round iteration while isolating it from ordinary 4R.
-- `assets/support/review-transaction-contract.md` (likely new), `lib/sdd-preflight.ts`, package verification, managed-asset migration, and installer fingerprints — ship and safely refresh the new contracts without rewriting user/project shadows.
+- `assets/support/review-transaction-contract.md` (likely new), `lib/sdd/sdd-preflight.ts`, package verification, managed-asset migration, and installer fingerprints — ship and safely refresh the new contracts without rewriting user/project shadows.
 
 #### Test suites
 
 - New `tests/review-snapshot.test.ts` and `tests/review-transaction.test.ts`; transaction coverage must assert the full ordinary budget, conditional exactly-once validator, `approved | escalated` terminal set, exact receipt field names, and explicit new-lineage creation without old-budget inheritance or reset.
-- Rewrite/repoint `tests/review-gate.test.ts`, `tests/review-triggers.test.ts`, `tests/review-ledger-contract.test.ts`, `tests/runtime-harness.mjs`, `tests/orchestrator-budget.test.ts`, `tests/gentle-ai.test.ts`, and `tests/openspec-deltas.test.ts`.
+- Rewrite/repoint `tests/review-gate.test.ts`, `tests/review-triggers.test.ts`, `tests/review-ledger-contract.test.ts`, `tests/runtime-harness.mjs`, `tests/orchestrator-budget.test.ts`, `tests/jero-ai.test.ts`, and `tests/openspec-deltas.test.ts`.
 - Preserve and adapt package/permission coverage in `tests/package-manifest.test.ts` and `tests/sdd-agent-tools.test.ts`.
 - Add transition tests proving ordinary 4R must run one scoped validator after fixes, skips it when no fix exists, always runs one final verification, cannot repeat validation or return to fixing/discovery, cannot transition to Judgment Day, and cannot be restarted by commit/push/PR/release gates.
 

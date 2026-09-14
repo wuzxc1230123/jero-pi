@@ -30,8 +30,8 @@ Isolated re-run of the new suite alone: `node --experimental-strip-types --test 
 
 **rg inline-mode sweep** (independently re-run, not trusted from apply-progress): `rg -n -i "inline mode|inline execution mode|inline-mode"` across the repo → 3 hits, all explicit negation statements in `assets/orchestrator.md:325`, `tests/review-ledger-contract.test.ts:71` (comment), `skills/_shared/review-ledger-contract.md:56`. Zero residual inline-mode clause content. Confirms task 3.2's claim.
 
-### Port Fidelity — canonical diff (gentle-ai vs gentle-pi)
-`diff` between `internal/assets/skills/_shared/review-ledger-contract.md` (gentle-ai, 97 lines) and `skills/_shared/review-ledger-contract.md` (gentle-pi, 98 lines) shows the four normative clause paragraphs (Exhaustive first pass, Findings ledger schema, Ledger persistence branches, Scoped re-review) are **byte-identical** between products. All deltas are exactly the design's adaptation table:
+### Port Fidelity — canonical diff (gentle-ai vs jero-pi)
+`diff` between `internal/assets/skills/_shared/review-ledger-contract.md` (gentle-ai, 97 lines) and `skills/_shared/review-ledger-contract.md` (jero-pi, 98 lines) shows the four normative clause paragraphs (Exhaustive first pass, Findings ledger schema, Ledger persistence branches, Scoped re-review) are **byte-identical** between products. All deltas are exactly the design's adaptation table:
 - Path examples (`internal/x.go`/`internal/y.go` → `lib/x.ts`/`lib/y.ts`) and asset paths (`internal/assets/{family}/...` → `assets/agents/...`)
 - Test reference (`review_ledger_contract_test.go` → `tests/review-ledger-contract.test.ts`)
 - Adapter multiplicity prose (13 families → single Pi runtime)

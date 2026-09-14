@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { visibleWidth } from "@earendil-works/pi-tui";
-import { emptyThread, TASK_EVENT, applyTaskEvent } from "../lib/agents-protocol.ts";
-import { renderThreadItem } from "../lib/agents-thread-view.ts";
+import { emptyThread, TASK_EVENT, applyTaskEvent } from "../lib/agents/agents-protocol.ts";
+import { renderThreadItem } from "../lib/agents/agents-thread-view.ts";
 
 const plainTheme = { fg: (_color: string, text: string) => text };
 const taggedTheme = { fg: (color: string, text: string) => `[${color}]${text}` };

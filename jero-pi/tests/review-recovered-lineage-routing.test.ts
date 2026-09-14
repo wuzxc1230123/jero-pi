@@ -4,10 +4,10 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { __testing } from "../extensions/gentle-ai.ts";
-import type { NativeReviewCli } from "../lib/native-review-cli.ts";
-import { CandidateViewRegistry, injectReviewCandidateView } from "../lib/review-candidate-view.ts";
-import type { ReviewCollectInputV3, ReviewStatusV3 } from "../lib/review-integration-v2.ts";
+import { __testing } from "../extensions/jero-ai.ts";
+import type { NativeReviewCli } from "../lib/native/native-review-cli.ts";
+import { CandidateViewRegistry, injectReviewCandidateView } from "../lib/review/review-candidate-view.ts";
+import type { ReviewCollectInputV3, ReviewStatusV3 } from "../lib/review/review-integration-v2.ts";
 
 // Live-confirmed adapter defects (2026-08-16, gentle-ai 2.4.0-main, Engram
 // #12461/#12466), both around a lineage recovered EXTERNALLY through native
@@ -28,7 +28,7 @@ function git(cwd: string, ...arguments_: string[]): string {
 }
 
 function repository(t: test.TestContext): string {
-	const cwd = mkdtempSync(join(tmpdir(), "gentle-pi-recovered-routing-"));
+	const cwd = mkdtempSync(join(tmpdir(), "jero-pi-recovered-routing-"));
 	t.after(() => rmSync(cwd, { recursive: true, force: true }));
 	git(cwd, "init", "-b", "main");
 	writeFileSync(join(cwd, "tracked.txt"), "base\n");

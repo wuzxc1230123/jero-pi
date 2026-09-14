@@ -24,7 +24,7 @@ import {
 	piRuntimeRegistration,
 	verifyProviderContractBundleArchive,
 	verifyProviderContractBundleTree,
-} from "../lib/provider-contract-bundle.ts";
+} from "../lib/core/provider-contract-bundle.ts";
 
 export const PROVIDER_CONTRACT_MIRROR_ROOT = "contracts/review-provider-contract-mirror";
 export const PROVIDER_CONTRACT_LOCK_FILE = "provider-contract.lock.json";

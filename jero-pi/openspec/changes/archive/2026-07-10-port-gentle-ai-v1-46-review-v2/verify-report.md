@@ -31,7 +31,7 @@ All task checkboxes are complete. `tasks.md`, `apply-progress.md`, and the suppl
 | `node --experimental-strip-types --test tests/review-triggers.test.ts tests/review-gate.test.ts tests/review-ledger-contract.test.ts tests/orchestrator-budget.test.ts tests/package-manifest.test.ts tests/sdd-agent-tools.test.ts && pnpm run test:harness` | 0 | All 143 tests passed; runtime harness exited 0. Includes all six adversarial routing paths and both `git -C` collector cases. |
 | `pnpm test` | 0 | All 342 tests passed; runtime harness exited 0. |
 | `node scripts/verify-package-files.mjs` | 0 | 46 required package resources passed. |
-| `pnpm publish --dry-run --no-git-checks` | 0 | Lifecycle tests and package verification passed; ended with `Skip publishing gentle-pi@0.13.0 (dry run)`. Nothing was published. |
+| `pnpm publish --dry-run --no-git-checks` | 0 | Lifecycle tests and package verification passed; ended with `Skip publishing jero-pi@0.13.0 (dry run)`. Nothing was published. |
 | `git diff --check` | 0 | No output; no whitespace errors. |
 | `git status --short` and `git diff --cached --name-status` | 0 | Working-tree implementation and OpenSpec artifacts remain unstaged/uncommitted; staged-file inspection returned no entries. |
 | `git diff --name-only -- package.json pnpm-lock.yaml` | 0 | No output; package version and lockfile are unchanged. |
@@ -44,15 +44,15 @@ No build command is configured. No stage, commit, push, PR, tag, release, public
 
 | Requirement | Scenario | Current implementation | Fresh passing runtime evidence | Result |
 |---|---|---|---|---|
-| Deterministic route classification | Objectively trivial diff | `lib/review-triggers.ts:77-93,112-153` restricts documentation proof to recognized README/docs paths and requires complete, non-executable, non-configuration evidence. | `runtime evidence proves documentation-only changes trivial`; README Markdown, docs Markdown, and docs MDX all pass. | ✅ COMPLIANT |
-| Deterministic route classification | Ambiguous executable or configuration diff | `lib/review-triggers.ts:77-97,117-137` excludes configuration and runtime Markdown from documentation proof. | `documentation-like executable and configuration paths remain non-trivial` passes for `requirements.txt`, `CMakeLists.txt`, `assets/agents/review-risk.md`, `skills/gentle-ai/SKILL.md`, `src/pages/dashboard.mdx`, and `README.sh`; each routes standard. | ✅ COMPLIANT |
-| Deterministic route classification | Ordinary non-trivial diff | `lib/review-triggers.ts:105-109,168-174` selects one lens with risk → resilience → reliability → readability precedence. | `standard routing selects exactly one dominant lens by fixed precedence`. | ✅ COMPLIANT |
-| Size and hot-path escalation | 399 and 400 line boundaries | Strict comparison at `lib/review-triggers.ts:155-158`. | `399 ordinary changed lines remain standard`; `400 ordinary changed lines remain standard`. | ✅ COMPLIANT |
+| Deterministic route classification | Objectively trivial diff | `lib/review/review-triggers.ts:77-93,112-153` restricts documentation proof to recognized README/docs paths and requires complete, non-executable, non-configuration evidence. | `runtime evidence proves documentation-only changes trivial`; README Markdown, docs Markdown, and docs MDX all pass. | ✅ COMPLIANT |
+| Deterministic route classification | Ambiguous executable or configuration diff | `lib/review/review-triggers.ts:77-97,117-137` excludes configuration and runtime Markdown from documentation proof. | `documentation-like executable and configuration paths remain non-trivial` passes for `requirements.txt`, `CMakeLists.txt`, `assets/agents/review-risk.md`, `skills/gentle-ai/SKILL.md`, `src/pages/dashboard.mdx`, and `README.sh`; each routes standard. | ✅ COMPLIANT |
+| Deterministic route classification | Ordinary non-trivial diff | `lib/review/review-triggers.ts:105-109,168-174` selects one lens with risk → resilience → reliability → readability precedence. | `standard routing selects exactly one dominant lens by fixed precedence`. | ✅ COMPLIANT |
+| Size and hot-path escalation | 399 and 400 line boundaries | Strict comparison at `lib/review/review-triggers.ts:155-158`. | `399 ordinary changed lines remain standard`; `400 ordinary changed lines remain standard`. | ✅ COMPLIANT |
 | Size and hot-path escalation | 401 line boundary | `changedLines > 400` requests full 4R with four stable lenses. | `401 ordinary changed lines route to full 4R in stable order`. | ✅ COMPLIANT |
 | Size and hot-path escalation | Hot path | Hot-path evidence requests full 4R after triviality evaluation. | `non-trivial hot path routes to full 4R regardless of size`. | ✅ COMPLIANT |
 | Size and hot-path escalation | Objectively trivial hot-path edit | Objective triviality returns before hot-path escalation. | `objectively trivial hot-path documentation remains trivial`; large docs hot-path collection also passes. | ✅ COMPLIANT |
 | Pre-commit and pre-push ceiling | Large or hot pre-delivery diff | `eventCeiling` caps both events at standard. | Fresh parameterized pre-commit and pre-push tests pass with one risk lens. | ✅ COMPLIANT |
-| Non-blocking safety composition | Review advice does not gate a command | `extensions/gentle-ai.ts:2144-2171,2268-2279` notifies, returns `undefined`, then continues. | `applyReviewAdvice notifies but never blocks command execution`; runtime harness permits `gh pr create --draft`. | ✅ COMPLIANT |
+| Non-blocking safety composition | Review advice does not gate a command | `extensions/jero-ai.ts:2144-2171,2268-2279` notifies, returns `undefined`, then continues. | `applyReviewAdvice notifies but never blocks command execution`; runtime harness permits `gh pr create --draft`. | ✅ COMPLIANT |
 | Non-blocking safety composition | Dangerous-command confirmation is preserved | Tool hook invokes review advice before independent `confirmCommand`. | Runtime harness emits standard advice for `git push` and still blocks when confirmation is declined. | ✅ COMPLIANT |
 | Delivery boundary | Routing completes without delivery | Classifier/advice path has no delivery operation. | `review v2 package and runtime stop before delivery or publication`; empty index and unchanged package/lockfile inspection. | ✅ COMPLIANT |
 
@@ -106,7 +106,7 @@ No build command is configured. No stage, commit, push, PR, tag, release, public
 
 | Design decision | Followed? | Evidence |
 |---|---|---|
-| Const-derived pure typed classifier with flat evidence/plan interfaces | ✅ Yes | `lib/review-triggers.ts` exports const objects, derived types, flat interfaces, and pure functions. |
+| Const-derived pure typed classifier with flat evidence/plan interfaces | ✅ Yes | `lib/review/review-triggers.ts` exports const objects, derived types, flat interfaces, and pure functions. |
 | Conservative objective triviality before escalation | ✅ Yes | Restrictive docs/README proof, explicit configuration/runtime exclusions, and six adversarial paths pass. |
 | Strict `>400`, hot-path escalation, and pre-delivery ceiling | ✅ Yes | 399/400/401/hot/event tests pass. |
 | Fixed standard precedence and stable full-lens order | ✅ Yes | Risk → resilience → reliability → readability fallback; full order risk, resilience, readability, reliability. |

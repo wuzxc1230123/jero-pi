@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { NATIVE_CLI_CONTRACTS } from "../lib/native-review-cli.ts";
+import { NATIVE_CLI_CONTRACTS } from "../lib/native/native-review-cli.ts";
 
 // Organic RDD parity: the four organic-parity capability columns exist on every
 // shipped NATIVE_CLI_CONTRACTS row. Every row through the pinned "2.1.11"

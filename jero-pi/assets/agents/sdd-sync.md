@@ -100,16 +100,16 @@ sync into:
 openspec/specs/{domain}/spec.md
 ```
 
-Use the native helper semantics from `lib/openspec-deltas.ts` when editing manually:
+Use the native helper semantics from `lib/sdd/openspec-deltas.ts` when editing manually:
 
 - If canonical spec does not exist, copy the change spec as the new canonical spec.
 - `## ADDED Requirements` appends requirements.
 - `## MODIFIED Requirements` replaces full matching requirement blocks by exact name.
 - `## REMOVED Requirements` deletes full matching requirement blocks by exact name.
-- `## RENAMED Requirements` is intentionally unsupported until `lib/openspec-deltas.ts` implements it; block instead of improvising.
+- `## RENAMED Requirements` is intentionally unsupported until `lib/sdd/openspec-deltas.ts` implements it; block instead of improvising.
 - Preserve unrelated canonical requirements and document sections.
 
-Use guardrail semantics from `lib/openspec-guardrails.ts`:
+Use guardrail semantics from `lib/sdd/openspec-guardrails.ts`:
 
 - warn on active same-domain collisions;
 - detect legacy flat specs;

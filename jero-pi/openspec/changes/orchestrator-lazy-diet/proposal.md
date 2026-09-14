@@ -2,7 +2,7 @@
 
 ## Intent
 
-**Problem statement:** `assets/orchestrator.md` (22,626 B ≈ 5,650 tokens, bytes/4) is injected always-on into every Pi parent session via `getOrchestratorPrompt` (`extensions/gentle-ai.ts:123-133`, appended at :2208). It is 92% of gentle-pi's always-on parent budget. Most of it is long-tail protocol prose, examples, and per-phase tables that are only needed on specific triggers, not every turn. A proven lazy-pointer pattern already exists in the same file: the `## SDD Workflow (lazy-loaded)` section points to `assets/sdd-orchestrator-workflow.md` (12,425 B) by substituted path (`{{GENTLE_PI_SDD_WORKFLOW_PATH}}`) and is NOT double-injected. gentle-ai already applied this diet to its Claude orchestrator (7.8 KB core + 13.8 KB lazy).
+**Problem statement:** `assets/orchestrator.md` (22,626 B ≈ 5,650 tokens, bytes/4) is injected always-on into every Pi parent session via `getOrchestratorPrompt` (`extensions/jero-ai.ts:123-133`, appended at :2208). It is 92% of jero-pi's always-on parent budget. Most of it is long-tail protocol prose, examples, and per-phase tables that are only needed on specific triggers, not every turn. A proven lazy-pointer pattern already exists in the same file: the `## SDD Workflow (lazy-loaded)` section points to `assets/sdd-orchestrator-workflow.md` (12,425 B) by substituted path (`{{GENTLE_PI_SDD_WORKFLOW_PATH}}`) and is NOT double-injected. gentle-ai already applied this diet to its Claude orchestrator (7.8 KB core + 13.8 KB lazy).
 
 **Success:** a thin always-on core (target ≤8 KB) carrying only every-turn load-bearing rules, long-tail detail moved to on-demand lazy reference files, zero normative content lost, and drift locked by tests under `pnpm test`.
 
@@ -24,7 +24,7 @@
 ## Coordination (parallel changes)
 
 - `persona-single-channel` must land FIRST. It owns the CONTENT of Identity Contract + Language Boundary (dedupes them against the wrapper). This change then moves the already-deduped single copy. Disposition treats those sections as **content owned by `persona-single-channel`, placement owned here**.
-- `port-review-ledger-contract` owns the CONTENT of the 4R / Review Lens sections. Same treatment: **content owned there, placement owned here**. Note `tests/gentle-ai.test.ts:40` currently asserts `assets/orchestrator.md` contains all four `review-*` lens names — that assertion must follow the content owner (kept as a core pointer or repointed to the review lazy file); coordinate so neither change breaks it.
+- `port-review-ledger-contract` owns the CONTENT of the 4R / Review Lens sections. Same treatment: **content owned there, placement owned here**. Note `tests/jero-ai.test.ts:40` currently asserts `assets/orchestrator.md` contains all four `review-*` lens names — that assertion must follow the content owner (kept as a core pointer or repointed to the review lazy file); coordinate so neither change breaks it.
 
 ## Disposition table
 
@@ -75,9 +75,9 @@ Core must hold: identity/role/mental model (~2.0 KB), routing ladder + delegatio
 |------|--------|-------------|
 | `assets/orchestrator.md` | Modified | slimmed to thin always-on core |
 | `assets/orchestrator-delegation.md` `-memory.md` `-skills.md` | New | lazy reference files |
-| `extensions/gentle-ai.ts` (:118-133) | Modified | add path placeholders + substitution for new lazy files; keep cache |
+| `extensions/jero-ai.ts` (:118-133) | Modified | add path placeholders + substitution for new lazy files; keep cache |
 | `tests/orchestrator-budget.test.ts` (new) | New | byte-budget + union + cache tests |
-| `tests/gentle-ai.test.ts` (:40) | Modified | review-lens assertion follows content owner (coordinated) |
+| `tests/jero-ai.test.ts` (:40) | Modified | review-lens assertion follows content owner (coordinated) |
 
 ## Risks
 

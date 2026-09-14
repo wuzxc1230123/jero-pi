@@ -15,7 +15,7 @@ import {
 	verifyProviderContractBundleArchive,
 	verifyProviderContractBundleEntries,
 	verifyProviderContractBundleTree,
-} from "../lib/provider-contract-bundle.ts";
+} from "../lib/core/provider-contract-bundle.ts";
 
 // Fixture provenance: generated from gentle-ai main (contract 1.1.0) with
 // `go run ./internal/providercontractbundlecmd generate --out <dir>`.
@@ -118,7 +118,7 @@ function fixtureArchive(): Buffer {
 }
 
 function withTemporaryDirectory<T>(run: (directory: string) => T): T {
-	const directory = mkdtempSync(join(tmpdir(), "gentle-pi-provider-bundle-"));
+	const directory = mkdtempSync(join(tmpdir(), "jero-pi-provider-bundle-"));
 	try {
 		return run(directory);
 	} finally {

@@ -2,7 +2,7 @@
 
 ## Intent (Problem Statement)
 
-On 2026-07-07 a skill-name collision was hotfixed **directly in the installed package copy**, renaming 6 skills' frontmatter `name:` to `gentle-ai-`-prefixed forms so gentle-ai and gentle-pi skills stop clashing in the same Pi runtime. The repo still ships the ORIGINAL names, so the next `npm update`/reinstall silently REVERTS the fix — a live regression trap. This change upstreams the hotfix so the next release is a no-op for already-patched installs.
+On 2026-07-07 a skill-name collision was hotfixed **directly in the installed package copy**, renaming 6 skills' frontmatter `name:` to `gentle-ai-`-prefixed forms so gentle-ai and jero-pi skills stop clashing in the same Pi runtime. The repo still ships the ORIGINAL names, so the next `npm update`/reinstall silently REVERTS the fix — a live regression trap. This change upstreams the hotfix so the next release is a no-op for already-patched installs.
 
 ## Scope
 
@@ -14,7 +14,7 @@ On 2026-07-07 a skill-name collision was hotfixed **directly in the installed pa
 ### Out of Scope
 - The other 6 skills stay unprefixed (collision-only, matches hotfix).
 - Skill **directory** renames — frontmatter is authoritative (`deriveSkillName`); dirs unchanged, so `scripts/verify-package-files.mjs` paths stay valid.
-- `lib/review-triggers.ts` / `tests/review-triggers.test.ts` `judgment-day` — a separate agent-identifier set that mirrors `triggers.go`; owned by the parallel change.
+- `lib/review/review-triggers.ts` / `tests/review-triggers.test.ts` `judgment-day` — a separate agent-identifier set that mirrors `triggers.go`; owned by the parallel change.
 
 ## Capabilities
 

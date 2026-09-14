@@ -1,4 +1,4 @@
-# Tasks: Port the review-ledger contract into gentle-pi
+# Tasks: Port the review-ledger contract into jero-pi
 
 ## Review Workload Forecast
 

@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { ScrollView, visibleWidth, type TUI, type TuiMouseEvent } from "@earendil-works/pi-tui";
 import { renderLayoutFrame } from "@earendil-works/pi-tui/dist/layout.js";
-import { installSidebar, invalidateSidebar } from "../lib/shell-sidebar-layout.ts";
-import { sidebarPart, sidebarState } from "../lib/shell-sidebar.ts";
-import { renderShellSidebarBar } from "../lib/shell-bar.ts";
-import { renderTodoCard, type TodoState } from "../lib/shell-todo.ts";
+import { installSidebar, invalidateSidebar } from "../lib/shell/shell-sidebar-layout.ts";
+import { sidebarPart, sidebarState } from "../lib/shell/shell-sidebar.ts";
+import { renderShellSidebarBar } from "../lib/shell/shell-bar.ts";
+import { renderTodoCard, type TodoState } from "../lib/shell/shell-todo.ts";
 
 const NODE = Symbol.for("@earendil-works/pi-tui/layout-node");
 const theme = { fg: (_color: string, text: string) => text, bold: (text: string) => text };

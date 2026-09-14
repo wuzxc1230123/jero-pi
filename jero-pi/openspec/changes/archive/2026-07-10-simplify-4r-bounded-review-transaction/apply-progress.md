@@ -27,16 +27,16 @@
 
 | Task | Test file / gate | Layer | Safety net | RED | GREEN | TRIANGULATE | REFACTOR |
 |---|---|---|---|---|---|---|---|
-| 1.1 | `tests/review-snapshot.test.ts` | Integration | Existing focused baseline 137/137 | Missing `lib/review-snapshot.ts` failed | 3/3 pass | Complete vs intended projection; ignored/untracked and unresolved cases | Temp-index helper and immutable result naming; 3/3 pass |
+| 1.1 | `tests/review-snapshot.test.ts` | Integration | Existing focused baseline 137/137 | Missing `lib/review/review-snapshot.ts` failed | 3/3 pass | Complete vs intended projection; ignored/untracked and unresolved cases | Temp-index helper and immutable result naming; 3/3 pass |
 | 1.2 | `tests/review-snapshot.test.ts` | Integration | 137/137 | Snapshot API absent | 3/3 pass | Real-index bytes and worktree status checked across projections | Focused suite green |
-| 2.1 | `tests/review-transaction.test.ts` | Unit/integration | 137/137 | Missing `lib/review-transaction.ts` failed | 8/8 pass | Replay/restart, pending, tamper, lock, write fault, Git-dir modes, child replay | Canonical helpers and atomic-write seams; 8/8 pass |
+| 2.1 | `tests/review-transaction.test.ts` | Unit/integration | 137/137 | Missing `lib/review/review-transaction.ts` failed | 8/8 pass | Replay/restart, pending, tamper, lock, write fault, Git-dir modes, child replay | Canonical helpers and atomic-write seams; 8/8 pass |
 | 2.2 | `tests/review-transaction.test.ts` | Unit/integration | 137/137 | V1 schemas/store absent | 8/8 pass | Receipt projection and state/HEAD hashes independently changed | Focused suite green |
 | 2.3 | `tests/review-transaction.test.ts` | Integration | 137/137 | Injected pre-HEAD fault had no implementation | 8/8 pass | Lock plus fsync-adjacent fault; prior revision and integrity mismatch paths | Orphan cleanup and durable file helpers; 8/8 pass |
 | 3.1 | `tests/review-policy-ordinary.test.ts` | Unit | Store tests green | Missing ordinary reducer failed | 6/6 pass | 0/1/4 routes, fix/no-fix, invalid output, regression, terminal failure | Pure reducer helpers; 6/6 pass |
 | 3.2 | `tests/review-policy-ordinary.test.ts` | Unit | Store tests green | Ordinary transitions absent | 6/6 pass | Second refuter/fix/validator/final edges rejected | Claims immutable and resolutions separated; combined reducer/store 14/14 pass |
 | 4.1 | `tests/review-policy-judgment-day.test.ts` | Unit | Ordinary/store tests green | Missing Judgment Day reducer failed | 5/5 pass | Clean, two-round approval, round-two survivor, wrong mode | Focused suite green |
 | 4.2 | `tests/review-policy-judgment-day.test.ts` | Unit | Ordinary/store tests green | Judgment Day transitions absent | 5/5 pass | Two fixes/two re-judgments and no-third-round edge | Disjoint phase helpers; combined policy/store 19/19 pass |
-| 5.1 | `tests/review-{triggers,gate}.test.ts`, `tests/gentle-ai.test.ts` | Unit/integration | 137/137 | Missing gate exports plus five lifecycle classification failures | 40/40 pass | Exact commit/push/PR/release, scope change, unresolved/delete/ordering, replay, safety precedence | Removed ambient diff advice and dead collection path; 40/40 pass |
+| 5.1 | `tests/review-{triggers,gate}.test.ts`, `tests/jero-ai.test.ts` | Unit/integration | 137/137 | Missing gate exports plus five lifecycle classification failures | 40/40 pass | Exact commit/push/PR/release, scope change, unresolved/delete/ordering, replay, safety precedence | Removed ambient diff advice and dead collection path; 40/40 pass |
 | 5.2 | Same as 5.1 | Unit/integration | 137/137 | Start-only and typed controller behavior absent | 40/40 pass | Stable push updates and parent-target child replay with changed budget | Const-tagged unions and shared gate result path; 40/40 pass |
 | 6.1 | Contract/package/preflight tests and runtime harness | Contract/integration | 137/137 | 18 expected contract/migration failures | 85/85 pass; runtime harness pass | Ownership, routing preservation, user override, no delivery, exact actor authority | Contract matrix simplified; gates remain green |
 | 6.2 | `tests/review-ledger-contract.test.ts`, `tests/package-manifest.test.ts` | Contract | 137/137 | Old sweeps/refuters/shared iteration still present | Contract/package focused gates pass | Lens, refuter, validator, fix, judge, orchestrator, skill, chain, README parity | Obsolete clauses removed; focused suite green |
@@ -62,11 +62,11 @@
 
 ## Judgment Day APPLY Round 1 — TDD Cycle Evidence
 
-Safety net before corrective production edits: `node --experimental-strip-types --test tests/review-*.test.ts tests/gentle-ai.test.ts` — 74/74 passed.
+Safety net before corrective production edits: `node --experimental-strip-types --test tests/review-*.test.ts tests/jero-ai.test.ts` — 74/74 passed.
 
 | Finding | Test file / layer | RED | GREEN | TRIANGULATE | REFACTOR |
 |---|---|---|---|---|---|
-| JD-APP-001 | `tests/gentle-ai.test.ts`, `tests/review-gate.test.ts` / runtime integration | Receipt-backed allow plus compound/wrapper cases written before runtime bridge; corrective suite failed | Direct approved receipt allows; raw/compound/wrapper forms block | Direct, missing receipt, `&&`, `env`, `command`, `sh -c`, and dangerous-safety precedence | Shared lifecycle inspection and gate adapter; focused green |
+| JD-APP-001 | `tests/jero-ai.test.ts`, `tests/review-gate.test.ts` / runtime integration | Receipt-backed allow plus compound/wrapper cases written before runtime bridge; corrective suite failed | Direct approved receipt allows; raw/compound/wrapper forms block | Direct, missing receipt, `&&`, `env`, `command`, `sh -c`, and dangerous-safety precedence | Shared lifecycle inspection and gate adapter; focused green |
 | JD-APP-002 | `tests/review-transaction.test.ts` / unit-integration | Reducer transition API and absence of generic mutation written before implementation; missing export failed | Only exact reducer transitions persist; generic method absent | Replay, pending completion, terminal state, and lock/fault paths | Private completed-operation primitive behind reducer/gate APIs |
 | JD-APP-003 | `tests/review-gate.test.ts` / real Git integration | Real ref/object/peel/tree fixtures written before repository resolver | Commit, push, PR, and release relationships allow only when exact | Nonexistent object, mismatched commit/tree, deletion, unstable order, and changed scope | Shared Git relationship helpers |
 | JD-APP-004 | `tests/review-snapshot.test.ts` / real Git integration | Repository-root, isolated-object, GC, and cleanup tests failed on missing snapshot exports | Nested-cwd complete capture survives live GC outside live objects | Complete/intended projections, ignored/untracked paths, GC, and terminal cleanup | Durable snapshot metadata/object-store interface |
@@ -79,24 +79,24 @@ Safety net before corrective production edits: `node --experimental-strip-types 
 
 Corrective verification:
 
-- Focused: `node --experimental-strip-types --test tests/review-*.test.ts tests/gentle-ai.test.ts` — 80/80 passed.
+- Focused: `node --experimental-strip-types --test tests/review-*.test.ts tests/jero-ai.test.ts` — 80/80 passed.
 - Full: `pnpm test` — 337/337 Node tests passed; runtime harness passed.
 - Package: `node scripts/verify-package-files.mjs` — 49 files passed.
 - Diff hygiene: `git diff --check` — passed.
 
 ## Judgment Day APPLY Round 2 — TDD Cycle Evidence
 
-Safety net before Round 2 edits: `node --experimental-strip-types --test tests/gentle-ai.test.ts tests/review-gate.test.ts tests/review-ledger-contract.test.ts` — 28/28 passed.
+Safety net before Round 2 edits: `node --experimental-strip-types --test tests/jero-ai.test.ts tests/review-gate.test.ts tests/review-ledger-contract.test.ts` — 28/28 passed.
 
 | Finding | Test file / layer | RED | GREEN | TRIANGULATE | REFACTOR |
 |---|---|---|---|---|---|
-| JD-APP-001 | `tests/gentle-ai.test.ts` / runtime integration | Pre-implementation batch failed because backslash-newline lifecycle input returned no block; 8,192-character direct/wrapped cases were written in the same RED batch | Continuation and long direct/wrapped lifecycle forms block before execution | Compound, `env`, `command`, `sh -c`, continuation, long direct, and long wrapped forms | Replaced the 256-character regex window with one linear scan using constant token space |
+| JD-APP-001 | `tests/jero-ai.test.ts` / runtime integration | Pre-implementation batch failed because backslash-newline lifecycle input returned no block; 8,192-character direct/wrapped cases were written in the same RED batch | Continuation and long direct/wrapped lifecycle forms block before execution | Compound, `env`, `command`, `sh -c`, continuation, long direct, and long wrapped forms | Replaced the 256-character regex window with one linear scan using constant token space |
 | JD-APP-003 | `tests/review-gate.test.ts` / real Git integration | Drifted destination update returned `allow`; create-over-existing was written in the same RED batch | Exact-old update and absent-old create semantics pass | Existing exact update + absent create allow; drifted update + existing create deny | Centralized fail-closed destination-ref resolution |
 | JD-APP-010 | `tests/review-ledger-contract.test.ts` / contract | Two README/managed-contract checks rejected the retained fresh-context lens instruction | Receipt-only zero-actor README wording passes | Managed union and README parity both reject the obsolete phrase | Added the semantic obsolete-contract fragment once |
 
 Round 2 verification:
 
-- Focused: `node --experimental-strip-types --test tests/review-*.test.ts tests/gentle-ai.test.ts` — 80/80 passed.
+- Focused: `node --experimental-strip-types --test tests/review-*.test.ts tests/jero-ai.test.ts` — 80/80 passed.
 - Full: `pnpm test` — 337/337 Node tests passed; runtime harness passed.
 - Package: `node scripts/verify-package-files.mjs` — 49 files passed.
 - Diff hygiene: `git diff --check` — passed.
@@ -118,8 +118,8 @@ The first remediation RED run reproduced all five CRITICAL findings: 47/54 passe
 
 Remediation verification:
 
-- Focused TDD loop: `node --experimental-strip-types --test tests/review-snapshot.test.ts tests/review-transaction.test.ts tests/review-gate.test.ts tests/package-manifest.test.ts tests/gentle-ai.test.ts` — 54/54 passed.
-- Final focused review/runtime gate: `node --experimental-strip-types --test tests/review-*.test.ts tests/gentle-ai.test.ts` — 83/83 passed.
+- Focused TDD loop: `node --experimental-strip-types --test tests/review-snapshot.test.ts tests/review-transaction.test.ts tests/review-gate.test.ts tests/package-manifest.test.ts tests/jero-ai.test.ts` — 54/54 passed.
+- Final focused review/runtime gate: `node --experimental-strip-types --test tests/review-*.test.ts tests/jero-ai.test.ts` — 83/83 passed.
 - Judgment Day reducer fixture check after test-helper refactor: `node --experimental-strip-types --test tests/review-policy-judgment-day.test.ts` — 5/5 passed.
 - Full: `pnpm test` — 341/341 Node tests passed; runtime harness passed.
 - Package: `node scripts/verify-package-files.mjs` — 49 files passed.
@@ -193,13 +193,13 @@ Remediation verification:
 
 ### Runtime and library
 
-- `extensions/gentle-ai.ts`
-- `lib/review-snapshot.ts`
-- `lib/review-transaction.ts`
-- `lib/review-policy-ordinary.ts`
-- `lib/review-policy-judgment-day.ts`
-- `lib/review-triggers.ts`
-- `lib/sdd-preflight.ts`
+- `extensions/jero-ai.ts`
+- `lib/review/review-snapshot.ts`
+- `lib/review/review-transaction.ts`
+- `lib/review/review-policy-ordinary.ts`
+- `lib/review/review-policy-judgment-day.ts`
+- `lib/review/review-triggers.ts`
+- `lib/sdd/sdd-preflight.ts`
 
 ### Contracts, assets, and docs
 
@@ -233,7 +233,7 @@ Remediation verification:
 - `tests/review-triggers.test.ts`
 - `tests/review-gate.test.ts`
 - `tests/review-ledger-contract.test.ts`
-- `tests/gentle-ai.test.ts`
+- `tests/jero-ai.test.ts`
 - `tests/orchestrator-budget.test.ts`
 - `tests/sdd-preflight.test.ts`
 - `tests/package-manifest.test.ts`

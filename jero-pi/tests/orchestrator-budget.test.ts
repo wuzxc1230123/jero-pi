@@ -52,7 +52,7 @@ function copyRequiredLazyAssets(destination: string): void {
 
 const representativeProductionAssetsDir = mkdtempSync(join(tmpdir(), "gp-b-"));
 copyRequiredLazyAssets(representativeProductionAssetsDir);
-const { __testing } = await import("../extensions/gentle-ai.ts");
+const { __testing } = await import("../extensions/jero-ai.ts");
 
 // A controlled long assets root proves the parent prompt remains within the
 // canonical budget independently of the checkout or installed-package path.
@@ -289,7 +289,7 @@ const CURRENT_HARD_PREFLIGHT_INVARIANT = "Hard preflight invariant: `openspec/co
 const SUPERSEDED_LIFECYCLE_REVIEW_LINES = new Set([
 	70,
 	// 74/77: the loose mode-choice background lines were replaced by the
-	// marked gentle-pi:background-subagents policy block (issue #256).
+	// marked jero-pi:background-subagents policy block (issue #256).
 	74,
 	76,
 	77,

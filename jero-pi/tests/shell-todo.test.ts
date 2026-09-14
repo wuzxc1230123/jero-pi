@@ -11,8 +11,8 @@ import {
 	todoPromptBlock,
 	todoSummary,
 	type TodoState,
-} from "../lib/shell-todo.ts";
-import { stripAnsi } from "../lib/terminal-theme.ts";
+} from "../lib/shell/shell-todo.ts";
+import { stripAnsi } from "../lib/core/terminal-theme.ts";
 
 // Gentle Todo: a task list the model rewrites as it works. The reducer is
 // pure, the state replays from the session branch, and staleness is derived

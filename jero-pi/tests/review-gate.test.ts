@@ -16,7 +16,7 @@ import {
 	type GateTargetV1,
 	type GhCommandRunnerV1,
 	type ReleaseFastPathEvidenceV1,
-} from "../lib/review-publication-gate.ts";
+} from "../lib/review/review-publication-gate.ts";
 import {
 	REVIEW_MODE,
 	REVIEW_TRANSITION,
@@ -32,9 +32,9 @@ import {
 	type ReceiptEnvelopeV1,
 	type ReviewBudgetV1,
 	type ReviewStateV1,
-} from "../lib/review-transaction.ts";
-import { REVIEW_LENS, REVIEW_ROUTE } from "../lib/review-triggers.ts";
-import { inheritedUnsafeGitEnvironmentKeys } from "../lib/review-repository.ts";
+} from "../lib/review/review-transaction.ts";
+import { REVIEW_LENS, REVIEW_ROUTE } from "../lib/review/review-triggers.ts";
+import { inheritedUnsafeGitEnvironmentKeys } from "../lib/review/review-repository.ts";
 import { qualifiedReviewLockPlatform, testSnapshot } from "./review-test-fixtures.ts";
 
 interface GateRepository {
@@ -63,7 +63,7 @@ test("unsafe publication Git environment matching preserves actual mixed-case ke
 });
 
 function createGateRepository(t: test.TestContext): GateRepository {
-	const parent = mkdtempSync(join(tmpdir(), "gentle-pi-gate-repo-"));
+	const parent = mkdtempSync(join(tmpdir(), "jero-pi-gate-repo-"));
 	const repository = join(parent, "repo");
 	mkdirSync(repository);
 	t.after(() => rmSync(parent, { recursive: true, force: true }));

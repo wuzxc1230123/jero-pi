@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { TUI } from "@earendil-works/pi-tui";
-import { sidebarPart, sidebarState } from "../lib/shell-sidebar.ts";
+import { sidebarPart, sidebarState } from "../lib/shell/shell-sidebar.ts";
 
 const host = (terminal?: object) => ({ terminal }) as TUI;
 const component = () => ({ render: (_width = 80) => ["bottom"], invalidate() {} });

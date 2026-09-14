@@ -23,7 +23,7 @@ The forecast is below the requested 2,000-line ceiling. The High 400-line risk i
 - Strict TDD is active: every work unit follows RED → GREEN → TRIANGULATE → REFACTOR.
 - Keep production code and its tests in the same work unit/commit; use conventional commits and do not commit by file type.
 - Before implementation, record protected uncommitted paths/hunks with `git diff --stat` and targeted `git diff`; after each unit, verify those hunks are unchanged.
-- Use targeted edits and existing seams. Do not modify `lib/review-repository.ts` or the pinned `IDENTITY` file unless a narrow, unavoidable import seam is proven.
+- Use targeted edits and existing seams. Do not modify `lib/review/review-repository.ts` or the pinned `IDENTITY` file unless a narrow, unavoidable import seam is proven.
 - Do not change operation names, states, lens-selection policy, correction limits, graph-v1 mutation rules, ordinary repository-delivery policy, or persisted schemas.
 - Run focused tests after each unit; run `pnpm test` and `pnpm run prepack` before release readiness.
 
@@ -33,7 +33,7 @@ The forecast is below the requested 2,000-line ceiling. The High 400-line risk i
 
 - [x] 1. Baseline protection and strict contract parser
 
-**Scope:** `lib/review-compact-contract.ts`, `tests/review-compact-contract.test.ts`, and the smallest required type/import seams in `lib/review-compact.ts`.
+**Scope:** `lib/review/review-compact-contract.ts`, `tests/review-compact-contract.test.ts`, and the smallest required type/import seams in `lib/review-compact.ts`.
 
 - RED: Add table-driven tests for malformed top-level start/finalize/validate values; recursively unknown keys in projection, findings, refuter rows, validation proof/checks, follow-ups, final evidence, and derived targets; wrong types/enums; untrimmed/empty strings; malformed digests/lineage IDs; duplicate canonical lists; unsafe/non-integer/out-of-range numbers; and invalid field pairings.
 - GREEN: Implement `CompactReviewContractError` with stable `area`/`code`, exact-key recursive parsers accepting `unknown`, const-backed enums, canonical string/digest/lineage/integer/range helpers, and the parser exports specified by design. Return typed values without spreading unvalidated input or coercing values.
@@ -45,7 +45,7 @@ The forecast is below the requested 2,000-line ceiling. The High 400-line risk i
 
 - [x] 2. Facade and extension pre-mutation boundaries
 
-**Scope:** `lib/review-facade.ts`, `extensions/gentle-ai.ts`, `tests/review-facade.test.ts`, `tests/review-controller.test.ts`.
+**Scope:** `lib/review-facade.ts`, `extensions/jero-ai.ts`, `tests/review-facade.test.ts`, `tests/review-controller.test.ts`.
 
 - RED: Add boundary tests proving `startCompactReview`, `finalizeCompactReview`, `validateCompactReviewGate`, and the extension tool route parse complete inputs before inspection, authority discovery, lock/CAS, actor launch, receipt load, or reducer execution. Cover nested errors and unchanged 0/1/4 lens selection.
 - GREEN: Route all compact public inputs through the shared parsers; remove compact-path coercions/casts and distributed shallow checks; preserve graph-v1 routing and existing operation/state names.

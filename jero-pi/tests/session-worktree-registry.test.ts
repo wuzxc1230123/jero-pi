@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { SessionManager } from "@earendil-works/pi-coding-agent";
-import { SessionWorktreeRegistry, resolveSessionWorktree, resolveSessionWorktreeWithGit, SESSION_WORKTREE_ENTRY, toolWorktreePath, worktreeGitEnvironment } from "../lib/session-worktree-registry.ts";
+import { SessionWorktreeRegistry, resolveSessionWorktree, resolveSessionWorktreeWithGit, SESSION_WORKTREE_ENTRY, toolWorktreePath, worktreeGitEnvironment } from "../lib/core/session-worktree-registry.ts";
 
 // All Git and session writes belong to unique fixtures, never the live clone.
 function fixture(t: test.TestContext) {

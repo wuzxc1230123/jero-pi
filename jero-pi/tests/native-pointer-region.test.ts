@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { Box, Container, Text, type Component, type TuiMouseEvent } from "@earendil-works/pi-tui";
-import { createNativePointerScope } from "../lib/native-pointer-region.ts";
+import { createNativePointerScope } from "../lib/native/native-pointer-region.ts";
 
 function mouse(
 	type: TuiMouseEvent["type"], button: TuiMouseEvent["button"], y: number, height: number,

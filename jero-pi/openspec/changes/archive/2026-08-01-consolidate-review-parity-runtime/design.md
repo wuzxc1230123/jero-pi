@@ -95,7 +95,7 @@ The only supported native runtime becomes `2.1.3` at:
 <package-root>/.gentle-ai/v2.1.3/gentle-ai.exe
 ```
 
-`lib/gentle-ai-binary.ts`, `scripts/gentle-ai-installer.mjs`, and `scripts/install-gentle-ai.mjs` must agree on `2.1.3`. Runtime verification must accept exactly `gentle-ai 2.1.3\n`. No PATH/global fallback and no fallback to v2.1.2 is allowed.
+`lib/core/gentle-ai-binary.ts`, `scripts/gentle-ai-installer.mjs`, and `scripts/install-gentle-ai.mjs` must agree on `2.1.3`. Runtime verification must accept exactly `gentle-ai 2.1.3\n`. No PATH/global fallback and no fallback to v2.1.2 is allowed.
 
 The installer creates/verifies the v2.1.3 directory and four-field `integrity.json` contract already used by v2.1.2. Existing v2.1.2 package-local bytes are not authority and need not be deleted; the resolver ignores them after the pin changes. Migration must not mutate user-managed assets.
 
@@ -122,7 +122,7 @@ Asset names, URLs, archive digests, manifest version, manifest asset name, manif
 
 ### 6.1 Strict decoder
 
-`lib/native-review-cli.ts` must migrate the version-specific adapter and fixtures from v2.1.2 to v2.1.3. The START decoder must require exactly the released response fields:
+`lib/native/native-review-cli.ts` must migrate the version-specific adapter and fixtures from v2.1.2 to v2.1.3. The START decoder must require exactly the released response fields:
 
 ```text
 operation
@@ -201,16 +201,16 @@ No files in this section are edited during design. The next tasks revision must 
 
 ### 9.1 Pin, provisioning, and integrity
 
-- `lib/gentle-ai-binary.ts` — pin/path/error/integrity version `2.1.3`.
+- `lib/core/gentle-ai-binary.ts` — pin/path/error/integrity version `2.1.3`.
 - `scripts/gentle-ai-installer.mjs` — v2.1.3 base URL, tag, filenames, six official digests, install directory, and manifest version.
 - `scripts/install-gentle-ai.mjs` — v2.1.3 install/verification diagnostics.
 - `scripts/verify-package-files.mjs` — require the v2.1.3 native fixture path instead of the v2.1.2 path.
 
 ### 9.2 Native adapter and controller
 
-- `lib/native-review-cli.ts` — v2.1.3 contract/version, version-specific adapter naming, strict START fields, action enum, lenses-required boolean, and no implicit committed-only flag.
-- `extensions/gentle-ai.ts` — truthful INSPECT preflight, authoritative START routing, result mapping, actor-dispatch rules, failure mapping, and v2.1.3 guidance/contract labels.
-- `lib/review-candidate-view.ts` — preserve B1/B2 behavior; change only if required to avoid actor binding when `lenses_required` is false, with focused regression evidence.
+- `lib/native/native-review-cli.ts` — v2.1.3 contract/version, version-specific adapter naming, strict START fields, action enum, lenses-required boolean, and no implicit committed-only flag.
+- `extensions/jero-ai.ts` — truthful INSPECT preflight, authoritative START routing, result mapping, actor-dispatch rules, failure mapping, and v2.1.3 guidance/contract labels.
+- `lib/review/review-candidate-view.ts` — preserve B1/B2 behavior; change only if required to avoid actor binding when `lenses_required` is false, with focused regression evidence.
 
 ### 9.3 Fixtures and tests
 
@@ -262,7 +262,7 @@ Rollout order is mandatory:
 3. provision and verify `.gentle-ai/v2.1.3/<executable>` and prove exact runtime version;
 4. rerun the real parity fixture, focused suites, harness, package verification, full suite, and package dry-run;
 5. append v2.1.3 evidence to apply progress and update state;
-6. run Pi `/reload` so the current session reloads `extensions/gentle-ai.ts` and uses the new v2.1.3 adapter;
+6. run Pi `/reload` so the current session reloads `extensions/jero-ai.ts` and uses the new v2.1.3 adapter;
 7. after reload, re-prove the controller/runtime identity is v2.1.3; and only then
 8. start the mandatory high-risk final review, followed by independent SDD verification and lifecycle receipt validation in their required order.
 

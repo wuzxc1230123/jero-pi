@@ -68,10 +68,10 @@ Dangerous-command safety remains independent and authoritative.
 
 ## Affected areas
 
-- `extensions/gentle-ai.ts`: route supported native operations and relay read-only native status evidence.
+- `extensions/jero-ai.ts`: route supported native operations and relay read-only native status evidence.
 - A process boundary under `lib/`: typed argument-array execution and strict response validation.
 - Pi compact-v2 and graph-v1 routing: preserve read-only compatibility behavior and mutation rejection.
-- `lib/sdd-status.ts` and the SDD status command: consume only exact native binding/readiness evidence.
+- `lib/sdd/sdd-status.ts` and the SDD status command: consume only exact native binding/readiness evidence.
 - Review evidence: preserve native validation as review evidence only; ordinary repository policy owns delivery.
 - Focused strict-TDD coverage for adapter behavior, read-only status, no-probe/no-fallback guarantees, binding CAS, and legacy compatibility.
 

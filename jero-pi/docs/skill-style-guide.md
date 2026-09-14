@@ -1,6 +1,6 @@
 # Skill Style Guide
 
-This guide is the normative style contract for LLM-first skills shipped with or created inside `gentle-pi` projects.
+This guide is the normative style contract for LLM-first skills shipped with or created inside `jero-pi` projects.
 
 ## Purpose
 

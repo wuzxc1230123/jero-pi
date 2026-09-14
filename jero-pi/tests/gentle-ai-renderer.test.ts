@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createGentleAiExtension } from "../extensions/gentle-ai.ts";
+import { createGentleAiExtension } from "../extensions/jero-ai.ts";
 import type { ExtensionAPI, ToolDefinition } from "@earendil-works/pi-coding-agent";
 import { Box, visibleWidth } from "@earendil-works/pi-tui";
-import { renderGentleAiResult, GentleAiCallCard } from "../lib/gentle-ai-renderer.ts";
-import { stripAnsi } from "../lib/terminal-theme.ts";
+import { renderGentleAiResult, GentleAiCallCard } from "../lib/core/gentle-ai-renderer.ts";
+import { stripAnsi } from "../lib/core/terminal-theme.ts";
 
 // Rose cards: exactly one component closes the frame in every state. While
 // a call runs, the call card draws the bottom rule (a partial result never

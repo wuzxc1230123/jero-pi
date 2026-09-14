@@ -13,14 +13,14 @@ import codeGraphTools, {
 } from "../extensions/codegraph-tools.ts";
 
 function workspace(t: test.TestContext): string {
-	const cwd = realpathSync(mkdtempSync(join(tmpdir(), "gentle-pi-codegraph-")));
+	const cwd = realpathSync(mkdtempSync(join(tmpdir(), "jero-pi-codegraph-")));
 	execFileSync("git", ["init", "-b", "main"], { cwd, stdio: "ignore" });
 	t.after(() => rmSync(cwd, { recursive: true, force: true }));
 	return cwd;
 }
 
 test("CodeGraph tool rejects non-project, nested-project, HOME, and temporary workspaces before init", async (t) => {
-	const nonProject = realpathSync(mkdtempSync(join(tmpdir(), "gentle-pi-codegraph-non-project-")));
+	const nonProject = realpathSync(mkdtempSync(join(tmpdir(), "jero-pi-codegraph-non-project-")));
 	t.after(() => rmSync(nonProject, { recursive: true, force: true }));
 	const root = workspace(t);
 	const nested = join(root, "nested");
@@ -252,8 +252,8 @@ function withWindowsPath(t: test.TestContext, path: string): void {
 }
 
 test("Windows shim helpers skip stale PATH shims before resolving the npm script", (t) => {
-	const staleBinDir = realpathSync(mkdtempSync(join(tmpdir(), "gentle-pi-codegraph-stale-bin-")));
-	const validBinDir = realpathSync(mkdtempSync(join(tmpdir(), "gentle-pi-codegraph-valid-bin-")));
+	const staleBinDir = realpathSync(mkdtempSync(join(tmpdir(), "jero-pi-codegraph-stale-bin-")));
+	const validBinDir = realpathSync(mkdtempSync(join(tmpdir(), "jero-pi-codegraph-valid-bin-")));
 	t.after(() => rmSync(staleBinDir, { recursive: true, force: true }));
 	t.after(() => rmSync(validBinDir, { recursive: true, force: true }));
 	writeFileSync(join(staleBinDir, "codegraph.cmd"), "@ECHO off\n");
@@ -269,7 +269,7 @@ test("Windows shim helpers skip stale PATH shims before resolving the npm script
 });
 
 test("Windows shim helpers resolve quoted PATH entries in order without stripping unmatched quotes", (t) => {
-	const root = realpathSync(mkdtempSync(join(tmpdir(), "gentle-pi-codegraph-quoted-bin-")));
+	const root = realpathSync(mkdtempSync(join(tmpdir(), "jero-pi-codegraph-quoted-bin-")));
 	t.after(() => rmSync(root, { recursive: true, force: true }));
 	const firstBin = join(root, "Program Files", "nodejs");
 	const secondBin = join(root, "other-bin");
@@ -291,7 +291,7 @@ test("Windows shim helpers resolve quoted PATH entries in order without strippin
 });
 
 test("Windows launcher passes command metacharacters as one literal argv value", async (t) => {
-	const binDir = realpathSync(mkdtempSync(join(tmpdir(), "gentle-pi-codegraph-bin-")));
+	const binDir = realpathSync(mkdtempSync(join(tmpdir(), "jero-pi-codegraph-bin-")));
 	t.after(() => rmSync(binDir, { recursive: true, force: true }));
 	writeCodeGraphPackage(binDir, "process.stdout.write(JSON.stringify(process.argv.slice(2)));\n");
 	const cwd = workspace(t);

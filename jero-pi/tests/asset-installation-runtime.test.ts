@@ -16,8 +16,8 @@ async function proveLazyDiscovery(): Promise<void> {
 	const shim = join(cwd, "extensions.ts");
 	const source = (name: string) => JSON.stringify(new URL(`../extensions/${name}.ts`, import.meta.url).href);
 	writeFileSync(shim, `
-import { createGentleAiExtension } from ${source("gentle-ai")};
-import gentleAgents from ${source("gentle-agents")};
+import { createGentleAiExtension } from ${source("jero-ai")};
+import gentleAgents from ${source("jero-agents")};
 import sddInit from ${source("sdd-init")};
 export default function (pi) {
   createGentleAiExtension({ nativeReviewCli: null, candidateViews: null, processEnv: {} })(pi);
@@ -62,7 +62,7 @@ export default function (pi) {
 		assert.doesNotMatch(before, /- sdd-/, "fresh startup must not install SDD definitions");
 		assert.equal(existsSync(join(agentDir, "chains", "sdd-full.chain.md")), false);
 		assert.equal(existsSync(join(agentDir, "gentle-ai", "support")), false);
-		await session.prompt("/gentle:install-sdd");
+		await session.prompt("/jero:install-sdd");
 		assert.strictEqual(runtime.session, session);
 		const after = await names();
 		for (const name of ["gentle-ai-explore", "review-risk", "sdd-init", "sdd-apply"]) {
@@ -73,7 +73,7 @@ export default function (pi) {
 		}
 		assert.ok(existsSync(join(agentDir, "chains", "sdd-full.chain.md")));
 		assert.equal(session.messages.length, 0, "slash activation must not start a model turn");
-		console.log("SDK discovery: delegation/review only -> /gentle:install-sdd -> same-session sdd-init/sdd-apply and support");
+		console.log("SDK discovery: delegation/review only -> /jero:install-sdd -> same-session sdd-init/sdd-apply and support");
 	} finally {
 		await runtime.dispose();
 	}
@@ -83,7 +83,7 @@ if (process.env.GENTLE_PI_ASSET_PROOF_CHILD === "1") {
 	await proveLazyDiscovery();
 } else {
 	test("actual SDK discovers SDD only after explicit activation in the same session", () => {
-		const root = mkdtempSync(join(tmpdir(), "gentle-pi-assets-sdk-"));
+		const root = mkdtempSync(join(tmpdir(), "jero-pi-assets-sdk-"));
 		try {
 			const home = join(root, "home");
 			const cwd = join(root, "project");

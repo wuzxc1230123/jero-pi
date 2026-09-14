@@ -9,10 +9,10 @@ import {
 	reconcileGeneratedRuntimeSources,
 } from "../scripts/verify-package-files.mjs";
 import { INSTALLER_VERSION, RELEASE_BASE_URL, GENTLE_AI_WINDOWS_SOURCE_TAG } from "../scripts/gentle-ai-installer.mjs";
-import { GENTLE_AI_VERSION } from "../lib/gentle-ai-binary.ts";
+import { GENTLE_AI_VERSION } from "../lib/core/gentle-ai-binary.ts";
 
 function makeFixtureRoot(): string {
-	return mkdtempSync(join(tmpdir(), "gentle-pi-verify-package-files-"));
+	return mkdtempSync(join(tmpdir(), "jero-pi-verify-package-files-"));
 }
 
 test("contracts/ walk fails on a file that exists on disk but is unlisted in contractHashes", () => {
@@ -124,7 +124,7 @@ test("Gentle AI version pin mismatch is reported with a specific message when a 
 	});
 
 	assert.deepEqual(mismatches, [
-		'lib/gentle-ai-binary.ts GENTLE_AI_VERSION ("2.2.0") does not match the authoritative scripts/gentle-ai-installer.mjs INSTALLER_VERSION ("2.2.3")',
+		'lib/core/gentle-ai-binary.ts GENTLE_AI_VERSION ("2.2.0") does not match the authoritative scripts/gentle-ai-installer.mjs INSTALLER_VERSION ("2.2.3")',
 	]);
 });
 
@@ -142,7 +142,7 @@ test("Gentle AI version pin mismatch also flags a drifted release URL and a drif
 	]);
 });
 
-test("Gentle AI version pin agrees across the installer version, the release URL, the Windows source tag, and lib/gentle-ai-binary.ts", () => {
+test("Gentle AI version pin agrees across the installer version, the release URL, the Windows source tag, and lib/core/gentle-ai-binary.ts", () => {
 	const mismatches = gentleAiVersionPinMismatches({
 		installerVersion: INSTALLER_VERSION,
 		releaseBaseUrl: RELEASE_BASE_URL,

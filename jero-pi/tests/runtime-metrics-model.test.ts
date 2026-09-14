@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { normalizeRuntimeModel } from "../lib/runtime-metrics.ts";
+import { normalizeRuntimeModel } from "../lib/metrics/runtime-metrics.ts";
 
 // Data-driven family-pattern normalizer (gentle-pi#968 / gentle-ai#4536). Rules:
 // - non-string or empty provider or id -> {provider: "unknown", id: "unknown"};

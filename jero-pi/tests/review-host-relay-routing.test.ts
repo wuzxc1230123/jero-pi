@@ -4,10 +4,10 @@ import { mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { __testing } from "../extensions/gentle-ai.ts";
-import type { NativeReviewCli, NativeReviewUnachievableLensCaptureArtifact, NativeReviewUnachievableLensCaptureRequest } from "../lib/native-review-cli.ts";
-import { REVIEW_HOST_RELAY_FAILURE, REVIEW_HOST_RELAY_PI_TIMEOUT_ENV, REVIEW_HOST_RELAY_PI_TIMEOUT_MAX_MS, REVIEW_HOST_RELAY_SUBMISSION_MISSING_MESSAGE, REVIEW_HOST_RELAY_UNAVAILABLE_MESSAGE, ReviewHostRelayError, type ReviewHostRelayRequest } from "../lib/review-host-relay.ts";
-import { decodeReviewNextTransitionV3, decodeReviewStatusV3, type ReviewArtifactSubjectV2, type ReviewCaptureSubmissionV1, type ReviewCollectInputV3, type ReviewStatusV3 } from "../lib/review-integration-v2.ts";
+import { __testing } from "../extensions/jero-ai.ts";
+import type { NativeReviewCli, NativeReviewUnachievableLensCaptureArtifact, NativeReviewUnachievableLensCaptureRequest } from "../lib/native/native-review-cli.ts";
+import { REVIEW_HOST_RELAY_FAILURE, REVIEW_HOST_RELAY_PI_TIMEOUT_ENV, REVIEW_HOST_RELAY_PI_TIMEOUT_MAX_MS, REVIEW_HOST_RELAY_SUBMISSION_MISSING_MESSAGE, REVIEW_HOST_RELAY_UNAVAILABLE_MESSAGE, ReviewHostRelayError, type ReviewHostRelayRequest } from "../lib/review/review-host-relay.ts";
+import { decodeReviewNextTransitionV3, decodeReviewStatusV3, type ReviewArtifactSubjectV2, type ReviewCaptureSubmissionV1, type ReviewCollectInputV3, type ReviewStatusV3 } from "../lib/review/review-integration-v2.ts";
 
 // One-slot capture routing: the host relay runs only when the selected
 // provider-returned collect input carries the --materialize token. Every
@@ -18,7 +18,7 @@ const PHASE_REVISION = `sha256:${"3".repeat(64)}`;
 const TREE = "2".repeat(40);
 
 function repository(t: test.TestContext): string {
-	const cwd = mkdtempSync(join(tmpdir(), "gentle-pi-relay-routing-"));
+	const cwd = mkdtempSync(join(tmpdir(), "jero-pi-relay-routing-"));
 	t.after(() => rmSync(cwd, { recursive: true, force: true }));
 	execFileSync("git", ["init", "-b", "main"], { cwd });
 	writeFileSync(join(cwd, "app.ts"), "export const value = 1;\n");

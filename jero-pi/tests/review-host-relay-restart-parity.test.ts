@@ -16,7 +16,7 @@ import test from "node:test";
 // not merely asserted.
 //
 // Each scenario runs the controller in its own child process with a fresh
-// module load of extensions/gentle-ai.ts. Module-level state and every closure
+// module load of extensions/jero-ai.ts. Module-level state and every closure
 // restart from scratch. The truthful restart protocol uses the public surface:
 //   1. Process A: INSPECT exposes one opaque collectBinding, which is copied
 //      unchanged to exactly one gentle_review_capture invocation. The relay
@@ -132,7 +132,7 @@ function collectStatus(lineageId, inputs) {
 }
 
 function repository(t) {
-	const cwd = realpathSync(mkdtempSync(join(tmpdir(), "gentle-pi-relay-restart-")));
+	const cwd = realpathSync(mkdtempSync(join(tmpdir(), "jero-pi-relay-restart-")));
 	t.after(() => rmSync(cwd, { recursive: true, force: true }));
 	execFileSync("git", ["init", "-b", "main"], { cwd });
 	writeFileSync(join(cwd, "app.ts"), "export const value = 1;\n");
@@ -142,8 +142,8 @@ function repository(t) {
 }
 
 function restartWorkerSource() {
-	const extensionUrl = pathToFileURL(join(import.meta.dirname, "..", "extensions", "gentle-ai.ts")).href;
-	const relayUrl = pathToFileURL(join(import.meta.dirname, "..", "lib", "review-host-relay.ts")).href;
+	const extensionUrl = pathToFileURL(join(import.meta.dirname, "..", "extensions", "jero-ai.ts")).href;
+	const relayUrl = pathToFileURL(join(import.meta.dirname, "..", "lib", "review", "review-host-relay.ts")).href;
 	const terminalSubmission = JSON.stringify({
 		schema: "gentle-ai.review-last-event-closure/v1",
 		operation: "review/capture-result",
@@ -244,7 +244,7 @@ await writeFile(outFile, JSON.stringify({ result, inspectResult, captureBinding,
 }
 
 function runWorker(t, cwd, statuses, mode) {
-	const scratch = realpathSync(mkdtempSync(join(tmpdir(), "gentle-pi-relay-restart-run-")));
+	const scratch = realpathSync(mkdtempSync(join(tmpdir(), "jero-pi-relay-restart-run-")));
 	t.after(() => rmSync(scratch, { recursive: true, force: true }));
 	const statusFile = join(scratch, "statuses.json");
 	const outFile = join(scratch, "out.json");

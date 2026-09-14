@@ -131,7 +131,7 @@ The system MUST ...
 
 Omit empty operation sections only when they would add noise. Do not invent implementation details.
 
-`## RENAMED Requirements` is intentionally unsupported in gentle-pi until `lib/openspec-deltas.ts` implements executable rename semantics. Do not emit RENAMED sections; model renames as explicit ADDED/MODIFIED/REMOVED changes with Reason/Migration notes or block and ask for implementation support.
+`## RENAMED Requirements` is intentionally unsupported in jero-pi until `lib/sdd/openspec-deltas.ts` implements executable rename semantics. Do not emit RENAMED sections; model renames as explicit ADDED/MODIFIED/REMOVED changes with Reason/Migration notes or block and ask for implementation support.
 
 ## MODIFIED Requirements Workflow
 

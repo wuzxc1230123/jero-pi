@@ -1,4 +1,4 @@
-# Apply Progress: migrate gentle-pi to `review-integration/v2`
+# Apply Progress: migrate jero-pi to `review-integration/v2`
 
 **Cumulative state**: Phases 1–5 and 7–14 complete; Phase 6.1 remains historically partial as recorded in `tasks.md` because two mirrored skill assets were deliberately left to their upstream sync. This file merges the original Phase-1 OpenSpec report, cumulative Engram progress through Stage 2/Phase 13, and corrective attempt 11.
 
@@ -27,9 +27,9 @@
 
 | File | Action | Correction |
 |---|---|---|
-| `extensions/gentle-ai.ts` | Modified | Provider manifest adapter, evidence-first orchestration, three production outcome branches, distinct-evidence state, fail-closed diagnostics, and closed wrapper outcome input. |
-| `lib/review-candidate-view.ts` | Modified | Distinguish production provider-hash verification from local hand-built descriptor digest checks. |
-| `lib/review-compact-contract.ts` | Modified | Add exact-key `final_verification_outcome` with the three-value closed domain while retaining the paired boolean compatibility input. |
+| `extensions/jero-ai.ts` | Modified | Provider manifest adapter, evidence-first orchestration, three production outcome branches, distinct-evidence state, fail-closed diagnostics, and closed wrapper outcome input. |
+| `lib/review/review-candidate-view.ts` | Modified | Distinguish production provider-hash verification from local hand-built descriptor digest checks. |
+| `lib/review/review-compact-contract.ts` | Modified | Add exact-key `final_verification_outcome` with the three-value closed domain while retaining the paired boolean compatibility input. |
 | `tests/review-controller-native-routing.test.ts` | Modified | Production caller tests for manifest/hash enforcement, ordering, three branches, fail-closed premature validation, and evidence identity reuse. |
 | `tests/review-controller-native-recovery.test.ts` | Modified | Direct `captureEvidence` boundary test. |
 | `tests/review-compact-contract.test.ts` | Modified | Exact outcome parsing and invalid/ambiguous input tests. |
@@ -68,7 +68,7 @@ The historical failed `verify-report.md` remains untracked and byte-untouched.
 |---|---|
 | Focused tests | 253/253 pass after a confirmed 9-failure RED. |
 | Runtime harness | Exit 0; real `createGentleAiExtension` controller trace proves capture precedes targeted validation. |
-| Rollback boundary | Revert Phase-14 edits in `extensions/gentle-ai.ts`, `lib/review-candidate-view.ts`, `lib/review-compact-contract.ts`, their four test files, and the v2.2.2 spec correction. Earlier v2 migration work remains intact. |
+| Rollback boundary | Revert Phase-14 edits in `extensions/jero-ai.ts`, `lib/review/review-candidate-view.ts`, `lib/review/review-compact-contract.ts`, their four test files, and the v2.2.2 spec correction. Earlier v2 migration work remains intact. |
 
 ## Final Gates
 

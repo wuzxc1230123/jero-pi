@@ -36,9 +36,9 @@ This change originally explored capability-gated parity work and an unrelated ar
 
 | Area | Impact | Description |
 | --- | --- | --- |
-| `extensions/gentle-ai.ts` | Consumer | Relays typed native lifecycle results and consent bindings. |
-| `lib/native-review-cli.ts` | Consumer | Executes the package-local native CLI with exact provider-owned arguments. |
-| `lib/review-host-relay.ts` | Transport | Returns untouched provider-materialized reviewer output through the supplied submission form. |
+| `extensions/jero-ai.ts` | Consumer | Relays typed native lifecycle results and consent bindings. |
+| `lib/native/native-review-cli.ts` | Consumer | Executes the package-local native CLI with exact provider-owned arguments. |
+| `lib/review/review-host-relay.ts` | Transport | Returns untouched provider-materialized reviewer output through the supplied submission form. |
 | `README.md`, `docs/native-authority-architecture.md` | Documentation | Describe ordinary delivery policy and native review ownership. |
 
 ## Success Criteria

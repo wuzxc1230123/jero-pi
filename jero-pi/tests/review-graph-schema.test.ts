@@ -3,7 +3,7 @@ import test from "node:test";
 import {
 	createReviewEventV1,
 	validateReviewEventV1,
-} from "../lib/review-graph-schema.ts";
+} from "../lib/review/review-graph-schema.ts";
 
 const stateHash = "a".repeat(64);
 

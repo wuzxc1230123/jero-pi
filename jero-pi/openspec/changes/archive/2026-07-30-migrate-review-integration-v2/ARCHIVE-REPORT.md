@@ -68,7 +68,7 @@ Three delta specifications were merged into the main specification tree:
 - Field-wise manifest comparison replacing sorted-path-set equality
 - Four scenarios: matching-manifest dispatch, mode/type-change divergence rejection, no-shell dispatch, tree divergence between START and dispatch
 
-**Source**: `/home/gentleman/work/gentle-pi/openspec/changes/migrate-review-integration-v2/specs/review-orchestration/spec.md`
+**Source**: `/home/gentleman/work/jero-pi/openspec/changes/migrate-review-integration-v2/specs/review-orchestration/spec.md`
 
 ### 2. review-transaction/spec.md — MODIFIED Requirement
 
@@ -80,7 +80,7 @@ Three delta specifications were merged into the main specification tree:
 - New scenarios: v2 identity at every call site, half-upgraded install fails hard, loud skip on missing binary
 - Removed scenarios from v1: inlined into v2 specification
 
-**Source**: `/home/gentleman/work/gentle-pi/openspec/changes/migrate-review-integration-v2/specs/review-transaction/spec.md`
+**Source**: `/home/gentleman/work/jero-pi/openspec/changes/migrate-review-integration-v2/specs/review-transaction/spec.md`
 
 ### 3. review-correction-lifecycle/spec.md — NEW Specification
 
@@ -90,7 +90,7 @@ Three delta specifications were merged into the main specification tree:
 - Three requirements: evidence-first capture ordering, closed outcome domain, three terminal branches
 - Five scenarios covering evidence precedence, outside-domain rejection, passed/verification_failed/procedural_tooling_failed outcomes
 
-**Source**: `/home/gentleman/work/gentle-pi/openspec/changes/migrate-review-integration-v2/specs/review-correction-lifecycle/spec.md`
+**Source**: `/home/gentleman/work/jero-pi/openspec/changes/migrate-review-integration-v2/specs/review-correction-lifecycle/spec.md`
 
 ## Archive Contents
 
@@ -145,9 +145,9 @@ Per the maintainer's session preflight:
 
 All merged specs are persisted in the main specification tree:
 
-- `/home/gentleman/work/gentle-pi/openspec/specs/review-orchestration/spec.md` — updated with new requirement
-- `/home/gentleman/work/gentle-pi/openspec/specs/review-transaction/spec.md` — requirement modified with v2.2.2 details
-- `/home/gentleman/work/gentle-pi/openspec/specs/review-correction-lifecycle/spec.md` — NEW file created
+- `/home/gentleman/work/jero-pi/openspec/specs/review-orchestration/spec.md` — updated with new requirement
+- `/home/gentleman/work/jero-pi/openspec/specs/review-transaction/spec.md` — requirement modified with v2.2.2 details
+- `/home/gentleman/work/jero-pi/openspec/specs/review-correction-lifecycle/spec.md` — NEW file created
 
 ## Known Carried-Forward Deviations
 
@@ -185,9 +185,9 @@ Per the verify-report and task tracking, these deliberate deviations remain reco
 ## Summary of Changes by File Category
 
 ### Source Code
-- New: `lib/review-integration-v2.ts` (v2 decoders)
-- Modified: `lib/native-review-cli.ts` (v2 contract, correction lifecycle, new `repair` method)
-- Modified: `lib/review-candidate-view.ts` (v2 manifest binding, field-wise comparison)
+- New: `lib/review/review-integration-v2.ts` (v2 decoders)
+- Modified: `lib/native/native-review-cli.ts` (v2 contract, correction lifecycle, new `repair` method)
+- Modified: `lib/review/review-candidate-view.ts` (v2 manifest binding, field-wise comparison)
 - Deleted: `lib/review-integration-v1.ts`, `runtime/review-integration-v1.mjs`
 - Regenerated: `runtime/*.mjs` (4 modules)
 

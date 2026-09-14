@@ -7,17 +7,17 @@ import { PassThrough } from "node:stream";
 import test from "node:test";
 import { Text, visibleWidth } from "@earendil-works/pi-tui";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { createGentleAiExtension } from "../extensions/gentle-ai.ts";
-import { ChildStandingReviewPermissionClient, ParentStandingReviewPermissionBroker } from "../lib/review-session-standing-permission-ipc.ts";
-import { captureReviewSessionIdentity, grantReviewSessionPermission, hasReviewSessionPermission, revokeReviewSessionPermissionsForSession } from "../lib/review-session-standing-permission.ts";
-import { CandidateViewRegistry } from "../lib/review-candidate-view.ts";
-import { NativeReviewConsentRequiredError, type NativeReviewCli } from "../lib/native-review-cli.ts";
-import { decodeReviewConsentV2, decodeReviewConsentV3, type ReviewConsentEnvelope, type ReviewStatusV3 } from "../lib/review-integration-v2.ts";
+import { createGentleAiExtension } from "../extensions/jero-ai.ts";
+import { ChildStandingReviewPermissionClient, ParentStandingReviewPermissionBroker } from "../lib/review/review-session-standing-permission-ipc.ts";
+import { captureReviewSessionIdentity, grantReviewSessionPermission, hasReviewSessionPermission, revokeReviewSessionPermissionsForSession } from "../lib/review/review-session-standing-permission.ts";
+import { CandidateViewRegistry } from "../lib/review/review-candidate-view.ts";
+import { NativeReviewConsentRequiredError, type NativeReviewCli } from "../lib/native/native-review-cli.ts";
+import { decodeReviewConsentV2, decodeReviewConsentV3, type ReviewConsentEnvelope, type ReviewStatusV3 } from "../lib/review/review-integration-v2.ts";
 import {
 	HOST_REVIEW_SESSION_PERMISSION_LABEL,
 	formatReviewConsentUi,
 	presentReviewConsentUi,
-} from "../lib/review-consent-ui.ts";
+} from "../lib/review/review-consent-ui.ts";
 
 function consentFixture(): Record<string, unknown> {
 	const path = join(process.cwd(), "tests", "fixtures", "devbinary", "consent-v3.captured.json");
@@ -151,7 +151,7 @@ interface RegisteredEvent {
 }
 
 function reviewRepository(t: test.TestContext): string {
-	const cwd = realpathSync(mkdtempSync(join(tmpdir(), "gentle-pi-session-consent-")));
+	const cwd = realpathSync(mkdtempSync(join(tmpdir(), "jero-pi-session-consent-")));
 	t.after(() => {
 		try { execFileSync("chmod", ["-R", "u+w", cwd], { stdio: "ignore" }); } catch { /* best effort */ }
 		rmSync(cwd, { recursive: true, force: true });
@@ -165,7 +165,7 @@ function reviewRepository(t: test.TestContext): string {
 }
 
 function siblingWorktree(t: test.TestContext, parentRoot: string): string {
-	const cwd = realpathSync(mkdtempSync(join(tmpdir(), "gentle-pi-session-consent-worktree-")));
+	const cwd = realpathSync(mkdtempSync(join(tmpdir(), "jero-pi-session-consent-worktree-")));
 	t.after(() => rmSync(cwd, { recursive: true, force: true }));
 	execFileSync("git", ["worktree", "add", "-b", `permission-child-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, cwd, "HEAD"], { cwd: parentRoot, stdio: "ignore" });
 	return cwd;
@@ -409,7 +409,7 @@ test("explicit revocation ends the host grant without changing provider mode or 
 	const ctx = interactiveContext(cwd, manager, async (_title, options) => options[prompts++ === 0 ? 2 : 1]);
 	const start = { operation: "start", input: JSON.stringify({ mode: "ordinary" }) };
 	await runtime.controller.execute("grant-session", start, undefined, undefined, ctx);
-	const command = runtime.commands.get("gentle:review-session-permission");
+	const command = runtime.commands.get("jero:review-session-permission");
 	assert.ok(command);
 	await command!.handler("revoke", ctx);
 	writeFileSync(join(cwd, "app.ts"), "export const value = 3;\n");

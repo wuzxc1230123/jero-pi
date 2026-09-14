@@ -2,7 +2,7 @@
 
 ## Technical Approach
 
-Split always-on `assets/orchestrator.md` into a thin core plus three path-substituted lazy reference files, reusing the proven `{{...PATH}}` + single-cache pattern already used for `{{GENTLE_PI_SDD_WORKFLOW_PATH}}` in `getOrchestratorPrompt` (`extensions/gentle-ai.ts:123-133`). Core keeps only every-turn load-bearing rules as terse summaries + pointers; each split section moves **verbatim** into its lazy file so nothing normative is lost. Drift is locked by two Node `node:test` suites under `pnpm test`: a byte-budget test and a frozen-fixture union test. Maps to proposal capability `orchestrator-prompt-budget`.
+Split always-on `assets/orchestrator.md` into a thin core plus three path-substituted lazy reference files, reusing the proven `{{...PATH}}` + single-cache pattern already used for `{{GENTLE_PI_SDD_WORKFLOW_PATH}}` in `getOrchestratorPrompt` (`extensions/jero-ai.ts:123-133`). Core keeps only every-turn load-bearing rules as terse summaries + pointers; each split section moves **verbatim** into its lazy file so nothing normative is lost. Drift is locked by two Node `node:test` suites under `pnpm test`: a byte-budget test and a frozen-fixture union test. Maps to proposal capability `orchestrator-prompt-budget`.
 
 ## Inventory (measured, wc -c)
 
@@ -22,7 +22,7 @@ Method: `awk 'NR>=a && NR<=b' assets/orchestrator.md | wc -c` per section line-r
 | Skill Registry Protocol (245-267) | 1,628 | Split | core 720 (condensed resolve-once + pointer, drafted + measured) / skills.md verbatim; see Appendix |
 | Intent-Driven Skill Discovery (268-290) | 1,498 | Split | core 350 (pointer only, drafted + measured) / skills.md verbatim; see Appendix |
 | Safety (291-297) | 286 | Core (full) | core |
-| 4R Review Triggers (298-312) | 1,386 | Split | core ~825 (condensed gate semantics + 4 lens names + pointer, drafted + measured — see Appendix); content owned by port-review-ledger-contract / delegation.md verbatim (full rationale, `lib/review-triggers.ts` detail) |
+| 4R Review Triggers (298-312) | 1,386 | Split | core ~825 (condensed gate semantics + 4 lens names + pointer, drafted + measured — see Appendix); content owned by port-review-ledger-contract / delegation.md verbatim (full rationale, `lib/review/review-triggers.ts` detail) |
 | **Total** | **22,626** | | |
 
 ### Reserved: incoming Review Execution Contract (JD-004)
@@ -194,11 +194,11 @@ For skill-shaped requests, do not treat injected `<available_skills>` as complet
 ```text
 ## 4R Review Triggers
 
-`extensions/gentle-ai.ts` MUST NOT gate, authorize, rederive, or validate Bash delivery commands that look like git/gh workflow events. Commit, push, pull-request, release, and archive follow ordinary repository policy; review and Judgment Day evidence remain review-only.
+`extensions/jero-ai.ts` MUST NOT gate, authorize, rederive, or validate Bash delivery commands that look like git/gh workflow events. Commit, push, pull-request, release, and archive follow ordinary repository policy; review and Judgment Day evidence remain review-only.
 
 **Superseded historical trigger model:** earlier prompt text treated **pre-commit**/**pre-push** as advisory review prompts, **pre-pr** (`gh pr create`) as a strong gate for hot globs or large diffs, and **post-sdd-phase** as a Judgment Day gate. It also directed `4r-review` or `review-risk`, `review-reliability`, `review-resilience`, and `review-readability` before retrying. That Pi-side Bash delivery-gating model is obsolete and must not be restored.
 
-Current review instructions are runtime-owned; Pi does not infer a delivery route from a Bash command. Full historical rationale and `lib/review-triggers.ts` detail: `{{GENTLE_PI_DELEGATION_PATH}}`.
+Current review instructions are runtime-owned; Pi does not infer a delivery route from a Bash command. Full historical rationale and `lib/review/review-triggers.ts` detail: `{{GENTLE_PI_DELEGATION_PATH}}`.
 ```
 
 The four lens names required by the JD-007 core-alone assertion (`review-risk`, `review-reliability`, `review-resilience`, `review-readability`) are retained verbatim in the superseded historical trigger paragraph.
@@ -237,26 +237,26 @@ Bounded from `port-review-ledger-contract/design.md`'s "Ledger persistence branc
 | `assets/orchestrator-delegation.md` | Create | routing/delegation/review/language detail (verbatim) |
 | `assets/orchestrator-memory.md` | Create | memory phase table + keys + lifecycle (verbatim) |
 | `assets/orchestrator-skills.md` | Create | skill registry + intent discovery (verbatim) |
-| `extensions/gentle-ai.ts` (:119-133) | Modify | 3 path getters + 3 substitutions in cache block; add `getOrchestratorPrompt` to the `__testing` export object (:2125-2136); add a `GENTLE_PI_TEST_ASSETS_DIR` env-var override at the `ASSETS_DIR` definition (:52) so tests can stub short fixture paths (JD-005 test seam) |
+| `extensions/jero-ai.ts` (:119-133) | Modify | 3 path getters + 3 substitutions in cache block; add `getOrchestratorPrompt` to the `__testing` export object (:2125-2136); add a `GENTLE_PI_TEST_ASSETS_DIR` env-var override at the `ASSETS_DIR` definition (:52) so tests can stub short fixture paths (JD-005 test seam) |
 | `tests/orchestrator-budget.test.ts` | Create | byte-budget + frozen-fixture union tests |
 | `tests/fixtures/orchestrator.pre-diet.md` | Create | frozen post-dedup baseline |
-| `tests/gentle-ai.test.ts` (:40) | Modify | review-lens assertion reads core + delegation ref (union) |
+| `tests/jero-ai.test.ts` (:40) | Modify | review-lens assertion reads core + delegation ref (union) |
 
 ## Interfaces / Contracts
 
-Pointer wording per moved section is the literal closing sentence of each drafted block in "## Appendix: drafted core texts (measured)" (not restated here, to avoid two drifting copies of the same sentence — the Core Budget table above holds only byte counts and basis notes, not the text itself). Each pointer names its lazy path placeholder (`{{GENTLE_PI_DELEGATION_PATH}}`, `{{GENTLE_PI_MEMORY_PATH}}`, `{{GENTLE_PI_SKILLS_PATH}}`) and, for Delegation/Work Routing/4R, the concrete content that moved (table, examples, cost/context balance, canonical workflows, Review Lens Selection detail, `lib/review-triggers.ts` detail). Mirrors the SDD pointer pattern at :196-202.
+Pointer wording per moved section is the literal closing sentence of each drafted block in "## Appendix: drafted core texts (measured)" (not restated here, to avoid two drifting copies of the same sentence — the Core Budget table above holds only byte counts and basis notes, not the text itself). Each pointer names its lazy path placeholder (`{{GENTLE_PI_DELEGATION_PATH}}`, `{{GENTLE_PI_MEMORY_PATH}}`, `{{GENTLE_PI_SKILLS_PATH}}`) and, for Delegation/Work Routing/4R, the concrete content that moved (table, examples, cost/context balance, canonical workflows, Review Lens Selection detail, `lib/review/review-triggers.ts` detail). Mirrors the SDD pointer pattern at :196-202.
 
-**Test seam (JD-005)**: `getOrchestratorPrompt` (`extensions/gentle-ai.ts:123-133`) is added to the existing `__testing` export object (`extensions/gentle-ai.ts:2125-2136`), so `tests/orchestrator-budget.test.ts` can call it directly instead of re-implementing the read+substitute+cache logic. `ASSETS_DIR` (`extensions/gentle-ai.ts:52`, currently `join(PACKAGE_ROOT, "assets")` with no override) gains a `GENTLE_PI_TEST_ASSETS_DIR` environment-variable override, read once at the same call site: `const ASSETS_DIR = process.env.GENTLE_PI_TEST_ASSETS_DIR ?? join(PACKAGE_ROOT, "assets");`. The byte-budget test sets `process.env.GENTLE_PI_TEST_ASSETS_DIR` to a short fixture directory containing minimal stand-in `orchestrator.md` + 3 lazy files before importing/calling `__testing.getOrchestratorPrompt()`, so the budget assertion measures the RETURN value against realistic-length substituted paths without depending on the real repo path length. Because `orchestratorPromptCache` is a module-level singleton (first read wins for the process lifetime, per `persona-single-channel/design.md`'s Testing Strategy note), the env override MUST be set before the first call in a given test process, or the test must run in a fresh process/module instance per fixture.
+**Test seam (JD-005)**: `getOrchestratorPrompt` (`extensions/jero-ai.ts:123-133`) is added to the existing `__testing` export object (`extensions/jero-ai.ts:2125-2136`), so `tests/orchestrator-budget.test.ts` can call it directly instead of re-implementing the read+substitute+cache logic. `ASSETS_DIR` (`extensions/jero-ai.ts:52`, currently `join(PACKAGE_ROOT, "assets")` with no override) gains a `GENTLE_PI_TEST_ASSETS_DIR` environment-variable override, read once at the same call site: `const ASSETS_DIR = process.env.GENTLE_PI_TEST_ASSETS_DIR ?? join(PACKAGE_ROOT, "assets");`. The byte-budget test sets `process.env.GENTLE_PI_TEST_ASSETS_DIR` to a short fixture directory containing minimal stand-in `orchestrator.md` + 3 lazy files before importing/calling `__testing.getOrchestratorPrompt()`, so the budget assertion measures the RETURN value against realistic-length substituted paths without depending on the real repo path length. Because `orchestratorPromptCache` is a module-level singleton (first read wins for the process lifetime, per `persona-single-channel/design.md`'s Testing Strategy note), the env override MUST be set before the first call in a given test process, or the test must run in a fresh process/module instance per fixture.
 
 ## Testing Strategy (strict TDD, `pnpm test`)
 
 | Layer | What | Approach |
 |---|---|---|
-| Unit | Byte budget (JD-005) | Budget applies to `getOrchestratorPrompt()`'s RETURN value, not the raw file — the raw file still has unresolved `{{...PATH}}` placeholders, and substituted paths add real bytes. Test seam: `getOrchestratorPrompt` is exported via `__testing` (`extensions/gentle-ai.ts:2125-2136`); set `process.env.GENTLE_PI_TEST_ASSETS_DIR` to a short fixture dir before the first call so `ASSETS_DIR` (`:52`) resolves the three new placeholders to short fixture paths (module cache is first-read-wins, so set the env var before any call in the test process). Then `assert.ok(Buffer.byteLength(__testing.getOrchestratorPrompt(), "utf8") <= 10240)` — RED before split |
+| Unit | Byte budget (JD-005) | Budget applies to `getOrchestratorPrompt()`'s RETURN value, not the raw file — the raw file still has unresolved `{{...PATH}}` placeholders, and substituted paths add real bytes. Test seam: `getOrchestratorPrompt` is exported via `__testing` (`extensions/jero-ai.ts:2125-2136`); set `process.env.GENTLE_PI_TEST_ASSETS_DIR` to a short fixture dir before the first call so `ASSETS_DIR` (`:52`) resolves the three new placeholders to short fixture paths (module cache is first-read-wins, so set the env var before any call in the test process). Then `assert.ok(Buffer.byteLength(__testing.getOrchestratorPrompt(), "utf8") <= 10240)` — RED before split |
 | Unit | Union (nothing lost) | freeze `tests/fixtures/orchestrator.pre-diet.md`; extract normative lines (non-blank, trimmed, skip pure ``` fences/`|---|` separators); `union = core + 3 lazy`; per-line `assert.ok(union.includes(line), \`normative line lost: ${line}\`)` — loud per-rule failure |
 | Unit | Core-alone load-bearing assertions (JD-007) | In ADDITION to the union sweep (which only proves nothing is fully lost, not core-summary quality): assert load-bearing tokens — "4-file rule", "400 changed lines", the 6 named Mandatory Delegation Trigger labels, and the 4 lens names (`review-risk`, `review-reliability`, `review-resilience`, `review-readability`) — are present in CORE ALONE (core string, no lazy union). Adopt disposition-mapped per-rule assertions (persona-single-channel's pattern): each frozen normative line asserts against its OWN documented disposition (`CORE_VERBATIM` / `LAZY_VERBATIM` / `CORE_SUMMARIZED_INTO`) instead of one blanket union-includes sweep |
 | Unit | Substitution/cache | render `getOrchestratorPrompt()`; `assert.doesNotMatch(rendered, /\{\{/)`; call twice → same reference (cache) |
-| Regression | `tests/gentle-ai.test.ts:40` (JD-006) | `:40` iterates 3 files (README, `orchestrator.md`, gentle-ai `SKILL.md`) in a uniform loop; ONLY the `orchestrator.md` iteration is repointed to read core + the referenced delegation ref (union) — the README and gentle-ai `SKILL.md` iterations are unchanged. Assert the four `review-*` names + `Review Lens Selection|review lens` appear in the `orchestrator.md` union, keep the forbidden-generic-route checks |
+| Regression | `tests/jero-ai.test.ts:40` (JD-006) | `:40` iterates 3 files (README, `orchestrator.md`, gentle-ai `SKILL.md`) in a uniform loop; ONLY the `orchestrator.md` iteration is repointed to read core + the referenced delegation ref (union) — the README and gentle-ai `SKILL.md` iterations are unchanged. Assert the four `review-*` names + `Review Lens Selection|review lens` appear in the `orchestrator.md` union, keep the forbidden-generic-route checks |
 
 RED→GREEN order: (1) freeze fixture, (2) add budget+union+core-alone tests RED, (3) extract sections verbatim to lazy + slim core + wire placeholders GREEN, (4) repoint the `orchestrator.md` entry of `:40`.
 
@@ -273,7 +273,7 @@ This three-way order is corroborated independently by `port-review-ledger-contra
 
 ## Open Questions
 
-- [x] Does `port-review-ledger-contract` keep the four lens names in core or move them fully to lazy? ANSWERED by `port-review-ledger-contract/design.md:211-219`: the four `review-*` lens names STAY in the orchestrator core summary (its `tests/gentle-ai.test.ts:40` union assertion depends on their presence there). This design's 4R core row (825 B) and Delegation core row (1,468 B) both carry the four names accordingly (see Appendix).
+- [x] Does `port-review-ledger-contract` keep the four lens names in core or move them fully to lazy? ANSWERED by `port-review-ledger-contract/design.md:211-219`: the four `review-*` lens names STAY in the orchestrator core summary (its `tests/jero-ai.test.ts:40` union assertion depends on their presence there). This design's 4R core row (825 B) and Delegation core row (1,468 B) both carry the four names accordingly (see Appendix).
 - [ ] Confirm final core total after both dependencies actually land (target: within ~295 B headroom of the revised 10,240 B threshold, measured against the 9,945 B drafted-and-measured total in "Core budget rebuilt from measured drafts" — re-verify with `wc -c` per the Reserved-row hard commitment above).
 
 

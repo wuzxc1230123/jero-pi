@@ -4,7 +4,7 @@
 
 ## Recovery boundary and authority
 
-- Consumed status: OpenSpec artifact store; change `consolidate-review-parity-runtime`; allowed root `/home/gentleman/work/gentle-pi`; strict TDD configuration uses `pnpm test`; delivery exception is `exception-ok` / `size-exception`.
+- Consumed status: OpenSpec artifact store; change `consolidate-review-parity-runtime`; allowed root `/home/gentleman/work/jero-pi`; strict TDD configuration uses `pnpm test`; delivery exception is `exception-ok` / `size-exception`.
 - Before reconstruction, SHA-256 values for every changed or untracked non-OpenSpec path were saved in `recovery-non-openspec-before.sha256`.
 - This recovery edits only OpenSpec provenance/state artifacts. It does **not** implement B2, edit product/test/package files, or mutate `.git/gentle-ai/**` authority.
 - There is no current review lineage or receipt for this candidate. Existing native authority is not interpreted, altered, reconstructed, or reconciled by this recovery.
@@ -110,8 +110,8 @@ B2 is the next ordered work-unit slice. Final verification, 4R review, lifecycle
 
 ### B2 files changed
 
-- `extensions/gentle-ai.ts`
-- `lib/review-candidate-view.ts`
+- `extensions/jero-ai.ts`
+- `lib/review/review-candidate-view.ts`
 - `tests/review-controller-native-routing.test.ts`
 - `tests/review-controller.test.ts`
 - `openspec/changes/consolidate-review-parity-runtime/tasks.md`
@@ -139,7 +139,7 @@ B2 is the next ordered work-unit slice. Final verification, 4R review, lifecycle
 All B2 checkboxes are persisted `[x]`. The remaining unchecked implementation-owned tasks are the four **Final verification and delivery gates** rows in `tasks.md`; they are intentionally out of scope for this B2-only apply. No final review, lifecycle delivery, commit, push, PR, merge, or release was performed.
 
 - Workload / PR boundary: assigned B2 slice only under the pre-recorded `exception-ok` / `size-exception`; no delivery action was taken.
-- Structured status consumed: native OpenSpec status reported `applyState: ready`, `nextRecommended: apply`, repo-local `/home/gentleman/work/gentle-pi`, with that root in `allowedEditRoots`. No action-context warnings.
+- Structured status consumed: native OpenSpec status reported `applyState: ready`, `nextRecommended: apply`, repo-local `/home/gentleman/work/jero-pi`, with that root in `allowedEditRoots`. No action-context warnings.
 - CodeGraph fallback: `.codegraph/` existed, but the session exposed no CodeGraph MCP server (only an uninitialized non-CodeGraph MCP); targeted filesystem reads were used after that unavailable-tool fallback.
 
 ## Final verification and delivery gates — pre-review RED/GREEN — complete
@@ -149,10 +149,10 @@ All B2 checkboxes are persisted `[x]`. The remaining unchecked implementation-ow
 ### Environment and runtime identity
 
 - Date: 2026-07-13
-- Repository: `/home/gentleman/work/gentle-pi`
+- Repository: `/home/gentleman/work/jero-pi`
 - Node.js: `v24.18.0`; pnpm: `11.1.1`; platform: `linux/x64`
-- Verified runtime: `/home/gentleman/work/gentle-pi/.gentle-ai/v2.1.2/gentle-ai`; `gentle-ai 2.1.2`
-- The focused parity fixture used the verified absolute package-local binary and reported its disposable linked view/artifacts under `/tmp/gentle-pi-v212-parity-*`; it did not use an ambient/global binary.
+- Verified runtime: `/home/gentleman/work/jero-pi/.gentle-ai/v2.1.2/gentle-ai`; `gentle-ai 2.1.2`
+- The focused parity fixture used the verified absolute package-local binary and reported its disposable linked view/artifacts under `/tmp/jero-pi-v212-parity-*`; it did not use an ambient/global binary.
 
 ### RED evidence
 
@@ -183,7 +183,7 @@ All required commands exited zero:
 | `node scripts/verify-package-files.mjs` | Passed; package resource check: 54 files |
 | `pnpm test` | Passed: 694 tests, 0 failures; then runtime harness passed |
 | `git diff --check` | Passed; no whitespace errors |
-| `pnpm pack --dry-run` | Passed; package dry-run listed `gentle-pi-1.0.2.tgz` as its prospective artifact only |
+| `pnpm pack --dry-run` | Passed; package dry-run listed `jero-pi-1.0.2.tgz` as its prospective artifact only |
 
 The pre- and post-dry-run checks `find . -maxdepth 1 -type f -name '*.tgz' -printf '%f\\n'` were empty: no tarball was created. `pnpm pack --dry-run` also exercised the package `prepack` convention (`pnpm test && node scripts/verify-package-files.mjs`) successfully.
 
@@ -217,7 +217,7 @@ No issue was closed, commented on, or otherwise mutated. Upstream tracker dispos
 - Left Final verification **TRIANGULATE** and **REFACTOR** `[ ]`.
 - Updated `state.yaml` to `apply: ready-review`; `verify` remains `blocked-pending-review`.
 - Workload / PR boundary: pre-approved `exception-ok` / `size-exception`; this was verification-only and made no delivery action.
-- Structured status consumed: authoritative OpenSpec status reported `applyState: ready`, `nextRecommended: apply`, repo-local workspace `/home/gentleman/work/gentle-pi`, allowed edit root `/home/gentleman/work/gentle-pi`, and no action-context warnings.
+- Structured status consumed: authoritative OpenSpec status reported `applyState: ready`, `nextRecommended: apply`, repo-local workspace `/home/gentleman/work/jero-pi`, allowed edit root `/home/gentleman/work/jero-pi`, and no action-context warnings.
 
 ### Remaining tasks and boundary
 
@@ -229,7 +229,7 @@ No issue was closed, commented on, or otherwise mutated. Upstream tracker dispos
 - Consumed authoritative OpenSpec state: change `consolidate-review-parity-runtime`, `artifact_store: openspec`, `status: apply-ready-c1`, and `next_recommended: apply`. Strict TDD is active; configured runner is `pnpm test`.
 - Delivery boundary consumed: C1 only under the recorded `exception-ok` / `size-exception`. No final 4R review, independent SDD verification, lifecycle validation, commit, push, PR, or release was started.
 - Required apply artifact `openspec/changes/consolidate-review-parity-runtime/spec.md` is absent (`ENOENT`). The artifact directory contains no replacement spec file. Per the apply dependency contract, implementation and RED test edits did not begin.
-- Action context was not supplied as structured status. Produced safety status: authoritative workspace `/home/gentleman/work/gentle-pi`; no additional allowed edit roots were established; no edits were made outside the workspace. The missing required spec is the blocking reason.
+- Action context was not supplied as structured status. Produced safety status: authoritative workspace `/home/gentleman/work/jero-pi`; no additional allowed edit roots were established; no edits were made outside the workspace. The missing required spec is the blocking reason.
 - Existing `state.yaml` already requires `/reload` before review; because C1 is incomplete, that downstream boundary remains unchanged.
 
 ### C1 TDD Cycle Evidence
@@ -269,9 +269,9 @@ The preceding “blocked before RED” note is **superseded provenance only**: n
 ### Remaining tasks and boundary
 
 - `- [ ] Complete the matrix for \`created\`, \`resumed\`, \`reuse-receipt\`, and \`blocked-scope-action\`, including valid \`lenses_required: true/false\`, zero dispatch for false/reuse/blocked, no duplicate budget, and exact retry after ambiguous output.`
-- `- [ ] Run Pi \`/reload\`, then prove the current session reloads \`extensions/gentle-ai.ts\` and uses the v2.1.3 adapter/runtime identity. A pre-reload review is invalid.`
+- `- [ ] Run Pi \`/reload\`, then prove the current session reloads \`extensions/jero-ai.ts\` and uses the v2.1.3 adapter/runtime identity. A pre-reload review is invalid.`
 
-Workload / PR boundary: C1 only under the recorded `exception-ok` / `size-exception`; no commit, push, review, or delivery action was performed. Structured status consumed: authoritative OpenSpec `applyState: ready`, `nextRecommended: apply`, workspace and allowed edit root `/home/gentleman/work/gentle-pi`; no action-context warning.
+Workload / PR boundary: C1 only under the recorded `exception-ok` / `size-exception`; no commit, push, review, or delivery action was performed. Structured status consumed: authoritative OpenSpec `applyState: ready`, `nextRecommended: apply`, workspace and allowed edit root `/home/gentleman/work/jero-pi`; no action-context warning.
 
 ## C1 action/lenses-required triangulation and post-reload proof (2026-07-13)
 
@@ -300,12 +300,12 @@ Workload / PR boundary: C1 only under the recorded `exception-ok` / `size-except
   - `- [ ] Run independent SDD verification against the spec and completed task evidence.`
   - `- [ ] Validate the approved content-bound receipt at pre-commit, pre-push, pre-PR, and release gates; only then authorize delivery.`
 - Workload / PR boundary: C1 only under the pre-recorded `exception-ok` / `size-exception`. No review, commit, push, PR, release, or lifecycle action was performed.
-- Structured status consumed: authoritative OpenSpec status (`applyState: ready`, `nextRecommended: apply`), repo-local workspace `/home/gentleman/work/gentle-pi`, allowed edit root `/home/gentleman/work/gentle-pi`; no action-context warning.
+- Structured status consumed: authoritative OpenSpec status (`applyState: ready`, `nextRecommended: apply`), repo-local workspace `/home/gentleman/work/jero-pi`, allowed edit root `/home/gentleman/work/jero-pi`; no action-context warning.
 
 ## C2 applicability-aware native START — partial implementation (2026-07-13)
 
 - Added a strict-TDD regression in `tests/review-controller-native-routing.test.ts` before changing production routing. It proved the old presence-based block: an unrelated compact claimant prevented native START.
-- GREEN: `extensions/gentle-ai.ts` now classifies readable compact lineages against the live frozen candidate binding (base tree, candidate trees, genesis paths, intended untracked scope). Unrelated valid history reaches the v2.1.3 native START; one matching claimant returns `compact-authority-applicable` and routes `use-compatible-read-or-gate-route` without invoking native START; multiple matching claimants and unreadable/corrupt authority fail closed with distinct diagnostics.
+- GREEN: `extensions/jero-ai.ts` now classifies readable compact lineages against the live frozen candidate binding (base tree, candidate trees, genesis paths, intended untracked scope). Unrelated valid history reaches the v2.1.3 native START; one matching claimant returns `compact-authority-applicable` and routes `use-compatible-read-or-gate-route` without invoking native START; multiple matching claimants and unreadable/corrupt authority fail closed with distinct diagnostics.
 - No authority, receipt, reset journal, or historical lineage was mutated. The incident RESET remains recorded as rejected before mutation and was not retried.
 - This is **not C2 completion**: the required controlled seven-lineage approved/escalated/correction-required fixture, explicit matching nonterminal/invalid coverage, centralized INSPECT/reset/gate reuse, and post-extension `/reload` proof remain outstanding. C2 task checkboxes and `state.yaml` are intentionally unchanged.
 
@@ -340,7 +340,7 @@ Workload / PR boundary: C1 only under the recorded `exception-ok` / `size-except
 - `- [ ] If the extension/controller or native adapter changes, run Pi /reload and prove post-reload v2.1.3 identity and C2 routing; pre-reload evidence is invalid.`
 
 - Workload / PR boundary: pre-approved `exception-ok` / `size-exception`; no review/reset/recover/supersede/commit/push was started.
-- Structured status consumed: authoritative OpenSpec status reported `applyState: ready`, `nextRecommended: apply`, repo-local workspace `/home/gentleman/work/gentle-pi`, allowed edit root `/home/gentleman/work/gentle-pi`, no action-context warnings.
+- Structured status consumed: authoritative OpenSpec status reported `applyState: ready`, `nextRecommended: apply`, repo-local workspace `/home/gentleman/work/jero-pi`, allowed edit root `/home/gentleman/work/jero-pi`, no action-context warnings.
 
 ## C2 correction follow-up — nonterminal compact authority closure (2026-07-13)
 
@@ -369,12 +369,12 @@ Workload / PR boundary: C1 only under the recorded `exception-ok` / `size-except
 - Shared classifier adoption for INSPECT, RESET eligibility, and compatible gate routing.
 - C2 post-extension `/reload` identity/routing proof.
 
-No review, reset, recover, supersede, commit, push, PR, or delivery action was run. Workload boundary remains `exception-ok` / `size-exception`; authoritative OpenSpec state remains `ready-c2-correction`, workspace `/home/gentleman/work/gentle-pi`.
+No review, reset, recover, supersede, commit, push, PR, or delivery action was run. Workload boundary remains `exception-ok` / `size-exception`; authoritative OpenSpec state remains `ready-c2-correction`, workspace `/home/gentleman/work/jero-pi`.
 
 ## C2 applicability matrix completion — ready for reload (2026-07-13)
 
 - **RED:** Added the controlled C2 matrix to `tests/review-controller-native-routing.test.ts`. Before the implementation, the seven-lineage INSPECT diagnostic was absent and identity-broken authority could fall through to native START. The focused test failed with those exact assertions.
-- **GREEN:** Centralized compact applicability classification in `extensions/gentle-ai.ts`. It distinguishes `unrelated-history`, `compatible-receipt`, `nonterminal`, `escalated`, `ambiguous`, and `invalid`; START and native INSPECT use it. Valid unrelated history reaches native START, a valid exact approved receipt uses the compatible read/gate route, and every unsafe/incomplete condition fails closed before native START.
+- **GREEN:** Centralized compact applicability classification in `extensions/jero-ai.ts`. It distinguishes `unrelated-history`, `compatible-receipt`, `nonterminal`, `escalated`, `ambiguous`, and `invalid`; START and native INSPECT use it. Valid unrelated history reaches native START, a valid exact approved receipt uses the compatible read/gate route, and every unsafe/incomplete condition fails closed before native START.
 - **TRIANGULATE:** The disposable fixture creates five approved lineages, one escalated lineage, and one `correction_required` lineage, all unrelated to the live target. It proves exactly one native START, snapshots every fixture authority state/receipt byte before and after, and covers exact matching approved, escalated, correction-required, ambiguous, corrupt, missing, malformed, mismatched-receipt, and identity-broken cases. Existing controller coverage confirms valid compact terminal authority remains non-resettable.
 - **REFACTOR:** INSPECT reports the Pi-local applicability diagnostic without claiming a native claimant inventory. RESET eligibility remains unchanged: valid historical compact authority is not reset-eligible; only existing invalid-authority paths retain their explicit reset protocol.
 
@@ -465,7 +465,7 @@ No review, reset, recover, supersede, commit, push, PR, or delivery action was r
 - Remaining implementation-owned task: `- [ ] Only after fresh 4R completion, run independent SDD verification and lifecycle receipt validation.`
 - No implementation, test, package metadata, Git authority, review/finalize/validate, staging, commit, push, PR, or lifecycle operation was performed by this synchronization.
 - Workload / PR boundary: approved single-PR unlimited size exception (`exception-ok`).
-- Structured status consumed: authoritative OpenSpec workspace `/home/gentleman/work/gentle-pi`; change root is within the allowed edit root. Prior persisted state was `ready-reload` / `verify: blocked-pending-c4-reload`; its dispatcher routing is stale after these checkbox updates. The next dependency boundary is independent SDD verification; lifecycle receipt validation remains part of task 75 and must not be reported complete.
+- Structured status consumed: authoritative OpenSpec workspace `/home/gentleman/work/jero-pi`; change root is within the allowed edit root. Prior persisted state was `ready-reload` / `verify: blocked-pending-c4-reload`; its dispatcher routing is stale after these checkbox updates. The next dependency boundary is independent SDD verification; lifecycle receipt validation remains part of task 75 and must not be reported complete.
 
 ## Task-graph correction (2026-07-13)
 
@@ -504,7 +504,7 @@ No review, reset, recover, supersede, commit, push, PR, or delivery action was r
 
 > This entry is added at archive time (2026-08-01) to close the provenance gap between the last apply-progress entry above (ending at `next_recommended: verify-after-content-bound-review`, lineage `review-ca0c5ee1e22c737c`) and the approved post-correction binding independently confirmed in `verify-report.md`. No implementation, test, or authority mutation is performed by this note; it records already-completed work for traceability.
 
-- The mandatory high-risk 4R final review ran on fresh lineage `review-fc8372e5c81b2074` after the v2.1.4 pin migration above. Initial lenses raised findings later resolved as `RELIABILITY-001`, `RESILIENCE-001`, and `RESILIENCE-002`; one bounded correction of 137/200 lines across six files (`lib/native-review-cli.ts`, `lib/review-candidate-view.ts`, `scripts/gentle-ai-installer.mjs`, `tests/gentle-ai-installer.test.ts`, `tests/native-review-cli.test.ts`, `tests/review-candidate-view.test.ts`) closed them.
+- The mandatory high-risk 4R final review ran on fresh lineage `review-fc8372e5c81b2074` after the v2.1.4 pin migration above. Initial lenses raised findings later resolved as `RELIABILITY-001`, `RESILIENCE-001`, and `RESILIENCE-002`; one bounded correction of 137/200 lines across six files (`lib/native/native-review-cli.ts`, `lib/review/review-candidate-view.ts`, `scripts/gentle-ai-installer.mjs`, `tests/gentle-ai-installer.test.ts`, `tests/native-review-cli.test.ts`, `tests/review-candidate-view.test.ts`) closed them.
 - The lineage reached `approved`. Authority revision `sha256:6689109d1a1092ae079eba2c48616c0b9074d005e81ce1240da6bdd0229d5274`; receipt hash `sha256:039f2029cf408e4b93d0c952475b7e6ababbb2d2b7279287122346c1604e5a15`; SDD binding revision `sha256:13abb2a1b7524b54ed116de9bdf2c47c47254d02cd7ab85f68ddf1ac5f995057`; final candidate/index tree `1ea94a5b512a447871769e265924fbfd8f1e789c`.
 - Independent SDD verification then ran and passed: 12/12 requirements, 27/27 scenarios, 17/17 tasks complete, zero CRITICAL findings, zero blockers. Full `pnpm test` reported 729/729 passing, followed by the runtime harness. See `verify-report.md` for the complete record.
 - This is the authoritative post-correction binding. `state.yaml`'s `synchronization.final_bounded_migration` (lineage `review-ca0c5ee1e22c737c`) predates this correction and is marked `superseded` in `state.yaml`; the authoritative binding is recorded under `synchronization.authoritative_post_correction_binding` (lineage `review-fc8372e5c81b2074`).

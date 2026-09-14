@@ -18,7 +18,7 @@ import { fileURLToPath } from "node:url";
 
 export const GENTLE_AI_BINARY_MISSING_CODE = "package-local-binary-missing";
 export const GENTLE_AI_INSTALL_RECOVERY_COMMAND = "node scripts/install-gentle-ai.mjs";
-export const GENTLE_AI_INSTALL_RECOVERY_INSTRUCTIONS = `If GENTLE_PI_SKIP_GENTLE_AI_INSTALL is set, remove or unset it before changing to the installed gentle-pi package directory and running \`${GENTLE_AI_INSTALL_RECOVERY_COMMAND}\`.`;
+export const GENTLE_AI_INSTALL_RECOVERY_INSTRUCTIONS = `If GENTLE_PI_SKIP_GENTLE_AI_INSTALL is set, remove or unset it before changing to the installed jero-pi package directory and running \`${GENTLE_AI_INSTALL_RECOVERY_COMMAND}\`.`;
 // Derived from the one authoritative pinned version in
 // scripts/gentle-ai-installer.mjs rather than repeating the literal here, so
 // the two can never independently drift apart the way they once did.
@@ -35,7 +35,7 @@ export class PackageLocalGentleAiBinaryMissingError extends Error {
 }
 
 export function gentleAiBinaryPath(
-	packageRoot = dirname(dirname(fileURLToPath(import.meta.url))),
+	packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url)))),
 	platform = process.platform,
 )         {
 	return join(
@@ -57,7 +57,7 @@ function sha256(value        )         {
 //   1. GENTLE_PI_GENTLE_AI_DEV_BINARY (session override, absolute path), then
 //   2. the persistent registration file at
 //      <GENTLE_PI_CONFIG_HOME|~/.pi/gentle-ai>/dev-binary.json with the strict
-//      shape {"schema":"gentle-pi.dev-binary/v1","path":"<absolute path>"}.
+//      shape {"schema":"jero-pi.dev-binary/v1","path":"<absolute path>"}.
 //
 // The registration deliberately pins no digest: it is the unpinned field-test
 // mode, and the binary at that path changes on every rebuild. Every resolution
@@ -74,7 +74,7 @@ function sha256(value        )         {
 // ---------------------------------------------------------------------------
 
 export const GENTLE_AI_DEV_BINARY_ENV = "GENTLE_PI_GENTLE_AI_DEV_BINARY";
-export const GENTLE_AI_DEV_BINARY_REGISTRATION_SCHEMA = "gentle-pi.dev-binary/v1";
+export const GENTLE_AI_DEV_BINARY_REGISTRATION_SCHEMA = "jero-pi.dev-binary/v1";
 export const GENTLE_AI_DEV_BINARY_OVERRIDE_INVALID_CODE = "dev-binary-override-invalid";
 
 
@@ -270,7 +270,7 @@ function sameFile(before                              , after                   
 }
 
 export function resolveGentleAiBinary(
-	packageRoot = dirname(dirname(fileURLToPath(import.meta.url))),
+	packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url)))),
 	platform = process.platform,
 	readBinary                           = readFileSync,
 	environment                               = ambientDevBinaryEnvironment(),

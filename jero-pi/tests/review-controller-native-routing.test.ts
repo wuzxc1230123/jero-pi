@@ -8,10 +8,10 @@ import { syncBuiltinESMExports } from "node:module";
 import { dirname, join, resolve, sep } from "node:path";
 import test from "node:test";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { __testing, createGentleAiExtension, PendingReviewConsentRegistry } from "../extensions/gentle-ai.ts";
-import { CandidateViewRegistry } from "../lib/review-candidate-view.ts";
-import { NATIVE_REVIEW_ERROR_CODE, NativeReviewCliError, NativeReviewConsentRequiredError, type NativeReviewCli } from "../lib/native-review-cli.ts";
-import { decodeReviewConsentV3, decodeReviewStatusV3, type ReviewCollectInputV3, type ReviewStatusV3 } from "../lib/review-integration-v2.ts";
+import { __testing, createGentleAiExtension, PendingReviewConsentRegistry } from "../extensions/jero-ai.ts";
+import { CandidateViewRegistry } from "../lib/review/review-candidate-view.ts";
+import { NATIVE_REVIEW_ERROR_CODE, NativeReviewCliError, NativeReviewConsentRequiredError, type NativeReviewCli } from "../lib/native/native-review-cli.ts";
+import { decodeReviewConsentV3, decodeReviewStatusV3, type ReviewCollectInputV3, type ReviewStatusV3 } from "../lib/review/review-integration-v2.ts";
 
 const SHA = `sha256:${"a".repeat(64)}`;
 const TREE = "b".repeat(40);
@@ -260,7 +260,7 @@ test("public acknowledgement reports the burn from the review-acknowledged/v1 en
 });
 
 function candidateRepository(t: test.TestContext): string {
-	const cwd = realpathSync(mkdtempSync(join(tmpdir(), "gentle-pi-native-routing-")));
+	const cwd = realpathSync(mkdtempSync(join(tmpdir(), "jero-pi-native-routing-")));
 	// The registry's views are 0555 dirs / 0444 files; restore writability before
 	// the fixture teardown so a surviving view never breaks rmSync.
 	t.after(() => { try { execFileSync("chmod", ["-R", "u+w", cwd]); } catch {} rmSync(cwd, { recursive: true, force: true }); });
@@ -773,7 +773,7 @@ test("public INSPECT and STATUS publish the exact pi-bound binding that capture 
 });
 
 function repository(t: test.TestContext): string {
-	const cwd = realpathSync(mkdtempSync(join(tmpdir(), "gentle-pi-native-routing-")));
+	const cwd = realpathSync(mkdtempSync(join(tmpdir(), "jero-pi-native-routing-")));
 	t.after(() => {
 		execFileSync("chmod", ["-R", "u+rwx", cwd], { stdio: "ignore" });
 		chmodSync(cwd, 0o700);

@@ -10,13 +10,13 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { REVIEW_PROJECTION } from "../lib/review-snapshot.ts";
+import { REVIEW_PROJECTION } from "../lib/review/review-snapshot.ts";
 import {
 	GATE_RESULT,
 	GATE_TARGET_KIND,
 	PUSH_UPDATE_KIND,
 	resolveConfiguredPushDestinationV1,
-} from "../lib/review-publication-gate.ts";
+} from "../lib/review/review-publication-gate.ts";
 import {
 	EVIDENCE_CLASS,
 	JOURNAL_STATUS,
@@ -37,12 +37,12 @@ import {
 	type CanonicalFrozenRowV1,
 	type ReceiptBodyV1,
 	type ReviewBudgetV1,
-} from "../lib/review-transaction.ts";
-import { REVIEW_LENS, REVIEW_ROUTE } from "../lib/review-triggers.ts";
+} from "../lib/review/review-transaction.ts";
+import { REVIEW_LENS, REVIEW_ROUTE } from "../lib/review/review-triggers.ts";
 import {
 	ordinaryValidatorRequest,
 	recordOrdinaryValidation,
-} from "../lib/review-policy-ordinary.ts";
+} from "../lib/review/review-policy-ordinary.ts";
 import { qualifiedReviewLockPlatform, testSnapshot } from "./review-test-fixtures.ts";
 
 const TREE = {
@@ -129,7 +129,7 @@ function receiptBody(): ReceiptBodyV1 {
 }
 
 function temporaryStore(t: test.TestContext): { root: string; store: ReviewTransactionStore } {
-	const parent = mkdtempSync(join(tmpdir(), "gentle-pi-review-store-"));
+	const parent = mkdtempSync(join(tmpdir(), "jero-pi-review-store-"));
 	const root = join(parent, "repo");
 	mkdirSync(root);
 	t.after(() => rmSync(parent, { recursive: true, force: true }));
@@ -353,7 +353,7 @@ test("store exposes only reducer-bound authority transitions", (t) => {
 });
 
 test("repository authority fails closed until Git has stable root commit anchors", (t) => {
-	const parent = mkdtempSync(join(tmpdir(), "gentle-pi-review-git-store-"));
+	const parent = mkdtempSync(join(tmpdir(), "jero-pi-review-git-store-"));
 	const repository = join(parent, "repo");
 	mkdirSync(repository);
 	t.after(() => rmSync(parent, { recursive: true, force: true }));
@@ -417,7 +417,7 @@ test("new ordinary lineages fail closed when immutable genesis paths are absent"
 });
 
 test("tag PUSH CREATE accepts an annotated tag for an approved commit advertised by the bound destination", (t) => {
-	const parent = mkdtempSync(join(tmpdir(), "gentle-pi-tag-gate-"));
+	const parent = mkdtempSync(join(tmpdir(), "jero-pi-tag-gate-"));
 	const repository = join(parent, "repo");
 	const remote = join(parent, "remote.git");
 	mkdirSync(repository);

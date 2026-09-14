@@ -58,8 +58,8 @@ because the archive and binary digests cannot be pinned without the tarballs.
       `INSTALLER_VERSION = "2.2.2"`, and the 4 `asset()` rows: filenames plus
       `sha256` from the signed `checksums.txt` and `binarySha256` computed from each
       extracted executable. 12 literals.
-- [x] 13.5 `lib/gentle-ai-binary.ts` — `GENTLE_AI_VERSION = "2.2.2"`.
-- [x] 13.6 `lib/native-review-cli.ts` — add the `NATIVE_CLI_CONTRACTS["2.2.2"]` row.
+- [x] 13.5 `lib/core/gentle-ai-binary.ts` — `GENTLE_AI_VERSION = "2.2.2"`.
+- [x] 13.6 `lib/native/native-review-cli.ts` — add the `NATIVE_CLI_CONTRACTS["2.2.2"]` row.
       Ground it against the released binary rather than copying blind: check what
       v2.2.2 advertises on the lane Pi speaks before deciding whether `riskEvidence`
       and `hint` stay dark.
@@ -89,10 +89,10 @@ because the archive and binary digests cannot be pinned without the tarballs.
       suite so this class of rot cannot hide again.
 - [x] 13.13 (COMPLETE — folded into tasks.md Phase 13; see there for the fix) Archive deadlock, INVESTIGATED — Pi DOES have its own version, and separately
       a pre-existing decode bug:
-      - `lib/native-review-cli.ts:1265` gates `ready` on `reviewGateResult === "allow"`
+      - `lib/native/native-review-cli.ts:1265` gates `ready` on `reviewGateResult === "allow"`
         with no relaxation, so with the kill switch off `ready` can never become true —
         the same deadlock gentle-ai fixed upstream in `2c18fa10`.
-      - `lib/native-review-cli.ts:1246` decodes with
+      - `lib/native/native-review-cli.ts:1246` decodes with
         `exactObject(body.reviewGate, ["result", "reason"])` — no optional `delivery` key.
         gentle-ai's status struct carries `Delivery` with `json:"delivery,omitempty"`
         (`internal/sddstatus/status.go:193`), emitted when the kill switch is off. Under

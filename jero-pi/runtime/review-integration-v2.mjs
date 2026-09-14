@@ -1821,7 +1821,7 @@ export function decodeReviewNextTransitionV3(value         , options            
 	return { kind, reasonCode, ...(correctionRequest === undefined ? {} : { correctionRequest }), ...(continuation === undefined ? {} : { continuation }), ...(unachievableLensSlots === undefined ? {} : { unachievableLensSlots }) };
 }
 
-// Mirrors NATIVE_REVIEW_UNACHIEVABLE_LENS_DETAIL_LIMIT (lib/native-review-cli.ts) and Go's 512-byte CAPTURE_UNACHIEVABLE detail bound.
+// Mirrors NATIVE_REVIEW_UNACHIEVABLE_LENS_DETAIL_LIMIT (lib/native/native-review-cli.ts) and Go's 512-byte CAPTURE_UNACHIEVABLE detail bound.
 export const REVIEW_INTEGRATION_UNACHIEVABLE_LENS_DETAIL_LIMIT = 512;
 
 function decodeUnachievableLensSlot(value         , label        )                               {

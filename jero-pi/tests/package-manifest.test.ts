@@ -13,9 +13,9 @@ import { homedir, tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { applyModelConfig } from "../extensions/gentle-ai.ts";
-import { resolveGentlePiAgentHome } from "../lib/agent-home.ts";
-import { getPackageAssetOwner, installPackageAssets, installSddAssets, type PackageAssetOwner } from "../lib/sdd-preflight.ts";
+import { applyModelConfig } from "../extensions/jero-ai.ts";
+import { resolveGentlePiAgentHome } from "../lib/agents/agent-home.ts";
+import { getPackageAssetOwner, installPackageAssets, installSddAssets, type PackageAssetOwner } from "../lib/sdd/sdd-preflight.ts";
 
 const PACKAGE_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const MANAGED_EXEMPLAR_FILE = "gentle-ai-explore.md";
@@ -84,10 +84,6 @@ interface PackageJson {
 	devDependencies?: Record<string, string>;
 	bundledDependencies?: string[];
 	bundleDependencies?: string[];
-	repository?: {
-		type?: string;
-		url?: string;
-	};
 	pi?: PackageJsonPiManifest;
 }
 
@@ -128,80 +124,20 @@ test("package verification names the native review runtime boundary and packaged
 
 	assert.ok(manifest.files?.includes("lib/"), "the published package must include the native review runtime module directory");
 	assert.ok(manifest.files?.includes("runtime/"), "the published package must include generated JavaScript runtime modules");
-	assert.match(verifier, /"lib\/native-review-cli\.ts"/, "package verification must require the native review adapter from the packaged runtime");
+	assert.match(verifier, /"lib\/native\/native-review-cli\.ts"/, "package verification must require the native review adapter from the packaged runtime");
 	assert.match(verifier, /"runtime\/native-review-cli\.mjs"/, "package verification must require the generated native review adapter");
 	assert.match(verifier, /build-runtime-modules\.mjs.*--check/s, "package verification must reject generated-runtime drift");
 	assert.match(verifier, /"tests\/fixtures\/native-review-cli\/v2\.1\.3\/start\.json"/, "package verification must retain the pinned native decoder fixture");
 	assert.match(
-		readFileSync(join(PACKAGE_ROOT, "extensions", "gentle-ai.ts"), "utf8"),
+		readFileSync(join(PACKAGE_ROOT, "extensions", "jero-ai.ts"), "utf8"),
 		/createNativeReviewCli\(\)/,
 		"the production extension must construct its native client from the packaged runtime module",
 	);
 });
 
-test("npm publication is bound to the exact package tag and triggering commit", () => {
-	const workflow = readFileSync(join(PACKAGE_ROOT, ".github", "workflows", "publish.yml"), "utf8");
-	const releaseSkill = readFileSync(join(PACKAGE_ROOT, "skills", "release", "SKILL.md"), "utf8");
-	const packageJson = readPackageJson();
-	const dispatchBlock = workflow.match(
-		/^ {2}workflow_dispatch:\n([\s\S]*?)^\npermissions:/m,
-	)?.[1];
-	assert.ok(dispatchBlock);
-	const inputNames = [
-		...dispatchBlock.matchAll(/^ {6}([A-Za-z0-9_-]+):$/gm),
-	].map((match) => match[1]);
-
-	assert.match(workflow, /on:\n\s+workflow_dispatch:\s*\n/);
-	assert.deepEqual(inputNames, ["tag"], "the trusted workflow must expose exactly one caller input");
-	assert.match(workflow, /inputs:\n\s+tag:/, "the trusted main workflow must accept only the release tag");
-	assert.match(workflow, /RELEASE_TAG: \$\{\{ inputs\.tag \}\}/);
-	assert.doesNotMatch(workflow, /checkout-ref|dist-tag.*inputs|inputs\.(?!tag)/, "the release workflow must not accept checkout or dist-tag inputs");
-	assert.match(workflow, /ref: \$\{\{ github\.sha \}\}/, "checkout must use the immutable event SHA");
-	assert.match(workflow, /persist-credentials: false/, "the release checkout must not retain GitHub credentials");
-	assert.match(workflow, /DEFAULT_BRANCH: \$\{\{ github\.event\.repository\.default_branch \}\}/);
-	assert.match(workflow, /\$\{DEFAULT_BRANCH\}" != "main"/);
-	assert.match(workflow, /\$\{GITHUB_REF\}" != "refs\/heads\/main"/);
-	assert.match(workflow, /\$\{GITHUB_REF_TYPE\}" != "branch"/);
-	assert.match(workflow, /Release tag is not exact vSemVer/);
-	assert.match(workflow, /git ls-remote origin[\s\S]*"refs\/heads\/main"[\s\S]*"refs\/tags\/\$\{tag\}"/);
-	assert.match(workflow, /git fetch --atomic --no-tags origin/);
-	assert.match(workflow, /refs\/heads\/main:refs\/remotes\/origin\/release-main/);
-	assert.match(workflow, /refs\/tags\/\$\{tag\}:refs\/release-verification\/tag/);
-	assert.match(workflow, /git cat-file -t refs\/release-verification\/tag/);
-	assert.match(workflow, /git checkout --detach "\$\{tag_commit\}"/);
-	assert.match(workflow, /git rev-parse "\$\{GITHUB_SHA\}\^\{commit\}"/);
-	assert.match(workflow, /git rev-parse ['"]HEAD\^\{commit\}['"]/);
-	assert.match(workflow, /Reverify protected release authority and publish/);
-	assert.match(workflow, /Release authority changed after verification/);
-	assert.match(workflow, /id-token: write/, "trusted publishing requires OIDC");
-	assert.match(workflow, /node-version: "24"/, "trusted publishing must use a supported Node.js version");
-	assert.match(workflow, /const minimum = \[11, 5, 1\]/, "trusted publishing must reject npm versions below 11.5.1");
-	assert.match(workflow, /packageJson\.repository\?\.type !== expectedRepository\.type/);
-	assert.match(workflow, /packageJson\.repository\?\.url !== expectedRepository\.url/);
-	assert.deepEqual(
-		packageJson.repository,
-		{
-			type: "git",
-			url: "git+https://github.com/Gentleman-Programming/gentle-pi.git",
-		},
-		"trusted publishing requires the exact case-sensitive npm repository identity",
-	);
-	assert.match(workflow, /npm publish --provenance --access public/);
-	assert.doesNotMatch(workflow, /pnpm publish|--no-git-checks|NODE_AUTH_TOKEN/);
-
-	assert.match(releaseSkill, /tag="v\$\{version\}"/);
-	assert.match(releaseSkill, /release_sha="\$\(git rev-parse 'origin\/main\^\{commit\}'\)"/);
-	assert.match(releaseSkill, /git rev-parse "\$\{tag\}\^\{commit\}"/);
-	assert.match(releaseSkill, /git fetch --no-tags origin "refs\/tags\/\$\{tag\}"/);
-	assert.match(releaseSkill, /gh release create "\$\{tag\}"[\s\S]*--verify-tag/);
-	assert.match(releaseSkill, /--ref main/);
-	assert.match(releaseSkill, /-f tag="\$\{tag\}"/);
-	assert.match(releaseSkill, /trusted OIDC with provenance/);
-	assert.doesNotMatch(releaseSkill, /--ref "\$\{tag\}"|-f dist-tag=/);
-});
 
 test("Pi delivery relay is absent from the packaged extension", () => {
-	const extension = readFileSync(join(PACKAGE_ROOT, "extensions", "gentle-ai.ts"), "utf8");
+	const extension = readFileSync(join(PACKAGE_ROOT, "extensions", "jero-ai.ts"), "utf8");
 
 	assert.doesNotMatch(extension, /review-publication-gate/);
 });
@@ -210,13 +146,10 @@ test("generated runtime modules and packed-package checks are deterministic", ()
 	const packageJson = readPackageJson();
 	const generator = readFileSync(join(PACKAGE_ROOT, "scripts", "build-runtime-modules.mjs"), "utf8");
 	const packedRunner = readFileSync(join(PACKAGE_ROOT, "scripts", "test-packed-runner.mjs"), "utf8");
-	const ci = readFileSync(join(PACKAGE_ROOT, ".github", "workflows", "ci.yml"), "utf8");
 	assert.equal(packageJson.scripts?.["build:runtime-modules"], "node scripts/build-runtime-modules.mjs --write");
 	assert.equal(packageJson.scripts?.["check:runtime-modules"], "node scripts/build-runtime-modules.mjs --check");
 	assert.equal(packageJson.scripts?.["test:packed-package"], "node scripts/test-packed-runner.mjs");
 	assert.match(packageJson.scripts?.prepublishOnly ?? "", /pnpm run test:packed-package/);
-	assert.match(ci, /pnpm run check:runtime-modules/);
-	assert.match(ci, /pnpm run test:packed-package/);
 	assert.match(generator, /Generated by scripts\/build-runtime-modules\.mjs/);
 	assert.match(packedRunner, /\["install"[^\]]*"--ignore-scripts=false"/s, "packed install must explicitly enable postinstall");
 	assert.doesNotMatch(packedRunner, /\["install"[^\]]*"--ignore-scripts"(?!\=false)/s);
@@ -234,12 +167,12 @@ test("package manifest ships and runs the checked-in package-local Gentle AI ins
 
 	assert.equal(packageJson.scripts?.postinstall, "node scripts/install-gentle-ai.mjs");
 	assert.match(reference, /run `node scripts\/install-gentle-ai\.mjs`/, "missing-binary recovery documentation must use the package postinstall entrypoint");
-	assert.match(reference, /installed `gentle-pi` package directory/, "recovery documentation must name the package working directory");
+	assert.match(reference, /installed `jero-pi` package directory/, "recovery documentation must name the package working directory");
 	assert.match(reference, /if `GENTLE_PI_SKIP_GENTLE_AI_INSTALL` is set, remove or unset it before/i, "recovery documentation must prevent the installer skip from repeating");
 	assert.ok(packageJson.files?.includes("scripts/"));
 	assert.match(verifier, /"scripts\/install-gentle-ai\.mjs"/);
 	assert.match(verifier, /"scripts\/gentle-ai-installer\.mjs"/);
-	assert.match(verifier, /"lib\/gentle-ai-binary\.ts"/);
+	assert.match(verifier, /"lib\/core\/gentle-ai-binary\.ts"/);
 });
 
 test("package manifest installs pi-pretty through a wrapper without bundling native optional dependencies", () => {
@@ -248,25 +181,25 @@ test("package manifest installs pi-pretty through a wrapper without bundling nat
 	assert.equal(
 		packageJson.dependencies?.["@heyhuynhgiabuu/pi-pretty"],
 		"0.6.14",
-		"gentle-pi must install the tested pi-pretty version as a normal dependency",
+		"jero-pi must install the tested pi-pretty version as a normal dependency",
 	);
 	assert.ok(
 		packageJson.pi?.extensions?.includes("./extensions"),
-		"gentle-pi must load packaged extension wrappers",
+		"jero-pi must load packaged extension wrappers",
 	);
 	assert.ok(
 		!packageJson.pi?.extensions?.includes(
 			"./node_modules/@heyhuynhgiabuu/pi-pretty/dist/index.js",
 		),
-		"gentle-pi must not reference pnpm-unportable nested node_modules paths",
+		"jero-pi must not reference pnpm-unportable nested node_modules paths",
 	);
 	assert.ok(
 		existsSync(join(PACKAGE_ROOT, "extensions", "pi-pretty.ts")),
-		"gentle-pi must expose pi-pretty through a packaged wrapper extension",
+		"jero-pi must expose pi-pretty through a packaged wrapper extension",
 	);
 	assert.ok(
 		existsSync(join(PACKAGE_ROOT, "extensions", "quiet-tools.ts")),
-		"gentle-pi must expose quiet built-in tool rendering through a packaged extension",
+		"jero-pi must expose quiet built-in tool rendering through a packaged extension",
 	);
 	assert.ok(
 		!packageJson.bundledDependencies?.includes("@heyhuynhgiabuu/pi-pretty"),
@@ -280,7 +213,7 @@ test("package manifest installs pi-pretty through a wrapper without bundling nat
 
 test("package verification binds the published Gentle AI v2.8.2 runtime pin", () => {
 	const installer = readFileSync(join(PACKAGE_ROOT, "scripts", "gentle-ai-installer.mjs"), "utf8");
-	const binary = readFileSync(join(PACKAGE_ROOT, "lib", "gentle-ai-binary.ts"), "utf8");
+	const binary = readFileSync(join(PACKAGE_ROOT, "lib", "core", "gentle-ai-binary.ts"), "utf8");
 	const verifier = readFileSync(join(PACKAGE_ROOT, "scripts", "verify-package-files.mjs"), "utf8");
 
 	assert.match(installer, /INSTALLER_VERSION = "2\.8\.2"/);
@@ -430,7 +363,7 @@ test("packaged agents use YAML list syntax for tool allowlists", () => {
 		entry.endsWith(".md") ? [join(agentsDir, entry)] : [],
 	);
 
-	assert.ok(agentFiles.length > 0, "gentle-pi must ship packaged agents");
+	assert.ok(agentFiles.length > 0, "jero-pi must ship packaged agents");
 
 	for (const file of agentFiles) {
 		const frontmatter = readAgentFrontmatter(file);
@@ -461,7 +394,7 @@ test("packaged agents declare only tool names a Pi child session can resolve", (
 		entry.endsWith(".md") ? [join(agentsDir, entry)] : [],
 	);
 
-	assert.ok(agentFiles.length > 0, "gentle-pi must ship packaged agents");
+	assert.ok(agentFiles.length > 0, "jero-pi must ship packaged agents");
 
 	for (const file of agentFiles) {
 		const { tools } = readAgentDefinition(file);
@@ -703,8 +636,8 @@ test("forced package installation preserves same-path user-authored agents and s
 	// The user-authored file below sits on the RETIRED review-refuter.md path:
 	// this also pins that gentle-pi#311 P5 asset retirement deletes only
 	// hash-proven package-managed copies, never user content.
-	const temporaryAgentHome = mkdtempSync(join(tmpdir(), "gentle-pi-refuter-home-"));
-	const temporaryProject = mkdtempSync(join(tmpdir(), "gentle-pi-refuter-project-"));
+	const temporaryAgentHome = mkdtempSync(join(tmpdir(), "jero-pi-refuter-home-"));
+	const temporaryProject = mkdtempSync(join(tmpdir(), "jero-pi-refuter-project-"));
 	const previousAgentHome = process.env.GENTLE_PI_AGENT_HOME;
 	const samePathUserAgent = join(temporaryAgentHome, "agents", RETIRED_REFUTER_FILE);
 	const userShadow = join(temporaryAgentHome, "subagents", RETIRED_REFUTER_FILE);
@@ -786,7 +719,7 @@ test("v0.14 ownership evidence is bundled and matches the self-contained bounded
 });
 
 test("first forced sync migrates untouched v0.13 assets, preserves routing, and owns new assets", () => {
-	const temporaryAgentHome = mkdtempSync(join(tmpdir(), "gentle-pi-v013-upgrade-"));
+	const temporaryAgentHome = mkdtempSync(join(tmpdir(), "jero-pi-v013-upgrade-"));
 	const previousAgentHome = process.env.GENTLE_PI_AGENT_HOME;
 	const installedReviewRisk = join(temporaryAgentHome, "agents", REVIEW_RISK_FILE);
 	const installedExemplar = join(temporaryAgentHome, "agents", MANAGED_EXEMPLAR_FILE);
@@ -864,7 +797,7 @@ test("first forced sync migrates untouched v0.13 assets, preserves routing, and 
 });
 
 test("first forced sync migrates untouched v0.14 review contracts and preserves routing", () => {
-	const temporaryAgentHome = mkdtempSync(join(tmpdir(), "gentle-pi-v014-upgrade-"));
+	const temporaryAgentHome = mkdtempSync(join(tmpdir(), "jero-pi-v014-upgrade-"));
 	const previousAgentHome = process.env.GENTLE_PI_AGENT_HOME;
 	const installedReviewRisk = join(temporaryAgentHome, "agents", REVIEW_RISK_FILE);
 	const legacySource = readFileSync(V014_REVIEW_RISK_FIXTURE, "utf8");
@@ -902,7 +835,7 @@ test("first forced sync migrates untouched v0.14 review contracts and preserves 
 });
 
 test("first forced sync preserves a body-edited v0.13 asset byte-for-byte", () => {
-	const temporaryAgentHome = mkdtempSync(join(tmpdir(), "gentle-pi-v013-edited-"));
+	const temporaryAgentHome = mkdtempSync(join(tmpdir(), "jero-pi-v013-edited-"));
 	const previousAgentHome = process.env.GENTLE_PI_AGENT_HOME;
 	const installedReviewRisk = join(temporaryAgentHome, "agents", REVIEW_RISK_FILE);
 	const editedLegacySource = readFileSync(V013_REVIEW_RISK_FIXTURE, "utf8").replace(
@@ -933,7 +866,7 @@ test("first forced sync preserves a body-edited v0.13 asset byte-for-byte", () =
 });
 
 test("forced package installation refreshes an asset recorded as package-managed", () => {
-	const temporaryAgentHome = mkdtempSync(join(tmpdir(), "gentle-pi-malformed-refuter-"));
+	const temporaryAgentHome = mkdtempSync(join(tmpdir(), "jero-pi-malformed-refuter-"));
 	const previousAgentHome = process.env.GENTLE_PI_AGENT_HOME;
 	const installedExemplar = join(temporaryAgentHome, "agents", MANAGED_EXEMPLAR_FILE);
 	const managedAssetsManifest = join(
@@ -985,7 +918,7 @@ function assertManagedAgentUserEditIsPreserved(
 	editLabel: string,
 	editSource: (source: string) => string,
 ): void {
-	const temporaryAgentHome = mkdtempSync(join(tmpdir(), "gentle-pi-managed-edit-"));
+	const temporaryAgentHome = mkdtempSync(join(tmpdir(), "jero-pi-managed-edit-"));
 	const previousAgentHome = process.env.GENTLE_PI_AGENT_HOME;
 	const installedExemplar = join(temporaryAgentHome, "agents", MANAGED_EXEMPLAR_FILE);
 	const managedAssetsManifest = join(
@@ -1055,7 +988,7 @@ test("forced package installation preserves an ordinary body edit to a managed a
 });
 
 test("package model assignment keeps only package-managed agents owned", () => {
-	const temporaryAgentHome = mkdtempSync(join(tmpdir(), "gentle-pi-model-ownership-"));
+	const temporaryAgentHome = mkdtempSync(join(tmpdir(), "jero-pi-model-ownership-"));
 	const previousAgentHome = process.env.GENTLE_PI_AGENT_HOME;
 	const installedExemplar = join(temporaryAgentHome, "agents", MANAGED_EXEMPLAR_FILE);
 	const userAgent = join(temporaryAgentHome, "agents", "user-router.md");
@@ -1147,7 +1080,7 @@ test("sdd-explore packages its CodeGraph-enabled exploration allowlist", () => {
 test("gentle-ai-worker packages the exact scoped writer contract", () => {
 	const agentsDir = join(PACKAGE_ROOT, "assets", "agents");
 	const agentPath = join(agentsDir, "gentle-ai-worker.md");
-	assert.ok(existsSync(agentPath), "gentle-pi must package gentle-ai-worker.md");
+	assert.ok(existsSync(agentPath), "jero-pi must package gentle-ai-worker.md");
 	for (const genericName of ["worker.md", "generic-writer.md"]) {
 		assert.ok(
 			!existsSync(join(agentsDir, genericName)),
@@ -1253,7 +1186,7 @@ test("gentle-ai-worker packages the exact scoped writer contract", () => {
 });
 
 test("installSddAssets installs gentle-ai-worker with a loader-compatible scoped identity", () => {
-	const temporaryAgentHome = mkdtempSync(join(tmpdir(), "gentle-pi-agent-home-"));
+	const temporaryAgentHome = mkdtempSync(join(tmpdir(), "jero-pi-agent-home-"));
 	const previousAgentHome = process.env.GENTLE_PI_AGENT_HOME;
 
 	try {
@@ -1305,8 +1238,8 @@ test("installSddAssets installs gentle-ai-worker with a loader-compatible scoped
 });
 
 test("agent home resolver centralizes Gentle and Pi agent-dir precedence", () => {
-	const explicitGentleHome = mkdtempSync(join(tmpdir(), "gentle-pi-resolver-explicit-"));
-	const piAgentDir = mkdtempSync(join(tmpdir(), "gentle-pi-resolver-pi-dir-"));
+	const explicitGentleHome = mkdtempSync(join(tmpdir(), "jero-pi-resolver-explicit-"));
+	const piAgentDir = mkdtempSync(join(tmpdir(), "jero-pi-resolver-pi-dir-"));
 
 	try {
 		assert.equal(
@@ -1337,8 +1270,8 @@ test("agent home resolver centralizes Gentle and Pi agent-dir precedence", () =>
 test("asset installation uses PI_CODING_AGENT_DIR as the Pi agent home when no explicit Gentle override is set", () => {
 	const previousAgentHome = process.env.GENTLE_PI_AGENT_HOME;
 	const previousPiAgentDir = process.env.PI_CODING_AGENT_DIR;
-	const temporaryPiAgentDir = mkdtempSync(join(tmpdir(), "gentle-pi-agent-dir-"));
-	const explicitGentleHome = mkdtempSync(join(tmpdir(), "gentle-pi-explicit-home-"));
+	const temporaryPiAgentDir = mkdtempSync(join(tmpdir(), "jero-pi-agent-dir-"));
+	const explicitGentleHome = mkdtempSync(join(tmpdir(), "jero-pi-explicit-home-"));
 
 	try {
 		delete process.env.GENTLE_PI_AGENT_HOME;
@@ -1373,8 +1306,8 @@ test("asset installation uses PI_CODING_AGENT_DIR as the Pi agent home when no e
 test("global model routing uses PI_CODING_AGENT_DIR for package-installed agents", () => {
 	const previousAgentHome = process.env.GENTLE_PI_AGENT_HOME;
 	const previousPiAgentDir = process.env.PI_CODING_AGENT_DIR;
-	const temporaryPiAgentDir = mkdtempSync(join(tmpdir(), "gentle-pi-model-agent-dir-"));
-	const temporaryProject = mkdtempSync(join(tmpdir(), "gentle-pi-model-project-"));
+	const temporaryPiAgentDir = mkdtempSync(join(tmpdir(), "jero-pi-model-agent-dir-"));
+	const temporaryProject = mkdtempSync(join(tmpdir(), "jero-pi-model-project-"));
 
 	try {
 		delete process.env.GENTLE_PI_AGENT_HOME;
@@ -1410,7 +1343,7 @@ test("normal and forced installation copy generic agents with complete role cont
 
 	try {
 		for (const force of [false, true]) {
-			const temporaryAgentHome = mkdtempSync(join(tmpdir(), "gentle-pi-generic-agents-"));
+			const temporaryAgentHome = mkdtempSync(join(tmpdir(), "jero-pi-generic-agents-"));
 			process.env.GENTLE_PI_AGENT_HOME = temporaryAgentHome;
 			try {
 				installSddAssets(PACKAGE_ROOT, force);
@@ -1511,7 +1444,8 @@ test("pi-pretty wrapper uses real package path resolution for pnpm symlink insta
 
 test("v2.6.2 release package and runtime stop before publication", () => {
 	const packageJson = readPackageJson();
-	assert.equal(packageJson.version, "2.6.2", "the release manifest must remain explicitly pinned to v2.6.2");
+	// jero-pi fork lineage: the upstream v2.6.2 pin travels as a prerelease tag.
+	assert.match(packageJson.version ?? "", /^2\.6\.2(-jero\.\d+)?$/, "the release manifest must stay pinned to the v2.6.2 fork lineage");
 	assert.equal(
 		packageJson.scripts?.test,
 		"node --experimental-strip-types --test tests/*.test.ts && pnpm run check:provider-contract && pnpm run test:harness",
@@ -1527,7 +1461,7 @@ test("v2.6.2 release package and runtime stop before publication", () => {
 	assert.match(verifier, /assets\/migrations\/managed-assets-v0\.13\.json/);
 	assert.match(verifier, /assets\/migrations\/managed-assets-v0\.14\.json/);
 
-	const runtime = readFileSync(join(PACKAGE_ROOT, "extensions", "gentle-ai.ts"), "utf8");
+	const runtime = readFileSync(join(PACKAGE_ROOT, "extensions", "jero-ai.ts"), "utf8");
 	assert.doesNotMatch(runtime, /execFileSync\("git", \["(?:commit|push|tag)"/);
 	assert.doesNotMatch(runtime, /execFileSync\("(?:npm|pnpm)", \["publish"/);
 });

@@ -7,7 +7,7 @@ import { spawn as nodeSpawn } from "node:child_process";
 // and never surfaces the outcome to the user. This module is the pure,
 // testable core of that nudge (`shouldTriggerTelemetry`,
 // `spawnTelemetryTrigger`) plus the decode helper the foreground
-// `/gentle:telemetry` slash command uses to relay `<op> --json` output
+// `/jero:telemetry` slash command uses to relay `<op> --json` output
 // (`decodeTelemetryTriggerDecision`).
 
 export const TELEMETRY_TRIGGER_KILL_TIMEOUT_MS = 3_000;
@@ -78,7 +78,7 @@ export function shouldTriggerTelemetry(env                                      
 }
 
 // A minimal structural subset of node:child_process's ChildProcess, mirroring
-// the ChildLike/Spawn seam already used by lib/agents-runner.ts: narrow
+// the ChildLike/Spawn seam already used by lib/agents/agents-runner.ts: narrow
 // enough that tests can stub it without touching a real process.
 
 

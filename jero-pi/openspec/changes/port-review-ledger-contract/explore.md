@@ -2,7 +2,7 @@
 
 ## Problem
 
-gentle-pi's review flows are the PRE-LEDGER design that gentle-ai fixed today (gentle-ai change `review-ledger-contract`, archived at /home/gentleman/work/gentle-ai/openspec/changes/archive/2026-07-08-review-ledger-contract/ with full proposal/spec/design/ledger). Symptoms of the old design: each review pass re-samples the full target with fresh context, re-reviews churn (find → fix → full re-review → NEW findings), no persisted findings ledger, no convergence guarantee.
+jero-pi's review flows are the PRE-LEDGER design that gentle-ai fixed today (gentle-ai change `review-ledger-contract`, archived at /home/gentleman/work/gentle-ai/openspec/changes/archive/2026-07-08-review-ledger-contract/ with full proposal/spec/design/ledger). Symptoms of the old design: each review pass re-samples the full target with fresh context, re-reviews churn (find → fix → full re-review → NEW findings), no persisted findings ledger, no convergence guarantee.
 
 ## Verified facts (2026-07-08 audit)
 
@@ -18,9 +18,9 @@ Battle evidence from today: 5 judgment-day cycles across 2 repos, convergence 5�
 
 ## Open questions for proposal
 
-1. Which gentle-pi surfaces carry review-flow normative text? (skills/judgment-day/*, assets/agents/review-*.md + jd-*.md, orchestrator.md 4R section, gentle-ai skill body, sdd-orchestrator-workflow.md.)
-2. Test strategy: gentle-pi is TypeScript — is there an existing test harness asserting asset/skill content (pnpm test)? Port the drift-guard clause test as a TS test over the markdown assets.
-3. Ledger persistence per artifact store: gentle-pi's SDD flows use openspec + engram — the contract's persistence branch applies as-is.
+1. Which jero-pi surfaces carry review-flow normative text? (skills/judgment-day/*, assets/agents/review-*.md + jd-*.md, orchestrator.md 4R section, gentle-ai skill body, sdd-orchestrator-workflow.md.)
+2. Test strategy: jero-pi is TypeScript — is there an existing test harness asserting asset/skill content (pnpm test)? Port the drift-guard clause test as a TS test over the markdown assets.
+3. Ledger persistence per artifact store: jero-pi's SDD flows use openspec + engram — the contract's persistence branch applies as-is.
 4. Naming interaction: judgment-day skill may be renamed by sync-skill-collision-prefixes (parallel change) — coordinate; content changes here, name changes there.
 
 ## Constraints

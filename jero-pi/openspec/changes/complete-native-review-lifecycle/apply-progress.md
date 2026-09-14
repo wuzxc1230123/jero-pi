@@ -30,8 +30,8 @@
 
 | Unit | Focused test command and result | Runtime harness | Rollback boundary |
 |---|---|---|---|
-| 1 — Inert evidence | `node --experimental-strip-types --test tests/review-graph-schema.test.ts tests/review-transaction.test.ts` — 15/15 passing | N/A: graph/policy/store unit boundary has no Pi runtime path | `lib/review-graph-schema.ts`, `lib/review-transaction.ts`, paired tests |
-| 2 — Targeted proof and contracts | `node --experimental-strip-types --test tests/review-controller.test.ts tests/review-policy-ordinary.test.ts tests/review-transaction.test.ts tests/review-graph-schema.test.ts tests/review-ledger-contract.test.ts` — 45/45 passing | `pnpm run test:harness` — passed | `lib/review-{snapshot,policy-ordinary,transaction}.ts`, `extensions/gentle-ai.ts`, ordinary contract surfaces, paired tests |
+| 1 — Inert evidence | `node --experimental-strip-types --test tests/review-graph-schema.test.ts tests/review-transaction.test.ts` — 15/15 passing | N/A: graph/policy/store unit boundary has no Pi runtime path | `lib/review/review-graph-schema.ts`, `lib/review/review-transaction.ts`, paired tests |
+| 2 — Targeted proof and contracts | `node --experimental-strip-types --test tests/review-controller.test.ts tests/review-policy-ordinary.test.ts tests/review-transaction.test.ts tests/review-graph-schema.test.ts tests/review-ledger-contract.test.ts` — 45/45 passing | `pnpm run test:harness` — passed | `lib/review-{snapshot,policy-ordinary,transaction}.ts`, `extensions/jero-ai.ts`, ordinary contract surfaces, paired tests |
 
 ## Final Regression and Measurement
 
@@ -72,7 +72,7 @@ None — implementation matches the revised proposal, delta specs, and design.
 | Focused GREEN | `node --experimental-strip-types --test tests/review-policy-ordinary.test.ts tests/review-snapshot.test.ts` — exit 0, 19/19 passed |
 | Runtime harness | N/A for the focused correction: no controller/runtime boundary changed. `pnpm test` includes `pnpm run test:harness` and passed. |
 | Full regression | `pnpm test` — exit 0, 427/427 unit/contract tests passed; runtime harness passed |
-| Rollback boundary | `lib/review-policy-ordinary.ts`, `tests/review-policy-ordinary.test.ts`, `tests/review-snapshot.test.ts`, and this correction-batch evidence |
+| Rollback boundary | `lib/review/review-policy-ordinary.ts`, `tests/review-policy-ordinary.test.ts`, `tests/review-snapshot.test.ts`, and this correction-batch evidence |
 
 ```json
 {"schema":"gentle-ai.remediation-result/v1","lineage_id":"complete-native-review-lifecycle","generation":1,"mode":"openspec","fix_batch":["VER-001","VER-002","VER-003","VER-004"],"failed_evidence_revision":"sha256:dd40551aac887c9e36fb3285b04563455ccdfa46560186340bf20579005c8d24","status":"success"}

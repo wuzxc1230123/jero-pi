@@ -56,7 +56,7 @@
 
 ## Files Changed
 
-- Runtime: `lib/review-triggers.ts`, `extensions/gentle-ai.ts`
+- Runtime: `lib/review/review-triggers.ts`, `extensions/jero-ai.ts`
 - Package assets: `assets/agents/review-refuter.md`, four review agents, three Judgment Day agents, `assets/chains/4r-review.chain.md`, `assets/orchestrator.md`, `assets/orchestrator-delegation.md`
 - Skills/contracts: `skills/_shared/review-ledger-contract.md`, `skills/gentle-ai/SKILL.md`, `skills/judgment-day/SKILL.md`, `skills/judgment-day/references/prompts-and-formats.md`
 - Tests/package proof: `tests/review-triggers.test.ts`, `tests/review-gate.test.ts`, `tests/review-ledger-contract.test.ts`, `tests/orchestrator-budget.test.ts`, `tests/package-manifest.test.ts`, `tests/sdd-agent-tools.test.ts`, `tests/runtime-harness.mjs`, `scripts/verify-package-files.mjs`
@@ -98,6 +98,6 @@ No files were staged, committed, pushed, released, published, or version-bumped.
 
 ### Changed Files
 
-- Runtime: `lib/review-triggers.ts`, `extensions/gentle-ai.ts`
+- Runtime: `lib/review/review-triggers.ts`, `extensions/jero-ai.ts`
 - Regression tests: `tests/review-triggers.test.ts`, `tests/review-gate.test.ts`
 - Judgment Day artifacts: `openspec/changes/port-gentle-ai-v1-46-review-v2/review-ledger.md`, `openspec/changes/port-gentle-ai-v1-46-review-v2/apply-progress.md`

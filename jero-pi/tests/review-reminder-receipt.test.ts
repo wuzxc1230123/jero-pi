@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { consumeReviewMutation, pendingReviewMutation, recordReviewMutation, REVIEW_REMINDER_RECEIPT } from "../lib/review-reminder-receipt.ts";
+import { consumeReviewMutation, pendingReviewMutation, recordReviewMutation, REVIEW_REMINDER_RECEIPT } from "../lib/review/review-reminder-receipt.ts";
 
 function fixture() {
 	let sessionId = "parent";
@@ -53,7 +53,7 @@ test("malformed, unknown-version, and unmatched consumption entries do not estab
 	for (const patch of [{ kind: "spawn" }, { source: "prose" }, { toolName: "bash" }, { sessionId: "" }, { root: "relative" }, { taskId: "foreign" }, { extra: true }, { toolCallId: "" }, { id: null }]) {
 		f.entries.push({ ...good, data: { ...data, ...patch } });
 	}
-	f.entries.push({ ...good, customType: "gentle-pi.review-reminder-receipt/v99" });
+	f.entries.push({ ...good, customType: "jero-pi.review-reminder-receipt/v99" });
 	assert.equal(pendingReviewMutation(f.session, "/repo"), undefined);
 	f.entries.push(good);
 	const captured = pendingReviewMutation(f.session, "/repo");

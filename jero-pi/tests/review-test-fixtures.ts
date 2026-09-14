@@ -5,9 +5,9 @@ import {
 	SNAPSHOT_CLEANUP_TRIGGER,
 	type SnapshotV1,
 	type ReviewMode,
-} from "../lib/review-snapshot.ts";
+} from "../lib/review/review-snapshot.ts";
 import { existsSync, renameSync } from "node:fs";
-import type { ReviewLockPlatformAdapterV1 } from "../lib/review-lock.ts";
+import type { ReviewLockPlatformAdapterV1 } from "../lib/review/review-lock.ts";
 import {
 	REVIEW_EVENT,
 	REVIEW_LENS,
@@ -15,7 +15,7 @@ import {
 	TRIVIALITY,
 	type ReviewLens,
 	type ReviewRoute,
-} from "../lib/review-triggers.ts";
+} from "../lib/review/review-triggers.ts";
 
 export function qualifiedReviewLockPlatform(): ReviewLockPlatformAdapterV1 {
 	return {

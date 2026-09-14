@@ -1,4 +1,4 @@
-import { stripAnsi } from "../lib/terminal-theme.ts";
+import { stripAnsi } from "../lib/core/terminal-theme.ts";
 
 // Test-only readers for Gentle AI cards: the title text in the top rule,
 // the tone tag around it (with tagged fake themes), and the body between

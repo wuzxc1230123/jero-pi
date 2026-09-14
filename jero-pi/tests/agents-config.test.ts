@@ -14,8 +14,8 @@ import {
 	parseFrontmatter,
 	parseModelRef,
 	resolveAgentProfile,
-} from "../lib/agents-config.ts";
-import { THINKING_LEVELS } from "../lib/model-routing-authority.ts";
+} from "../lib/agents/agents-config.ts";
+import { THINKING_LEVELS } from "../lib/core/model-routing-authority.ts";
 
 // Gentle Agents configuration: markdown agent definitions (the same files
 // gentle-ai installs) and subagents.json, both parsed without touching pi.

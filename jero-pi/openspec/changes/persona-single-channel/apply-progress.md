@@ -5,7 +5,7 @@
 
 ## Summary
 
-Made `extensions/gentle-ai.ts`'s `buildGentlePrompt` wrapper block the single canonical home for
+Made `extensions/jero-ai.ts`'s `buildGentlePrompt` wrapper block the single canonical home for
 Pi-session identity/persona/language content, collapsing `assets/orchestrator.md`'s duplicated
 Identity Contract and Language Boundary LB1 sections to one-line pointers (LB2-LB5 kept verbatim —
 unique delegation/artifact rules). Locked the union with a frozen-fixture, RED-first migration test
@@ -17,7 +17,7 @@ cross-tool ownership contract doc.
 
 - [x] 0.1 Branch gate — satisfied at apply start.
 - [x] 1.1-1.6 RED — frozen fixtures + all guards + byte-delta placeholder, confirmed failing against pre-change source.
-- [x] 2.1-2.3 GREEN — `extensions/gentle-ai.ts` edits.
+- [x] 2.1-2.3 GREEN — `extensions/jero-ai.ts` edits.
 - [x] 3.1-3.3 GREEN — `assets/orchestrator.md` edits.
 - [x] 4.1-4.3 Byte measurement — `byte-measurements.md` + test assertions updated with real values.
 - [x] 5.1 Cross-tool ownership contract doc.
@@ -28,11 +28,11 @@ cross-tool ownership contract doc.
 | File | Action | What Was Done |
 |------|--------|---------------|
 | `tests/persona-single-channel.test.ts` | Created | Frozen-fixture line-level union sweep (Table A/B rules), exact-string + concept-level (regex) duplication guards, added-rule assertion, byte-delta assertions with real measured values, persona-selection regression checks. 28 tests, all passing post-change. |
-| `extensions/gentle-ai.ts` | Modified | `GENTLEMAN_PERSONA_PROMPT` (:148-155) gains `- Always respond in the same language the user writes in.` (mirrors `NEUTRAL_PERSONA_PROMPT`, position 2 in the bullet list to match). Wrapper Identity contract block (was :179-184) replaced with design.md's exact post-change text (5-bullet union, merged self-description paragraph, trimmed persona-mode bullet). |
+| `extensions/jero-ai.ts` | Modified | `GENTLEMAN_PERSONA_PROMPT` (:148-155) gains `- Always respond in the same language the user writes in.` (mirrors `NEUTRAL_PERSONA_PROMPT`, position 2 in the bullet list to match). Wrapper Identity contract block (was :179-184) replaced with design.md's exact post-change text (5-bullet union, merged self-description paragraph, trimmed persona-mode bullet). |
 | `assets/orchestrator.md` | Modified | `## Identity Contract` (was :5-21) replaced with the one-line pointer. `## Language Boundary` LB1 sentence (was :30) replaced with the one-line pointer; LB2 (subagent-English), LB3 (artifacts-English), LB4 (public-comment language), LB5/Exceptions kept verbatim, byte-for-byte. |
 | `tests/artifact-language.test.ts` | Modified (collateral) | One pre-existing assertion asserted the OLD LB1 sentence verbatim (`/User-facing conversation should stay in the user's language/`). Updated to assert the new pointer text instead — the rest of that test (artifact-language separation, LB2-LB5 content) was unaffected and untouched. See Deviations. |
 | `openspec/changes/persona-single-channel/byte-measurements.md` | Created | Section-level and whole-file `wc -c` before/after measurements, method, comparison against design.md's converged figures, and the one flagged 1B deviation (orchestrator Identity pointer: 149B measured vs 148B estimate). |
-| `openspec/changes/persona-single-channel/cross-tool-persona-ownership-contract.md` | Created | gentle-pi-canonical ownership statement + 3 guarantees + drift control + cross-reference, mirroring gentle-ai's `engram-protocol-dedup/upstream-protocol-flag-contract.md` pattern. Documents gentle-ai's `APPEND_SYSTEM.md` persona-section slimming as an out-of-scope follow-up. |
+| `openspec/changes/persona-single-channel/cross-tool-persona-ownership-contract.md` | Created | jero-pi-canonical ownership statement + 3 guarantees + drift control + cross-reference, mirroring gentle-ai's `engram-protocol-dedup/upstream-protocol-flag-contract.md` pattern. Documents gentle-ai's `APPEND_SYSTEM.md` persona-section slimming as an out-of-scope follow-up. |
 | `openspec/changes/persona-single-channel/tasks.md` | Modified | All 20 tasks ticked `[x]` with completion notes. |
 | `openspec/changes/persona-single-channel/specs/session-persona/spec.md` | Modified | All 6 Acceptance Criteria bullets ticked `[x]`. |
 
@@ -85,7 +85,7 @@ edited (Phase 2/3), then pass (GREEN, 28/28).
 | **Net per session (gentleman)** | — | — | **−283 B (≈ −0.28 KB)** | Within design's converged "≈ −0.3 KB" |
 | **Net per session (neutral)** | — | — | **−341 B (≈ −0.33 KB)** | Within design's converged "≈ −0.3 KB" |
 
-Whole-file `wc -c` cross-check: `extensions/gentle-ai.ts` +437 B, `assets/orchestrator.md` −719 B
+Whole-file `wc -c` cross-check: `extensions/jero-ai.ts` +437 B, `assets/orchestrator.md` −719 B
 (1 B off the −720 B section-sum, same rounding-noise artifact, confirmed via `git diff --stat`
 showing only the two intended hunks per file).
 
@@ -138,7 +138,7 @@ None. All 20 tasks across 7 phases complete.
 - Boundary: starts at Phase 0 (branch gate, pre-satisfied) and ends at Phase 6 (full green suite +
   spec acceptance criteria checked).
 - Estimated review budget impact: diff is `tests/persona-single-channel.test.ts` (new, ~460 lines,
-  fixture-heavy — the dominant contributor anticipated in the forecast), `extensions/gentle-ai.ts`
+  fixture-heavy — the dominant contributor anticipated in the forecast), `extensions/jero-ai.ts`
   (+5/-4 lines), `assets/orchestrator.md` (+2/-15 lines), `tests/artifact-language.test.ts` (+4/-1,
   collateral), plus two new markdown artifacts (`byte-measurements.md`,
   `cross-tool-persona-ownership-contract.md`) and the two OpenSpec tracking files

@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { visibleWidth, type TuiMouseEvent } from "@earendil-works/pi-tui";
-import { emptyThread, TASK_EVENT, TASK_STATUS, TaskStore, type TaskRecord } from "../lib/agents-protocol.ts";
-import { renderThreadItem } from "../lib/agents-thread-view.ts";
-import { AgentsView, taskHeader } from "../lib/agents-view.ts";
-import { stripAnsi } from "../lib/terminal-theme.ts";
+import { emptyThread, TASK_EVENT, TASK_STATUS, TaskStore, type TaskRecord } from "../lib/agents/agents-protocol.ts";
+import { renderThreadItem } from "../lib/agents/agents-thread-view.ts";
+import { AgentsView, taskHeader } from "../lib/agents/agents-view.ts";
+import { stripAnsi } from "../lib/core/terminal-theme.ts";
 
 // Gentle Agents overlay: list left, selected thread right, tail-following,
 // and only the selected task subscribed.

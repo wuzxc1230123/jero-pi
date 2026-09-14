@@ -170,7 +170,7 @@ There is no compatibility window, parallel authority, automatic conversion, auth
 
 ## Affected areas
 
-- `lib/review-transaction.ts` graph-v1 storage, reduction, recovery, reset detection, and transaction surface;
+- `lib/review/review-transaction.ts` graph-v1 storage, reduction, recovery, reset detection, and transaction surface;
 - storage schemas and canonical hashing utilities;
 - Git repository/common-directory resolution;
 - authoritative mutation locking and crash publication paths;

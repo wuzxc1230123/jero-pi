@@ -5,13 +5,13 @@ import { tmpdir } from "node:os";
 import { delimiter, join, resolve } from "node:path";
 import test from "node:test";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { __testing, createGentleAiExtension } from "../../extensions/gentle-ai.ts";
-import { resolveGentleAiBinary } from "../../lib/gentle-ai-binary.ts";
-import { OPAQUE_PI_REVIEWER_ARGV } from "../../lib/opaque-pi-reviewer-adapter.ts";
-import { NativeReviewCliV216, type ExecFileAdapter, type NativeReviewCli } from "../../lib/native-review-cli.ts";
-import { REVIEW_HOST_RELAY_FAILURE, ReviewHostRelayError, reviewHostRelaySlots, runReviewHostRelaySlot } from "../../lib/review-host-relay.ts";
-import { GENTLE_PI_REVIEW_RELAY_CONTRACT, GENTLE_PI_REVIEW_RELAY_CONTRACT_ENV } from "../../lib/review-relay-contract.ts";
-import { decodeReviewStatusV3 } from "../../lib/review-integration-v2.ts";
+import { __testing, createGentleAiExtension } from "../../extensions/jero-ai.ts";
+import { resolveGentleAiBinary } from "../../lib/core/gentle-ai-binary.ts";
+import { OPAQUE_PI_REVIEWER_ARGV } from "../../lib/review/opaque-pi-reviewer-adapter.ts";
+import { NativeReviewCliV216, type ExecFileAdapter, type NativeReviewCli } from "../../lib/native/native-review-cli.ts";
+import { REVIEW_HOST_RELAY_FAILURE, ReviewHostRelayError, reviewHostRelaySlots, runReviewHostRelaySlot } from "../../lib/review/review-host-relay.ts";
+import { GENTLE_PI_REVIEW_RELAY_CONTRACT, GENTLE_PI_REVIEW_RELAY_CONTRACT_ENV } from "../../lib/review/review-relay-contract.ts";
+import { decodeReviewStatusV3 } from "../../lib/review/review-integration-v2.ts";
 import { requireDevBinary } from "../support/native-binary-gate.ts";
 
 const DEV_BINARY = process.env.GENTLE_AI_DEV_BINARY;
@@ -313,8 +313,8 @@ process.stdin.on("end", () => {
 // does not manufacture the remaining reviewer, refuter, validator, or approval
 // transitions.
 test("dev-binary: POSIX Pi host relay captures one real B-target slot from an A-session without reoffering it", { skip: !RUNNABLE }, async (t) => {
-	const sessionA = repository(t, "gentle-pi-relay-session-a-");
-	const targetB = repository(t, "gentle-pi-relay-target-b-");
+	const sessionA = repository(t, "jero-pi-relay-session-a-");
+	const targetB = repository(t, "jero-pi-relay-target-b-");
 	const nestedTarget = join(targetB, "nested");
 	mkdirSync(nestedTarget);
 	const workflowDirectory = join(targetB, ".github", "workflows");
@@ -437,7 +437,7 @@ test("dev-binary: POSIX Pi host relay captures one real B-target slot from an A-
 // consumed; the host must relay that refusal and its continuation instead of
 // an unknown outcome the contract forbids replaying.
 test("dev-binary: a garbage reviewer result is refused at admission as a proven non-mutation and the same slot is reoffered", { skip: !RUNNABLE }, async (t) => {
-	const cwd = repository(t, "gentle-pi-relay-refused-");
+	const cwd = repository(t, "jero-pi-relay-refused-");
 	const workflowDirectory = join(cwd, ".github", "workflows");
 	mkdirSync(workflowDirectory, { recursive: true });
 	const workflow = join(workflowDirectory, "relay.yml");
@@ -449,7 +449,7 @@ test("dev-binary: a garbage reviewer result is refused at admission as a proven 
 	// The isolated home and the fake reviewer live outside the candidate so
 	// the repository stays free of untracked paths and START needs no
 	// intended-untracked selection.
-	const scratch = mkdtempSync(join(tmpdir(), "gentle-pi-relay-refused-scratch-"));
+	const scratch = mkdtempSync(join(tmpdir(), "jero-pi-relay-refused-scratch-"));
 	t.after(() => rmSync(scratch, { recursive: true, force: true }));
 	const isolatedHome = join(scratch, "home");
 	mkdirSync(isolatedHome);
@@ -517,8 +517,8 @@ test("dev-binary: a garbage reviewer result is refused at admission as a proven 
 // Go-owned targeted validation, and terminal approval. The only reviewer is the
 // fixed fake Pi executable below; no model, provider, or profile is selected.
 test("dev-binary: Pi controller keeps an explicit B root and selected-untracked binding through Go-owned validation approval", { skip: !RUNNABLE }, async (t) => {
-	const sessionA = repository(t, "gentle-pi-combined-session-a-");
-	const targetB = repository(t, "gentle-pi-combined-target-b-");
+	const sessionA = repository(t, "jero-pi-combined-session-a-");
+	const targetB = repository(t, "jero-pi-combined-target-b-");
 	const nestedTarget = join(targetB, "nested", "target");
 	mkdirSync(nestedTarget, { recursive: true });
 	const workflowDirectory = join(targetB, ".github", "workflows");
@@ -536,7 +536,7 @@ test("dev-binary: Pi controller keeps an explicit B root and selected-untracked 
 	// --git-common-dir answers relative to the repository it was asked about, so
 	// resolving it against the process cwd compared the active project with
 	// itself: the assertion held in a linked worktree and failed in a primary
-	// checkout, and in neither case measured what it names. lib/review-candidate-view.ts
+	// checkout, and in neither case measured what it names. lib/review/review-candidate-view.ts
 	// resolves it against the repository root, which is the convention here too.
 	const activeProjectCommonDir = realpathSync(resolve(process.cwd(), git(process.cwd(), "rev-parse", "--git-common-dir")));
 	const sandboxCommonDir = realpathSync(resolve(canonicalB, git(canonicalB, "rev-parse", "--git-common-dir")));

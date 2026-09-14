@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Defines how `gentle-pi` SDD maintains OpenSpec-compatible file-backed specs without requiring the external OpenSpec CLI/package.
+Defines how `jero-pi` SDD maintains OpenSpec-compatible file-backed specs without requiring the external OpenSpec CLI/package.
 
 ## Requirements
 
@@ -110,6 +110,6 @@ The SDD preflight or status flow MUST surface when installed `.pi` SDD assets di
 #### Scenario: stale installed asset detected
 
 - GIVEN `.pi/agents/sdd-spec.md` differs from `assets/agents/sdd-spec.md`
-- WHEN SDD preflight or `/gentle:status` runs
+- WHEN SDD preflight or `/jero:status` runs
 - THEN the user sees a warning that installed SDD assets are stale
 - AND receives the safe refresh command or next action

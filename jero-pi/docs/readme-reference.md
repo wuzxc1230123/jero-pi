@@ -55,25 +55,25 @@ Pointer input is fullscreen-only. Regions preserve a consuming child's native re
 `Text`, activate on press or wheel, synthesize outside leave events, or alter terminal tracking.
 Callers own keyboard policy, theme state, and business actions.
 
-**Migration note:** Do not enable `pi-tool-cards` and `quiet-tools` together: Pi rejects duplicate `bash`, `read`, `edit`, and `write` registrations. Disable or remove the standalone package during migration; gentle-pi does not change those package registrations or delete that repository. The global fullscreen setting described below is a separate install-time change.
+**Migration note:** Do not enable `pi-tool-cards` and `quiet-tools` together: Pi rejects duplicate `bash`, `read`, `edit`, and `write` registrations. Disable or remove the standalone package during migration; jero-pi does not change those package registrations or delete that repository. The global fullscreen setting described below is a separate install-time change.
 
 ## Install
 
 ```bash
-pi install npm:gentle-pi@2.6.0
+pi install npm:jero-pi@2.6.0
 ```
 
 The stable release is [`v2.6.0`](https://github.com/Gentleman-Programming/gentle-pi/releases/tag/v2.6.0). Restart Pi after installation, then run `gentle-ai sync`. That published release pairs with Gentle AI `v2.8.0` and provider contract `1.2.0`; capabilities `v2.5` are retained. The command above installs that exact published version.
 
 ### Source checkout
 
-This checkout prepares `gentle-pi` `2.6.2`; it is source state, not a published release. Its package-local native runtime pin is Gentle AI `v2.8.2`, distinct from the published `v2.6.0` pairing.
+This checkout prepares `jero-pi` `2.6.2`; it is source state, not a published release. Its package-local native runtime pin is Gentle AI `v2.8.2`, distinct from the published `v2.6.0` pairing.
 
 ### Pi compatibility
 
-The current package requires Pi 0.85.1 or newer (development tests pin 0.85.1). Use the latest Pi release; gentle-pi does not update your installed Pi automatically. Children, including any `GENTLE_PI_AGENTS_PI` override, must emit `agent_settled`: `agent_end` records a run's output but is not completion because retries or queued continuations may follow.
+The current package requires Pi 0.85.1 or newer (development tests pin 0.85.1). Use the latest Pi release; jero-pi does not update your installed Pi automatically. Children, including any `GENTLE_PI_AGENTS_PI` override, must emit `agent_settled`: `agent_end` records a run's output but is not completion because retries or queued continuations may follow.
 
-The [`v2.6.0` release](https://github.com/Gentleman-Programming/gentle-pi/releases/tag/v2.6.0) adds persistent registered worktrees and grouped `/gentle:changes` views; fuller workspace interaction details are in the [Gentle Shell reference](gentle-shell.md). It also adds named atomic `/gentle:profiles`, parent-confirmed native SDD preflight transport, native review intended-untracked selection and provider continuations, and opt-in custom ask responses. Pi recognizes its global Git-managed package path; subsystems install with explicit recovery guidance when npm lifecycle work was skipped. Windows keeps child consoles hidden and fixes ownership mode; Gentle Todo keeps the next pending task visible when collapsed.
+The [`v2.6.0` release](https://github.com/Gentleman-Programming/gentle-pi/releases/tag/v2.6.0) adds persistent registered worktrees and grouped `/jero:changes` views; fuller workspace interaction details are in the [Gentle Shell reference](jero-shell.md). It also adds named atomic `/jero:profiles`, parent-confirmed native SDD preflight transport, native review intended-untracked selection and provider continuations, and opt-in custom ask responses. Pi recognizes its global Git-managed package path; subsystems install with explicit recovery guidance when npm lifecycle work was skipped. Windows keeps child consoles hidden and fixes ownership mode; Gentle Todo keeps the next pending task visible when collapsed.
 
 ### Install-time fullscreen
 
@@ -89,12 +89,12 @@ Native RDD was introduced in `gentle-pi` `v0.15.0` on 2026-07-10 with bounded re
 
 ```bash
 # Stable release
-pi install npm:gentle-pi@2.6.0
+pi install npm:jero-pi@2.6.0
 ```
 
-RDD remains opt-in. Enable it only through an explicit user decision with `/gentle:review-mode enable`; `status` lets you inspect the mode without changing it.
+RDD remains opt-in. Enable it only through an explicit user decision with `/jero:review-mode enable`; `status` lets you inspect the mode without changing it.
 
-The source checkout's RDD integration installs Gentle AI only into its private `.gentle-ai/` directory. Darwin and Linux use pinned release assets with asset and executable SHA-256 verification (signed archives for source pin `v2.8.2`; raw prerelease binaries only under a prerelease pin). Windows x64 and arm64 build the exact `v2.8.2` source tag with a local Go 1.25.10+ toolchain, a sealed Go environment, `GOTOOLCHAIN=local`, and `GOSUMDB=sum.golang.org`; it does not download Go automatically. Windows provenance is Go-toolchain plus SumDB evidence and postinstall tamper detection, **not** Authenticode or protection against a malicious joint binary-and-manifest replacement. Package-private locks coordinate cooperative concurrent or crashed installers; their tombstones fail closed. A malicious same-user process with write access to package-private `node_modules` is outside that protocol because it can already replace package code, binary, or manifest, and portable Node has no pathname-delete CAS. It never uses `PATH` or a global `gentle-ai` installation. For development or offline installs only, set `GENTLE_PI_SKIP_GENTLE_AI_INSTALL=1`; native review operations then fail closed with an actionable `package-local-binary-missing` error. To recover explicitly, if `GENTLE_PI_SKIP_GENTLE_AI_INSTALL` is set, remove or unset it before changing to the installed `gentle-pi` package directory. Then run `node scripts/install-gentle-ai.mjs`. This invokes the package-owned installer without relying on a global binary or npm configuration change. A missing binary can result from skipped lifecycle scripts, but does not prove that lifecycle scripts were disabled.
+The source checkout's RDD integration installs Gentle AI only into its private `.gentle-ai/` directory. Darwin and Linux use pinned release assets with asset and executable SHA-256 verification (signed archives for source pin `v2.8.2`; raw prerelease binaries only under a prerelease pin). Windows x64 and arm64 build the exact `v2.8.2` source tag with a local Go 1.25.10+ toolchain, a sealed Go environment, `GOTOOLCHAIN=local`, and `GOSUMDB=sum.golang.org`; it does not download Go automatically. Windows provenance is Go-toolchain plus SumDB evidence and postinstall tamper detection, **not** Authenticode or protection against a malicious joint binary-and-manifest replacement. Package-private locks coordinate cooperative concurrent or crashed installers; their tombstones fail closed. A malicious same-user process with write access to package-private `node_modules` is outside that protocol because it can already replace package code, binary, or manifest, and portable Node has no pathname-delete CAS. It never uses `PATH` or a global `gentle-ai` installation. For development or offline installs only, set `GENTLE_PI_SKIP_GENTLE_AI_INSTALL=1`; native review operations then fail closed with an actionable `package-local-binary-missing` error. To recover explicitly, if `GENTLE_PI_SKIP_GENTLE_AI_INSTALL` is set, remove or unset it before changing to the installed `jero-pi` package directory. Then run `node scripts/install-gentle-ai.mjs`. This invokes the package-owned installer without relying on a global binary or npm configuration change. A missing binary can result from skipped lifecycle scripts, but does not prove that lifecycle scripts were disabled.
 
 Recommended companion packages:
 
@@ -112,34 +112,34 @@ Then start Pi in a project:
 pi
 ```
 
-`gentle-pi` installs delegation and review agents at startup. SDD agents, chains, and support are global Pi runtime assets installed on demand, not per-project setup. The first SDD flow in a session runs a one-time SDD preflight for preferences and managed-asset refresh; for natural-language requests, el Gentleman decides when SDD is needed and runs the explicit preflight first.
+`jero-pi` installs delegation and review agents at startup. SDD agents, chains, and support are global Pi runtime assets installed on demand, not per-project setup. The first SDD flow in a session runs a one-time SDD preflight for preferences and managed-asset refresh; for natural-language requests, el Gentleman decides when SDD is needed and runs the explicit preflight first.
 
 ## Quick start
 
 ```text
-/gentle:status          Check package, SDD assets, OpenSpec, and global model config.
-/gentle:doctor          Run read-only diagnostics for SDD assets, config, tools, and guards.
-/gentle:sdd-preflight   Run or reuse the session SDD preflight explicitly.
+/jero:status          Check package, SDD assets, OpenSpec, and global model config.
+/jero:doctor          Run read-only diagnostics for SDD assets, config, tools, and guards.
+/jero:sdd-preflight   Run or reuse the session SDD preflight explicitly.
 /gentle-sdd-init           Create or refresh openspec/config.yaml (openspec/both stores only).
-/gentle:models             Assign global model/effort routing to SDD/custom agents.
-/gentle:profiles           Create, switch, and manage global agent-model profiles.
-/gentle:persona            Switch between gentleman and neutral persona modes.
-/gentle:background-subagents  Show or set the managed background-subagents policy, with its deciding source.
-/gentle:review-mode          Show or set the receipt-driven development mode (status|enable|disable).
-/gentle:banner             Configure startup rose, text logo, and color preset.
+/jero:models             Assign global model/effort routing to SDD/custom agents.
+/jero:profiles           Create, switch, and manage global agent-model profiles.
+/jero:persona            Switch between gentleman and neutral persona modes.
+/jero:background-subagents  Show or set the managed background-subagents policy, with its deciding source.
+/jero:review-mode          Show or set the receipt-driven development mode (status|enable|disable).
+/jero:banner             Configure startup rose, text logo, and color preset.
 ```
 
 Typical flow:
 
 1. Open Pi in your repo.
-2. Run `/gentle:status`.
+2. Run `/jero:status`.
 3. Run `/gentle-sdd-init` once per project, or when test/project capabilities change. This also runs the session SDD preflight.
 4. For a substantial change, ask Pi to use SDD. Natural-language requests are classified by the parent agent, not by brittle runtime regexes.
 5. Review the phase artifacts instead of trusting floating chat context.
 
 ## Core workflow
 
-1. **Install and inspect.** Install `gentle-pi`, open Pi in the target repository, then run `/gentle:status` or `/gentle:doctor`.
+1. **Install and inspect.** Install `jero-pi`, open Pi in the target repository, then run `/jero:status` or `/jero:doctor`.
 2. **Plan when risk justifies it.** Small work stays direct; substantial work uses SDD with Engram, OpenSpec, or both so requirements and decisions survive compaction.
 3. **Build with evidence.** One focused writer implements the approved scope. When Strict TDD is available, apply and verify preserve RED → GREEN → TRIANGULATE → REFACTOR evidence.
 4. **Use runtime-owned RDD when available.** Gentle AI supplies any runtime-specific review instructions; this package does not recreate a lifecycle in documentation or prompts.
@@ -149,7 +149,7 @@ Typical flow:
 
 ## How the harness decides what to do
 
-`gentle-pi` routes through the smallest safe workflow:
+`jero-pi` routes through the smallest safe workflow:
 
 | Request shape                                                               | Harness                      |
 | --------------------------------------------------------------------------- | ---------------------------- |
@@ -161,7 +161,7 @@ The goal is not ceremony. The goal is to avoid accidental chaos. Once a task sto
 
 ### Delegation triggers
 
-`gentle-pi` keeps the parent session thin and delegates at the narrowest useful point. When the Pi Subagents extension is installed, the preferred runtime is the `subagent_*` tool family because it runs the user's configured project/global subagent definitions and preserves history/background behavior. With the background policy on, delegations default to background mode: the terminal stays free and each result comes back as a message that starts a new turn; task mode is reserved for delegations that must ask the user something mid-flight. If those tools are unavailable, the parent should fall back to Pi's native `Agent` tool or another available delegation mechanism. The requirement is delegation; the runtime is capability-dependent.
+`jero-pi` keeps the parent session thin and delegates at the narrowest useful point. When the Pi Subagents extension is installed, the preferred runtime is the `subagent_*` tool family because it runs the user's configured project/global subagent definitions and preserves history/background behavior. With the background policy on, delegations default to background mode: the terminal stays free and each result comes back as a message that starts a new turn; task mode is reserved for delegations that must ask the user something mid-flight. If those tools are unavailable, the parent should fall back to Pi's native `Agent` tool or another available delegation mechanism. The requirement is delegation; the runtime is capability-dependent.
 
 | Trigger                                                                                                                     | Required behavior                                                             |
 | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
@@ -213,9 +213,9 @@ The former compact controller classified documentation/comment/formatting-only c
 
 ### Review authority architecture (reference only)
 
-Gentle AI dynamically supplies runtime-specific RDD instructions. `gentle-pi` does not define an RDD lifecycle, command route, approval path, recovery sequence, or fallback. The historical compact-controller material below documents architecture and compatibility boundaries only; it is not an operator instruction.
+Gentle AI dynamically supplies runtime-specific RDD instructions. `jero-pi` does not define an RDD lifecycle, command route, approval path, recovery sequence, or fallback. The historical compact-controller material below documents architecture and compatibility boundaries only; it is not an operator instruction.
 
-Concretely: `gentle-pi` mirrors the Gentle AI provider contract bundle's `orchestration/pi.md` locally (`contracts/review-provider-contract-mirror/`, verified against the mirror lock's recorded SHA-256 before injection) and injects that mirrored text into the primary session's system prompt at session start. Gentle AI does not write anything into Pi's system prompt; when the mirrored contract is absent, unreadable, or fails digest verification, `gentle-pi` invents no fallback lifecycle.
+Concretely: `jero-pi` mirrors the Gentle AI provider contract bundle's `orchestration/pi.md` locally (`contracts/review-provider-contract-mirror/`, verified against the mirror lock's recorded SHA-256 before injection) and injects that mirrored text into the primary session's system prompt at session start. Gentle AI does not write anything into Pi's system prompt; when the mirrored contract is absent, unreadable, or fails digest verification, `jero-pi` invents no fallback lifecycle.
 
 ```mermaid
 flowchart TD
@@ -252,7 +252,7 @@ VALIDATE is informational. Commit, push, PR, and release commands follow ordinar
 
 For the source checkout, native contract pairing is exact: this adapter resolves only the integrity-verified package-local Gentle AI v2.8.2 executable, independently hashes it, then negotiates `gentle-ai.review-integration/v2` outside the repository. Capabilities are cached by that executable digest. Every START, target status, FINALIZE, validate, and BIND-SDD request passes the same contract identifier. Negotiated envelopes decode exactly against the vendored schemas; `recover` routes only the provider-selected `action_disposition`, and optional additions require a future compatible schema/minor that the provider explicitly advertises and the consumer negotiates.
 
-Contract `/v2` replaces the Base64 `candidate_diff` reviewer transport of `/v1` with immutable `base_tree`/`candidate_tree` plus an ordered `changed_path_manifest` and never an inline patch. `gentle-pi` negotiates `/v2` only, with no dual-lane fallback; the cutover landed as one atomic commit against gentle-ai v2.2.2 (tracked by the `migrate-review-integration-v2` change), and the `/v1` schemas stay packaged because the `/v2` schemas `$ref` into their fragments. This provider contract version is unrelated to Pi's own internal "compact-v2" review-authority naming used below — the shared digit is coincidental, not a version pairing.
+Contract `/v2` replaces the Base64 `candidate_diff` reviewer transport of `/v1` with immutable `base_tree`/`candidate_tree` plus an ordered `changed_path_manifest` and never an inline patch. `jero-pi` negotiates `/v2` only, with no dual-lane fallback; the cutover landed as one atomic commit against gentle-ai v2.2.2 (tracked by the `migrate-review-integration-v2` change), and the `/v1` schemas stay packaged because the `/v2` schemas `$ref` into their fragments. This provider contract version is unrelated to Pi's own internal "compact-v2" review-authority naming used below — the shared digit is coincidental, not a version pairing.
 
 Target status owns `current_target`, `unrelated`, `ambiguous`, and `corrupted` applicability and returns one native action. Pi does not reconstruct ordinary authority from provider-private files or choose a lineage from repository-wide history. Restart recovery rebuilds only the derived candidate view from the native Git/content projection, including intended-untracked paths, symlinks, and immutable gitlink identities. Native failure envelopes retain their exact mutation outcome, replayability, required inputs, request digest, and next action. After an unknown or lost mutating result, Pi calls target status before any replay decision and returns only the provider-declared action.
 
@@ -320,7 +320,7 @@ Native review mode and the two candidate choices remain provider-owned lifecycle
 
 The host grant is held only in a schema-checked `globalThis[Symbol.for(...)]` WeakMap registry keyed by session and canonical Git common-directory digest. It is never written through session entries, settings, environment variables, or the old asked latch. A package-owned Gentle Agents child can request one bounded parent-owned stdio authorization for its own validated pending ordinary START; it sends only that target's canonical repository digest, and the parent rechecks the live task, digest, and current parent session grant before the child replays its exact provider grant locally. No candidate bytes, provider vectors, paths, local child grant, or delivery authority crosses that channel. External or legacy `pi-subagents` launchers do not receive this channel and remain unsupported. Headless/RPC/unsupported UI, external processes, model prose, tool arguments, cancellation, identity drift, malformed identity, and uncertain native results cannot create or consume the grant. Native workspace binding remains canonical and target-specific; session-wide consent never authorizes an unselected target or an unrelated repository. The grant conveys no review verdict, forecast/cost approval, acknowledgement, maintenance, delivery, or cross-repository authority. When the host cannot resolve the choice, `gentle_review` returns the original unresolved two-choice provider envelope unchanged for the normal lossless relay. SessionManager binding isolates simultaneous SDK sessions; Pi does not claim universal same-process agent-principal isolation because the SDK exposes no principal identity.
 
-When RDD is on and an agent loop ends with an unreviewed candidate, `gentle-pi` sends one read-only reminder pointing the agent back to `gentle_review {"operation":"inspect"}` before it reports completion. This nudge is idempotent (at most once per target identity per session), never fires for a headless session or a subagent's own loop, and never runs START or answers consent itself. Pi treats a child `agent_end` as a latest-answer update, not completion: queued retry, compaction, follow-up, required verification, and legitimate post-correction verification remain live until `agent_settled`. It does not claim ready or RDD-ready first, but this ordering rule does not impose a universal full-suite requirement or turn a receipt into a delivery gate. At session start, `gentle-pi` records the current target identity as a baseline, so a candidate that already existed before the session began (the user's own prior work, not this session's output) never draws the reminder.
+When RDD is on and an agent loop ends with an unreviewed candidate, `jero-pi` sends one read-only reminder pointing the agent back to `gentle_review {"operation":"inspect"}` before it reports completion. This nudge is idempotent (at most once per target identity per session), never fires for a headless session or a subagent's own loop, and never runs START or answers consent itself. Pi treats a child `agent_end` as a latest-answer update, not completion: queued retry, compaction, follow-up, required verification, and legitimate post-correction verification remain live until `agent_settled`. It does not claim ready or RDD-ready first, but this ordering rule does not impose a universal full-suite requirement or turn a receipt into a delivery gate. At session start, `jero-pi` records the current target identity as a baseline, so a candidate that already existed before the session began (the user's own prior work, not this session's output) never draws the reminder.
 
 Review outcomes and receipt state are informational; commit, push, pull-request, and release delivery follow ordinary repository policy. No one-shot command authorization, publication-target revalidation, or receipt gate is required for delivery, and Pi does not inspect RDD mode or native authority to decide a Bash delivery command.
 
@@ -328,7 +328,7 @@ Dangerous-command safety remains independent and authoritative. Destructive-revi
 
 The Pi host relay bounds each locked-down reviewer subprocess by materialized prompt size rather than by one fixed number: a 15-minute floor plus 15 minutes per mebibyte of prompt, clamped to a 2-hour ceiling. Set `GENTLE_PI_REVIEW_RELAY_PI_TIMEOUT_MS` to a positive decimal to replace that derived bound with your own; malformed values are ignored and the same 2-hour ceiling still applies, so no configuration turns a foreground finalize into an unbounded child process. A reviewer killed by the bound reports `pi-host-relay-timeout` with the elapsed time and the limit it was measured against, and it explicitly does not ask you to relaunch the identical slot — that would re-spend the model tokens to reach the same wall. Reviewer results admitted earlier in the same finalize stay admitted and are not re-run.
 
-Adversarial review roles (the refuter and the targeted validator) are never Pi-authored: the provider renders self-contained `review.capture-refuter` / `review.capture-validation` vectors and Go runs its own locked-down `pi` process on them. Package agent assets remain a package-managed isolated installation. Project and user overrides may shadow a package asset; `gentle-pi` preserves those definitions and does not claim their effective permissions are package-compliant.
+Adversarial review roles (the refuter and the targeted validator) are never Pi-authored: the provider renders self-contained `review.capture-refuter` / `review.capture-validation` vectors and Go runs its own locked-down `pi` process on them. Package agent assets remain a package-managed isolated installation. Project and user overrides may shadow a package asset; `jero-pi` preserves those definitions and does not claim their effective permissions are package-compliant.
 
 ## SDD/OpenSpec flow
 
@@ -359,7 +359,7 @@ For substantial work, the parent session coordinates the flow and each phase wri
 
 ### OpenSpec artifact model
 
-`gentle-pi` treats OpenSpec-compatible behavior as part of the harness. You do not need to install the external OpenSpec CLI/package for SDD.
+`jero-pi` treats OpenSpec-compatible behavior as part of the harness. You do not need to install the external OpenSpec CLI/package for SDD.
 
 In file-backed modes, canonical accepted behavior lives in `openspec/specs/`, while active changes carry deltas under `openspec/changes/`:
 
@@ -409,7 +409,7 @@ Engram-only mode is different by design: Engram is working memory and does not m
 
 ## SDD preflight and project files
 
-`gentle-pi` does not require SDD agents to be copied into every project. The package installs and refreshes global Pi SDD assets under the Pi agent home on SDD activation, and treats project-local files only as overrides/debug copies. Slash SDD flows such as `/sdd-*`, `/gentle-sdd-init`, and the explicit `/gentle:sdd-preflight` command run a lazy preflight and resolve session-scoped SDD preferences. For natural-language requests, the parent agent decides whether the work should use SDD and must run/reuse `/gentle:sdd-preflight` before continuing.
+`jero-pi` does not require SDD agents to be copied into every project. The package installs and refreshes global Pi SDD assets under the Pi agent home on SDD activation, and treats project-local files only as overrides/debug copies. Slash SDD flows such as `/sdd-*`, `/gentle-sdd-init`, and the explicit `/jero:sdd-preflight` command run a lazy preflight and resolve session-scoped SDD preferences. For natural-language requests, the parent agent decides whether the work should use SDD and must run/reuse `/jero:sdd-preflight` before continuing.
 
 ```text
 ~/.pi/agent/agents/sdd-*.md
@@ -424,9 +424,9 @@ Canonical values are `auto` execution mode, `openspec` artifact store, `ask-on-r
 Startup refreshes only hash-proven delegation and review assets; existing SDD package content is preserved until SDD preflight or an explicit SDD installation command. For the previously unowned `sdd-research.md`, SDD refresh recognizes only the known old content hash (ignoring model/thinking routing), preserves routing, and records ownership. Body-edited or unknown assets remain untouched. Manual refresh uses the same ownership checks, scoped to the selected owner:
 
 ```text
-/gentle:install-delegation --force
-/gentle:install-review --force
-/gentle:install-sdd --force
+/jero:install-delegation --force
+/jero:install-review --force
+/jero:install-sdd --force
 ```
 
 SDD preflight (including `/gentle-sdd-init`) installs missing SDD agents, chains, and support files and refreshes hash-proven managed SDD copies only. It preserves user edits and project overrides. Applying explicit saved model settings remains a separate, global concern at startup and preflight; the three installer commands do not apply model settings.
@@ -444,12 +444,12 @@ Workspace edits do not activate a different installed package path. Activate the
 Manual preflight command:
 
 ```text
-/gentle:sdd-preflight
+/jero:sdd-preflight
 ```
 
 ## Skill registry
 
-`gentle-pi` keeps a local registry at:
+`jero-pi` keeps a local registry at:
 
 ```text
 .atl/skill-registry.md
@@ -503,7 +503,7 @@ Behavior:
 
 Skill discovery is a guardrail, not a workflow router: it helps Pi load the right skill without forcing extra ceremony.
 
-`gentle-pi` also ships package-owned `gentle-ai-skill-creator` and `gentle-ai-skill-improver` skills plus the `/skill-creation` prompt for creating or updating project skills. Both skills use `docs/skill-style-guide.md` as their normative style contract. The workflow checks for duplicates, keeps `SKILL.md` concise, uses one-line trigger-rich frontmatter, and reminds maintainers to refresh the registry after skill changes.
+`jero-pi` also ships package-owned `gentle-ai-skill-creator` and `gentle-ai-skill-improver` skills plus the `/skill-creation` prompt for creating or updating project skills. Both skills use `docs/skill-style-guide.md` as their normative style contract. The workflow checks for duplicates, keeps `SKILL.md` concise, uses one-line trigger-rich frontmatter, and reminds maintainers to refresh the registry after skill changes.
 
 Packaged skills include `cognitive-doc-design`, `comment-writer`, `gentle-ai-judgment-day`, `gentle-ai-skill-creator`, `gentle-ai-skill-improver`, and the other delivery/review skills under `skills/`. SDD init is installed as the packaged `sdd-init` runtime agent under `assets/agents/` and refreshed with the SDD assets.
 
@@ -519,7 +519,7 @@ Delegation contract:
 ## Persona modes
 
 ```text
-/gentle:persona
+/jero:persona
 ```
 
 | Persona     | Behavior                                                                                                      |
@@ -539,12 +539,12 @@ A project can still override the global default with:
 .pi/gentle-ai/persona.json
 ```
 
-`/gentle:persona` writes the global config and updates an existing project override when one is present, so the current project does not stay stale. Run `/reload` or start a new Pi session after switching persona.
+`/jero:persona` writes the global config and updates an existing project override when one is present, so the current project does not stay stale. Run `/reload` or start a new Pi session after switching persona.
 
 ## Model and effort assignment
 
 ```text
-/gentle:models
+/jero:models
 ```
 
 The modal discovers:
@@ -570,9 +570,9 @@ Saved globally at:
 ~/.pi/gentle-ai/models.json
 ```
 
-Existing project-local `.pi/gentle-ai/models.json` files are still read as a legacy fallback when no global model config exists, but `/gentle:models` writes the shared global config.
+Existing project-local `.pi/gentle-ai/models.json` files are still read as a legacy fallback when no global model config exists, but `/jero:models` writes the shared global config.
 
-Inside `/gentle:models`, press `x` to export the saved routing to `~/.pi/gentle-ai/models.export.json`, or `r` to restore from that file after confirmation. Export uses a versioned envelope and restore writes the normal `models.json` shape before applying routing to agents.
+Inside `/jero:models`, press `x` to export the saved routing to `~/.pi/gentle-ai/models.export.json`, or `r` to restore from that file after confirmation. Export uses a versioned envelope and restore writes the normal `models.json` shape before applying routing to agents.
 
 Config shape (per agent):
 
@@ -593,10 +593,10 @@ Legacy string entries are still accepted and treated as `model`-only config.
 ## Agent-model profiles
 
 ```text
-/gentle:profiles
+/jero:profiles
 ```
 
-Profiles are named, switchable snapshots of the global agent-model routing from `/gentle:models`. The panel fills the terminal, shows the profile list on the left, and a detail pane comparing the selected profile's routing with the currently effective routing, one line per agent in shared columns. Keys:
+Profiles are named, switchable snapshots of the global agent-model routing from `/jero:models`. The panel fills the terminal, shows the profile list on the left, and a detail pane comparing the selected profile's routing with the currently effective routing, one line per agent in shared columns. Keys:
 
 | Key     | Action                                                                 |
 | ------- | ---------------------------------------------------------------------- |
@@ -612,7 +612,7 @@ Profiles are named, switchable snapshots of the global agent-model routing from 
 | `pgup`/`pgdn`, `ctrl+j`/`ctrl+k` | Scroll the detail pane by a page.                                |
 | `esc`   | Close.                                                                 |
 
-Applying a profile writes `~/.pi/gentle-ai/models.json`, then reconciles agent frontmatter and `subagents.json` the same way `/gentle:models` does. The reconciliation happens on the next subagent launch, and that launch still routes with the previous routing — expect one launch of lag after switching. The active profile is persisted so `/gentle:profiles` reopens with the applied profile marked.
+Applying a profile writes `~/.pi/gentle-ai/models.json`, then reconciles agent frontmatter and `subagents.json` the same way `/jero:models` does. The reconciliation happens on the next subagent launch, and that launch still routes with the previous routing — expect one launch of lag after switching. The active profile is persisted so `/jero:profiles` reopens with the applied profile marked.
 
 A profile also carries the orchestrator under the reserved routing key `orchestrator`. Applying a profile that defines it writes `defaultProvider`, `defaultModel`, and `defaultThinkingLevel` to Pi's global `settings.json` (preserving every other key; an unreadable `settings.json` aborts that part and is reported instead of being overwritten). Applying a profile without an `orchestrator` entry never moves the orchestrator, and `s` snapshots the currently effective orchestrator together with the routing. `orchestrator` is reserved: it is not a subagent name, is never written to `subagents.json`, and is not counted as a role.
 
@@ -628,7 +628,7 @@ Store shape:
 
 ```json
 {
-  "kind": "gentle-pi.agent_model_profiles",
+  "kind": "jero-pi.agent_model_profiles",
   "version": 1,
   "active": "deep-work",
   "profiles": {
@@ -647,7 +647,7 @@ Store shape:
 }
 ```
 
-The `profiles` values use the same per-agent shape as `models.json`. Profile names are slugs of 1-64 ASCII characters (letters, numbers, `.`, `_`, `-`, starting with a letter or number); names outside ASCII are rejected, as are the reserved object keys `__proto__`, `constructor`, and `prototype`. A rename or duplicate onto an existing name is refused, renaming the active profile keeps it active, and deleting the active profile is refused. Export and import use a single-profile envelope (`kind: "gentle-pi.agent_model_profile"`, `version: 1`) at `~/.pi/gentle-ai/profiles.export.json`.
+The `profiles` values use the same per-agent shape as `models.json`. Profile names are slugs of 1-64 ASCII characters (letters, numbers, `.`, `_`, `-`, starting with a letter or number); names outside ASCII are rejected, as are the reserved object keys `__proto__`, `constructor`, and `prototype`. A rename or duplicate onto an existing name is refused, renaming the active profile keeps it active, and deleting the active profile is refused. Export and import use a single-profile envelope (`kind: "jero-pi.agent_model_profile"`, `version: 1`) at `~/.pi/gentle-ai/profiles.export.json`.
 
 The store is replaced atomically through a sibling temp file and a rename, so an interrupted write cannot leave truncated JSON behind. Applying a profile writes `profiles.json` first and then materializes routing; if materialization fails, the previous active marker and the previous routing are restored, and anything that could not be restored is named in the warning.
 
@@ -655,24 +655,24 @@ The store is replaced atomically through a sibling temp file and a rename, so an
 
 | Command                          | What it does                                                        |
 | -------------------------------- | ------------------------------------------------------------------- |
-| `/gentle:status`              | Shows package, SDD asset, OpenSpec, and global model config status. |
-| `/gentle:doctor`              | Runs read-only diagnostics for SDD assets, model/persona config, memory tools, and safety guards. |
-| `/gentle:sdd-preflight`          | Runs or reuses the lazy SDD preflight for this Pi session.          |
-| `/gentle:models`                 | Opens global model + effort assignment UI. Press `x` to export and `r` to restore saved routing. |
-| `/gentle:profiles`               | Opens global agent-model profiles: apply live, create, update, duplicate, rename, delete, export, and import. |
-| `/gentle:persona`                | Switches global persona mode, with project override support.        |
-| `/gentle:background-subagents`   | Shows or sets the managed background-subagents policy (`status\|enable\|disable`), naming the source that decided it. |
-| `/gentle:telemetry`              | Shows or changes the local Gentle AI telemetry trigger (`status\|enable\|disable\|preview`).  |
-| `/gentle:review-mode`            | Shows or sets the receipt-driven development mode (`status\|enable\|disable`); user-initiated only, Pi automation never toggles it. |
-| `/gentle:banner`                 | Configures startup banner rose, text logo, and color preset.        |
-| `/gentle:toggle-rose`            | Toggles the startup rose.                                           |
-| `/gentle:toggle-text-logo`       | Toggles the startup text logo.                                      |
-| `/gentle:banner-color`           | Selects a startup banner color preset.                              |
+| `/jero:status`              | Shows package, SDD asset, OpenSpec, and global model config status. |
+| `/jero:doctor`              | Runs read-only diagnostics for SDD assets, model/persona config, memory tools, and safety guards. |
+| `/jero:sdd-preflight`          | Runs or reuses the lazy SDD preflight for this Pi session.          |
+| `/jero:models`                 | Opens global model + effort assignment UI. Press `x` to export and `r` to restore saved routing. |
+| `/jero:profiles`               | Opens global agent-model profiles: apply live, create, update, duplicate, rename, delete, export, and import. |
+| `/jero:persona`                | Switches global persona mode, with project override support.        |
+| `/jero:background-subagents`   | Shows or sets the managed background-subagents policy (`status\|enable\|disable`), naming the source that decided it. |
+| `/jero:telemetry`              | Shows or changes the local Gentle AI telemetry trigger (`status\|enable\|disable\|preview`).  |
+| `/jero:review-mode`            | Shows or sets the receipt-driven development mode (`status\|enable\|disable`); user-initiated only, Pi automation never toggles it. |
+| `/jero:banner`                 | Configures startup banner rose, text logo, and color preset.        |
+| `/jero:toggle-rose`            | Toggles the startup rose.                                           |
+| `/jero:toggle-text-logo`       | Toggles the startup text logo.                                      |
+| `/jero:banner-color`           | Selects a startup banner color preset.                              |
 | `/gentle-sdd-init`               | Initializes or refreshes `openspec/config.yaml` (openspec/both stores only). |
-| `/gentle:install-delegation` | Installs missing global delegation agents only; `--force` refreshes managed copies. |
-| `/gentle:install-review`     | Installs missing global review agents and chains only; `--force` refreshes managed copies. |
-| `/gentle:install-sdd`         | Installs missing global SDD agents, chains, and support only, without overwriting files. |
-| `/gentle:install-sdd --force` | Refreshes only managed global SDD assets, preserving user edits and project overrides. |
+| `/jero:install-delegation` | Installs missing global delegation agents only; `--force` refreshes managed copies. |
+| `/jero:install-review`     | Installs missing global review agents and chains only; `--force` refreshes managed copies. |
+| `/jero:install-sdd`         | Installs missing global SDD agents, chains, and support only, without overwriting files. |
+| `/jero:install-sdd --force` | Refreshes only managed global SDD assets, preserving user edits and project overrides. |
 | `/skill-registry:refresh`        | Regenerates `.atl/skill-registry.md`.                               |
 | `/skill-creation`                | Creates or updates an LLM-first skill using the packaged `gentle-ai-skill-creator` contract and style guide. |
 
@@ -680,12 +680,12 @@ Startup installs and refreshes only delegation and review assets. SDD assets are
 
 ### Background subagents policy
 
-Background delegation is off unless you turn it on. The policy is user-owned: only an explicit `/gentle:background-subagents enable` or `disable` writes it, and Pi automation never toggles it.
+Background delegation is off unless you turn it on. The policy is user-owned: only an explicit `/jero:background-subagents enable` or `disable` writes it, and Pi automation never toggles it.
 
 ```text
-/gentle:background-subagents           Report the effective policy, the deciding source, and the resolved capability.
-/gentle:background-subagents enable    Write "on" to the global file.
-/gentle:background-subagents disable   Write "off" to the global file.
+/jero:background-subagents           Report the effective policy, the deciding source, and the resolved capability.
+/jero:background-subagents enable    Write "on" to the global file.
+/jero:background-subagents disable   Write "off" to the global file.
 ```
 
 Four sources can decide the policy, and the first hit wins:
@@ -697,7 +697,7 @@ Four sources can decide the policy, and the first hit wins:
 | 3        | `GENTLE_PI_BACKGROUND_SUBAGENTS`                  | Exactly `on` or `off`. Any other value is ignored.            |
 | 4        | Built-in default                                  | `off`.                                                        |
 
-Both files use the strict shape `{"schema":"gentle-pi.background-subagents/v1","policy":"on"}`. A file that is present but malformed fails closed to `off` and is **not** skipped in favor of a lower-priority source, so a typo in the project file disables background subagents rather than silently handing the decision to the global file. The command reports that case as a warning instead of an ordinary `off`.
+Both files use the strict shape `{"schema":"jero-pi.background-subagents/v1","policy":"on"}`. A file that is present but malformed fails closed to `off` and is **not** skipped in favor of a lower-priority source, so a typo in the project file disables background subagents rather than silently handing the decision to the global file. The command reports that case as a warning instead of an ordinary `off`.
 
 Because the project file outranks the global one, `enable` still writes the global file but reports plainly when a project file keeps the effective policy unchanged. The resolved capability (`ready` or `absent`) reports whether `subagent_run` is actually callable in this session; a policy of `on` with capability `absent` means Gentle Agents is disabled or the retired subagents package is still installed.
 
@@ -726,7 +726,7 @@ Use it when you want skills available normally but do not want Gentle AI to refr
 
 ## Memory
 
-`gentle-pi` does **not** provide persistent memory by itself.
+`jero-pi` does **not** provide persistent memory by itself.
 
 For memory, install the companion package:
 
@@ -749,11 +749,11 @@ Memory contract for SDD delegation:
 
 Separately, at primary session start (never for a named or SDD sub-agent), Gentle Pi asks the local `gentle-ai` binary to handle its own install/heartbeat telemetry: it spawns `gentle-ai telemetry trigger --json` detached, with a 3 s deadline, discards its output, and never blocks session start or surfaces an error — an older binary without the verb is silently treated as nothing to do. This runs at most once per process.
 
-Install counts for `gentle-pi` and `gentle-engram` come from npm download statistics; the package itself never emits an install event.
+Install counts for `jero-pi` and `gentle-engram` come from npm download statistics; the package itself never emits an install event.
 
 To opt out:
 
-- `/gentle:telemetry disable` — asks the local `gentle-ai` binary to disable telemetry (also `status` and `preview` to inspect it without leaving Pi).
+- `/jero:telemetry disable` — asks the local `gentle-ai` binary to disable telemetry (also `status` and `preview` to inspect it without leaving Pi).
 - `DO_NOT_TRACK=1` — Gentle Pi suppresses runtime usage telemetry and the install/heartbeat trigger; `gentle-ai` also honors this standard independently.
 - `GENTLE_AI_TELEMETRY=0` — same effect, `gentle-ai`'s own environment switch.
 
@@ -763,13 +763,13 @@ To opt out:
 
 | Path                           | Purpose                                                                                                    |
 | ------------------------------ | ---------------------------------------------------------------------------------------------------------- |
-| `extensions/gentle-ai.ts`      | Injects identity, orchestrates native review authority, refreshes delegation/review assets at startup and SDD on demand, registers commands, applies model/persona config, and enforces runtime safety. |
-| `lib/native-review-cli.ts`     | Strict package-local adapter for Gentle AI START, FINALIZE, VALIDATE, SDD binding, and status contracts.     |
-| `lib/review-integration-v2.ts` | Strict consumer decoder for negotiated capabilities, operations, target status, projections, repair, and failures against contract `review-integration/v2` (active today).  |
-| `lib/review-candidate-view.ts` | Builds immutable changed-scope actor views while preserving full-tree, path, mode, symlink, and index integrity. |
-| `lib/review-canonical.ts`      | Permanent Pi-owned canonical JSON and domain-hash primitives for consumer-side identities.                   |
-| `lib/review-repository.ts`     | Permanent Pi-owned Git common-directory identity, safe Git environment, and authority-root binding.          |
-| `lib/gentle-ai-binary.ts`      | Resolves and verifies the confined package-local Gentle AI runtime without global or PATH fallback.          |
+| `extensions/jero-ai.ts`      | Injects identity, orchestrates native review authority, refreshes delegation/review assets at startup and SDD on demand, registers commands, applies model/persona config, and enforces runtime safety. |
+| `lib/native/native-review-cli.ts`     | Strict package-local adapter for Gentle AI START, FINALIZE, VALIDATE, SDD binding, and status contracts.     |
+| `lib/review/review-integration-v2.ts` | Strict consumer decoder for negotiated capabilities, operations, target status, projections, repair, and failures against contract `review-integration/v2` (active today).  |
+| `lib/review/review-candidate-view.ts` | Builds immutable changed-scope actor views while preserving full-tree, path, mode, symlink, and index integrity. |
+| `lib/review/review-canonical.ts`      | Permanent Pi-owned canonical JSON and domain-hash primitives for consumer-side identities.                   |
+| `lib/review/review-repository.ts`     | Permanent Pi-owned Git common-directory identity, safe Git environment, and authority-root binding.          |
+| `lib/core/gentle-ai-binary.ts`      | Resolves and verifies the confined package-local Gentle AI runtime without global or PATH fallback.          |
 | `scripts/gentle-ai-installer.mjs` | Installs signed Darwin/Linux archives or exact Go SumDB-verified Windows source builds into the package-local runtime. |
 | `contracts/review-integration/v1/` | Byte-identical provider schemas and conformance fixtures for contract `review-integration/v1`, hash-checked before packaging; retained on disk permanently because `/v2`'s schemas `$ref` into these fragments. |
 | `contracts/review-integration/v2/` | Byte-identical provider schemas and conformance fixtures for contract `review-integration/v2` (immutable `base_tree`/`candidate_tree`, ordered `changed_path_manifest`, no inline candidate diff), hash-checked before packaging. |
@@ -803,7 +803,7 @@ Validate before publishing:
 ```bash
 pnpm test
 bun build extensions/skill-registry.ts --target=node --format=esm --outfile=/tmp/skill-registry.js
-node --experimental-strip-types --check extensions/gentle-ai.ts
+node --experimental-strip-types --check extensions/jero-ai.ts
 node --experimental-strip-types --check extensions/sdd-init.ts
 node --experimental-strip-types --check extensions/startup-banner.ts
 npm pack --dry-run
@@ -825,12 +825,12 @@ What it checks, against live scratch repositories:
 - controller sequencing: each decoded offered next step equals the native transition; correction evidence precedes Go-owned targeted validation, then native approval and terminal burn leave no retained receipt;
 - the active audited abandon end to end, asserting the adapter builds the exact nine-line `gentle-ai.review-abandon-authorization/v2` discarded-work binding and the native gate commits the quarantine record;
 - after a scope change, a burned approved predecessor exposes no recoverable authority; recovered-successor hydration remains covered at unit level;
-- forward-decoder freshness: every live envelope captured from the binary must decode without unknown-key rejection, the early warning that gentle-ai main grew a field gentle-pi lacks;
+- forward-decoder freshness: every live envelope captured from the binary must decode without unknown-key rejection, the early warning that gentle-ai main grew a field jero-pi lacks;
 - the default no-model lane: 13 of 14 checks pass while the real-model check is intentionally skipped; Go-owned validation uses a deterministic scratch fake `pi`, and only `--with-model` runs the real locked-down reviewer with model spend.
 
 Prerequisites:
 
-- A real `gentle-ai` binary selected through the dev-binary override; there is no PATH or pinned-binary fallback, and the battery refuses to run without one. Either export `GENTLE_PI_GENTLE_AI_DEV_BINARY=<absolute path>` for the session, or register a persistent override with `/gentle:dev-binary <absolute path>` (stored at `~/.pi/gentle-ai/dev-binary.json` with schema `gentle-pi.dev-binary/v1`; the environment variable takes precedence over the registration, and the binary is re-validated and re-hashed on every resolution). Any real build works: an installed release binary or a locally built gentle-ai main.
+- A real `gentle-ai` binary selected through the dev-binary override; there is no PATH or pinned-binary fallback, and the battery refuses to run without one. Either export `GENTLE_PI_GENTLE_AI_DEV_BINARY=<absolute path>` for the session, or register a persistent override with `/jero:dev-binary <absolute path>` (stored at `~/.pi/gentle-ai/dev-binary.json` with schema `jero-pi.dev-binary/v1`; the environment variable takes precedence over the registration, and the binary is re-validated and re-hashed on every resolution). Any real build works: an installed release binary or a locally built gentle-ai main.
 - A Git checkout or worktree of this repository. The battery is a contributor tool wired to the repository layout and is excluded from `pnpm test` and CI by construction; run it from the repo, not from an installed Pi package.
 
 The battery owns one throwaway scratch root under the OS temp directory and never touches the enclosing repository. Before any review lifecycle it creates private `HOME`, XDG config/cache/data/state, temporary, and RDD state directories inside that root; it proves RDD starts `off/default`, explicitly opts in with sandbox-global RDD, and removes the complete root after the run. It never requires or changes the user's ambient RDD mode. The default run spends no model tokens; `--with-model` launches one real reviewer model run and costs model spend.
@@ -851,11 +851,11 @@ gh workflow run publish.yml \
   --ref main \
   -f tag="${tag}"
 gh run watch <run-id> --repo Gentleman-Programming/gentle-pi --exit-status
-npm view gentle-pi@<version> version --registry=https://registry.npmjs.org/
-npm dist-tag ls gentle-pi --registry=https://registry.npmjs.org/
+npm view jero-pi@<version> version --registry=https://registry.npmjs.org/
+npm dist-tag ls jero-pi --registry=https://registry.npmjs.org/
 ```
 
-Do not run `npm publish` locally for `gentle-pi`. Dispatch the trusted workflow definition only from protected default `main` and provide its sole `tag` input. The workflow requires an exact annotated `vSemVer` tag whose peeled commit, current remote `main`, dispatch/main workflow commit, checkout, and `package.json` version are identical. It rechecks remote tag and `main` immediately before publishing through OIDC with provenance and environment protection; an advanced `main` requires a new release version, never a moved tag.
+Do not run `npm publish` locally for `jero-pi`. Dispatch the trusted workflow definition only from protected default `main` and provide its sole `tag` input. The workflow requires an exact annotated `vSemVer` tag whose peeled commit, current remote `main`, dispatch/main workflow commit, checkout, and `package.json` version are identical. It rechecks remote tag and `main` immediately before publishing through OIDC with provenance and environment protection; an advanced `main` requires a new release version, never a moved tag.
 
 ## Principles
 

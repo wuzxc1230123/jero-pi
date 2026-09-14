@@ -30,10 +30,10 @@ import {
 	sddPreflightDiskPath,
 	writeSddPreflightToDisk,
 	type SddPreflightPreferences,
-} from "../lib/sdd-preflight.ts";
+} from "../lib/sdd/sdd-preflight.ts";
 
 async function workspace(): Promise<string> {
-	return mkdtemp(join(tmpdir(), "gentle-pi-sdd-preflight-"));
+	return mkdtemp(join(tmpdir(), "jero-pi-sdd-preflight-"));
 }
 
 const SAMPLE_PREFS: SddPreflightPreferences = {
@@ -52,7 +52,7 @@ function writeRawPreflight(cwd: string, chainedPrStrategy: string, prompted = tr
 	const path = sddPreflightDiskPath(cwd); mkdirSync(join(cwd, ".pi", "gentle-ai"), { recursive: true }); writeFileSync(path, JSON.stringify({ executionMode: "auto", artifactStore: "openspec", chainedPrStrategy, reviewBudgetLines: 400, engramAvailable: false, prompted })); return path;
 }
 test("production callers distinguish first-session confirmation from explicit field editing", () => {
-	const root = join(import.meta.dirname, ".."), gentleAi = readFileSync(join(root, "extensions", "gentle-ai.ts"), "utf8"), sddInit = readFileSync(join(root, "extensions", "sdd-init.ts"), "utf8");
+	const root = join(import.meta.dirname, ".."), gentleAi = readFileSync(join(root, "extensions", "jero-ai.ts"), "utf8"), sddInit = readFileSync(join(root, "extensions", "sdd-init.ts"), "utf8");
 	assert.match(gentleAi, /function runSddPreflight\(\s*ctx: ExtensionContext,\s*promptFields: readonly SddPreflightField\[\] = \[\]\s*\)/s); assert.match(gentleAi, /if \(isSddAgent && !getSddPreflightPreferences\(ctx\) && ctx\.mode !== "rpc"\) \{\s*await runSddPreflight\(ctx\);/s); assert.match(gentleAi, /applyModelConfig: async \(\) => applySavedModelConfig\(ctx\)\s*\},\s*\{\s*promptFields\s*\}\s*\);/s); assert.ok(gentleAi.includes('await runSddPreflight(ctx, args.trim() === "--edit" ? SDD_PREFLIGHT_FIELDS : []);')); assert.match(sddInit, /applyModelConfig: \(\) => applySavedModelConfig\(ctx\)\s*\},\s*\{\s*promptFields: \[\]\s*\}\s*\);/s);
 });
 test("capability-constrained artifact selector elision", async () => {
@@ -107,7 +107,7 @@ async function waitForFile(path: string, timeoutMs = 2_000): Promise<void> {
 }
 
 function spawnOwnerInstall(agentHome: string, owner: "delegation" | "review", holdLockMs = 0) {
-	const moduleUrl = pathToFileURL(join(import.meta.dirname, "..", "lib", "sdd-preflight.ts")).href;
+	const moduleUrl = pathToFileURL(join(import.meta.dirname, "..", "lib", "sdd", "sdd-preflight.ts")).href;
 	const script = `import { installPackageAssets } from ${JSON.stringify(moduleUrl)}; installPackageAssets(process.env.GENTLE_PI_AGENT_HOME, false, [process.env.GENTLE_PI_TEST_ASSET_OWNER], { holdLockMs: Number(process.env.GENTLE_PI_TEST_HOLD_LOCK_MS) });`;
 	const child = spawn(process.execPath, ["--experimental-strip-types", "--input-type=module", "--eval", script], {
 		env: {
@@ -130,7 +130,7 @@ function spawnOwnerInstall(agentHome: string, owner: "delegation" | "review", ho
 }
 
 test("managed asset replacements use exclusive same-directory temporary files", () => {
-	const source = readFileSync(join(import.meta.dirname, "..", "lib", "sdd-preflight.ts"), "utf8");
+	const source = readFileSync(join(import.meta.dirname, "..", "lib", "sdd", "sdd-preflight.ts"), "utf8");
 	assert.match(source, /function replaceManagedAssetFileAtomically\([\s\S]*?flag: "wx"/);
 	assert.match(source, /renameSync\(temporaryPath, path\)/);
 });
@@ -378,8 +378,8 @@ test("forced asset refresh migrates the exact v0.10.7 malformed sdd-apply asset 
 		join(packageRoot, "assets", "agents", "sdd-apply.md"),
 		"utf8",
 	);
-	const temporaryAgentHome = mkdtempSync(join(tmpdir(), "gentle-pi-v0107-preflight-"));
-	const temporaryUserAgentHome = mkdtempSync(join(tmpdir(), "gentle-pi-v0107-user-preflight-"));
+	const temporaryAgentHome = mkdtempSync(join(tmpdir(), "jero-pi-v0107-preflight-"));
+	const temporaryUserAgentHome = mkdtempSync(join(tmpdir(), "jero-pi-v0107-user-preflight-"));
 	const previousAgentHome = process.env.GENTLE_PI_AGENT_HOME;
 	const installed = join(temporaryAgentHome, "agents", "sdd-apply.md");
 	const userInstalled = join(temporaryUserAgentHome, "agents", "sdd-apply.md");
@@ -443,7 +443,7 @@ test("forced asset refresh migrates only untouched v0.14 package contracts and p
 		join(packageRoot, "tests", "fixtures", "v0.14", "assets", "agents", "review-risk.md"),
 		"utf8",
 	);
-	const temporaryAgentHome = mkdtempSync(join(tmpdir(), "gentle-pi-v014-preflight-"));
+	const temporaryAgentHome = mkdtempSync(join(tmpdir(), "jero-pi-v014-preflight-"));
 	const previousAgentHome = process.env.GENTLE_PI_AGENT_HOME;
 	const untouched = join(temporaryAgentHome, "agents", "review-risk.md");
 	const edited = join(temporaryAgentHome, "agents", "review-readability.md");
@@ -530,7 +530,7 @@ test("slash SDD preflight trigger accepts the gentle-sdd command prefix", () => 
 	for (const text of ["/gentle-sdd-init", "/gentle-sdd-continue", "/gentle-sdd-status fix-rose --json", "/sdd", "/sdd:plan", "/sdd-plan this change"]) {
 		assert.equal(isSddPreflightTrigger(text), true, text);
 	}
-	for (const text of ["/gentle-sddx", "/gentle:sdd-preflight", "/gentle-status", "gentle-sdd-init"]) {
+	for (const text of ["/gentle-sddx", "/jero:sdd-preflight", "/gentle-status", "gentle-sdd-init"]) {
 		assert.equal(isSddPreflightTrigger(text), false, text);
 	}
 });

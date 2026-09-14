@@ -4,7 +4,7 @@ import {
 	applyDeltaSpec,
 	parseDeltaSpec,
 	parseRequirementBlocks,
-} from "../lib/openspec-deltas.ts";
+} from "../lib/sdd/openspec-deltas.ts";
 
 const canonicalSpec = `# Example Specification
 

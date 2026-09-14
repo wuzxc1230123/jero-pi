@@ -5,8 +5,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { __testing, createGentleAiExtension, PendingReviewConsentRegistry } from "../extensions/gentle-ai.ts";
-import { CandidateViewRegistry } from "../lib/review-candidate-view.ts";
+import { __testing, createGentleAiExtension, PendingReviewConsentRegistry } from "../extensions/jero-ai.ts";
+import { CandidateViewRegistry } from "../lib/review/review-candidate-view.ts";
 import {
 	NATIVE_REVIEW_ERROR_CODE,
 	NATIVE_REVIEW_MODE_OPERATION,
@@ -19,14 +19,14 @@ import {
 	normalizeNativeReviewCwd,
 	type NativeReviewCli,
 	type ExecFileAdapter,
-} from "../lib/native-review-cli.ts";
+} from "../lib/native/native-review-cli.ts";
 import {
 	decodeReviewConsentV3,
 	decodeReviewFailureV2,
 	decodeReviewLastEventClosureV1,
 	decodeReviewStartV3,
 	type ReviewStatusV3,
-} from "../lib/review-integration-v2.ts";
+} from "../lib/review/review-integration-v2.ts";
 
 const CAPTURED_FIXTURES = join(process.cwd(), "tests", "fixtures", "devbinary");
 
@@ -131,7 +131,7 @@ test("current review mode keeps canonical reach values and rejects unrecognized 
 		(error: unknown) => error instanceof NativeReviewCliError && error.code === NATIVE_REVIEW_ERROR_CODE.SCHEMA_INCOMPATIBLE,
 	);
 	if (process.platform !== "win32") {
-		const root = realpathSync(mkdtempSync(join(tmpdir(), "gentle-pi-review-mode-")));
+		const root = realpathSync(mkdtempSync(join(tmpdir(), "jero-pi-review-mode-")));
 		const alias = `${root}-alias`;
 		const { symlinkSync } = await import("node:fs");
 		symlinkSync(root, alias, "dir");
@@ -207,7 +207,7 @@ function parityRuntime(nativeReviewCli: NativeReviewCli | null, options: ParityR
 }
 
 function repository(t: test.TestContext): string {
-	const cwd = realpathSync(mkdtempSync(join(tmpdir(), "gentle-pi-native-parity-")));
+	const cwd = realpathSync(mkdtempSync(join(tmpdir(), "jero-pi-native-parity-")));
 	t.after(() => {
 		try { execFileSync("chmod", ["-R", "u+w", cwd], { stdio: "ignore" }); } catch { /* best effort */ }
 		rmSync(cwd, { recursive: true, force: true });
@@ -366,7 +366,7 @@ test("review-mode gate retains every off-source continuation and fails closed on
 	assert.equal(failed.outcome, "native-operation-failed");
 });
 
-test("public gentle:review-mode handler reports current operations, global-off warnings, and unavailability", async () => {
+test("public jero:review-mode handler reports current operations, global-off warnings, and unavailability", async () => {
 	const calls: string[] = [];
 	const native = {
 		reviewMode: async ({ operation }: { operation: "status" | "enable" | "disable" }) => {
@@ -380,7 +380,7 @@ test("public gentle:review-mode handler reports current operations, global-off w
 		},
 	} as unknown as NativeReviewCli;
 	const runtime = parityRuntime(native);
-	const command = runtime.commands.get("gentle:review-mode");
+	const command = runtime.commands.get("jero:review-mode");
 	assert.ok(command);
 	const notices: Array<{ message: string; type?: string }> = [];
 	const ctx = context(process.cwd(), "review-mode-command", notices);
@@ -393,7 +393,7 @@ test("public gentle:review-mode handler reports current operations, global-off w
 	assert.equal(notices[2]?.type, "warning");
 	assert.match(notices[2]?.message ?? "", /gentle-ai review mode enable --scope=global/);
 
-	const unavailable = parityRuntime({} as NativeReviewCli).commands.get("gentle:review-mode");
+	const unavailable = parityRuntime({} as NativeReviewCli).commands.get("jero:review-mode");
 	assert.ok(unavailable);
 	const unavailableNotices: Array<{ message: string; type?: string }> = [];
 	await unavailable!.handler("status", context(process.cwd(), "review-mode-unavailable", unavailableNotices));
@@ -455,7 +455,7 @@ test("public consent relay allows any active session to resolve a live binding, 
 		scope: "clone",
 		status: { global: "", cloneLocal: "off", effective: "off", source: "clone_local" },
 	});
-	const disable = second.commands.get("gentle:review-mode");
+	const disable = second.commands.get("jero:review-mode");
 	assert.ok(disable);
 	await disable!.handler("disable", context(cwd, "session-b"));
 	const staleModeCleared = await answerConsent(second, cwd, nextCandidate.consent_binding, "declined", "session-b");
@@ -810,5 +810,5 @@ test("candidate consent completion writes no persistent asked latch", async (t) 
 	assert.equal((completed.result as { lineage_id?: string }).lineage_id, "consent-lineage");
 	assert.deepEqual(fixture.answers, ["granted"]);
 	const commonDir = execFileSync("git", ["rev-parse", "--path-format=absolute", "--git-common-dir"], { cwd, encoding: "utf8" }).trim();
-	assert.equal(existsSync(join(commonDir, "gentle-pi", "review-consent", "asked.json")), false);
+	assert.equal(existsSync(join(commonDir, "jero-pi", "review-consent", "asked.json")), false);
 });

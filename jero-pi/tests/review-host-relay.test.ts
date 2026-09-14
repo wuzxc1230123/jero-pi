@@ -3,7 +3,7 @@ import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSy
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { createNodeExecFileAdapter } from "../lib/native-review-cli.ts";
+import { createNodeExecFileAdapter } from "../lib/native/native-review-cli.ts";
 import {
 	REVIEW_HOST_RELAY_FAILURE,
 	REVIEW_HOST_RELAY_PI_ARGV,
@@ -26,9 +26,9 @@ import {
 	submitReviewHostRelayPreparedResult,
 	type ReviewHostRelayPreparedResult,
 	type ReviewHostRelayRequest,
-} from "../lib/review-host-relay.ts";
-import { GENTLE_PI_REVIEW_RELAY_CONTRACT, GENTLE_PI_REVIEW_RELAY_CONTRACT_ENV } from "../lib/review-relay-contract.ts";
-import { decodeReviewNextTransitionV3, type ReviewCaptureSubmissionV1, type ReviewCollectInputV3 } from "../lib/review-integration-v2.ts";
+} from "../lib/review/review-host-relay.ts";
+import { GENTLE_PI_REVIEW_RELAY_CONTRACT, GENTLE_PI_REVIEW_RELAY_CONTRACT_ENV } from "../lib/review/review-relay-contract.ts";
+import { decodeReviewNextTransitionV3, type ReviewCaptureSubmissionV1, type ReviewCollectInputV3 } from "../lib/review/review-integration-v2.ts";
 
 // ---------------------------------------------------------------------------
 // Fake binaries. Following the repo's fake-executable idiom (shell/git
@@ -146,7 +146,7 @@ interface RelayHarness {
 }
 
 function harness(t: test.TestContext, overrides: Record<string, string> = {}): RelayHarness {
-	const directory = realpathSync(mkdtempSync(join(tmpdir(), "gentle-pi-relay-harness-")));
+	const directory = realpathSync(mkdtempSync(join(tmpdir(), "jero-pi-relay-harness-")));
 	t.after(() => rmSync(directory, { recursive: true, force: true }));
 	const gentleAi = join(directory, "gentle-ai");
 	const pi = join(directory, "pi");
@@ -594,7 +594,7 @@ test("the production relay path resolves the reviewer bound from the environment
 
 test("a relay Pi timeout keeps its typed mapping and timing evidence when opaque scratch cleanup also fails", async (t) => {
 	const fixture = harness(t, { RELAY_FAKE_PI_MODE: "hang", RELAY_FAKE_PI_BREAK_CLEANUP: "true" });
-	const scratchParent = realpathSync(mkdtempSync(join(tmpdir(), "gentle-pi-relay-pi-primary-failure-")));
+	const scratchParent = realpathSync(mkdtempSync(join(tmpdir(), "jero-pi-relay-pi-primary-failure-")));
 	const originalTmpdir = process.env.TMPDIR;
 	process.env.TMPDIR = scratchParent;
 	try {
@@ -699,7 +699,7 @@ test("a submission the fake admits with the expected subject still completes", a
 
 test("submission refusal preserves its primary evidence when result staging cleanup also fails", async (t) => {
 	const fixture = harness(t, { RELAY_FAKE_SUBMIT_MODE: "refuse-cleanup-fail" });
-	const scratchParent = realpathSync(mkdtempSync(join(tmpdir(), "gentle-pi-relay-primary-failure-")));
+	const scratchParent = realpathSync(mkdtempSync(join(tmpdir(), "jero-pi-relay-primary-failure-")));
 	const originalTmpdir = process.env.TMPDIR;
 	process.env.TMPDIR = scratchParent;
 	try {
@@ -732,7 +732,7 @@ test("relay scratch and staging directories are removed after failures too", asy
 
 test("a result staging cleanup failure remains a typed submit failure", async (t) => {
 	const fixture = harness(t, { RELAY_FAKE_SUBMIT_MODE: "cleanup-fail" });
-	const scratchParent = realpathSync(mkdtempSync(join(tmpdir(), "gentle-pi-relay-cleanup-")));
+	const scratchParent = realpathSync(mkdtempSync(join(tmpdir(), "jero-pi-relay-cleanup-")));
 	const originalTmpdir = process.env.TMPDIR;
 	process.env.TMPDIR = scratchParent;
 	try {

@@ -1,4 +1,4 @@
-# Exploration: migrate gentle-pi to `review-integration/v2` (v2-only)
+# Exploration: migrate jero-pi to `review-integration/v2` (v2-only)
 
 Phase: `sdd-explore`. Change: `migrate-review-integration-v2`. Artifact store: hybrid
 (this file plus Engram topic `sdd/migrate-review-integration-v2/explore`).
@@ -28,7 +28,7 @@ decoder: `decodeReviewCapabilitiesV1`, `decodeReviewStartV1`, `decodeReviewStatu
 identity through `requireIdentity` / `requireVersionedIdentity`, so the module is
 v1-typed at the literal-type level rather than by convention.
 
-`lib/native-review-cli.ts` (1813 lines) imports those decoders and threads
+`lib/native/native-review-cli.ts` (1813 lines) imports those decoders and threads
 `REVIEW_INTEGRATION_CONTRACT` through six `--contract` call sites: capabilities
 (L1570), start (L1623), finalize (L1687), validate (L1714), bind-sdd (L1733), status
 (L1756).
@@ -36,14 +36,14 @@ v1-typed at the literal-type level rather than by convention.
 ### Reviewer transport — correction to a prior assumption
 
 Pi's reviewer transport does **not** ship Base64 patches, and does not follow
-gentle-ai's documented Git-command-allowlist recipe either. `lib/review-candidate-view.ts`
+gentle-ai's documented Git-command-allowlist recipe either. `lib/review/review-candidate-view.ts`
 (914 lines, `CandidateViewRegistry`) materializes a real, chmod-read-only Git worktree
 scoped to the changed-path manifest, and points lens sub-agents at it through the `Read`
 tool via `injectReviewCandidateView`, wired into `subagent_run` in
-`extensions/gentle-ai.ts`. Lens agents get no shell access to Git at all.
+`extensions/jero-ai.ts`. Lens agents get no shell access to Git at all.
 
 Verified: `base64` and `candidate_diff` both occur zero times in
-`lib/review-candidate-view.ts` and `extensions/gentle-ai.ts`.
+`lib/review/review-candidate-view.ts` and `extensions/jero-ai.ts`.
 
 Whether this already satisfies the contract's "a runtime that cannot enforce a
 per-command shell boundary exposes no shell and reports incomplete inspection" clause is
@@ -78,7 +78,7 @@ a naming-collision risk to disambiguate in docs and commit messages, not a depen
   `next_transition.collect.inputs[]` carries `artifact_subject`, `base_tree`,
   `candidate_tree`, and `changed_path_manifest` per input), `consent/v2`, `failure/v2`,
   `operation/v2`, `repair/v2`
-- `lib/native-review-cli.ts` — all six `--contract` call sites plus decoder imports
+- `lib/native/native-review-cli.ts` — all six `--contract` call sites plus decoder imports
 - `runtime/native-review-cli.mjs` — regenerate via
   `scripts/build-git-commit-transaction-runner.mjs`; never hand-edit
 - `scripts/verify-package-files.mjs` — see blind spot below
@@ -92,8 +92,8 @@ with a closed `--outcome`, and the `verification_failed` / `procedural_tooling_f
 branches). Zero existing footprint in the native-review-cli client path — this is the
 largest new surface in the migration.
 
-**Keep, version-agnostic:** `lib/review-candidate-view.ts`, `lib/review-compact*.ts`,
-`scripts/gentle-ai-installer.mjs`, `lib/gentle-ai-binary.ts`.
+**Keep, version-agnostic:** `lib/review/review-candidate-view.ts`, `lib/review-compact*.ts`,
+`scripts/gentle-ai-installer.mjs`, `lib/core/gentle-ai-binary.ts`.
 
 ## Package-verification blind spot
 

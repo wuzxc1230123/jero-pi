@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { TuiAltScreen, visibleWidth, type Terminal, type TuiMouseEvent } from "@earendil-works/pi-tui";
-import { CHANGE_STATUS, changesModel, type ChangedFile } from "../lib/shell-changes.ts";
-import { WorktreeChangesView, ChangesView, colorDiff, type ChangesViewDeps } from "../lib/shell-changes-view.ts";
-import { stripAnsi } from "../lib/terminal-theme.ts";
+import { CHANGE_STATUS, changesModel, type ChangedFile } from "../lib/shell/shell-changes.ts";
+import { WorktreeChangesView, ChangesView, colorDiff, type ChangesViewDeps } from "../lib/shell/shell-changes-view.ts";
+import { stripAnsi } from "../lib/core/terminal-theme.ts";
 
 // The changes overlay: files on the left, the selected file's diff on the
 // right, keys at the bottom. Rendering is pure; git access is injected.

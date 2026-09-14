@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { AGENT_MODE, parseAgentsConfig, resolveAgentProfile, type AgentDefinition } from "../lib/agents-config.ts";
-import { TASK_STATUS, TaskStore, type RemediationTaskState, type TaskRecord } from "../lib/agents-protocol.ts";
-import { AgentRunner, childArguments, JsonLines, piCommand, abortReasonText, type RemediationPlan, type RemediationTerminalFacts, type RunnerDeps, type RunnerHooks, type TaskRequest } from "../lib/agents-runner.ts";
+import { AGENT_MODE, parseAgentsConfig, resolveAgentProfile, type AgentDefinition } from "../lib/agents/agents-config.ts";
+import { TASK_STATUS, TaskStore, type RemediationTaskState, type TaskRecord } from "../lib/agents/agents-protocol.ts";
+import { AgentRunner, childArguments, JsonLines, piCommand, abortReasonText, type RemediationPlan, type RemediationTerminalFacts, type RunnerDeps, type RunnerHooks, type TaskRequest } from "../lib/agents/agents-runner.ts";
 import { fakeChild, type FakeChild } from "./agents-fake-child.ts";
 
 // Gentle Agents runner: every subagent is a child `pi --mode rpc` process.

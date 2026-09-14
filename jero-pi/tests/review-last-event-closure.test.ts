@@ -2,16 +2,16 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
-import { __testing } from "../extensions/gentle-ai.ts";
-import { reconcileUnknownReviewLastEventCapture } from "../lib/review-last-event-controller.ts";
-import * as nativeReviewCliModule from "../lib/native-review-cli.ts";
-import type { NativeReviewCli } from "../lib/native-review-cli.ts";
+import { __testing } from "../extensions/jero-ai.ts";
+import { reconcileUnknownReviewLastEventCapture } from "../lib/review/review-last-event-controller.ts";
+import * as nativeReviewCliModule from "../lib/native/native-review-cli.ts";
+import type { NativeReviewCli } from "../lib/native/native-review-cli.ts";
 import {
 	decodeReviewLastEventClosureV1,
 	decodeReviewStartV3,
 	type ReviewCollectInputV3,
 	type ReviewStatusV3,
-} from "../lib/review-integration-v2.ts";
+} from "../lib/review/review-integration-v2.ts";
 
 const SHA = `sha256:${"a".repeat(64)}`;
 const TREE = "b".repeat(40);

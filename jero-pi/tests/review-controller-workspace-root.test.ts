@@ -5,10 +5,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { __testing, createGentleAiExtension } from "../extensions/gentle-ai.ts";
-import { NativeReviewIntegrationError, type NativeReviewCli } from "../lib/native-review-cli.ts";
-import { CandidateViewRegistry } from "../lib/review-candidate-view.ts";
-import { decodeReviewFailureV2, type AuthorityRepairAssessmentV1, type ReviewStatusV3 } from "../lib/review-integration-v2.ts";
+import { __testing, createGentleAiExtension } from "../extensions/jero-ai.ts";
+import { NativeReviewIntegrationError, type NativeReviewCli } from "../lib/native/native-review-cli.ts";
+import { CandidateViewRegistry } from "../lib/review/review-candidate-view.ts";
+import { decodeReviewFailureV2, type AuthorityRepairAssessmentV1, type ReviewStatusV3 } from "../lib/review/review-integration-v2.ts";
 
 interface RegisteredTool {
 	execute: (
@@ -54,7 +54,7 @@ function context(cwd: string): ExtensionContext {
 	return { cwd, hasUI: false, ui: { confirm: async () => true } } as unknown as ExtensionContext;
 }
 
-function repository(t: test.TestContext, prefix = "gentle-pi-workspace-root-"): string {
+function repository(t: test.TestContext, prefix = "jero-pi-workspace-root-"): string {
 	const cwd = realpathSync(mkdtempSync(join(tmpdir(), prefix)));
 	t.after(() => {
 		if (process.platform !== "win32") {
@@ -70,7 +70,7 @@ function repository(t: test.TestContext, prefix = "gentle-pi-workspace-root-"): 
 }
 
 function addWorktree(t: test.TestContext, cwd: string, branch: string): string {
-	const parent = realpathSync(mkdtempSync(join(tmpdir(), "gentle-pi-workspace-worktrees-")));
+	const parent = realpathSync(mkdtempSync(join(tmpdir(), "jero-pi-workspace-worktrees-")));
 	t.after(() => {
 		try { execFileSync("git", ["worktree", "remove", "--force", join(parent, branch)], { cwd }); } catch {}
 		rmSync(parent, { recursive: true, force: true });
@@ -352,8 +352,8 @@ test("an omitted workspaceRoot canonicalizes a nested same-worktree session befo
 });
 
 test("an explicit nested foreign workspace root canonically owns inspect, status, and START", async (t) => {
-	const sessionCwd = repository(t, "gentle-pi-session-a-");
-	const target = repository(t, "gentle-pi-target-b-");
+	const sessionCwd = repository(t, "jero-pi-session-a-");
+	const target = repository(t, "jero-pi-target-b-");
 	const nested = join(target, "nested");
 	mkdirSync(nested);
 	writeFileSync(join(target, "app.ts"), "export const value = 2; // target B\n");
@@ -429,10 +429,10 @@ test("STATUS relays exclude selection and rejects malformed input before native 
 });
 
 test("an explicit foreign workspace root works when the Pi session cwd is not a Git repository", async (t) => {
-	const target = repository(t, "gentle-pi-target-b-non-git-session-");
+	const target = repository(t, "jero-pi-target-b-non-git-session-");
 	const nested = join(target, "nested");
 	mkdirSync(nested);
-	const nonGit = realpathSync(mkdtempSync(join(tmpdir(), "gentle-pi-non-git-session-")));
+	const nonGit = realpathSync(mkdtempSync(join(tmpdir(), "jero-pi-non-git-session-")));
 	t.after(() => rmSync(nonGit, { recursive: true, force: true }));
 	const observed: string[] = [];
 	const { controller } = runtime(fakeNative({
@@ -447,8 +447,8 @@ test("an explicit foreign workspace root works when the Pi session cwd is not a 
 });
 
 test("omitted workspaceRoot fails closed for the same lineage bound to two target repositories", async (t) => {
-	const rootA = repository(t, "gentle-pi-ambiguous-a-");
-	const rootB = repository(t, "gentle-pi-ambiguous-b-");
+	const rootA = repository(t, "jero-pi-ambiguous-a-");
+	const rootB = repository(t, "jero-pi-ambiguous-b-");
 	const candidateViews = new CandidateViewRegistry();
 	const viewA = candidateViews.create({ contributorRoot: rootA });
 	const viewB = candidateViews.create({ contributorRoot: rootB });
@@ -476,7 +476,7 @@ test("omitted workspaceRoot fails closed for the same lineage bound to two targe
 test("workspaceRoot fails closed before any native call for invalid target paths", async (t) => {
 	const sessionCwd = repository(t);
 	const worktree = addWorktree(t, sessionCwd, "feat-guard");
-	const nonGit = realpathSync(mkdtempSync(join(tmpdir(), "gentle-pi-non-git-")));
+	const nonGit = realpathSync(mkdtempSync(join(tmpdir(), "jero-pi-non-git-")));
 	t.after(() => rmSync(nonGit, { recursive: true, force: true }));
 	const filePath = join(worktree, "app.ts");
 	let nativeCalls = 0;

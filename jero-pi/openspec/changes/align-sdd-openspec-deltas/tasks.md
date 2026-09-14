@@ -20,7 +20,7 @@ Chain strategy: pending
 
 ### 1. Prompt and convention parity with `gentle-ai`
 
-- [x] 1.1 Read `/Users/alanbuscaglia/work/gentle-ai/internal/assets/skills/_shared/openspec-convention.md` and port the relevant path/model rules into `gentle-pi` docs or SDD assets.
+- [x] 1.1 Read `/Users/alanbuscaglia/work/gentle-ai/internal/assets/skills/_shared/openspec-convention.md` and port the relevant path/model rules into `jero-pi` docs or SDD assets.
 - [x] 1.2 Update `assets/agents/sdd-spec.md` with domain subdirectory layout: `openspec/changes/{change}/specs/{domain}/spec.md`.
 - [x] 1.3 Update `assets/agents/sdd-spec.md` with ADDED/MODIFIED/REMOVED sections and the copy-full-then-edit workflow for MODIFIED requirements.
 - [x] 1.4 Update `assets/agents/sdd-spec.md` to state Engram mode has no canonical merge layer and must not create `sdd/canonical/*` topics.
@@ -31,7 +31,7 @@ Chain strategy: pending
 
 - [x] 2.1 RED: add tests for parsing requirement blocks from canonical specs.
 - [x] 2.2 RED: add tests for parsing ADDED/MODIFIED/REMOVED delta sections.
-- [x] 2.3 GREEN: implement minimal markdown parser in `lib/openspec-deltas.ts` scoped to OpenSpec heading conventions.
+- [x] 2.3 GREEN: implement minimal markdown parser in `lib/sdd/openspec-deltas.ts` scoped to OpenSpec heading conventions.
 - [x] 2.4 RED: add tests for applying ADDED to canonical specs while preserving existing requirements.
 - [x] 2.5 RED: add tests for applying MODIFIED by replacing the full matching requirement block.
 - [x] 2.6 RED: add tests for applying REMOVED by deleting the matching requirement block.
@@ -49,9 +49,9 @@ Chain strategy: pending
 
 ### 4. Installed asset freshness
 
-- [x] 4.1 RED: add runtime-harness test showing `.pi/agents/sdd-spec.md` drift from `assets/agents/sdd-spec.md` is surfaced by `/gentle:status` or preflight.
+- [x] 4.1 RED: add runtime-harness test showing `.pi/agents/sdd-spec.md` drift from `assets/agents/sdd-spec.md` is surfaced by `/jero:status` or preflight.
 - [x] 4.2 GREEN: implement non-destructive drift detection.
-- [x] 4.3 Document `/gentle:install-sdd --force` as the explicit refresh path.
+- [x] 4.3 Document `/jero:install-sdd --force` as the explicit refresh path.
 
 ### 5. Example migration and verification
 

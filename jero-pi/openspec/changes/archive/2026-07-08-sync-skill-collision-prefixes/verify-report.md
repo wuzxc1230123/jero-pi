@@ -16,7 +16,7 @@
 
 ## Check 1: Frontmatter byte-identical to installed hotfix
 
-Diffed `name:` line 2 of each of the 6 collision skills' repo copy against `~/.pi/agent/npm/node_modules/gentle-pi/skills/*/SKILL.md`:
+Diffed `name:` line 2 of each of the 6 collision skills' repo copy against `~/.pi/agent/npm/node_modules/jero-pi/skills/*/SKILL.md`:
 
 | Skill | Repo | Installed | Match |
 |-------|------|-----------|-------|
@@ -39,7 +39,7 @@ All 6 byte-identical. Next-update-no-op guarantee holds.
 
 Independent `rg` sweep for each of the 6 original bare names (word-boundary, excluding `skills/<dir>/**` self-paths, `.codegraph/`, `.engram/`, `openspec/changes/**`) found remaining matches ONLY at the documented out-of-scope locations:
 - `scripts/verify-package-files.mjs` (directory path strings, unchanged by design)
-- `lib/review-triggers.ts:69,157` (KNOWN_AGENTS identifier namespace)
+- `lib/review/review-triggers.ts:69,157` (KNOWN_AGENTS identifier namespace)
 - `tests/review-triggers.test.ts:154,211` (mirrors review-triggers.ts)
 - `assets/orchestrator.md:308` (4R review-trigger agent identifier, owned by `port-review-ledger-contract`)
 
@@ -84,7 +84,7 @@ All 19 checkboxes in `tasks.md` are `[x]` (confirmed via `rg -c '\[x\]'` = 19, `
 | In-Repo Skill-Name Reference Consistency | skill-improver cross-reference updated | PASS — Check 3 |
 | In-Repo Skill-Name Reference Consistency | No dangling original name remains | PASS — Check 3 |
 | Skill Directory Names Unchanged | Directories keep original paths | PASS — no `mv`/rename in diff, `scripts/verify-package-files.mjs` paths intact |
-| KNOWN_AGENTS Identifier Namespace Untouched | review-triggers untouched | PASS — `lib/review-triggers.ts` and `tests/review-triggers.test.ts` absent from `git diff --stat` |
+| KNOWN_AGENTS Identifier Namespace Untouched | review-triggers untouched | PASS — `lib/review/review-triggers.ts` and `tests/review-triggers.test.ts` absent from `git diff --stat` |
 | Frontmatter-Name Regression Test | Test fails on reversion | PASS by construction — new test reads live frontmatter, would fail if reverted |
 | Frontmatter-Name Regression Test | Test passes on correct state | PASS — 12/12 in Check 5 |
 

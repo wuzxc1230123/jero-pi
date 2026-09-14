@@ -9,7 +9,7 @@ import { basename, dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
-const temporary = mkdtempSync(join(tmpdir(), "gentle-pi-packed-runner-"));
+const temporary = mkdtempSync(join(tmpdir(), "jero-pi-packed-runner-"));
 const packDirectory = join(temporary, "pack");
 const installDirectory = join(temporary, "install");
 // Every child inherits only disposable Pi homes, never the operator's settings.
@@ -53,7 +53,7 @@ try {
 }));
 	if (packed.length !== 1 || typeof packed[0]?.filename !== "string") throw new Error("npm pack did not return one tarball");
 	const tarball = join(packDirectory, packed[0].filename);
-	writeFileSync(join(installDirectory, "package.json"), JSON.stringify({ name: "gentle-pi-packed-runner-test", private: true }), "utf8");
+	writeFileSync(join(installDirectory, "package.json"), JSON.stringify({ name: "jero-pi-packed-runner-test", private: true }), "utf8");
 	runNpm(["install", "--ignore-scripts=false", "--no-audit", "--no-fund", "--package-lock=false", "--omit=dev", "--legacy-peer-deps", tarball], {
 		cwd: installDirectory,
 		stdio: "inherit",
@@ -63,7 +63,7 @@ try {
 	assert.deepEqual(readdirSync(agentHome), ["settings.json"]);
 	assert.deepEqual(readdirSync(piAgentHome), []);
 	assert.equal(existsSync(join(installDirectory, ".pi", "settings.json")), false);
-	const packageRoot = join(installDirectory, "node_modules", "gentle-pi");
+	const packageRoot = join(installDirectory, "node_modules", "jero-pi");
 	assert.ok(existsSync(join(packageRoot, "scripts", "install-tui-mode-setting.mjs")));
 	const { nativeReviewAbandonAuthorization } = await import(pathToFileURL(join(packageRoot, "runtime", "native-review-cli.mjs")).href);
 	const abandonAuthorization = nativeReviewAbandonAuthorization({
@@ -96,7 +96,7 @@ try {
 	// schema string against a list hand-copied into this script. The copy was a
 	// second, silent pin: it accepted only `capabilities/v2`, so the moment the
 	// pinned provider advertised an additive minor this E2E rejected a pairing
-	// that gentle-pi reads correctly, and it would have done so again on the
+	// that jero-pi reads correctly, and it would have done so again on the
 	// next minor. Using the shipped decoder makes the assertion what it always
 	// meant to be — the packed consumer can read the packed provider — and it
 	// checks the whole envelope (protocol major/minor, required operations,
@@ -107,7 +107,7 @@ try {
 	const decoded = decodeReviewCapabilitiesV2(capabilities, executableDigest);
 	if (decoded.contract !== "gentle-ai.review-integration/v2" || decoded.packageVersion !== versions[0].name.slice(1)) throw new Error("package-local Gentle AI returned incompatible capabilities");
 	const packageManifest = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"));
-	process.stdout.write(`packed package E2E passed (gentle-pi ${packageManifest.version ?? "unknown"}; Gentle AI ${decoded.packageVersion ?? "unknown"})\n`);
+	process.stdout.write(`packed package E2E passed (jero-pi ${packageManifest.version ?? "unknown"}; Gentle AI ${decoded.packageVersion ?? "unknown"})\n`);
 } finally {
 	rmSync(temporary, { recursive: true, force: true });
 }

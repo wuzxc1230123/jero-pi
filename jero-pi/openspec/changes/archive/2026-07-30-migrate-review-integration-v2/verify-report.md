@@ -55,7 +55,7 @@ All output hashes are SHA-256 over the exact combined stdout/stderr bytes captur
 | Scenario-focused 13-file Node command | 0 | 392/392 pass, 0 fail, 0 skip | `sha256:097e53bca88ae13695f5e7003cdc9b1c98781e7532a99cb9391e7681052fd5d3` |
 | Unit/static subset (9 files) | 0 | 153/153 pass | `sha256:1a9456db74653e2431f031ccbdcc0c6a3e565f2f05f5be648828721a5e14f6f2` |
 | Integration/controller subset (4 files) | 0 | 239/239 pass | `sha256:a2386d237692fed62142795e28b866aa1bb52dedcddcf7f82cf7883daee42fac` |
-| `/home/gentleman/work/gentle-pi/.gentle-ai/v2.2.2/gentle-ai review capabilities --contract gentle-ai.review-integration/v2` | 0 | `capabilities/v2`, contract v2, package 2.2.2, protocol 2.0, 8 operations, 10 mandatory + 17 optional features | `sha256:cc743cfd0ed536d5f708edbbe5115645d5f5c5be40eb4d4a175b7034818597d5` |
+| `/home/gentleman/work/jero-pi/.gentle-ai/v2.2.2/gentle-ai review capabilities --contract gentle-ai.review-integration/v2` | 0 | `capabilities/v2`, contract v2, package 2.2.2, protocol 2.0, 8 operations, 10 mandatory + 17 optional features | `sha256:cc743cfd0ed536d5f708edbbe5115645d5f5c5be40eb4d4a175b7034818597d5` |
 | Schema `$ref` audit | 0 | 23 v1 schemas retained; 9 v2 schemas; 64 v2→v1 refs to 9 unique existing targets; 0 missing | `sha256:49ea4137ab3087baffe9d53de32ba0ba09b65388b8185370debdc2693fe6089c` |
 | Delta-spec version audit | 0 | Five v2.2.2 references; zero stale v2.2.1/v2.2.0 references | `sha256:81888ad25d5ffa20f3d86cb8cbad4aa8dce19d7fdb159e2579c6ab9616bd9e73` |
 | Spec/task count audit | 0 | 5 requirements, 15 scenarios; 69 checked, 1 partial, 0 unchecked | `sha256:34f52e193aa99aa6f0b963e947b67f13154f7db075b04ae4fd1cd819e2645e56` |

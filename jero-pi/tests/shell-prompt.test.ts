@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { visibleWidth } from "@earendil-works/pi-tui";
-import { stripAnsi } from "../lib/terminal-theme.ts";
+import { stripAnsi } from "../lib/core/terminal-theme.ts";
 import {
 	framePromptLines,
 	PROMPT_STATE,
@@ -9,7 +9,7 @@ import {
 	petalTone,
 	withPromptHint,
 	type PromptFrameOptions,
-} from "../lib/shell-prompt.ts";
+} from "../lib/shell/shell-prompt.ts";
 
 // The Gentle Shell prompt wraps pi's editor output (a top rule, padded content
 // lines, a bottom rule) in a rounded frame with a petal that shows the agent

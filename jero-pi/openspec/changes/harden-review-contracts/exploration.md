@@ -14,7 +14,7 @@ Relevant seams found:
 |---|---|---|
 | Operation inputs | `lib/review-facade.ts` accepts broad operation objects and optional nested payloads | Add runtime schemas at each operation boundary, including exact nested shapes and numeric/string constraints. |
 | Finalize payloads | `lib/review-compact.ts` has `CompactReviewResultInput`, refuter, finding, and targeted-validation interfaces; validation is distributed and permissive in places | Validate before reducer logic and reject unknown keys recursively. |
-| Legacy reducer seam | `lib/review-policy-ordinary.ts` constructs validator requests and checks hashes, but request shape checks are shallow | Preserve the frozen-row/hash model while making the input and generated handoff runtime-validated. |
+| Legacy reducer seam | `lib/review/review-policy-ordinary.ts` constructs validator requests and checks hashes, but request shape checks are shallow | Preserve the frozen-row/hash model while making the input and generated handoff runtime-validated. |
 | Persistent authority | `lib/review-compact-store.ts` already uses exact-key checks for stored records | Reuse the strictness convention for transient operation payloads; do not weaken persisted compatibility. |
 | Lens prompts | Four `assets/agents/review-*.md` files and `tests/review-ledger-contract.test.ts` carry the canonical contract | Establish one canonical prompt contract/source or a single parity fixture so lens prompts cannot drift. |
 | Runtime identity | Repository/authority and compact store code already validate persisted identity fields | Add loaded-runtime identity binding and explicit mismatch failures without changing graph-v1 read-only behavior. |

@@ -7,9 +7,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { createGentleAiExtension } from "../extensions/gentle-ai.ts";
-import { NATIVE_REVIEW_ERROR_CODE, NativeReviewCliError, type NativeReviewCli } from "../lib/native-review-cli.ts";
-import type { ReviewStatusV3 } from "../lib/review-integration-v2.ts";
+import { createGentleAiExtension } from "../extensions/jero-ai.ts";
+import { NATIVE_REVIEW_ERROR_CODE, NativeReviewCliError, type NativeReviewCli } from "../lib/native/native-review-cli.ts";
+import type { ReviewStatusV3 } from "../lib/review/review-integration-v2.ts";
 
 // gentle-pi#556 / gentle-ai#4051: with RDD enabled, the agent finished an
 // implementation and reported completion without ever entering the review
@@ -69,13 +69,13 @@ function ctx(sessionId: string, hasUI = true, cwd = process.cwd()): ExtensionCon
 async function withSessionStartEnv<T>(callback: (cwd: string) => Promise<T>): Promise<T> {
 	const previousAgentHome = process.env.GENTLE_PI_AGENT_HOME;
 	const previousConfigHome = process.env.GENTLE_PI_CONFIG_HOME;
-	process.env.GENTLE_PI_AGENT_HOME = await mkdtemp(join(tmpdir(), "gentle-pi-session-baseline-agent-home-"));
+	process.env.GENTLE_PI_AGENT_HOME = await mkdtemp(join(tmpdir(), "jero-pi-session-baseline-agent-home-"));
 	// Isolates both the model-config sweep and the dev-binary registration
 	// lookup from this machine's real ~/.pi/gentle-ai, so `session_start`'s
 	// unrelated notifications never leak into these assertions.
-	process.env.GENTLE_PI_CONFIG_HOME = await mkdtemp(join(tmpdir(), "gentle-pi-session-baseline-config-home-"));
+	process.env.GENTLE_PI_CONFIG_HOME = await mkdtemp(join(tmpdir(), "jero-pi-session-baseline-config-home-"));
 	try {
-		const cwd = await mkdtemp(join(tmpdir(), "gentle-pi-session-baseline-cwd-"));
+		const cwd = await mkdtemp(join(tmpdir(), "jero-pi-session-baseline-cwd-"));
 		childProcess.execFileSync("git", ["init", "--quiet", cwd]);
 		await mkdir(join(cwd, "src"));
 		await writeFile(join(cwd, "src/example.ts"), "export const value = 1;");
@@ -235,7 +235,7 @@ for (const scenario of ["same", "changed", "sibling-root", "nested-root", "faile
 		await handlers.get("agent_end")!(agentEndEvent, endSession);
 		const shouldRemind = changedTarget || unsuccessful || scenario === "new-write" || scenario === "concurrent-write";
 		assert.deepEqual(statusRequests.slice(callsBeforeEnd), shouldRemind ? [{ cwd: endSession.cwd, agent: "pi" }] : []);
-		const reminders = sent.filter(({ message }) => message.customType === "gentle-pi.review-preflight");
+		const reminders = sent.filter(({ message }) => message.customType === "jero-pi.review-preflight");
 		assert.equal(reminders.length, shouldRemind ? 1 : 0,
 			shouldRemind ? "an unconsumed own mutation still requires preflight" : "an acknowledged or unowned target must not receive another preflight reminder");
 		if (changedTarget) assert.ok(String(reminders[0]?.message.content).includes(nextTarget));
@@ -277,7 +277,7 @@ test("agent_end nudges exactly once when RDD is on and STATUS offers review.star
 
 	assert.equal(sent.length, 1);
 	const [entry] = sent;
-	assert.equal(entry?.message.customType, "gentle-pi.review-preflight");
+	assert.equal(entry?.message.customType, "jero-pi.review-preflight");
 	const content = String(entry?.message.content);
 	assert.match(content, /gentle_review/);
 	assert.match(content, /first determine whether the user explicitly left this exact target unreviewed\. if yes, do not invoke review; report that disposition and continue\. only otherwise, call the gentle_review tool with \{"operation":"inspect"\}/i);
@@ -619,7 +619,7 @@ for (const ownsMutation of [false, true]) {
 			targetIdentity = targetB;
 			const callsBeforeEnd = statusRequests.length;
 			await agentEnd!(agentEndEvent, session);
-			const reminders = sent.filter(({ message }) => message.customType === "gentle-pi.review-preflight");
+			const reminders = sent.filter(({ message }) => message.customType === "jero-pi.review-preflight");
 			assert.deepEqual({
 				statusRequests: statusRequests.slice(callsBeforeEnd),
 				reminderCount: reminders.length,

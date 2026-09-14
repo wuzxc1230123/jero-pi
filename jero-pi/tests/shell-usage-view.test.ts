@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { visibleWidth } from "@earendil-works/pi-tui";
-import { stripAnsi } from "../lib/terminal-theme.ts";
-import { parseCodexUsage, UsageStore } from "../lib/shell-usage.ts";
-import { UsageView } from "../lib/shell-usage-view.ts";
+import { stripAnsi } from "../lib/core/terminal-theme.ts";
+import { parseCodexUsage, UsageStore } from "../lib/shell/shell-usage.ts";
+import { UsageView } from "../lib/shell/shell-usage-view.ts";
 
 // The subscriptions overlay: one framed panel listing every provider the
 // store knows, with r to refetch and esc to close.

@@ -13,7 +13,7 @@ import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, wr
 import { tmpdir } from "node:os";
 import { delimiter, dirname, isAbsolute, join, relative } from "node:path";
 import test from "node:test";
-import { REVIEW_HOST_RELAY_FAILURE, ReviewHostRelayError, runReviewHostRelaySlot } from "../../lib/review-host-relay.ts";
+import { REVIEW_HOST_RELAY_FAILURE, ReviewHostRelayError, runReviewHostRelaySlot } from "../../lib/review/review-host-relay.ts";
 import { ARM_POSITIVE_ENV, CASE_KINDS, DEFAULT_ROLE_VECTOR_TIMEOUT_MS, DESCRIPTOR_SCHEMA, DescriptorValidationError, POSITIVE_JOURNEY_COMMAND, PROVIDER_ROLE_CAPTURE_ARTIFACT_SCHEMA, PROVIDER_ROLE_VECTOR_KINDS, PROVIDER_ROLE_VECTOR_ROLE, PROVIDER_ROLE_VECTOR_VERB, ProviderRoleVectorError, ROLE_STREAM_MAX_BYTES, ROLE_VECTOR_FAILURE, loadDescriptor, resolveDeclaredExecutable, runMatrix, runProviderRoleVector, validateDescriptor } from "../../scripts/maintainer/provider-relay-matrix.mjs";
 const BASELINE_ENV = "GENTLE_PI_MAINTAINER_BASELINE_BINARY";
 const CAPABLE_ENV = "GENTLE_PI_MAINTAINER_CAPABLE_BINARY";
@@ -22,7 +22,7 @@ const REQUIRE_ENV = "GENTLE_PI_REQUIRE_MAINTAINER";
 // one private sandbox. A predictable /tmp path is squattable: another user can
 // pre-create it between runs, and a test that resolves it would then spawn a
 // file it never wrote. mkdtemp's unpredictable name plus 0700 removes that.
-const SANDBOX = mkdtempSync(join(tmpdir(), "gentle-pi-maintainer-sandbox-"));
+const SANDBOX = mkdtempSync(join(tmpdir(), "jero-pi-maintainer-sandbox-"));
 chmodSync(SANDBOX, 0o700);
 process.on("exit", () => rmSync(SANDBOX, { recursive: true, force: true }));
 const sandboxPath = (name: string) => join(SANDBOX, name);
@@ -69,7 +69,7 @@ function rejects(obj, fragment) {
 	assert.throws(() => validateDescriptor(obj), (error) => error instanceof DescriptorValidationError && error.message.includes(fragment));
 }
 function tempDescriptor(t, obj) {
-	const directory = mkdtempSync(join(tmpdir(), "gentle-pi-maintainer-"));
+	const directory = mkdtempSync(join(tmpdir(), "jero-pi-maintainer-"));
 	t.after(() => rmSync(directory, { recursive: true, force: true }));
 	const path = join(directory, "d.json");
 	writeFileSync(path, JSON.stringify(obj));
@@ -87,7 +87,7 @@ test("valid descriptor validates and returns a normalized copy", () => {
 	assert.deepEqual(d.cases[0]!.submission.values, SUBMISSION.values);
 });
 test("rejects malformed descriptor fields with exact-shape errors (no defaults, no production resolution)", () => {
-	rejects({ ...descriptor(), schema: "gentle-pi.maintainer.provider-relay-descriptor/v2" }, "descriptor.schema must be exactly");
+	rejects({ ...descriptor(), schema: "jero-pi.maintainer.provider-relay-descriptor/v2" }, "descriptor.schema must be exactly");
 	rejects({ ...descriptor(), gentleAiExecutable: "gentle-ai" }, "absolute path");
 	rejects({ ...descriptor(), gentleAiExecutable: undefined }, "absolute path");
 	rejects({ ...descriptor(), extra: 1 }, "descriptor.extra");
@@ -350,7 +350,7 @@ test("resolveDeclaredExecutable checks absolute paths verbatim and bare names on
 // deterministic and needs no arming.
 // ---------------------------------------------------------------------------
 function capableStubHarness(t: test.TestContext) {
-	const directory = mkdtempSync(join(tmpdir(), "gentle-pi-maintainer-capable-stub-"));
+	const directory = mkdtempSync(join(tmpdir(), "jero-pi-maintainer-capable-stub-"));
 	chmodSync(directory, 0o700);
 	t.after(() => rmSync(directory, { recursive: true, force: true }));
 	const materializeLog = join(directory, "materialized");
@@ -417,7 +417,7 @@ test("a relay-unavailable case against a CAPABLE binary fails closed at pi: zero
 // not silently claimed here.
 // ---------------------------------------------------------------------------
 test("a bare Pi declaration is resolved once: the relay never falls through to a second PATH candidate after materialization removes the first", { skip: process.platform === "win32" && "POSIX shebang/executable subprocess fixture; Windows .cmd launcher execution (shell:false) is #311 P8 evidence, not claimed here" }, async (t) => {
-	const root = mkdtempSync(join(tmpdir(), "gentle-pi-maintainer-resolve-once-"));
+	const root = mkdtempSync(join(tmpdir(), "jero-pi-maintainer-resolve-once-"));
 	chmodSync(root, 0o700);
 	t.after(() => rmSync(root, { recursive: true, force: true }));
 	const dirA = join(root, "path-a");
@@ -471,7 +471,7 @@ test("a bare Pi declaration is resolved once: the relay never falls through to a
 test("platform-neutral: runMatrix passes the first resolved concrete Pi path into the relay boundary (no second resolution)", async (t) => {
 	// Keep the fixture on the same Windows volume as process.cwd() so the
 	// first PATH component genuinely exercises relative-path normalization.
-	const root = mkdtempSync(join(process.cwd(), ".gentle-pi-maintainer-portable-"));
+	const root = mkdtempSync(join(process.cwd(), ".jero-pi-maintainer-portable-"));
 	chmodSync(root, 0o700);
 	t.after(() => rmSync(root, { recursive: true, force: true }));
 	const dirA = join(root, "path-a");

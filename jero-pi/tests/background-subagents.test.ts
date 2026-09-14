@@ -14,7 +14,7 @@ import type {
 	ExtensionAPI,
 	ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
-import { __testing, createGentleAiExtension } from "../extensions/gentle-ai.ts";
+import { __testing, createGentleAiExtension } from "../extensions/jero-ai.ts";
 
 // ---------------------------------------------------------------------------
 // Background subagents policy (issue #256).
@@ -60,7 +60,7 @@ function writePolicyFile(dir: string, policy: string): void {
 	mkdirSync(dir, { recursive: true });
 	writeFileSync(
 		join(dir, "background-subagents.json"),
-		JSON.stringify({ schema: "gentle-pi.background-subagents/v1", policy }),
+		JSON.stringify({ schema: "jero-pi.background-subagents/v1", policy }),
 	);
 }
 
@@ -96,13 +96,13 @@ function installSubagentsPackage(
 test("strict decode accepts exactly the v1 schema with policy on|off", () => {
 	assert.equal(
 		parseBackgroundSubagentsPolicyFile(
-			'{"schema":"gentle-pi.background-subagents/v1","policy":"on"}',
+			'{"schema":"jero-pi.background-subagents/v1","policy":"on"}',
 		),
 		"on",
 	);
 	assert.equal(
 		parseBackgroundSubagentsPolicyFile(
-			'{"schema":"gentle-pi.background-subagents/v1","policy":"off"}',
+			'{"schema":"jero-pi.background-subagents/v1","policy":"off"}',
 		),
 		"off",
 	);
@@ -114,10 +114,10 @@ test("strict decode rejects malformed shapes", () => {
 		"[]",
 		"null",
 		'{"policy":"on"}',
-		'{"schema":"gentle-pi.background-subagents/v2","policy":"on"}',
-		'{"schema":"gentle-pi.background-subagents/v1","policy":"ON"}',
-		'{"schema":"gentle-pi.background-subagents/v1","policy":true}',
-		'{"schema":"gentle-pi.background-subagents/v1","policy":"on","extra":1}',
+		'{"schema":"jero-pi.background-subagents/v2","policy":"on"}',
+		'{"schema":"jero-pi.background-subagents/v1","policy":"ON"}',
+		'{"schema":"jero-pi.background-subagents/v1","policy":true}',
+		'{"schema":"jero-pi.background-subagents/v1","policy":"on","extra":1}',
 	]) {
 		assert.equal(
 			parseBackgroundSubagentsPolicyFile(raw),
@@ -489,11 +489,11 @@ test("loadBackgroundSubagentsPolicy delegates to the resolver so the two can nev
 });
 
 // ---------------------------------------------------------------------------
-// /gentle:background-subagents command (issue #345)
+// /jero:background-subagents command (issue #345)
 //
 // The policy had no user-facing surface at all: it could only be set by
 // hand-writing JSON or exporting an env var, and the deciding source was
-// visible to nobody. The command mirrors /gentle:review-mode — status|enable|
+// visible to nobody. The command mirrors /jero:review-mode — status|enable|
 // disable, user-initiated only, Pi automation never toggles it.
 // ---------------------------------------------------------------------------
 
@@ -558,17 +558,17 @@ async function runBackgroundSubagents(
 		GENTLE_PI_BACKGROUND_SUBAGENTS: undefined,
 		...env,
 	});
-	const command = registeredCommands().get("gentle:background-subagents");
-	assert.ok(command, "gentle:background-subagents must be registered");
+	const command = registeredCommands().get("jero:background-subagents");
+	assert.ok(command, "jero:background-subagents must be registered");
 	const notices: Array<{ message: string; type?: string }> = [];
 	await command!.handler(argument, notifyContext(cwd, notices));
 	assert.equal(notices.length, 1, "one invocation reports exactly once");
 	return notices[0]!;
 }
 
-test("gentle:background-subagents is registered and declares user-initiated sub-actions", () => {
-	const command = registeredCommands().get("gentle:background-subagents");
-	assert.ok(command, "gentle:background-subagents must be registered");
+test("jero:background-subagents is registered and declares user-initiated sub-actions", () => {
+	const command = registeredCommands().get("jero:background-subagents");
+	assert.ok(command, "jero:background-subagents must be registered");
 	assert.match(command!.description ?? "", /status\|enable\|disable/);
 	assert.match(
 		command!.description ?? "",
@@ -677,7 +677,7 @@ test("enable writes the global file and reports that it decides", async (t) => {
 	const globalFile = join(configHome, "background-subagents.json");
 	const notice = await runBackgroundSubagents(t, "enable", cwd, configHome);
 	assert.deepEqual(JSON.parse(readFileSync(globalFile, "utf8")), {
-		schema: "gentle-pi.background-subagents/v1",
+		schema: "jero-pi.background-subagents/v1",
 		policy: "on",
 	});
 	assert.equal(notice.type, "info");
@@ -698,7 +698,7 @@ test("disable writes the global file off and reports that it decides", async (t)
 	writePolicyFile(configHome, "on");
 	const notice = await runBackgroundSubagents(t, "disable", cwd, configHome);
 	assert.deepEqual(JSON.parse(readFileSync(globalFile, "utf8")), {
-		schema: "gentle-pi.background-subagents/v1",
+		schema: "jero-pi.background-subagents/v1",
 		policy: "off",
 	});
 	assert.equal(notice.type, "info");
@@ -720,7 +720,7 @@ test("enable under an outranking project file writes the global file and says it
 	const notice = await runBackgroundSubagents(t, "enable", cwd, configHome);
 	assert.deepEqual(
 		JSON.parse(readFileSync(globalFile, "utf8")),
-		{ schema: "gentle-pi.background-subagents/v1", policy: "on" },
+		{ schema: "jero-pi.background-subagents/v1", policy: "on" },
 		"the requested global write still happens",
 	);
 	assert.equal(notice.type, "warning");
@@ -761,7 +761,7 @@ test("an unknown sub-action warns and changes nothing", async (t) => {
 	assert.equal(notice.type, "warning");
 	assert.equal(
 		notice.message,
-		'Unknown /gentle:background-subagents sub-action "toggle". Use status, enable, or disable.',
+		'Unknown /jero:background-subagents sub-action "toggle". Use status, enable, or disable.',
 	);
 	assert.equal(
 		existsSync(join(configHome, "background-subagents.json")),

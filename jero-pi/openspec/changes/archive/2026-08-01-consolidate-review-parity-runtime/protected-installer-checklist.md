@@ -3,8 +3,8 @@
 ## Protected paths
 
 - `package.json`
-- `lib/native-review-cli.ts`
-- `lib/gentle-ai-binary.ts`
+- `lib/native/native-review-cli.ts`
+- `lib/core/gentle-ai-binary.ts`
 - `scripts/verify-package-files.mjs`
 - `scripts/gentle-ai-installer.mjs`
 - `scripts/install-gentle-ai.mjs`

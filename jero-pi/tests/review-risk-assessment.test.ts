@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { createGentleAiExtension, __testing } from "../extensions/gentle-ai.ts";
+import { createGentleAiExtension, __testing } from "../extensions/jero-ai.ts";
 import {
 	NATIVE_REVIEW_ERROR_CODE,
 	NATIVE_REVIEW_MODE_SOURCE,
@@ -9,7 +9,7 @@ import {
 	NativeReviewCliV216,
 	type ExecFileAdapter,
 	type NativeReviewCli,
-} from "../lib/native-review-cli.ts";
+} from "../lib/native/native-review-cli.ts";
 import {
 	decodeReviewAssessmentV1,
 	isSmallWriterProfile,
@@ -24,7 +24,7 @@ import {
 	type RddLine,
 	type WriterProfile,
 	type NativeReviewOutcome,
-} from "../lib/review-risk-assessment.ts";
+} from "../lib/review/review-risk-assessment.ts";
 
 // ---------------------------------------------------------------------------
 // gentle-pi#662: decoder for the native `gentle-ai review assess` envelope
@@ -328,7 +328,7 @@ test("resolveWriterProfile: an unknown or omitted profile fails closed to small,
 
 // ---------------------------------------------------------------------------
 // Tool-level fail-closed path: the `gentle_review` tool's `assess` operation
-// (`extensions/gentle-ai.ts`, gentle-pi#662) must treat a native CLI without
+// (`extensions/jero-ai.ts`, gentle-pi#662) must treat a native CLI without
 // the `assess` verb (an older binary) or a rejected `assess` call (a process
 // failure) the same way -- risk "unassessable", which `verificationPlan`
 // treats as `high`. `assess` is exposed as a `gentle_review` operation, not a
@@ -544,7 +544,7 @@ test("gentle_review assess never requires a lineageId (unlike most other operati
 });
 
 // ---------------------------------------------------------------------------
-// Native reader (`NativeReviewCliV216.assess`, `lib/native-review-cli.ts`):
+// Native reader (`NativeReviewCliV216.assess`, `lib/native/native-review-cli.ts`):
 // mirrors reviewMode's wiring -- bounded subprocess, typed decode, fail closed
 // on a non-zero exit or an "unknown command" older binary.
 // ---------------------------------------------------------------------------

@@ -5,7 +5,7 @@ import { join } from "node:path";
 import test from "node:test";
 import {
 	decodeReviewConsentV3,
-} from "../lib/review-integration-v2.ts";
+} from "../lib/review/review-integration-v2.ts";
 import {
 	decodeNativeSddStatusV2,
 	NATIVE_REVIEW_DEFAULT_MAX_BUFFER_BYTES,
@@ -17,7 +17,7 @@ import {
 	isNativeReviewUnachievableVerbRefused,
 	type ExecFileAdapter,
 	type NativeTargetStatusRequest,
-} from "../lib/native-review-cli.ts";
+} from "../lib/native/native-review-cli.ts";
 
 const fixture = (name: string): Record<string, unknown> => JSON.parse(
 	readFileSync(join(process.cwd(), "tests", "fixtures", "devbinary", name), "utf8"),
@@ -106,7 +106,7 @@ test("native SDD status rejects malformed v2 identities, dependencies, instructi
 		{ changeName: "complete-native-review-lifecycle", workspaceRoot: "/repo" },
 	));
 	const malformed = [
-		{ ...nativeSddStatus(), schemaName: "gentle-pi.sdd-status" },
+		{ ...nativeSddStatus(), schemaName: "jero-pi.sdd-status" },
 		{ ...nativeSddStatus(), schemaVersion: 1 },
 		{ ...nativeSddStatus(), changeName: "other-change" },
 		{ ...nativeSddStatus(), artifactStore: "future-store" },
@@ -893,7 +893,7 @@ test("current review STATUS retains compact snapshot and released-lock wire fiel
 		);
 	}
 	if (process.platform !== "win32") {
-		const root = mkdtempSync(join(tmpdir(), "gentle-pi-native-status-"));
+		const root = mkdtempSync(join(tmpdir(), "jero-pi-native-status-"));
 		const alias = `${root}-alias`;
 		symlinkSync(root, alias, "dir");
 		t.after(() => {

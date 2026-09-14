@@ -44,10 +44,10 @@ Reuse the existing repository-derived graph-v1/CAS authority, semantic chain, ex
 
 | Area | Impact | Description |
 |---|---|---|
-| `lib/review-snapshot.ts` | Modified | Persist canonical genesis paths with the immutable snapshot identity |
-| `lib/review-transaction.ts` | Modified | Bind state, events, replay, and receipts to genesis paths and follow-ups |
-| `lib/review-policy-ordinary.ts` | Modified | Enforce correction and targeted-validation invariants |
-| `extensions/gentle-ai.ts` | Modified | Accept and report the minimal lifecycle evidence |
+| `lib/review/review-snapshot.ts` | Modified | Persist canonical genesis paths with the immutable snapshot identity |
+| `lib/review/review-transaction.ts` | Modified | Bind state, events, replay, and receipts to genesis paths and follow-ups |
+| `lib/review/review-policy-ordinary.ts` | Modified | Enforce correction and targeted-validation invariants |
+| `extensions/jero-ai.ts` | Modified | Accept and report the minimal lifecycle evidence |
 | Ordinary validator/orchestrator/skill assets | Modified | Remove fix-line review language and require targeted evidence |
 | Existing review contract, policy, transaction, and controller tests | Modified | Replace broad-review assertions; remove tests for discarded transitions |
 
@@ -66,8 +66,8 @@ Revert lifecycle commits together; retain existing graph-v1 stores and behavior 
 ## Dependencies
 
 - Approved Gentleman-Programming/gentle-ai#1104.
-- Existing gentle-pi review parity landed by `52f60d97`, `c13b677e`, and `bd1f0a6a`.
-- Existing gentle-pi graph-v1 review lifecycle.
+- Existing jero-pi review parity landed by `52f60d97`, `c13b677e`, and `bd1f0a6a`.
+- Existing jero-pi graph-v1 review lifecycle.
 
 ## Success Criteria
 

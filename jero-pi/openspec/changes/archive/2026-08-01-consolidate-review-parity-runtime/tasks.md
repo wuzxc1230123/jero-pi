@@ -36,7 +36,7 @@ Chain strategy: size-exception
 
 ### C4 RED — strict-TDD false-overflow reproduction
 
-- [x] Add a failing focused regression at the existing candidate-view/controller test targets (discover via `lib/review-candidate-view.ts`, `extensions/gentle-ai.ts`, and the C3 tests) with a 293-entry candidate tree and only 45 changed paths; assert the old full-tree projection exceeds the bounded dispatch context and actor count remains zero.
+- [x] Add a failing focused regression at the existing candidate-view/controller test targets (discover via `lib/review/review-candidate-view.ts`, `extensions/jero-ai.ts`, and the C3 tests) with a 293-entry candidate tree and only 45 changed paths; assert the old full-tree projection exceeds the bounded dispatch context and actor count remains zero.
 - [x] Add the fixture/harness assertion for fresh lineage `review-d3587ca14ff4f06b`: `review-d3587ca14ff4f06b` is blocked before actor execution, with no consumed lens, actor output, or FINALIZE mutation.
 
 **Verification:** RED reproduces the false context overflow while proving no actor starts.

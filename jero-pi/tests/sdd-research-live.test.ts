@@ -7,9 +7,9 @@ import { dirname, isAbsolute, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { AgentRunner } from "../lib/agents-runner.ts";
-import { TaskStore } from "../lib/agents-protocol.ts";
-import { researchAgent, RESEARCH_CHILD_TOOLS_ENV } from "../lib/sdd-research-capabilities.ts";
+import { AgentRunner } from "../lib/agents/agents-runner.ts";
+import { TaskStore } from "../lib/agents/agents-protocol.ts";
+import { researchAgent, RESEARCH_CHILD_TOOLS_ENV } from "../lib/sdd/sdd-research-capabilities.ts";
 
 // Runtime-owned authentication references the existing profile; no credentials
 // are copied, extracted or symlinked. Only native OAuth refresh may persist there.
@@ -17,7 +17,7 @@ import { researchAgent, RESEARCH_CHILD_TOOLS_ENV } from "../lib/sdd-research-cap
 const enabled = process.env.GENTLE_PI_LIVE_RESEARCH_TEST === "1";
 const role = process.env.GENTLE_PI_LIVE_RESEARCH_ROLE;
 const tools = ["web_search", "source_check", "fetch_content", "get_search_content"];
-const candidate = fileURLToPath(new URL("../extensions/gentle-agents.ts", import.meta.url));
+const candidate = fileURLToPath(new URL("../extensions/jero-agents.ts", import.meta.url));
 const self = fileURLToPath(import.meta.url);
 const question = `Generic runtime capability probe, not an SDD workflow or proposal admission. Artifact store: none. Do not write files or launch agents. Use ALL FOUR tools web_search, source_check, fetch_content and get_search_content to answer: What does the Node.js fs module provide? Set web_search workflow to none. Search only public Node.js documentation (site:nodejs.org). Check and retrieve the original public documentation. Return ONLY JSON with source_url (an https://nodejs.org/ URL) and passage (a verbatim 40-300 character passage from retrieved documentation). Do not use remembered text as evidence. If any tool fails, report inability rather than inventing evidence.`;
 

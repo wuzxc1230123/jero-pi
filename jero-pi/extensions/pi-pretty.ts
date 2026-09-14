@@ -5,7 +5,7 @@ import {
 	mergeDisabledTools,
 	PI_PRETTY_SUPPRESSED_TOOL_NAMES,
 	quietToolsEnabled,
-} from "../lib/quiet-tools-config.ts";
+} from "../lib/core/quiet-tools-config.ts";
 
 const packageJsonPath = realpathSync(
 	fileURLToPath(new URL("../package.json", import.meta.url)),

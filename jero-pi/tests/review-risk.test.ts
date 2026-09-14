@@ -7,8 +7,8 @@ import {
 	correctionBudget,
 	countAuthoredChangedLines,
 	type ReviewDiffStat,
-} from "../lib/review-risk.ts";
-import { FULL_4R_LENSES, REVIEW_LENS } from "../lib/review-triggers.ts";
+} from "../lib/review/review-risk.ts";
+import { FULL_4R_LENSES, REVIEW_LENS } from "../lib/review/review-triggers.ts";
 
 function stat(path: string, additions: number, deletions = 0): ReviewDiffStat {
 	return { path, additions, deletions, binary: false, mode_only: false };

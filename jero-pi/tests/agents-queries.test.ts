@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { AGENT_MODE, type AgentDefinition } from "../lib/agents-config.ts";
-import { CHILD_MESSAGE_MAX_BYTES, ChildMessenger } from "../lib/agents-messaging.ts";
-import { TaskStore } from "../lib/agents-protocol.ts";
-import { AgentRunner } from "../lib/agents-runner.ts";
+import { AGENT_MODE, type AgentDefinition } from "../lib/agents/agents-config.ts";
+import { CHILD_MESSAGE_MAX_BYTES, ChildMessenger } from "../lib/agents/agents-messaging.ts";
+import { TaskStore } from "../lib/agents/agents-protocol.ts";
+import { AgentRunner } from "../lib/agents/agents-runner.ts";
 import { fakeChild } from "./agents-fake-child.ts";
 
 const tick = () => new Promise((resolve) => setImmediate(resolve));

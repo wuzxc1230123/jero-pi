@@ -7,14 +7,14 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import type { AssistantMessage } from "@earendil-works/pi-ai";
-import { AgentRunner, type ChildLike, type TaskRequest } from "../lib/agents-runner.ts";
-import { TaskStore } from "../lib/agents-protocol.ts";
-import { parseAgentDefinition } from "../lib/agents-config.ts";
+import { AgentRunner, type ChildLike, type TaskRequest } from "../lib/agents/agents-runner.ts";
+import { TaskStore } from "../lib/agents/agents-protocol.ts";
+import { parseAgentDefinition } from "../lib/agents/agents-config.ts";
 import { Type } from "typebox";
-import { RESEARCH_CHILD_TOOLS_ENV } from "../lib/sdd-research-capabilities.ts";
-import { admitManagedRemediation } from "../extensions/gentle-agents.ts";
+import { RESEARCH_CHILD_TOOLS_ENV } from "../lib/sdd/sdd-research-capabilities.ts";
+import { admitManagedRemediation } from "../extensions/jero-agents.ts";
 
-import { NativeReviewCliV216, createNodeExecFileAdapter } from "../lib/native-review-cli.ts";
+import { NativeReviewCliV216, createNodeExecFileAdapter } from "../lib/native/native-review-cli.ts";
 
 const self = fileURLToPath(import.meta.url);
 const source = dirname(dirname(self));
@@ -91,7 +91,7 @@ if (!childRole) test("installed AI producer → fixed Pi extensions → managed 
 	const previousHome = process.env.GENTLE_PI_AGENT_HOME;
 	process.env.GENTLE_PI_AGENT_HOME = home;
 	try {
-		const { installPackageAssets } = await import(join(pkg, "lib", "sdd-preflight.ts"));
+		const { installPackageAssets } = await import(join(pkg, "lib", "sdd", "sdd-preflight.ts"));
 		installPackageAssets(cwd, false, ["sdd"]);
 	} finally {
 		if (previousHome === undefined) delete process.env.GENTLE_PI_AGENT_HOME; else process.env.GENTLE_PI_AGENT_HOME = previousHome;
@@ -116,7 +116,7 @@ if (!childRole) test("installed AI producer → fixed Pi extensions → managed 
 	assert.equal(status.schemaName, "gentle-ai.sdd-status"); assert.equal(status.schemaVersion, 2);
 	assert.equal(status.nextRecommended, "apply");
 	await t.test("installed host suppresses continuation for read-only and excluded-marker answers", async () => {
-		const { createGentleAiExtension } = await import(join(pkg, "extensions", "gentle-ai.ts"));
+		const { createGentleAiExtension } = await import(join(pkg, "extensions", "jero-ai.ts"));
 		for (const answer of [false, undefined]) {
 			const verbs: string[] = [], confirmations: string[] = [], notices: string[] = [];
 			const commands = new Map();
@@ -134,7 +134,7 @@ if (!childRole) test("installed AI producer → fixed Pi extensions → managed 
 			assert.equal(existsSync(join(change, ".gentle-ai-instance")), false);
 		}
 	});
-	const fixed = [join(pkg, "extensions", "gentle-ai.ts"), join(pkg, "extensions", "gentle-agents.ts")];
+	const fixed = [join(pkg, "extensions", "jero-ai.ts"), join(pkg, "extensions", "jero-agents.ts")];
 	const docExtension = join(pkg, "tests", "sdd-native-managed-uptake.test.ts");
 	const selection = { documentation: { tools: ["fetch_content"], extensions: { fetch_content: docExtension } } };
 	async function run(id: string, phase: "apply" | "research" | "remediate", script: unknown[], options: Record<string, any> = {}) {
@@ -211,7 +211,7 @@ if (!childRole) test("installed AI producer → fixed Pi extensions → managed 
 		rmSync(definition.filePath);
 		let acquires = 0;
 		try {
-			await assert.rejects(admitManagedRemediation({ agent: definition, cwd, sddChange: { phase: "remediate", changeName: "uptake", workspaceRoot: cwd, failedEvidenceRevision: `sha256:${"a".repeat(64)}` } } as unknown as TaskRequest, {}, { ...native, sddAttemptAcquire: async () => { acquires++; throw new Error("Must not acquire"); } } as unknown as import("../lib/native-review-cli.ts").NativeReviewCli, async () => {}), /unsupported/i);
+			await assert.rejects(admitManagedRemediation({ agent: definition, cwd, sddChange: { phase: "remediate", changeName: "uptake", workspaceRoot: cwd, failedEvidenceRevision: `sha256:${"a".repeat(64)}` } } as unknown as TaskRequest, {}, { ...native, sddAttemptAcquire: async () => { acquires++; throw new Error("Must not acquire"); } } as unknown as import("../lib/native/native-review-cli.ts").NativeReviewCli, async () => {}), /unsupported/i);
 			assert.equal(acquires, 0);
 		} finally { writeFileSync(definition.filePath, bytes); }
 	});

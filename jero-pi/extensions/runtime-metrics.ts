@@ -1,9 +1,9 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { EFFORTS, ORCHESTRATOR_AGENT_CLASS, RuntimeMetrics, UNKNOWN_AGENT_CLASS, type FinalResponse, type TokenMeasurement } from "../lib/runtime-metrics.ts";
-import { CHILD_METRICS_EVENT, CHILD_METRICS_REVOKED, snapshotChildEvent, type ChildLaunchBucket } from "../lib/runtime-metrics-children.ts";
-import { RuntimeMetricsAttempt } from "../lib/runtime-metrics-delivery.ts";
-import { sendNativeRuntimeEvent, type NativeRuntimeTransportDeps } from "../lib/runtime-metrics-native.ts";
-import { runtimeMetricsEnvAllows } from "../lib/runtime-metrics-policy.ts";
+import { EFFORTS, ORCHESTRATOR_AGENT_CLASS, RuntimeMetrics, UNKNOWN_AGENT_CLASS, type FinalResponse, type TokenMeasurement } from "../lib/metrics/runtime-metrics.ts";
+import { CHILD_METRICS_EVENT, CHILD_METRICS_REVOKED, snapshotChildEvent, type ChildLaunchBucket } from "../lib/metrics/runtime-metrics-children.ts";
+import { RuntimeMetricsAttempt } from "../lib/metrics/runtime-metrics-delivery.ts";
+import { sendNativeRuntimeEvent, type NativeRuntimeTransportDeps } from "../lib/metrics/runtime-metrics-native.ts";
+import { runtimeMetricsEnvAllows } from "../lib/metrics/runtime-metrics-policy.ts";
 
 /** Available final usage -> one deferred attempt -> discard. No history reads,
  * cumulative session accounting, policy leases, delivery queue or retry. Print

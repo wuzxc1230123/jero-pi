@@ -3,9 +3,9 @@ import { EventEmitter } from "node:events";
 import { PassThrough } from "node:stream";
 import { test } from "node:test";
 import { readFileSync, realpathSync } from "node:fs";
-import { setGentleAiDevBinaryEnvironmentForTesting } from "../lib/gentle-ai-binary.ts";
-import * as native from "../lib/runtime-metrics-native.ts";
-import { parseAgentClass, type RuntimeMetricBucket } from "../lib/runtime-metrics.ts";
+import { setGentleAiDevBinaryEnvironmentForTesting } from "../lib/core/gentle-ai-binary.ts";
+import * as native from "../lib/metrics/runtime-metrics-native.ts";
+import { parseAgentClass, type RuntimeMetricBucket } from "../lib/metrics/runtime-metrics.ts";
 import { createHash } from "node:crypto";
 import schema from "../contracts/telemetry/runtime-aggregate-v1.schema.json" with { type: "json" };
 import fixturePayloads from "./fixtures/runtime-metrics-native-batches.json" with { type: "json" };
@@ -260,7 +260,7 @@ for (const decision of ["discarded", "disabled", "stored", "duplicate", "sent", 
 }
 
 test("metrics receiver, attempt gate and send transport have no filesystem persistence surface", () => {
-	for (const path of ["../extensions/runtime-metrics.ts", "../lib/runtime-metrics-delivery.ts", "../lib/runtime-metrics-native.ts"]) {
+	for (const path of ["../extensions/runtime-metrics.ts", "../lib/metrics/runtime-metrics-delivery.ts", "../lib/metrics/runtime-metrics-native.ts"]) {
 		const source = readFileSync(new URL(path, import.meta.url), "utf8");
 		assert.doesNotMatch(source, /node:fs|appendEntry\s*\(|writeFile|mkdir|createWriteStream/);
 	}

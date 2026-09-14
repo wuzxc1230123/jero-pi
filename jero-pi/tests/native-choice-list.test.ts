@@ -4,12 +4,12 @@ import {
 	KeybindingsManager, stripTerminalSequences, Text, TUI_KEYBINDINGS,
 	type Component, type TuiMouseEvent, visibleWidth,
 } from "@earendil-works/pi-tui";
-import { NativeChoiceList } from "../lib/native-choice-list.ts";
+import { NativeChoiceList } from "../lib/native/native-choice-list.ts";
 import {
 	NativePointerScope,
 	type NativePointerRegionCallbacks,
-} from "../lib/native-pointer-region.ts";
-import { createNativeFullscreenInteraction } from "../lib/native-fullscreen-interaction.ts";
+} from "../lib/native/native-pointer-region.ts";
+import { createNativeFullscreenInteraction } from "../lib/native/native-fullscreen-interaction.ts";
 
 const selectedForeground = "\u001b[38;5;39m";
 const hoverBackground = "\u001b[48;5;236m";

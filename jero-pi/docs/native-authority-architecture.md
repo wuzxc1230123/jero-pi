@@ -9,9 +9,9 @@ U8 closed the U1-U7 slimming work. New ordinary review authority is native; Pi r
 | Surface | Owner after #191 |
 | --- | --- |
 | Ordinary START, FINALIZE, target status, validation, SDD binding, recovery, and reconciliation | Package-local Gentle AI v2.4.0 through `gentle-ai.review-integration/v2` (migration complete, see below) |
-| Canonical consumer identities | Permanent Pi module `lib/review-canonical.ts` |
-| Git common-directory and repository identity | Permanent Pi module `lib/review-repository.ts` |
-| Immutable reviewer candidate views | Permanent Pi module `lib/review-candidate-view.ts` |
+| Canonical consumer identities | Permanent Pi module `lib/review/review-canonical.ts` |
+| Git common-directory and repository identity | Permanent Pi module `lib/review/review-repository.ts` |
+| Immutable reviewer candidate views | Permanent Pi module `lib/review/review-candidate-view.ts` |
 | Dangerous-command safety | Pi; independent of review authority and delivery decisions |
 | Explicit Judgment Day and historical graph semantic replay | Pi graph-v1 until a separately proven replacement exists |
 | Historical graph receipt validation | Pi graph-v1 transaction, reachable only for historical graph authority and explicit Judgment Day |
@@ -20,15 +20,15 @@ Pi no longer owns an ordinary compact store, compact gate, compatibility facade,
 
 ## Naming note: "compact-v2" is not contract v2
 
-This document and `gentle_review`'s recovery/maintenance commands use "compact-v2" to name Pi's own internal review-authority storage generation (historically `lib/review-compact.ts`, now only the reduced `lib/review-compact-contract.ts` after gentle-pi#311 P5), predating and unrelated to gentle-ai's negotiated protocol contract `gentle-ai.review-integration/v2`. The two share a digit and nothing else: "compact-v2" is Pi-internal authority-state vocabulary; `review-integration/v2` is gentle-ai's wire contract replacing the Base64 `candidate_diff` transport with immutable `base_tree`/`candidate_tree` and an ordered `changed_path_manifest`. Do not conflate them when reading the maintenance-boundary section below.
+This document and `gentle_review`'s recovery/maintenance commands use "compact-v2" to name Pi's own internal review-authority storage generation (historically `lib/review-compact.ts`, now only the reduced `lib/review/review-compact-contract.ts` after gentle-pi#311 P5), predating and unrelated to gentle-ai's negotiated protocol contract `gentle-ai.review-integration/v2`. The two share a digit and nothing else: "compact-v2" is Pi-internal authority-state vocabulary; `review-integration/v2` is gentle-ai's wire contract replacing the Base64 `candidate_diff` transport with immutable `base_tree`/`candidate_tree` and an ordered `changed_path_manifest`. Do not conflate them when reading the maintenance-boundary section below.
 
 ## Contract migration status: `review-integration/v1` → `/v2` (complete)
 
-gentle-ai publishes two negotiated contracts side by side: `gentle-ai.review-integration/v1` (the Base64 candidate-diff transport Pi used to speak) and `gentle-ai.review-integration/v2` (immutable `base_tree`/`candidate_tree`, an ordered `changed_path_manifest`, mandatory `artifact_subjects`, and an evidence-first correction lifecycle). gentle-pi negotiates `/v2` only, with no dual-lane fallback — the pinned binary always answers exactly one exact version, so negotiating a version range would buy nothing and double the decoder surface permanently.
+gentle-ai publishes two negotiated contracts side by side: `gentle-ai.review-integration/v1` (the Base64 candidate-diff transport Pi used to speak) and `gentle-ai.review-integration/v2` (immutable `base_tree`/`candidate_tree`, an ordered `changed_path_manifest`, mandatory `artifact_subjects`, and an evidence-first correction lifecycle). jero-pi negotiates `/v2` only, with no dual-lane fallback — the pinned binary always answers exactly one exact version, so negotiating a version range would buy nothing and double the decoder surface permanently.
 
 The migration (tracked as the `migrate-review-integration-v2` OpenSpec change) landed in two stages:
 
-- **Stage 1 (authorable without an external dependency):** the `lib/review-integration-v2.ts` decoder module, a pure evidence-first correction-lifecycle module, and a field-wise candidate-view manifest check were authored and unit-tested against the mirrored `contracts/review-integration/v2/` fixtures while `lib/native-review-cli.ts` still negotiated `/v1`.
+- **Stage 1 (authorable without an external dependency):** the `lib/review/review-integration-v2.ts` decoder module, a pure evidence-first correction-lifecycle module, and a field-wise candidate-view manifest check were authored and unit-tested against the mirrored `contracts/review-integration/v2/` fixtures while `lib/native/native-review-cli.ts` still negotiated `/v1`.
 - **Stage 2 (gated on the pinned gentle-ai release advertising contract v2, landed against v2.2.2):** one atomic commit flipped the import, added the net-new negotiated `review repair` and `review capture-evidence` call sites, deleted `lib/review-integration-v1.ts` and its generated runtime and tests, and regenerated `runtime/*.mjs`. `contracts/review-integration/v1/**` stays on disk permanently because the `/v2` JSON schemas `$ref` into its fragments.
 
 Under `/v2`, reviewers inspect the frozen candidate through read-only Git against the exact frozen trees; a runtime that cannot enforce a per-command shell boundary exposes no shell and reports incomplete inspection rather than substituting live files. Pi already satisfies this by materializing a chmod-read-only worktree scoped to the manifest and pointing lens agents at it through `Read` — they get no Git shell at all.
@@ -39,9 +39,9 @@ The permanent modules have direct production consumers after #191:
 
 | Permanent module | Direct production consumers |
 | --- | --- |
-| `review-canonical.ts` | `extensions/gentle-ai.ts` and eight live review modules |
-| `review-repository.ts` | `extensions/gentle-ai.ts`, graph object store, legacy detector, snapshot, and transaction |
-| `review-candidate-view.ts` | `extensions/gentle-ai.ts` |
+| `review-canonical.ts` | `extensions/jero-ai.ts` and eight live review modules |
+| `review-repository.ts` | `extensions/jero-ai.ts`, graph object store, legacy detector, snapshot, and transaction |
+| `review-candidate-view.ts` | `extensions/jero-ai.ts` |
 
 The remaining ordinary reducer is not dead authority. Historical graph event replay calls it to validate semantic adjacency. Deleting it would weaken graph integrity even though controller mutation is read-only.
 

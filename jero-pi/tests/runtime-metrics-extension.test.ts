@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import runtimeMetrics from "../extensions/runtime-metrics.ts";
-import { parseAgentClass, type RuntimeMetricBucket } from "../lib/runtime-metrics.ts";
-import { encodeNativeRuntimeEvent } from "../lib/runtime-metrics-native.ts";
-import { CHILD_METRICS_EVENT, childEvent } from "../lib/runtime-metrics-children.ts";
-import { normalizeRpcEvent, TASK_EVENT } from "../lib/agents-protocol.ts";
+import { parseAgentClass, type RuntimeMetricBucket } from "../lib/metrics/runtime-metrics.ts";
+import { encodeNativeRuntimeEvent } from "../lib/metrics/runtime-metrics-native.ts";
+import { CHILD_METRICS_EVENT, childEvent } from "../lib/metrics/runtime-metrics-children.ts";
+import { normalizeRpcEvent, TASK_EVENT } from "../lib/agents/agents-protocol.ts";
 
 const tick = () => new Promise<void>(resolve => setImmediate(resolve));
 function harness(env: NodeJS.ProcessEnv = {}, mode: "tui" | "print" = "tui", shutdownWaitMs = 1500, model: unknown = { provider: "openai", id: "gpt-4o" }) {

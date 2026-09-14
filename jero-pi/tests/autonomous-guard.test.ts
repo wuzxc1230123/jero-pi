@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test from "node:test";
-import { __testing } from "../extensions/gentle-ai.ts";
+import { __testing } from "../extensions/jero-ai.ts";
 
 const { classifyGuardedCommand, evaluateGuardedCommand, guardedCommandPreview, guardedCommandTitle } = __testing;
 
@@ -12,7 +12,7 @@ const { classifyGuardedCommand, evaluateGuardedCommand, guardedCommandPreview, g
 // ---------------------------------------------------------------------------
 
 function makeTmpDir(): string {
-	return mkdtempSync(join(tmpdir(), "gentle-pi-autonomous-"));
+	return mkdtempSync(join(tmpdir(), "jero-pi-autonomous-"));
 }
 
 function writeConfig(dir: string, relPath: string, content: unknown): void {

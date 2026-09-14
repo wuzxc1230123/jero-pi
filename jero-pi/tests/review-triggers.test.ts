@@ -11,7 +11,7 @@ import {
 	classifyReviewRoute,
 	type DiffEvidence,
 	type TriggerEvent,
-} from "../lib/review-triggers.ts";
+} from "../lib/review/review-triggers.ts";
 
 function evidence(overrides: Partial<DiffEvidence> = {}): DiffEvidence {
 	return {

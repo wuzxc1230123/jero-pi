@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import {
 	renderSddPreflightPrompt,
 	type SddPreflightPreferences,
-} from "../lib/sdd-preflight.ts";
+} from "../lib/sdd/sdd-preflight.ts";
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const TEXT_EXTENSIONS = new Set([".md", ".ts", ".mjs", ".json"]);

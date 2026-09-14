@@ -37,7 +37,7 @@ No new engine, ledger, DSL, generator, framework, compatibility layer, waiver, a
 - **New:** [sdd-native-runtime](specs/sdd-native-runtime/spec.md): existing status/action/recovery/settlement/consumer behavior, not new machinery.
 - **Modified:** [sdd-orchestrator-assets](specs/sdd-orchestrator-assets/spec.md): native interpretation/authorized handoff; [sdd-research](specs/sdd-research/spec.md): truthful grants/recovery.
 - **AI:** `internal/cli/sdd_status.go`, `internal/sddstatus/`, `internal/assets/`, `internal/components/sdd/` in the external AI repository.
-- **Pi:** `lib/native-review-cli.ts`; managed SDD executor/provisioning/assets in this repository.
+- **Pi:** `lib/native/native-review-cli.ts`; managed SDD executor/provisioning/assets in this repository.
 
 ## Acceptance and measurement
 

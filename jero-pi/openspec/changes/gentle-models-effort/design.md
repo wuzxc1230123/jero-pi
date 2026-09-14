@@ -1,4 +1,4 @@
-# Design: `/gentle:models` effort support
+# Design: `/jero:models` effort support
 
 ## Current flow
 
@@ -50,7 +50,7 @@ Use Pi/subagent's existing `thinking` field, not `reasoning_effort`, because sub
 - high;
 - xhigh.
 
-Pi/model compatibility remains the runtime's responsibility. The selector should not hide levels based on the selected model because `/gentle:models` is configuring agents, not making a single provider call.
+Pi/model compatibility remains the runtime's responsibility. The selector should not hide levels based on the selected model because `/jero:models` is configuring agents, not making a single provider call.
 
 ## Frontmatter application
 
@@ -93,7 +93,7 @@ This avoids a larger multi-column UI rewrite and keeps the current overlay compo
 Extend `tests/runtime-harness.mjs` rather than adding brittle direct imports. The harness can:
 
 1. create a temp workspace with `.pi/agents/sdd-apply.md` frontmatter;
-2. run the `/gentle:models` command using a fake `ui.custom()` result with a `save` routing config;
+2. run the `/jero:models` command using a fake `ui.custom()` result with a `save` routing config;
 3. assert:
    - `.pi/gentle-ai/models.json` writes object entries;
    - `.pi/agents/sdd-apply.md` has `model:` and `thinking:`;

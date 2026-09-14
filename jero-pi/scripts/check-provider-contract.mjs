@@ -15,7 +15,7 @@ import {
 	generateProviderContractBaselines,
 	piRuntimeRegistration,
 	verifyProviderContractBundleTree,
-} from "../lib/provider-contract-bundle.ts";
+} from "../lib/core/provider-contract-bundle.ts";
 import {
 	PROVIDER_CONTRACT_ACQUISITION,
 	PROVIDER_CONTRACT_LOCK_FILE,
@@ -123,13 +123,13 @@ async function main() {
 	const packageRoot = join(fileURLToPath(new URL("..", import.meta.url)));
 	const problems = checkProviderContractMirror(packageRoot);
 	if (problems.length > 0) {
-		console.error("gentle-pi provider contract mirror has drifted:");
+		console.error("jero-pi provider contract mirror has drifted:");
 		for (const problem of problems) console.error(`- ${problem}`);
 		console.error("\nRe-run scripts/mirror-provider-contract.mjs against a verified local bundle, or restore the mirrored bytes.");
 		process.exit(1);
 	}
 	const lock = JSON.parse(readFileSync(join(packageRoot, ...PROVIDER_CONTRACT_MIRROR_ROOT.split("/"), PROVIDER_CONTRACT_LOCK_FILE), "utf8"));
-	console.log(`gentle-pi provider contract mirror check passed (contract ${lock.contract_semver}, ${Object.keys(lock.entries).length} bundle entries, ${Object.keys(lock.generated).length} generated baselines, acquisition ${lock.acquisition}).`);
+	console.log(`jero-pi provider contract mirror check passed (contract ${lock.contract_semver}, ${Object.keys(lock.entries).length} bundle entries, ${Object.keys(lock.generated).length} generated baselines, acquisition ${lock.acquisition}).`);
 }
 
 const isMainModule = process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href;

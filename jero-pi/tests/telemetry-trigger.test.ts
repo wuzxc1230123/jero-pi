@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { __testing, createGentleAiExtension } from "../extensions/gentle-ai.ts";
-import type { ExecFileAdapter, ExecFileResult } from "../lib/native-review-cli.ts";
+import { __testing, createGentleAiExtension } from "../extensions/jero-ai.ts";
+import type { ExecFileAdapter, ExecFileResult } from "../lib/native/native-review-cli.ts";
 import {
 	decodeTelemetryTriggerDecision,
 	shouldTriggerTelemetry,
@@ -12,14 +12,14 @@ import {
 	type TelemetryTriggerChildLike,
 	type TelemetryTriggerSpawn,
 	type TelemetryTriggerSpawnOptions,
-} from "../lib/telemetry-trigger.ts";
+} from "../lib/core/telemetry-trigger.ts";
 
 // ---------------------------------------------------------------------------
 // gentle-pi#677: gentle-ai owns telemetry end to end (gentle-ai#4309); Pi only
 // nudges the local binary once per process. These tests cover the pure
-// predicate/spawn/decode core in lib/telemetry-trigger.ts and the two ways
-// extensions/gentle-ai.ts wires it in: the once-per-process activation nudge
-// and the foreground /gentle:telemetry slash command relay.
+// predicate/spawn/decode core in lib/core/telemetry-trigger.ts and the two ways
+// extensions/jero-ai.ts wires it in: the once-per-process activation nudge
+// and the foreground /jero:telemetry slash command relay.
 // ---------------------------------------------------------------------------
 
 interface FakeSpawnRecord {
@@ -255,7 +255,7 @@ test("activation: a missing binary or spawn error never affects activation", asy
 });
 
 // ---------------------------------------------------------------------------
-// Extension wiring: the foreground /gentle:telemetry slash command.
+// Extension wiring: the foreground /jero:telemetry slash command.
 // ---------------------------------------------------------------------------
 
 function fakeAdapter(result: ExecFileResult): { adapter: ExecFileAdapter; requests: Array<{ file: string; arguments: readonly string[] }> } {
@@ -267,7 +267,7 @@ function fakeAdapter(result: ExecFileResult): { adapter: ExecFileAdapter; reques
 	return { adapter, requests };
 }
 
-test("/gentle:telemetry relays a status --json payload", async () => {
+test("/jero:telemetry relays a status --json payload", async () => {
 	const payload = { schema: "gentle-ai.telemetry-status/v1", enabled: true, source: "default" };
 	const { adapter, requests } = fakeAdapter({
 		stdout: `${JSON.stringify(payload)}\n`,
@@ -281,8 +281,8 @@ test("/gentle:telemetry relays a status --json payload", async () => {
 		resolveTelemetryTriggerBinary: () => "/opt/gentle-ai/gentle-ai",
 		telemetryExecFileAdapter: adapter,
 	});
-	const command = commands.get("gentle:telemetry");
-	assert.ok(command, "gentle:telemetry must be registered");
+	const command = commands.get("jero:telemetry");
+	assert.ok(command, "jero:telemetry must be registered");
 	const notifications: Array<{ message: string; severity: string }> = [];
 	await command!.handler("", fakeContext("/work/project", notifications));
 
@@ -293,7 +293,7 @@ test("/gentle:telemetry relays a status --json payload", async () => {
 	assert.deepEqual(JSON.parse(notifications[0].message), payload);
 });
 
-test("/gentle:telemetry disable prints a one-line confirmation", async () => {
+test("/jero:telemetry disable prints a one-line confirmation", async () => {
 	const { adapter } = fakeAdapter({
 		stdout: `${JSON.stringify({ schema: "gentle-ai.telemetry-status/v1", enabled: false, source: "user" })}\n`,
 		stderr: "",
@@ -306,14 +306,14 @@ test("/gentle:telemetry disable prints a one-line confirmation", async () => {
 		resolveTelemetryTriggerBinary: () => "/opt/gentle-ai/gentle-ai",
 		telemetryExecFileAdapter: adapter,
 	});
-	const command = commands.get("gentle:telemetry");
+	const command = commands.get("jero:telemetry");
 	const notifications: Array<{ message: string; severity: string }> = [];
 	await command!.handler("disable", fakeContext("/work/project", notifications));
 
 	assert.deepEqual(notifications, [{ message: "Gentle AI telemetry disabled.", severity: "info" }]);
 });
 
-test("/gentle:telemetry relays a typed non-zero failure", async () => {
+test("/jero:telemetry relays a typed non-zero failure", async () => {
 	const { adapter } = fakeAdapter({
 		stdout: "",
 		stderr: "unknown telemetry command\n",
@@ -326,7 +326,7 @@ test("/gentle:telemetry relays a typed non-zero failure", async () => {
 		resolveTelemetryTriggerBinary: () => "/opt/gentle-ai/gentle-ai",
 		telemetryExecFileAdapter: adapter,
 	});
-	const command = commands.get("gentle:telemetry");
+	const command = commands.get("jero:telemetry");
 	const notifications: Array<{ message: string; severity: string }> = [];
 	await command!.handler("preview", fakeContext("/work/project", notifications));
 
@@ -335,13 +335,13 @@ test("/gentle:telemetry relays a typed non-zero failure", async () => {
 	assert.match(notifications[0].message, /unknown telemetry command/);
 });
 
-test("/gentle:telemetry rejects an unknown sub-action without calling the binary", async () => {
+test("/jero:telemetry rejects an unknown sub-action without calling the binary", async () => {
 	const { adapter, requests } = fakeAdapter({ stdout: "{}", stderr: "", exitCode: 0, signal: null, timedOut: false, outputLimitExceeded: false });
 	const { commands } = buildExtensionHarness({
 		resolveTelemetryTriggerBinary: () => "/opt/gentle-ai/gentle-ai",
 		telemetryExecFileAdapter: adapter,
 	});
-	const command = commands.get("gentle:telemetry");
+	const command = commands.get("jero:telemetry");
 	const notifications: Array<{ message: string; severity: string }> = [];
 	await command!.handler("frobnicate", fakeContext("/work/project", notifications));
 

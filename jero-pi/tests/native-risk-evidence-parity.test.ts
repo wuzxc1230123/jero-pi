@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { nativeRiskEvidencePhrases } from "../lib/native-review-cli.ts";
+import { nativeRiskEvidencePhrases } from "../lib/native/native-review-cli.ts";
 
 // gentle-ai's negotiated `start/v2` envelope is a closed schema, so it cannot
 // carry the `risk_evidence` phrases its plain sibling emits. Pi renders them

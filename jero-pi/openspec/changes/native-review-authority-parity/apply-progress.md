@@ -22,8 +22,8 @@ Partial — implementation batch 5 completed work unit 3. No review, receipt, ga
 
 ## Files changed in batch 5
 
-- `extensions/gentle-ai.ts`
-- `lib/native-review-cli.ts`
+- `extensions/jero-ai.ts`
+- `lib/native/native-review-cli.ts`
 - `tests/review-controller.test.ts`
 - `tests/review-controller-native-routing.test.ts`
 - `openspec/changes/native-review-authority-parity/tasks.md`
@@ -51,13 +51,13 @@ Partial — implementation batch 5 completed work unit 3. No review, receipt, ga
 ## Remaining tasks (verbatim persisted unchecked lines)
 
 - [ ] **RED:** Add bind tests for canonical repository/change/path validation, approved lineage/receipt identity, explicit empty first revision, observed-revision retry, stale/conflicting revision, cross-repository/worktree/path mismatch, and ambiguous committed output. <!-- sdd-owner: implementation -->
-- [ ] **GREEN:** Implement native `bind-sdd` composition in `extensions/gentle-ai.ts`; verify every echoed identity, return the observed native binding revision, and never create a Pi binding mirror or guess a revision. <!-- sdd-owner: implementation -->
+- [ ] **GREEN:** Implement native `bind-sdd` composition in `extensions/jero-ai.ts`; verify every echoed identity, return the observed native binding revision, and never create a Pi binding mirror or guess a revision. <!-- sdd-owner: implementation -->
 - [ ] **RED:** Add `tests/sdd-status.test.ts` coverage for ready exact bound status, missing/stale/changed binding, authority change during reload, wrong change/path, non-allow gate, malformed status, and no duplicate lifecycle call. <!-- sdd-owner: implementation -->
-- [ ] **GREEN:** Add `NativeReviewReadinessOverlay` and data-only merge to `lib/sdd-status.ts`; make exact `resolveControllerSddStatus` asynchronous and consume only decoded native bound readiness. <!-- sdd-owner: implementation -->
+- [ ] **GREEN:** Add `NativeReviewReadinessOverlay` and data-only merge to `lib/sdd/sdd-status.ts`; make exact `resolveControllerSddStatus` asynchronous and consume only decoded native bound readiness. <!-- sdd-owner: implementation -->
 - [ ] **GREEN:** Ensure native readiness reloads authority and binding, confirms exact OpenSpec identity/path, revalidates live gate evidence, and adds `resolve-review` blocking without inferring from tasks, artifacts, actor output, Engram, or local discovery. <!-- sdd-owner: implementation -->
 - [ ] **TRIANGULATE:** Verify SDD status never starts/finalizes a review, mutates authority, services general `STATUS`, or reports readiness after any revision/target race. <!-- sdd-owner: implementation -->
 - [ ] **RED:** Add controller tests for general ordinary `STATUS`, `INSPECT`/complete mixed claimant inventory, and native-absence decisions requiring native evidence; assert zero native adapter calls and zero local mutations. <!-- sdd-owner: implementation -->
-- [ ] **GREEN:** Add stable `nativeStatusUnsupported` result in `extensions/gentle-ai.ts` with `inventory_complete: false`, follow-up-required action, native contract evidence, and unchanged public outer envelope. <!-- sdd-owner: implementation -->
+- [ ] **GREEN:** Add stable `nativeStatusUnsupported` result in `extensions/jero-ai.ts` with `inventory_complete: false`, follow-up-required action, native contract evidence, and unchanged public outer envelope. <!-- sdd-owner: implementation -->
 - [ ] **GREEN:** Route unsupported status before version probing; prohibit native file parsing, mutating probes, claimant selection, legacy fallback, binding, approval, receipt creation, and lifecycle authorization. <!-- sdd-owner: implementation -->
 - [ ] **TRIANGULATE:** Verify future status capability is not implied by 2.1.0 and any Pi-local diagnostics remain explicitly incomplete and cannot claim clean/absence/winner. <!-- sdd-owner: implementation -->
 
@@ -68,7 +68,7 @@ Delivery remains the accepted single-PR size exception. Batch 5 is work unit 3 o
 ## Structured status consumed
 
 - Authoritative OpenSpec status: `native-review-authority-parity`; apply state `ready`; `nextRecommended: apply`.
-- Action context: `repo-local`, workspace and only allowed edit root `/home/gentleman/work/gentle-pi-issue112`.
+- Action context: `repo-local`, workspace and only allowed edit root `/home/gentleman/work/jero-pi-issue112`.
 - Strict TDD active; configured full test command `pnpm test`.
 - Action-context warning: sibling changes and parent-owned lifecycle prose were preserved.
 
@@ -97,7 +97,7 @@ None in this batch. The delivery-authority retirement advances work unit 7, but 
 
 ### Batch 6 files changed
 
-- `extensions/gentle-ai.ts`
+- `extensions/jero-ai.ts`
 - `tests/review-controller-native-routing.test.ts`
 - `openspec/changes/native-review-authority-parity/apply-progress.md`
 
@@ -114,20 +114,20 @@ The accepted single-PR size exception remains in force. Batch 6 is a partial del
 ### Structured status consumed
 
 - Authoritative OpenSpec status: `native-review-authority-parity`; apply state `ready`; `nextRecommended: apply`.
-- Action context: `repo-local`, workspace and only allowed edit root `/home/gentleman/work/gentle-pi-issue112`.
+- Action context: `repo-local`, workspace and only allowed edit root `/home/gentleman/work/jero-pi-issue112`.
 - Strict TDD active; configured test command `pnpm test`.
 - Action-context warning: preserved all sibling work and performed no real bind/review/gate/delivery action.
 
 #### Complete unchecked task inventory at batch end (verbatim)
 
 - [ ] **RED:** Add bind tests for canonical repository/change/path validation, approved lineage/receipt identity, explicit empty first revision, observed-revision retry, stale/conflicting revision, cross-repository/worktree/path mismatch, and ambiguous committed output. <!-- sdd-owner: implementation -->
-- [ ] **GREEN:** Implement native `bind-sdd` composition in `extensions/gentle-ai.ts`; verify every echoed identity, return the observed native binding revision, and never create a Pi binding mirror or guess a revision. <!-- sdd-owner: implementation -->
+- [ ] **GREEN:** Implement native `bind-sdd` composition in `extensions/jero-ai.ts`; verify every echoed identity, return the observed native binding revision, and never create a Pi binding mirror or guess a revision. <!-- sdd-owner: implementation -->
 - [ ] **RED:** Add `tests/sdd-status.test.ts` coverage for ready exact bound status, missing/stale/changed binding, authority change during reload, wrong change/path, non-allow gate, malformed status, and no duplicate lifecycle call. <!-- sdd-owner: implementation -->
-- [ ] **GREEN:** Add `NativeReviewReadinessOverlay` and data-only merge to `lib/sdd-status.ts`; make exact `resolveControllerSddStatus` asynchronous and consume only decoded native bound readiness. <!-- sdd-owner: implementation -->
+- [ ] **GREEN:** Add `NativeReviewReadinessOverlay` and data-only merge to `lib/sdd/sdd-status.ts`; make exact `resolveControllerSddStatus` asynchronous and consume only decoded native bound readiness. <!-- sdd-owner: implementation -->
 - [ ] **GREEN:** Ensure native readiness reloads authority and binding, confirms exact OpenSpec identity/path, revalidates live gate evidence, and adds `resolve-review` blocking without inferring from tasks, artifacts, actor output, Engram, or local discovery. <!-- sdd-owner: implementation -->
 - [ ] **TRIANGULATE:** Verify SDD status never starts/finalizes a review, mutates authority, services general `STATUS`, or reports readiness after any revision/target race. <!-- sdd-owner: implementation -->
 - [ ] **RED:** Add controller tests for general ordinary `STATUS`, `INSPECT`/complete mixed claimant inventory, and native-absence decisions requiring native evidence; assert zero native adapter calls and zero local mutations. <!-- sdd-owner: implementation -->
-- [ ] **GREEN:** Add stable `nativeStatusUnsupported` result in `extensions/gentle-ai.ts` with `inventory_complete: false`, follow-up-required action, native contract evidence, and unchanged public outer envelope. <!-- sdd-owner: implementation -->
+- [ ] **GREEN:** Add stable `nativeStatusUnsupported` result in `extensions/jero-ai.ts` with `inventory_complete: false`, follow-up-required action, native contract evidence, and unchanged public outer envelope. <!-- sdd-owner: implementation -->
 - [ ] **GREEN:** Route unsupported status before version probing; prohibit native file parsing, mutating probes, claimant selection, legacy fallback, binding, approval, receipt creation, and lifecycle authorization. <!-- sdd-owner: implementation -->
 - [ ] **TRIANGULATE:** Verify future status capability is not implied by 2.1.0 and any Pi-local diagnostics remain explicitly incomplete and cannot claim clean/absence/winner. <!-- sdd-owner: implementation -->
 - [ ] **RED:** Extend existing compact/graph suites (`tests/review-compact-gate.test.ts`, `tests/review-transaction.test.ts`, and graph/receipt suites) with review read/export preservation and typed ordinary mutation rejection. <!-- sdd-owner: implementation -->
@@ -136,10 +136,10 @@ The accepted single-PR size exception remains in force. Batch 6 is a partial del
 - [ ] **TRIANGULATE:** Run compatibility fixtures against current issue #118 seams and verify no existing issue #118 behavior, files, receipts, or authority ownership is rewritten. <!-- sdd-owner: implementation -->
 - [ ] **REFACTOR:** Keep legacy compatibility routing isolated from the single native adapter and preserve existing graph-v1 Judgment Day mutation rules. <!-- sdd-owner: implementation -->
 - [ ] **RED:** Add regressions proving review and Judgment Day evidence cannot authorize, deny, wrap, or otherwise control commit, push, PR, or release delivery. <!-- sdd-owner: implementation -->
-- [ ] **GREEN:** Remove `PendingReviewAuthorization`, `gateLifecycleCommand`, `ReviewGateEvaluator`, and all bash-time native delivery revalidation from `extensions/gentle-ai.ts`. <!-- sdd-owner: implementation -->
+- [ ] **GREEN:** Remove `PendingReviewAuthorization`, `gateLifecycleCommand`, `ReviewGateEvaluator`, and all bash-time native delivery revalidation from `extensions/jero-ai.ts`. <!-- sdd-owner: implementation -->
 - [ ] **GREEN:** Keep review receipts, lineages, and candidate evidence review-only; ordinary commit, push, PR, and release always follow repository policy. <!-- sdd-owner: implementation -->
 - [ ] **TRIANGULATE:** Prove no Pi review output mints delivery authority and dangerous-command handling remains outside review authority. <!-- sdd-owner: implementation -->
-- [ ] **RED:** Add package/runtime tests covering inclusion of `lib/native-review-cli.ts`, fixtures, controller exports, injected dependencies, and production asset loading from the packaged runtime rather than source-only paths. <!-- sdd-owner: implementation -->
+- [ ] **RED:** Add package/runtime tests covering inclusion of `lib/native/native-review-cli.ts`, fixtures, controller exports, injected dependencies, and production asset loading from the packaged runtime rather than source-only paths. <!-- sdd-owner: implementation -->
 - [ ] **GREEN:** Update package/runtime manifests or asset-copy rules only where required so native adapter and fixture/test support are available in the supported runtime; do not alter unrelated issue #118 assets. <!-- sdd-owner: implementation -->
 - [ ] **TRIANGULATE:** Run focused native, controller, SDD, compact/graph, receipt, Judgment Day, dispatcher, release-fast-path, and issue #118 seam suites, then run `pnpm test` and type/package checks. <!-- sdd-owner: implementation -->
 - [ ] **REFACTOR:** Remove only proven duplication after tests pass; retain strict decoders, typed errors, no-fallback guarantees, and the explicit upstream status/inventory follow-up. <!-- sdd-owner: implementation -->
@@ -173,9 +173,9 @@ The accepted single-PR size exception remains in force. Batch 6 is a partial del
 
 ### Files changed in batch 7
 
-- `extensions/gentle-ai.ts`
-- `lib/native-review-cli.ts`
-- `lib/sdd-status.ts`
+- `extensions/jero-ai.ts`
+- `lib/native/native-review-cli.ts`
+- `lib/sdd/sdd-status.ts`
 - `tests/review-controller-native-routing.test.ts`
 - `tests/review-controller.test.ts`
 - `tests/sdd-status.test.ts`
@@ -198,7 +198,7 @@ Accepted single-PR size exception remains in force. Batch 7 is a reviewable bind
 ### Structured status consumed
 
 - Authoritative OpenSpec status: `native-review-authority-parity`; `applyState: ready`; `nextRecommended: apply`.
-- Action context: `repo-local`; only allowed edit root `/home/gentleman/work/gentle-pi-issue112`.
+- Action context: `repo-local`; only allowed edit root `/home/gentleman/work/jero-pi-issue112`.
 - Strict TDD active; configured test command `pnpm test`.
 - Action-context warning: pre-existing sibling changes were preserved; no native authority mutation was executed.
 
@@ -212,12 +212,12 @@ Complete — all 42/42 implementation task checkboxes are persisted as `[x]`. No
 
 - Work unit 5: completed all four typed unsupported-status/inventory rows. The controller returns the stable `native-status-unsupported` envelope for general `STATUS` and `INSPECT` before any fake/native adapter operation; the result remains explicitly incomplete and fail-closed.
 - Work unit 6: completed all five legacy compatibility rows. Native-routed `FINALIZE` now recognizes known compact-v2 and graph-v1 lineages and returns typed `legacy-read-only` without invoking the native client or changing legacy authority. Existing compact/graph review read, receipt, mixed-authority, and explicit Judgment Day suites remain green.
-- Work unit 8: completed all four package/runtime rows. Package verification now names `lib/native-review-cli.ts` and the pinned start fixture; manifest/package dry-run confirms both are shipped. No unrelated issue #118 asset was changed.
+- Work unit 8: completed all four package/runtime rows. Package verification now names `lib/native/native-review-cli.ts` and the pinned start fixture; manifest/package dry-run confirms both are shipped. No unrelated issue #118 asset was changed.
 - Tasks artifact was updated immediately after the final green verification: work units 5, 6, and 8 now visibly use `[x]`; task progress is 42/42 with no unchecked implementation rows.
 
 ### Files changed in batch 8
 
-- `extensions/gentle-ai.ts`
+- `extensions/jero-ai.ts`
 - `scripts/verify-package-files.mjs`
 - `tests/review-controller-native-routing.test.ts`
 - `tests/package-manifest.test.ts`
@@ -238,7 +238,7 @@ Complete — all 42/42 implementation task checkboxes are persisted as `[x]`. No
 - `pnpm run test:harness` — PASS
 - `node scripts/verify-package-files.mjs` — PASS (51 required resources)
 - `pnpm test` — PASS (582 unit tests plus runtime harness)
-- `pnpm pack --dry-run` — PASS; package includes `lib/native-review-cli.ts` and `tests/fixtures/native-review-cli/v2.1.0/*`
+- `pnpm pack --dry-run` — PASS; package includes `lib/native/native-review-cli.ts` and `tests/fixtures/native-review-cli/v2.1.0/*`
 - `git diff --check` — PASS
 
 ### Deviations
@@ -258,7 +258,7 @@ The accepted single-PR size exception remains in force. This batch completed the
 ### Structured status consumed
 
 - Authoritative OpenSpec status: `native-review-authority-parity`; `applyState: ready`; `nextRecommended: apply` at batch start.
-- Action context: `repo-local`; workspace and only allowed edit root `/home/gentleman/work/gentle-pi-issue112`.
+- Action context: `repo-local`; workspace and only allowed edit root `/home/gentleman/work/jero-pi-issue112`.
 - Strict TDD active; configured test command `pnpm test`.
 - Action-context warning: pre-existing sibling changes and parent-owned lifecycle prose were preserved.
 - **Superseded historical status:** the final recorded OpenSpec status was `applyState: all_done`, task progress `42/42`, and `nextRecommended: review`. Its former claim that review evidence blocked verification/archive is obsolete; review evidence is informational and does not receipt-gate archive or delivery.
@@ -295,7 +295,7 @@ Complete — task reconciliation remains 42/42 checked with zero unchecked rows.
 
 ### Files changed in batch 9
 
-- `extensions/gentle-ai.ts`
+- `extensions/jero-ai.ts`
 - `tests/review-controller-native-routing.test.ts`
 - `openspec/changes/native-review-authority-parity/tasks.md`
 - `openspec/changes/native-review-authority-parity/apply-progress.md`
@@ -336,8 +336,8 @@ Complete — task reconciliation remains 42/42 checked with zero unchecked imple
 
 ### Files changed in batch 10
 
-- `lib/native-review-cli.ts`
-- `extensions/gentle-ai.ts`
+- `lib/native/native-review-cli.ts`
+- `extensions/jero-ai.ts`
 - `tests/native-review-cli.test.ts`
 - `tests/review-controller-native-routing.test.ts`
 - `openspec/changes/native-review-authority-parity/tasks.md`

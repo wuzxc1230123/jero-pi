@@ -33,7 +33,7 @@ No implementation, test, package, authority, index, lifecycle, delivery, commit,
 The authoritative pre-persistence status was obtained with:
 
 ```sh
-gentle-ai sdd-status consolidate-review-parity-runtime --cwd /home/gentleman/work/gentle-pi --json --instructions
+gentle-ai sdd-status consolidate-review-parity-runtime --cwd /home/gentleman/work/jero-pi --json --instructions
 ```
 
 | Field | Verified value |
@@ -45,11 +45,11 @@ gentle-ai sdd-status consolidate-review-parity-runtime --cwd /home/gentleman/wor
 | Task progress | 17 complete, 0 pending |
 | Review gate | `allow` — explicit bound compact authority exactly matched the repository |
 | Action context mode | `repo-local` |
-| Workspace root | `/home/gentleman/work/gentle-pi` |
-| Allowed edit root | `/home/gentleman/work/gentle-pi` |
+| Workspace root | `/home/gentleman/work/jero-pi` |
+| Allowed edit root | `/home/gentleman/work/jero-pi` |
 | Blocked reasons | none |
 
-The active change is explicit and unambiguous. All implementation and report paths are inside the authoritative workspace and allowed edit root. CodeGraph ordering was respected: the existing `.codegraph/` index was checked first; MCP returned `MCP not initialized`, then local `codegraph explore -p /home/gentleman/work/gentle-pi ...` succeeded before targeted source reads.
+The active change is explicit and unambiguous. All implementation and report paths are inside the authoritative workspace and allowed edit root. CodeGraph ordering was respected: the existing `.codegraph/` index was checked first; MCP returned `MCP not initialized`, then local `codegraph explore -p /home/gentleman/work/jero-pi ...` succeeded before targeted source reads.
 
 ## Approved content-bound authority
 
@@ -73,7 +73,7 @@ The active change is explicit and unambiguous. All implementation and report pat
 - Task markers: **17 checked, 0 unchecked**; no malformed ownership markers.
 - Forecast: chained PRs **No**; `exception-ok` / `size-exception` explicitly recorded.
 - The approved authority retained one high-risk 4R boundary and one 137-line correction within the frozen 200-line budget.
-- The correction touched only `lib/native-review-cli.ts`, `lib/review-candidate-view.ts`, `scripts/gentle-ai-installer.mjs`, `tests/gentle-ai-installer.test.ts`, `tests/native-review-cli.test.ts`, and `tests/review-candidate-view.test.ts`, matching the frozen correction scope.
+- The correction touched only `lib/native/native-review-cli.ts`, `lib/review/review-candidate-view.ts`, `scripts/gentle-ai-installer.mjs`, `tests/gentle-ai-installer.test.ts`, `tests/native-review-cli.test.ts`, and `tests/review-candidate-view.test.ts`, matching the frozen correction scope.
 - No chained slice, extra PR boundary, lifecycle action, or delivery scope was introduced.
 
 ## Final correction verification

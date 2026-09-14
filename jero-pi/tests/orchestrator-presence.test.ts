@@ -5,12 +5,12 @@ import * as fs from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { historyDir, saveTask } from "../lib/agents-history.ts";
-import { TASK_STATUS, TaskStore, type TaskRecord } from "../lib/agents-protocol.ts";
-import * as presence from "../lib/orchestrator-presence.ts";
+import { historyDir, saveTask } from "../lib/agents/agents-history.ts";
+import { TASK_STATUS, TaskStore, type TaskRecord } from "../lib/agents/agents-protocol.ts";
+import * as presence from "../lib/core/orchestrator-presence.ts";
 import {
 	ACTIVITY_LIMIT, PresencePublisher, listPresence, projectActivity, readActivity,
-} from "../lib/orchestrator-presence.ts";
+} from "../lib/core/orchestrator-presence.ts";
 
 function fixture(t: test.TestContext) {
 	const profile = fs.mkdtempSync(join(fs.realpathSync(tmpdir()), "presence-test-"));

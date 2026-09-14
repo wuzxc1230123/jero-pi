@@ -2,8 +2,8 @@
 
 ## Technical Approach
 
-Make the **wrapper block** (`extensions/gentle-ai.ts` `buildGentlePrompt` :166-201) the single
-canonical home for identity + persona + reply-language STYLE inside gentle-pi's always-on parent
+Make the **wrapper block** (`extensions/jero-ai.ts` `buildGentlePrompt` :166-201) the single
+canonical home for identity + persona + reply-language STYLE inside jero-pi's always-on parent
 injection. The wrapper and `orchestrator.md` are concatenated into ONE `systemPrompt` append per
 parent session (`gentle-ai.ts:2204-2208`; empty for named/SDD agents, so both channels have
 identical reach). We union the two duplicated copies into the wrapper, collapse
@@ -164,26 +164,26 @@ cells not independently re-measured are marked "estimate".
 
 | File | Action | Description |
 |---|---|---|
-| `extensions/gentle-ai.ts` | Modify | Union identity into wrapper (:179-184), trimming the "in the user's language" clause from the persona-mode bullet; fold one language-match clause into `GENTLEMAN_PERSONA_PROMPT` (mirrors `NEUTRAL_PERSONA_PROMPT` :158); factor `SHARED_PERSONA_BULLETS` (:148-164); keep "never invent memory" (wrapper phrasing) |
+| `extensions/jero-ai.ts` | Modify | Union identity into wrapper (:179-184), trimming the "in the user's language" clause from the persona-mode bullet; fold one language-match clause into `GENTLEMAN_PERSONA_PROMPT` (mirrors `NEUTRAL_PERSONA_PROMPT` :158); factor `SHARED_PERSONA_BULLETS` (:148-164); keep "never invent memory" (wrapper phrasing) |
 | `assets/orchestrator.md` | Modify | Identity Contract (:5-21) → pointer; Language Boundary LB1 (:30) → pointer; LB2-LB5 kept verbatim |
 | `tests/persona-single-channel.test.ts` | Create | Frozen-fixture line-level union + duplication guard + byte-delta (`wc -c`) |
-| `openspec/changes/persona-single-channel/cross-tool-persona-ownership-contract.md` | Create | gentle-pi owns Pi-session persona; gentle-ai follow-up expectation |
+| `openspec/changes/persona-single-channel/cross-tool-persona-ownership-contract.md` | Create | jero-pi owns Pi-session persona; gentle-ai follow-up expectation |
 
 ## Cross-tool ownership contract (required outline)
 
 Path: `openspec/changes/persona-single-channel/cross-tool-persona-ownership-contract.md`
 (pattern: gentle-ai `engram-protocol-dedup/upstream-protocol-flag-contract.md`).
 
-1. **Title/intent** — Pi-session persona ownership handoff (gentle-pi ↔ gentle-ai Pi adapter);
+1. **Title/intent** — Pi-session persona ownership handoff (jero-pi ↔ gentle-ai Pi adapter);
    slimming `APPEND_SYSTEM.md` is out of scope here, a gentle-ai follow-up.
-2. **Guarantee 1 — gentle-pi is canonical**: the always-on injection (wrapper + `orchestrator.md`)
+2. **Guarantee 1 — jero-pi is canonical**: the always-on injection (wrapper + `orchestrator.md`)
    is the SINGLE source of Pi-parent identity/persona/language.
 3. **Guarantee 2 — upstream MUST slim to a residual/pointer**: gentle-ai's Pi adapter
    `<!-- gentle-ai:persona -->` section (37,276 B) must reduce to an action/tooling residual that
    does NOT restate identity/persona/language tone (mirrors `persona-canonical-channel` residual).
 4. **Guarantee 3 — marker idempotency**: section is marker-delimited; slim must converge on
    re-inject without orphaning (gentle-ai `InjectMarkdownSection` full-replace).
-5. **Drift control** — doc referenced from both repos' proposals; gentle-pi wording wins on conflict.
+5. **Drift control** — doc referenced from both repos' proposals; jero-pi wording wins on conflict.
 6. **Cross-reference** — proposal Dependencies, this design, gentle-ai follow-up change id (TBD).
 
 ## Testing Strategy (strict TDD, `pnpm test` → `node --experimental-strip-types --test tests/*.test.ts`,
@@ -204,7 +204,7 @@ which also runs `pnpm run test:harness` — `tests/runtime-harness.mjs` — as i
 ## Sequencing contract (vs `orchestrator-lazy-diet`)
 
 This change lands **FIRST** — it owns CONTENT; the diet owns PLACEMENT (the diet's just-completed
-design plans a core summary + three lazy files and repoints `tests/gentle-ai.test.ts:40`).
+design plans a core summary + three lazy files and repoints `tests/jero-ai.test.ts:40`).
 
 **Content-final regions** the diet MUST treat as frozen wording (may relocate, must not re-edit text
 or re-duplicate the wrapper's identity/persona/language content):

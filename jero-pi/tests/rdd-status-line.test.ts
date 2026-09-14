@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { __testing } from "../extensions/gentle-ai.ts";
+import { __testing } from "../extensions/jero-ai.ts";
 import {
 	NATIVE_REVIEW_MODE_OPERATION,
 	NATIVE_REVIEW_MODE_SOURCE,
@@ -8,7 +8,7 @@ import {
 	type NativeReviewModeRequest,
 	type NativeReviewModeResult,
 	type NativeReviewModeStatus,
-} from "../lib/native-review-cli.ts";
+} from "../lib/native/native-review-cli.ts";
 
 // ---------------------------------------------------------------------------
 // gentle-pi#661: the always-on parent prompt renders a second status line,

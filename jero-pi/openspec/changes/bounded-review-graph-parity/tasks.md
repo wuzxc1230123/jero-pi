@@ -32,7 +32,7 @@ Chain strategy: size-exception
 
 - [x] Preserve the delivered Unit 1 implementation only where it matches the revised spec/design; re-run its RED → GREEN → TRIANGULATE → REFACTOR evidence and correct drift.
 
-**Targets:** `lib/review-canonical.ts`, `lib/review-graph-schema.ts`, `lib/review-repository.ts`, their focused tests, and required shared exports.
+**Targets:** `lib/review/review-canonical.ts`, `lib/review/review-graph-schema.ts`, `lib/review/review-repository.ts`, their focused tests, and required shared exports.
 
 **Verify:** canonical identity, graph-v1 schema rejection, exact Git common-directory resolution, linked/bare/relocated repository behavior, symlink/path rejection, and unforgeable repository capability. Include the centralized hostile inherited-Git-environment policy required by design §6.1; no worktree-local authority.
 
@@ -42,7 +42,7 @@ Chain strategy: size-exception
 
 - [x] Preserve the delivered Unit 2 implementation only where it matches the revised spec/design; re-run focused crash and concurrency evidence and correct drift.
 
-**Targets:** `lib/review-lock.ts`, `lib/review-object-store.ts`, `lib/review-graph-reducer.ts`, and focused lock/object/graph/fault utilities and tests.
+**Targets:** `lib/review/review-lock.ts`, `lib/review/review-object-store.ts`, `lib/review-graph-reducer.ts`, and focused lock/object/graph/fault utilities and tests.
 
 **Verify:** graph-v1 immutable event/root closure, explicit genesis, same-lineage predecessor validation, three-slot `CURRENT` publication, owner-token and stale/ambiguous recovery, fsync boundaries, and valid-old-or-valid-new crash outcomes. Preserve graph-v1 locking while moving reset/mutation control through the shared control lock.
 
@@ -52,7 +52,7 @@ Chain strategy: size-exception
 
 - [x] Preserve the delivered Unit 3 implementation only where it matches the revised spec/design; re-run lifecycle and resume evidence and correct drift.
 
-**Targets:** `lib/review-transaction.ts`, `lib/review-checkpoint.ts`, lifecycle/gate modules, and `extensions/gentle-ai.ts` routing/tests.
+**Targets:** `lib/review/review-transaction.ts`, `lib/review-checkpoint.ts`, lifecycle/gate modules, and `extensions/jero-ai.ts` routing/tests.
 
 **Verify:** graph-event-backed prepared/completed idempotency, identity-bound checkpoints, monotonic budgets, immutable frozen claims, terminal closure, Judgment Day separation, exactly-once final verification, runtime-branded authoritative reads/receipts, exact typed targets, zero actors in gates, and fail-closed reset/epoch/incarnation checks.
 
@@ -62,7 +62,7 @@ Chain strategy: size-exception
 
 - [x] Preserve the delivered Unit 4 implementation only where it matches the revised spec/design; re-run transfer, mirror, and hostile Git routing evidence and correct drift.
 
-**Targets:** `lib/review-bundle.ts`, `lib/review-mirror.ts`, `lib/review-checkpoint.ts`, `extensions/gentle-ai.ts`, and bundle/mirror/checkpoint tests.
+**Targets:** `lib/review-bundle.ts`, `lib/review-mirror.ts`, `lib/review-checkpoint.ts`, `extensions/jero-ai.ts`, and bundle/mirror/checkpoint tests.
 
 **Verify:** deterministic framed export, complete staged closure validation, atomic idempotent import, mirror-only denial, inspection-only handling of foreign/pre-reset bundles, exact current-incarnation admission, and `REVIEW_BUNDLE_EPOCH_MISMATCH` on replay or rebinding. Exercise `inspect`, `recover`, `repair`, import, export, and gate paths through the same Git environment rejection policy.
 
@@ -74,7 +74,7 @@ Chain strategy: size-exception
 
 **Depends on:** Units 1–4.
 
-**Targets:** add `lib/review-legacy-detector.ts` and `lib/review-reset.ts`; update `lib/review-object-store.ts`, `lib/review-transaction.ts`, `lib/review-repository.ts`, `lib/review-bundle.ts`, `lib/review-checkpoint.ts`, lifecycle/gate modules, and `extensions/gentle-ai.ts` routing; add reset, detector, replay, Git-policy, crash, and cross-platform tests; update operator documentation.
+**Targets:** add `lib/review/review-legacy-detector.ts` and `lib/review-reset.ts`; update `lib/review/review-object-store.ts`, `lib/review/review-transaction.ts`, `lib/review/review-repository.ts`, `lib/review-bundle.ts`, `lib/review-checkpoint.ts`, lifecycle/gate modules, and `extensions/jero-ai.ts` routing; add reset, detector, replay, Git-policy, crash, and cross-platform tests; update operator documentation.
 
 **RED:** Add tests proving: legacy and mixed-state detection blocks every authority-bearing operation before graph use; `inspect` reports exact target, inventory hash, invalidated classes, and confirmation challenge; partial/ambiguous/normalized confirmation is rejected; reset cannot run from startup/start/import/resume/gate; inventory changes require reconfirmation; reset marker is durable before deletion; each quarantine/delete/init phase is crash-recoverable and remains blocked; quarantine cannot escape its reset-id path; obsolete legacy reappearance blocks completion; and graph-v1 locking remains authoritative without native exchange/ACL fencing.
 
@@ -92,7 +92,7 @@ Chain strategy: size-exception
 
 **Targets/discovery:** remove `lib/review-native-fence.ts`, `native/gentle_review_native.cc`, `scripts/build-native-addon.mjs`, the `native:build` package/script entries and native dependency/config entries, native activation/migration tests and fixtures, and documentation describing migration, activation exchange, DACL/ACL fencing, or native activation. Search package manifests, test configuration, lockfiles, and docs for references before deletion.
 
-**Verify:** no import, script, package entry, test, fixture, or documentation path references removed native activation; graph-v1 `lib/review-lock.ts` and its platform-qualified locking tests remain intact and pass. Confirm no `migrate` routing remains; retain `inspect`, `recover`, `repair`, and `reset` documentation.
+**Verify:** no import, script, package entry, test, fixture, or documentation path references removed native activation; graph-v1 `lib/review/review-lock.ts` and its platform-qualified locking tests remain intact and pass. Confirm no `migrate` routing remains; retain `inspect`, `recover`, `repair`, and `reset` documentation.
 
 **Rollback:** restore only the removed inactive files/configuration if cleanup must be reverted; do not restore migration or native activation authority behavior.
 
@@ -136,10 +136,10 @@ Chain strategy: size-exception
 
 > **Historical task record — obsolete delivery-authority model:** The completed work below records the former receipt/gate delivery model. It is not active normative guidance: review output is non-deciding evidence, and commit, push, PR, and release follow ordinary repository policy.
 
-**Historical scope boundary:** Port gentle-ai commit `2b3a091` ("fix(release): allow verified releases from main") into gentle-pi's native release gating: `lib/review-transaction.ts` fast-path evaluation and pre-push remote recheck, `extensions/gentle-ai.ts` controller/consumption routing, and the managed contract wording surfaces. Release from protected `main` may bypass receipt validation only when the tag targets the current immutable `origin/main` SHA (explicitly resolved from the remote, never local `HEAD`), required CI for that exact SHA is successful, the remote head is rechecked immediately before tag push, and no new vulnerability, policy, provenance, signing, generated-artifact, or release evidence requires escalation. Local branch position and worktree dirtiness are not publication inputs. Major and post-incident releases always require explicit extraordinary review. Any failed or unprovable condition falls back to native receipt validation and fails closed on missing, scope-changed, invalidated, or escalated receipts.
+**Historical scope boundary:** Port gentle-ai commit `2b3a091` ("fix(release): allow verified releases from main") into jero-pi's native release gating: `lib/review/review-transaction.ts` fast-path evaluation and pre-push remote recheck, `extensions/jero-ai.ts` controller/consumption routing, and the managed contract wording surfaces. Release from protected `main` may bypass receipt validation only when the tag targets the current immutable `origin/main` SHA (explicitly resolved from the remote, never local `HEAD`), required CI for that exact SHA is successful, the remote head is rechecked immediately before tag push, and no new vulnerability, policy, provenance, signing, generated-artifact, or release evidence requires escalation. Local branch position and worktree dirtiness are not publication inputs. Major and post-incident releases always require explicit extraordinary review. Any failed or unprovable condition falls back to native receipt validation and fails closed on missing, scope-changed, invalidated, or escalated receipts.
 
 - [x] **RED:** Failing tests in `tests/review-gate.test.ts` (fast-path eligibility, remote-SHA binding, CI binding, escalating evidence, major/post-incident/unprovable-version denial, protected-ref and remote-head provability, pre-push recheck), `tests/review-controller.test.ts` (receipt-free fast-path authorization, remote-advance block at consumption, fail-closed fallback without a lineage, non-release evidence rejection, receipt fallback), and contract-wording assertions in `tests/review-ledger-contract.test.ts`, `tests/package-manifest.test.ts`, and `tests/orchestrator-budget.test.ts`.
-- [x] **GREEN:** `evaluateReleaseFastPathV1`/`recheckReleaseFastPathRemoteHeadV1` in `lib/review-transaction.ts`; validate-input release evidence parsing, receipt-free fast-path authorization, and consumption-time remote recheck in `extensions/gentle-ai.ts`; fast-path wording in `skills/_shared/review-ledger-contract.md`, `assets/orchestrator.md`, `assets/orchestrator-delegation.md`, `skills/gentle-ai/SKILL.md`, `skills/judgment-day/SKILL.md`, `skills/release/SKILL.md`, and `README.md`.
+- [x] **GREEN:** `evaluateReleaseFastPathV1`/`recheckReleaseFastPathRemoteHeadV1` in `lib/review/review-transaction.ts`; validate-input release evidence parsing, receipt-free fast-path authorization, and consumption-time remote recheck in `extensions/jero-ai.ts`; fast-path wording in `skills/_shared/review-ledger-contract.md`, `assets/orchestrator.md`, `assets/orchestrator-delegation.md`, `skills/gentle-ai/SKILL.md`, `skills/judgment-day/SKILL.md`, `skills/release/SKILL.md`, and `README.md`.
 - [x] **TRIANGULATE:** Dirty-worktree/detached-HEAD eligibility, forged tag identity, missing remote branch, invalidating and escalating dispositions, non-semver tags, remote advance and remote deletion before push, and receipt-validation fallback still allowing an approved receipt; full suite plus runtime harness.
 - [x] **REFACTOR:** Shared remote-head resolution through the existing `resolveRemoteGateRef`/`repositoryRootForGate` gate helpers; one fast-path evaluation reused by controller validation, with the consumption recheck bound to the registered authorization.
 
@@ -147,7 +147,7 @@ Chain strategy: size-exception
 
 ## Deferral: graph-v1 cross-repo bundle trust (RISK2-001) — experimental, deferred
 
-**Decision:** The parity-that-matters (release-from-main fast path, canonical hashing, lock, receipts, gates, pinned-subset identity) is done, green, and ships. `RISK2-001` — bundle cross-repo import is spoofable because `repository_identity`/`root_commit_ids` match alone cannot prove a bundle's lineage content was ever produced by a legitimate export from this repository's own history, and `common_directory` (the binding the transaction gate at `lib/review-transaction.ts:1666` uses) legitimately differs across clones of the same repository, so it cannot be the discriminator (see `reviews/post-apply-4r-round2-ledger.md` row `RISK2-001` and Unit 2 of `apply-progress.md`) — is deferred to its own follow-up change (`openspec/changes/cross-repo-bundle-trust`) because closing it soundly needs a real cross-repo trust primitive, not a bounded correction.
+**Decision:** The parity-that-matters (release-from-main fast path, canonical hashing, lock, receipts, gates, pinned-subset identity) is done, green, and ships. `RISK2-001` — bundle cross-repo import is spoofable because `repository_identity`/`root_commit_ids` match alone cannot prove a bundle's lineage content was ever produced by a legitimate export from this repository's own history, and `common_directory` (the binding the transaction gate at `lib/review/review-transaction.ts:1666` uses) legitimately differs across clones of the same repository, so it cannot be the discriminator (see `reviews/post-apply-4r-round2-ledger.md` row `RISK2-001` and Unit 2 of `apply-progress.md`) — is deferred to its own follow-up change (`openspec/changes/cross-repo-bundle-trust`) because closing it soundly needs a real cross-repo trust primitive, not a bounded correction.
 
 **Guard added instead of a silent gap:** `ReviewBundleImporter.import` (`lib/review-bundle.ts`) now requires an explicit, experimental `acknowledgeUntrustedBundleSource: true` opt-in (default false/absent) before adopting any lineage this store has not already established as its own authority. Without it, import fails closed with a distinct `REVIEW_BUNDLE_UNTRUSTED_SOURCE` error — this makes the previously silent RISK2-001 acceptance path non-silent. Re-importing or extending a lineage this store's authority already recognizes needs no acknowledgement.
 

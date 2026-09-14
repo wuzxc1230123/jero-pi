@@ -9,7 +9,7 @@ import type {
 	ExtensionContext,
 	ToolCallEventResult,
 } from "@earendil-works/pi-coding-agent";
-import gentleAi, { __testing, createGentleAiExtension } from "../extensions/gentle-ai.ts";
+import gentleAi, { __testing, createGentleAiExtension } from "../extensions/jero-ai.ts";
 import {
 	REVIEW_MODE,
 	REVIEW_TRANSITION,
@@ -17,13 +17,13 @@ import {
 	createReviewState,
 	setReviewMutationLockPlatformForTesting,
 	type ReviewBudgetV1,
-} from "../lib/review-transaction.ts";
-import { ordinaryValidatorRequest } from "../lib/review-policy-ordinary.ts";
-import { domainHashV1 } from "../lib/review-canonical.ts";
-import { resolveRepositoryAuthorityV1 } from "../lib/review-repository.ts";
-import { REVIEW_LENS, REVIEW_ROUTE } from "../lib/review-triggers.ts";
+} from "../lib/review/review-transaction.ts";
+import { ordinaryValidatorRequest } from "../lib/review/review-policy-ordinary.ts";
+import { domainHashV1 } from "../lib/review/review-canonical.ts";
+import { resolveRepositoryAuthorityV1 } from "../lib/review/review-repository.ts";
+import { REVIEW_LENS, REVIEW_ROUTE } from "../lib/review/review-triggers.ts";
 import { qualifiedReviewLockPlatform, testSnapshot } from "./review-test-fixtures.ts";
-import type { NativeReviewCli } from "../lib/native-review-cli.ts";
+import type { NativeReviewCli } from "../lib/native/native-review-cli.ts";
 
 setReviewMutationLockPlatformForTesting(qualifiedReviewLockPlatform());
 
@@ -120,7 +120,7 @@ function git(repository: string, ...args: string[]): string {
 }
 
 function createRepository(t: test.TestContext): RepositoryFixture {
-	const parent = realpathSync(mkdtempSync(join(tmpdir(), "gentle-pi-review-controller-")));
+	const parent = realpathSync(mkdtempSync(join(tmpdir(), "jero-pi-review-controller-")));
 	const repository = join(parent, "repo");
 	mkdirSync(repository);
 	t.after(() => rmSync(parent, { recursive: true, force: true }));
@@ -374,7 +374,7 @@ test("general STATUS returns the typed native-status-unsupported boundary withou
 
 test("gentle-pi#185: general STATUS on a non-negotiated native CLI names the exact status command to run", async (t) => {
 	// The legacy `correctionForecast` restoration guard this issue originally
-	// reported (extensions/gentle-ai.ts, then around line 5329) was scoped to
+	// reported (extensions/jero-ai.ts, then around line 5329) was scoped to
 	// `targetStatus !== undefined` and skipped restoring a candidate view when
 	// the native CLI lacked negotiated STATUS support, reproducing the #176
 	// empty-registry failure. That entire manual FINALIZE lifecycle (and the

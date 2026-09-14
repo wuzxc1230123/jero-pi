@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { sanitizeTerminalText, stripAnsi } from "../lib/terminal-theme.ts";
+import { sanitizeTerminalText, stripAnsi } from "../lib/core/terminal-theme.ts";
 
 test("sanitizeTerminalText removes user-controlled ANSI and control characters", () => {
 	assert.equal(

@@ -39,7 +39,7 @@ Apply runs on the **next branch**, cut only after change #2's apply on `feat/por
 - [x] 1.5 Add added-rule assertion: gentleman output contains the new `GENTLEMAN_PERSONA_PROMPT` clause "Always respond in the same language the user writes in."
 - [x] 1.6 Add byte-delta assertion (placeholder values). Run `pnpm test` — confirm all new assertions FAIL against current source. — RED confirmed: 19 pass / 7 fail on first run (one additional false-fail from a 1B fixture-transcription bug, fixed before recording RED — see apply-progress.md). Direction: FAILURES = pre-change duplication/missing-rule state (2x/3x language-match duplication, missing added rule, missing pointers) — exactly the state the migration fixes.
 
-## Phase 2: GREEN — extensions/gentle-ai.ts
+## Phase 2: GREEN — extensions/jero-ai.ts
 
 - [x] 2.1 Replace wrapper Identity contract block (`:179-184`) with design.md's exact post-change text.
 - [x] 2.2 Add `- Always respond in the same language the user writes in.` to `GENTLEMAN_PERSONA_PROMPT`; leave `NEUTRAL_PERSONA_PROMPT` unchanged.

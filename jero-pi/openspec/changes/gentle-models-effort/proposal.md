@@ -2,11 +2,11 @@
 
 ## Problem
 
-`/gentle:models` currently lets users assign a model per discovered agent, but it cannot assign the agent reasoning/thinking effort in the same flow. Users who route SDD/custom/builtin subagents to stronger or cheaper models still need to edit agent frontmatter or `.pi/settings.json` manually to tune effort.
+`/jero:models` currently lets users assign a model per discovered agent, but it cannot assign the agent reasoning/thinking effort in the same flow. Users who route SDD/custom/builtin subagents to stronger or cheaper models still need to edit agent frontmatter or `.pi/settings.json` manually to tune effort.
 
 ## Goals
 
-- Extend `/gentle:models` so each agent can store both `model` and `thinking` effort.
+- Extend `/jero:models` so each agent can store both `model` and `thinking` effort.
 - Preserve existing string-only `.pi/gentle-ai/models.json` files.
 - Apply effort consistently to:
   - project/user agent frontmatter via `thinking:`;
@@ -23,7 +23,7 @@
 
 ## Impact
 
-Primary code lives in `extensions/gentle-ai.ts`. Tests should extend the runtime harness to exercise the command path. README documentation should update the model assignment section.
+Primary code lives in `extensions/jero-ai.ts`. Tests should extend the runtime harness to exercise the command path. README documentation should update the model assignment section.
 
 ## Review workload
 

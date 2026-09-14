@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { readRuntimeMetricsPolicy, runtimeMetricsEnvAllows } from "../lib/runtime-metrics-policy.ts";
+import { readRuntimeMetricsPolicy, runtimeMetricsEnvAllows } from "../lib/metrics/runtime-metrics-policy.ts";
 
 const grant = { schema: "gentle-ai.telemetry-policy/v1", operation: "policy", enabled: true, source: "state", reason: "enabled" };
 const result = (value: unknown) => ({ stdout: JSON.stringify(value), stderr: "", exitCode: 0,

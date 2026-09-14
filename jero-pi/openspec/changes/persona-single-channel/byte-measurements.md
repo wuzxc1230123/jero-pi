@@ -4,7 +4,7 @@ Method: `bat --no-pager --plain --line-range <start>:<end> <file> | wc -c` for s
 measurements (byte-identical to `sed -n '<start>,<end>p'` piped to `wc -c`); `wc -c <file>` for
 whole-file totals; `git diff --stat` to cross-check the line-level shape of the edit. All
 measurements taken on branch `feat/persona-single-channel`, cut from `main` post-#72 (the
-review-ledger port), against `extensions/gentle-ai.ts` and `assets/orchestrator.md` before and
+review-ledger port), against `extensions/jero-ai.ts` and `assets/orchestrator.md` before and
 after the Phase 2/3 edits in this change.
 
 ## Section-level deltas (the regions this change edits)
@@ -25,13 +25,13 @@ after the Phase 2/3 edits in this change.
 
 | File | Before | After | Δ |
 |---|---|---|---|
-| `extensions/gentle-ai.ts` | 77,226 B | 77,663 B | **+437 B** (= +379 wrapper block + 58 new clause line) |
+| `extensions/jero-ai.ts` | 77,226 B | 77,663 B | **+437 B** (= +379 wrapper block + 58 new clause line) |
 | `assets/orchestrator.md` | 23,766 B | 23,047 B | **−719 B** (1 B off the −720 B section-sum above; rounding/newline-boundary noise between `bat --line-range` extraction and whole-file `wc -c`, not a content discrepancy — confirmed via `git diff --stat`: 17 lines removed, 2 lines net-added, no other hunks) |
 
 `git diff --stat` confirms only the two intended hunks per file (no unrelated changes):
 ```
 assets/orchestrator.md  | 17 ++---------------
-extensions/gentle-ai.ts |  5 +++--
+extensions/jero-ai.ts |  5 +++--
 2 files changed, 5 insertions(+), 17 deletions(-)
 ```
 

@@ -3,8 +3,8 @@ import { mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test, { after } from "node:test";
-import { historyDir, loadHistory, loadStoredTask, pruneHistory, saveTask } from "../lib/agents-history.ts";
-import { applyTaskEvent, emptyThread, TASK_EVENT, TASK_STATUS, TaskStore, type TaskRecord } from "../lib/agents-protocol.ts";
+import { historyDir, loadHistory, loadStoredTask, pruneHistory, saveTask } from "../lib/agents/agents-history.ts";
+import { applyTaskEvent, emptyThread, TASK_EVENT, TASK_STATUS, TaskStore, type TaskRecord } from "../lib/agents/agents-protocol.ts";
 
 // Gentle Agents history: JSON per task, async, lazy, pruned by count.
 

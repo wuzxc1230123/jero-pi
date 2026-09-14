@@ -58,9 +58,9 @@ An `as const` `GATE_TARGET_KIND` keys `GateTargetByKind`; `GateTargetV1 = GateTa
 | Files | Action | Purpose |
 |---|---|---|
 | `lib/review-{snapshot,transaction,policy-ordinary,policy-judgment-day}.ts` | Create | Snapshot, store, schemas, reducers. |
-| `lib/review-triggers.ts`, `extensions/gentle-ai.ts` | Modify | Typed operations, exact gates, safety composition. |
+| `lib/review/review-triggers.ts`, `extensions/jero-ai.ts` | Modify | Typed operations, exact gates, safety composition. |
 | `assets/`, `skills/`, `README.md` | Modify | Bounded actor/orchestrator contracts. |
-| `lib/sdd-preflight.ts`, migration/package files | Modify | Managed-contract rollout. |
+| `lib/sdd/sdd-preflight.ts`, migration/package files | Modify | Managed-contract rollout. |
 | `tests/review-*.test.ts`, contract/runtime tests | Create/Modify | Invariants and negative gates. |
 
 ## Testing Strategy

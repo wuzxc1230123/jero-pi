@@ -2,7 +2,7 @@
 
 ## Review workload forecast
 
-- Expected touched implementation files: `extensions/gentle-ai.ts`, `tests/runtime-harness.mjs`, `README.md`.
+- Expected touched implementation files: `extensions/jero-ai.ts`, `tests/runtime-harness.mjs`, `README.md`.
 - Expected changed lines: under 400 excluding SDD artifacts.
 - Delivery strategy: single PR/work unit is OK. No chained PR needed unless implementation uncovers broader Pi API changes.
 
@@ -10,7 +10,7 @@
 
 ### 1. RED: add harness coverage
 
-- Extend `tests/runtime-harness.mjs` fake UI/context so `/gentle:models` can return a saved config.
+- Extend `tests/runtime-harness.mjs` fake UI/context so `/jero:models` can return a saved config.
 - Create a temp project agent file and execute the command.
 - Assert expected model+thinking config is written/applied.
 - Run `pnpm test` and record failing evidence.
@@ -18,7 +18,7 @@
 Expected evidence:
 
 ```text
-RED: pnpm test fails because `/gentle:models` cannot yet accept/apply effort config.
+RED: pnpm test fails because `/jero:models` cannot yet accept/apply effort config.
 ```
 
 ### 2. Normalize routing config
@@ -67,7 +67,7 @@ TRIANGULATE: legacy string config remains supported.
 
 ### 7. Docs update
 
-- Update README `/gentle:models` section to say model and effort assignment.
+- Update README `/jero:models` section to say model and effort assignment.
 - Add saved config example with object entries.
 - Mention that effort maps to Pi/subagent `thinking` and model-specific support is handled by Pi runtime.
 

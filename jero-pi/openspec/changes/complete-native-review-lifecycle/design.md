@@ -25,11 +25,11 @@ Follow-ups exist only inside ordinary `validation_evidence`; they create no tran
 
 | File | Change |
 |---|---|
-| `lib/review-snapshot.ts` | Add identity-bound genesis paths and authoritative correction capture. |
-| `lib/review-policy-ordinary.ts` | Require exact proof-bearing validator request; omit fix diff/candidate fields; reject missing/duplicate/failed per-ID proof and original-criterion regressions. |
-| `lib/review-transaction.ts` | Persist genesis, internal correction binding, and validation evidence; remove `OrdinaryFollowUpInput`, reducer handling, and top-level `follow_ups`. |
-| `lib/review-graph-schema.ts` | Do not add `ordinary-follow-up`. |
-| `extensions/gentle-ai.ts` | Derive correction evidence internally and confine targeted validation input through existing `input`/`inputPath` handling. |
+| `lib/review/review-snapshot.ts` | Add identity-bound genesis paths and authoritative correction capture. |
+| `lib/review/review-policy-ordinary.ts` | Require exact proof-bearing validator request; omit fix diff/candidate fields; reject missing/duplicate/failed per-ID proof and original-criterion regressions. |
+| `lib/review/review-transaction.ts` | Persist genesis, internal correction binding, and validation evidence; remove `OrdinaryFollowUpInput`, reducer handling, and top-level `follow_ups`. |
+| `lib/review/review-graph-schema.ts` | Do not add `ordinary-follow-up`. |
+| `extensions/jero-ai.ts` | Derive correction evidence internally and confine targeted validation input through existing `input`/`inputPath` handling. |
 | `assets/agents/review-validator.md` | Replace scoped/fix-line review with exact acceptance/regression-proof consumption and inert follow-ups. |
 | `skills/_shared/review-ledger-contract.md` | Make the targeted ordinary boundary canonical; leave Judgment Day wording intact. |
 | `assets/orchestrator-delegation.md` | Replace ordinary “scoped validator”/fix-diff routing language with targeted proof validation. |

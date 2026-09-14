@@ -35,13 +35,13 @@ $ node --experimental-strip-types tests/runtime-harness.mjs   (exit 0)
 | Union Reconciliation With Zero Rule Loss | Migration test validates the union | Line-level union sweep, one named assertion per Table A/B rule, all pass; independently re-verified below | PASS |
 | " | Frozen fixtures remain immutable | Fixtures unedited during apply per apply-progress; file-integrity self-check test passes | PASS |
 | Persona Constant Selection Keeps Working | Gentleman/Neutral selected | 2 dedicated tests (no cross-leak of voseo bullets), pass | PASS |
-| Named/SDD Subagent Branches Unaffected | SDD subagent launch unaffected | **No runtime test exercises `agent_start` with `isNamedAgent`/`isSddAgent` true.** Verified only via manual `git diff --stat` (task 2.3) claiming 0 diff on that branch. Independently re-confirmed via `git diff HEAD -- extensions/gentle-ai.ts`: the `isNamedAgent \|\| isSddAgent ? "" : ...` branch (:2205-2207) has zero diff. | **WARNING — no covering runtime test, compliance rests on source inspection only** |
+| Named/SDD Subagent Branches Unaffected | SDD subagent launch unaffected | **No runtime test exercises `agent_start` with `isNamedAgent`/`isSddAgent` true.** Verified only via manual `git diff --stat` (task 2.3) claiming 0 diff on that branch. Independently re-confirmed via `git diff HEAD -- extensions/jero-ai.ts`: the `isNamedAgent \|\| isSddAgent ? "" : ...` branch (:2205-2207) has zero diff. | **WARNING — no covering runtime test, compliance rests on source inspection only** |
 | Cross-Tool Ownership Contract Documented | Ownership contract artifact exists | `cross-tool-persona-ownership-contract.md` exists, contains all 3 guarantees + drift control + cross-reference | PASS (doc-only requirement, no test expected) |
 | Measured Byte Delta Recorded | Byte measurement recorded with method | `byte-measurements.md` exists with method + before/after + delta; reproduced independently below | PASS |
 
 ## Independent Reproduction — Union Diff (removed orchestrator sections vs new wrapper text)
 
-Diffed `git show HEAD:assets/orchestrator.md` (removed Identity Contract :5-21, removed Language Boundary LB1 :30) against the current wrapper block (`extensions/gentle-ai.ts` :175-185) and current `orchestrator.md`, line by line:
+Diffed `git show HEAD:assets/orchestrator.md` (removed Identity Contract :5-21, removed Language Boundary LB1 :30) against the current wrapper block (`extensions/jero-ai.ts` :175-185) and current `orchestrator.md`, line by line:
 
 - "You are el Gentleman: ... controlled development work." — byte-identical, kept once (wrapper).
 - Self-description translated paragraph ("I am el Gentleman: ...not a generic chatbot.") — merged verbatim into wrapper bullet 1.
@@ -66,7 +66,7 @@ All figures in `byte-measurements.md` were independently reproduced via direct `
 | Orchestrator Identity Contract (pre, HEAD 5-21) | 831 B | 831 B | Exact |
 | Orchestrator Language Boundary (post, lines 15-29) | 2,079 B | 2,079 B | Exact |
 | Orchestrator Language Boundary (pre, HEAD 28-42) | 2,117 B | 2,117 B | Exact |
-| Whole-file `extensions/gentle-ai.ts` delta | +437 B | +437 B (77,226 → 77,663) | Exact |
+| Whole-file `extensions/jero-ai.ts` delta | +437 B | +437 B (77,226 → 77,663) | Exact |
 | Whole-file `assets/orchestrator.md` delta | −719 B | −719 B (23,766 → 23,047) | Exact |
 
 All byte claims verified bit-for-bit. `byte-measurements.md`'s stated method (`bat --line-range` / `wc -c`, cross-checked with `git diff --stat`) is reproducible and accurate.
@@ -80,7 +80,7 @@ All byte claims verified bit-for-bit. `byte-measurements.md`'s stated method (`b
 
 ## Additional Finding Not Listed in apply-progress.md Deviations
 
-**Design-specified `SHARED_PERSONA_BULLETS` refactor was not implemented, and this was not recorded as a deviation.** `design.md`'s "File Changes" table lists factoring `SHARED_PERSONA_BULLETS` as part of the `extensions/gentle-ai.ts` modification (Decision 3: "factor the 4 shared bullets ... into one `SHARED_PERSONA_BULLETS` base, leaving each persona only its language-specific bullets. Kills intra-constant drift."). Current source (`extensions/gentle-ai.ts:147-165`) still has `GENTLEMAN_PERSONA_PROMPT` and `NEUTRAL_PERSONA_PROMPT` as two fully independent template literals; the 4 bullets design calls out ("senior architect and teacher", "Treat AI as a tool...", "Push back...", "Correct errors...") remain literally duplicated across both constants — the exact intra-constant drift Decision 3 says the change exists to remove. `design.md`'s own Open Questions section (unchecked) flags this as unresolved scope ("Confirm `SHARED_PERSONA_BULLETS` refactor is in scope now vs a follow-up"), which is inconsistent with the File Changes table treating it as a settled action item. No spec requirement mandates this refactor (the spec only requires persona selection to keep working, which it does), so this is not spec-blocking — but `apply-progress.md`'s Deviations section should have recorded this skip explicitly, the way it recorded the other 4 deviations, instead of silently omitting a design-table action item.
+**Design-specified `SHARED_PERSONA_BULLETS` refactor was not implemented, and this was not recorded as a deviation.** `design.md`'s "File Changes" table lists factoring `SHARED_PERSONA_BULLETS` as part of the `extensions/jero-ai.ts` modification (Decision 3: "factor the 4 shared bullets ... into one `SHARED_PERSONA_BULLETS` base, leaving each persona only its language-specific bullets. Kills intra-constant drift."). Current source (`extensions/jero-ai.ts:147-165`) still has `GENTLEMAN_PERSONA_PROMPT` and `NEUTRAL_PERSONA_PROMPT` as two fully independent template literals; the 4 bullets design calls out ("senior architect and teacher", "Treat AI as a tool...", "Push back...", "Correct errors...") remain literally duplicated across both constants — the exact intra-constant drift Decision 3 says the change exists to remove. `design.md`'s own Open Questions section (unchecked) flags this as unresolved scope ("Confirm `SHARED_PERSONA_BULLETS` refactor is in scope now vs a follow-up"), which is inconsistent with the File Changes table treating it as a settled action item. No spec requirement mandates this refactor (the spec only requires persona selection to keep working, which it does), so this is not spec-blocking — but `apply-progress.md`'s Deviations section should have recorded this skip explicitly, the way it recorded the other 4 deviations, instead of silently omitting a design-table action item.
 
 ## Issues
 

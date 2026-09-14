@@ -44,7 +44,7 @@ The transient parser and persisted-record validator remain separate. The former 
 
 ### 1. Strict transient contract module
 
-Add `lib/review-compact-contract.ts` as the only parser for compact operation payloads and nested actor evidence. Its exported functions accept `unknown`, reject recursively unknown fields, and return validated values:
+Add `lib/review/review-compact-contract.ts` as the only parser for compact operation payloads and nested actor evidence. Its exported functions accept `unknown`, reject recursively unknown fields, and return validated values:
 
 ```ts
 parseCompactStartInput(value: unknown): CompactFacadeStartInput
@@ -92,7 +92,7 @@ Mutually dependent fields are checked before authority access. For example, `fin
 
 ### 2. Boundary placement
 
-`extensions/gentle-ai.ts` keeps JSON decoding and operation routing but delegates compact payload validation to the new parser. Existing `as never`, numeric coercion, and distributed shallow checks are removed from the compact START/FINALIZE path.
+`extensions/jero-ai.ts` keeps JSON decoding and operation routing but delegates compact payload validation to the new parser. Existing `as never`, numeric coercion, and distributed shallow checks are removed from the compact START/FINALIZE path.
 
 `startCompactReview`, `finalizeCompactReview`, and `validateCompactReviewGate` also validate their complete inputs immediately. Their first observable repository action must occur after parsing succeeds. Tests will use a store/Git probe hook to prove malformed input does not call legacy inspection, authority discovery, snapshot capture, lock acquisition, state replacement, or receipt loading.
 
@@ -267,13 +267,13 @@ Lens-specific instructions remain outside the shared parity assertions. Project/
 
 | File | Intended change |
 |---|---|
-| `lib/review-compact-contract.ts` | New strict transient parsers, exact-key helpers, and contract errors |
+| `lib/review/review-compact-contract.ts` | New strict transient parsers, exact-key helpers, and contract errors |
 | `lib/review-runtime-contract.ts` | New stable loaded-runtime identity and compatibility assertions |
 | `lib/review-facade.ts` | Parse complete inputs first; validator request handoff; authority-derived repair report |
 | `lib/review-compact.ts` | Validator request/proof contracts and request/response binding; preserve reducer semantics |
 | `lib/review-compact-store.ts` | Enforce runtime compatibility at compact load/mutation/receipt use; persisted shapes unchanged |
 | `lib/review-compact-gate.ts` | Parse validate/derived targets and recheck runtime identity at both gate reads |
-| `extensions/gentle-ai.ts` | Replace compact coercions/casts with shared parsers; keep graph-v1 routing unchanged |
+| `extensions/jero-ai.ts` | Replace compact coercions/casts with shared parsers; keep graph-v1 routing unchanged |
 | Four `assets/agents/review-*.md` files | Align only shared contract clauses where parity exposes drift |
 | `tests/review-ledger-contract.test.ts` | Consume one canonical 4R parity fixture |
 | `tests/review-compact-contract.test.ts` | New table-driven recursive shape/type/enum/string/range rejection tests |

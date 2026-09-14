@@ -51,17 +51,17 @@ const requiredPaths = [
   "docs/native-authority-architecture.md",
   "docs/skill-style-guide.md",
   "docs/review-integration.md",
-  "extensions/gentle-ai.ts",
+  "extensions/jero-ai.ts",
   "extensions/sdd-init.ts",
   "extensions/skill-registry.ts",
-  "lib/gentle-ai-binary.ts",
-  "lib/native-review-cli.ts",
-  "lib/provider-contract-bundle.ts",
-  "lib/review-host-relay.ts",
-  "lib/review-integration-v2.ts",
-  "lib/review-relay-contract.ts",
-  "lib/sdd-preflight.ts",
-  "lib/telemetry-trigger.ts",
+  "lib/core/gentle-ai-binary.ts",
+  "lib/native/native-review-cli.ts",
+  "lib/core/provider-contract-bundle.ts",
+  "lib/review/review-host-relay.ts",
+  "lib/review/review-integration-v2.ts",
+  "lib/review/review-relay-contract.ts",
+  "lib/sdd/sdd-preflight.ts",
+  "lib/core/telemetry-trigger.ts",
 	"runtime/gentle-ai-binary.mjs",
 	"runtime/native-review-cli.mjs",
 	"runtime/review-integration-v2.mjs",
@@ -237,7 +237,7 @@ export function gentleAiVersionPinMismatches({ installerVersion, releaseBaseUrl,
   const mismatches = [];
   if (libGentleAiVersion !== installerVersion) {
     mismatches.push(
-      `lib/gentle-ai-binary.ts GENTLE_AI_VERSION ("${libGentleAiVersion}") does not match the authoritative scripts/gentle-ai-installer.mjs INSTALLER_VERSION ("${installerVersion}")`,
+      `lib/core/gentle-ai-binary.ts GENTLE_AI_VERSION ("${libGentleAiVersion}") does not match the authoritative scripts/gentle-ai-installer.mjs INSTALLER_VERSION ("${installerVersion}")`,
     );
   }
   if (!releaseBaseUrl.includes(`/v${installerVersion}/`)) {
@@ -302,7 +302,7 @@ async function main() {
   });
 
   if (missing.length > 0) {
-    console.error("gentle-pi package is missing required Pi resources:");
+    console.error("jero-pi package is missing required Pi resources:");
     for (const relativePath of missing) {
       console.error(`- ${relativePath}`);
     }
@@ -312,7 +312,7 @@ async function main() {
 
   const { unlistedOnDisk, listedButMissing } = reconcileContractsOnDisk(root, contractHashes);
   if (unlistedOnDisk.length > 0 || listedButMissing.length > 0) {
-    console.error("gentle-pi packaged contracts/ tree has drifted from contractHashes:");
+    console.error("jero-pi packaged contracts/ tree has drifted from contractHashes:");
     for (const relativePath of unlistedOnDisk) console.error(`- unlisted-on-disk: ${relativePath}`);
     for (const relativePath of listedButMissing) console.error(`- listed-but-missing: ${relativePath}`);
     console.error("\nRefusing to pack/publish an unreconciled contracts/ tree.");
@@ -322,7 +322,7 @@ async function main() {
   const generatedRuntimeSources = extractGeneratedRuntimeSources(root);
   const { drifted } = reconcileGeneratedRuntimeSources(root, generatedRuntimeSources, requiredPaths);
   if (drifted.length > 0) {
-    console.error("gentle-pi generated runtime sources, runtime/*.mjs, and requiredPaths have drifted apart:");
+    console.error("jero-pi generated runtime sources, runtime/*.mjs, and requiredPaths have drifted apart:");
     for (const entry of drifted) {
       const where = [];
       if (!entry.inSources) where.push("missing from generator sources");
@@ -340,7 +340,7 @@ async function main() {
   });
 
   if (driftedContracts.length > 0) {
-    console.error("gentle-pi packaged review-integration/v1 and review-integration/v2 contract bytes drifted from the pinned v2.8.2 runtime's vendored Gentle AI contract artifacts:");
+    console.error("jero-pi packaged review-integration/v1 and review-integration/v2 contract bytes drifted from the pinned v2.8.2 runtime's vendored Gentle AI contract artifacts:");
     for (const drift of driftedContracts) console.error(`- ${drift.relativePath}: expected ${drift.expected}, got ${drift.actual}`);
     process.exit(1);
   }
@@ -355,7 +355,7 @@ async function main() {
       .filter(([, digest]) => !/^[0-9a-f]{64}$/.test(digest))
       .map(([field]) => `${target}.${field}`));
   if (unpinnedDigests.length > 0) {
-    console.error("gentle-pi Gentle AI release digests are not pinned SHA-256 values:");
+    console.error("jero-pi Gentle AI release digests are not pinned SHA-256 values:");
     for (const entry of unpinnedDigests) console.error(`- ${entry}`);
     console.error("Refusing to pack/publish until scripts/gentle-ai-installer.mjs pins the published release digests (checksums.txt archives for a stable, SHA256SUMS.txt raw binaries for a prerelease).");
     process.exit(1);
@@ -367,12 +367,12 @@ async function main() {
     env: { ...process.env, NODE_NO_WARNINGS: "1" },
   });
   if (generatedRuntimeCheck.status !== 0) {
-    console.error("gentle-pi generated runtime does not match its TypeScript sources:");
+    console.error("jero-pi generated runtime does not match its TypeScript sources:");
     console.error((generatedRuntimeCheck.stderr || generatedRuntimeCheck.stdout || "unknown generator failure").trim());
     process.exit(1);
   }
 
-  const { GENTLE_AI_VERSION } = await import(new URL("../lib/gentle-ai-binary.ts", import.meta.url));
+  const { GENTLE_AI_VERSION } = await import(new URL("../lib/core/gentle-ai-binary.ts", import.meta.url));
   const versionMismatches = gentleAiVersionPinMismatches({
     installerVersion: INSTALLER_VERSION,
     releaseBaseUrl: RELEASE_BASE_URL,
@@ -380,12 +380,12 @@ async function main() {
     libGentleAiVersion: GENTLE_AI_VERSION,
   });
   if (versionMismatches.length > 0) {
-    console.error("gentle-pi Gentle AI version pins have drifted from the authoritative INSTALLER_VERSION:");
+    console.error("jero-pi Gentle AI version pins have drifted from the authoritative INSTALLER_VERSION:");
     for (const mismatch of versionMismatches) console.error(`- ${mismatch}`);
     process.exit(1);
   }
 
-  console.log(`gentle-pi package resource check passed (${requiredPaths.length} files; ${Object.keys(contractHashes).length} exact byte-pinned contract artifacts for the v2.8.2 runtime).`);
+  console.log(`jero-pi package resource check passed (${requiredPaths.length} files; ${Object.keys(contractHashes).length} exact byte-pinned contract artifacts for the v2.8.2 runtime).`);
 }
 
 const isMainModule = process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href;

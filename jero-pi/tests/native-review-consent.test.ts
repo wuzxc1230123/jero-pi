@@ -2,15 +2,15 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
-import { GENTLE_AI_VERSION } from "../lib/gentle-ai-binary.ts";
+import { GENTLE_AI_VERSION } from "../lib/core/gentle-ai-binary.ts";
 import {
 	NativeReviewCliV216,
 	NativeReviewConsentBindingError,
 	NativeReviewConsentRequiredError,
 	type ExecFileAdapter,
-} from "../lib/native-review-cli.ts";
+} from "../lib/native/native-review-cli.ts";
 import { NativeReviewCliV216 as RuntimeNativeReviewCliV216 } from "../runtime/native-review-cli.mjs";
-import type { ReviewConsentV2 } from "../lib/review-integration-v2.ts";
+import type { ReviewConsentV2 } from "../lib/review/review-integration-v2.ts";
 
 const fixtureRoot = join(process.cwd(), "contracts", "review-integration", "v2", "fixtures");
 const fixture = <T = Record<string, unknown>>(name: string): T => JSON.parse(readFileSync(join(fixtureRoot, name), "utf8")) as T;
@@ -134,7 +134,7 @@ test("controller-prebound START target checks STATUS once and executes its exact
 
 test("consent follow-up executes the provider-named invocation exactly once and refuses changed lineage or target bindings", async () => {
 	const consent = fixture<ReviewConsentV2 extends never ? never : Record<string, unknown>>("consent.fixture.json");
-	const decodedConsent = (await import("../lib/review-integration-v2.ts")).decodeReviewConsentV2(consent);
+	const decodedConsent = (await import("../lib/review/review-integration-v2.ts")).decodeReviewConsentV2(consent);
 	const preboundLineage = "Review.Lineage_42";
 	for (const choice of decodedConsent.choices) {
 		choice.invocation = choice.invocation.replace("review-consent-fixture", preboundLineage);
@@ -183,7 +183,7 @@ test("consent answer preserves quoted Windows provider cwd tokens and launches t
 		? [{ providerCwd: windowsCwd, requestedCwd: gitBashCwd }, { providerCwd: gitBashCwd, requestedCwd: windowsCwd }, { providerCwd: gitBashCwd, requestedCwd: gitBashCwd }, { providerCwd: windowsCwd, requestedCwd: windowsCwd }]
 		: [{ providerCwd: windowsCwd, requestedCwd: windowsCwd }];
 	for (const { providerCwd, requestedCwd } of cwdPairs) {
-		const decoded = (await import("../lib/review-integration-v2.ts")).decodeReviewConsentV2(fixture<Record<string, unknown>>("consent.fixture.json"));
+		const decoded = (await import("../lib/review/review-integration-v2.ts")).decodeReviewConsentV2(fixture<Record<string, unknown>>("consent.fixture.json"));
 		const lineage = "windows-cwd-lineage";
 		for (const choice of decoded.choices) {
 			choice.invocation = choice.invocation
@@ -206,7 +206,7 @@ test("consent answer preserves quoted Windows provider cwd tokens and launches t
 
 test("consent answer preserves quoted UNC and drive-root cwd tokens", async () => {
 	for (const providerCwd of ["\\\\server\\share", "C:\\"]) {
-		const decoded = (await import("../lib/review-integration-v2.ts")).decodeReviewConsentV2(fixture<Record<string, unknown>>("consent.fixture.json"));
+		const decoded = (await import("../lib/review/review-integration-v2.ts")).decodeReviewConsentV2(fixture<Record<string, unknown>>("consent.fixture.json"));
 		const lineage = "windows-root-lineage";
 		for (const choice of decoded.choices) {
 			choice.invocation = choice.invocation
@@ -229,7 +229,7 @@ test("consent answer preserves quoted UNC and drive-root cwd tokens", async () =
 
 test("unmatched consent invocation quotes reject before provider launch", async () => {
 	for (const quote of ["'", '"']) {
-		const decoded = (await import("../lib/review-integration-v2.ts")).decodeReviewConsentV2(fixture<Record<string, unknown>>("consent.fixture.json"));
+		const decoded = (await import("../lib/review/review-integration-v2.ts")).decodeReviewConsentV2(fixture<Record<string, unknown>>("consent.fixture.json"));
 		const choice = decoded.choices.find((candidate) => candidate.answer === "granted") as { invocation: string };
 		choice.invocation = `${choice.invocation} ${quote}`;
 		for (const createClient of [client, runtimeClient]) {
@@ -244,7 +244,7 @@ test("unmatched consent invocation quotes reject before provider launch", async 
 });
 
 test("different, duplicate, missing, and malformed consent cwd options reject before provider launch", async () => {
-	const decoded = (await import("../lib/review-integration-v2.ts")).decodeReviewConsentV2(fixture<Record<string, unknown>>("consent.fixture.json"));
+	const decoded = (await import("../lib/review/review-integration-v2.ts")).decodeReviewConsentV2(fixture<Record<string, unknown>>("consent.fixture.json"));
 	const drifted = (replace: (invocation: string) => string): ReviewConsentV2 => {
 		const consent = structuredClone(decoded);
 		const choice = consent.choices.find((candidate) => candidate.answer === "granted") as { invocation: string };
@@ -268,7 +268,7 @@ test("different, duplicate, missing, and malformed consent cwd options reject be
 });
 
 test("a consent invocation binding mismatch is a typed pre-native error that never launches the provider", async () => {
-	const consent = (await import("../lib/review-integration-v2.ts")).decodeReviewConsentV2(fixture<Record<string, unknown>>("consent.fixture.json"));
+	const consent = (await import("../lib/review/review-integration-v2.ts")).decodeReviewConsentV2(fixture<Record<string, unknown>>("consent.fixture.json"));
 	const queue = queuedAdapter([]);
 	await assert.rejects(
 		() => client(queue.adapter).answerConsent!({ cwd: "/repo/.git/gentle-ai/candidate-views/a1c7fdae", consent, answer: "granted" }),
@@ -289,7 +289,7 @@ test("a consent invocation binding mismatch is a typed pre-native error that nev
 // guards defend against a consent object that drifted after decoding. Each one
 // must still name itself rather than collapse into a generic failure.
 test("every consent invocation binding guard reports its own reason without launching the provider", async () => {
-	const decoded = (await import("../lib/review-integration-v2.ts")).decodeReviewConsentV2(fixture<Record<string, unknown>>("consent.fixture.json"));
+	const decoded = (await import("../lib/review/review-integration-v2.ts")).decodeReviewConsentV2(fixture<Record<string, unknown>>("consent.fixture.json"));
 	const drifted = (mutate: (consent: ReviewConsentV2) => void): ReviewConsentV2 => {
 		const value = structuredClone(decoded);
 		mutate(value);
@@ -326,7 +326,7 @@ test("every consent invocation binding guard reports its own reason without laun
 });
 
 test("fresh consent START accepts the strictly decoded provider-created lineage and rejects a mismatched target", async () => {
-	const decoded = (await import("../lib/review-integration-v2.ts")).decodeReviewConsentV2(fixture<Record<string, unknown>>("consent.fixture.json"));
+	const decoded = (await import("../lib/review/review-integration-v2.ts")).decodeReviewConsentV2(fixture<Record<string, unknown>>("consent.fixture.json"));
 	const freshConsent = structuredClone(decoded);
 	for (const choice of freshConsent.choices) {
 		choice.invocation = choice.invocation.replace(" --lineage review-consent-fixture", "");
@@ -360,7 +360,7 @@ test("fresh consent START accepts the strictly decoded provider-created lineage 
 });
 
 test("duplicate, empty, missing, and malformed consent lineages fail before provider launch", async () => {
-	const decoded = (await import("../lib/review-integration-v2.ts")).decodeReviewConsentV2(fixture<Record<string, unknown>>("consent.fixture.json"));
+	const decoded = (await import("../lib/review/review-integration-v2.ts")).decodeReviewConsentV2(fixture<Record<string, unknown>>("consent.fixture.json"));
 	const drifted = (replace: (invocation: string) => string): ReviewConsentV2 => {
 		const consent = structuredClone(decoded);
 		const choice = consent.choices.find((candidate) => candidate.answer === "granted") as { invocation: string };
@@ -389,7 +389,7 @@ test("duplicate, empty, missing, and malformed consent lineages fail before prov
 
 test("declined consent decodes the provider's explicit empty authority fields without creating a lineage", async () => {
 	const rawConsent = fixture<Record<string, unknown>>("consent.fixture.json");
-	const consent = (await import("../lib/review-integration-v2.ts")).decodeReviewConsentV2(rawConsent);
+	const consent = (await import("../lib/review/review-integration-v2.ts")).decodeReviewConsentV2(rawConsent);
 	const declined = {
 		operation: "review/start",
 		action: "declined",
@@ -507,7 +507,7 @@ test("Pi START rejects a foreign consent/v3 envelope and only relays exact Pi-bo
 });
 
 test("a granted Pi consent/v3 answer replays the captured exact agent-bound invocation", async () => {
-	const decoded = (await import("../lib/review-integration-v2.ts")).decodeReviewConsentV3(piBoundConsent(), "pi");
+	const decoded = (await import("../lib/review/review-integration-v2.ts")).decodeReviewConsentV3(piBoundConsent(), "pi");
 	const cwd = decoded.choices[0].invocation.split(" --cwd ")[1]!.split(" ")[0]!;
 	const started = devbinaryFixture<Record<string, unknown>>("start-v3-consent-granted.captured.json");
 	const queue = queuedAdapter([capabilities(), started]);
@@ -527,7 +527,7 @@ test("a granted Pi consent/v3 answer replays the captured exact agent-bound invo
 });
 
 test("a declined Pi consent/v3 answer replays the captured exact agent-bound invocation and creates no authority", async () => {
-	const decoded = (await import("../lib/review-integration-v2.ts")).decodeReviewConsentV3(piBoundConsent(), "pi");
+	const decoded = (await import("../lib/review/review-integration-v2.ts")).decodeReviewConsentV3(piBoundConsent(), "pi");
 	const cwd = decoded.choices[1].invocation.split(" --cwd ")[1]!.split(" ")[0]!;
 	const declined = devbinaryFixture<Record<string, unknown>>("start-v3-consent-declined.captured.json");
 	const queue = queuedAdapter([capabilities(), declined]);

@@ -4,8 +4,8 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { __testing } from "../../extensions/gentle-ai.ts";
-import { CandidateViewRegistry } from "../../lib/review-candidate-view.ts";
+import { __testing } from "../../extensions/jero-ai.ts";
+import { CandidateViewRegistry } from "../../lib/review/review-candidate-view.ts";
 import {
 	NATIVE_REVIEW_ERROR_CODE,
 	NativeReviewCliError,
@@ -13,8 +13,8 @@ import {
 	NativeReviewConsentRequiredError,
 	createNodeExecFileAdapter,
 	type ExecFileAdapter,
-} from "../../lib/native-review-cli.ts";
-import type { ReviewStatusV3 } from "../../lib/review-integration-v2.ts";
+} from "../../lib/native/native-review-cli.ts";
+import type { ReviewStatusV3 } from "../../lib/review/review-integration-v2.ts";
 import { requireDevBinary } from "../support/native-binary-gate.ts";
 
 // Organic RDD Parity: candidate-bound dev-binary journeys.
@@ -31,7 +31,7 @@ const devBinaryGate = requireDevBinary({
 });
 if (!devBinaryGate.run) console.log(`tests/devbinary/native-review-parity.devtest.ts: ${devBinaryGate.reason}`);
 const RUNNABLE = devBinaryGate.run;
-const DEV_HOME = mkdtempSync(join(tmpdir(), "gentle-pi-dev-binary-home-"));
+const DEV_HOME = mkdtempSync(join(tmpdir(), "jero-pi-dev-binary-home-"));
 const ORIGINAL_HOME = process.env.HOME;
 const ORIGINAL_USERPROFILE = process.env.USERPROFILE;
 
@@ -84,7 +84,7 @@ function git(cwd: string, ...args: string[]): string {
 }
 
 function repository(t: test.TestContext): string {
-	const cwd = mkdtempSync(join(tmpdir(), "gentle-pi-dev-binary-"));
+	const cwd = mkdtempSync(join(tmpdir(), "jero-pi-dev-binary-"));
 	t.after(() => {
 		try { execFileSync("chmod", ["-R", "u+w", cwd]); } catch { /* best effort */ }
 		rmSync(cwd, { recursive: true, force: true });

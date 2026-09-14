@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { __testing } from "../extensions/gentle-ai.ts";
+import { __testing } from "../extensions/jero-ai.ts";
 
 function scratchDir(prefix: string): string {
 	const dir = mkdtempSync(join(tmpdir(), prefix));
@@ -12,7 +12,7 @@ function scratchDir(prefix: string): string {
 }
 
 async function runRetiredOperation(parameters: Record<string, unknown>): Promise<Record<string, unknown>> {
-	const cwd = scratchDir("gentle-pi-retired-ops-");
+	const cwd = scratchDir("jero-pi-retired-ops-");
 	return await __testing.executeReviewControllerOperation(parameters, cwd, null);
 }
 

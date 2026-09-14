@@ -157,7 +157,7 @@ Use the configured subagent runtime when available. Prefer the `subagent_*` tool
 
 For bounded multi-file writes, prefer the installed package-owned `gentle-ai-worker`, then a user-configured `worker`. If neither worker definition exists, fall back to the native `Agent` even when `subagent_*` tools are available. If no delegation mechanism is available, stop and explain the blocker.
 
-<!-- gentle-pi:background-subagents -->
+<!-- jero-pi:background-subagents -->
 #### Background Subagent Policy
 
 Background execution is policy-gated: the always-on orchestrator prompt renders one status line, `Background subagent policy: on|off (capability: ready|absent)`. If the policy is off OR the `subagent_run` tool is unavailable, run every delegation in the foreground — `mode: "task"` when `subagent_*` tools exist, otherwise the native `Agent` fallback — always.
@@ -171,7 +171,7 @@ When the policy is on and `subagent_run` is available:
 - Use `mode: "task"` only when the subagent must ask the human something mid-flight (task-mode dialogs reach the human; background dialogs are dismissed) or when the human asked to wait.
 - Launch as many independent tasks as the work has; the runner queues beyond `max_concurrency`. Do not duplicate launches or work, and do not overlap files or topics. Never run parallel writers in one worktree.
 - Finished tasks persist across restarts; running ones are stopped when pi exits and must be relaunched, never claimed as recovered.
-<!-- /gentle-pi:background-subagents -->
+<!-- /jero-pi:background-subagents -->
 
 For generic non-SDD exploration and mapping, first attempt the installed package-owned `gentle-ai-explore`. If that individual role is missing or unusable, fall back to Pi's native `Agent` with the same read-only mapping constraints and report the fallback.
 

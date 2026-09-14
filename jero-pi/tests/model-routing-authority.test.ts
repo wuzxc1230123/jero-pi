@@ -3,10 +3,10 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync }
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { applySavedModelConfig, readModelConfig, readModelConfigAsync } from "../extensions/gentle-ai.ts";
+import { applySavedModelConfig, readModelConfig, readModelConfigAsync } from "../extensions/jero-ai.ts";
 
 test("model routing authority normalizes and preserves sync/async source status", async (t) => {
-	const loaded = await import("../lib/model-routing-authority.ts").then(
+	const loaded = await import("../lib/core/model-routing-authority.ts").then(
 		(module) => ({ module, error: undefined }),
 		(error) => ({ module: undefined, error }),
 	);
@@ -15,7 +15,7 @@ test("model routing authority normalizes and preserves sync/async source status"
 		`shared model routing authority must load: ${String(loaded.error)}`,
 	);
 	const authority = loaded.module;
-	const root = mkdtempSync(join(tmpdir(), "gentle-pi-model-routing-authority-"));
+	const root = mkdtempSync(join(tmpdir(), "jero-pi-model-routing-authority-"));
 	const globalDir = join(root, "global");
 	const projectDir = join(root, "project");
 	const projectConfigDir = join(projectDir, ".pi", "gentle-ai");
@@ -132,7 +132,7 @@ test("model routing authority normalizes and preserves sync/async source status"
 });
 
 test("saved-routing apply fails closed for invalid project and global sources", async (t) => {
-	const root = mkdtempSync(join(tmpdir(), "gentle-pi-model-routing-apply-"));
+	const root = mkdtempSync(join(tmpdir(), "jero-pi-model-routing-apply-"));
 	const configHome = join(root, "global");
 	const projectConfigDir = join(root, ".pi", "gentle-ai");
 	const projectAgentsDir = join(root, ".pi", "agents");
@@ -197,7 +197,7 @@ test("saved-routing apply fails closed for invalid project and global sources", 
 });
 
 test("saved-routing apply preserves missing, valid, null, inherit, and omission behavior", async (t) => {
-	const root = mkdtempSync(join(tmpdir(), "gentle-pi-model-routing-apply-valid-"));
+	const root = mkdtempSync(join(tmpdir(), "jero-pi-model-routing-apply-valid-"));
 	const configHome = join(root, "global");
 	const projectConfigDir = join(root, ".pi", "gentle-ai");
 	const projectAgentsDir = join(root, ".pi", "agents");

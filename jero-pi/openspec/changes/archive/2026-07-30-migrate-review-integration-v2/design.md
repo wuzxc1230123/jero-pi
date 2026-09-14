@@ -1,11 +1,11 @@
-# Design: migrate gentle-pi to `review-integration/v2`
+# Design: migrate jero-pi to `review-integration/v2`
 
 ## Technical Approach
 
-`lib/review-integration-v2.ts` succeeds `-v1.ts` as the single strict decoder. `lib/native-review-cli.ts`
+`lib/review/review-integration-v2.ts` succeeds `-v1.ts` as the single strict decoder. `lib/native/native-review-cli.ts`
 swaps the contract constant and grows the surface each call site needs, and gains one net-new negotiated
-`review repair` site. A new pure `lib/review-correction-lifecycle.ts` holds the evidence-first branch
-machine. `lib/review-candidate-view.ts` binds to the provider manifest and compares field-wise. The v1
+`review repair` site. A new pure `lib/review/review-correction-lifecycle.ts` holds the evidence-first branch
+machine. `lib/review/review-candidate-view.ts` binds to the provider manifest and compares field-wise. The v1
 lib, its generated runtime, and both v1 test files die in the same commit as the switchover.
 
 The sequencing is driven by one hard external fact established below: **the currently pinned binary
@@ -32,7 +32,7 @@ containing the pin bump *and* the contract switchover *and* the v1 deletion *and
 regeneration, authored only after gentle-ai v2.2.1 publishes. No commit in the branch is ever red.
 
 **Why this consequence is unavoidable.** Every negotiated operation routes through
-`NativeReviewCliV216.negotiated()` (`lib/native-review-cli.ts:1586-1601`), which always calls
+`NativeReviewCliV216.negotiated()` (`lib/native/native-review-cli.ts:1586-1601`), which always calls
 `capabilities()` (`:1562-1584`) first. Flip `REVIEW_INTEGRATION_CONTRACT` and *every* negotiated call
 against v2.2.0 dies at capabilities. `tests/native-review-parity-runtime.test.ts` spawns that binary for
 real, including a hand-built invocation that hardcodes the v1 contract at `:167`
@@ -71,7 +71,7 @@ passes explicit required/optional lists. `requireVersionedIdentity` goes because
 `const` schema. `assertSupersetOf` stays for operations/schemas (the v2.2.0 lesson: exact-match rejected a
 compatible minor); `assertExactSet` for gates, projections, mandatory features.
 
-#### Export surface of `lib/review-integration-v2.ts`
+#### Export surface of `lib/review/review-integration-v2.ts`
 
 ```ts
 export const REVIEW_INTEGRATION_CONTRACT = "gentle-ai.review-integration/v2";
@@ -136,7 +136,7 @@ authority-repair-assessment/v1** — five, of which repair + assessment are the 
 one `git diff --raw -z --no-ext-diff --find-renames=100% <base> <candidate>` and yields
 `{path, status, old_mode, new_mode, deleted, type_changed, mode_only}`; `mode_only` is
 `old_sha === new_sha && old_mode !== new_mode`. Comparison is key-by-key over the union of paths and
-replaces the `JSON.stringify` path equality at `lib/review-candidate-view.ts:688`, which it subsumes.
+replaces the `JSON.stringify` path equality at `lib/review/review-candidate-view.ts:688`, which it subsumes.
 `deriveChangedScope` is untouched.
 
 **Declared deviation from the review-orchestration spec.** The spec's field-wise list names
@@ -152,7 +152,7 @@ This is a deliberate deviation, not an omission; `sdd-verify` should read it as 
 `manifest-intended-untracked-not-subset`, `manifest-input-divergence` (two capture inputs disagree on
 `base_tree`/`candidate_tree`/manifest digest), `manifest-subject-drift`
 (`artifact_subject.base_tree`/`candidate_tree` ≠ the input's). Reviewer dispatch **requires** the
-manifest; only the pre-commit gate path (`extensions/gentle-ai.ts:5281`, where no reviewer sees the
+manifest; only the pre-commit gate path (`extensions/jero-ai.ts:5281`, where no reviewer sees the
 candidate) may fall back to `status.projection`, and that fallback is explicit, never silent.
 `artifact_subject.changed_path_manifest_sha256` is cross-checked across inputs but not recomputed — the
 provider's canonicalization is unspecified in the mirrored contract.
@@ -160,11 +160,11 @@ provider's canonicalization is unspecified in the mirrored contract.
 ### Decision: correction lifecycle as a pure module, with distinct immutable evidence per attempt
 
 Pi does not route from `next_transition` today; it drives its own start→dispatch→finalize flow. Rather
-than grow `extensions/gentle-ai.ts` (5000+ lines), the branch machine is a pure
-`resolveCorrectionStep(status, evidence) → CorrectionStep` in `lib/review-correction-lifecycle.ts`,
+than grow `extensions/jero-ai.ts` (5000+ lines), the branch machine is a pure
+`resolveCorrectionStep(status, evidence) → CorrectionStep` in `lib/review/review-correction-lifecycle.ts`,
 unit-testable with no subprocess. The client gains one method,
 `captureEvidence({cwd, lineageId, outcome, evidenceDocument})`, staged through the same 0o600 tmpfile
-discipline `finalize` uses (`lib/native-review-cli.ts:1104-1122`), decoded against
+discipline `finalize` uses (`lib/native/native-review-cli.ts:1104-1122`), decoded against
 `gentle-ai.review-verification-evidence/v2`.
 
 | Outcome | Step | Rule |
@@ -193,7 +193,7 @@ data.
 ### Decision: negotiated `review repair` is a new call site; `repair-legacy-alias` stays unnegotiated
 
 The spec requires repair to pass the v2 contract identifier. Pi's only repair-shaped invocation today is
-`repairLegacyAlias` (`lib/native-review-cli.ts:1371-1391`), whose argv at `:1379-1387` carries **no**
+`repairLegacyAlias` (`lib/native/native-review-cli.ts:1371-1391`), whose argv at `:1379-1387` carries **no**
 `--contract` and whose response decodes via `decodeNativeMaintenanceResult`, not `repair/v2`. These are
 two different operations and must not be conflated.
 
@@ -217,7 +217,7 @@ rejects any version key it does not know (`:1045-1046`).
 
 | Spec obligation | Design response |
 |---|---|
-| Fresh interactive approval | `maintainerAuthorization` is computed only after a fresh approval through `lib/review-consent-latch.ts`; the existing exact-binding assertions (`:1375-1376`) stay unchanged. No cached or inferred approval. |
+| Fresh interactive approval | `maintainerAuthorization` is computed only after a fresh approval through `lib/review/review-consent-latch.ts`; the existing exact-binding assertions (`:1375-1376`) stay unchanged. No cached or inferred approval. |
 | Shell-free exact argv | Already satisfied: fixed `execFile` array, no shell, `isCanonicalProcessString` on every interpolated value (`:1372-1374`). |
 | Audit record only from a valid response envelope | Already satisfied: `decodeNativeMaintenanceResult` runs *before* the non-zero-exit throw (`:1388-1389`), so a partial failure still preserves a decoded record. |
 | Repair inputs derived from fresh native inventory | The negotiated `repair` call runs `--mode preflight` first; `repository_binding`, `lineage_id`, `expected_revision`, `cause`, `disposition` are read from that response's `provider_inputs` and passed straight back to `--mode execute`. Pi-side constants (`NATIVE_REVIEW_LEGACY_ALIAS_REPAIR`, `:222`) are used **only** to reject a provider response that disagrees, never as a source. |
@@ -238,12 +238,12 @@ a version. `decodeReviewCapabilitiesV1` decodes `package.version` (`:569`) and n
 1. `NativeReviewCliV216.capabilities()` asserts `capabilities.packageVersion === GENTLE_AI_VERSION` after
    decoding and throws `expected gentle-ai v{GENTLE_AI_VERSION}, provider reported v{observed}`.
 2. Any capabilities *decode* failure is rewrapped with `expected gentle-ai v{GENTLE_AI_VERSION}; the
-   installed runtime is incompatible — reinstall gentle-pi`. This is the `.gentle-ai/` half-upgrade path:
+   installed runtime is incompatible — reinstall jero-pi`. This is the `.gentle-ai/` half-upgrade path:
    an older runtime answers `unsupported_contract` for v2 and the message must say which version is wanted.
 3. `verifyVersion`'s message gains `expected v{GENTLE_AI_VERSION}, found v{observed ?? "unparseable"}`.
 
-The assertion lives in the client, not the decoder, so `lib/review-integration-v2.ts` stays a pure
-contract decoder with no dependency on the pin. `lib/gentle-ai-binary.ts:14` already names the version for
+The assertion lives in the client, not the decoder, so `lib/review/review-integration-v2.ts` stays a pure
+contract decoder with no dependency on the pin. `lib/core/gentle-ai-binary.ts:14` already names the version for
 the *missing*-binary case; this closes the *wrong*-binary case.
 
 ### Decision: `verify-package-files.mjs` reconciles against `contractHashes` and against `sources`
@@ -280,10 +280,10 @@ to name both lanes rather than "review-integration/v1 … v2.2.0".
 (`scripts/build-git-commit-transaction-runner.mjs:9-14`) and it emits `runtime/<name>.mjs` by rewriting
 `.ts` import specifiers to `.mjs` (`:25-27`).
 
-Consequence: the moment `lib/native-review-cli.ts` imports `./review-integration-v2.ts`, the generated
+Consequence: the moment `lib/native/native-review-cli.ts` imports `./review-integration-v2.ts`, the generated
 `runtime/native-review-cli.mjs` imports `./review-integration-v2.mjs` — which does not exist until
 `sources[1]` changes. And `tests/native-review-parity-runtime.test.ts:13-14` imports **both**
-`lib/native-review-cli.ts` and `runtime/native-review-cli.mjs` and compares them, so a stale runtime is an
+`lib/native/native-review-cli.ts` and `runtime/native-review-cli.mjs` and compares them, so a stale runtime is an
 immediate test failure, not just a `--check` failure.
 
 **Choice**: the import flip, `sources[1]`, the `runtime --write` regeneration, the v1 deletions, and the
@@ -330,12 +330,12 @@ has exactly **1 skip**, and a claim of zero skips would be wrong.
 
 | File | Action | Description |
 |---|---|---|
-| `lib/review-integration-v2.ts` | Create | v2 decoders, identity, exact-key discipline; unimported until Stage 2 |
+| `lib/review/review-integration-v2.ts` | Create | v2 decoders, identity, exact-key discipline; unimported until Stage 2 |
 | `tests/review-integration-v2.test.ts` | Create | rejection test per decoder; 4 fixture round-trips; 22-schema superset |
-| `lib/review-correction-lifecycle.ts` | Create | pure three-branch step resolver |
+| `lib/review/review-correction-lifecycle.ts` | Create | pure three-branch step resolver |
 | `tests/review-correction-lifecycle.test.ts` | Create | 3 outcomes, budget invariant, distinct-evidence invariant |
 | `tests/support/native-binary-gate.ts` | Create | `requireNativeBinary()` shared loud-skip gate |
-| `lib/review-candidate-view.ts` | Modify | `deriveChangedPathManifest`, optional `manifest` on the descriptor, field-wise check replacing `:688` |
+| `lib/review/review-candidate-view.ts` | Modify | `deriveChangedPathManifest`, optional `manifest` on the descriptor, field-wise check replacing `:688` |
 | `scripts/verify-package-files.mjs` | Modify | `contracts/` ↔ `contractHashes` walk; `sources` ↔ `runtime/` ↔ `requiredPaths` walk; +13 v2 hashes; reworded drift message `:150` |
 | `tests/native-review-parity-runtime.test.ts` | Modify | replace the `:30` skip ternary with `requireNativeBinary()` |
 | `tests/gentle-ai-binary.test.ts` | Modify | replace the `:23` skip ternary with `requireNativeBinary()` |
@@ -350,10 +350,10 @@ has exactly **1 skip**, and a claim of zero skips would be wrong.
 | File | Action | Description |
 |---|---|---|
 | `lib/review-integration-v1.ts`, `runtime/review-integration-v1.mjs`, `tests/review-integration-v1.test.ts`, `tests/native-review-integration-v1.test.ts` | Delete | same commit |
-| `lib/native-review-cli.ts` | Modify | import flip; six existing `--contract` sites; net-new negotiated `repair`; `captureEvidence`; typed transition/consent; version-naming failures; `NATIVE_CLI_CONTRACTS["2.2.1"]` row |
+| `lib/native/native-review-cli.ts` | Modify | import flip; six existing `--contract` sites; net-new negotiated `repair`; `captureEvidence`; typed transition/consent; version-naming failures; `NATIVE_CLI_CONTRACTS["2.2.1"]` row |
 | `scripts/build-git-commit-transaction-runner.mjs` | Modify | `sources[1]` → `"review-integration-v2"` |
 | `runtime/*.mjs` | Regenerate | `--write` only; never hand-edited |
-| `extensions/gentle-ai.ts` | Modify | descriptor source (L5067/5068/5281), lifecycle wiring, v1 literal |
+| `extensions/jero-ai.ts` | Modify | descriptor source (L5067/5068/5281), lifecycle wiring, v1 literal |
 | `scripts/verify-package-files.mjs` | Modify | `requiredPaths` `lib/`+`runtime/` v1→v2 entries (`:46`, `:51`); version literals `:182` |
 | `scripts/test-packed-runner.mjs` | Modify | **previously unlisted.** `:60` argv `--contract` v1→v2; `:61` accepted-schema list `capabilities/v1`,`capabilities/v1.1` → `capabilities/v2`, and the `capabilities.contract` equality literal |
 | `tests/package-manifest.test.ts` | Modify | `:219` packed-runner regex; `:277-278` version regexes |
@@ -364,7 +364,7 @@ has exactly **1 skip**, and a claim of zero skips would be wrong.
 | `tests/native-review-cli.test.ts` | Modify | `:679` comment reference |
 | `tests/devbinary/native-review-parity.devtest.ts` | Modify | 6 v1 references |
 | `scripts/gentle-ai-installer.mjs` | Modify | pin surface — see below |
-| `lib/gentle-ai-binary.ts` | Modify | `:8` `GENTLE_AI_VERSION = "2.2.1"` |
+| `lib/core/gentle-ai-binary.ts` | Modify | `:8` `GENTLE_AI_VERSION = "2.2.1"` |
 | `tests/gentle-ai-installer.test.ts` | Modify | `:25-28` EXPECTED asset table |
 
 ### Pin / digest surface (Stage 2, previously reduced to "the pin commit only")
@@ -376,8 +376,8 @@ has exactly **1 skip**, and a claim of zero skips would be wrong.
 | `scripts/gentle-ai-installer.mjs:47-52` | `GENTLE_AI_RELEASE_ASSETS`: 4 targets × (`name`, `sha256`, `binarySha256`) = 12 literals. Archive `sha256` from the minisign-signed `checksums.txt`; `binarySha256` computed from each extracted executable. |
 | `scripts/gentle-ai-installer.mjs:41-46` | Windows rows stay absent unless v2.2.1 publishes signed Windows assets; the comment's version reference updates. |
 | `scripts/gentle-ai-installer.mjs:35` | `GENTLE_AI_PENDING_DIGEST` sentinel is **not** used. `verify-package-files.mjs:158-167` hard-fails prepack on any non-SHA-256 digest, so the commit must carry real digests. |
-| `lib/gentle-ai-binary.ts:8` | `GENTLE_AI_VERSION = "2.2.1"` |
-| `lib/native-review-cli.ts:540-541` | new `NATIVE_CLI_CONTRACTS["2.2.1"]` row |
+| `lib/core/gentle-ai-binary.ts:8` | `GENTLE_AI_VERSION = "2.2.1"` |
+| `lib/native/native-review-cli.ts:540-541` | new `NATIVE_CLI_CONTRACTS["2.2.1"]` row |
 | `scripts/verify-package-files.mjs:182` | both literal `2.2.0` assertions → `2.2.1` |
 | `tests/package-manifest.test.ts:277-278` | regexes → `2\.2\.1` |
 | `tests/gentle-ai-installer.test.ts:25-28` | independent duplicate of the 12 digest literals |
@@ -399,7 +399,7 @@ has exactly **1 skip**, and a claim of zero skips would be wrong.
 ## Interfaces / Contracts
 
 ```ts
-// lib/review-candidate-view.ts
+// lib/review/review-candidate-view.ts
 export interface ChangedPathEntry {
   readonly path: string;
   readonly status: "A" | "M" | "D" | "R" | "C" | "T";
@@ -410,7 +410,7 @@ export interface ChangedPathEntry {
   readonly modeOnly: boolean;
 }
 
-// lib/review-correction-lifecycle.ts
+// lib/review/review-correction-lifecycle.ts
 export type CorrectionStep =
   | { kind: "run-targeted-validation"; request: TargetedValidationRequest }
   | { kind: "await-changed-candidate"; supersedes: string; actionable: string }
@@ -457,10 +457,10 @@ skip is the Windows drive-letter test and stays.
 
 ### Stage 1 — authorable now, no external dependency, `pnpm test` green at every commit
 
-1. `lib/review-integration-v2.ts` + `tests/review-integration-v2.test.ts`. v1 still present and still the
+1. `lib/review/review-integration-v2.ts` + `tests/review-integration-v2.test.ts`. v1 still present and still the
    only imported module; both compile. Green.
 2. `deriveChangedPathManifest` + field-wise comparison behind the optional `manifest` field. Green.
-3. `lib/review-correction-lifecycle.ts` + its unit tests (pure; no client wiring yet). Green.
+3. `lib/review/review-correction-lifecycle.ts` + its unit tests (pure; no client wiring yet). Green.
 4. `scripts/verify-package-files.mjs`: both reconciliations + the 13 v2 `contractHashes` entries. Green.
 5. `tests/support/native-binary-gate.ts` + both suite call sites + CI env var. Green (the binary is
    installed; the gate is a no-op).
@@ -474,7 +474,7 @@ Nothing below can be authored, let alone made green, before this. Verify with
 
 Pin bump (all rows of the pin/digest table) **+** client import flip **+** all six `--contract` sites
 **+** net-new negotiated `repair` **+** `captureEvidence` and lifecycle wiring **+** descriptor sourcing
-in `extensions/gentle-ai.ts` **+** `sources[1]` **+** `runtime --write` **+** v1 lib/runtime/test deletion
+in `extensions/jero-ai.ts` **+** `sources[1]` **+** `runtime --write` **+** v1 lib/runtime/test deletion
 **+** every v1 literal in `scripts/test-packed-runner.mjs` and the six test files. `pnpm test` green,
 `pnpm run check:transaction-runner` green, `node scripts/verify-package-files.mjs` green.
 

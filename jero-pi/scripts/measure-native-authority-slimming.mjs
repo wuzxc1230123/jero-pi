@@ -77,7 +77,7 @@ function measure(ref) {
 	const reviewEdges = imports.filter(({ source, target }) =>
 		posix.basename(source).startsWith("review-") || posix.basename(target).startsWith("review-"),
 	);
-	const permanent = ["lib/review-canonical.ts", "lib/review-repository.ts", "lib/review-candidate-view.ts", "lib/review-publication-gate.ts"];
+	const permanent = ["lib/review/review-canonical.ts", "lib/review/review-repository.ts", "lib/review/review-candidate-view.ts", "lib/review/review-publication-gate.ts"];
 	const permanentConsumers = Object.fromEntries(permanent.map((module) => [
 		module,
 		imports.filter(({ target }) => target === module).map(({ source }) => source).toSorted(),

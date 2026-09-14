@@ -16,7 +16,7 @@ import {
 	resolveGentleAiDevBinaryOverride,
 	unregisterGentleAiDevBinary,
 	type GentleAiDevBinaryEnvironment,
-} from "../lib/gentle-ai-binary.ts";
+} from "../lib/core/gentle-ai-binary.ts";
 
 const PLATFORM = "linux";
 
@@ -52,9 +52,9 @@ const isOverrideError = (origin: string | RegExp) => (error: unknown): boolean =
 	&& (typeof origin === "string" ? error.message.includes(origin) : origin.test(error.message));
 
 test("the explicit env override resolves a verified dev binary and never changes the pinned path", async () => {
-	const home = await scratch("gentle-pi-dev-home-");
-	const bin = await scratch("gentle-pi-dev-bin-");
-	const packageRoot = await scratch("gentle-pi-dev-package-");
+	const home = await scratch("jero-pi-dev-home-");
+	const bin = await scratch("jero-pi-dev-bin-");
+	const packageRoot = await scratch("jero-pi-dev-package-");
 	const devBinary = writeDevBinary(bin);
 	const env = environment(home, { [GENTLE_AI_DEV_BINARY_ENV]: devBinary });
 
@@ -73,9 +73,9 @@ test("the explicit env override resolves a verified dev binary and never changes
 });
 
 test("a registration is strict, env wins, and unregister restores the pinned resolver", async () => {
-	const home = await scratch("gentle-pi-dev-home-");
-	const registeredDirectory = await scratch("gentle-pi-dev-bin-");
-	const envDirectory = await scratch("gentle-pi-dev-env-");
+	const home = await scratch("jero-pi-dev-home-");
+	const registeredDirectory = await scratch("jero-pi-dev-bin-");
+	const envDirectory = await scratch("jero-pi-dev-env-");
 	const registered = writeDevBinary(registeredDirectory);
 	const envBinary = writeDevBinary(envDirectory, "#!/bin/sh\necho 'gentle-ai 9.9.10-dev'\n");
 	const registeredResult = registerGentleAiDevBinary(registered, environment(home), PLATFORM);
@@ -89,9 +89,9 @@ test("a registration is strict, env wins, and unregister restores the pinned res
 });
 
 test("invalid override sources fail closed instead of silently falling back to the pin", async () => {
-	const home = await scratch("gentle-pi-dev-home-");
-	const bin = await scratch("gentle-pi-dev-bin-");
-	const packageRoot = await scratch("gentle-pi-dev-package-");
+	const home = await scratch("jero-pi-dev-home-");
+	const bin = await scratch("jero-pi-dev-bin-");
+	const packageRoot = await scratch("jero-pi-dev-package-");
 	const devBinary = writeDevBinary(bin);
 	const symlinked = join(bin, "gentle-ai-link");
 	symlinkSync(devBinary, symlinked);
@@ -110,8 +110,8 @@ test("invalid override sources fail closed instead of silently falling back to t
 });
 
 test("an unset or empty dev-binary environment preserves the package-local resolver", async () => {
-	const home = await scratch("gentle-pi-dev-home-");
-	const packageRoot = await scratch("gentle-pi-dev-package-");
+	const home = await scratch("jero-pi-dev-home-");
+	const packageRoot = await scratch("jero-pi-dev-package-");
 	for (const env of [environment(home), environment(home, { [GENTLE_AI_DEV_BINARY_ENV]: "" })]) {
 		assert.equal(resolveGentleAiDevBinaryOverride(env, PLATFORM), undefined);
 		assert.throws(() => resolveGentleAiBinary(packageRoot, PLATFORM, readFileSync, env), PackageLocalGentleAiBinaryMissingError);
@@ -119,24 +119,24 @@ test("an unset or empty dev-binary environment preserves the package-local resol
 });
 
 test("GENTLE_PI_CONFIG_HOME relocates only the local registration document", async () => {
-	const home = await scratch("gentle-pi-dev-home-");
-	const configHome = await scratch("gentle-pi-dev-config-");
+	const home = await scratch("jero-pi-dev-home-");
+	const configHome = await scratch("jero-pi-dev-config-");
 	assert.equal(gentleAiDevBinaryRegistrationPath(environment(home, { GENTLE_PI_CONFIG_HOME: configHome })), join(configHome, "dev-binary.json"));
 	assert.equal(gentleAiDevBinaryRegistrationPath(environment(home)), join(home, ".pi", "gentle-ai", "dev-binary.json"));
 });
 
 test("malformed registration variants name their local registration path and never fall back", async () => {
-	const bin = await scratch("gentle-pi-dev-bin-");
-	const packageRoot = await scratch("gentle-pi-dev-package-");
+	const bin = await scratch("jero-pi-dev-bin-");
+	const packageRoot = await scratch("jero-pi-dev-package-");
 	const devBinary = writeDevBinary(bin);
 	for (const contents of [
 		"not json at all",
-		`${JSON.stringify({ schema: "gentle-pi.dev-binary/v0", path: devBinary })}\n`,
+		`${JSON.stringify({ schema: "jero-pi.dev-binary/v0", path: devBinary })}\n`,
 		`${JSON.stringify({ schema: GENTLE_AI_DEV_BINARY_REGISTRATION_SCHEMA })}\n`,
 		`${JSON.stringify({ schema: GENTLE_AI_DEV_BINARY_REGISTRATION_SCHEMA, path: "relative/gentle-ai" })}\n`,
 		`${JSON.stringify([devBinary])}\n`,
 	]) {
-		const home = await scratch("gentle-pi-dev-home-");
+		const home = await scratch("jero-pi-dev-home-");
 		const registrationPath = writeRegistration(home, contents);
 		const env = environment(home);
 		assert.throws(() => resolveGentleAiDevBinaryOverride(env, PLATFORM), isOverrideError(registrationPath));
@@ -145,8 +145,8 @@ test("malformed registration variants name their local registration path and nev
 });
 
 test("registered binary replacement is observed on the next resolution", async () => {
-	const home = await scratch("gentle-pi-dev-home-");
-	const bin = await scratch("gentle-pi-dev-bin-");
+	const home = await scratch("jero-pi-dev-home-");
+	const bin = await scratch("jero-pi-dev-bin-");
 	const devBinary = writeDevBinary(bin, "#!/bin/sh\necho 'gentle-ai 9.9.9-dev+build1'\n");
 	writeRegistration(home, registrationDocument(devBinary));
 	const env = environment(home);

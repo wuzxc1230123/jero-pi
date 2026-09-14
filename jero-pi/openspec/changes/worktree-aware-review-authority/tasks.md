@@ -28,7 +28,7 @@ The expanded same-PR scope is explicitly approved. No artificial line cap or new
 
 ## 1. Complete live candidate and reset recovery seams
 
-**Files:** `lib/review-snapshot.ts`, `extensions/gentle-ai.ts`, `tests/review-snapshot.test.ts`, `tests/review-controller.test.ts`.
+**Files:** `lib/review/review-snapshot.ts`, `extensions/jero-ai.ts`, `tests/review-snapshot.test.ts`, `tests/review-controller.test.ts`.
 
 - [x] **RED:** Add ephemeral-binding coverage for repository ID, base tree, complete/current candidate trees, canonical changed paths, and intended-untracked scope, including preservation of the real index and zero retained snapshot/authority mutation. <!-- sdd-owner: implementation -->
 - [x] **GREEN:** Add `LiveReviewCandidateBinding` and missing-reset-state typed mapping without changing `SnapshotV1` or mutating authority before the error is returned. <!-- sdd-owner: implementation -->
@@ -60,7 +60,7 @@ The expanded same-PR scope is explicitly approved. No artificial line cap or new
 
 ## 4. Route controller INSPECT and START by the live candidate
 
-**Files:** `extensions/gentle-ai.ts`, `tests/review-controller.test.ts`.
+**Files:** `extensions/jero-ai.ts`, `tests/review-controller.test.ts`.
 
 - [x] **GREEN:** Add optional policy-bound INSPECT applicability metadata while retaining unfiltered repository-wide inventory and compatibility-first blocking. <!-- sdd-owner: implementation -->
 - [x] **GREEN:** Route linked-worktree path-only matches to terminal reuse and material candidate differences to fresh START; preserve existing receipt behavior. <!-- sdd-owner: implementation -->
@@ -71,7 +71,7 @@ The expanded same-PR scope is explicitly approved. No artificial line cap or new
 
 ## 5. Establish SDD ownership parsing and status accounting
 
-**Files:** `lib/sdd-status.ts`, `tests/sdd-status.test.ts`.
+**Files:** `lib/sdd/sdd-status.ts`, `tests/sdd-status.test.ts`.
 
 - [x] **RED:** Add parser tests for unmarked legacy rows, canonical implementation/parent markers, checked/unchecked combinations, and legacy completion routing to `parent-lifecycle`. <!-- sdd-owner: implementation -->
 - [x] **GREEN:** Add const-derived `SDD_TASK_OWNER`, line-oriented parsing, implementation `taskProgress`, and additive `deferredParentActions`/`taskArtifactErrors` fields in every status constructor. <!-- sdd-owner: implementation -->

@@ -4,24 +4,24 @@ Date: 2026-05-14
 
 ## Scope implemented
 
-- `extensions/gentle-ai.ts`
+- `extensions/jero-ai.ts`
   - Added routing config entry type `{ model?, thinking? }`.
   - Added backward-compatible parser for legacy string config.
   - Persisted config as object entries only when non-empty.
   - Applied both `model` and `thinking` to:
     - project/user agent frontmatter (`model:`, `thinking:`),
     - builtin agents via `.pi/settings.json` overrides.
-  - Extended `/gentle:models` modal:
+  - Extended `/jero:models` modal:
     - row labels now show model + effort,
     - `e` opens effort picker,
     - `i` resets both model and effort to inherit,
     - custom model flow preserves existing `thinking`.
 - `tests/runtime-harness.mjs`
-  - Added RED/GREEN harness scenario for `/gentle:models` save flow.
+  - Added RED/GREEN harness scenario for `/jero:models` save flow.
   - Added legacy string-config startup application assertion (TRIANGULATE).
   - Added builtin worker fixture under temp `pi-subagents` path to validate settings overrides.
 - `README.md`
-  - Updated `/gentle:models` docs to model + effort assignment.
+  - Updated `/jero:models` docs to model + effort assignment.
   - Added config object example and legacy compatibility note.
 
 ## TDD evidence
@@ -132,7 +132,7 @@ pnpm run prepack
 Result:
 
 ```text
-gentle-pi package resource check passed (12 files).
+jero-pi package resource check passed (12 files).
 ```
 
 ## Notes

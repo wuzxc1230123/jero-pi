@@ -1,4 +1,4 @@
-# Proposal: migrate gentle-pi to `review-integration/v2` (v2-only)
+# Proposal: migrate jero-pi to `review-integration/v2` (v2-only)
 
 ## Intent
 
@@ -13,7 +13,7 @@ a dual-lane migration would buy nothing and double the decoder surface permanent
 
 ### In Scope
 - New v2 decoder module; delete `lib/review-integration-v1.ts`, `runtime/review-integration-v1.mjs`, and both v1 tests in the same commit.
-- `lib/native-review-cli.ts`: all six `--contract` call sites plus decoder imports.
+- `lib/native/native-review-cli.ts`: all six `--contract` call sites plus decoder imports.
 - Net-new correction lifecycle: evidence-first ordering, `review capture-evidence` with closed `--outcome`, and the `verification_failed` / `procedural_tooling_failed` / `passed` branches.
 - Bind candidate-view materialization to the v2 collection-input trees and full manifest fields.
 - `scripts/verify-package-files.mjs`: bidirectional directory walk so unlisted `contracts/**` files fail instead of passing silently.
@@ -82,10 +82,10 @@ comparison would accept.
 
 | Area | Impact | Description |
 |------|--------|-------------|
-| `lib/review-integration-v2.ts` | New | v2 decoders, identity, exact-key discipline |
+| `lib/review/review-integration-v2.ts` | New | v2 decoders, identity, exact-key discipline |
 | `lib/review-integration-v1.ts` | Removed | Deleted with its runtime and both tests |
-| `lib/native-review-cli.ts` | Modified | Six `--contract` sites, imports, correction lifecycle |
-| `lib/review-candidate-view.ts` | Modified | v2 descriptor source + field-wise manifest check |
+| `lib/native/native-review-cli.ts` | Modified | Six `--contract` sites, imports, correction lifecycle |
+| `lib/review/review-candidate-view.ts` | Modified | v2 descriptor source + field-wise manifest check |
 | `scripts/verify-package-files.mjs` | Modified | Bidirectional contract directory walk |
 | `scripts/build-git-commit-transaction-runner.mjs` | Modified | `sources` module-name list |
 | `runtime/*.mjs` | Regenerated | Never hand-edited |

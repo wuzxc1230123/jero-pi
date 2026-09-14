@@ -41,9 +41,9 @@ delivery command
 
 | File | Responsibility |
 | --- | --- |
-| `extensions/gentle-ai.ts` | Typed lifecycle consumer, consent relay, and informational controller result. |
-| `lib/native-review-cli.ts` | Exact native command execution and typed decoding. |
-| `lib/review-host-relay.ts` | Opaque provider prompt/result transport. |
+| `extensions/jero-ai.ts` | Typed lifecycle consumer, consent relay, and informational controller result. |
+| `lib/native/native-review-cli.ts` | Exact native command execution and typed decoding. |
+| `lib/review/review-host-relay.ts` | Opaque provider prompt/result transport. |
 | `README.md` | Delivery remains ordinary repository policy. |
 | `docs/native-authority-architecture.md` | Native authority and legacy compatibility ownership. |
 

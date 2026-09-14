@@ -10,7 +10,7 @@ import {
 	OpaquePiReviewerTransportError,
 	resolvePiLaunch,
 	runOpaquePiReviewer,
-} from "../lib/opaque-pi-reviewer-adapter.ts";
+} from "../lib/review/opaque-pi-reviewer-adapter.ts";
 
 const FAKE_PI = `#!/usr/bin/env node
 const fs = require("node:fs");
@@ -64,7 +64,7 @@ interface OpaquePiLog {
 }
 
 function harness(t: test.TestContext, overrides: Record<string, string> = {}): OpaqueHarness {
-	const directory = mkdtempSync(join(tmpdir(), "gentle-pi-opaque-reviewer-"));
+	const directory = mkdtempSync(join(tmpdir(), "jero-pi-opaque-reviewer-"));
 	t.after(() => rmSync(directory, { recursive: true, force: true }));
 	const pi = join(directory, "pi");
 	writeFileSync(pi, FAKE_PI);
@@ -168,7 +168,7 @@ test("the opaque adapter returns typed transport errors for launch, nonzero, emp
 
 test("the opaque adapter leaves no prompt or result file in scratch and reports cleanup failure as transport-only", async (t) => {
 	const fixture = harness(t);
-	const scratchParent = mkdtempSync(join(tmpdir(), "gentle-pi-opaque-reviewer-cleanup-"));
+	const scratchParent = mkdtempSync(join(tmpdir(), "jero-pi-opaque-reviewer-cleanup-"));
 	const originalTmpdir = process.env.TMPDIR;
 	process.env.TMPDIR = scratchParent;
 	try {
@@ -191,7 +191,7 @@ test("the opaque adapter leaves no prompt or result file in scratch and reports 
 
 test("the opaque adapter preserves primary nonzero and timeout errors when scratch cleanup also fails", async (t) => {
 	const fixture = harness(t);
-	const scratchParent = mkdtempSync(join(tmpdir(), "gentle-pi-opaque-reviewer-primary-failure-"));
+	const scratchParent = mkdtempSync(join(tmpdir(), "jero-pi-opaque-reviewer-primary-failure-"));
 	const originalTmpdir = process.env.TMPDIR;
 	process.env.TMPDIR = scratchParent;
 	try {
@@ -225,7 +225,7 @@ test("the opaque adapter preserves primary nonzero and timeout errors when scrat
 });
 
 test("the opaque adapter has no review lifecycle imports or identifiers", () => {
-	const adapterPath = fileURLToPath(new URL("../lib/opaque-pi-reviewer-adapter.ts", import.meta.url));
+	const adapterPath = fileURLToPath(new URL("../lib/review/opaque-pi-reviewer-adapter.ts", import.meta.url));
 	const source = readFileSync(adapterPath, "utf8");
 	assert.doesNotMatch(source, /review-integration|gentle-ai|materialize|submit/i);
 	for (const identifier of ["lineage", "target", "revision", "receipt", "lens", "order", "subject", "schema", "capture", "submission", "status", "model", "provider", "profile"]) {

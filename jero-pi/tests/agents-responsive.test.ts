@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { visibleWidth } from "@earendil-works/pi-tui";
-import { measureAgentsViewLayout } from "../lib/agents-view-layout.ts";
+import { measureAgentsViewLayout } from "../lib/agents/agents-view-layout.ts";
 
 const widths = [0, 1, 2, 11, 12, 59, 60, 90];
 

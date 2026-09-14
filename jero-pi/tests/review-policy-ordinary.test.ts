@@ -10,7 +10,7 @@ import {
 	type CanonicalFrozenRowV1,
 	type ReviewBudgetV1,
 	type ReviewStateV1,
-} from "../lib/review-transaction.ts";
+} from "../lib/review/review-transaction.ts";
 import {
 	RESOLUTION_OUTCOME,
 	applyOrdinaryFix,
@@ -20,14 +20,14 @@ import {
 	recordOrdinaryFinalVerification,
 	recordOrdinaryValidation,
 	resolveOrdinaryEvidence,
-} from "../lib/review-policy-ordinary.ts";
+} from "../lib/review/review-policy-ordinary.ts";
 import {
 	FULL_4R_LENSES,
 	REVIEW_LENS,
 	REVIEW_ROUTE,
 	type ReviewLens,
 	type ReviewRoute,
-} from "../lib/review-triggers.ts";
+} from "../lib/review/review-triggers.ts";
 import { testSnapshot } from "./review-test-fixtures.ts";
 
 const TREE = {

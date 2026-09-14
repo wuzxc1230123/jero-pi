@@ -54,7 +54,7 @@ test("static prompts declare one dynamic Gentle AI RDD ownership boundary", () =
 });
 
 test("rendered parent prompt keeps the RDD boundary while omitting lifecycle mirrors", async () => {
-	const { __testing } = await import("../extensions/gentle-ai.ts");
+	const { __testing } = await import("../extensions/jero-ai.ts");
 	const rendered = __testing.getOrchestratorPrompt();
 	assert.ok(rendered.includes(BOUNDARY));
 	for (const marker of ["Authority-First Terminal Procedure", "reconcile-terminal-mirrors", "next_transition"]) {

@@ -2,15 +2,15 @@
 
 ## Problem
 
-assets/orchestrator.md (22,626 B ≈ 5,650 tokens) is injected ALWAYS-ON into every Pi parent session (extensions/gentle-ai.ts getOrchestratorPrompt :123-133, appended at :2208), while a lazy-load pattern already exists in the same package: the orchestrator's "## SDD Workflow (lazy-loaded)" section points to assets/sdd-orchestrator-workflow.md (12,425 B) by path instead of inlining it.
+assets/orchestrator.md (22,626 B ≈ 5,650 tokens) is injected ALWAYS-ON into every Pi parent session (extensions/jero-ai.ts getOrchestratorPrompt :123-133, appended at :2208), while a lazy-load pattern already exists in the same package: the orchestrator's "## SDD Workflow (lazy-loaded)" section points to assets/sdd-orchestrator-workflow.md (12,425 B) by path instead of inlining it.
 
-gentle-ai applied the same diet to its Claude orchestrator: 7.8KB always-on + 13.8KB lazy file. gentle-pi's equivalent should follow: keep the thin always-on core (delegation triggers, review lens selection pointers, memory contract summary) and move the long-tail detail to lazy-loaded reference files the orchestrator reads on demand.
+gentle-ai applied the same diet to its Claude orchestrator: 7.8KB always-on + 13.8KB lazy file. jero-pi's equivalent should follow: keep the thin always-on core (delegation triggers, review lens selection pointers, memory contract summary) and move the long-tail detail to lazy-loaded reference files the orchestrator reads on demand.
 
 ## Verified facts (2026-07-08 audit)
 
 - orchestrator.md sections include: Identity Contract (:5-21), Language Boundary (:28-42), delegation rules, Mandatory Delegation Triggers, Review Lens Selection / 4R Review Triggers, Memory Contract (:206-243), SDD Workflow lazy pointer, and more (inventory the full section list).
 - The lazy workflow file (12.4KB) is NOT double-injected — the pointer pattern works today.
-- Always-on parent injection totals ~24.7KB from gentle-pi alone (~6,170 tokens); orchestrator.md is 92% of it.
+- Always-on parent injection totals ~24.7KB from jero-pi alone (~6,170 tokens); orchestrator.md is 92% of it.
 
 ## Decision space for proposal
 

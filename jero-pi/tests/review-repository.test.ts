@@ -4,9 +4,9 @@ import { cpSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import test from "node:test";
-import { resolveRepositoryAuthorityV1, reviewGitEnvironment, setReviewRepositoryIdentityRetryHookForTesting } from "../lib/review-repository.ts";
-import { REVIEW_MODE, ReviewTransactionStore, createReviewState, setReviewMutationLockPlatformForTesting } from "../lib/review-transaction.ts";
-import { REVIEW_LENS, REVIEW_ROUTE } from "../lib/review-triggers.ts";
+import { resolveRepositoryAuthorityV1, reviewGitEnvironment, setReviewRepositoryIdentityRetryHookForTesting } from "../lib/review/review-repository.ts";
+import { REVIEW_MODE, ReviewTransactionStore, createReviewState, setReviewMutationLockPlatformForTesting } from "../lib/review/review-transaction.ts";
+import { REVIEW_LENS, REVIEW_ROUTE } from "../lib/review/review-triggers.ts";
 import { qualifiedReviewLockPlatform, testSnapshot } from "./review-test-fixtures.ts";
 
 setReviewMutationLockPlatformForTesting(qualifiedReviewLockPlatform());
@@ -16,7 +16,7 @@ function git(cwd: string, ...args: string[]): string {
 }
 
 function repository(t: test.TestContext): string {
-	const parent = mkdtempSync(join(tmpdir(), "gentle-pi-review-repository-"));
+	const parent = mkdtempSync(join(tmpdir(), "jero-pi-review-repository-"));
 	const root = join(parent, "repo");
 	mkdirSync(root);
 	git(root, "init", "-b", "main");
@@ -102,7 +102,7 @@ test("linked worktrees resolve one common-directory authority", (t) => {
 });
 
 test("non-Git directories and empty repositories fail closed", (t) => {
-	const outside = mkdtempSync(join(tmpdir(), "gentle-pi-not-git-"));
+	const outside = mkdtempSync(join(tmpdir(), "jero-pi-not-git-"));
 	t.after(() => rmSync(outside, { recursive: true, force: true }));
 	assert.throws(() => resolveRepositoryAuthorityV1(outside), /Git common directory|repository/i);
 	git(outside, "init");
@@ -141,7 +141,7 @@ test("a store transplanted into an unrelated repository fails closed", (t) => {
 	const sourceCommonDirectory = git(source, "rev-parse", "--path-format=absolute", "--git-common-dir");
 	const sourceStoreRoot = join(sourceCommonDirectory, "gentle-ai", "reviews");
 
-	const otherParent = mkdtempSync(join(tmpdir(), "gentle-pi-review-repository-unrelated-"));
+	const otherParent = mkdtempSync(join(tmpdir(), "jero-pi-review-repository-unrelated-"));
 	t.after(() => rmSync(otherParent, { recursive: true, force: true }));
 	const other = join(otherParent, "repo");
 	mkdirSync(other);

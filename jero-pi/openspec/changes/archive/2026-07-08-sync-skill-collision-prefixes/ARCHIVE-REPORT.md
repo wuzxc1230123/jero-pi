@@ -18,4 +18,4 @@ This change merges FIRST: `skills/judgment-day/SKILL.md` line 2 (frontmatter) is
 
 ## Follow-ups
 
-None. The pre-existing bare-name identifiers in lib/review-triggers.ts (KNOWN_AGENTS namespace, mirrors gentle-ai's triggers.go) are intentionally out of scope and documented in the design.
+None. The pre-existing bare-name identifiers in lib/review/review-triggers.ts (KNOWN_AGENTS namespace, mirrors gentle-ai's triggers.go) are intentionally out of scope and documented in the design.

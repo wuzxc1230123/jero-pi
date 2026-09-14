@@ -15,7 +15,7 @@ import {
 	decodeReviewRepairV2,
 	decodeReviewStartV3,
 	decodeReviewStatusV3,
-} from "../lib/review-integration-v2.ts";
+} from "../lib/review/review-integration-v2.ts";
 
 const fixtureRoot = join(process.cwd(), "contracts", "review-integration", "v2", "fixtures");
 const devFixtureRoot = join(process.cwd(), "tests", "fixtures", "devbinary");

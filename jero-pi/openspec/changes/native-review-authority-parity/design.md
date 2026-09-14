@@ -31,10 +31,10 @@ The required upstream follow-up is a versioned, non-mutating JSON command that d
 ## Architecture and data flow
 
 ```text
-Pi gentle_review / gentle:sdd-status
+Pi gentle_review / jero:sdd-status
                          |
                          v
-extensions/gentle-ai.ts: explicit route selection and public envelope mapping
+extensions/jero-ai.ts: explicit route selection and public envelope mapping
        |                  |                         |
        |                  |                         +--> explicit Judgment Day -> graph-v1 review evidence
        |                  +--> known Pi ordinary -> existing read/export; mutation rejected
@@ -42,7 +42,7 @@ extensions/gentle-ai.ts: explicit route selection and public envelope mapping
        +--> supported new ordinary operation
                          |
                          v
-lib/native-review-cli.ts: version capability + argv + strict decoder
+lib/native/native-review-cli.ts: version capability + argv + strict decoder
                          |
                          v
 Injected ExecFileAdapter(file, arguments, cwd, timeout, maxBuffer)
@@ -69,7 +69,7 @@ Native `start` is relied on for its own content-derived lineage/CAS behavior; Pi
 
 ### Files and symbols
 
-Create `lib/native-review-cli.ts` with these exported symbols:
+Create `lib/native/native-review-cli.ts` with these exported symbols:
 
 - `NATIVE_REVIEW_OPERATION` and const-derived `NativeReviewOperation`;
 - `NATIVE_REVIEW_ERROR_CODE` and const-derived `NativeReviewErrorCode`;
@@ -195,7 +195,7 @@ Pre-launch validation failures report `mutationOutcome: "none"`. Timeout, signal
 
 ## Controller integration and public envelopes
 
-### `extensions/gentle-ai.ts` symbols
+### `extensions/jero-ai.ts` symbols
 
 Refactor without splitting authority logic across two controllers:
 
@@ -242,14 +242,14 @@ Binding is a direct call to the native authority owner, not a post-finalize comp
 6. **Pre-call and post-call failures have different call-count semantics.** A request-known validation failure proves no native bind call. Once native bind is invoked, malformed output or any result identity mismatch is committed-or-ambiguous: the bind-call counter has incremented, readiness remains blocked, and Pi cannot claim that no native mutation occurred.
 7. **Recovery preserves semantics.** A stale or native-rejected CAS remains blocked. Lost output, malformed output, and post-call identity mismatch permit only exact-operation replay with the same cwd, change, lineage, and expected revision, or an explicit supported native recovery path. Pi must not retry with different semantics, guess a revision, fall back to Pi authority, copy records, start/finalize another lineage, or infer readiness.
 
-Change `lib/sdd-status.ts` by replacing callback-only authority readiness for the new native path with flat data:
+Change `lib/sdd/sdd-status.ts` by replacing callback-only authority readiness for the new native path with flat data:
 
 - retain `SddReviewAuthorityOverlay` for existing legacy recovery compatibility;
 - add `NativeReviewReadinessOverlay` with `expected`, `ready`, `lineageId`, `bindingRevision`, and `reason`;
 - add `nativeReviewReadiness?: NativeReviewReadinessOverlay` to `ResolveSddStatusOptions`;
 - update `withRecoveryBlock` and `resolveSddStatus` to apply the native overlay as data, never as a process callback.
 
-`extensions/gentle-ai.ts:resolveControllerSddStatus` becomes asynchronous for an exact OpenSpec change. It invokes `NativeReviewCliV210.sddStatus`, maps only decoded bound readiness into `NativeReviewReadinessOverlay`, then calls local `resolveSddStatus`. Local proposal/spec/design/task/collision/verification rules still apply. Native failure, missing/stale binding, changed authority, wrong change/path, non-ready review evidence, or malformed status adds `resolve-review:` to `blockedReasons` and selects `resolve-review`.
+`extensions/jero-ai.ts:resolveControllerSddStatus` becomes asynchronous for an exact OpenSpec change. It invokes `NativeReviewCliV210.sddStatus`, maps only decoded bound readiness into `NativeReviewReadinessOverlay`, then calls local `resolveSddStatus`. Local proposal/spec/design/task/collision/verification rules still apply. Native failure, missing/stale binding, changed authority, wrong change/path, non-ready review evidence, or malformed status adds `resolve-review:` to `blockedReasons` and selects `resolve-review`.
 
 Engram/none status remains non-authoritative and does not invoke native OpenSpec status. Bound SDD status never services general `gentle_review STATUS` or claimant inventory.
 
@@ -263,9 +263,9 @@ Version success, child-process success, actor output, start/finalize results, bi
 
 | File | Symbols/changes | Tests |
 | --- | --- | --- |
-| `lib/native-review-cli.ts` | New process adapter, capability matrix, `NativeReviewCliV210`, `NativeStartRequest.policyPath?` argv with no hash alias, four-field bind request/argv, strict result-only decoders, finalize staging, typed errors | `tests/native-review-cli.test.ts`; fixtures under `tests/fixtures/native-review-cli/v2.1.0/` |
-| `extensions/gentle-ai.ts` | `createGentleAiExtension`, async `executeReviewControllerOperation`, route-specific native START parsing, repository-local policy-path validation, public description/mappers, asymmetric bind precondition/result handling without an approval cache, and async `resolveControllerSddStatus`; delivery commands remain outside this controller | `tests/review-controller-native-routing.test.ts`, `tests/review-controller.test.ts`, `tests/gentle-ai.test.ts` |
-| `lib/sdd-status.ts` | `NativeReviewReadinessOverlay`, data-only readiness merge while preserving `SddReviewAuthorityOverlay` | `tests/sdd-status.test.ts` |
+| `lib/native/native-review-cli.ts` | New process adapter, capability matrix, `NativeReviewCliV210`, `NativeStartRequest.policyPath?` argv with no hash alias, four-field bind request/argv, strict result-only decoders, finalize staging, typed errors | `tests/native-review-cli.test.ts`; fixtures under `tests/fixtures/native-review-cli/v2.1.0/` |
+| `extensions/jero-ai.ts` | `createGentleAiExtension`, async `executeReviewControllerOperation`, route-specific native START parsing, repository-local policy-path validation, public description/mappers, asymmetric bind precondition/result handling without an approval cache, and async `resolveControllerSddStatus`; delivery commands remain outside this controller | `tests/review-controller-native-routing.test.ts`, `tests/review-controller.test.ts`, `tests/jero-ai.test.ts` |
+| `lib/sdd/sdd-status.ts` | `NativeReviewReadinessOverlay`, data-only readiness merge while preserving `SddReviewAuthorityOverlay` | `tests/sdd-status.test.ts` |
 | Existing compact/graph modules | No format or mutation changes; exercised as compatibility fixtures | Existing `tests/review-compact-gate.test.ts`, `tests/review-transaction.test.ts`, and graph/receipt suites |
 
 Focused test cases:

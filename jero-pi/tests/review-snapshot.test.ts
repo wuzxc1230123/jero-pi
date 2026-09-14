@@ -22,13 +22,13 @@ import {
 	type CaptureReviewSnapshotOptions,
 	type ReviewProjectionV1,
 	type SnapshotV1,
-} from "../lib/review-snapshot.ts";
+} from "../lib/review/review-snapshot.ts";
 import {
 	REVIEW_MODE,
 	createReviewState,
 	type ReviewBudgetV1,
-} from "../lib/review-transaction.ts";
-import { REVIEW_LENS, REVIEW_ROUTE } from "../lib/review-triggers.ts";
+} from "../lib/review/review-transaction.ts";
+import { REVIEW_LENS, REVIEW_ROUTE } from "../lib/review/review-triggers.ts";
 
 function judgmentDayBudget(): ReviewBudgetV1 {
 	return {
@@ -61,7 +61,7 @@ function createRepository(t: test.TestContext): {
 	repository: string;
 	git: (...args: string[]) => string;
 } {
-	const parent = realpathSync(mkdtempSync(join(tmpdir(), "gentle-pi-snapshot-")));
+	const parent = realpathSync(mkdtempSync(join(tmpdir(), "jero-pi-snapshot-")));
 	const repository = join(parent, "repo");
 	mkdirSync(repository);
 	t.after(() => rmSync(parent, { recursive: true, force: true }));
@@ -79,7 +79,7 @@ function createRepository(t: test.TestContext): {
 		"-c",
 		"user.name=Gentle Pi Tests",
 		"-c",
-		"user.email=gentle-pi@example.invalid",
+		"user.email=jero-pi@example.invalid",
 		"commit",
 		"-m",
 		"base",

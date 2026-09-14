@@ -40,7 +40,7 @@ sees it*. A second parser could drift and pass while the loader disagrees.
 `:308` (`judgment-day` in the 4R Review Triggers section) unchanged.
 **Alternatives considered**: Rename `:308` too.
 **Rationale**: Line 308 documents the review-trigger **agent identifier** namespace
-that mirrors `lib/review-triggers.ts` / `triggers.go` — explicitly out of scope
+that mirrors `lib/review/review-triggers.ts` / `triggers.go` — explicitly out of scope
 (proposal §Out of Scope) and owned by `port-review-ledger-contract`. Renaming it
 alone would desync prose from the code identifier.
 
@@ -66,7 +66,7 @@ alone would desync prose from the code identifier.
 | `tests/skill-collision-prefixes.test.ts` | Create | Regression test (below) |
 
 **Explicitly NOT changed** (out of scope, verified): `scripts/verify-package-files.mjs:38-47`
-(directory paths, dirs unchanged), `lib/review-triggers.ts:69,157` and
+(directory paths, dirs unchanged), `lib/review/review-triggers.ts:69,157` and
 `tests/review-triggers.test.ts:154,211` (agent identifiers mirroring `triggers.go`),
 `assets/orchestrator.md:308` (trigger identifier). No matches in `assets/agents/**`,
 `assets/chains/**`, `docs/**`, `assets/sdd-orchestrator-workflow.md` (grep-verified).

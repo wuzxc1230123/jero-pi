@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import * as nativeReviewCli from "../lib/native-review-cli.ts";
+import * as nativeReviewCli from "../lib/native/native-review-cli.ts";
 import {
 	CompactReviewContractError,
 	parseNativeCompactFinalizeInput,
 	toNativeValidatorDocument,
-} from "../lib/review-compact-contract.ts";
+} from "../lib/review/review-compact-contract.ts";
 
 const REQUEST_HASH = "a".repeat(64);
 

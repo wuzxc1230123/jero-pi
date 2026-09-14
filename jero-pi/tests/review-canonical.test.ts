@@ -4,7 +4,7 @@ import {
 	canonicalJsonV1,
 	domainHashV1,
 	parseCanonicalJsonV1,
-} from "../lib/review-canonical.ts";
+} from "../lib/review/review-canonical.ts";
 
 test("canonical JSON has stable bytes and domain hashes", () => {
 	const left = { zebra: -0, omitted: undefined, nested: { b: true, a: "é" } };

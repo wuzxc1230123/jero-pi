@@ -37,7 +37,7 @@ Use separate reducers over atomic Git-directory storage. Persist a request/resul
 
 | Area | Impact |
 |---|---|
-| `lib/review-*.ts`, `extensions/gentle-ai.ts` | New/modified |
+| `lib/review-*.ts`, `extensions/jero-ai.ts` | New/modified |
 | Canonical specs, `assets/`, `skills/`, `README.md` | Modified |
 | `tests/` | New/modified |
 

@@ -9,7 +9,7 @@ executive_summary:
 
 validation_evidence:
 
-- Code inspection: `extensions/gentle-ai.ts`
+- Code inspection: `extensions/jero-ai.ts`
   - `ModelPanelResult` custom branch includes `config: AgentModelConfig`.
   - `SddModelPanel` clones initial entries with `cloneModelConfig(initialConfig)`.
   - Custom exits from both the agent list shortcut and model picker return `{ type: "custom", agent, config: this.draft }`.
@@ -23,7 +23,7 @@ validation_evidence:
   - Runtime harness completed successfully.
 - Command: `pnpm run prepack` — PASS
   - Re-ran `pnpm test` successfully.
-  - Package resource check passed: `gentle-pi package resource check passed (12 files).`
+  - Package resource check passed: `jero-pi package resource check passed (12 files).`
 
 findings_blockers:
 
@@ -53,7 +53,7 @@ risks:
 next_recommended:
 
 - Proceed to archive/merge readiness if the parent accepts the noted review-workload and manual-smoke-test risks.
-- Optional before merge: run a manual `/gentle:models` TUI smoke test for `e`, `c`, `i`, and save interactions.
+- Optional before merge: run a manual `/jero:models` TUI smoke test for `e`, `c`, `i`, and save interactions.
 - Review README diff separately to exclude or intentionally accept unrelated documentation changes.
 
 skill_resolution: injected

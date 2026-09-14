@@ -1,4 +1,4 @@
-# Apply Progress: Port the review-ledger contract into gentle-pi
+# Apply Progress: Port the review-ledger contract into jero-pi
 
 **Mode**: Strict TDD (RED → GREEN → REFACTOR)
 **Status**: 12/12 tasks complete. Ready for verify.

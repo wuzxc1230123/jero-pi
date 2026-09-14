@@ -94,15 +94,15 @@ For every unit:
 ### 2.2 RED: require the complete producer contract and no status-to-continue fallback
 - [x] **Start → end:** Start with the baseline; end with failing cases for all emitted action tokens, seven dependencies, optional four instruction groups, nullable discovery, wrong identity, malformed/unknown action, misleading prose, and separate status/continue calls.
 
-  - **Paths:** proposed `tests/native-review-cli-sdd-status-v2.test.ts`, `tests/sdd-status-continue.test.ts`; `tests/gentle-agents.test.ts`.
+  - **Paths:** proposed `tests/native-review-cli-sdd-status-v2.test.ts`, `tests/sdd-status-continue.test.ts`; `tests/jero-agents.test.ts`.
   - **Depends on:** 2.1 and AI unit 1 producer fixture. **Forecast:** provisional 110–145 Pi unit 1 lines.
-  - **Focused commands (future):** 2.1 command plus `node --experimental-strip-types --test tests/gentle-agents.test.ts`; record RED first.
+  - **Focused commands (future):** 2.1 command plus `node --experimental-strip-types --test tests/jero-agents.test.ts`; record RED first.
   - **Managed/native boundary:** `handleSddStatusCommand` cannot mutate; expressly authorized continuation alone calls mutating adapter. Read-only/excluded-marker human scope suppresses it; marker-only planning authorization may call without source roots. **Independent proof:** malformed/prose routes never launch phases. **Rollback:** only RED cases.
 
 ### 2.3 GREEN/TRIANGULATE/REFACTOR: cut live reads to native v2 and keep handlers distinct
 - [x] **Start → end:** Start from 2.2 RED; end with native v2 decode/rendering and `sddStatus` read-only, a narrow authorized `sddContinue` adapter call, and no live local readiness reconstruction, `resolve-via-engram`, prefixed-token inference, automatic fallback, or `instructions` alias.
 
-  - **Paths:** `lib/native-review-cli.ts`, `lib/sdd-status.ts`, `lib/sdd-preflight.ts`, `extensions/gentle-ai.ts`, `assets/agents/sdd-apply.md`; retain 2.1–2.2 tests.
+  - **Paths:** `lib/native/native-review-cli.ts`, `lib/sdd/sdd-status.ts`, `lib/sdd/sdd-preflight.ts`, `extensions/jero-ai.ts`, `assets/agents/sdd-apply.md`; retain 2.1–2.2 tests.
   - **Depends on:** 2.2; synchronize with independently verified AI unit 1 before tuple acceptance. **Forecast:** provisional 135–170 lines including guidance in Pi unit 1.
   - **Focused commands (future):** 2.2 commands, then package-declared `pnpm test`.
   - **Managed/native boundary:** status/startup use native status only; authorized continue alone invokes native continue, displays preparation text without executing it. **Independent proof:** verifier runs handlers against AI unit 1 binary/fixture and checks logs for no fallback/mutation. **Rollback:** consumer/handler/asset/tests together to proven tuple, no dual-live reader.
@@ -124,7 +124,7 @@ AI unit 2's native portion of 3.1 is accepted externally. It proves native admis
 ### 3.2 RED/GREEN/TRIANGULATE/REFACTOR: provision only selected admitted routes while retaining authorized persistence
 - [x] **Start → end:** Start with failing cases for documentation/open-web exact selected grants, inactive/missing extension tools, separately authorized read/write/Engram persistence, narrowed OpenSpec path, wrong worktree, and denial persistence; also require missing-tool denial → corrected capability/artifact facts → continuation with the **same** bounded selected-store path/scope, never a broadened or replacement scope. End with existing launch data carrying selected classes/per-class grants and actual extension selection, with child-local inventory recheck.
 
-  - **Paths:** `lib/sdd-research-capabilities.ts`, `extensions/gentle-agents.ts`, `lib/agents-runner.ts`, `assets/agents/sdd-research.md`; retain 3.1 tests.
+  - **Paths:** `lib/sdd/sdd-research-capabilities.ts`, `extensions/jero-agents.ts`, `lib/agents/agents-runner.ts`, `assets/agents/sdd-research.md`; retain 3.1 tests.
   - **Depends on:** 3.1 and independently verified Pi unit 1. **Forecast:** provisional 235–325 Pi unit 2 lines.
   - **Focused commands (future):** 3.1 Pi command first demonstrates RED; after GREEN, package-declared `pnpm test`. Verify named continuation retains identical bounded scope through denial/correction.
   - **Managed/native boundary:** fixed extension selection, selected tools callable; each absent/inactive route blocks collection/proposal while authorized selected-store persistence remains. **Independent proof:** inspect actual child allowlist, loaded extension selection, both OpenSpec/Engram locator readbacks, not self-report. **Rollback:** selected-class plumbing/research asset/tests together; retain intent/evidence, never broaden roots/switch stores.
@@ -152,10 +152,10 @@ Tasks 4.1–4.2 are accepted external AI unit 3 facts. The bounded R3 marker-det
 ### 4.3 RED/GREEN/TRIANGULATE/REFACTOR: give the managed child typed remediation and existing compact bracket transport
 - [x] **Start → end:** Start with RED tests requiring `remediate` to refuse if unsupported, carry `failedEvidenceRevision` unchanged when supported, acquire once, and settle pass/fail/interruption through existing compact JSON; end with narrow adapter methods and runner finalization using retained session/task history, not a second ledger.
 
-  - **Paths:** `lib/native-review-cli.ts`, `extensions/gentle-agents.ts`, `lib/agents-runner.ts`, `lib/sdd-preflight.ts:25–64,760–769` (`ASSET_OWNER_BY_KEY`), proposed `assets/agents/sdd-remediate.md`; `tests/gentle-agents.test.ts`, proposed `tests/sdd-managed-runtime-settlement.test.ts`.
+  - **Paths:** `lib/native/native-review-cli.ts`, `extensions/jero-agents.ts`, `lib/agents/agents-runner.ts`, `lib/sdd/sdd-preflight.ts:25–64,760–769` (`ASSET_OWNER_BY_KEY`), proposed `assets/agents/sdd-remediate.md`; `tests/jero-agents.test.ts`, proposed `tests/sdd-managed-runtime-settlement.test.ts`.
   - **Depends on:** independently verified 4.2 and preceding Pi units, including Pi unit 1. **Forecast:** provisional 330–400 Pi unit 3 lines; explain/reforecast cohesive overruns.
   - **Registration/install proof:** RED requires absent remediation asset rejection by owner registry/install path; GREEN registers through existing `ASSET_OWNER_BY_KEY`/installation and proves installed content is selected actor before launch. 5.1 is final re-proof, not first registration.
-  - **Focused commands (future):** `node --experimental-strip-types --test tests/gentle-agents.test.ts tests/sdd-managed-runtime-settlement.test.ts`, then `pnpm test`.
+  - **Focused commands (future):** `node --experimental-strip-types --test tests/jero-agents.test.ts tests/sdd-managed-runtime-settlement.test.ts`, then `pnpm test`.
   - **Managed/native boundary:** post-acquire spawn failure settles interrupted with process/cleanup; absent ownership/install refuses before launch; lost settle reply uses same token/ID/payload, no rerun/double charge. **Independent proof:** installed owner/manifest, native record count/charges/evidence binding; no verifier-success prerequisite for failure/interruption. **Rollback:** adapter/runner/preflight registration-install/typed asset/tests together; retain records, refuse unsupported consumers.
 
 Task 4.3 is implemented as Pi-owned unit 3. Asset ownership/install registration and focused proof are included; independent review is parent-owned, and task 5.1 remains the final tuple re-proof.
@@ -167,7 +167,7 @@ The five frozen unit-3 critical findings are corrected under `pi-unit3-review-co
 ### 5.1 RED/GREEN/TRIANGULATE/REFACTOR: prove the real producer → Pi → managed-child tuple
 - [x] **Start → end:** Start with a failing controlled boundary case using the built AI binary after its internal units pass independent verification, fixed Pi extension selection, and installed assets; end with a managed child that receives native v2 action/context, selected research/persistence tools, and typed remediation support, or fails safely before work when an asset/provisioning capability is deliberately absent.
 
-  - **Paths:** `extensions/gentle-ai.ts`, `assets/agents/sdd-apply.md`, `assets/agents/sdd-research.md`, proposed `assets/agents/sdd-remediate.md`, `lib/agents-runner.ts`; proposed `tests/sdd-native-managed-uptake.test.ts`. 4.3 already owns/proves remediation registration/install.
+  - **Paths:** `extensions/jero-ai.ts`, `assets/agents/sdd-apply.md`, `assets/agents/sdd-research.md`, proposed `assets/agents/sdd-remediate.md`, `lib/agents/agents-runner.ts`; proposed `tests/sdd-native-managed-uptake.test.ts`. 4.3 already owns/proves remediation registration/install.
   - **Depends on:** independently verified AI 1–3 and Pi 1–3 including 4.3. Pi unit 4 carries only required final wiring/test adjustments. **Forecast:** provisional 210–290 lines; final PR accounting separate.
   - **Focused commands (future):** package-declared `pnpm run test:dev-binary`; `node --experimental-strip-types --test tests/sdd-native-managed-uptake.test.ts`. Record exact binary paths/build identities and installed manifest/content.
   - **Managed/native boundary:** scope-authorized producer → Pi → child proves read-only/excluded-marker adapter suppression; supported action, denial/partial persistence, stale/wrong-worktree refusal, remediation binding and incomplete-asset refusal.

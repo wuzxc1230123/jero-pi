@@ -5,8 +5,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { createGentleAiExtension } from "../extensions/gentle-ai.ts";
-import type { NativeReviewCli, NativeReviewStatusResult } from "../lib/native-review-cli.ts";
+import { createGentleAiExtension } from "../extensions/jero-ai.ts";
+import type { NativeReviewCli, NativeReviewStatusResult } from "../lib/native/native-review-cli.ts";
 
 // Issue #184: gentle-ai 2.1.8 leaves review-transactions/v2/LOCK behind after
 // ORDINARY successful operations and inventories it as {"status":"released"}.
@@ -47,7 +47,7 @@ function context(cwd: string): ExtensionContext {
 }
 
 function repository(t: test.TestContext): string {
-	const cwd = realpathSync(mkdtempSync(join(tmpdir(), "gentle-pi-lock-status-")));
+	const cwd = realpathSync(mkdtempSync(join(tmpdir(), "jero-pi-lock-status-")));
 	t.after(() => rmSync(cwd, { recursive: true, force: true }));
 	execFileSync("git", ["init", "-b", "main"], { cwd });
 	writeFileSync(join(cwd, "app.ts"), "export const value = 1;\n");

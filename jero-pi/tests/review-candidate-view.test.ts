@@ -21,15 +21,15 @@ import {
 	injectReviewCandidateView,
 	readCandidateContextManifestPage,
 	type NativeCandidateProjectionDescriptor,
-} from "../lib/review-candidate-view.ts";
-import { assertCandidateOwnerParent, assertTrustedWindowsOwner, prepareCandidateOwnerParent, setWindowsAclAuthorityForTesting, validatePrivateWindowsDacl, validatePrivateWindowsOwner, WindowsDaclValidationError, WindowsOwnerValidationError } from "../lib/review-candidate-view-owner.ts";
+} from "../lib/review/review-candidate-view.ts";
+import { assertCandidateOwnerParent, assertTrustedWindowsOwner, prepareCandidateOwnerParent, setWindowsAclAuthorityForTesting, validatePrivateWindowsDacl, validatePrivateWindowsOwner, WindowsDaclValidationError, WindowsOwnerValidationError } from "../lib/review/review-candidate-view-owner.ts";
 
 function git(cwd: string, ...arguments_: string[]): string {
 	return execFileSync("git", arguments_, { cwd, encoding: "utf8" }).trim();
 }
 
 function repository(t: test.TestContext): string {
-	const cwd = mkdtempSync(join(tmpdir(), "gentle-pi-candidate-view-"));
+	const cwd = mkdtempSync(join(tmpdir(), "jero-pi-candidate-view-"));
 	t.after(() => {
 		if (process.platform !== "win32") execFileSync("chmod", ["-R", "u+rwx", cwd]);
 		rmSync(cwd, { recursive: true, force: true });
@@ -189,7 +189,7 @@ test("private candidate owner revalidates every Windows ancestor replacement bou
 });
 
 test("private candidate owner rejects a controlled foreign Windows owner", { skip: process.platform !== "win32" }, (t) => {
-	const path = mkdtempSync(join(tmpdir(), "gentle-pi-foreign-owner-"));
+	const path = mkdtempSync(join(tmpdir(), "jero-pi-foreign-owner-"));
 	t.after(() => rmSync(path, { recursive: true, force: true }));
 	try {
 		execFileSync(realpathSync.native("\\\\?\\GLOBALROOT\\SystemRoot\\System32\\icacls.exe"), [path, "/setowner", "*S-1-5-32-545"], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
@@ -257,7 +257,7 @@ test("candidate contributor root accepts canonical Windows Git path spelling", {
 
 test("private candidate owner ignores a spoofed SystemRoot when invoking Windows ACL tools", { skip: process.platform !== "win32" }, (t) => {
 	const originalSystemRoot = process.env.SystemRoot;
-	const spoofedSystemRoot = join(tmpdir(), "gentle-pi-spoofed-SystemRoot");
+	const spoofedSystemRoot = join(tmpdir(), "jero-pi-spoofed-SystemRoot");
 	process.env.SystemRoot = spoofedSystemRoot;
 	t.after(() => {
 		if (originalSystemRoot === undefined) delete process.env.SystemRoot;
@@ -854,7 +854,7 @@ function emptyTreeOf(cwd: string): string {
 }
 
 function unbornRepository(t: test.TestContext, stage = true): string {
-	const cwd = mkdtempSync(join(tmpdir(), "gentle-pi-candidate-view-unborn-"));
+	const cwd = mkdtempSync(join(tmpdir(), "jero-pi-candidate-view-unborn-"));
 	t.after(() => rmSync(cwd, { recursive: true, force: true }));
 	git(cwd, "init", "-b", "main");
 	git(cwd, "config", "user.name", "Candidate Test");
@@ -1112,7 +1112,7 @@ test("candidate registry still fails closed rebinding the same lineage to genuin
 // gentle-pi#323: `createOrReuse` reuses whatever view a replay key maps to,
 // with no awareness of live candidate content -- a content-independent key
 // reuses a stale view even after the candidate content it was frozen from
-// has changed. The fix lives at the START call site (extensions/gentle-ai.ts),
+// has changed. The fix lives at the START call site (extensions/jero-ai.ts),
 // which now folds the current candidate tree into the replay key; this test
 // documents both the registry's plain-key reuse contract and that folding
 // content identity into the key produces a fresh view once content changes.
@@ -1137,7 +1137,7 @@ test("candidate registry reuses a replay-keyed view verbatim regardless of live 
 test("candidate registry rejects a lineage target whose authorized symlink was replaced", (t) => {
 	const root = repository(t);
 	const replacement = repository(t);
-	const alias = join(tmpdir(), `gentle-pi-candidate-alias-${process.pid}-${Date.now()}`);
+	const alias = join(tmpdir(), `jero-pi-candidate-alias-${process.pid}-${Date.now()}`);
 	t.after(() => rmSync(alias, { recursive: true, force: true }));
 	symlinkSync(root, alias, "dir");
 	const registry = new CandidateViewRegistry();
@@ -2030,7 +2030,7 @@ test("dispatch restore removes a registered projection when materialization fail
 });
 
 test("candidate root resolution drift is exposed as a typed candidate-view error", () => {
-	const missingRoot = join(tmpdir(), `gentle-pi-missing-root-${process.pid}-${Date.now()}`);
+	const missingRoot = join(tmpdir(), `jero-pi-missing-root-${process.pid}-${Date.now()}`);
 	assert.throws(
 		() => new CandidateViewRegistry().hasCurrentBinding(missingRoot),
 		(error: unknown) => error instanceof CandidateViewError && error.reason === "contributor-root-unresolvable",
@@ -2506,7 +2506,7 @@ test("candidate view fails closed when the unborn ref probe exits with an unexpe
 });
 
 test("candidate view treats an unborn sha256 repository base as the repository-native sha256 empty tree", (t) => {
-	const contributorRoot = mkdtempSync(join(tmpdir(), "gentle-pi-candidate-view-unborn-sha256-"));
+	const contributorRoot = mkdtempSync(join(tmpdir(), "jero-pi-candidate-view-unborn-sha256-"));
 	t.after(() => rmSync(contributorRoot, { recursive: true, force: true }));
 	try {
 		git(contributorRoot, "init", "--object-format=sha256", "-b", "main");

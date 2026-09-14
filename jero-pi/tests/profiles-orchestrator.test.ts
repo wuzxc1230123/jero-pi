@@ -8,10 +8,10 @@ import {
 	parseOrchestratorModelRef,
 	readOrchestratorSettings,
 	restoreOrchestratorSettings,
-} from "../lib/profiles-orchestrator.ts";
+} from "../lib/core/profiles-orchestrator.ts";
 
 function fixture(t: test.TestContext) {
-	const root = mkdtempSync(join(tmpdir(), "gentle-pi-orchestrator-"));
+	const root = mkdtempSync(join(tmpdir(), "jero-pi-orchestrator-"));
 	t.after(() => rmSync(root, { recursive: true, force: true }));
 	return { root, settingsPath: join(root, "settings.json") };
 }

@@ -2,13 +2,13 @@
 
 ## Problem
 
-`gentle-pi` has SDD phase agents and OpenSpec-style directories, but its current SDD assets and examples do not consistently encode the spec-evolution model already accepted in `gentle-ai`: canonical file-backed specs in `openspec/specs/`, change deltas in `openspec/changes/{change}/specs/{domain}/spec.md`, and archive-time merge into canonical specs.
+`jero-pi` has SDD phase agents and OpenSpec-style directories, but its current SDD assets and examples do not consistently encode the spec-evolution model already accepted in `gentle-ai`: canonical file-backed specs in `openspec/specs/`, change deltas in `openspec/changes/{change}/specs/{domain}/spec.md`, and archive-time merge into canonical specs.
 
-This creates drift between `gentle-pi` and `gentle-ai`, especially around spec updates, archive semantics, legacy flat `spec.md` artifacts, and stale installed `.pi` assets.
+This creates drift between `jero-pi` and `gentle-ai`, especially around spec updates, archive semantics, legacy flat `spec.md` artifacts, and stale installed `.pi` assets.
 
 ## Goals
 
-- Port the accepted `gentle-ai` OpenSpec convention into `gentle-pi` SDD assets.
+- Port the accepted `gentle-ai` OpenSpec convention into `jero-pi` SDD assets.
 - Make `openspec`/`both` (hybrid) modes treat `openspec/specs/` as the canonical source of truth.
 - Make change specs use `openspec/changes/{change}/specs/{domain}/spec.md`.
 - Document that `engram` mode is working memory only and intentionally has no canonical spec merge layer.
@@ -27,7 +27,7 @@ This creates drift between `gentle-pi` and `gentle-ai`, especially around spec u
 - `assets/agents/sdd-archive.md`
 - `assets/agents/sdd-apply.md` and `assets/agents/sdd-verify.md` only if artifact naming compatibility is needed
 - `assets/chains/*.chain.md`
-- `lib/sdd-preflight.ts` / install asset freshness behavior
+- `lib/sdd/sdd-preflight.ts` / install asset freshness behavior
 - `README.md`
 - `openspec/changes/*` examples and fixtures
 - `tests/runtime-harness.mjs` or new focused tests
@@ -36,11 +36,11 @@ This creates drift between `gentle-pi` and `gentle-ai`, especially around spec u
 
 ### New Capabilities
 
-- `sdd-openspec`: Defines the canonical OpenSpec-compatible SDD file layout, delta authoring rules, sync/archive merge behavior, and accepted mode boundaries for `gentle-pi`.
+- `sdd-openspec`: Defines the canonical OpenSpec-compatible SDD file layout, delta authoring rules, sync/archive merge behavior, and accepted mode boundaries for `jero-pi`.
 
 ### Modified Capabilities
 
-- None yet. `gentle-pi` currently has no canonical source spec for SDD/OpenSpec behavior.
+- None yet. `jero-pi` currently has no canonical source spec for SDD/OpenSpec behavior.
 
 ## Success Criteria
 

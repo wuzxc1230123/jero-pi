@@ -10,7 +10,7 @@ import {
 	shellEnabled,
 	type ShellBarModel,
 	type ShellBarTheme,
-} from "../lib/shell-bar.ts";
+} from "../lib/shell/shell-bar.ts";
 
 // The Gentle Shell bar replaces pi's three-line footer with one line of
 // segments. Rendering is pure so it can be verified without a TUI.
@@ -35,7 +35,7 @@ const plainTheme: ShellBarTheme = {
 
 function model(overrides: Partial<ShellBarModel> = {}): ShellBarModel {
 	return {
-		cwd: "~/work/gentle-pi",
+		cwd: "~/work/jero-pi",
 		branch: "main",
 		dirty: undefined,
 		sessionName: undefined,
@@ -80,13 +80,13 @@ test("renderShellBar renders one line with the segments in order", () => {
 	assert.equal(rest.length, 0);
 	assert.equal(
 		line,
-		"✿ gentle-pi ⟡ ~/work/gentle-pi main ⟡ gpt-5.5 · medium ⟡ ctx ▰▰▰▰▱▱▱▱ 45% ⟡ $9.49 sub",
+		"✿ jero-pi ⟡ ~/work/jero-pi main ⟡ gpt-5.5 · medium ⟡ ctx ▰▰▰▰▱▱▱▱ 45% ⟡ $9.49 sub",
 	);
 });
 
 test("renderShellBar colors the brand, model, effort, and gauge by role", () => {
 	const [line] = renderShellBar(model(), taggedTheme, 400);
-	assert.match(line, /<accent>✿ gentle-pi<\/accent>/);
+	assert.match(line, /<accent>✿ jero-pi<\/accent>/);
 	assert.match(line, /<text>gpt-5\.5<\/text>/);
 	assert.match(line, /<syntaxFunction>medium<\/syntaxFunction>/);
 	assert.match(line, /<accent>▰▰▰▰<\/accent><border>▱▱▱▱<\/border>/);
@@ -95,7 +95,7 @@ test("renderShellBar colors the brand, model, effort, and gauge by role", () => 
 
 test("renderShellBar shows the branch as dirty-neutral and omits it outside git", () => {
 	const [line] = renderShellBar(model({ branch: null }), plainTheme, 160);
-	assert.match(line, /⟡ ~\/work\/gentle-pi ⟡/);
+	assert.match(line, /⟡ ~\/work\/jero-pi ⟡/);
 });
 
 test("renderShellBar shows the session dirty count next to the branch", () => {
@@ -145,10 +145,10 @@ test("renderShellBar repaints extension statuses in the bar role, discarding col
 test("renderShellBar compacts the path and branch before it sacrifices an extension status", () => {
 	const long = model({ branch: "fix/shell-bar-status-ansi", dirty: 2, statuses: ["MCP: 3/3 servers"] });
 	const [full] = renderShellBar(long, plainTheme, 160);
-	assert.match(full, /~\/work\/gentle-pi fix\/shell-bar-status-ansi ±2 .* MCP: 3\/3 servers$/);
+	assert.match(full, /~\/work\/jero-pi fix\/shell-bar-status-ansi ±2 .* MCP: 3\/3 servers$/);
 	const [compact] = renderShellBar(long, plainTheme, 118);
 	assert.ok(visibleWidth(compact) <= 118, `line overflowed: ${visibleWidth(compact)}`);
-	assert.match(compact, /⟡ gentle-pi fix\/shell-bar-… ±2 ⟡/);
+	assert.match(compact, /⟡ jero-pi fix\/shell-bar-… ±2 ⟡/);
 	assert.match(compact, /MCP: 3\/3 servers$/);
 });
 
@@ -161,7 +161,7 @@ test("renderShellBar drops the session name, then trailing segments, before trun
 
 	const [atFifty] = renderShellBar(wide, plainTheme, 50);
 	assert.ok(visibleWidth(atFifty) <= 50, `line overflowed: ${visibleWidth(atFifty)}`);
-	assert.match(atFifty, /^✿ gentle-pi/);
+	assert.match(atFifty, /^✿ jero-pi/);
 });
 
 test("shellEnabled stays off inside a Gentle Agents child", () => {

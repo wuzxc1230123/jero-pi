@@ -12,10 +12,10 @@ import {
 import { Text, type Component } from "@earendil-works/pi-tui";
 import { homedir } from "node:os";
 import { isAbsolute } from "node:path";
-import { resolveGentleAiDevBinaryOverride, type GentleAiDevBinaryOverride } from "../lib/gentle-ai-binary.ts";
-import { quietToolsEnabled } from "../lib/quiet-tools-config.ts";
-import { getGentleAiRenderState, renderGentleAiLifecycleCall, renderGentleAiResult, type GentleAiRenderContext } from "../lib/gentle-ai-renderer.ts";
-import { sanitizeTerminalText } from "../lib/terminal-theme.ts";
+import { resolveGentleAiDevBinaryOverride, type GentleAiDevBinaryOverride } from "../lib/core/gentle-ai-binary.ts";
+import { quietToolsEnabled } from "../lib/core/quiet-tools-config.ts";
+import { getGentleAiRenderState, renderGentleAiLifecycleCall, renderGentleAiResult, type GentleAiRenderContext } from "../lib/core/gentle-ai-renderer.ts";
+import { sanitizeTerminalText } from "../lib/core/terminal-theme.ts";
 
 type QuietToolName = "read" | "bash" | "grep" | "find" | "ls" | "edit" | "write";
 type ThemeLike = {

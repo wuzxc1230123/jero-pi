@@ -30,7 +30,7 @@
 
 ### Phase 4: Verification
 - [x] 4.1 `pnpm test` on `tests/skill-collision-prefixes.test.ts`: 12/12 pass.
-- [x] 4.2 Repo-wide grep for the 6 original unprefixed names (excluding `skills/**` directory paths, `.codegraph/`, `.engram/`, `openspec/changes/**` planning prose, and `pnpm-lock.yaml`). Remaining matches are: the test file's `Record` map keys (source dir names, intentional), already-prefixed strings containing the bare token as substring, and the documented out-of-scope files (`scripts/verify-package-files.mjs`, `lib/review-triggers.ts`, `tests/review-triggers.test.ts`, `assets/orchestrator.md:308`). No dangling unprefixed references found.
+- [x] 4.2 Repo-wide grep for the 6 original unprefixed names (excluding `skills/**` directory paths, `.codegraph/`, `.engram/`, `openspec/changes/**` planning prose, and `pnpm-lock.yaml`). Remaining matches are: the test file's `Record` map keys (source dir names, intentional), already-prefixed strings containing the bare token as substring, and the documented out-of-scope files (`scripts/verify-package-files.mjs`, `lib/review/review-triggers.ts`, `tests/review-triggers.test.ts`, `assets/orchestrator.md:308`). No dangling unprefixed references found.
 - [x] 4.3 Full `pnpm test` suite (`node --experimental-strip-types --test tests/*.test.ts && pnpm run test:harness`): 216/216 pass, 0 fail, exit code 0. No regressions.
 
 ## Files Changed
@@ -65,7 +65,7 @@
 - **Pure functions created**: 0 (reused existing `parseFrontmatter`/`readSkillName` helper is a thin file-read wrapper, not new production logic)
 
 ## Deviations from Design
-None — implementation matches design.md exactly (byte-exact prefixed names verified against `~/.pi/agent/npm/node_modules/gentle-pi/skills/*/SKILL.md` before editing).
+None — implementation matches design.md exactly (byte-exact prefixed names verified against `~/.pi/agent/npm/node_modules/jero-pi/skills/*/SKILL.md` before editing).
 
 ## Issues Found
 None.

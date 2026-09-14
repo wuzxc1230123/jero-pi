@@ -4,14 +4,14 @@ import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { AGENT_MODE, type AgentDefinition } from "../lib/agents-config.ts";
-import { AgentRunner, type TaskRequest } from "../lib/agents-runner.ts";
-import { TaskStore } from "../lib/agents-protocol.ts";
-import { createNodeExecFileAdapter, NativeReviewCliV216, decodeNativeSddStatusV2, NATIVE_REVIEW_ERROR_CODE, NativeReviewCliError } from "../lib/native-review-cli.ts";
-import { createGentleAiExtension, __testing } from "../extensions/gentle-ai.ts";
+import { AGENT_MODE, type AgentDefinition } from "../lib/agents/agents-config.ts";
+import { AgentRunner, type TaskRequest } from "../lib/agents/agents-runner.ts";
+import { TaskStore } from "../lib/agents/agents-protocol.ts";
+import { createNodeExecFileAdapter, NativeReviewCliV216, decodeNativeSddStatusV2, NATIVE_REVIEW_ERROR_CODE, NativeReviewCliError } from "../lib/native/native-review-cli.ts";
+import { createGentleAiExtension, __testing } from "../extensions/jero-ai.ts";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import type { NativeReviewCli, NativeSddStatusV2 } from "../lib/native-review-cli.ts";
-import { ensureSddPreflight } from "../lib/sdd-preflight.ts";
+import type { NativeReviewCli, NativeSddStatusV2 } from "../lib/native/native-review-cli.ts";
+import { ensureSddPreflight } from "../lib/sdd/sdd-preflight.ts";
 import { fakeChild } from "./agents-fake-child.ts";
 
 const applyAgent: AgentDefinition = {
@@ -47,7 +47,7 @@ function request(sddChange: { changeName: string; workspaceRoot: string; phase: 
 const tick = () => new Promise((resolve) => setImmediate(resolve));
 
 function workspace(t: test.TestContext): string {
-	const root = mkdtempSync(join(tmpdir(), "gentle-pi-sdd-selection-"));
+	const root = mkdtempSync(join(tmpdir(), "jero-pi-sdd-selection-"));
 	t.after(() => rmSync(root, { recursive: true, force: true }));
 	mkdirSync(join(root, "openspec", "changes", "alpha"), { recursive: true });
 	mkdirSync(join(root, "openspec", "changes", "beta"), { recursive: true });
@@ -55,8 +55,8 @@ function workspace(t: test.TestContext): string {
 }
 
 test("remediation read tools are limited to canonical relative paths inside the confirmed worktree", async (t) => {
-	const { remediationToolAllowed } = await import("../extensions/gentle-agents.ts");
-	const cwd = workspace(t), outside = mkdtempSync(join(tmpdir(), "gentle-pi-remediation-outside-"));
+	const { remediationToolAllowed } = await import("../extensions/jero-agents.ts");
+	const cwd = workspace(t), outside = mkdtempSync(join(tmpdir(), "jero-pi-remediation-outside-"));
 	t.after(() => rmSync(outside, { recursive: true, force: true }));
 	symlinkSync(outside, join(cwd, "escape"));
 	const scope = { cwd, editPaths: [], commands: ["pnpm test"], allowedEditRoots: [cwd] };
@@ -295,7 +295,7 @@ test("a throwing SDD selection flag reader fails closed without resolving an uns
 test("selected SDD startup fails closed for malformed identity, root, phase, symlink, and resolver errors", (t) => {
 	const root = workspace(t);
 	const selected = JSON.stringify({ changeName: "alpha", workspaceRoot: root, phase: "apply" });
-	const outside = mkdtempSync(join(tmpdir(), "gentle-pi-sdd-selection-outside-"));
+	const outside = mkdtempSync(join(tmpdir(), "jero-pi-sdd-selection-outside-"));
 	t.after(() => rmSync(outside, { recursive: true, force: true }));
 	const escaped = join(root, "escaped-root");
 	symlinkSync(outside, escaped);

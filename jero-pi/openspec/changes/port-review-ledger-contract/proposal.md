@@ -1,8 +1,8 @@
-# Proposal: Port the review-ledger contract into gentle-pi
+# Proposal: Port the review-ledger contract into jero-pi
 
 ## Intent
 
-**Problem statement.** gentle-pi's review surfaces (4R lenses + judgment-day) are the PRE-LEDGER design that gentle-ai fixed on 2026-07-08. Each pass re-samples the full target with fresh context, re-reviews churn (find → fix → full re-review → NEW findings), keeps no persisted findings ledger, and has no convergence guarantee. gentle-ai's battle evidence (5 cycles, convergence 5→1→1→0, 54 findings resolved) proves the ledger design. We want ONE conceptual contract across both products.
+**Problem statement.** jero-pi's review surfaces (4R lenses + judgment-day) are the PRE-LEDGER design that gentle-ai fixed on 2026-07-08. Each pass re-samples the full target with fresh context, re-reviews churn (find → fix → full re-review → NEW findings), keeps no persisted findings ledger, and has no convergence guarantee. gentle-ai's battle evidence (5 cycles, convergence 5→1→1→0, 54 findings resolved) proves the ledger design. We want ONE conceptual contract across both products.
 
 ## Scope
 
@@ -16,20 +16,20 @@
 
 ### Out of Scope
 - Frontmatter `name:` fields of judgment-day + 5 skills — owned by parallel change `sync-skill-collision-prefixes` (this change owns BODY content only).
-- Runtime review-gate logic in `extensions/gentle-ai.ts` / `lib/review-triggers.ts` (trigger gating, not ledger prose).
+- Runtime review-gate logic in `extensions/jero-ai.ts` / `lib/review/review-triggers.ts` (trigger gating, not ledger prose).
 - Any change to review lens severity vocabulary or 4R trigger cadence.
 
 ## Capabilities
 
 ### New Capabilities
-- `review-ledger-contract`: exhaustive-first-pass loop, persisted findings ledger, scoped re-review, and judge/fix role split, replicated across all gentle-pi review surfaces and enforced by a drift-guard test.
+- `review-ledger-contract`: exhaustive-first-pass loop, persisted findings ledger, scoped re-review, and judge/fix role split, replicated across all jero-pi review surfaces and enforced by a drift-guard test.
 
 ### Modified Capabilities
 - None (no existing specs in `openspec/specs/`).
 
 ## Approach
 
-Follow gentle-ai ADR 1: one authored canonical source, hand-replicated into each static asset, parity enforced by a table-driven presence test — no build-time generation (agent/skill files are copied whole, not marker-injected). Apply the two hard-won lessons: clauses live INSIDE the copy-pasteable templates (JD-003/JD-013), and the fix role carries its own clause set with no sweep/emission clauses (JD-001). Ledger persistence reuses gentle-pi's existing openspec+engram stores as-is. Keep wording as close to the canonical gentle-ai source as the Pi runtime allows.
+Follow gentle-ai ADR 1: one authored canonical source, hand-replicated into each static asset, parity enforced by a table-driven presence test — no build-time generation (agent/skill files are copied whole, not marker-injected). Apply the two hard-won lessons: clauses live INSIDE the copy-pasteable templates (JD-003/JD-013), and the fix role carries its own clause set with no sweep/emission clauses (JD-001). Ledger persistence reuses jero-pi's existing openspec+engram stores as-is. Keep wording as close to the canonical gentle-ai source as the Pi runtime allows.
 
 ## Affected Areas
 

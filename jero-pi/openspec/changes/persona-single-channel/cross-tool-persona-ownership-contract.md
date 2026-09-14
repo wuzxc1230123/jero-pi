@@ -1,6 +1,6 @@
-# Cross-tool contract: Pi-session persona ownership (gentle-pi ↔ gentle-ai)
+# Cross-tool contract: Pi-session persona ownership (jero-pi ↔ gentle-ai)
 
-This note documents the ownership handoff between `gentle-pi` (this repo) and the sibling
+This note documents the ownership handoff between `jero-pi` (this repo) and the sibling
 `gentle-ai` Pi adapter for identity/persona/language content injected into Pi coding-agent
 sessions. Slimming `gentle-ai`'s `APPEND_SYSTEM.md` persona section (37,276 B, unchanged by this
 change) is explicitly **out of scope** here — it is a `gentle-ai`-owned follow-up (pattern mirrors
@@ -9,22 +9,22 @@ analogous upstream handoff to `gentle-engram`).
 
 ## Title / intent
 
-`persona-single-channel` makes `gentle-pi`'s always-on parent-session injection (the
+`persona-single-channel` makes `jero-pi`'s always-on parent-session injection (the
 `buildGentlePrompt` wrapper block + `assets/orchestrator.md`, concatenated once per parent session
-at `extensions/gentle-ai.ts:2204-2208`) the single canonical source of Pi-session
+at `extensions/jero-ai.ts:2204-2208`) the single canonical source of Pi-session
 identity/persona/language content. This document records the guarantees that hold on the
-`gentle-pi` side today, and the follow-up expectation on the `gentle-ai` side.
+`jero-pi` side today, and the follow-up expectation on the `gentle-ai` side.
 
-## Guarantee 1 — gentle-pi is canonical for Pi-session identity/persona/language
+## Guarantee 1 — jero-pi is canonical for Pi-session identity/persona/language
 
-For any Pi parent session running the `gentle-pi` extension, the wrapper block
-(`extensions/gentle-ai.ts` `buildGentlePrompt`) plus `assets/orchestrator.md` is the SINGLE source
+For any Pi parent session running the `jero-pi` extension, the wrapper block
+(`extensions/jero-ai.ts` `buildGentlePrompt`) plus `assets/orchestrator.md` is the SINGLE source
 of identity, persona, and reply-language-style content. `orchestrator.md`'s Identity Contract and
 Language Boundary LB1 sections are one-line pointers back to the wrapper (this change); no other
-`gentle-pi` file duplicates this content in the parent-session injection path.
+`jero-pi` file duplicates this content in the parent-session injection path.
 
 - Named/SDD subagent sessions receive an empty `gentlePrompt` branch
-  (`extensions/gentle-ai.ts:2204-2206`, untouched by this change) — this guarantee applies only to
+  (`extensions/jero-ai.ts:2204-2206`, untouched by this change) — this guarantee applies only to
   the parent session.
 - The known residual third memory-rule copy at `gentle-ai.ts:198` (Harness principles block,
   "Never claim persistent memory is available because of this package...") is out of scope for this
@@ -34,25 +34,25 @@ Language Boundary LB1 sections are one-line pointers back to the wrapper (this c
 
 `gentle-ai`'s Pi adapter injects a separate, larger persona/identity block via
 `APPEND_SYSTEM.md`'s `<!-- gentle-ai:persona -->` section (37,276 B, measured on this branch,
-unchanged by this change). Once `gentle-pi`'s wrapper + `orchestrator.md` is canonical
+unchanged by this change). Once `jero-pi`'s wrapper + `orchestrator.md` is canonical
 (Guarantee 1), that upstream section is a duplicate at the tool level (a third copy of
 identity/persona/language content, this time in a different repository's injected file).
 
 `gentle-ai`'s Pi adapter MUST reduce `<!-- gentle-ai:persona -->` to an action/tooling residual
 that does NOT restate identity, persona, or language-style tone content — it may keep
 Pi-adapter-specific mechanics (tool wiring, capability flags, invocation instructions) but must not
-duplicate the identity/persona/language prose that `gentle-pi` now owns. This mirrors the residual
+duplicate the identity/persona/language prose that `jero-pi` now owns. This mirrors the residual
 pattern already established by the `persona-canonical-channel` change (see review-ledger.md context
-above; that precedent is why `gentle-pi`'s union sweep in this change is line-level, not
+above; that precedent is why `jero-pi`'s union sweep in this change is line-level, not
 section-level — it previously caught 3 content-loss regressions the same class of dedup can
 introduce).
 
 - This guarantee does NOT ship in this change. It is recorded here so the `gentle-ai` follow-up
-  change has a concrete, gentle-pi-side-verified target to slim against.
+  change has a concrete, jero-pi-side-verified target to slim against.
 - Until the `gentle-ai` follow-up lands, `APPEND_SYSTEM.md`'s persona section remains a duplicate
-  for any environment where BOTH `gentle-pi`'s Pi extension AND `gentle-ai`'s Pi adapter are active
+  for any environment where BOTH `jero-pi`'s Pi extension AND `gentle-ai`'s Pi adapter are active
   in the same session. This is a known, accepted, temporary state — not a regression introduced by
-  this change (this change only touches `gentle-pi`'s own injection).
+  this change (this change only touches `jero-pi`'s own injection).
 
 ## Guarantee 3 — marker idempotency
 
@@ -66,9 +66,9 @@ guarantee `gentle-ai` already provides for its other marker-delimited sections.
 ## Drift control
 
 - This document is the single source of truth for the ownership boundary described above; if
-  `gentle-pi` wording and any future `gentle-ai`-side documentation of this boundary conflict,
-  `gentle-pi`'s wording in this document wins (gentle-pi is canonical per Guarantee 1).
-- Any future edit to `gentle-pi`'s Identity Contract / Language Boundary / persona-prompt content
+  `jero-pi` wording and any future `gentle-ai`-side documentation of this boundary conflict,
+  `jero-pi`'s wording in this document wins (jero-pi is canonical per Guarantee 1).
+- Any future edit to `jero-pi`'s Identity Contract / Language Boundary / persona-prompt content
   MUST be reflected here if it changes what the `gentle-ai` follow-up is expected to slim against.
 
 ## Cross-reference

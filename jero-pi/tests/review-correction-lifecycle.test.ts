@@ -6,7 +6,7 @@ import {
 	CorrectionOutcomeError,
 	assertDistinctCorrectionEvidence,
 	resolveCorrectionStep,
-} from "../lib/review-correction-lifecycle.ts";
+} from "../lib/review/review-correction-lifecycle.ts";
 
 // The provider owns the evidence directory and the budget ledger. Pi's job is
 // narrower and entirely decidable from data: given a status and one captured

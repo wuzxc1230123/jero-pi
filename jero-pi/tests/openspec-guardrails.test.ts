@@ -8,10 +8,10 @@ import {
 	analyzeDeltaDestructiveness,
 	detectActiveDomainCollisions,
 	detectLegacyFlatSpec,
-} from "../lib/openspec-guardrails.ts";
+} from "../lib/sdd/openspec-guardrails.ts";
 
 test("detectActiveDomainCollisions finds other active changes touching the same domain", async () => {
-	const cwd = await mkdtemp(join(tmpdir(), "gentle-pi-guardrails-"));
+	const cwd = await mkdtemp(join(tmpdir(), "jero-pi-guardrails-"));
 	mkdirSync(join(cwd, "openspec/changes/current/specs/sdd-openspec"), { recursive: true });
 	mkdirSync(join(cwd, "openspec/changes/other/specs/sdd-openspec"), { recursive: true });
 	mkdirSync(join(cwd, "openspec/changes/archive/2026-01-01-old/specs/sdd-openspec"), { recursive: true });
@@ -26,7 +26,7 @@ test("detectActiveDomainCollisions finds other active changes touching the same 
 });
 
 test("detectLegacyFlatSpec warns when a flat change spec exists without domain specs", async () => {
-	const cwd = await mkdtemp(join(tmpdir(), "gentle-pi-legacy-flat-"));
+	const cwd = await mkdtemp(join(tmpdir(), "jero-pi-legacy-flat-"));
 	mkdirSync(join(cwd, "openspec/changes/legacy-change"), { recursive: true });
 	writeFileSync(join(cwd, "openspec/changes/legacy-change/spec.md"), "# Legacy\n");
 
@@ -38,7 +38,7 @@ test("detectLegacyFlatSpec warns when a flat change spec exists without domain s
 });
 
 test("detectLegacyFlatSpec reports domain specs when both old and new layouts exist", async () => {
-	const cwd = await mkdtemp(join(tmpdir(), "gentle-pi-legacy-both-"));
+	const cwd = await mkdtemp(join(tmpdir(), "jero-pi-legacy-both-"));
 	mkdirSync(join(cwd, "openspec/changes/mixed/specs/domain"), { recursive: true });
 	writeFileSync(join(cwd, "openspec/changes/mixed/spec.md"), "# Legacy\n");
 	writeFileSync(join(cwd, "openspec/changes/mixed/specs/domain/spec.md"), "# Domain\n");

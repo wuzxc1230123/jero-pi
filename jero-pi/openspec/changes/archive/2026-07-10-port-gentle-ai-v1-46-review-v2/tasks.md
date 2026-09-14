@@ -30,7 +30,7 @@ Maintainer-approved `size:exception` recorded from the explicit instruction to i
 ## Unit 1: Review-refuter asset
 
 - [x] 1.1 **RED:** In `tests/{package-manifest,sdd-agent-tools}.test.ts` and `tests/runtime-harness.mjs`, fail Package permissions/Explicit override scenarios for source, packaged, installed, forced-refresh identity, exact tools, forbidden capabilities, and untouched overrides. Run `node --experimental-strip-types --test tests/package-manifest.test.ts tests/sdd-agent-tools.test.ts && pnpm run test:harness`.
-- [x] 1.2 **GREEN:** Create `assets/agents/review-refuter.md` with identity `review-refuter` and exactly `read`, `grep`, `find`; add package proof to `scripts/verify-package-files.mjs` while preserving generic installation in `lib/sdd-preflight.ts`.
+- [x] 1.2 **GREEN:** Create `assets/agents/review-refuter.md` with identity `review-refuter` and exactly `read`, `grep`, `find`; add package proof to `scripts/verify-package-files.mjs` while preserving generic installation in `lib/sdd/sdd-preflight.ts`.
 - [x] 1.3 **REFACTOR/triangulate:** Add malformed/override cases and rerun 1.1. Roll back only the new asset and test/verifier hunks.
 
 ## Unit 2: Canonical contract and replicas
@@ -42,7 +42,7 @@ Maintainer-approved `size:exception` recorded from the explicit instruction to i
 ## Unit 3: Deterministic routing and safety
 
 - [x] 3.1 **RED:** Rewrite `tests/{review-triggers,review-gate}.test.ts` and `tests/runtime-harness.mjs` for trivial/ambiguous/ordinary, 399/400/401, hot/trivial-hot, ceiling, advice continuation, dangerous confirmation, and no-delivery scenarios. Run `node --experimental-strip-types --test tests/review-triggers.test.ts tests/review-gate.test.ts && pnpm run test:harness`.
-- [x] 3.2 **GREEN:** Replace rules in `lib/review-triggers.ts` with const-derived flat typed evidence/plans and deterministic precedence; update `extensions/gentle-ai.ts` to collect conservative evidence, notify, return `undefined`, then independently call `confirmCommand`.
+- [x] 3.2 **GREEN:** Replace rules in `lib/review/review-triggers.ts` with const-derived flat typed evidence/plans and deterministic precedence; update `extensions/jero-ai.ts` to collect conservative evidence, notify, return `undefined`, then independently call `confirmCommand`.
 - [x] 3.3 **REFACTOR/triangulate:** Add stable-lens-order and incomplete-evidence cases; rerun 3.1. Roll back only routing/runtime and associated test hunks.
 
 ## Unit 4: Integration and clean verification

@@ -4,7 +4,7 @@
 
 **Blocked before implementation.**
 
-The authoritative OpenSpec status consumed on 2026-07-12 reports `applyState: ready`, `nextRecommended: apply`, and an allowed repository-local edit root of `/home/gentleman/work/gentle-pi`.
+The authoritative OpenSpec status consumed on 2026-07-12 reports `applyState: ready`, `nextRecommended: apply`, and an allowed repository-local edit root of `/home/gentleman/work/jero-pi`.
 
 ## Delivery gate
 
@@ -70,12 +70,12 @@ None in the completed strict-parser slice. The broader change has not been compl
 
 | Work unit | RED | GREEN | TRIANGULATE | REFACTOR | Evidence |
 |---|---|---|---|---|---|
-| 1. Strict transient compact parser | `tests/review-compact-contract.test.ts` failed with `ERR_MODULE_NOT_FOUND` before `lib/review-compact-contract.ts` existed | Focused parser tests pass after the parser was added | Valid inputs plus nested unknown-key and final-evidence-pair violations | Parser keeps exact-object assertions local and separate from persisted-record validation | `node --experimental-strip-types --test tests/review-compact-contract.test.ts` passed (2 tests) |
+| 1. Strict transient compact parser | `tests/review-compact-contract.test.ts` failed with `ERR_MODULE_NOT_FOUND` before `lib/review/review-compact-contract.ts` existed | Focused parser tests pass after the parser was added | Valid inputs plus nested unknown-key and final-evidence-pair violations | Parser keeps exact-object assertions local and separate from persisted-record validation | `node --experimental-strip-types --test tests/review-compact-contract.test.ts` passed (2 tests) |
 | 2. Facade pre-mutation boundary | New facade test failed because repository discovery happened before malformed-input rejection | Parser now executes at `startCompactReview` and `finalizeCompactReview` entry; focused facade tests pass | Invalid start against a nonexistent cwd and invalid finalize evidence pairing both reject as contract errors | No broad repository changes | `node --experimental-strip-types --test tests/review-compact-contract.test.ts tests/review-facade.test.ts` passed (10 tests) |
 
 ### Files changed in this continuation
 
-- `lib/review-compact-contract.ts` — new strict transient START/FINALIZE parser and stable contract error.
+- `lib/review/review-compact-contract.ts` — new strict transient START/FINALIZE parser and stable contract error.
 - `tests/review-compact-contract.test.ts` — new parser coverage.
 - `lib/review-facade.ts` — parse before authority discovery.
 - `tests/review-facade.test.ts` — boundary and rejection coverage.
@@ -115,7 +115,7 @@ Explicit `size:exception` approved: one PR, hard maximum 2,000 authored lines. C
 
 ### Status
 
-**Blocked: the corrective expectation reconciliation passes, but the requested full six-work-unit implementation is not complete.** The authoritative status consumed before editing remained `applyState: ready`, `nextRecommended: apply`, artifact store `openspec`, and repository-local edit root `/home/gentleman/work/gentle-pi`. No action-context warning applied.
+**Blocked: the corrective expectation reconciliation passes, but the requested full six-work-unit implementation is not complete.** The authoritative status consumed before editing remained `applyState: ready`, `nextRecommended: apply`, artifact store `openspec`, and repository-local edit root `/home/gentleman/work/jero-pi`. No action-context warning applied.
 
 ### Corrective change
 
@@ -187,8 +187,8 @@ Explicit `size:exception` remains approved for one PR with a 2,000-line maximum.
 - `lib/review-facade.ts`
 - `lib/review-compact-store.ts`
 - `lib/review-runtime-contract.ts`
-- `lib/review-compact-contract.ts`
-- `extensions/gentle-ai.ts`
+- `lib/review/review-compact-contract.ts`
+- `extensions/jero-ai.ts`
 - `tests/review-compact.test.ts`
 - `tests/review-facade.test.ts`
 - `tests/review-runtime-contract.test.ts`

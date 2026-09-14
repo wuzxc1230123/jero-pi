@@ -16,8 +16,8 @@ import {
 	setGentleAiDevBinaryEnvironmentForTesting,
 	unregisterGentleAiDevBinary,
 	type GentleAiDevBinaryEnvironment,
-} from "../lib/gentle-ai-binary.ts";
-import { NativeReviewCliV216, createNativeReviewCli, type ExecFileAdapter } from "../lib/native-review-cli.ts";
+} from "../lib/core/gentle-ai-binary.ts";
+import { NativeReviewCliV216, createNativeReviewCli, type ExecFileAdapter } from "../lib/native/native-review-cli.ts";
 import { GENTLE_AI_WINDOWS_SOURCE_MODULE_CHECKSUM, resolveGentleAiReleaseAsset } from "../scripts/gentle-ai-installer.mjs";
 import { requireNativeBinary } from "./support/native-binary-gate.ts";
 
@@ -44,7 +44,7 @@ interface PinnedBinaryIsolation {
 let pinnedBinaryIsolation: PinnedBinaryIsolation | undefined;
 
 test.beforeEach((t) => {
-	const home = mkdtempSync(join(tmpdir(), "gentle-pi-pinned-binary-home-"));
+	const home = mkdtempSync(join(tmpdir(), "jero-pi-pinned-binary-home-"));
 	const environment: GentleAiDevBinaryEnvironment = { env: { ...process.env }, home };
 	delete environment.env.GENTLE_PI_CONFIG_HOME;
 	const savedEnvironmentValue = environment.env[GENTLE_AI_DEV_BINARY_ENV];
@@ -112,7 +112,7 @@ async function writeWindowsSourceBinary(packageRoot: string): Promise<{ binaryPa
 }
 
 verifiedBinaryTest("runtime resolves an absolute package-local binary path without PATH fallback or ambient dev contamination", async () => {
-	const packageRoot = await mkdtemp(join(tmpdir(), "gentle-pi-binary-"));
+	const packageRoot = await mkdtemp(join(tmpdir(), "jero-pi-binary-"));
 	const executable = process.platform === "win32" ? "gentle-ai.exe" : "gentle-ai";
 	const binaryPath = await writeVerifiedBinary(packageRoot);
 	const devBinary = join(packageRoot, "maintainer-dev-binary");
@@ -145,7 +145,7 @@ verifiedBinaryTest("runtime resolves an absolute package-local binary path witho
 });
 
 test("runtime validates a Windows Go SumDB source manifest and rejects tampering, symlinks, and PATH injection", async () => {
-	const packageRoot = await mkdtemp(join(tmpdir(), "gentle-pi-windows-source-runtime-"));
+	const packageRoot = await mkdtemp(join(tmpdir(), "jero-pi-windows-source-runtime-"));
 	const { binaryPath, manifestPath } = await writeWindowsSourceBinary(packageRoot);
 	assert.equal(resolveGentleAiBinary(packageRoot, "win32"), binaryPath);
 
@@ -179,7 +179,7 @@ function gentleAiBinaryPathForTest(packageRoot: string): string {
 }
 
 test("runtime rejects an unverified binary, a symlinked manifest, and ambient executable injection", async () => {
-	const packageRoot = await mkdtemp(join(tmpdir(), "gentle-pi-binary-integrity-"));
+	const packageRoot = await mkdtemp(join(tmpdir(), "jero-pi-binary-integrity-"));
 	const executable = process.platform === "win32" ? "gentle-ai.exe" : "gentle-ai";
 	const binaryPath = join(packageRoot, ".gentle-ai", RUNTIME_DIRECTORY, executable);
 	const manifestPath = join(packageRoot, ".gentle-ai", RUNTIME_DIRECTORY, "integrity.json");
@@ -196,7 +196,7 @@ test("runtime rejects an unverified binary, a symlinked manifest, and ambient ex
 });
 
 verifiedBinaryTest("runtime rejects malformed, unknown, wrong, and symlinked integrity paths", async () => {
-	const packageRoot = await mkdtemp(join(tmpdir(), "gentle-pi-binary-manifest-"));
+	const packageRoot = await mkdtemp(join(tmpdir(), "jero-pi-binary-manifest-"));
 	const binaryPath = await writeVerifiedBinary(packageRoot);
 	const manifestPath = join(packageRoot, ".gentle-ai", RUNTIME_DIRECTORY, "integrity.json");
 	const valid = JSON.parse(readFileSync(manifestPath, "utf8")) as Record<string, string>;
@@ -218,13 +218,13 @@ verifiedBinaryTest("runtime rejects malformed, unknown, wrong, and symlinked int
 	await symlink(binaryTarget, binaryPath);
 	assert.throws(() => resolveGentleAiBinary(packageRoot, process.platform), /package-local-binary-missing/);
 
-	const directoryRoot = await mkdtemp(join(tmpdir(), "gentle-pi-binary-directory-"));
+	const directoryRoot = await mkdtemp(join(tmpdir(), "jero-pi-binary-directory-"));
 	await symlink(join(packageRoot, ".gentle-ai"), join(directoryRoot, ".gentle-ai"));
 	assert.throws(() => resolveGentleAiBinary(directoryRoot, process.platform), /package-local-binary-missing/);
 });
 
 verifiedBinaryTest("runtime rejects a binary-only tamper while its canonical pinned manifest remains unchanged", async () => {
-	const packageRoot = await mkdtemp(join(tmpdir(), "gentle-pi-binary-pinned-manifest-tamper-"));
+	const packageRoot = await mkdtemp(join(tmpdir(), "jero-pi-binary-pinned-manifest-tamper-"));
 	const binaryPath = await writeVerifiedBinary(packageRoot);
 	await writeFile(binaryPath, "binary-only tamper");
 	if (process.platform !== "win32") await chmod(binaryPath, 0o700);
@@ -232,7 +232,7 @@ verifiedBinaryTest("runtime rejects a binary-only tamper while its canonical pin
 });
 
 verifiedBinaryTest("runtime rejects an arbitrary binary even when a forged manifest matches its digest", async () => {
-	const packageRoot = await mkdtemp(join(tmpdir(), "gentle-pi-binary-forged-manifest-"));
+	const packageRoot = await mkdtemp(join(tmpdir(), "jero-pi-binary-forged-manifest-"));
 	const binaryPath = await writeVerifiedBinary(packageRoot);
 	const asset = resolveGentleAiReleaseAsset(process.platform, process.arch);
 	await writeFile(binaryPath, "arbitrary binary");
@@ -242,7 +242,7 @@ verifiedBinaryTest("runtime rejects an arbitrary binary even when a forged manif
 });
 
 verifiedBinaryTest("runtime rejects binary replacement during verification", async () => {
-	const packageRoot = await mkdtemp(join(tmpdir(), "gentle-pi-binary-replacement-"));
+	const packageRoot = await mkdtemp(join(tmpdir(), "jero-pi-binary-replacement-"));
 	const binaryPath = await writeVerifiedBinary(packageRoot);
 	assert.throws(
 		() => resolveGentleAiBinary(packageRoot, process.platform, (path) => {
@@ -255,14 +255,14 @@ verifiedBinaryTest("runtime rejects binary replacement during verification", asy
 });
 
 test("runtime fails closed when the package-local binary is missing", async () => {
-	const packageRoot = await mkdtemp(join(tmpdir(), "gentle-pi-binary-missing-"));
+	const packageRoot = await mkdtemp(join(tmpdir(), "jero-pi-binary-missing-"));
 	assert.throws(
 		() => resolveGentleAiBinary(packageRoot, "linux"),
 		(error: unknown) => error instanceof PackageLocalGentleAiBinaryMissingError
 			&& error.code === GENTLE_AI_BINARY_MISSING_CODE
 			&& error.message.includes("package-local-binary-missing")
 			&& error.message.includes("If GENTLE_PI_SKIP_GENTLE_AI_INSTALL is set, remove or unset it before")
-			&& error.message.includes("installed gentle-pi package directory")
+			&& error.message.includes("installed jero-pi package directory")
 			&& error.message.includes("GENTLE_PI_SKIP_GENTLE_AI_INSTALL")
 			&& error.message.includes("remove or unset it before")
 			&& error.message.includes("does not prove install lifecycle scripts were disabled"),
@@ -274,14 +274,14 @@ verifiedBinaryTest("runtime rejects a valid but non-executable POSIX binary", as
 		t.skip("Windows does not use POSIX executable mode bits");
 		return;
 	}
-	const packageRoot = await mkdtemp(join(tmpdir(), "gentle-pi-binary-non-executable-"));
+	const packageRoot = await mkdtemp(join(tmpdir(), "jero-pi-binary-non-executable-"));
 	const binaryPath = await writeVerifiedBinary(packageRoot);
 	await chmod(binaryPath, 0o600);
 	assert.throws(() => resolveGentleAiBinary(packageRoot, process.platform), /package-local-binary-missing/);
 });
 
 test("production native operations report the package-local missing binary code", async () => {
-	const packageRoot = await mkdtemp(join(tmpdir(), "gentle-pi-native-missing-"));
+	const packageRoot = await mkdtemp(join(tmpdir(), "jero-pi-native-missing-"));
 	const adapter: ExecFileAdapter = async () => {
 		throw new Error("the adapter must not be reached when the package binary is missing");
 	};
@@ -292,7 +292,7 @@ test("production native operations report the package-local missing binary code"
 });
 
 verifiedBinaryTest("production native client never invokes a global gentle-ai executable", async () => {
-	const packageRoot = await mkdtemp(join(tmpdir(), "gentle-pi-native-"));
+	const packageRoot = await mkdtemp(join(tmpdir(), "jero-pi-native-"));
 	const binaryPath = await writeVerifiedBinary(packageRoot);
 	const calls: string[] = [];
 	const adapter: ExecFileAdapter = async (request) => {

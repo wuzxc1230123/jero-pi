@@ -30,7 +30,7 @@ Chain strategy: size-exception
 ## Phase 2: Targeted Ordinary Proof (TDD)
 
 - [x] 2.1 **RED** — In snapshot/policy/transaction/controller tests, cover canonical genesis paths, Git root selection (nested/relative/absolute; outside/unresolved fails closed), documentation-like paths, staged/mixed/empty-index no-mutation trees, exact frozen IDs, and pre-append scope rejection.
-- [x] 2.2 **GREEN** — Update `lib/review-{snapshot,policy-ordinary,transaction}.ts` and `extensions/gentle-ai.ts`: retain internal Git correction binding; ordinary validator accepts only ledger/acceptance/per-ID regression/original-criterion proof and inert follow-ups—never diff, candidate, changed lines, discovery, or re-review.
+- [x] 2.2 **GREEN** — Update `lib/review-{snapshot,policy-ordinary,transaction}.ts` and `extensions/jero-ai.ts`: retain internal Git correction binding; ordinary validator accepts only ledger/acceptance/per-ID regression/original-criterion proof and inert follow-ups—never diff, candidate, changed lines, discovery, or re-review.
 - [x] 2.3 **RED/GREEN** — Require one validator after a fix, zero without one, and reject/revert/escalate failed acceptance, missing/duplicate/failed proof, or original-criterion regression.
 
 ## Phase 3: Contract Cleanup and Regression Evidence

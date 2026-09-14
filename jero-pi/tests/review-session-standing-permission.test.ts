@@ -20,10 +20,10 @@ import {
 	revokeReviewSessionPermission,
 	revokeReviewSessionPermissionsForSession,
 	type ReviewSessionContext,
-} from "../lib/review-session-standing-permission.ts";
+} from "../lib/review/review-session-standing-permission.ts";
 
 function repository(t: test.TestContext): string {
-	const cwd = realpathSync(mkdtempSync(join(tmpdir(), "gentle-pi-session-permission-")));
+	const cwd = realpathSync(mkdtempSync(join(tmpdir(), "jero-pi-session-permission-")));
 	t.after(() => rmSync(cwd, { recursive: true, force: true }));
 	execFileSync("git", ["init", "-b", "main"], { cwd, stdio: "ignore" });
 	writeFileSync(join(cwd, "README.md"), "test repository\n");
@@ -33,7 +33,7 @@ function repository(t: test.TestContext): string {
 }
 
 function siblingWorktree(t: test.TestContext, parentRoot: string): string {
-	const cwd = realpathSync(mkdtempSync(join(tmpdir(), "gentle-pi-session-permission-worktree-")));
+	const cwd = realpathSync(mkdtempSync(join(tmpdir(), "jero-pi-session-permission-worktree-")));
 	t.after(() => rmSync(cwd, { recursive: true, force: true }));
 	execFileSync("git", ["worktree", "add", "--detach", cwd, "HEAD"], { cwd: parentRoot, stdio: "ignore" });
 	return cwd;

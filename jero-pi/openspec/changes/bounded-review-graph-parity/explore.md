@@ -8,7 +8,7 @@ This is exploration only; no implementation was performed.
 
 ## Current implementation verified
 
-Primary file: `lib/review-transaction.ts`.
+Primary file: `lib/review/review-transaction.ts`.
 
 - `reviewStoreRootForRepository()` resolves `git rev-parse --git-path gentle-ai/reviews`, so storage is repository-local and Git-aware. The code does not itself establish the target's exact common-directory layout or portability contract.
 - `ReviewTransactionStore` stores each lineage beneath `lineages/<lineage-id>/`, with `HEAD` and `revisions/<revision>.json`; it validates schema, revision number, state hash, and HEAD/state agreement on read.
@@ -36,7 +36,7 @@ Exclusive file creation and fsync are present. However, the current lock contain
 
 ### 4. Validated bundle export/import — missing
 
-No export/import surface or bundle format was found in `lib/review-transaction.ts` or the test search. The target requires bundles that carry the required event/object closure and metadata, are content-address validated before installation, reject malformed or conflicting objects, and do not mutate authoritative state until validation succeeds. Import should be atomic and idempotent, with explicit handling for already-present objects and missing predecessors.
+No export/import surface or bundle format was found in `lib/review/review-transaction.ts` or the test search. The target requires bundles that carry the required event/object closure and metadata, are content-address validated before installation, reject malformed or conflicting objects, and do not mutate authoritative state until validation succeeds. Import should be atomic and idempotent, with explicit handling for already-present objects and missing predecessors.
 
 ### 5. Resume semantics — partial and not portable
 

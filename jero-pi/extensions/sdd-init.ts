@@ -6,8 +6,8 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { basename, dirname, join, relative } from "node:path";
-import { applySavedModelConfig } from "./gentle-ai.ts";
-import { ensureSddPreflight, installPackageAssets } from "../lib/sdd-preflight.ts";
+import { applySavedModelConfig } from "./jero-ai.ts";
+import { ensureSddPreflight, installPackageAssets } from "../lib/sdd/sdd-preflight.ts";
 type ExtensionAPI = any;
 
 const CONFIG_REL_PATH = "openspec/config.yaml";

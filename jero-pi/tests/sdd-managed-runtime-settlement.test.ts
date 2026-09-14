@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { parseRemediationPlan, remediationEvidence, observeRemediationTool, type RemediationObservations, type RemediationPlan, type RemediationScope, type TaskRequest } from "../lib/agents-runner.ts";
-import { NATIVE_REVIEW_ERROR_CODE, NATIVE_REVIEW_OPERATION, NativeReviewCliError, type NativeReviewCli } from "../lib/native-review-cli.ts";
-import { remediationUnresolved } from "../lib/agents-history.ts";
-import type { TaskRecord } from "../lib/agents-protocol.ts";
+import { parseRemediationPlan, remediationEvidence, observeRemediationTool, type RemediationObservations, type RemediationPlan, type RemediationScope, type TaskRequest } from "../lib/agents/agents-runner.ts";
+import { NATIVE_REVIEW_ERROR_CODE, NATIVE_REVIEW_OPERATION, NativeReviewCliError, type NativeReviewCli } from "../lib/native/native-review-cli.ts";
+import { remediationUnresolved } from "../lib/agents/agents-history.ts";
+import type { TaskRecord } from "../lib/agents/agents-protocol.ts";
 
 const testCwd = process.cwd();
 const human = { hasUI: true, ui: { confirm: async () => true } } as unknown as Pick<ExtensionContext, "hasUI" | "ui">;
@@ -43,7 +43,7 @@ test("remediation plan is bounded and cannot select another working directory", 
 
 
 test("remediation shell captures numeric exit, preserves stock errors and executes once", async () => {
-	const { remediationBash } = await import("../extensions/gentle-agents.ts");
+	const { remediationBash } = await import("../extensions/jero-agents.ts");
 	for (const exitCode of [0, 7, null]) {
 		let calls = 0;
 		const shell = remediationBash(testCwd, { exec: async (command, cwd, options) => {
@@ -65,14 +65,14 @@ test("remediation shell captures numeric exit, preserves stock errors and execut
 
 
 test("remediation owner and packaged actor are installed through existing ownership", async () => {
-	const { getPackageAssetOwner } = await import("../lib/sdd-preflight.ts");
+	const { getPackageAssetOwner } = await import("../lib/sdd/sdd-preflight.ts");
 	const { readFileSync } = await import("node:fs");
 	assert.equal(getPackageAssetOwner("agents/sdd-remediate.md"), "sdd");
 	assert.match(readFileSync("assets/agents/sdd-remediate.md", "utf8"), /SDD remediate executor/);
 });
 
 test("native remediation admission refuses unsupported owner before acquire", async () => {
-	const { admitManagedRemediation } = await import("../extensions/gentle-agents.ts");
+	const { admitManagedRemediation } = await import("../extensions/jero-agents.ts");
 	let acquires = 0;
 	await assert.rejects(admitManagedRemediation({ agent: { name: "sdd-remediate", filePath: "/absent" }, sddChange: { changeName: "fix", workspaceRoot: testCwd, phase: "remediate", failedEvidenceRevision: revision }, cwd: testCwd } as unknown as TaskRequest, {}, { sddAttemptAcquire: async () => { acquires++; } } as unknown as NativeReviewCli, async () => {}), /unsupported/i);
 	assert.equal(acquires, 0);
@@ -80,11 +80,11 @@ test("native remediation admission refuses unsupported owner before acquire", as
 
 
 test("admitted remediation retains exact settlement before one lost-reply replay", async () => {
-	const { admitManagedRemediation } = await import("../extensions/gentle-agents.ts");
+	const { admitManagedRemediation } = await import("../extensions/jero-agents.ts");
 	const { resolve } = await import("node:path");
 	const { readFileSync } = await import("node:fs");
 	const path = resolve("assets/agents/sdd-remediate.md");
-	const { parseAgentDefinition } = await import("../lib/agents-config.ts");
+	const { parseAgentDefinition } = await import("../lib/agents/agents-config.ts");
 	const agent = parseAgentDefinition(readFileSync(path, "utf8"), path, "global");
 	assert.ok("instructions" in agent);
 	const saved = [], calls = [];
@@ -104,8 +104,8 @@ test("admitted remediation retains exact settlement before one lost-reply replay
 
 
 async function admissionFixture(overrides = {}, persist: (task: TaskRecord) => Promise<void> = async () => {}, agentPatch = {}, attemptPatch = {}, context: Pick<ExtensionContext, "hasUI" | "ui"> = human) {
-	const { admitManagedRemediation } = await import("../extensions/gentle-agents.ts");
-	const { parseAgentDefinition } = await import("../lib/agents-config.ts");
+	const { admitManagedRemediation } = await import("../extensions/jero-agents.ts");
+	const { parseAgentDefinition } = await import("../lib/agents/agents-config.ts");
 	const { readFileSync } = await import("node:fs");
 	const { resolve } = await import("node:path");
 	const path = resolve("assets/agents/sdd-remediate.md");
@@ -153,7 +153,7 @@ test("runtime harness requires its own observed command; malformed content canno
 
 
 test("stock local shell wrapper observes real exit zero and preserves cancellation", async () => {
-	const { remediationBash } = await import("../extensions/gentle-agents.ts");
+	const { remediationBash } = await import("../extensions/jero-agents.ts");
 	const { createBashToolDefinition } = await import("@earendil-works/pi-coding-agent");
 	const shell = remediationBash(process.cwd(), undefined, shellScope(process.cwd(), ["printf wrapper-proof", "sleep 30"]));
 	assert.deepEqual(shell.definition.parameters, createBashToolDefinition(process.cwd()).parameters);
@@ -180,8 +180,8 @@ test("history pruning retains admitted unsettled and uncertain task payloads", a
 	const { mkdtemp, rm } = await import("node:fs/promises");
 	const { tmpdir } = await import("node:os");
 	const { join } = await import("node:path");
-	const { saveTask, pruneHistory, loadHistory } = await import("../lib/agents-history.ts");
-	const { emptyThread } = await import("../lib/agents-protocol.ts");
+	const { saveTask, pruneHistory, loadHistory } = await import("../lib/agents/agents-history.ts");
+	const { emptyThread } = await import("../lib/agents/agents-protocol.ts");
 	const dir = await mkdtemp(join(tmpdir(), "remediation-history-")); t.after(() => rm(dir, { recursive: true, force: true }));
 	await saveTask(dir, { id: "retained", agent: "sdd-remediate", status: "failed", createdAt: 1, sddRemediation: { token: "opaque", settlementUncertain: true, settle: { requestId: "exact" } } } as unknown as TaskRecord, emptyThread());
 	for (const state of ["blocked", "complete"] as const) await saveTask(dir, { id: state, agent: "sdd-remediate", status: "failed", createdAt: 2, sddRemediation: { acquireResult: { state } } } as unknown as TaskRecord, emptyThread());
@@ -254,7 +254,7 @@ test("remediationUnresolved treats a received settlement as terminal, regardless
 
 
 test("remediation actor preserves separately authorized memory artifact tools", async () => {
-	const { parseAgentDefinition } = await import("../lib/agents-config.ts");
+	const { parseAgentDefinition } = await import("../lib/agents/agents-config.ts");
 	const { readFileSync } = await import("node:fs");
 	const agent = parseAgentDefinition(readFileSync("assets/agents/sdd-remediate.md", "utf8"), "/agents/sdd-remediate.md", "global");
 	assert.ok("instructions" in agent);
@@ -283,7 +283,7 @@ test("R3-duplicate-command-evidence requires a distinct execution for every inde
 
 
 test("R1 confirms exact canonical paths and commands; data, denial and symlinks grant nothing", async t => {
-	const { confirmRemediationScope, remediationToolAllowed } = await import("../extensions/gentle-agents.ts");
+	const { confirmRemediationScope, remediationToolAllowed } = await import("../extensions/jero-agents.ts");
 	const { mkdtempSync, writeFileSync, symlinkSync, rmSync } = await import("node:fs");
 	const { tmpdir } = await import("node:os"); const { join } = await import("node:path");
 	const cwd = mkdtempSync(join(tmpdir(), "remediation-scope-")); t.after(() => rmSync(cwd, { recursive: true, force: true }));
@@ -330,7 +330,7 @@ test("R1 denial/headless/cancellation gives zero acquisition and durable mutatio
 	}
 });
 test("R1 child invokes only the exact confirmed command/cwd/count with distinct call IDs", async () => {
-	const { remediationBash } = await import("../extensions/gentle-agents.ts");
+	const { remediationBash } = await import("../extensions/jero-agents.ts");
 	let executions = 0;
 	const shell = remediationBash(testCwd, { exec: async () => { executions++; return { exitCode: 0 }; } }, shellScope(testCwd, ["pnpm test", "pnpm test"]));
 	const execute = (id: string, command: string, cwd = testCwd) => shell.definition.execute(id, { command }, undefined, undefined, cwd === testCwd ? undefined : { cwd } as unknown as ExtensionContext);

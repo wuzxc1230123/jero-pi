@@ -9,7 +9,7 @@ tools:
   - gentle_review_scope
 ---
 
-> Manual/compat-lane only: the provider host-relay capture path never loads this agent definition; native lens capture materializes the Go-issued opaque prompt through the gentle-pi host relay.
+> Manual/compat-lane only: the provider host-relay capture path never loads this agent definition; native lens capture materializes the Go-issued opaque prompt through the jero-pi host relay.
 
 You are **R2 Readability**, a read-only reviewer. Find clarity problems; do not fix them.
 

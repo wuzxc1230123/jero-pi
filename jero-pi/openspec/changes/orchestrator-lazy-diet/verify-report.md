@@ -35,15 +35,15 @@ All findings below were independently re-derived from the filesystem/test run in
 
 | Path | Substituted return (Buffer.byteLength) | vs 10,240 B budget |
 |---|---:|---|
-| Dev checkout (`/home/gentleman/work/gentle-pi`), measured directly via `__testing.getOrchestratorPrompt()` | **10,351 B** | **+111 B over** |
-| Installed path (`~/.pi/agent/npm/node_modules/gentle-pi`), computed from actual placeholder-substitution arithmetic (raw core 10,107 B + per-occurrence path-length deltas for all 4 placeholders, cross-checked to within 1 B against the directly-measured dev figure) | **~10,506 B** | **~+266 B over** |
+| Dev checkout (`/home/gentleman/work/jero-pi`), measured directly via `__testing.getOrchestratorPrompt()` | **10,351 B** | **+111 B over** |
+| Installed path (`~/.pi/agent/npm/node_modules/jero-pi`), computed from actual placeholder-substitution arithmetic (raw core 10,107 B + per-occurrence path-length deltas for all 4 placeholders, cross-checked to within 1 B against the directly-measured dev figure) | **~10,506 B** | **~+266 B over** |
 
 **Verdict: the requirement is NOT met as written for any real deployment path, and the apply-progress.md's own mitigating claim is factually wrong.**
 
 Reasoning:
 1. The spec's normative sentence explicitly names `getOrchestratorPrompt`'s return, not the raw core file. The raw core (10,107 B) does fit under budget with 133 B headroom — but that is not what the spec governs.
 2. `tests/orchestrator-budget.test.ts`'s budget assertion runs exclusively against a `mkdtemp` short-path stub directory (~15 chars). By construction this test **can never fail** due to real deployment path length, only due to raw content growth. This means the "Budget regression caught" scenario ("a future edit that pushes the file over the budget... `pnpm test` MUST fail before merge") is satisfied only for content edits, not for the actual violation type observed here (path-length-driven overage on the governed quantity).
-3. apply-progress.md's own risk note speculates: "If a shorter/typical install path is used... the real substituted return will normally fall under 10,240 B." I measured the actual installed package path (`~/.pi/agent/npm/node_modules/gentle-pi`) as instructed and found the opposite: it is **worse** than the dev checkout (~266 B over vs ~111 B over), because `node_modules` nesting is longer than a typical shallow dev checkout, and 3 of the 4 placeholders resolve to the same `orchestrator-delegation.md` path used 3 times (each occurrence multiplies the path-length cost). This directly contradicts the optimism used to justify treating the overage as "not a blocker."
+3. apply-progress.md's own risk note speculates: "If a shorter/typical install path is used... the real substituted return will normally fall under 10,240 B." I measured the actual installed package path (`~/.pi/agent/npm/node_modules/jero-pi`) as instructed and found the opposite: it is **worse** than the dev checkout (~266 B over vs ~111 B over), because `node_modules` nesting is longer than a typical shallow dev checkout, and 3 of the 4 placeholders resolve to the same `orchestrator-delegation.md` path used 3 times (each occurrence multiplies the path-length cost). This directly contradicts the optimism used to justify treating the overage as "not a blocker."
 4. No design amendment or spec carve-out was ever written to formalize this as an accepted deviation. It exists only as a prose paragraph in `apply-progress.md` ("Honest headroom note"), never sent back through judgment-day, and `review-ledger.md`'s Round 3 entries (all "verified"/APPROVED) predate this discovery — the ledger has no JD-011 or later entry addressing it.
 
 **This is a CRITICAL finding**, not a WARNING: a normative requirement, read plainly, is unmet in every real environment tested, and the current test suite is structurally incapable of ever catching it (it always measures a synthetic stub, never the real deployment path). This is a genuine gap between "tests are green" and "the requirement is actually satisfied in production."
@@ -57,7 +57,7 @@ Do not accept the current apply-progress.md prose note as a substitute for eithe
 ## 4. Design Coherence
 
 - Fixture freeze order followed the design's hard merge-order commitment: `git show HEAD:assets/orchestrator.md` (23,047 B / 312 lines) matches the fixture exactly, and the design's "Final re-baseline (hard commitment executed, 2026-07-09, post-merge of all three prior changes)" section documents this state — consistent.
-- Three lazy files by domain, verbatim-move decision, and placeholder wiring (`getDelegationPath/getMemoryPath/getSkillsPath` mirroring `getSddWorkflowPath`) all match the design's "Decision: Wire new placeholders into the existing cache" section — confirmed via `rg` against `extensions/gentle-ai.ts`.
+- Three lazy files by domain, verbatim-move decision, and placeholder wiring (`getDelegationPath/getMemoryPath/getSkillsPath` mirroring `getSddWorkflowPath`) all match the design's "Decision: Wire new placeholders into the existing cache" section — confirmed via `rg` against `extensions/jero-ai.ts`.
 - Test seam (JD-005: `GENTLE_PI_TEST_ASSETS_DIR` env override + `__testing.getOrchestratorPrompt` export) implemented exactly as specified — confirmed via `rg`.
 - The only design-vs-reality gap is §3 above (budget-on-real-path), which the design's own Addendum implicitly anticipated risk for (JD-005's rationale) but never resolved to a real pass/fail commitment.
 
@@ -68,8 +68,8 @@ Do not accept the current apply-progress.md prose note as a substitute for eithe
   - Phase 1 (seam): `ASSETS_DIR` env override and `__testing.getOrchestratorPrompt` export both present — confirmed via `rg`.
   - Phase 2 (RED tests): `tests/fixtures/orchestrator.pre-diet.md` and `tests/orchestrator-budget.test.ts` present with the claimed test counts.
   - Phase 3 (core + 3 lazy files): all 4 files exist with byte counts matching apply-progress.md exactly.
-  - Phase 4 (wiring): 3 path getters + 3 `.replaceAll` calls confirmed in `extensions/gentle-ai.ts`.
-  - Phase 5 (repoints): `tests/gentle-ai.test.ts:40` + 5 discovered repoints across 4 additional files, all diffs confirmed genuine (widened union reads, no weakening).
+  - Phase 4 (wiring): 3 path getters + 3 `.replaceAll` calls confirmed in `extensions/jero-ai.ts`.
+  - Phase 5 (repoints): `tests/jero-ai.test.ts:40` + 5 discovered repoints across 4 additional files, all diffs confirmed genuine (widened union reads, no weakening).
   - Phase 6 (measure/verify): byte table and `pnpm test` 306/306 result both independently reproduced.
 - No unchecked tasks. No task claims contradicted by the filesystem.
 

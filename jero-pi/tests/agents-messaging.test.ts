@@ -3,7 +3,7 @@ import { spawn } from "node:child_process";
 import { once } from "node:events";
 import { join } from "node:path";
 import test from "node:test";
-import { CHILD_MESSAGE_MAX_BYTES, ChildMessenger, parseChildFrame } from "../lib/agents-messaging.ts";
+import { CHILD_MESSAGE_MAX_BYTES, ChildMessenger, parseChildFrame } from "../lib/agents/agents-messaging.ts";
 
 test("notification and query frames admit only bounded exact schemas", () => {
 	assert.deepEqual(parseChildFrame({ id: "n1", kind: "notification", message: "💡\nready" }).frame, { id: "n1", kind: "notification", message: "💡\nready" });

@@ -1,6 +1,6 @@
 ---
 name: release
-description: "Release gentle-pi through GitHub and npm. Trigger: release, publish, npm publish, GitHub release, version bump."
+description: "Release jero-pi through GitHub and npm. Trigger: release, publish, npm publish, GitHub release, version bump."
 license: Apache-2.0
 metadata:
   author: gentleman-programming
@@ -9,11 +9,11 @@ metadata:
 
 ## When to Use
 
-Use this skill when preparing, publishing, or verifying a `gentle-pi` release.
+Use this skill when preparing, publishing, or verifying a `jero-pi` release.
 
 ## Hard Rules
 
-- Do not publish `gentle-pi` to npm from a local machine.
+- Do not publish `jero-pi` to npm from a local machine.
 - npm publishing MUST go through the GitHub Actions workflow `.github/workflows/publish.yml` so provenance, environment protection, and registry credentials are controlled by GitHub.
 - Dispatch the trusted workflow definition from protected default `main`, never from a release tag. Its only caller input is the exact annotated version tag.
 - Use a clean worktree for release commits. Do not package unrelated local files or scratch artifacts.
@@ -66,7 +66,7 @@ Use this skill when preparing, publishing, or verifying a `gentle-pi` release.
    test "$(git rev-parse 'HEAD^{commit}')" = "${release_sha}"
    test -z "$(git ls-remote --tags origin "refs/tags/${tag}")"
 
-   git tag -a "${tag}" "${release_sha}" -m "gentle-pi ${tag}"
+   git tag -a "${tag}" "${release_sha}" -m "jero-pi ${tag}"
    test "$(git rev-parse "${tag}^{commit}")" = "${release_sha}"
 
    git fetch origin main
@@ -79,7 +79,7 @@ Use this skill when preparing, publishing, or verifying a `gentle-pi` release.
    gh release create "${tag}" \
      --repo Gentleman-Programming/gentle-pi \
      --verify-tag \
-     --title "gentle-pi ${tag}" \
+     --title "jero-pi ${tag}" \
      --notes "<release notes>"
    ```
 
@@ -108,8 +108,8 @@ Use this skill when preparing, publishing, or verifying a `gentle-pi` release.
 7. **Verify npm**
 
    ```bash
-   npm view gentle-pi@<version> version --registry=https://registry.npmjs.org/
-   npm dist-tag ls gentle-pi --registry=https://registry.npmjs.org/
+   npm view jero-pi@<version> version --registry=https://registry.npmjs.org/
+   npm dist-tag ls jero-pi --registry=https://registry.npmjs.org/
    ```
 
 ## Failure Handling
@@ -123,7 +123,7 @@ Use this skill when preparing, publishing, or verifying a `gentle-pi` release.
   gh run view <run-id> --repo Gentleman-Programming/gentle-pi --log
   ```
 
-- If npm verification is briefly stale after a successful workflow, check the exact version first (`npm view gentle-pi@<version> version`) before assuming publish failed.
+- If npm verification is briefly stale after a successful workflow, check the exact version first (`npm view jero-pi@<version> version`) before assuming publish failed.
 
 ## Output Contract
 

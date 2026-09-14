@@ -8,7 +8,7 @@ Single-source identity/persona/language injection for a Pi parent session, repla
 
 ### Requirement: Single Canonical Identity/Persona/Language Channel
 
-Identity, persona, and language-boundary content MUST appear exactly once within gentle-pi's always-on parent-session injection. The wrapper block built by `buildGentlePrompt` in `gentle-ai.ts` MUST be the canonical home, because it carries the runtime `Current persona mode:` line. `orchestrator.md`'s Identity Contract section MUST reduce to a single-line pointer referencing the canonical block. Within `orchestrator.md`'s Language Boundary section, only the duplicated portion (LB1 — the user-facing language/persona-mode rule) MUST reduce to a single-line pointer referencing the canonical block; the unique delegation/artifact rules (LB2-LB5 — subagent-English delegation, artifact-English, public-comment target language, and exceptions) are retained verbatim, because they exist nowhere else in the injection and deleting them would be content loss.
+Identity, persona, and language-boundary content MUST appear exactly once within jero-pi's always-on parent-session injection. The wrapper block built by `buildGentlePrompt` in `gentle-ai.ts` MUST be the canonical home, because it carries the runtime `Current persona mode:` line. `orchestrator.md`'s Identity Contract section MUST reduce to a single-line pointer referencing the canonical block. Within `orchestrator.md`'s Language Boundary section, only the duplicated portion (LB1 — the user-facing language/persona-mode rule) MUST reduce to a single-line pointer referencing the canonical block; the unique delegation/artifact rules (LB2-LB5 — subagent-English delegation, artifact-English, public-comment target language, and exceptions) are retained verbatim, because they exist nowhere else in the injection and deleting them would be content loss.
 
 #### Scenario: Parent session receives single-source injection
 
@@ -80,13 +80,13 @@ The injection branch used for named or SDD subagent sessions MUST NOT be altered
 
 ### Requirement: Cross-Tool Ownership Contract Documented
 
-A written cross-tool ownership contract MUST exist in the change directory stating that gentle-pi owns Pi-session identity/persona/language content, and that slimming gentle-ai's `APPEND_SYSTEM.md` persona section is a follow-up owned by the gentle-ai repo.
+A written cross-tool ownership contract MUST exist in the change directory stating that jero-pi owns Pi-session identity/persona/language content, and that slimming gentle-ai's `APPEND_SYSTEM.md` persona section is a follow-up owned by the gentle-ai repo.
 
 #### Scenario: Ownership contract artifact exists
 
 - GIVEN the change is applied
 - WHEN a reviewer inspects the change directory
-- THEN a written artifact states gentle-pi's ownership of Pi-session identity
+- THEN a written artifact states jero-pi's ownership of Pi-session identity
 - AND the artifact records the gentle-ai APPEND_SYSTEM slimming as an out-of-scope, documented follow-up
 
 ### Requirement: Measured Byte Delta Recorded
@@ -102,7 +102,7 @@ Measured before/after byte counts for the affected injection channels, together 
 
 ## Acceptance Criteria
 
-- [x] Identity/persona/language rules appear exactly once in gentle-pi's injection; orchestrator.md's Identity Contract reduces to a pointer; orchestrator.md's Language Boundary LB1 (duplicated) reduces to a pointer while LB2-LB5 (unique) remain verbatim.
+- [x] Identity/persona/language rules appear exactly once in jero-pi's injection; orchestrator.md's Identity Contract reduces to a pointer; orchestrator.md's Language Boundary LB1 (duplicated) reduces to a pointer while LB2-LB5 (unique) remain verbatim.
 - [x] Frozen-fixture migration test proves the union (zero rules lost) under `pnpm test`.
 - [x] Persona constant selection (Gentleman/Neutral) verified unchanged.
 - [x] Named/SDD subagent injection branch verified unchanged.

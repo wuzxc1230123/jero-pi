@@ -9,7 +9,7 @@ import { test } from "node:test";
 const helperUrl = new URL("../scripts/install-tui-mode-setting.mjs", import.meta.url);
 const { installTuiModeSetting } = await import(helperUrl.href);
 
-function fixture(t: { after(fn: () => void): void }, packagePath: readonly string[] = ["npm", "node_modules", "gentle-pi"]) {
+function fixture(t: { after(fn: () => void): void }, packagePath: readonly string[] = ["npm", "node_modules", "jero-pi"]) {
 	const root = mkdtempSync(join(tmpdir(), "gentle-tui-test-"));
 	t.after(() => rmSync(root, { recursive: true, force: true }));
 	const home = join(root, "agent");
@@ -25,7 +25,7 @@ function link(target: string, path: string, directory = false) {
 }
 
 for (const [name, packagePath] of [
-	["npm", ["npm", "node_modules", "gentle-pi"]],
+	["npm", ["npm", "node_modules", "jero-pi"]],
 	["Pi Git", ["git", "github.com", "Gentleman-Programming", "gentle-pi"]],
 ] as const) {
 	test(`recognized global ${name} installation persists fullscreen and preserves other settings`, async (t) => {
@@ -64,7 +64,7 @@ for (const name of ["GENTLE_PI_AGENT_HOME", "PI_CODING_AGENT_DIR", "default"]) {
 	test(`agent-home precedence: ${name}`, async (t) => {
 		const f = fixture(t);
 		const home = name === "default" ? join(f.root, ".pi", "agent") : f.home;
-		const packageRoot = join(home, "npm", "node_modules", "gentle-pi");
+		const packageRoot = join(home, "npm", "node_modules", "jero-pi");
 		mkdirSync(packageRoot, { recursive: true });
 		const env = name === "default" ? {} : name === "PI_CODING_AGENT_DIR" ? { PI_CODING_AGENT_DIR: home } : f.env;
 		await installTuiModeSetting({ packageRoot, env, home: f.root });
@@ -74,13 +74,13 @@ for (const name of ["GENTLE_PI_AGENT_HOME", "PI_CODING_AGENT_DIR", "default"]) {
 }
 
 for (const relative of [
-	"project/.pi/npm/node_modules/gentle-pi",
+	"project/.pi/npm/node_modules/jero-pi",
 	"project/.pi/git/github.com/Gentleman-Programming/gentle-pi",
-	"consumer/node_modules/gentle-pi",
+	"consumer/node_modules/jero-pi",
 	"checkout",
-	"agent/git/github.com/gentle-pi",
-	"temporary/npm/node_modules/gentle-pi",
-	"store/.pnpm/gentle-pi/node_modules/gentle-pi",
+	"agent/git/github.com/jero-pi",
+	"temporary/npm/node_modules/jero-pi",
+	"store/.pnpm/jero-pi/node_modules/jero-pi",
 ]) {
 	test(`unowned install is untouched: ${relative}`, async (t) => {
 		const f = fixture(t);
@@ -95,7 +95,7 @@ for (const relative of [
 
 for (const packagePath of [
 	["git", "gitlab.com", "Gentleman-Programming", "gentle-pi"],
-	["git", "github.com", "Other-Organization", "gentle-pi"],
+	["git", "github.com", "Other-Organization", "jero-pi"],
 	["git", "github.com", "Gentleman-Programming", "other-pi"],
 ]) {
 	test(`unowned global Pi Git install is untouched: ${packagePath.join("/")}`, async (t) => {
@@ -114,7 +114,7 @@ test("missing configured agent home is a no-op", async (t) => {
 });
 
 for (const [name, packagePath] of [
-	["npm", ["npm", "node_modules", "gentle-pi"]],
+	["npm", ["npm", "node_modules", "jero-pi"]],
 	["Pi Git", ["git", "github.com", "Gentleman-Programming", "gentle-pi"]],
 ] as const) {
 	test(`global ${name} package symlink into a store is not ownership`, async (t) => {
@@ -200,17 +200,17 @@ test("Pi's later packages-only save retains persisted fullscreen", async (t) => 
 	const { SettingsManager } = await import("@earendil-works/pi-coding-agent");
 	const manager = SettingsManager.create(f.root, f.home);
 	await installTuiModeSetting(f.options);
-	manager.setPackages(["npm:gentle-pi"]);
+	manager.setPackages(["npm:jero-pi"]);
 	await manager.flush();
 	assert.deepEqual(manager.drainErrors(), []);
-	assert.deepEqual(JSON.parse(readFileSync(f.settings, "utf8")), { tuiMode: "fullscreen", packages: ["npm:gentle-pi"] });
+	assert.deepEqual(JSON.parse(readFileSync(f.settings, "utf8")), { tuiMode: "fullscreen", packages: ["npm:jero-pi"] });
 	manager.setTuiMode("regular");
 	await manager.flush();
 	assert.equal(JSON.parse(readFileSync(f.settings, "utf8")).tuiMode, "regular");
 });
 
 for (const [name, packagePath] of [
-	["npm", ["npm", "node_modules", "gentle-pi"]],
+	["npm", ["npm", "node_modules", "jero-pi"]],
 	["Pi Git", ["git", "github.com", "Gentleman-Programming", "gentle-pi"]],
 ] as const) {
 	test(`symlinked ${name} ancestor cannot grant settings ownership`, async (t) => {
@@ -295,7 +295,7 @@ function runPostinstall(f: ReturnType<typeof fixture>, route: PostinstallRoute) 
 function assertPostinstallLifecycle(f: ReturnType<typeof fixture>, route: PostinstallRoute, result: ReturnType<typeof runPostinstall>, settingsExists = route !== "failure") {
 	assert.equal(result.status, route === "failure" ? 1 : 0, result.stderr);
 	assert.equal(existsSync(f.settings), settingsExists);
-	if (route === "failure") assert.match(result.stderr, /gentle-pi could not install its package-local Gentle AI vtest binary: native failed/);
+	if (route === "failure") assert.match(result.stderr, /jero-pi could not install its package-local Gentle AI vtest binary: native failed/);
 	else {
 		assert.doesNotMatch(result.stderr, /skip fixture native installer was invoked/);
 		assert.equal(JSON.parse(readFileSync(f.settings, "utf8")).tuiMode, "fullscreen");
@@ -303,7 +303,7 @@ function assertPostinstallLifecycle(f: ReturnType<typeof fixture>, route: Postin
 }
 
 for (const [name, packagePath] of [
-	["npm", ["npm", "node_modules", "gentle-pi"]],
+	["npm", ["npm", "node_modules", "jero-pi"]],
 	["Pi Git", ["git", "github.com", "Gentleman-Programming", "gentle-pi"]],
 ] as const) {
 	for (const route of ["skip", "success", "failure"] as const) {

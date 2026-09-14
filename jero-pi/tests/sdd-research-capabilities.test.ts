@@ -4,10 +4,10 @@ import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, symlinkSync, rmSyn
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
-import { parseResearchArtifactIntent, researchArtifactCall, researchArtifactReadback, type ResearchArtifactIntent } from "../lib/sdd-research-capabilities.ts";
-import { childArguments } from "../lib/agents-runner.ts";
-import { resolveResearchCapabilities, researchAgent, renderResearchCapabilities } from "../lib/sdd-research-capabilities.ts";
-import type { AgentDefinition } from "../lib/agents-config.ts";
+import { parseResearchArtifactIntent, researchArtifactCall, researchArtifactReadback, type ResearchArtifactIntent } from "../lib/sdd/sdd-research-capabilities.ts";
+import { childArguments } from "../lib/agents/agents-runner.ts";
+import { resolveResearchCapabilities, researchAgent, renderResearchCapabilities } from "../lib/sdd/sdd-research-capabilities.ts";
+import type { AgentDefinition } from "../lib/agents/agents-config.ts";
 
 const inventory = (names: string[]) => ({ getActiveTools: () => names, getAllTools: () => names.map(name => ({ name, sourceInfo: { source: "extension", path: "/installed/web.ts" } })) });
 const grant = (tools: string[]) => ({ tools, extensions: Object.fromEntries(tools.map(name => [name, "/installed/web.ts"])) });
@@ -175,7 +175,7 @@ test("only actual exact OpenSpec bytes and Engram metadata satisfy readback iden
 
 
 test("R4 research write crash reload requires durable desired identity and actual backend readback", async t => {
- const { default: gentleAgents } = await import("../extensions/gentle-agents.ts");
+ const { default: gentleAgents } = await import("../extensions/jero-agents.ts");
  const { appendFileSync } = await import("node:fs");
  const cwd = mkdtempSync(join(tmpdir(), "research-crash-")); t.after(() => rmSync(cwd, { recursive: true, force: true }));
  for (const store of ["openspec", "engram", "both"] as const) {
@@ -233,7 +233,7 @@ test("R4 research write crash reload requires durable desired identity and actua
 
 
 test("R4 corrupted or broadened durable research scope is not a restart grant", async t => {
- const { parseResearchPersistence } = await import("../lib/sdd-research-capabilities.ts");
+ const { parseResearchPersistence } = await import("../lib/sdd/sdd-research-capabilities.ts");
  const cwd = mkdtempSync(join(tmpdir(), "research-journal-")); t.after(() => rmSync(cwd, { recursive: true, force: true }));
  const locator = { artifact: "research", revision: 1, digest: "a".repeat(64), engram: { id: 12, project: "pi", topic_key: "sdd/demo/research", revision_count: 1 } };
  const scope: ResearchArtifactIntent = { store: "engram", worktree: cwd, changeName: "demo", retainedIntent: "retain uncertainty", locators: [locator] };

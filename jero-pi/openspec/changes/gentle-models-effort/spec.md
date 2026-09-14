@@ -7,7 +7,7 @@ The package MUST accept existing `.pi/gentle-ai/models.json` entries where an ag
 ### Scenario: existing string config loads
 
 - Given `.pi/gentle-ai/models.json` contains `{ "sdd-apply": "openai/gpt-5" }`
-- When `/gentle:models` opens
+- When `/jero:models` opens
 - Then `sdd-apply` shows model `openai/gpt-5`
 - And effort is treated as inherited/unset
 
@@ -65,7 +65,7 @@ The package MUST apply saved model and effort assignments for builtin agents thr
 
 ## Requirement: UI supports effort selection
 
-The `/gentle:models` modal MUST allow changing effort per agent and for all agents.
+The `/jero:models` modal MUST allow changing effort per agent and for all agents.
 
 ### Scenario: list shows both values
 
@@ -85,11 +85,11 @@ The implementation MUST update runtime tests and README documentation.
 
 ### Scenario: harness validates command behavior
 
-- Given the runtime harness executes `/gentle:models` with a fake saved config
+- Given the runtime harness executes `/jero:models` with a fake saved config
 - When the command finishes
 - Then the harness asserts the config file, agent frontmatter, and settings override contain the expected model/effort values
 
 ### Scenario: docs describe saved shape
 
-- Given README documents `/gentle:models`
+- Given README documents `/jero:models`
 - Then it explains model plus effort assignment and the `.pi/gentle-ai/models.json` object shape

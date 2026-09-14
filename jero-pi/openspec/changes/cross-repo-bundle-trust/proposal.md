@@ -19,7 +19,7 @@ below).
 its `repository_identity` / `repository_id` / `authority_id` match this repository's own,
 locally-resolved identity (`lib/review-bundle.ts`, `validateManifest` and the identity-equality
 check in `import`). `repository_identity` is derived only from the repository's pinned or live
-root-commit set (`lib/review-repository.ts`) — data that is public for any public repository, and
+root-commit set (`lib/review/review-repository.ts`) — data that is public for any public repository, and
 knowable to anyone who can clone or inspect that repository's history.
 
 This means: a party with no legitimate relationship to a target repository's own review authority
@@ -29,7 +29,7 @@ lineage (fake approvals, fake receipts, fake gate outcomes — all internally se
 because the domain-hashing algorithm is public code), export that fabricated lineage as a
 bundle, and have it accepted by any target repository sharing the same public root-commit
 identity. Nothing in the bundle format binds its content to a specific, trusted physical
-repository instance the way `lib/review-transaction.ts:1666`'s `common_directory` equality check
+repository instance the way `lib/review/review-transaction.ts:1666`'s `common_directory` equality check
 binds a receipt to the exact repository that produced it for same-process gate validation.
 
 `common_directory` cannot be reused as the cross-repo discriminator: it is, by design,
@@ -94,7 +94,7 @@ change.
 - Reopening or amending the terminal, escalated `bounded-review-graph-parity` review lineage.
   This is a new change with its own lineage.
 - Any change to `common_directory`'s existing same-process staleness/tamper-detection role in
-  `lib/review-transaction.ts` (`assertCurrentRepositoryAuthority`, `validateAuthoritativeGate`).
+  `lib/review/review-transaction.ts` (`assertCurrentRepositoryAuthority`, `validateAuthoritativeGate`).
 - Porting `gentle-ai`'s physical-path-plus-content-tree model wholesale; it is a read-only
   reference for a differently-shaped problem, not a drop-in fix.
 - General bundle format changes unrelated to cross-repo trust (e.g. compression, chunking,

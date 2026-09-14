@@ -4,11 +4,11 @@ v24.18.0
 11.1.1
 92f126cddb1ca3f5c22c23dea7bb3f6e3d91d404
  M README.md
- M lib/native-review-cli.ts
+ M lib/native/native-review-cli.ts
  M package.json
  M scripts/verify-package-files.mjs
  M tests/package-manifest.test.ts
-?? lib/gentle-ai-binary.ts
+?? lib/core/gentle-ai-binary.ts
 ?? openspec/changes/consolidate-review-parity-runtime/
 ?? scripts/gentle-ai-installer.mjs
 ?? scripts/install-gentle-ai.mjs
@@ -17,12 +17,12 @@ v24.18.0
 
 ## Diff stat
  README.md                        |  4 +++-
- lib/native-review-cli.ts         | 23 ++++++++++++++++++-----
+ lib/native/native-review-cli.ts         | 23 ++++++++++++++++++-----
  package.json                     |  1 +
  scripts/verify-package-files.mjs |  3 +++
  tests/package-manifest.test.ts   | 11 +++++++++++
  5 files changed, 36 insertions(+), 6 deletions(-)
- /dev/null => lib/gentle-ai-binary.ts | 44 ++++++++++++++++++++++++++++++++++++
+ /dev/null => lib/core/gentle-ai-binary.ts | 44 ++++++++++++++++++++++++++++++++++++
  1 file changed, 44 insertions(+)
  /dev/null => scripts/gentle-ai-installer.mjs | 178 +++++++++++++++++++++++++++
  1 file changed, 178 insertions(+)
@@ -35,8 +35,8 @@ v24.18.0
 
 ## Protected path digests
 b7a873043a640dbe634a7477801b08d29325f88d71360d5ad9aded0d00977f11  package.json
-cd95beee25b3f8eb525d789941beef3a7ca159a1232015f9971123551949e571  lib/native-review-cli.ts
-907f66e8ae357a93c20cfbe9ae89ed43243c1a4481ce7be3bd1eb470694a785c  lib/gentle-ai-binary.ts
+cd95beee25b3f8eb525d789941beef3a7ca159a1232015f9971123551949e571  lib/native/native-review-cli.ts
+907f66e8ae357a93c20cfbe9ae89ed43243c1a4481ce7be3bd1eb470694a785c  lib/core/gentle-ai-binary.ts
 ce9f4f656c7041f8e87e58dbd1da89fb5faced7eeaeacd9d9faed1157b8a0071  scripts/verify-package-files.mjs
 8fa4ea6390b2f352ceb152552ec2ad55f0bb405f2ea3a192ceb45b7f63bf8d85  scripts/gentle-ai-installer.mjs
 59fd147ddf93395d0046a54f7a8e0ed31d4c39dcd1db7c52d38e2f3da931dd03  scripts/install-gentle-ai.mjs
@@ -57,10 +57,10 @@ index e134e5eb..f035708f 100644
      "test": "node --experimental-strip-types --test tests/*.test.ts && pnpm run test:harness",
      "test:harness": "node --experimental-strip-types tests/runtime-harness.mjs",
      "prepack": "pnpm test && node scripts/verify-package-files.mjs",
-diff --git a/lib/native-review-cli.ts b/lib/native-review-cli.ts
+diff --git a/lib/native/native-review-cli.ts b/lib/native/native-review-cli.ts
 index d278ea5a..f4378895 100644
---- a/lib/native-review-cli.ts
-+++ b/lib/native-review-cli.ts
+--- a/lib/native/native-review-cli.ts
++++ b/lib/native/native-review-cli.ts
 @@ -3,6 +3,7 @@ import { chmod, mkdtemp, rm, writeFile } from "node:fs/promises";
  import { tmpdir } from "node:os";
  import { join } from "node:path";
@@ -134,12 +134,12 @@ index 8e434f77..fc505653 100644
 --- a/scripts/verify-package-files.mjs
 +++ b/scripts/verify-package-files.mjs
 @@ -36,8 +36,11 @@ const requiredPaths = [
-   "extensions/gentle-ai.ts",
+   "extensions/jero-ai.ts",
    "extensions/sdd-init.ts",
    "extensions/skill-registry.ts",
-+  "lib/gentle-ai-binary.ts",
-   "lib/native-review-cli.ts",
-   "lib/sdd-preflight.ts",
++  "lib/core/gentle-ai-binary.ts",
+   "lib/native/native-review-cli.ts",
+   "lib/sdd/sdd-preflight.ts",
 +  "scripts/gentle-ai-installer.mjs",
 +  "scripts/install-gentle-ai.mjs",
    "tests/fixtures/native-review-cli/v2.1.2/start.json",
@@ -167,11 +167,11 @@ index 6f47ed1d..b0d4e881 100644
  test("package manifest installs pi-pretty through a wrapper without bundling native optional dependencies", () => {
  	const packageJson = readPackageJson();
  
-diff --git a/lib/gentle-ai-binary.ts b/lib/gentle-ai-binary.ts
+diff --git a/lib/core/gentle-ai-binary.ts b/lib/core/gentle-ai-binary.ts
 new file mode 100644
 index 00000000..8f9c6e02
 --- /dev/null
-+++ b/lib/gentle-ai-binary.ts
++++ b/lib/core/gentle-ai-binary.ts
 @@ -0,0 +1,44 @@
 +import { existsSync, lstatSync } from "node:fs";
 +import { dirname, join, resolve } from "node:path";
@@ -184,7 +184,7 @@ index 00000000..8f9c6e02
 +	readonly code = GENTLE_AI_BINARY_MISSING_CODE;
 +	constructor(path: string) {
 +		super(
-+			`${GENTLE_AI_BINARY_MISSING_CODE}: Gentle AI v${GENTLE_AI_VERSION} is not installed at ${path}. Reinstall gentle-pi, or use GENTLE_PI_SKIP_GENTLE_AI_INSTALL=1 only for development/offline installs.`,
++			`${GENTLE_AI_BINARY_MISSING_CODE}: Gentle AI v${GENTLE_AI_VERSION} is not installed at ${path}. Reinstall jero-pi, or use GENTLE_PI_SKIP_GENTLE_AI_INSTALL=1 only for development/offline installs.`,
 +		);
 +		this.name = "PackageLocalGentleAiBinaryMissingError";
 +	}
@@ -411,13 +411,13 @@ index 00000000..1ae07e47
 +import { installGentleAi } from "./gentle-ai-installer.mjs";
 +
 +if (process.env.GENTLE_PI_SKIP_GENTLE_AI_INSTALL === "1") {
-+	console.warn("GENTLE_PI_SKIP_GENTLE_AI_INSTALL=1: skipped package-local Gentle AI installation; native review operations will fail with package-local-binary-missing until gentle-pi is reinstalled.");
++	console.warn("GENTLE_PI_SKIP_GENTLE_AI_INSTALL=1: skipped package-local Gentle AI installation; native review operations will fail with package-local-binary-missing until jero-pi is reinstalled.");
 +} else {
 +	try {
 +		const result = await installGentleAi();
 +		console.log(`Gentle AI v2.1.2 ${result.installed ? "installed" : "integrity-verified"} at ${result.binaryPath}`);
 +	} catch (error) {
-+		console.error(`gentle-pi could not install its package-local Gentle AI v2.1.2 binary: ${error instanceof Error ? error.message : String(error)}`);
++		console.error(`jero-pi could not install its package-local Gentle AI v2.1.2 binary: ${error instanceof Error ? error.message : String(error)}`);
 +		process.exitCode = 1;
 +	}
 +}
@@ -436,13 +436,13 @@ index 00000000..6ce21d19
 +	GENTLE_AI_BINARY_MISSING_CODE,
 +	PackageLocalGentleAiBinaryMissingError,
 +	resolveGentleAiBinary,
-+} from "../lib/gentle-ai-binary.ts";
-+import { NativeReviewCliV212, createNativeReviewCli, type ExecFileAdapter } from "../lib/native-review-cli.ts";
++} from "../lib/core/gentle-ai-binary.ts";
++import { NativeReviewCliV212, createNativeReviewCli, type ExecFileAdapter } from "../lib/native/native-review-cli.ts";
 +
 +const VERSION = { stdout: "gentle-ai 2.1.2\n", stderr: "", exitCode: 0, signal: null, timedOut: false, outputLimitExceeded: false } as const;
 +
 +test("runtime resolves an absolute package-local binary path without PATH fallback", async () => {
-+	const packageRoot = await mkdtemp(join(tmpdir(), "gentle-pi-binary-"));
++	const packageRoot = await mkdtemp(join(tmpdir(), "jero-pi-binary-"));
 +	const executable = process.platform === "win32" ? "gentle-ai.exe" : "gentle-ai";
 +	const binaryPath = join(packageRoot, ".gentle-ai", "v2.1.2", executable);
 +	await mkdir(join(packageRoot, ".gentle-ai", "v2.1.2"), { recursive: true });
@@ -456,7 +456,7 @@ index 00000000..6ce21d19
 +});
 +
 +test("runtime fails closed when the package-local binary is missing", async () => {
-+	const packageRoot = await mkdtemp(join(tmpdir(), "gentle-pi-binary-missing-"));
++	const packageRoot = await mkdtemp(join(tmpdir(), "jero-pi-binary-missing-"));
 +	assert.throws(
 +		() => resolveGentleAiBinary(packageRoot, "linux"),
 +		(error: unknown) => error instanceof PackageLocalGentleAiBinaryMissingError
@@ -466,7 +466,7 @@ index 00000000..6ce21d19
 +});
 +
 +test("production native operations report the package-local missing binary code", async () => {
-+	const packageRoot = await mkdtemp(join(tmpdir(), "gentle-pi-native-missing-"));
++	const packageRoot = await mkdtemp(join(tmpdir(), "jero-pi-native-missing-"));
 +	const adapter: ExecFileAdapter = async () => {
 +		throw new Error("the adapter must not be reached when the package binary is missing");
 +	};
@@ -477,7 +477,7 @@ index 00000000..6ce21d19
 +});
 +
 +test("production native client never invokes a global gentle-ai executable", async () => {
-+	const packageRoot = await mkdtemp(join(tmpdir(), "gentle-pi-native-"));
++	const packageRoot = await mkdtemp(join(tmpdir(), "jero-pi-native-"));
 +	const executable = process.platform === "win32" ? "gentle-ai.exe" : "gentle-ai";
 +	const binaryPath = join(packageRoot, ".gentle-ai", "v2.1.2", executable);
 +	await mkdir(join(packageRoot, ".gentle-ai", "v2.1.2"), { recursive: true });
@@ -603,8 +603,8 @@ index 00000000..ee84cdbb
 
 ## Post-suite protected path digests
 b7a873043a640dbe634a7477801b08d29325f88d71360d5ad9aded0d00977f11  package.json
-cd95beee25b3f8eb525d789941beef3a7ca159a1232015f9971123551949e571  lib/native-review-cli.ts
-907f66e8ae357a93c20cfbe9ae89ed43243c1a4481ce7be3bd1eb470694a785c  lib/gentle-ai-binary.ts
+cd95beee25b3f8eb525d789941beef3a7ca159a1232015f9971123551949e571  lib/native/native-review-cli.ts
+907f66e8ae357a93c20cfbe9ae89ed43243c1a4481ce7be3bd1eb470694a785c  lib/core/gentle-ai-binary.ts
 ce9f4f656c7041f8e87e58dbd1da89fb5faced7eeaeacd9d9faed1157b8a0071  scripts/verify-package-files.mjs
 8fa4ea6390b2f352ceb152552ec2ad55f0bb405f2ea3a192ceb45b7f63bf8d85  scripts/gentle-ai-installer.mjs
 59fd147ddf93395d0046a54f7a8e0ed31d4c39dcd1db7c52d38e2f3da931dd03  scripts/install-gentle-ai.mjs

@@ -13,7 +13,7 @@ import {
 	UsageStore,
 	windowLabel,
 	type ProviderUsage,
-} from "../lib/shell-usage.ts";
+} from "../lib/shell/shell-usage.ts";
 
 // Subscription usage: what each connected provider says about its windows.
 // Parsers are pure; the store only remembers the latest snapshot.

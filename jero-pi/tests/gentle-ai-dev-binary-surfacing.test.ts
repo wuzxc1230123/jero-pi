@@ -6,12 +6,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { createGentleAiExtension } from "../extensions/gentle-ai.ts";
+import { createGentleAiExtension } from "../extensions/jero-ai.ts";
 import {
 	GENTLE_AI_DEV_BINARY_ENV,
 	gentleAiDevBinaryRegistrationPath,
 	setGentleAiDevBinaryEnvironmentForTesting,
-} from "../lib/gentle-ai-binary.ts";
+} from "../lib/core/gentle-ai-binary.ts";
 
 // Loud surfacing for the dev-binary override: while an override is active,
 // every diagnostic surface must say so, name the exact binary, its live
@@ -47,8 +47,8 @@ function contextFor(cwd: string, notifications: Array<{ message: string; severit
 }
 
 async function withDevOverride<T>(callback: (state: { devBinary: string; sha256: string; home: string }) => Promise<T>): Promise<T> {
-	const home = await mkdtemp(join(tmpdir(), "gentle-pi-dev-surface-home-"));
-	const bin = await mkdtemp(join(tmpdir(), "gentle-pi-dev-surface-bin-"));
+	const home = await mkdtemp(join(tmpdir(), "jero-pi-dev-surface-home-"));
+	const bin = await mkdtemp(join(tmpdir(), "jero-pi-dev-surface-bin-"));
 	const devBinary = join(bin, "gentle-ai");
 	writeFileSync(devBinary, "#!/bin/sh\necho 'gentle-ai 9.9.9-dev+surface'\n");
 	chmodSync(devBinary, 0o755);
@@ -61,16 +61,16 @@ async function withDevOverride<T>(callback: (state: { devBinary: string; sha256:
 	}
 }
 
-test("gentle:doctor and gentle:status surface the active dev-binary override loudly", async () => {
+test("jero:doctor and jero:status surface the active dev-binary override loudly", async () => {
 	const previousAgentHome = process.env.GENTLE_PI_AGENT_HOME;
-	process.env.GENTLE_PI_AGENT_HOME = await mkdtemp(join(tmpdir(), "gentle-pi-dev-agent-home-"));
+	process.env.GENTLE_PI_AGENT_HOME = await mkdtemp(join(tmpdir(), "jero-pi-dev-agent-home-"));
 	try {
 		await withDevOverride(async ({ devBinary, sha256 }) => {
 			const { pi, commands } = harness();
 			createGentleAiExtension({ nativeReviewCli: null })(pi);
-			const cwd = await mkdtemp(join(tmpdir(), "gentle-pi-dev-cwd-"));
+			const cwd = await mkdtemp(join(tmpdir(), "jero-pi-dev-cwd-"));
 			const expected = `Gentle AI dev binary override active (unpinned, field-test only): ${devBinary} 9.9.9-dev+surface sha256:${sha256.slice(0, 16)}`;
-			for (const command of ["gentle:doctor", "gentle:status"]) {
+			for (const command of ["jero:doctor", "jero:status"]) {
 				const notifications: Array<{ message: string; severity: string }> = [];
 				await commands.get(command)!.handler("", contextFor(cwd, notifications));
 				assert.equal(notifications.length, 1, command);
@@ -85,14 +85,14 @@ test("gentle:doctor and gentle:status surface the active dev-binary override lou
 
 test("without an override the surfaces stay silent about dev binaries", async () => {
 	const previousAgentHome = process.env.GENTLE_PI_AGENT_HOME;
-	process.env.GENTLE_PI_AGENT_HOME = await mkdtemp(join(tmpdir(), "gentle-pi-dev-agent-home-"));
-	const home = await mkdtemp(join(tmpdir(), "gentle-pi-dev-surface-home-"));
+	process.env.GENTLE_PI_AGENT_HOME = await mkdtemp(join(tmpdir(), "jero-pi-dev-agent-home-"));
+	const home = await mkdtemp(join(tmpdir(), "jero-pi-dev-surface-home-"));
 	setGentleAiDevBinaryEnvironmentForTesting({ env: {}, home });
 	try {
 		const { pi, commands } = harness();
 		createGentleAiExtension({ nativeReviewCli: null })(pi);
-		const cwd = await mkdtemp(join(tmpdir(), "gentle-pi-dev-cwd-"));
-		for (const command of ["gentle:doctor", "gentle:status"]) {
+		const cwd = await mkdtemp(join(tmpdir(), "jero-pi-dev-cwd-"));
+		for (const command of ["jero:doctor", "jero:status"]) {
 			const notifications: Array<{ message: string; severity: string }> = [];
 			await commands.get(command)!.handler("", contextFor(cwd, notifications));
 			assert.equal(notifications.length, 1, command);
@@ -107,15 +107,15 @@ test("without an override the surfaces stay silent about dev binaries", async ()
 
 test("an invalid override is surfaced as a failure, never silently ignored", async () => {
 	const previousAgentHome = process.env.GENTLE_PI_AGENT_HOME;
-	process.env.GENTLE_PI_AGENT_HOME = await mkdtemp(join(tmpdir(), "gentle-pi-dev-agent-home-"));
-	const home = await mkdtemp(join(tmpdir(), "gentle-pi-dev-surface-home-"));
+	process.env.GENTLE_PI_AGENT_HOME = await mkdtemp(join(tmpdir(), "jero-pi-dev-agent-home-"));
+	const home = await mkdtemp(join(tmpdir(), "jero-pi-dev-surface-home-"));
 	setGentleAiDevBinaryEnvironmentForTesting({ env: { [GENTLE_AI_DEV_BINARY_ENV]: "/nonexistent/gentle-ai" }, home });
 	try {
 		const { pi, commands } = harness();
 		createGentleAiExtension({ nativeReviewCli: null })(pi);
-		const cwd = await mkdtemp(join(tmpdir(), "gentle-pi-dev-cwd-"));
+		const cwd = await mkdtemp(join(tmpdir(), "jero-pi-dev-cwd-"));
 		const notifications: Array<{ message: string; severity: string }> = [];
-		await commands.get("gentle:doctor")!.handler("", contextFor(cwd, notifications));
+		await commands.get("jero:doctor")!.handler("", contextFor(cwd, notifications));
 		assert.equal(notifications.length, 1);
 		assert.match(notifications[0]!.message, /fail: Gentle AI dev binary override/);
 		assert.match(notifications[0]!.message, new RegExp(GENTLE_AI_DEV_BINARY_ENV));
@@ -126,9 +126,9 @@ test("an invalid override is surfaced as a failure, never silently ignored", asy
 	}
 });
 
-test("gentle:dev-binary registers, reports, and clears the persistent override", async () => {
-	const home = await mkdtemp(join(tmpdir(), "gentle-pi-dev-surface-home-"));
-	const bin = await mkdtemp(join(tmpdir(), "gentle-pi-dev-surface-bin-"));
+test("jero:dev-binary registers, reports, and clears the persistent override", async () => {
+	const home = await mkdtemp(join(tmpdir(), "jero-pi-dev-surface-home-"));
+	const bin = await mkdtemp(join(tmpdir(), "jero-pi-dev-surface-bin-"));
 	const devBinary = join(bin, "gentle-ai");
 	writeFileSync(devBinary, "#!/bin/sh\necho 'gentle-ai 9.9.9-dev+register'\n");
 	chmodSync(devBinary, 0o755);
@@ -136,9 +136,9 @@ test("gentle:dev-binary registers, reports, and clears the persistent override",
 	try {
 		const { pi, commands } = harness();
 		createGentleAiExtension({ nativeReviewCli: null })(pi);
-		const cwd = await mkdtemp(join(tmpdir(), "gentle-pi-dev-cwd-"));
-		const command = commands.get("gentle:dev-binary");
-		assert.ok(command, "gentle:dev-binary command is registered");
+		const cwd = await mkdtemp(join(tmpdir(), "jero-pi-dev-cwd-"));
+		const command = commands.get("jero:dev-binary");
+		assert.ok(command, "jero:dev-binary command is registered");
 		const registrationPath = gentleAiDevBinaryRegistrationPath({ env: {}, home });
 
 		let notifications: Array<{ message: string; severity: string }> = [];
@@ -166,7 +166,7 @@ test("gentle:dev-binary registers, reports, and clears the persistent override",
 
 test("session start announces the active override once, loudly", async () => {
 	const previousAgentHome = process.env.GENTLE_PI_AGENT_HOME;
-	process.env.GENTLE_PI_AGENT_HOME = await mkdtemp(join(tmpdir(), "gentle-pi-dev-agent-home-"));
+	process.env.GENTLE_PI_AGENT_HOME = await mkdtemp(join(tmpdir(), "jero-pi-dev-agent-home-"));
 	try {
 		await withDevOverride(async ({ devBinary, sha256 }) => {
 			const handlers = new Map<string, (event: unknown, ctx: ExtensionContext) => Promise<void>>();
@@ -180,7 +180,7 @@ test("session start announces the active override once, loudly", async () => {
 			createGentleAiExtension({ nativeReviewCli: null })(pi);
 			const sessionStart = handlers.get("session_start");
 			assert.equal(typeof sessionStart, "function");
-			const cwd = await mkdtemp(join(tmpdir(), "gentle-pi-dev-cwd-"));
+			const cwd = await mkdtemp(join(tmpdir(), "jero-pi-dev-cwd-"));
 			const notifications: Array<{ message: string; severity: string }> = [];
 			await sessionStart!({}, contextFor(cwd, notifications));
 			const expected = `Gentle AI dev binary override active (unpinned, field-test only): ${devBinary} 9.9.9-dev+surface sha256:${sha256.slice(0, 16)}`;

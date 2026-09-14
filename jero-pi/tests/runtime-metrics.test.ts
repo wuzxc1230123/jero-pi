@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { RuntimeMetrics, type FinalResponse } from "../lib/runtime-metrics.ts";
+import { RuntimeMetrics, type FinalResponse } from "../lib/metrics/runtime-metrics.ts";
 
 function response(responseId = "local-response"): FinalResponse {
 	return {

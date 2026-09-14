@@ -4,14 +4,14 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { REVIEW_MODE, ReviewTransactionStore, createReviewState } from "../lib/review-transaction.ts";
-import { REVIEW_LENS, REVIEW_ROUTE } from "../lib/review-triggers.ts";
+import { REVIEW_MODE, ReviewTransactionStore, createReviewState } from "../lib/review/review-transaction.ts";
+import { REVIEW_LENS, REVIEW_ROUTE } from "../lib/review/review-triggers.ts";
 import { qualifiedReviewLockPlatform, testSnapshot } from "./review-test-fixtures.ts";
 
 const tree = (digit: string) => digit.repeat(40);
 
 function repository(t: test.TestContext): string {
-	const parent = mkdtempSync(join(tmpdir(), "gentle-pi-review-authority-"));
+	const parent = mkdtempSync(join(tmpdir(), "jero-pi-review-authority-"));
 	const cwd = join(parent, "repo");
 	mkdirSync(cwd);
 	t.after(() => rmSync(parent, { recursive: true, force: true }));

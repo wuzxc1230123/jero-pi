@@ -31,7 +31,7 @@ The bridge therefore has two distinct revisions: native store/authority revision
 
 ## Current Pi seams
 
-Pi's `extensions/gentle-ai.ts` currently routes ordinary `START`, `FINALIZE`, `STATUS`, and `VALIDATE` directly to TypeScript compact-v2 helpers (`startCompactReview`, `finalizeCompactReview`, `discoverCompactReview`, and `validateCompactReviewGate`). `lib/review-compact-store.ts` owns the Pi compact-v2 root and CAS behavior; `lib/sdd-status.ts` and the `sdd-status` command own read-only SDD reporting.
+Pi's `extensions/jero-ai.ts` currently routes ordinary `START`, `FINALIZE`, `STATUS`, and `VALIDATE` directly to TypeScript compact-v2 helpers (`startCompactReview`, `finalizeCompactReview`, `discoverCompactReview`, and `validateCompactReviewGate`). `lib/review-compact-store.ts` owns the Pi compact-v2 root and CAS behavior; `lib/sdd/sdd-status.ts` and the `sdd-status` command own read-only SDD reporting.
 
 **Superseded historical seam:** the prior controller registered a one-shot lifecycle authorization after validation and rederived its exact command/target/receipt at Bash execution. That seam was a Pi-side delivery gate and has been removed. The retained routing seam transports and reports review evidence only; it must not be restored as delivery authorization.
 

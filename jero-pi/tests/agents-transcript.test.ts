@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { sessionToMarkdown } from "../lib/agents-transcript.ts";
+import { sessionToMarkdown } from "../lib/agents/agents-transcript.ts";
 
 // Gentle Agents transcript: session JSONL in, readable markdown out.
 

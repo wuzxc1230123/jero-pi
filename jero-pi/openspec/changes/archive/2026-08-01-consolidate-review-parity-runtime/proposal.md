@@ -49,7 +49,7 @@ A terminal disposition is not synonymous with closing an issue. An upstream-bloc
 
 ### Included product slice
 
-- Preserve the existing uncommitted package-local installer baseline, including `scripts/install-gentle-ai.mjs`, `scripts/gentle-ai-installer.mjs`, `lib/gentle-ai-binary.ts`, and package-content verification references. Implementation may integrate and test this work but must not discard, silently rewrite, or replace it with a global-install assumption.
+- Preserve the existing uncommitted package-local installer baseline, including `scripts/install-gentle-ai.mjs`, `scripts/gentle-ai-installer.mjs`, `lib/core/gentle-ai-binary.ts`, and package-content verification references. Implementation may integrate and test this work but must not discard, silently rewrite, or replace it with a global-install assumption.
 - Make the frozen reviewer candidate resolvable through controller-owned context for every selected 4R lens and fail closed before actor dispatch when resolution or content identity cannot be proven (#96).
 - Align Pi pre-commit target derivation and gate authorization with the supported released Gentle AI projection/receipt contract, fixing the root cause in #133 and the actionable symptom in #119. The lifecycle gate remains mandatory.
 - Document the currently supported compact-v2 FINALIZE input, including `review_result.lens_results[].{lens,findings,evidence}`, selected-lens completeness, paired final evidence/result requirements, and a minimal no-correction example (#123).

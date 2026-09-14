@@ -1,7 +1,7 @@
 schema: spec-driven
 strict_tdd: true
 context: |
-  gentle-pi is a Node.js 24/TypeScript ESM Pi extension package managed with pnpm 11.
+  jero-pi is a Node.js 24/TypeScript ESM Pi extension package managed with pnpm 11.
   Architecture: extensions are runtime entry points, lib contains reusable logic, and assets/prompts/skills are packaged contracts.
   Conventions: explicit .ts ESM imports, node: built-ins, tabs, double quotes, and semicolons.
   Testing: node:test unit tests plus a custom Pi extension runtime harness; pnpm test runs both layers.

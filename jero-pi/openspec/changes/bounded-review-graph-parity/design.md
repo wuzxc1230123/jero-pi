@@ -128,23 +128,23 @@ Promotion always uses the locked importer and requires exact equality with the c
 
 ## 3. Proposed module boundaries
 
-`lib/review-transaction.ts` remains the compatibility facade. Persistence, retirement control, transfer, and mirror behavior are separated from review policy.
+`lib/review/review-transaction.ts` remains the compatibility facade. Persistence, retirement control, transfer, and mirror behavior are separated from review policy.
 
 | Module | Responsibility | Authority-bearing |
 | --- | --- | --- |
-| `lib/review-canonical.ts` | Canonical JSON v1, domain-separated SHA-256 helpers, bounded decoding | No |
-| `lib/review-graph-schema.ts` | Native graph event schemas and validation | No |
-| `lib/review-repository.ts` | Sanitized Git execution, exact common-directory resolution, repository identity, private authority capability, and managed-root validation | Establishes location and identity |
-| `lib/review-legacy-detector.ts` | Fixed-root pre-activation probes and post-retirement drift diagnostics without content traversal | Denies only before a retirement marker; diagnostics never authorize or deny afterward |
+| `lib/review/review-canonical.ts` | Canonical JSON v1, domain-separated SHA-256 helpers, bounded decoding | No |
+| `lib/review/review-graph-schema.ts` | Native graph event schemas and validation | No |
+| `lib/review/review-repository.ts` | Sanitized Git execution, exact common-directory resolution, repository identity, private authority capability, and managed-root validation | Establishes location and identity |
+| `lib/review/review-legacy-detector.ts` | Fixed-root pre-activation probes and post-retirement drift diagnostics without content traversal | Denies only before a retirement marker; diagnostics never authorize or deny afterward |
 | `lib/review-reset.ts` | Exact confirmation, logical-retirement state machine, new-incarnation initialization, selector publication, and explicit recovery | Yes, only under the control lock |
-| `lib/review-lock.ts` | Store-wide graph/reset mutation lock, owner-checked release, and conservative recovery | Protects mutation |
-| `lib/review-object-store.ts` | Immutable graph objects, incarnation-local roots, `STORE`, and authority-selector publication | Yes |
+| `lib/review/review-lock.ts` | Store-wide graph/reset mutation lock, owner-checked release, and conservative recovery | Protects mutation |
+| `lib/review/review-object-store.ts` | Immutable graph objects, incarnation-local roots, `STORE`, and authority-selector publication | Yes |
 | `lib/review-graph-reducer.ts` | Complete chain validation and deterministic event-to-`ReviewStateV1` reduction | Yes with a selected authoritative root |
 | `lib/review-checkpoint.ts` | Identity-bound transaction/import/export checkpoints | No |
 | `lib/review-bundle.ts` | Deterministic export, staged validation, installation, and locked publication | Publication is authoritative |
 | `lib/review-mirror.ts` | Explicit non-authoritative cache, retired-incarnation inspection, and transport API | Never |
-| `lib/review-transaction.ts` | Public transaction facade, receipt binding, and gate integration | Yes through repository authority |
-| `extensions/gentle-ai.ts` | `gentle_review` routing for graph operations, inspect, and logical reset | Calls authority APIs only |
+| `lib/review/review-transaction.ts` | Public transaction facade, receipt binding, and gate integration | Yes through repository authority |
+| `extensions/jero-ai.ts` | `gentle_review` routing for graph operations, inspect, and logical reset | Calls authority APIs only |
 
 Policy modules, snapshot capture, trigger classification, and controller actor routing remain behavior sources. They do not move into persistence or reset modules.
 
@@ -319,7 +319,7 @@ Linked worktrees resolve the same common directory, lock, reset marker, selector
 
 ### 6.1 Deterministic Git process and environment contract
 
-Every review entry point receives an explicit `cwd`; repository selection never falls back to ambient Git discovery. Before common-directory resolution, snapshot capture, gate validation, reset/inspect, recovery/repair, or import/export, `lib/review-repository.ts` applies one shared process policy:
+Every review entry point receives an explicit `cwd`; repository selection never falls back to ambient Git discovery. Before common-directory resolution, snapshot capture, gate validation, reset/inspect, recovery/repair, or import/export, `lib/review/review-repository.ts` applies one shared process policy:
 
 1. Canonicalize and metadata-check the explicit `cwd` without using Git environment hints.
 2. Reject inherited repository/config routing variables before any Git process or managed-store access. The deny set includes directory, worktree, common-directory, index, object, alternate, namespace, path-prefix, discovery, configuration-injection, replacement-ref, shallow-file, and graft-file controls.
@@ -751,16 +751,16 @@ Graph repair remains exact-byte restorative or descendant-only within the curren
 
 Expected implementation changes, without implementation in this phase:
 
-- update `lib/review-legacy-detector.ts` to perform fixed-root pre-activation probes, expose a separate post-retirement drift diagnostic, and remove post-retirement blocking from all authority paths;
+- update `lib/review/review-legacy-detector.ts` to perform fixed-root pre-activation probes, expose a separate post-retirement drift diagnostic, and remove post-retirement blocking from all authority paths;
 - rewrite `lib/review-reset.ts` around exact confirmation, the logical-reset phases, new incarnation initialization, selector publication, and explicit forward recovery, with no mutation capability for legacy paths;
-- update `lib/review-lock.ts` so graph mutation, import, reset, and recovery share the control lock namespace while preserving owner-token recovery semantics;
-- update `lib/review-graph-schema.ts` to enforce graph-only event kinds and mandatory current-incarnation bindings;
-- update `lib/review-object-store.ts` with incarnation-specific stores, `STORE.store_epoch`, selector generation, authority-incarnation binding, empty-root initialization, and two-of-three authority-selector publication;
+- update `lib/review/review-lock.ts` so graph mutation, import, reset, and recovery share the control lock namespace while preserving owner-token recovery semantics;
+- update `lib/review/review-graph-schema.ts` to enforce graph-only event kinds and mandatory current-incarnation bindings;
+- update `lib/review/review-object-store.ts` with incarnation-specific stores, `STORE.store_epoch`, selector generation, authority-incarnation binding, empty-root initialization, and two-of-three authority-selector publication;
 - update `lib/review-checkpoint.ts` to bind checkpoints to selector generation, epoch, incarnation, reset ID, and exact graph inputs;
 - update `lib/review-bundle.ts` to carry graph-only roots plus incarnation provenance, reject retired fields, prevent post-reset incarnation adoption, and route mismatched bundles to explicit mirror inspection only;
-- update `lib/review-repository.ts` with graph-v1 control/incarnation paths, exact target hashing, centralized inherited-Git-variable rejection/stripping, fixed child environments, direct arguments, and private resolved capabilities;
-- refactor `lib/review-transaction.ts` so every authority-bearing entry point uses the shared selector/marker/incarnation guard and never accesses retired paths after activation;
-- update `extensions/gentle-ai.ts` with inspect/logical-reset routing and remove the superseded transition operation;
+- update `lib/review/review-repository.ts` with graph-v1 control/incarnation paths, exact target hashing, centralized inherited-Git-variable rejection/stripping, fixed child environments, direct arguments, and private resolved capabilities;
+- refactor `lib/review/review-transaction.ts` so every authority-bearing entry point uses the shared selector/marker/incarnation guard and never accesses retired paths after activation;
+- update `extensions/jero-ai.ts` with inspect/logical-reset routing and remove the superseded transition operation;
 - retire `lib/review-migration.ts`, `lib/review-native-fence.ts`, related package assets, and related exports from the supported graph-v1 surface;
 - replace reset tests that assert legacy storage mutation with `tests/review-reset.test.ts` coverage for marker/selector publication, byte preservation, crash recovery, drift isolation, and old-artifact denial;
 - add table-driven repository-resolution tests across every authority-bearing entry point;
