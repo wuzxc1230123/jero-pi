@@ -210,6 +210,16 @@ Use cost-aware validation:
 
 On gate pass, continue automatically to the next phase. On gate fail, rerun the same phase exactly once with corrective feedback naming the specific failures. Validate the rerun. If it fails again, stop the automatic chain and report the phase, failures from both attempts, and the recommended fix. Never advance to dependent phases on a failed gate.
 
+### Defect-List Relay (targeted repair)
+
+A failed verify gate routes by the report's `## Defect List` section, relayed verbatim — never paraphrased into prose:
+
+- **Gatekeeper single rerun of `sdd-apply`:** the launch prompt carries the exact defect list. The rerun repairs per defect instead of re-reading and re-implementing the full task set; completed tasks stay untouched.
+- **Native `remediate` selection:** the `sdd-remediate` launch prompt carries the same defect list plus the failed evidence revision.
+- **Replan signal:** a second consecutive verify failure whose defect IDs overlap the first round's is a planning defect, not an implementation defect. Stop the chain; when the user elects rework of spec/design/tasks, inject the accumulated defect list into that planning launch as binding constraints under a `## Constraints from failed verification` heading so the new plan does not repeat them.
+
+Category routing is binding: `coverage` defects may only add tests and never touch implementation; `security` and `functional` defects may touch implementation inside the authorized edit roots; `tdd-evidence` defects repair the evidence or the vacuous test, never the evidence text alone; `spec-drift` routes to planning rework, never to apply.
+
 The gatekeeper is additive: it does not relax the Review Workload Guard, Strict TDD Forwarding, native status dependency checks, or mandatory delegation rules. It never creates a post-SDD review pass.
 
 ## Native Runtime Attempt Authority

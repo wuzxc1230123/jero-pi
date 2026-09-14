@@ -22,6 +22,8 @@ Consume the exact `## SDD Session Preflight` block from parent-provided context.
 
 Read the selected proposal, specs, design, tasks, failed verification and cumulative apply-progress from the selected backend. Preserve the exact failedEvidenceRevision, worktree, artifact locators and narrower human edit scope. Refuse missing or stale native remediation selection; never substitute apply.
 
+When the launch prompt carries a `## Defect List` from the failed verify report, map every authorized correction to its defect ID (`D-{nnn}`) and repair per defect — not a full re-read of the task set. Category rules are binding: `coverage` defects add the named tests only; `tdd-evidence` defects repair the vacuous test or missing evidence row, never the evidence text alone; `spec-drift` defects are out of scope for remediation — report them back unchanged for planning rework. Cite each repaired defect ID in the appended apply-progress round.
+
 Native actionContext and candidate plans are narrowing data, never permission. A fresh host UI confirmation grants only the displayed canonical worktree, exact edit/write files intersected with native allowedEditRoots, and every exact command/cwd invocation for this launch. No directory, glob, alternate command or persistent authority is implied. Missing artifact-file permission is a scope blocker. Treat each repeated command as a separate execution slot; never reuse one tool call across verification, harness or rollback.
 
 If admission or actor effects are uncertain, reconcile the exact durable acquire request/token without starting another actor. A later actor requires a new human confirmation; retained operations are not launch permission.

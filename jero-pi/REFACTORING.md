@@ -84,14 +84,18 @@
 
 ## 三、优化路线图（骨架不动，按分析文档优先级）
 
-### P0-A 定向修复替代全量重跑（分析一）
+### P0-A 定向修复替代全量重跑（分析一）——✅ 已实现（契约层）
 
-现状：verdict 不通过时由 `assets/sdd-orchestrator-workflow.md` 契约驱动整个阶段重跑。
-落点：
-1. `lib/sdd/sdd-status.ts`（状态机 schema `jero-pi.sdd-status`）增加 `defects[]` 结构化字段（severity/file/issue/direction），verify 阶段写入，apply 阶段消费
-2. `assets/agents/sdd-apply.md` / `sdd-verify.md` 提示词改为按缺陷清单逐条修复；覆盖率类缺陷只补测试不动实现
-3. replantear 时把否决理由注入新 plan 的约束段（`assets/agents/sdd-design.md`）
-验收：fake run e2e（扩展 `tests/runtime-harness.mjs`）模拟 corregir→corregir→pasa，断言第二轮 apply 输入包含第一轮缺陷清单。
+**实现说明**：当前架构中 `jero-pi.sdd-status` 是外部二进制拥有的只读投影，编排逻辑全部以"资产契约 + 测试钉住"的方式实现（与上游同构）。因此缺陷清单落在 **verify-report 工件 + 提示词契约**层，而非 native status 字段——这符合本包"native status 只读、编排状态是工件与提示词叠加"的既定架构规则。
+
+已落地（提交见 git log）：
+1. `assets/agents/sdd-verify.md`：新增 `## Defect List` 契约——非 pass 裁决时报告体必须逐缺陷输出 `D-{nnn} | severity | location | category | problem | repair direction`；六类 category（security/functional/coverage/tdd-evidence/scope/spec-drift）；计数规则（≥ blockers+critical_findings 条）；pass 时输出 `No defects.`
+2. `assets/sdd-orchestrator-workflow.md`：门控者新增 `### Defect-List Relay` ——逐字转递（禁止散文化）；单次重跑走 sdd-apply 定向修复；native `remediate` 路由携带清单+失败证据版本；**二轮重叠缺陷 = 规划缺陷信号**，重跑规划时以 `## Constraints from failed verification` 注入约束段（对应分析的"replantear 注入拒绝理由"）；category 路由绑定（coverage 只补测试、spec-drift 走规划）
+3. `assets/agents/sdd-apply.md`：新增 `## Defect-Directed Rerun` ——按缺陷修复不重读已完成任务、逐缺陷引用 D-ID、spec-drift 返回 blocked
+4. `assets/agents/sdd-remediate.md`：消费缺陷清单，category 规则绑定，spec-drift 超范围回传
+5. `assets/chains/sdd-verify.chain.md`：链步骤同步
+6. `tests/sdd-agent-tools.test.ts`：新增契约钉住测试（六文件交叉断言）
+7. 外部契约不动：`gentle-ai.verify-result/v1` 信封字段逐字保留（由外部二进制 `sdd-verify-validate` 校验，未知字段会被拒绝）
 
 ### P0-B RunRecord 信息密度（分析三）
 

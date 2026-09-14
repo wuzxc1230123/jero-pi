@@ -136,6 +136,23 @@ The report is `openspec/changes/{change}/verify-report.md`. After the envelope, 
 - review workload / PR boundary findings;
 - exact blockers.
 
+## Defect List
+
+Whenever `verdict` is not `pass`, or `blockers` or `critical_findings` is nonzero, the report body MUST include exactly one `## Defect List` section immediately after the envelope's closing fence, before any prose. Emit one line per defect, CRITICAL first, in this exact machine-readable shape with all six pipe-separated fields on one unwrapped line:
+
+```text
+D-{nnn} | {CRITICAL|WARNING} | {file:line or artifact topic} | {security|functional|coverage|tdd-evidence|scope|spec-drift} | {one-sentence problem} | {one-sentence repair direction}
+```
+
+Category rules:
+
+- `coverage`: missing tests only. The repair direction must name the tests to add and MUST NOT propose implementation changes.
+- `tdd-evidence`: cite the exact missing, vacuous, or fabricated evidence row from `apply-progress`.
+- `spec-drift`: cite the spec requirement or scenario ID that drifted; repair direction points to rework, not patching.
+- `scope`: unassigned work beyond the slice; cite the boundary that was crossed.
+
+Counting rules: every CRITICAL finding and every blocker is itemized; the list carries at least `blockers + critical_findings` entries. On a clean `pass`, emit the same heading with the single line `No defects.` The parent relays this section verbatim into rerun, remediation, and rework launches; do not paraphrase it away or fold it into prose.
+
 Do NOT launch child subagents. Parent/orchestrator owns delegation. Do NOT fix issues; report them.
 
 Return the standard phase envelope with status, executive_summary, artifacts, next_recommended, risks, and skill_resolution.

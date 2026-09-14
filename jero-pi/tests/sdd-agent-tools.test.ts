@@ -167,6 +167,36 @@ test("sdd-verify phase text carries the verify-result envelope and validate-befo
 	assert.match(chainSource, /sdd-verify-validate/);
 });
 
+test("failed verification carries a machine-readable defect list relayed by every repair route", () => {
+	// jero-pi REFACTORING P0-A: targeted repair replaces full re-runs. The
+	// verify executor itemizes defects; the orchestrator relays the section
+	// verbatim; apply and remediate consume it per defect.
+	const verifySource = readFileSync(join(assetsAgentsDir, "sdd-verify.md"), "utf8");
+	assert.match(verifySource, /## Defect List/);
+	assert.match(verifySource, /D-\{nnn\} \| \{CRITICAL\|WARNING\} \| /);
+	for (const category of ["security", "functional", "coverage", "tdd-evidence", "scope", "spec-drift"]) {
+		assert.ok(verifySource.includes(category), `sdd-verify.md defect categories must include \`${category}\``);
+	}
+	assert.match(verifySource, /No defects\./);
+
+	const workflowSource = readFileSync(join(repoRoot, "assets", "sdd-orchestrator-workflow.md"), "utf8");
+	assert.match(workflowSource, /### Defect-List Relay \(targeted repair\)/);
+	assert.match(workflowSource, /relay(?:ed)? verbatim/);
+	assert.match(workflowSource, /## Constraints from failed verification/);
+	assert.match(workflowSource, /`coverage` defects may only add tests/);
+
+	const applySource = readFileSync(join(assetsAgentsDir, "sdd-apply.md"), "utf8");
+	assert.match(applySource, /## Defect-Directed Rerun/);
+	assert.match(applySource, /do not re-read or re-implement completed tasks/);
+
+	const remediateSource = readFileSync(join(assetsAgentsDir, "sdd-remediate.md"), "utf8");
+	assert.match(remediateSource, /## Defect List/);
+	assert.match(remediateSource, /out of scope for remediation/);
+
+	const chainSource = readFileSync(join(repoRoot, "assets", "chains", "sdd-verify.chain.md"), "utf8");
+	assert.match(chainSource, /## Defect List/);
+});
+
 test("the retired Pi adversarial role agents are not packaged", () => {
 	// gentle-pi#311 P5: the refuter and targeted validator verdicts execute
 	// through Go-owned pi processes via provider-rendered self-contained

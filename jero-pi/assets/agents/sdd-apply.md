@@ -121,6 +121,17 @@ Internal todos and `apply-progress.md` are not enough completion evidence.
 
 Before returning, re-read the persisted tasks artifact and confirm every task you report as completed is visibly marked `- [x]`. If the artifact still shows a completed task as `- [ ]`, fix the checkbox before returning or return `blocked` explaining why it cannot be reconciled. Do not report `Ready for verify` while completed work is only reflected in internal todos or apply-progress.
 
+## Defect-Directed Rerun
+
+When the parent prompt carries a `## Defect List` relayed from a failed verification, this run is a targeted repair, not a fresh implementation pass:
+
+- Repair exactly the itemized defects; do not re-read or re-implement completed tasks, and do not refactor beyond the defect locations.
+- Cite the defect ID (`D-{nnn}`) in each corresponding `apply-progress` entry.
+- `coverage` defects: add the named tests only; touching implementation for a `coverage` defect is scope drift.
+- `spec-drift` defects: do not patch; return `blocked` with the defect line so the parent routes planning rework.
+- After repairs, re-run the focused verification named by the defect's repair direction and record the exit codes.
+- Merge this round into `apply-progress` as a `## Defect repair round` section; never overwrite prior rounds.
+
 ## Standard Mode
 
 If strict TDD is not active, implement assigned tasks against specs and design, update persisted task checkboxes as work completes, and record verification evidence.
