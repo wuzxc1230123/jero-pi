@@ -118,13 +118,18 @@
 落点：`lib/core/model-routing-authority.ts` + `lib/agents/agent-profiles.ts`。通过率 ≥0.85 且成本显著高时降一档试水；归因细分 blame: build|plan|clarify|spec；按仓库分区统计样本。
 验收：新增单测覆盖 decideAdjustments 等价逻辑（当前仅升档的分支补降档分支）。
 
-### P1-B 并行 build 自动启用（分析五）——字段已落地，自动启用待用户决策
+### P1-B 并行 build 自动启用（分析五）——✅ 已实现（保守路径 a，2026-09-15 决策执行）
 
-已落地：P0-C 的工作单元 `Files:`/`Depends:` 机器可检字段（冲突检测的输入）。
-**阻塞点**：现行委托契约规定 apply/verify **前台强制**（"background completion is a notification mechanism, not an orchestration resume guarantee"）。自动并行 apply 需要修改该安全策略，属产品决策——两个可选路径：
-- (a) 保守：工作单元图仅用于**串行链的自动排序与边界校验**（无交集+无环检查作为 Review Workload Guard 的一部分，纯确定性校验，不改前台策略）；
-- (b) 激进：为无交集单元开并行例外（需在 `assets/orchestrator-delegation.md` 增加明确的 carve-out 与失败收敛规则）。
-**待用户选择后实施**；夹具三例（相交/不相交/有环）判定单测随实施补齐。
+**决策依据**：现行委托契约规定 apply/verify 前台强制；并行例外（激进路径 b）需改安全策略，与"安全靠谱"要求冲突。保守路径把分析文档的核心思路（门禁从模型自评变为可核验证据）落成确定性代码：
+
+已落地：
+1. `lib/sdd/work-units.ts`：纯函数解析与校验——`parseWorkUnits`（标签/Files/Spec/Depends，路径归一化，畸形块逐行报告）+ `validateWorkUnitGraph`（标签唯一、依赖存在、无环 DFS 报告环路径、**独立单元文件集无交集**、Kahn 拓扑序按首现打破平级 → 确定性串行顺序）；fail-closed
+2. `/jero:sdd-units {change} [--json]` 命令（`extensions/jero-ai.ts`）：只读，读 `openspec/changes/{change}/tasks.md`，输出 `work-units: ok|invalid|none` + `order:` + 逐条 `issue:`；Engram-only 无文件 → fail-closed
+3. 工作流 `### Work-Unit Graph Gate`（Review Workload Guard 段）：首次 apply 前必须跑该命令并按裁决门控——invalid 不启动 apply（逐字上报 issue 行）；ok 按打印的 order **串行前台**启动（并行明确排除在外）
+4. `tests/work-units.test.ts`：三类夹具（无交无环/独立相交/环）+ 依赖单元共享文件合法 + 畸形单元 + 序确定性 + 命令与门控接线钉住
+5. 端到端冒烟通过（临时 change 目录 → `ok / order: parser -> cli`）；相关测试簇 172 用例全绿，typecheck 零新增诊断
+
+**收益**：切片边界从"模型自觉"变为机器校验（相交即拒绝）；串行链自动排序替代人工排序；为未来若决策开并行（路径 b）保留了全部确定性前提。
 
 ### P1-C 缓存与 e2e（分析六）——缓存项上游已实现
 

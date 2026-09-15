@@ -1,6 +1,7 @@
 import { consumeReviewMutation, pendingReviewMutation, recordReviewMutation } from "../lib/review/review-reminder-receipt.ts";
 import { resolveSessionWorktree } from "../lib/core/session-worktree-registry.ts";
 import { resolveResearchCapabilities, renderResearchCapabilities } from "../lib/sdd/sdd-research-capabilities.ts";
+import { parseWorkUnits, validateWorkUnitGraph, type WorkUnitIssue } from "../lib/sdd/work-units.ts";
 import { declareReviewRelayHandshake } from "../lib/review/review-relay-contract.ts";
 import { execFileSync } from "node:child_process";
 import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
@@ -8695,6 +8696,39 @@ function createGentleAiExtensionForTesting(
 			} catch (error) {
 				ctx.ui?.notify(error instanceof Error ? error.message : String(error), "warning");
 			}
+		},
+	});
+
+	// Deterministic work-unit boundary check (jero-pi P1-B, conservative
+	// path): reads tasks.md, rejects malformed/overlapping/cyclic unit
+	// graphs, and prints the serial launch order. Read-only; openspec store
+	// only — Engram tasks have no file to validate, so it fails closed.
+	pi.registerCommand("jero:sdd-units", {
+		description: "Validate work-unit graph (disjoint files, acyclic depends) in a change's tasks.md and print the serial order.",
+		handler: async (args, ctx) => {
+			const tokens = args.trim().split(/\s+/).filter(Boolean);
+			const json = tokens.includes("--json");
+			const change = tokens.filter((token) => token !== "--json")[0];
+			if (!change || tokens.length !== (json ? 2 : 1)) {
+				ctx.ui.notify("Usage: /jero:sdd-units {change} [--json]", "warning");
+				return;
+			}
+			const tasksPath = join(ctx.cwd, "openspec", "changes", change, "tasks.md");
+			if (!existsSync(tasksPath)) {
+				ctx.ui.notify(`No tasks.md for change "${change}" under openspec/changes/ (Engram-only changes have no file to validate).`, "warning");
+				return;
+			}
+			const { units, issues: parseIssues } = parseWorkUnits(readFileSync(tasksPath, "utf8"));
+			const validation = validateWorkUnitGraph(units);
+			const issues: WorkUnitIssue[] = [...parseIssues, ...validation.issues];
+			const verdict = units.length === 0 ? "none" : issues.length === 0 ? "ok" : "invalid";
+			const orderLine = verdict === "ok" && validation.order.length > 0 ? [`order: ${validation.order.join(" -> ")}`] : [];
+			const issueLines = issues.map((issue) => `issue: ${issue.code}${"label" in issue ? ` unit=${issue.label}` : ""}${"file" in issue ? ` file=${issue.file}` : ""}${"depends" in issue ? ` depends=${issue.depends}` : ""}${"labels" in issue ? ` path=${issue.labels.join(" -> ")}` : ""}${"line" in issue ? ` line=${issue.line}` : ""}`);
+			if (json) {
+				ctx.ui.notify(JSON.stringify({ verdict, units: units.length, order: verdict === "ok" ? validation.order : [], issues }, null, 2), verdict === "invalid" ? "warning" : "info");
+				return;
+			}
+			ctx.ui.notify([`work-units: ${verdict}`, `units: ${units.length}`, ...orderLine, ...issueLines].join("\n"), verdict === "invalid" ? "warning" : "info");
 		},
 	});
 

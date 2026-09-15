@@ -357,6 +357,16 @@ Any review transaction explicitly started outside SDD persists through its own a
 
 Automatic mode does not override reviewer burnout protection.
 
+### Work-Unit Graph Gate
+
+Before the first `sdd-apply` launch on tasks that declare `### Work unit:` blocks, run `/jero:sdd-units {change}` and gate on its verdict — the graph check is deterministic code, never model self-assessment:
+
+- `work-units: invalid`: do not launch apply. Report the printed `issue:` lines verbatim; overlapping files need an explicit `Depends:` edge or a re-slice by `sdd-tasks`, cycles and unknown labels need a `sdd-tasks` fix.
+- `work-units: none`: no work units declared; apply runs as a single unit and this gate does not apply.
+- `work-units: ok`: launch the units serially in the printed `order:` (foreground per the delegation policy; parallel launches remain out of scope). Each launch carries its unit's `Files:/Spec:/Depends:` block per the Result Contract relay rule.
+
+The command is read-only and openspec-file-backed only; Engram-only changes have no tasks.md to validate and the gate fails closed for them.
+
 ## Recovery
 
 For every store, request a fresh native v2 status projection. Artifact reads may supply phase inputs only after native selection; they never re-derive readiness, replace status, or bypass native refusal. Manual sdd-sync keeps its separate local resolver.
