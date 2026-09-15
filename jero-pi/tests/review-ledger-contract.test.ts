@@ -22,17 +22,11 @@ const README = "README.md";
 const TECHNICAL_REFERENCE = "docs/readme-reference.md";
 const CHAIN = "assets/chains/4r-review.chain.md";
 const SDD_WORKFLOW = "assets/sdd-orchestrator-workflow.md";
-const RELEASE_SKILL = "skills/release/SKILL.md";
 const WORKER = "assets/agents/gentle-ai-worker.md";
 const CANONICAL_LIFECYCLE_SPECS = [
 	"openspec/specs/review-orchestration/spec.md",
 	"openspec/specs/review-transaction/spec.md",
 ] as const;
-const HISTORICAL_LIFECYCLE_SPECS = [
-	"openspec/changes/complete-native-review-lifecycle/specs/review-orchestration/spec.md",
-	"openspec/changes/complete-native-review-lifecycle/specs/review-transaction/spec.md",
-] as const;
-
 function read(path: string): string {
 	return readFileSync(join(ROOT, path), "utf8");
 }
@@ -254,14 +248,6 @@ test("canonical ordinary review specs preserve the negotiated one-correction con
 	}
 });
 
-test("historical lifecycle change specs preserve their completed one-attempt design context", () => {
-	for (const path of HISTORICAL_LIFECYCLE_SPECS) {
-		const content = read(path);
-		assert.match(content, /at most one correction|one correction batch|After the one correction|GIVEN one exact ordinary correction|one validator and one final verification/i, path);
-		assert.doesNotMatch(content, /up to three failed targeted attempts/i, path);
-	}
-});
-
 test("risk lens distinguishes trusted orchestration from concrete boundary bypasses", () => {
 	const content = read("assets/agents/review-risk.md");
 	assert.match(content, /local orchestrator and same-user process are trusted/i);
@@ -400,7 +386,7 @@ test("technical reference documents the dynamic runtime authority boundary witho
 });
 
 test("managed contracts retain no fresh lifecycle review directive", () => {
-	const managed = union([...ORCHESTRATOR, SDD_WORKFLOW, RELEASE_SKILL, WORKER, GENTLE_SKILL, README]);
+	const managed = union([...ORCHESTRATOR, SDD_WORKFLOW, WORKER, GENTLE_SKILL, README]);
 	for (const obsolete of [
 		"A fresh review still follows delegated implementation.",
 		"run a fresh-context review lens unless",

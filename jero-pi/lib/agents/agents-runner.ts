@@ -184,7 +184,7 @@ export interface SddChangeSelection {
 	failedEvidenceRevision?: string;
 }
 
-export const SDD_CHANGE_FLAG = "--gentle-sdd-change";
+export const SDD_CHANGE_FLAG = "--jero-sdd-change";
 
 export interface RemediationTerminalFacts { spawned: boolean; exited: boolean; cleanupConfirmed: boolean }
 

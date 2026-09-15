@@ -321,9 +321,16 @@ function expectedGoArchitecture(architecture) { return architecture === "x64" ? 
 function sealedGoEnvironment(goPath, buildDirectory, architecture) {
 	const goDirectory = dirname(goPath);
 	const tempDirectory = join(buildDirectory, "tmp");
+	// jero-pi: the module proxy is the one transport a regional network may
+	// need to replace. Integrity does not ride on it — the module checksum is
+	// pinned and verified below regardless — so GENTLE_AI_GOPROXY may swap
+	// the proxy while every provenance check stays sealed.
+	const goProxy = process.env.GENTLE_AI_GOPROXY && /^[a-z0-9+.-]+:\/\/[^\s"'\\]+$/i.test(process.env.GENTLE_AI_GOPROXY)
+		? process.env.GENTLE_AI_GOPROXY
+		: "https://proxy.golang.org";
 	return {
 		GOENV: "off", GOFLAGS: "", GOWORK: "off", GOTOOLCHAIN: "local", GOSUMDB: "sum.golang.org",
-		GONOSUMDB: "", GOPRIVATE: "", GONOPROXY: "", GOINSECURE: "", GOPROXY: "https://proxy.golang.org",
+		GONOSUMDB: "", GOPRIVATE: "", GONOPROXY: "", GOINSECURE: "", GOPROXY: goProxy,
 		GOOS: "windows", GOARCH: expectedGoArchitecture(architecture), CGO_ENABLED: "0",
 		GOBIN: join(buildDirectory, "gobin"), GOPATH: join(buildDirectory, "gopath"), GOMODCACHE: join(buildDirectory, "gomodcache"), GOCACHE: join(buildDirectory, "gocache"),
 		SystemRoot: WINDOWS_SYSTEM_ROOT, WINDIR: WINDOWS_SYSTEM_ROOT, ComSpec: join(WINDOWS_SYSTEM_ROOT, "System32", "cmd.exe"),

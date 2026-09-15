@@ -1680,7 +1680,7 @@ const SENSITIVE_PATH_PATTERNS: RegExp[] = [
 ];
 
 const SDD_AGENT_NAME_SET = new Set<string>(SHIPPED_SDD_AGENT_NAMES);
-const SDD_CHANGE_FLAG = "gentle-sdd-change";
+const SDD_CHANGE_FLAG = "jero-sdd-change";
 const SDD_CHANGE_KEYS = ["changeName", "phase", "workspaceRoot"] as const;
 
 const JUDGMENT_DAY_AGENT_NAMES = [
@@ -8753,7 +8753,7 @@ function createGentleAiExtensionForTesting(
 		showCommandSddStatus(status, parsed.json, ctx);
 	};
 
-	pi.registerCommand("gentle-sdd-status", {
+	pi.registerCommand("jero-sdd-status", {
 		description: "Show deterministic SDD change status and instructions.",
 		handler: async (args, ctx) => {
 			await handleSddStatusCommand(args, ctx);
@@ -8791,7 +8791,7 @@ function createGentleAiExtensionForTesting(
 		showCommandSddStatus(decodeNativeSddStatusV2(await nativeReviewCli.sddContinue(selected), selected), parsed.json, ctx);
 	};
 
-	pi.registerCommand("gentle-sdd-continue", {
+	pi.registerCommand("jero-sdd-continue", {
 		description: "Resolve SDD status and route the next phase deterministically.",
 		handler: async (args, ctx) => {
 			await handleSddContinueCommand(args, ctx);

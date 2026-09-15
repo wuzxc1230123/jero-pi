@@ -526,11 +526,11 @@ test("affirmative natural-language SDD requests trigger preflight without matchi
 	}
 });
 
-test("slash SDD preflight trigger accepts the gentle-sdd command prefix", () => {
-	for (const text of ["/gentle-sdd-init", "/gentle-sdd-continue", "/gentle-sdd-status fix-rose --json", "/sdd", "/sdd:plan", "/sdd-plan this change"]) {
+test("slash SDD preflight trigger accepts the jero-sdd and legacy gentle-sdd command prefixes", () => {
+	for (const text of ["/jero-sdd-init", "/jero-sdd-continue", "/jero-sdd-status fix-rose --json", "/gentle-sdd-init", "/gentle-sdd-continue", "/sdd", "/sdd:plan", "/sdd-plan this change"]) {
 		assert.equal(isSddPreflightTrigger(text), true, text);
 	}
-	for (const text of ["/gentle-sddx", "/jero:sdd-preflight", "/gentle-status", "gentle-sdd-init"]) {
+	for (const text of ["/gentle-sddx", "/jero-sddx", "/jero:sdd-preflight", "/gentle-status", "gentle-sdd-init"]) {
 		assert.equal(isSddPreflightTrigger(text), false, text);
 	}
 });

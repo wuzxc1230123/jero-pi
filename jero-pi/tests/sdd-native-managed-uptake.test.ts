@@ -55,7 +55,7 @@ export async function launch(): Promise<void> {
 			}],
 		} });
 		assert.deepEqual(services.resourceLoader.getExtensions().errors, []);
-		if (args.includes("--gentle-sdd-change")) services.resourceLoader.getExtensions().runtime.flagValues.set("gentle-sdd-change", value("--gentle-sdd-change"));
+		if (args.includes("--jero-sdd-change")) services.resourceLoader.getExtensions().runtime.flagValues.set("jero-sdd-change", value("--jero-sdd-change"));
 		return { ...(await sdk.createAgentSessionFromServices({ services, sessionManager, sessionStartEvent, model: runtimeModels.getModel("uptake-control", "control"), tools: value("--tools").split(",") })), services, diagnostics: services.diagnostics };
 	}, { cwd: process.cwd(), agentDir: home, sessionManager: sdk.SessionManager.create(process.cwd(), value("--session-dir")) });
 	await sdk.runRpcMode(runtime);
@@ -69,7 +69,7 @@ export default function controlledDocumentation(pi) {
 	} });
 	pi.on("session_start", (_event, ctx) => {
 		writeFileSync(join(process.env.UPTAKE_RUN!, "inventory.json"), JSON.stringify(pi.getAllTools()));
-		writeFileSync(join(process.env.UPTAKE_RUN!, "startup.json"), JSON.stringify({ cwd: ctx.cwd, flag: pi.getFlag("gentle-sdd-change"), grant: process.env.GENTLE_PI_SDD_REMEDIATION_PLAN }));
+		writeFileSync(join(process.env.UPTAKE_RUN!, "startup.json"), JSON.stringify({ cwd: ctx.cwd, flag: pi.getFlag("jero-sdd-change"), grant: process.env.GENTLE_PI_SDD_REMEDIATION_PLAN }));
 	});
 }
 
@@ -124,10 +124,10 @@ if (!childRole) test("installed AI producer → fixed Pi extensions → managed 
 			const client = new NativeReviewCliV216(request => { verbs.push(request.arguments[0]); return adapter(request); }, binary);
 			createGentleAiExtension({ nativeReviewCli: client, processEnv: {} })({ on() {}, events: { emit() {} }, registerTool() {}, registerCommand: (name, command) => commands.set(name, command.handler), sendUserMessage: () => assert.fail("Unexpected launch"), sendMessage: () => assert.fail("Unexpected launch") });
 			const context = { cwd, hasUI: true, ui: { notify: text => notices.push(text), confirm: async (_title, text) => { confirmations.push(text); return answer; } } };
-			await commands.get("gentle-sdd-status")("uptake --json", context);
+			await commands.get("jero-sdd-status")("uptake --json", context);
 			assert.deepEqual(JSON.parse(notices[0]), status);
 			assert.equal(confirmations.length, 0);
-			await commands.get("gentle-sdd-continue")("uptake --json", context);
+			await commands.get("jero-sdd-continue")("uptake --json", context);
 			assert.deepEqual(verbs, ["sdd-status", "sdd-status"]);
 			assert.equal(confirmations.length, 1);
 			assert.ok(confirmations[0].includes(join(change, ".gentle-ai-instance")));

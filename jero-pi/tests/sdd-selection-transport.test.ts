@@ -88,8 +88,8 @@ test("selected SDD change snapshots at task construction and reaches child start
 	selection.changeName = "beta";
 	runner.run(request({ changeName: "beta", workspaceRoot: root, phase: "apply" }));
 	await tick();
-	const serialized = spawned[0]![spawned[0]!.indexOf("--gentle-sdd-change") + 1]!;
-	const concurrent = spawned[1]![spawned[1]!.indexOf("--gentle-sdd-change") + 1]!;
+	const serialized = spawned[0]![spawned[0]!.indexOf("--jero-sdd-change") + 1]!;
+	const concurrent = spawned[1]![spawned[1]!.indexOf("--jero-sdd-change") + 1]!;
 	assert.deepEqual(JSON.parse(serialized), { changeName: "alpha", workspaceRoot: root, phase: "apply" });
 	assert.deepEqual(JSON.parse(concurrent), { changeName: "beta", workspaceRoot: root, phase: "apply" });
 	const startup = __testing.resolveSddChangeStartup(serialized, root, "sdd-apply");
@@ -459,7 +459,7 @@ function commandHarness(root: string, status: unknown, answer?: unknown, hasUI =
 		notify: (text: string) => notices.push(text),
 		confirm: async (title: string, text: string) => { confirmations.push(`${title}\n${text}`); return answer; },
 	} } as unknown as ExtensionContext;
-	return { calls, notices, confirmations, ctx, run: (verb: string) => commands.get(`gentle-sdd-${verb}`)!("alpha --json", ctx) };
+	return { calls, notices, confirmations, ctx, run: (verb: string) => commands.get(`jero-sdd-${verb}`)!("alpha --json", ctx) };
 }
 
 function commandStatus(root: string) {

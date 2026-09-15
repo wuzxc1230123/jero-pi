@@ -1,6 +1,6 @@
 {
 	"name": "jero-pi",
-	"version": "2.6.2-jero.0",
+	"version": "2.6.2-jero.1",
 	"description": "Pi development harness restructured from gentle-pi v2.6.2: SDD/OpenSpec, subagents, strict TDD evidence, review guardrails, and skill discovery.",
 	"license": "MIT",
 	"type": "module",

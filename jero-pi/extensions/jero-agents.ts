@@ -568,7 +568,7 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 				try {
 					const retained = JSON.parse(env[REMEDIATION_PLAN_ENV]!);
 					// SDK flags are owner-local; the runner transports the same selected context.
-					const selection = Object.hasOwn(retained, "selection") ? retained.selection : JSON.parse(String(pi.getFlag("gentle-sdd-change")));
+					const selection = Object.hasOwn(retained, "selection") ? retained.selection : JSON.parse(String(pi.getFlag("jero-sdd-change")));
 					parseSddChange(selection, "sdd-remediate");
 					const plan = parseRemediationPlan(retained.plan, ctx.cwd);
 					if (selection.workspaceRoot !== ctx.cwd || JSON.stringify(plannedCommands(plan)) !== JSON.stringify(retained.scope?.commands) || JSON.stringify(plan.editPaths ?? []) !== JSON.stringify(retained.scope?.editPaths)) throw new Error("Remediation grant/plan mismatch");

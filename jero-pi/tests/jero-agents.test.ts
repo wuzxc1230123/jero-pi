@@ -1086,7 +1086,7 @@ test("SDD phase continuation requires a fresh selection and launches only that s
 	await tick();
 	const taskId = (run.details.gentleAgents as { taskId: string }).taskId;
 	const first = runtime.spawned[0]!;
-	assert.deepEqual(JSON.parse(first[first.indexOf("--gentle-sdd-change") + 1]!), { changeName: "alpha", workspaceRoot: cwd, phase: "apply" });
+	assert.deepEqual(JSON.parse(first[first.indexOf("--jero-sdd-change") + 1]!), { changeName: "alpha", workspaceRoot: cwd, phase: "apply" });
 	runtime.children[0].emit({ type: "agent_end", messages: [{ role: "assistant", content: [{ type: "text", text: "done" }] }] });
 	runtime.children[0].emit({ type: "agent_settled" });
 	await tick();
@@ -1099,7 +1099,7 @@ test("SDD phase continuation requires a fresh selection and launches only that s
 	}, undefined, undefined, ctx);
 	await tick();
 	const second = runtime.spawned[1]!;
-	assert.deepEqual(JSON.parse(second[second.indexOf("--gentle-sdd-change") + 1]!), { changeName: "beta", workspaceRoot: cwd, phase: "apply" });
+	assert.deepEqual(JSON.parse(second[second.indexOf("--jero-sdd-change") + 1]!), { changeName: "beta", workspaceRoot: cwd, phase: "apply" });
 	await h.fire("session_shutdown", ctx);
 });
 
