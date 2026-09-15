@@ -78,12 +78,10 @@ export async function installTuiModeSetting(options = {}) {
 	];
 	// Canonical agent-home aliases (including macOS /var) are supported.
 	// pnpm's physical store, npm links, and Git aliases are not owned global installs.
-	// A missing candidate path is simply not an owned install (dev checkouts,
-	// CI) — not an error.
-	function isCanonicalPath(path) {
-		try { return realpathSync(path) === path; } catch { return false; }
-	}
-	const installation = installations.find(({ packageRoot: expected }) => isCanonicalPath(expected));
+	// Ownership requires the caller's package root to BE the owned location —
+	// an owned install merely existing in the home never grants another
+	// package's postinstall the right to mutate Pi settings.
+	const installation = installations.find(({ packageRoot: expected }) => realpathSync(packageRoot) === expected);
 	if (!installation) return { changed: false, recognized: false };
 	assertDirectories(installation.paths);
 	const settingsPath = join(home, "settings.json");

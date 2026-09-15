@@ -1,6 +1,9 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { EFFORTS, ORCHESTRATOR_AGENT_CLASS, RuntimeMetrics, UNKNOWN_AGENT_CLASS, type FinalResponse, type TokenMeasurement } from "../lib/runtime-metrics.ts";
+import { EFFORTS, ORCHESTRATOR_AGENT_CLASS, RuntimeMetrics, UNKNOWN_AGENT_CLASS, type FinalResponse, type RuntimeMetricBucket, type TokenMeasurement } from "../lib/runtime-metrics.ts";
 import { CHILD_METRICS_EVENT, CHILD_METRICS_REVOKED, snapshotChildEvent } from "../lib/runtime-metrics-children.ts";
+
+/** Test-only seam: the active session's local accounting snapshot, if any. */
+export let liveSessionMetrics: () => { id: string; snapshot: readonly RuntimeMetricBucket[] } | undefined = () => undefined;
 
 /** Local-only runtime metrics host (jero-pi design §5.4).
  * The native delivery path — one deferred send attempt, print-mode shutdown
@@ -11,14 +14,16 @@ import { CHILD_METRICS_EVENT, CHILD_METRICS_REVOKED, snapshotChildEvent } from "
  * only. Views that want per-task usage read the child-event stream directly
  * (Agents view).
  */
-export default function runtimeMetrics(pi: ExtensionAPI, env = process.env): void {
+export default function runtimeMetrics(pi: ExtensionAPI, env = process.env, now: () => number = () => performance.now()): void {
 	if (env.GENTLE_PI_AGENTS_CHILD === "1") return;
 	type Selection = Pick<FinalResponse, "selectedModelId" | "selectedProvider" | "effort">;
 	let selection: Selection | undefined;
 	let active = false;
 	let requestSeen = false;
 	let ambiguous = false;
-	let live: { id: string; ctx: ExtensionContext; metrics: RuntimeMetrics; seen: WeakSet<object> } | undefined;
+	let live: { id: string; ctx: ExtensionContext; started: number; metrics: RuntimeMetrics; seen: WeakSet<object>; children: Set<string>; recorded: number } | undefined;
+	// Test-only seam: the local snapshot is otherwise private state.
+	liveSessionMetrics = () => (live ? { id: live.id, snapshot: live.metrics.snapshot() } : undefined);
 	const missing = { state: "unavailable" } as const;
 	function invalidate() { selection = undefined; ambiguous = true; }
 	function dispose() { live = undefined; invalidate(); }
@@ -28,14 +33,21 @@ export default function runtimeMetrics(pi: ExtensionAPI, env = process.env): voi
 	}
 	function record(owner: NonNullable<typeof live>, responses: FinalResponse[]): void {
 		if (!responses.length) return;
-		// Ephemeral event-local accounting only; source IDs never enter these rows.
-		for (const [index, row] of responses.entries()) owner.metrics.record({ ...row, responseId: String(index) });
+		// Ephemeral event-local accounting only; source IDs never enter these
+		// rows. The session-lifetime recorder owns the whole dedupe id space:
+		// every row gets a fresh id regardless of any source responseId
+		// (upstream regenerated the space per delivery batch, which is gone).
+		for (const row of responses) {
+			owner.metrics.record({ ...row, responseId: String(owner.recorded++) });
+		}
 	}
 	const offChild = pi.events.on(CHILD_METRICS_EVENT, value => {
 		try {
 			const owner = live && current(live.ctx);
 			const event = snapshotChildEvent(value);
-			if (!owner || !event || event.parentSessionId !== owner.id) return;
+			if (!owner || !event || event.parentSessionId !== owner.id
+				|| event.launchedAt < owner.started || owner.children.has(event.taskId)) return;
+			owner.children.add(event.taskId); // Busy/failed completions stay consumed.
 			record(owner, event.responses);
 		} catch { /* No metrics error enters the shared event bus. */ }
 	});
@@ -44,7 +56,8 @@ export default function runtimeMetrics(pi: ExtensionAPI, env = process.env): voi
 	});
 	pi.on("session_start", (_event, ctx) => {
 		dispose();
-		live = { id: ctx.sessionManager.getSessionId(), ctx, metrics: new RuntimeMetrics(), seen: new WeakSet<object>() };
+		live = { id: ctx.sessionManager.getSessionId(), ctx, started: now(),
+			metrics: new RuntimeMetrics(), seen: new WeakSet<object>(), children: new Set(), recorded: 0 };
 	});
 	pi.on("session_shutdown", () => { dispose(); offChild(); offRevoke(); });
 	pi.on("turn_start", () => { ambiguous = active; active = true; requestSeen = false; selection = undefined; });
@@ -74,7 +87,7 @@ export default function runtimeMetrics(pi: ExtensionAPI, env = process.env): voi
 				|| owner.seen.has(message)) return;
 			owner.seen.add(message);
 			const selected = active && !ambiguous ? selection : undefined;
-			record(owner, [{ kind: "final_assistant_response", responseId: "0",
+			record(owner, [{ kind: "final_assistant_response", responseId: "",
 				selectedProvider: selected?.selectedProvider ?? "unknown", selectedModelId: selected?.selectedModelId,
 				effort: selected?.effort ?? "unavailable",
 				executor: env.GENTLE_PI_AGENTS_CHILD === undefined ? "orchestrator" : "unknown",
