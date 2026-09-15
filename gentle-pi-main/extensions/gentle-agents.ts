@@ -31,7 +31,7 @@ import { openInExternalEditor } from "./gentle-shell.ts";
 import { resolveGentlePiAgentHome } from "../lib/agent-home.ts";
 import { assertResearchCheckpoint, parseResearchPersistence, RESEARCH_PERSISTENCE_ENTRY, canonicalArtifactPath, researchAgent, renderResearchCapabilities, RESEARCH_CHILD_TOOLS_ENV, RESEARCH_SELECTION_ENV, RESEARCH_ARTIFACT_ENV, parseResearchArtifactIntent, researchArtifactCall, researchArtifactReadback, type ResearchArtifactIntent, type ResearchWriteIdentity } from "../lib/sdd-research-capabilities.ts";
 import { CHILD_METRICS_EVENT, CHILD_METRICS_REVOKED, childEvent, launchSelection, type LaunchSelection } from "../lib/runtime-metrics-children.ts";
-import { runtimeMetricsEnvAllows } from "../lib/runtime-metrics.ts";
+import { runtimeMetricsEnvAllows, type RuntimeMetricsPolicyDeps } from "../lib/runtime-metrics-policy.ts";
 
 // Gentle Agents: subagents as isolated `pi --mode rpc` children, a task
 // store that notifies per task, and a Gentle Shell card above the editor.
@@ -335,6 +335,7 @@ export interface AgentsDeps extends RunnerDeps {
 	childIpc?: IpcEndpoint;
 	env: NodeJS.ProcessEnv;
 	resolveWorktree: WorktreeResolver;
+	runtimeMetricsPolicy?: RuntimeMetricsPolicyDeps;
 	metricsNow?: () => number;
 	metricsSchedule?: RunnerDeps["schedule"];
 }

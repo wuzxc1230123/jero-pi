@@ -3,6 +3,7 @@ import { chmod, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, posix, win32 } from "node:path";
 import { promisify } from "node:util";
+import { PackageLocalGentleAiBinaryMissingError, resolveGentleAiBinary } from "./gentle-ai-binary.ts";
 import { GENTLE_PI_REVIEW_RELAY_CONTRACT, GENTLE_PI_REVIEW_RELAY_CONTRACT_ENV } from "./review-relay-contract.ts";
 import { decodeReviewAssessmentV1, type ReviewAssessmentV1 } from "./review-risk-assessment.ts";
 import {
@@ -1497,36 +1498,13 @@ export function decodeNativeSddStatusV2(value: unknown, request: Pick<NativeSddS
 	return status as NativeSddStatusV2;
 }
 
-// Fail-closed default authority executable: no binary is resolved, installed,
-// or distributed in this build. Every review operation that reaches the
-// default resolver throws a typed authority-unavailable failure envelope
-// instead of ever launching a process. Tests keep the explicit-executable
-// seam; only the implicit default is closed.
-function failClosedAuthorityExecutable(): never {
-	throw new NativeReviewIntegrationError({
-		schema: "gentle-ai.review-integration.failure/v2",
-		contract: REVIEW_INTEGRATION_CONTRACT,
-		operation: "review.start",
-		phase: "pre_native",
-		code: "authority-unavailable",
-		message: "The native review authority runtime is not available in this build; review operations fail closed.",
-		mutationOutcome: "not_started",
-		authorityApplicability: "not_evaluated",
-		retrySafe: false,
-		replayability: "not_replayable",
-		requiredInputs: [],
-		nextAction: "stop",
-		raw: {},
-	});
-}
-
 class NativeReviewPlainCli {
 	private readonly adapter: ExecFileAdapter;
 	private readonly executable: string | (() => string);
 	private readonly timeoutMs: number;
 	private readonly maxBufferBytes: number;
 	private readonly cleanupDirectory: (directory: string) => Promise<void>;
-	constructor(adapter: ExecFileAdapter, executable: string | (() => string) = failClosedAuthorityExecutable, timeoutMs = 30_000, maxBufferBytes = resolveNativeReviewMaxBufferBytes(), cleanupDirectory = (directory: string) => rm(directory, { recursive: true, force: true })) {
+	constructor(adapter: ExecFileAdapter, executable: string | (() => string) = resolveGentleAiBinary, timeoutMs = 30_000, maxBufferBytes = resolveNativeReviewMaxBufferBytes(), cleanupDirectory = (directory: string) => rm(directory, { recursive: true, force: true })) {
 		if (typeof executable === "string" && (!isAbsolute(executable) || executable === "gentle-ai")) throw new TypeError("Native review requires an absolute package-local executable");
 		this.adapter = adapter;
 		this.executable = executable;
@@ -1542,7 +1520,9 @@ class NativeReviewPlainCli {
 			return executable;
 		}
 		catch (error) {
-			if (error instanceof NativeReviewIntegrationError) throw error;
+			if (error instanceof PackageLocalGentleAiBinaryMissingError) {
+				throw nativeError(NATIVE_REVIEW_ERROR_CODE.PACKAGE_BINARY_MISSING, operation, mutating, error.message, undefined, false);
+			}
 			throw nativeError(NATIVE_REVIEW_ERROR_CODE.UNAVAILABLE, operation, mutating, "package-local native process could not start", undefined, false);
 		}
 	}
@@ -2074,7 +2054,7 @@ export class NativeReviewCliV216 implements NativeReviewCli {
 	private readonly cleanupDirectory: (directory: string) => Promise<void>;
 	constructor(
 		adapter: ExecFileAdapter,
-		executable: string | (() => string) = failClosedAuthorityExecutable,
+		executable: string | (() => string) = resolveGentleAiBinary,
 		timeoutMs = 30_000,
 		maxBufferBytes = resolveNativeReviewMaxBufferBytes(),
 		cleanupDirectory: (directory: string) => Promise<void> = (directory) => rm(directory, { recursive: true, force: true }),
@@ -2094,7 +2074,7 @@ export class NativeReviewCliV216 implements NativeReviewCli {
 			if (!isAbsolute(path) || path === "gentle-ai") throw new TypeError("Native review requires an absolute package-local executable");
 			return path;
 		} catch (error) {
-			if (error instanceof NativeReviewIntegrationError) throw error;
+			if (error instanceof PackageLocalGentleAiBinaryMissingError) throw nativeError(NATIVE_REVIEW_ERROR_CODE.PACKAGE_BINARY_MISSING, operation, mutating, error.message, undefined, false);
 			throw nativeError(NATIVE_REVIEW_ERROR_CODE.UNAVAILABLE, operation, mutating, "package-local native process could not start", undefined, false);
 		}
 	}
@@ -2634,6 +2614,6 @@ export class NativeReviewCliV216 implements NativeReviewCli {
 	}
 }
 
-export function createNativeReviewCli(adapter?: ExecFileAdapter, executable: string | (() => string) = failClosedAuthorityExecutable): NativeReviewCli {
+export function createNativeReviewCli(adapter?: ExecFileAdapter, executable: string | (() => string) = resolveGentleAiBinary): NativeReviewCli {
 	return new NativeReviewCliV216(adapter ?? createNodeExecFileAdapter(), executable);
 }

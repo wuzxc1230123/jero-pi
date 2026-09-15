@@ -306,13 +306,3 @@ export class RuntimeMetrics {
 		return structuredClone([...this.#buckets.values()]);
 	}
 }
-
-/** Environment gate for runtime telemetry surfaces (migrated from the removed
- * runtime-metrics-policy module, behavior unchanged): unknown nonempty
- * spellings veto too — never weaken a native environment veto. */
-export function runtimeMetricsEnvAllows(env: NodeJS.ProcessEnv): boolean {
-	// Unknown nonempty spellings veto too: never weaken a native environment veto.
-	const truthy = (value: string | undefined) => !["", "0", "false", "no", "off"].includes(value?.trim().toLowerCase() ?? "");
-	return !truthy(env.DO_NOT_TRACK) && !truthy(env.CI) && !truthy(env.GITHUB_ACTIONS)
-		&& env.GENTLE_AI_TELEMETRY?.trim() !== "0";
-}

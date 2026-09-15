@@ -14,7 +14,7 @@ function fixture(entries: any[] = []) {
 	const notices: string[] = [];
 	const ctx: any = { hasUI:true, cwd:"/repo", sessionManager:{getSessionId:()=>"session",getEntries:()=>entries},
 		ui: { setFooter() {}, getEditorComponent:()=>({}), setWorkingVisible() {}, setWidget:(key,value)=>widgets.set(key,value), notify:(text)=>notices.push(text) } };
-	shell(pi,{}, {resolveWorktree:()=>({root:"/repo",commonDir:"/git"}),
+	shell(pi,{}, {resolveWorktree:()=>({root:"/repo",commonDir:"/git"}),devBinary:()=>undefined,
 		gitRunner:()=>async()=>{gitCalls++; return await new Promise<any>(()=>{});} });
 	const fire=async(key,event={})=>{for(const fn of handlers.get(key)??[]) await fn(event,ctx);};
 	return {pi,ctx,entries,notices,commands,widgets,fire,gitCalls:()=>gitCalls};

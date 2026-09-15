@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
+import { GENTLE_AI_VERSION } from "../lib/gentle-ai-binary.ts";
 import {
 	NativeReviewCliV216,
 	NativeReviewConsentBindingError,
@@ -15,14 +16,9 @@ const fixtureRoot = join(process.cwd(), "contracts", "review-integration", "v2",
 const fixture = <T = Record<string, unknown>>(name: string): T => JSON.parse(readFileSync(join(fixtureRoot, name), "utf8")) as T;
 const executableDigest = "dcc846103b16d365eaeeb9d7f289c23fc4f2897f23def1cb3fe7f05557b64705";
 
-// The fixture ships a placeholder package version ("2.1.7-test"); the consent
-// path validates it against the negotiated runtime, so pin the last shipped
-// native runtime version instead of the removed binary-resolved constant.
-const NATIVE_RUNTIME_VERSION = "2.9.1";
-
 function capabilities(): Record<string, unknown> {
 	const value = fixture<Record<string, unknown>>("capabilities.fixture.json");
-	(value.package as Record<string, unknown>).version = NATIVE_RUNTIME_VERSION;
+	(value.package as Record<string, unknown>).version = GENTLE_AI_VERSION;
 	return value;
 }
 

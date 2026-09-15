@@ -10,6 +10,7 @@ import { CHANGE_STATUS, renderChangesWidget, type ChangedFile, type ChangesModel
 import { WorktreeChangesView } from "../lib/shell-changes-view.ts";
 import { SessionWorktreeRegistry, resolveSessionWorktree, worktreeGitEnvironment, type WorktreeResolver } from "../lib/session-worktree-registry.ts";
 import { CARD_TONE, renderCard, type Card, type CardTheme } from "../lib/shell-card.ts";
+import { GentleAiDevBinaryOverrideError, resolveGentleAiDevBinaryOverride } from "../lib/gentle-ai-binary.ts";
 import { framePromptLines, PROMPT_HINT, PROMPT_STATE, withPromptHint, type PromptState } from "../lib/shell-prompt.ts";
 import { accountIdFromToken, CODEX_PROVIDER, CODEX_USAGE_URL, parseCodexUsage, parseUsageHeaders, UsageStore, type ProviderUsage } from "../lib/shell-usage.ts";
 import { UsageView } from "../lib/shell-usage-view.ts";
@@ -47,10 +48,13 @@ interface BuildOptions {
 	usage?: ProviderUsage;
 }
 
+export type DevBinaryNotice = { state: "active"; path: string; sha256: string } | { state: "invalid"; reason: string };
+
 export interface ShellDeps {
 	activeProfile(): string | undefined;
 	fetch: typeof fetch;
 	now(): number;
+	devBinary(): DevBinaryNotice | undefined;
 	resolveWorktree: WorktreeResolver;
 	gitRunner(cwd: string): GitRunner;
 }
@@ -80,7 +84,17 @@ export function createActiveProfileReader(env: NodeJS.ProcessEnv = process.env):
 	};
 }
 
-const defaultShellDeps: Omit<ShellDeps, "activeProfile"> = { fetch: (...args) => globalThis.fetch(...args), now: () => Date.now(), resolveWorktree: resolveSessionWorktree, gitRunner: shellGitRunner };
+function ambientDevBinary(): DevBinaryNotice | undefined {
+	try {
+		const override = resolveGentleAiDevBinaryOverride();
+		return override ? { state: "active", path: override.path, sha256: override.sha256 } : undefined;
+	} catch (error) {
+		if (error instanceof GentleAiDevBinaryOverrideError) return { state: "invalid", reason: error.message };
+		return undefined;
+	}
+}
+
+const defaultShellDeps: Omit<ShellDeps, "activeProfile"> = { fetch: (...args) => globalThis.fetch(...args), now: () => Date.now(), devBinary: ambientDevBinary, resolveWorktree: resolveSessionWorktree, gitRunner: shellGitRunner };
 
 interface AssistantUsageEntry {
 	type: string;
@@ -385,6 +399,8 @@ function showChanges(ctx: ExtensionContext, model: ChangesModel): void {
 
 const USAGE_COMMAND_NAME = "gentle:usage";
 const REVIEW_PREFLIGHT_TYPE = "gentle-pi.review-preflight";
+const DEV_BINARY_WIDGET_KEY = "gentle-shell-dev-binary";
+const SHA_PREFIX_LENGTH = 16;
 
 function messageText(content: string | Array<{ type: string; text?: string }>): string {
 	if (typeof content === "string") return content;
@@ -413,6 +429,18 @@ function spaced(component: { render(width: number): string[]; invalidate(): void
 			return [...component.render(width), ""];
 		},
 		invalidate() {},
+	};
+}
+
+export function devBinaryCard(notice: DevBinaryNotice): Card {
+	if (notice.state === "invalid") {
+		return { title: "Gentle AI", subtitle: "dev binary override invalid", body: [notice.reason], tone: CARD_TONE.ERROR };
+	}
+	return {
+		title: "Gentle AI",
+		subtitle: "dev binary override · field-test only",
+		body: [`${notice.path} · sha256:${notice.sha256.slice(0, SHA_PREFIX_LENGTH)}`],
+		tone: CARD_TONE.WARNING,
 	};
 }
 
@@ -552,6 +580,13 @@ export default function gentleShell(pi: ExtensionAPI, env: NodeJS.ProcessEnv = p
 		});
 		// The petal already says the agent is working; pi's own "Working" row would say it twice.
 		ctx.ui.setWorkingVisible(false);
+		const notice = deps.devBinary();
+		ctx.ui.setWidget(
+			DEV_BINARY_WIDGET_KEY,
+			notice
+				? (_tui, theme) => spaced(cardComponent(devBinaryCard(notice), theme, { expanded: true }))
+				: undefined,
+		);
 		if (changes !== tracker) return;
 		shown = "";
 		applyChanges(ctx, tracker.model);
@@ -584,8 +619,10 @@ export default function gentleShell(pi: ExtensionAPI, env: NodeJS.ProcessEnv = p
 			handler: async (ctx) => openChanges(ctx),
 		});
 	}
-	pi.on("agent_start", (_event, _ctx) => {
+	pi.on("agent_start", (_event, ctx) => {
 		prompt?.setWorking(true);
+		// The dev-binary card is a startup notice: it leaves with the first prompt.
+		if (ctx.hasUI) ctx.ui.setWidget(DEV_BINARY_WIDGET_KEY, undefined);
 	});
 	pi.on("agent_end", async (_event, ctx) => {
 		prompt?.setWorking(false);

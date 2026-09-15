@@ -162,6 +162,7 @@ function deps(): { deps: Partial<AgentsDeps>; children: FakeChild[]; spawned: st
 		children,
 		spawned,
 		deps: {
+			runtimeMetricsPolicy: { resolve: () => { throw new Error("Policy not configured in fixture"); } },
 			spawn: (command, args) => {
 				spawned.push([command, ...args]);
 				const child = fakeChild();
@@ -386,12 +387,17 @@ for (const boundary of ["allowed", "env", "session", "replacement", "bus-throws"
 			const at = clock + ms; renewalTimers.set(at, fn); return () => { renewalTimers.delete(at); };
 		};
 		let calls = 0;
+		const policy = { resolve: () => "fixture", exec: async () => {
+			calls++;
+			return { stdout: JSON.stringify({ schema: "gentle-ai.telemetry-policy/v1", operation: "policy", enabled: true,
+				source: "state", reason: "enabled" }), stderr: "", exitCode: 0, signal: null, timedOut: false, outputLimitExceeded: false };
+		} };
 		const env: NodeJS.ProcessEnv = {};
 		const profile = join(root, `metrics-${boundary}`);
 		mkdirSync(join(profile, "agents"), { recursive: true });
 		writeFileSync(join(profile, "agents", "gentle-ai-worker.md"), readFileSync(new URL("../assets/agents/gentle-ai-worker.md", import.meta.url)));
 		writeFileSync(join(profile, "subagents.json"), JSON.stringify({ model_profiles: { "gentle-ai-worker": { model: "openai/gpt-4o", effort: "high" } } }));
-		gentleAgents(h.pi, env, { ...runtime.deps, env, agentHome: profile, metricsNow: () => clock, metricsSchedule });
+		gentleAgents(h.pi, env, { ...runtime.deps, env, agentHome: profile, runtimeMetricsPolicy: policy, metricsNow: () => clock, metricsSchedule });
 		const listenerCounts = () => [...h.listeners].map(([name, set]) => [name, set.size]);
 		const initialListeners = listenerCounts();
 		await h.fire("session_start", context.ctx);
@@ -427,7 +433,7 @@ for (const boundary of ["allowed", "env", "session", "replacement", "bus-throws"
 				assert.ok([...h.listeners.values()].every(set => set.size === 0), "old bus subscriptions removed");
 				const fresh = fakePi();
 				Object.assign(fresh.pi, { events: h.pi.events });
-				gentleAgents(fresh.pi, env, { ...runtime.deps, env, metricsSchedule });
+				gentleAgents(fresh.pi, env, { ...runtime.deps, env, runtimeMetricsPolicy: policy, metricsSchedule });
 				await fresh.fire("session_start", context.ctx);
 				assert.deepEqual(listenerCounts(), initialListeners, "fresh instance installs one subscription set");
 				await fresh.fire("session_shutdown", context.ctx);

@@ -6,7 +6,7 @@ import { join } from "node:path";
 import test from "node:test";
 import { initTheme, type ExtensionAPI, type ExtensionContext } from "@earendil-works/pi-coding-agent";
 import type { TUI } from "@earendil-works/pi-tui";
-import installGentleShell, { buildShellBarModel, createActiveProfileReader, changesShortcut, fetchCodexUsage, loadFileDiff, shellGitRunner, openInExternalEditor, type GentlePromptEditor } from "../extensions/gentle-shell.ts";
+import installGentleShell, { buildShellBarModel, createActiveProfileReader, changesShortcut, devBinaryCard, fetchCodexUsage, loadFileDiff, shellGitRunner, openInExternalEditor, type GentlePromptEditor } from "../extensions/gentle-shell.ts";
 import { CHANGE_STATUS } from "../lib/shell-changes.ts";
 import { sidebarState, type SidebarRail } from "../lib/shell-sidebar.ts";
 import type { ShellBarTheme } from "../lib/shell-bar.ts";
@@ -525,7 +525,7 @@ test("registered canonical root governs real Git discovery, status and diff desp
 	const discovery = await run(["worktree", "list", "--porcelain", "-z"]);
 	assert.match(discovery.stdout, new RegExp(`worktree ${selected}`));
 	assert.ok(!discovery.stdout.includes(foreign));
-	installGentleShell(h.pi, { GENTLE_PI_SHELL_CHANGES_WATCH_MS: "off" }, { gitRunner: (cwd) => shellGitRunner(cwd, poisoned) });
+	installGentleShell(h.pi, { GENTLE_PI_SHELL_CHANGES_WATCH_MS: "off" }, { devBinary: () => undefined, gitRunner: (cwd) => shellGitRunner(cwd, poisoned) });
 	await fire(h.handlers, "session_start", ctx);
 	t.after(() => fire(h.handlers, "session_shutdown", ctx));
 	assert.equal(ui.widgets.has("gentle-shell-changes"), false, "preexisting dirty files are not agent changes");
@@ -725,4 +725,34 @@ test("gentleShell draws the review preflight message as a Gentle card", () => {
 	assert.ok(expanded.some((line) => line.includes("gentle_review")));
 	const collapsed = renderer({ ...message, content: [{ type: "text", text: message.content }] }, { expanded: false }, plainTheme).render(80).map(stripAnsi);
 	assert.equal(collapsed.length, 3);
+});
+
+test("gentleShell keeps a dev-binary override visible above the editor for the whole session", async () => {
+	const { pi, handlers } = fakePi();
+	const deps = { fetch: fakeFetch({}, false).fetchFn, now: () => 0, devBinary: () => ({ state: "active" as const, path: "/Users/me/go/bin/gentle-ai", sha256: "6e53bfc6305a3949deadbeef" }) };
+	gentleShell(pi, { GENTLE_PI_SHELL_CHANGES_WATCH_MS: "off" }, deps);
+	const { ctx, ui } = fakeContext();
+	await fire(handlers, "session_start", ctx);
+	const factory = ui.widgets.get("gentle-shell-dev-binary") as (tui: unknown, theme: unknown) => { render(width: number): string[] };
+	assert.ok(factory, "dev binary widget missing");
+	const lines = factory(fakeTui, plainTheme).render(100).map(stripAnsi);
+	assert.match(lines[0], /^╭─ ✿ Gentle AI · dev binary override · field-test only ─+╮$/);
+	assert.match(lines[1], /^│ \/Users\/me\/go\/bin\/gentle-ai · sha256:6e53bfc6305a3949 +│$/);
+	assert.match(lines[2], /^╰─+╯$/);
+	assert.equal(lines[3], "", "a blank line keeps the card off the prompt frame");
+	const painted = factory(fakeTui, { ...plainTheme, bg: (_role: string, text: string) => `\x1b[44m${text}\x1b[49m` }).render(100);
+	assert.equal(painted[0], lines[0], "top frame cells have no background");
+	assert.equal(painted[1], lines[1], "body interior remains transparent");
+	assert.equal(painted[2], lines[2], "bottom frame cells have no background");
+	assert.equal(painted[3], "", "external spacer has no background");
+	await fire(handlers, "agent_start", ctx);
+	assert.equal(ui.widgets.has("gentle-shell-dev-binary"), false, "the startup notice leaves with the first prompt");
+
+	const clean = fakePi();
+	gentleShell(clean.pi, { GENTLE_PI_SHELL_CHANGES_WATCH_MS: "off" }, { ...deps, devBinary: () => undefined });
+	const fresh = fakeContext();
+	await fire(clean.handlers, "session_start", fresh.ctx);
+	assert.equal(fresh.ui.widgets.has("gentle-shell-dev-binary"), false);
+
+	assert.equal(devBinaryCard({ state: "invalid", reason: "binary missing" }).tone, "error");
 });

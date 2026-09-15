@@ -180,7 +180,7 @@ function reviewRepository(t: test.TestContext): ReviewStartRepository {
 	};
 }
 
-test("a missing authority transport fails closed without inventing a recovery command", async () => {
+test("missing package-local binaries give a direct recovery without attributing the cause to lifecycle scripts", async () => {
 	const result = await __testing.executeReviewControllerOperation(
 		{ operation: "inspect" },
 		process.cwd(),
@@ -198,8 +198,11 @@ test("a missing authority transport fails closed without inventing a recovery co
 	);
 
 	assert.equal(result.outcome, "native-status-package-binary-missing");
-	assert.match(String(result.next_action), /native authority transport is provided/);
-	assert.match(String(result.reason), /not available in this build; review operations fail closed/);
+	assert.equal(result.recovery_command, "node scripts/install-gentle-ai.mjs");
+	assert.match(String(result.next_action), /installed gentle-pi package directory/);
+	assert.match(String(result.next_action), /GENTLE_PI_SKIP_GENTLE_AI_INSTALL/);
+	assert.match(String(result.next_action), /remove or unset it before/);
+	assert.match(String(result.reason), /does not prove install lifecycle scripts were disabled/);
 });
 
 test("registered Gentle Review tools render reusable rose lifecycle call rows", () => {

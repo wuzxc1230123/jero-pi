@@ -146,6 +146,12 @@ function registeredQuietTools() {
 	return tools;
 }
 
+function registeredQuietToolsWithResolver(resolveOverride: () => unknown) {
+	const { pi, tools } = createPi();
+	withEnv({ GENTLE_PI_QUIET_TOOLS: undefined }, () => quietTools(pi as any, resolveOverride as any));
+	return tools;
+}
+
 function renderToolResult(tool: any, result: any, options: any, context: Record<string, unknown> = {}): string {
 	return renderToString(tool.renderResult(result, options, passthroughTheme, context));
 }
@@ -701,6 +707,64 @@ test("quiet tool rendering recognizes exact quoted, escaped, Windows, and comman
 	}
 });
 
+test("quiet tool rendering recognizes only the exact resolved dev binary", () => {
+	let devPath = "/home/devel/projects/gentle-ai/dist/gentle-ai-main";
+	let resolutions = 0;
+	const tools = registeredQuietToolsWithResolver(() => {
+		resolutions += 1;
+		return { source: "registration", origin: "test", path: devPath, sha256: "test" };
+	});
+	const tool = tools.get("bash");
+	const cases = [
+		[`${devPath} review validate --gate pre-commit --cwd /repo/private`, "review validate pre commit"],
+		[`'${devPath}' review status --lineage secret`, "review status"],
+		[`"${devPath}" version`, "version"],
+		[`env FOO='a b' ${devPath} review capabilities`, "review capabilities"],
+		[`command -- "${devPath}" sdd-status hidden`, "sdd status"],
+	] as const;
+	for (const [command, operationPath] of cases) {
+		const call = renderToString(tool.renderCall({ command }, statusTheme, routineRenderContext({ args: { command } })));
+		assert.equal(cardTitle(call), `🌹︎ Gentle AI · running · ${operationPath}`, command); assert.equal(cardTone(call), "warning", command);
+		assert.doesNotMatch(call, /gentle-ai-main|private|secret|hidden/);
+	}
+	const command = `${devPath} review status --prompt hidden-prompt --lineage lineage-secret --body private-body`;
+	const lifecycleContext = routineRenderContext({ args: { command }, state: {} });
+	assert.match(renderToString(tool.renderCall({ command }, passthroughTheme, lifecycleContext)), /Gentle AI · running · review status/);
+	devPath = "/new/dev/gentle-ai-main";
+	const refreshedCommand = `${devPath} review status --token token-secret`;
+	assert.match(renderToString(tool.renderCall({ command: refreshedCommand }, passthroughTheme, routineRenderContext({ args: { command: refreshedCommand } }))), /Gentle AI · running · review status/);
+	assertGenericBash(tool, cases[2][0]);
+	const text = "error: private failure\nlineage=secret body=hidden\x1b[31m";
+	const collapsed = renderToolResult(tool, textResult(text), { expanded: false, isPartial: false, isError: true }, lifecycleContext);
+	const expanded = renderToolResult(tool, textResult(text), { expanded: true, isPartial: false, isError: true }, lifecycleContext);
+	const refreshed = renderToolResult(tool, textResult("result-secret"), { expanded: false, isPartial: false }, { args: { command: refreshedCommand } });
+	const hint = keyHint("app.tools.expand", "to expand");
+	assert.match(cardBody(collapsed), /\d+ lines?\b/);
+	assert.equal(cardBody(collapsed).split(hint).length - 1, 0);
+	assert.doesNotMatch(collapsed, /private|lineage|secret|hidden|error/);
+	assert.match(expanded, /private failure|lineage=secret body=hidden/);
+	assert.doesNotMatch(cardBody(expanded), /to expand|\x1b\[/);
+	assert.doesNotMatch(refreshed, /result-secret/);
+	assert.ok(resolutions > 1);
+});
+test("quiet tool rendering keeps unregistered dev lookalikes and composed calls generic", () => {
+	const devPath = "/home/devel/projects/gentle-ai/dist/gentle-ai-main";
+	const active = registeredQuietToolsWithResolver(() => ({ source: "registration", origin: "test", path: devPath, sha256: "test" }));
+	for (const command of [
+		"gentle-ai-main review status",
+		"/tmp/alias/gentle-ai review status",
+		`${devPath}-sibling review status`, `${devPath}.bak review status`, `${devPath}x review status`,
+		`${devPath} review status | tee output`, `${devPath} review status && echo done`,
+		`'${devPath}' review status $(printf nested)`,
+	]) assertGenericBash(active.get("bash"), command);
+
+	const unresolved = `${devPath} review status`;
+	assertGenericBash(registeredQuietToolsWithResolver(() => undefined).get("bash"), unresolved);
+	let throwing: Map<string, any> | undefined;
+	assert.doesNotThrow(() => { throwing = registeredQuietToolsWithResolver(() => { throw new Error("invalid override"); }); });
+	assertGenericBash(throwing!.get("bash"), unresolved);
+	assertGenericBash(registeredQuietToolsWithResolver(() => ({ path: "relative/gentle-ai-main" })).get("bash"), unresolved);
+});
 test("quiet tool rendering hides the routine partial result because the header owns state", () => {
 	const { pi, tools } = createPi();
 	withEnv({ GENTLE_PI_QUIET_TOOLS: undefined }, () => quietTools(pi as any));
@@ -1003,6 +1067,17 @@ test("quiet tool rendering keeps unescaped expansions inside double quotes gener
 		assert.equal(call.trimEnd(), `$ ${command}`, command);
 		assert.match(collapsed, /original command output/, command);
 	}
+});
+
+test("quiet tool rendering recognizes a quoted exact dev override path containing spaces", () => {
+	const devPath = "/opt/Gentle AI/gentle-ai";
+	const tool = registeredQuietToolsWithResolver(() => ({ path: devPath })).get("bash");
+	const command = `"${devPath}" review status "literal \\$|#;"`;
+	const call = renderToString(tool.renderCall({ command }, passthroughTheme, { args: { command } }));
+	const collapsed = renderToolResult(tool, textResult("private result"), { expanded: false, isPartial: false }, { args: { command } });
+	assert.equal(cardTitle(call), "🌹︎ Gentle AI · running · review status");
+	assert.doesNotMatch(call, /\/opt\/Gentle AI\/gentle-ai|literal/);
+	assert.doesNotMatch(collapsed, /private result/);
 });
 
 test("quiet tool rendering bounds and sanitizes partial text without a completion hint", () => {

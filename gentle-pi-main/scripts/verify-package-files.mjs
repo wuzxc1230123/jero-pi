@@ -54,16 +54,48 @@ const requiredPaths = [
   "extensions/gentle-ai.ts",
   "extensions/sdd-init.ts",
   "extensions/skill-registry.ts",
+  "lib/gentle-ai-binary.ts",
   "lib/native-review-cli.ts",
+  "lib/provider-contract-bundle.ts",
   "lib/review-host-relay.ts",
   "lib/review-integration-v2.ts",
   "lib/review-relay-contract.ts",
   "lib/sdd-preflight.ts",
-  "runtime/native-review-cli.mjs",
-  "runtime/review-integration-v2.mjs",
-  "runtime/review-risk-assessment.mjs",
-  "runtime/review-relay-contract.mjs",
+  "lib/telemetry-trigger.ts",
+	"runtime/gentle-ai-binary.mjs",
+	"runtime/native-review-cli.mjs",
+	"runtime/review-integration-v2.mjs",
+	"runtime/review-risk-assessment.mjs",
+	"runtime/review-relay-contract.mjs",
+	"runtime/telemetry-trigger.mjs",
+  "scripts/check-provider-contract.mjs",
+  "scripts/gentle-ai-installer.mjs",
+  "scripts/install-gentle-ai.mjs",
+  "scripts/mirror-provider-contract.mjs",
   "tests/fixtures/native-review-cli/v2.1.3/start.json",
+  "tests/fixtures/provider-contract-bundle/v1.1.0/README.md",
+  "tests/fixtures/provider-contract-bundle/v1.1.0/manifest.json",
+  "tests/fixtures/provider-contract-bundle/v1.1.0/schemas/lens.schema.json",
+  "tests/fixtures/provider-contract-bundle/v1.1.0/schemas/refuter.schema.json",
+  "tests/fixtures/provider-contract-bundle/v1.1.0/schemas/targeted-validator.schema.json",
+  "tests/fixtures/provider-contract-bundle/v1.1.0/vectors/lens.json",
+  "tests/fixtures/provider-contract-bundle/v1.1.0/vectors/refuter.json",
+  "tests/fixtures/provider-contract-bundle/v1.1.0/vectors/targeted-validator.json",
+  // Provider contract mirror (gentle-pi#311 P1/P2). Presence is enforced here;
+  // exact bytes are pinned by the lock-driven scripts/check-provider-contract.mjs
+  // drift check, which runs in the same pnpm test flow.
+  "contracts/review-provider-contract-mirror/provider-contract.lock.json",
+  "contracts/review-provider-contract-mirror/v1.2.0/bundle/README.md",
+  "contracts/review-provider-contract-mirror/v1.2.0/bundle/manifest.json",
+  "contracts/review-provider-contract-mirror/v1.2.0/bundle/orchestration/pi.md",
+  "contracts/review-provider-contract-mirror/v1.2.0/bundle/schemas/lens.schema.json",
+  "contracts/review-provider-contract-mirror/v1.2.0/bundle/schemas/refuter.schema.json",
+  "contracts/review-provider-contract-mirror/v1.2.0/bundle/schemas/targeted-validator.schema.json",
+  "contracts/review-provider-contract-mirror/v1.2.0/bundle/vectors/lens.json",
+  "contracts/review-provider-contract-mirror/v1.2.0/bundle/vectors/refuter.json",
+  "contracts/review-provider-contract-mirror/v1.2.0/bundle/vectors/targeted-validator.json",
+  "contracts/review-provider-contract-mirror/v1.2.0/generated/provider-capabilities.baseline.json",
+  "contracts/review-provider-contract-mirror/v1.2.0/generated/provider-roles.baseline.json",
   "prompts/skill-creation.md",
   "skills/_shared/review-ledger-contract.md",
   "skills/branch-pr/SKILL.md",
@@ -168,11 +200,19 @@ function listFilesRecursively(directory) {
 // byte-pinned contract artifact but lives outside this walk root). Reports
 // the two drift directions separately so a new unlisted file and a stale
 // hash-map entry are both visible.
+//
+// `contracts/review-provider-contract-mirror/**` is deliberately excluded:
+// that subtree has exactly one byte authority — the mirror's own lock record,
+// enforced by scripts/check-provider-contract.mjs in the same pnpm test flow —
+// so listing it here would create a second, drift-prone pin for the same bytes.
+const PROVIDER_CONTRACT_MIRROR_PREFIX = "contracts/review-provider-contract-mirror/";
+
 export function reconcileContractsOnDisk(packageRoot, hashes) {
   const contractsRoot = join(packageRoot, "contracts");
   const walked = existsSync(contractsRoot)
     ? listFilesRecursively(contractsRoot)
         .map((absolutePath) => relative(packageRoot, absolutePath).split(sep).join("/"))
+        .filter((relativePath) => !relativePath.startsWith(PROVIDER_CONTRACT_MIRROR_PREFIX))
     : [];
   const listed = Object.keys(hashes).filter((relativePath) => relativePath.startsWith("contracts/"));
   const walkedSet = new Set(walked);
@@ -182,6 +222,31 @@ export function reconcileContractsOnDisk(packageRoot, hashes) {
     unlistedOnDisk: walked.filter((relativePath) => !listedSet.has(relativePath)).sort(),
     listedButMissing: listed.filter((relativePath) => !walkedSet.has(relativePath)).sort(),
   };
+}
+
+// Compares every location that pins the Gentle AI version against the one
+// authoritative constant (scripts/gentle-ai-installer.mjs INSTALLER_VERSION),
+// returning a mismatch message per drifted location instead of a boolean.
+// This replaces a textual `.includes(...)` grep that could not have caught
+// the documented incident (scripts/install-gentle-ai.mjs header comment):
+// two hardcoded version copies drifted apart, and the installer reported
+// installing one version while writing another to disk. A textual grep only
+// verifies a string appears in a file; it cannot verify that two values
+// agree, which is exactly what this function checks instead.
+export function gentleAiVersionPinMismatches({ installerVersion, releaseBaseUrl, windowsSourceTag, libGentleAiVersion }) {
+  const mismatches = [];
+  if (libGentleAiVersion !== installerVersion) {
+    mismatches.push(
+      `lib/gentle-ai-binary.ts GENTLE_AI_VERSION ("${libGentleAiVersion}") does not match the authoritative scripts/gentle-ai-installer.mjs INSTALLER_VERSION ("${installerVersion}")`,
+    );
+  }
+  if (!releaseBaseUrl.includes(`/v${installerVersion}/`)) {
+    mismatches.push(`RELEASE_BASE_URL ("${releaseBaseUrl}") does not pin the authoritative v${installerVersion}`);
+  }
+  if (windowsSourceTag !== `v${installerVersion}`) {
+    mismatches.push(`GENTLE_AI_WINDOWS_SOURCE_TAG ("${windowsSourceTag}") does not match the authoritative v${installerVersion}`);
+  }
+  return mismatches;
 }
 
 // Reads the generator's `sources` array by regex rather than importing it,
@@ -280,6 +345,22 @@ async function main() {
     process.exit(1);
   }
 
+  // Release guard: refuse to pack/publish while any installer digest is not a real
+  // pinned SHA-256 (for example the pre-release pending sentinel).
+  const { GENTLE_AI_RELEASE_ASSETS, INSTALLER_VERSION, RELEASE_BASE_URL, GENTLE_AI_WINDOWS_SOURCE_TAG } = await import(
+    new URL("./gentle-ai-installer.mjs", import.meta.url)
+  );
+  const unpinnedDigests = Object.entries(GENTLE_AI_RELEASE_ASSETS).flatMap(([target, asset]) =>
+    [["sha256", asset.sha256], ["binarySha256", asset.binarySha256]]
+      .filter(([, digest]) => !/^[0-9a-f]{64}$/.test(digest))
+      .map(([field]) => `${target}.${field}`));
+  if (unpinnedDigests.length > 0) {
+    console.error("gentle-pi Gentle AI release digests are not pinned SHA-256 values:");
+    for (const entry of unpinnedDigests) console.error(`- ${entry}`);
+    console.error("Refusing to pack/publish until scripts/gentle-ai-installer.mjs pins the published release digests (checksums.txt archives for a stable, SHA256SUMS.txt raw binaries for a prerelease).");
+    process.exit(1);
+  }
+
   const generatedRuntimeCheck = spawnSync(process.execPath, [join(root, "scripts/build-runtime-modules.mjs"), "--check"], {
     cwd: root,
     encoding: "utf8",
@@ -288,6 +369,19 @@ async function main() {
   if (generatedRuntimeCheck.status !== 0) {
     console.error("gentle-pi generated runtime does not match its TypeScript sources:");
     console.error((generatedRuntimeCheck.stderr || generatedRuntimeCheck.stdout || "unknown generator failure").trim());
+    process.exit(1);
+  }
+
+  const { GENTLE_AI_VERSION } = await import(new URL("../lib/gentle-ai-binary.ts", import.meta.url));
+  const versionMismatches = gentleAiVersionPinMismatches({
+    installerVersion: INSTALLER_VERSION,
+    releaseBaseUrl: RELEASE_BASE_URL,
+    windowsSourceTag: GENTLE_AI_WINDOWS_SOURCE_TAG,
+    libGentleAiVersion: GENTLE_AI_VERSION,
+  });
+  if (versionMismatches.length > 0) {
+    console.error("gentle-pi Gentle AI version pins have drifted from the authoritative INSTALLER_VERSION:");
+    for (const mismatch of versionMismatches) console.error(`- ${mismatch}`);
     process.exit(1);
   }
 
