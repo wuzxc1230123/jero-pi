@@ -4,7 +4,6 @@ import { chmod, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, posix, win32 } from "node:path";
 import { promisify } from "node:util";
-import { PackageLocalGentleAiBinaryMissingError, resolveGentleAiBinary } from "./gentle-ai-binary.mjs";
 import { GENTLE_PI_REVIEW_RELAY_CONTRACT, GENTLE_PI_REVIEW_RELAY_CONTRACT_ENV } from "./review-relay-contract.mjs";
 import { decodeReviewAssessmentV1,                         } from "./review-risk-assessment.mjs";
 import {
@@ -981,6 +980,28 @@ export const NATIVE_CLI_CONTRACTS = Object.freeze({
 	// repeats 2.8.1 exactly. riskEvidence and hint remain dark because neither
 	// is proven to reach the negotiated START path Pi consumes.
 	"2.8.2": Object.freeze({ start: true, finalize: true, validate: true, bindSdd: true, status: true, inventory: true, reclaim: true, recover: true, abandon: true, quarantineLegacy: true, reconcileAuthority: true, repairLegacyAlias: true, mode: true, riskEvidence: false, hint: false, delivery: true }),
+	// v2.9.0 shipped RTK opt-in Community Tool integration (#4560, installer/
+	// sync/TUI only), SDD attempt-ledger fixes (#4564, #4567, #4569 — the
+	// remediation pointer is now decided by chain equality before shape, and
+	// the refusal wording changed), sync telemetry-runtime symlinked root
+	// (#4565), OpenCode reviewer Task wrapper decoding (#4545), and Engram
+	// protocol asset wording (#4179). Ground-truthed by diffing
+	// contracts/review-integration/v2 and contracts/review-provider-contract
+	// between the v2.8.2 and v2.9.0 tags in the gentle-ai source tree: zero
+	// bytes changed. None of the above touch the closed START/STATUS fields
+	// this row negotiates, so it repeats 2.8.2 exactly. riskEvidence and hint
+	// remain dark because neither is proven to reach the negotiated START
+	// path Pi consumes.
+	"2.9.0": Object.freeze({ start: true, finalize: true, validate: true, bindSdd: true, status: true, inventory: true, reclaim: true, recover: true, abandon: true, quarantineLegacy: true, reconcileAuthority: true, repairLegacyAlias: true, mode: true, riskEvidence: false, hint: false, delivery: true }),
+	// v2.9.1 shipped restoring compatible OpenCode review consent (#4584) and
+	// deriving Claude Code SDD dispatch authority from the session transcript
+	// (#4575, #4551). Ground-truthed by diffing contracts/review-integration/v2
+	// and contracts/review-provider-contract between the v2.9.0 and v2.9.1 tags
+	// in the gentle-ai source tree: zero bytes changed. Neither change touches
+	// the closed START/STATUS fields this row negotiates, so it repeats 2.9.0
+	// exactly. riskEvidence and hint remain dark because neither is proven to
+	// reach the negotiated START path Pi consumes.
+	"2.9.1": Object.freeze({ start: true, finalize: true, validate: true, bindSdd: true, status: true, inventory: true, reclaim: true, recover: true, abandon: true, quarantineLegacy: true, reconcileAuthority: true, repairLegacyAlias: true, mode: true, riskEvidence: false, hint: false, delivery: true }),
 });
 
 
@@ -1477,13 +1498,36 @@ export function decodeNativeSddStatusV2(value         , request                 
 	return status                     ;
 }
 
+// Fail-closed default authority executable: no binary is resolved, installed,
+// or distributed in this build. Every review operation that reaches the
+// default resolver throws a typed authority-unavailable failure envelope
+// instead of ever launching a process. Tests keep the explicit-executable
+// seam; only the implicit default is closed.
+function failClosedAuthorityExecutable()        {
+	throw new NativeReviewIntegrationError({
+		schema: "gentle-ai.review-integration.failure/v2",
+		contract: REVIEW_INTEGRATION_CONTRACT,
+		operation: "review.start",
+		phase: "pre_native",
+		code: "authority-unavailable",
+		message: "The native review authority runtime is not available in this build; review operations fail closed.",
+		mutationOutcome: "not_started",
+		authorityApplicability: "not_evaluated",
+		retrySafe: false,
+		replayability: "not_replayable",
+		requiredInputs: [],
+		nextAction: "stop",
+		raw: {},
+	});
+}
+
 class NativeReviewPlainCli {
 	                 adapter                 ;
 	                 executable                         ;
 	                 timeoutMs        ;
 	                 maxBufferBytes        ;
 	                 cleanupDirectory                                      ;
-	constructor(adapter                 , executable                          = resolveGentleAiBinary, timeoutMs = 30_000, maxBufferBytes = resolveNativeReviewMaxBufferBytes(), cleanupDirectory = (directory        ) => rm(directory, { recursive: true, force: true })) {
+	constructor(adapter                 , executable                          = failClosedAuthorityExecutable, timeoutMs = 30_000, maxBufferBytes = resolveNativeReviewMaxBufferBytes(), cleanupDirectory = (directory        ) => rm(directory, { recursive: true, force: true })) {
 		if (typeof executable === "string" && (!isAbsolute(executable) || executable === "gentle-ai")) throw new TypeError("Native review requires an absolute package-local executable");
 		this.adapter = adapter;
 		this.executable = executable;
@@ -1499,9 +1543,7 @@ class NativeReviewPlainCli {
 			return executable;
 		}
 		catch (error) {
-			if (error instanceof PackageLocalGentleAiBinaryMissingError) {
-				throw nativeError(NATIVE_REVIEW_ERROR_CODE.PACKAGE_BINARY_MISSING, operation, mutating, error.message, undefined, false);
-			}
+			if (error instanceof NativeReviewIntegrationError) throw error;
 			throw nativeError(NATIVE_REVIEW_ERROR_CODE.UNAVAILABLE, operation, mutating, "package-local native process could not start", undefined, false);
 		}
 	}
@@ -2033,7 +2075,7 @@ export class NativeReviewCliV216                            {
 	                 cleanupDirectory                                      ;
 	constructor(
 		adapter                 ,
-		executable                          = resolveGentleAiBinary,
+		executable                          = failClosedAuthorityExecutable,
 		timeoutMs = 30_000,
 		maxBufferBytes = resolveNativeReviewMaxBufferBytes(),
 		cleanupDirectory                                       = (directory) => rm(directory, { recursive: true, force: true }),
@@ -2053,7 +2095,7 @@ export class NativeReviewCliV216                            {
 			if (!isAbsolute(path) || path === "gentle-ai") throw new TypeError("Native review requires an absolute package-local executable");
 			return path;
 		} catch (error) {
-			if (error instanceof PackageLocalGentleAiBinaryMissingError) throw nativeError(NATIVE_REVIEW_ERROR_CODE.PACKAGE_BINARY_MISSING, operation, mutating, error.message, undefined, false);
+			if (error instanceof NativeReviewIntegrationError) throw error;
 			throw nativeError(NATIVE_REVIEW_ERROR_CODE.UNAVAILABLE, operation, mutating, "package-local native process could not start", undefined, false);
 		}
 	}
@@ -2593,6 +2635,6 @@ export class NativeReviewCliV216                            {
 	}
 }
 
-export function createNativeReviewCli(adapter                  , executable                          = resolveGentleAiBinary)                  {
+export function createNativeReviewCli(adapter                  , executable                          = failClosedAuthorityExecutable)                  {
 	return new NativeReviewCliV216(adapter ?? createNodeExecFileAdapter(), executable);
 }

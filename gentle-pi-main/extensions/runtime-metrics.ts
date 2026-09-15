@@ -1,18 +1,14 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { EFFORTS, ORCHESTRATOR_AGENT_CLASS, RuntimeMetrics, UNKNOWN_AGENT_CLASS, type FinalResponse, type TokenMeasurement } from "../lib/runtime-metrics.ts";
-import { CHILD_METRICS_EVENT, CHILD_METRICS_REVOKED, snapshotChildEvent, type ChildLaunchBucket } from "../lib/runtime-metrics-children.ts";
-import { RuntimeMetricsAttempt } from "../lib/runtime-metrics-delivery.ts";
-import { sendNativeRuntimeEvent, type NativeRuntimeTransportDeps } from "../lib/runtime-metrics-native.ts";
-import { runtimeMetricsEnvAllows } from "../lib/runtime-metrics-policy.ts";
+import { EFFORTS, ORCHESTRATOR_AGENT_CLASS, RuntimeMetrics, UNKNOWN_AGENT_CLASS, runtimeMetricsEnvAllows, type FinalResponse, type TokenMeasurement } from "../lib/runtime-metrics.ts";
+import { CHILD_METRICS_EVENT, CHILD_METRICS_REVOKED, snapshotChildEvent } from "../lib/runtime-metrics-children.ts";
 
-/** Available final usage -> one deferred attempt -> discard. No history reads,
- * cumulative session accounting, policy leases, delivery queue or retry. Print
- * mode alone joins its accepted attempt for at most 1.5 seconds at shutdown.
- * Pi hooks lack request correlation: latency and SDK-zero presence are unknown.
+/** Local accounting only, no delivery. Available final usage and child
+ * completions are aggregated into ephemeral event-local windows that close
+ * and are discarded in place: nothing leaves the machine. No history reads,
+ * cumulative session accounting, policy leases, delivery queue or retry.
  */
 export default function runtimeMetrics(pi: ExtensionAPI, env = process.env,
-	{ native, send = sendNativeRuntimeEvent, now = () => performance.now(), shutdownWaitMs = 1500 }:
-	{ native?: NativeRuntimeTransportDeps; send?: typeof sendNativeRuntimeEvent; now?: () => number; shutdownWaitMs?: number } = {}): void {
+	{ now = () => performance.now() }: { now?: () => number } = {}): void {
 	const allows = () => env.GENTLE_PI_AGENTS_CHILD !== "1" && runtimeMetricsEnvAllows(env);
 	if (!allows()) return;
 	type Selection = Pick<FinalResponse, "selectedModelId" | "selectedProvider" | "effort">;
@@ -20,28 +16,22 @@ export default function runtimeMetrics(pi: ExtensionAPI, env = process.env,
 	let active = false;
 	let requestSeen = false;
 	let ambiguous = false;
-	let live: { id: string; started: number; ctx: ExtensionContext; attempt: RuntimeMetricsAttempt;
+	let live: { id: string; started: number; ctx: ExtensionContext;
 		seen: WeakSet<object>; children: Set<string> } | undefined;
 	const missing = { state: "unavailable" } as const;
 	function invalidate() { selection = undefined; ambiguous = true; }
-	function dispose() { live?.attempt.dispose(); live = undefined; active = false; invalidate(); }
+	function dispose() { live = undefined; active = false; invalidate(); }
 	function current(ctx: ExtensionContext) {
 		if (!allows() || live?.id !== ctx.sessionManager.getSessionId()) dispose();
 		return live;
 	}
-	function submit(owner: NonNullable<typeof live>, responses: FinalResponse[], launches?: ChildLaunchBucket[]) {
+	function submit(owner: NonNullable<typeof live>, responses: FinalResponse[]) {
 		if (!responses.length || live !== owner || !current(owner.ctx)) return;
-		// Ephemeral event-local accounting only; source IDs never enter these rows.
+		// Ephemeral event-local accounting only; source IDs never enter these
+		// rows. The delivery path is removed: the aggregate window is closed
+		// and discarded locally, never exported or sent anywhere.
 		const metrics = new RuntimeMetrics();
 		for (const [index, row] of responses.entries()) metrics.record({ ...row, responseId: String(index) });
-		const rows = metrics.snapshot();
-		if (!rows.length) return;
-		const cwd = owner.ctx.cwd;
-		owner.attempt.offer(async signal => {
-			if (live !== owner || !current(owner.ctx) || signal.aborted) return;
-			await send(rows, cwd, { ...native, launches, env, signal,
-				current: () => live === owner && current(owner.ctx) === owner });
-		});
 	}
 	const offChild = pi.events.on(CHILD_METRICS_EVENT, value => {
 		try {
@@ -50,27 +40,20 @@ export default function runtimeMetrics(pi: ExtensionAPI, env = process.env,
 			if (!owner || !event || event.parentSessionId !== owner.id || event.launchedAt < owner.started
 				|| owner.children.has(event.taskId) || owner.children.size >= 256) return;
 			owner.children.add(event.taskId); // Busy/failed completions stay consumed.
-			submit(owner, event.responses, [{ ...event.launch, evidence: "launch_configuration", launches: 1 }]);
+			submit(owner, event.responses);
 		} catch { /* No telemetry error enters the shared event bus. */ }
 	});
 	const offRevoke = pi.events.on(CHILD_METRICS_REVOKED, id => {
-		if (live?.id === id) {
-			live.attempt.dispose();
-			live.attempt = new RuntimeMetricsAttempt();
-			invalidate();
-		}
+		if (live?.id === id) invalidate();
 	});
 	pi.on("session_start", (_event, ctx) => {
 		dispose();
 		if (!allows()) return;
 		live = { id: ctx.sessionManager.getSessionId(), started: now(), ctx,
-			attempt: new RuntimeMetricsAttempt(), seen: new WeakSet<object>(), children: new Set<string>() };
+			seen: new WeakSet<object>(), children: new Set<string>() };
 	});
-	pi.on("session_shutdown", (_event, ctx) => {
-		const teardown = () => { dispose(); offChild(); offRevoke(); };
-		const owner = live;
-		if (ctx.mode !== "print" || !owner) { teardown(); return; }
-		return owner.attempt.waitForSettled(shutdownWaitMs).finally(teardown);
+	pi.on("session_shutdown", () => {
+		dispose(); offChild(); offRevoke();
 	});
 	pi.on("turn_start", () => { ambiguous = active; active = true; requestSeen = false; selection = undefined; });
 	pi.on("turn_end", () => { active = false; invalidate(); });
@@ -85,8 +68,6 @@ export default function runtimeMetrics(pi: ExtensionAPI, env = process.env,
 		if (!active || ambiguous) return;
 		let effort: FinalResponse["effort"] = "unavailable";
 		try { const value = pi.getThinkingLevel(); if (EFFORTS.includes(value)) effort = value; } catch { /* No evidence. */ }
-		// No catalog gate: the selection is taken as-is (bounded to 128 chars) and
-		// the schema-driven normalizer decides what actually leaves the machine.
 		selection = { selectedProvider: typeof ctx.model?.provider === "string" && ctx.model.provider.length <= 128 ? ctx.model.provider : undefined,
 			selectedModelId: typeof ctx.model?.id === "string" && ctx.model.id.length <= 128 ? ctx.model.id : undefined, effort };
 	});

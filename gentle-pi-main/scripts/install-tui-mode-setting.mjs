@@ -1,7 +1,7 @@
 import { closeSync, constants, fchmodSync, fsyncSync, fstatSync, lstatSync, mkdirSync, openSync, readFileSync, realpathSync, renameSync, rmdirSync, unlinkSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { randomUUID } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 
@@ -111,4 +111,12 @@ export async function installTuiModeSetting(options = {}) {
 			if (sameFile(lock, inspect(lockPath))) rmdirSync(lockPath);
 		}
 	}
+}
+
+// Direct postinstall entry: `node scripts/install-tui-mode-setting.mjs`.
+// A settings failure must fail the install loudly; an unrecognized layout
+// (not a physically owned global install) is the documented no-op.
+const isMainModule = process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isMainModule) {
+	await installTuiModeSetting();
 }

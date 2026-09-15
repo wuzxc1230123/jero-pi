@@ -11,7 +11,7 @@ import { visibleWidth, type TuiMouseEvent } from "@earendil-works/pi-tui";
 import gentleAgents, { agentRuntimePaths, agentsCollapseKey, agentsEnabled, agentsStopKey, agentsViewKey, answerThroughUi, completionText, legacySubagentsInstalled, type AgentsDeps } from "../extensions/gentle-agents.ts";
 import { historyDir, loadHistory, saveTask } from "../lib/agents-history.ts";
 import { STALE_COMPLETION_MS } from "../lib/agents-completion-delivery.ts";
-import { emptyThread, TASK_EVENT, TASK_STATUS, TaskStore, type TaskRecord } from "../lib/agents-protocol.ts";
+import { applyTaskEvent, emptyThread, TASK_EVENT, TASK_STATUS, TaskStore, type TaskRecord } from "../lib/agents-protocol.ts";
 import { NativePointerScope } from "../lib/native-pointer-region.ts";
 import { PresenceCursor, PresencePublisher, listPresence, readActivity } from "../lib/orchestrator-presence.ts";
 import { stripAnsi } from "../lib/terminal-theme.ts";
@@ -162,7 +162,6 @@ function deps(): { deps: Partial<AgentsDeps>; children: FakeChild[]; spawned: st
 		children,
 		spawned,
 		deps: {
-			runtimeMetricsPolicy: { resolve: () => { throw new Error("Policy not configured in fixture"); } },
 			spawn: (command, args) => {
 				spawned.push([command, ...args]);
 				const child = fakeChild();
@@ -179,10 +178,11 @@ function deps(): { deps: Partial<AgentsDeps>; children: FakeChild[]; spawned: st
 	};
 }
 
-test("all nine subagent registrations own their transcript shell", () => {
+test("all ten subagent registrations own their transcript shell", () => {
 	const { pi, tools } = fakePi();
 	gentleAgents(pi, {}, deps().deps);
-	assert.equal(tools.size, 9);
+	assert.equal(tools.size, 10);
+	assert.deepEqual(tools.get("subagent_reconcile")?.parameters, { type: "object", additionalProperties: false, required: ["task_id"], properties: { task_id: { type: "string" } } });
 	for (const tool of tools.values()) assert.equal(tool.renderShell, "self", tool.name);
 });
 
@@ -386,17 +386,12 @@ for (const boundary of ["allowed", "env", "session", "replacement", "bus-throws"
 			const at = clock + ms; renewalTimers.set(at, fn); return () => { renewalTimers.delete(at); };
 		};
 		let calls = 0;
-		const policy = { resolve: () => "fixture", exec: async () => {
-			calls++;
-			return { stdout: JSON.stringify({ schema: "gentle-ai.telemetry-policy/v1", operation: "policy", enabled: true,
-				source: "state", reason: "enabled" }), stderr: "", exitCode: 0, signal: null, timedOut: false, outputLimitExceeded: false };
-		} };
 		const env: NodeJS.ProcessEnv = {};
 		const profile = join(root, `metrics-${boundary}`);
 		mkdirSync(join(profile, "agents"), { recursive: true });
 		writeFileSync(join(profile, "agents", "gentle-ai-worker.md"), readFileSync(new URL("../assets/agents/gentle-ai-worker.md", import.meta.url)));
 		writeFileSync(join(profile, "subagents.json"), JSON.stringify({ model_profiles: { "gentle-ai-worker": { model: "openai/gpt-4o", effort: "high" } } }));
-		gentleAgents(h.pi, env, { ...runtime.deps, env, agentHome: profile, runtimeMetricsPolicy: policy, metricsNow: () => clock, metricsSchedule });
+		gentleAgents(h.pi, env, { ...runtime.deps, env, agentHome: profile, metricsNow: () => clock, metricsSchedule });
 		const listenerCounts = () => [...h.listeners].map(([name, set]) => [name, set.size]);
 		const initialListeners = listenerCounts();
 		await h.fire("session_start", context.ctx);
@@ -432,7 +427,7 @@ for (const boundary of ["allowed", "env", "session", "replacement", "bus-throws"
 				assert.ok([...h.listeners.values()].every(set => set.size === 0), "old bus subscriptions removed");
 				const fresh = fakePi();
 				Object.assign(fresh.pi, { events: h.pi.events });
-				gentleAgents(fresh.pi, env, { ...runtime.deps, env, runtimeMetricsPolicy: policy, metricsSchedule });
+				gentleAgents(fresh.pi, env, { ...runtime.deps, env, metricsSchedule });
 				await fresh.fire("session_start", context.ctx);
 				assert.deepEqual(listenerCounts(), initialListeners, "fresh instance installs one subscription set");
 				await fresh.fire("session_shutdown", context.ctx);
@@ -829,6 +824,40 @@ async function shutdownAndRestoreNativeSpawn(
 		childProcess.spawn = originalSpawn;
 		syncBuiltinESMExports();
 	}
+}
+
+for (const matching of [true, false]) {
+ test("owned child diff relay validates the exact file independently of review bookkeeping: "+matching, async () => {
+  const h=fakePi(), d=deps(), {ctx}=fakeContext();
+  const target=realpathSync(cwd);
+  (ctx as any).cwd=target;
+  ctx.sessionManager.getCwd=()=>target;
+  ctx.sessionManager.getEntries=(()=>h.entries) as any;
+  ctx.sessionManager.getBranch=(()=>h.entries) as any;
+  d.deps.resolveWorktree=(path,base)=>{
+   const full=resolve(base,path);
+   return full===target||full.startsWith(target+"/")?{root:target,commonDir:"/fixture/common"}:undefined;
+  };
+  const spawn=d.deps.spawn!;
+  d.deps.spawn=(...args)=>{
+   const child=spawn(...args),on=child.on.bind(child);
+   child.on=((event,listener)=>{if(event==="spawn")queueMicrotask(listener);return on(event,listener);}) as any;
+   return child;
+  };
+  gentleAgents(h.pi,{},d.deps);
+  await h.fire("session_start",ctx);
+  await h.tools.get("subagent_run")!.execute("diff",{agent:"explore",task:"Write",mode:"background",workspace_root:target},undefined,undefined,ctx);
+  await tick();
+  writeFileSync(join(target,"session-diff-test.ts"),"agent\n");
+  const evidence={id:"write",root:target,path:matching?"session-diff-test.ts":"different.ts",before:{kind:"text",text:"original\n"},after:{kind:"text",text:"agent\n"}};
+  d.children[0].emit({type:"tool_execution_start",toolCallId:"write",toolName:"write",args:{path:"session-diff-test.ts"}});
+  d.children[0].emit({type:"tool_execution_end",toolCallId:"write",isError:false,result:{content:[],details:{gentleSessionChange:evidence}}});
+  const relays=h.events.filter(event=>event.name==="gentle-pi:child-session-change");
+  assert.equal(relays.length,matching?1:0);
+  if(matching) assert.match((relays[0].data as any).evidence.id,/:write$/);
+  assert.equal(h.entries.filter(entry=>entry.customType===REVIEW_REMINDER_RECEIPT).length,1);
+  await h.fire("session_shutdown",ctx); await tick();
+ });
 }
 
 for (const scenario of ["own", "other-root", "escaped", "sibling", "session-switch", "shutdown", "unregistered"] as const) {
@@ -1261,7 +1290,7 @@ test("subagent_list_agents and subagent_run in task mode launch a child with the
 	gentleAgents(pi, {}, harness.deps);
 	const { ctx, widget } = fakeContext();
 	await fire("session_start", ctx);
-	assert.deepEqual([...tools.keys()].sort(), ["subagent_cancel", "subagent_continue", "subagent_list_agents", "subagent_list_tasks", "subagent_reply", "subagent_result", "subagent_run", "subagent_send_message", "subagent_status"]);
+	assert.deepEqual([...tools.keys()].sort(), ["subagent_cancel", "subagent_continue", "subagent_list_agents", "subagent_list_tasks", "subagent_reconcile", "subagent_reply", "subagent_result", "subagent_run", "subagent_send_message", "subagent_status"]);
 	const listed = await tools.get("subagent_list_agents")!.execute("c0", {}, undefined, undefined, ctx);
 	assert.match(listed.content[0].text, /- explore \(global\): maps things/);
 
@@ -2140,6 +2169,81 @@ test("R1 malformed child grant denies tools even before/after failed session ini
 	assert.equal(denied(), true); assert.equal(registered.length, 0);
 });
 
+
+test("public reconciliation replays retained authority, persists closure, and never exposes or starts the actor", async () => {
+	const fixtureHome = join(root, "remediation-reconcile");
+	const acquire = { workspaceRoot: cwd, changeName: "alpha", requestId: "retained-acquire", workUnit: "correct", evidenceGoal: "Observed correction", remediatesEvidenceRevision: `sha256:${"a".repeat(64)}` };
+	await saveTask(historyDir(fixtureHome), { id: "retained", agent: "sdd-remediate", cwd, status: "failed", createdAt: 1, sddRemediation: { acquire, acquireUncertain: true } } as never, emptyThread());
+	const h = fakePi(), runtime = deps(), calls = [];
+	gentleAgents(h.pi, {}, { ...runtime.deps, home: fixtureHome, nativeSdd: {
+		sddAttemptAcquire: async input => { calls.push(["acquire", structuredClone(input)]); return { state: "proceed", token: "private-token" }; },
+		sddAttemptSettle: async input => { calls.push(["settle", structuredClone(input)]); return { state: "complete" }; },
+	} as unknown as NativeReviewCli });
+	const { ctx } = fakeContext(); await h.fire("session_start", ctx);
+	const output = await h.tools.get("subagent_reconcile").execute("reconcile", { task_id: "retained" }, undefined, undefined, ctx);
+	assert.match(output.content[0].text, /reconciled/i);
+	assert.equal(JSON.stringify(output).includes("private-token"), false);
+	assert.deepEqual(calls[0], ["acquire", acquire]); assert.equal(calls[1][0], "settle");
+	assert.equal(runtime.spawned.length, 0);
+	const retained = (await loadHistory(historyDir(fixtureHome)))[0].task;
+	assert.equal(retained.sddRemediation.acquireUncertain, undefined);
+	assert.deepEqual(retained.sddRemediation.settlement, { state: "complete" });
+});
+
+test("durable reconciliation locks serialize independent extension instances sharing one tasksDir", async () => {
+	const fixtureHome = join(root, "remediation-reconcile-independent");
+	const id = "retained-independent";
+	const acquire = { workspaceRoot: cwd, changeName: "alpha", requestId: id, workUnit: "correct", evidenceGoal: "Observed correction" };
+	await saveTask(historyDir(fixtureHome), { id, agent: "sdd-remediate", cwd, status: "failed", createdAt: 1, sddRemediation: { acquire, acquireUncertain: true } } as never, emptyThread());
+	const first = fakePi(), second = fakePi(), runtime = deps();
+	let calls = 0, release!: (result: { state: "blocked" }) => void;
+	const pending = new Promise<{ state: "blocked" }>(resolve => { release = resolve; });
+	const native = { sddAttemptAcquire: async () => { calls++; return calls === 1 ? pending : { state: "blocked" }; } } as unknown as NativeReviewCli;
+	gentleAgents(first.pi, {}, { ...runtime.deps, home: fixtureHome, nativeSdd: native });
+	gentleAgents(second.pi, {}, { ...runtime.deps, home: fixtureHome, nativeSdd: native });
+	const firstContext = fakeContext(), secondContext = fakeContext();
+	await first.fire("session_start", firstContext.ctx); await second.fire("session_start", secondContext.ctx);
+	const running = first.tools.get("subagent_reconcile")!.execute("first", { task_id: id }, undefined, undefined, firstContext.ctx);
+	await eventually(() => calls === 1, "the first instance must reach native acquire while holding the lock");
+	await assert.rejects(second.tools.get("subagent_reconcile")!.execute("second", { task_id: id }, undefined, undefined, secondContext.ctx), /busy|active|already being reconciled/i);
+	assert.equal(calls, 1, "a busy filesystem lock fails before native acquire");
+	release({ state: "blocked" }); await running;
+	await first.fire("session_shutdown", firstContext.ctx); await second.fire("session_shutdown", secondContext.ctx);
+});
+
+test("reconciliation reloads a stale local task and preserves the retained disk thread", async () => {
+	const fixtureHome = join(root, "remediation-reconcile-reload");
+	const id = "retained-reload";
+	const oldAcquire = { workspaceRoot: cwd, changeName: "alpha", requestId: "old", workUnit: "old", evidenceGoal: "old" };
+	const freshAcquire = { workspaceRoot: cwd, changeName: "alpha", requestId: "fresh", workUnit: "fresh", evidenceGoal: "fresh" };
+	await saveTask(historyDir(fixtureHome), { id, agent: "sdd-remediate", cwd, status: "failed", createdAt: 1, sddRemediation: { acquire: oldAcquire, acquireUncertain: true } } as never, applyTaskEvent(emptyThread(), { type: TASK_EVENT.NOTE, text: "old thread" }));
+	const h = fakePi(), runtime = deps(), seen: unknown[] = [];
+	gentleAgents(h.pi, {}, { ...runtime.deps, home: fixtureHome, nativeSdd: { sddAttemptAcquire: async input => { seen.push(structuredClone(input)); return { state: "blocked" }; } } as unknown as NativeReviewCli });
+	const { ctx } = fakeContext(); await h.fire("session_start", ctx);
+	await h.tools.get("subagent_status")!.execute("status", { task_id: id }, undefined, undefined, ctx);
+	const freshThread = applyTaskEvent(emptyThread(), { type: TASK_EVENT.NOTE, text: "fresh thread" });
+	await saveTask(historyDir(fixtureHome), { id, agent: "sdd-remediate", cwd, status: "failed", createdAt: 1, sddRemediation: { acquire: freshAcquire, acquireUncertain: true } } as never, freshThread);
+	await h.tools.get("subagent_reconcile")!.execute("reconcile", { task_id: id }, undefined, undefined, ctx);
+	assert.deepEqual(seen, [freshAcquire], "native receives the force-reloaded retained request");
+	const stored = (await loadHistory(historyDir(fixtureHome))).find(entry => entry.task.id === id)!;
+	assert.deepEqual(stored.thread.items, freshThread.items, "persistence retains the exact disk thread, not the stale store thread");
+	await h.fire("session_shutdown", ctx);
+});
+
+test("reconciliation releases the durable lock after native failure", async () => {
+	const fixtureHome = join(root, "remediation-reconcile-failure");
+	const id = "retained-failure";
+	const acquire = { workspaceRoot: cwd, changeName: "alpha", requestId: id, workUnit: "correct", evidenceGoal: "Observed correction" };
+	await saveTask(historyDir(fixtureHome), { id, agent: "sdd-remediate", cwd, status: "failed", createdAt: 1, sddRemediation: { acquire, acquireUncertain: true } } as never, emptyThread());
+	const h = fakePi(), runtime = deps(); let calls = 0;
+	gentleAgents(h.pi, {}, { ...runtime.deps, home: fixtureHome, nativeSdd: { sddAttemptAcquire: async () => { calls++; if (calls === 1) throw new TypeError("native failure"); return { state: "blocked" }; } } as unknown as NativeReviewCli });
+	const { ctx } = fakeContext(); await h.fire("session_start", ctx);
+	await assert.rejects(h.tools.get("subagent_reconcile")!.execute("failed", { task_id: id }, undefined, undefined, ctx), /native failure/);
+	const recovered = await h.tools.get("subagent_reconcile")!.execute("retry", { task_id: id }, undefined, undefined, ctx);
+	assert.match(recovered.content[0].text, /reconciled/i);
+	assert.equal(calls, 2, "the second attempt acquires after finally released the first lock");
+	await h.fire("session_shutdown", ctx);
+});
 
 test("R3/R4 host reload refuses retained acquire/actor uncertainty without another launch", async () => {
 	for (const actorClaimed of [false, true, "blocked", "complete"]) {

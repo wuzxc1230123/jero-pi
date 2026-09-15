@@ -7,7 +7,6 @@ import { parseAgentClass } from "../lib/runtime-metrics.ts";
 import { parseAgentDefinition, type AgentDefinition } from "../lib/agents-config.ts";
 import { normalizeRpcEvent, TASK_EVENT } from "../lib/agents-protocol.ts";
 import { ChildComposition, childEvent, classifyBuiltinAgent, launchSelection } from "../lib/runtime-metrics-children.ts";
-import { encodeNativeRuntimeEvent } from "../lib/runtime-metrics-native.ts";
 
 const asset = new URL("../assets/agents/gentle-ai-worker.md", import.meta.url);
 const definition = parseAgentDefinition(readFileSync(asset, "utf8"), asset.pathname, "global");
@@ -63,7 +62,7 @@ test("installed package definitions retain classification after the actual routi
 	}
 });
 
-test("packaged sdd-proposal is encoded only as canonical sdd-propose", () => {
+test("packaged sdd-proposal is recorded only as canonical sdd-propose", () => {
 	const path = new URL("../assets/agents/sdd-proposal.md", import.meta.url);
 	const packaged = parseAgentDefinition(readFileSync(path, "utf8"), path.pathname, "global");
 	assert.ok("instructions" in packaged);
@@ -77,10 +76,8 @@ test("packaged sdd-proposal is encoded only as canonical sdd-propose", () => {
 	assert.equal(composition.reserve(completed, "local-session"), true);
 	composition.record(completed);
 	const snapshot = composition.snapshot();
-	const payload = encodeNativeRuntimeEvent(snapshot.responses, snapshot.launches);
-	assert.ok(payload);
-	assert.equal(JSON.parse(payload).rows[0].agent_class, "sdd-propose");
-	assert.ok(!payload.includes("sdd-proposal"));
+	assert.equal(snapshot.responses[0].agentClass, "sdd-propose");
+	assert.ok(!JSON.stringify(snapshot).includes("sdd-proposal"));
 });
 
 test("schema-approved packaged names survive customization without exposing private names", () => {
@@ -113,10 +110,6 @@ test("launch distribution and each observed combination remain independent and p
 		&& row.selectedModelId === "gpt-4o"));
 	assert.equal(view.responses[0].providerThinkingLevel, "low");
 	assert.equal(view.responses[0].tokens.reasoning.sum, 1);
-	const encoded = encodeNativeRuntimeEvent(view.responses, view.launches);
-	assert.ok(encoded);
-	assert.ok(JSON.parse(encoded).rows.filter((row: { responses: number | null }) => row.responses !== null)
-		.every((row: { model_evidence: string; selected_effort: string }) => row.model_evidence === "response" && row.selected_effort === "high"));
 	assert.equal(view.droppedResponses, 2);
 	assert.equal(view.settled, 1);
 	assert.equal(view.statuses.completed, 1);
@@ -149,18 +142,14 @@ test("registered child launch identity survives catalog state and missing respon
 	assert.equal(composition.reserve(completed, "local-session"), true);
 	composition.record(completed);
 	const snapshot = composition.snapshot();
-	const payload = encodeNativeRuntimeEvent(snapshot.responses, snapshot.launches);
-	assert.ok(payload);
-	const rows = JSON.parse(payload).rows;
-	const launchRow = rows.find((row: { launches: number | null }) => row.launches === 1);
-	const responseRow = rows.find((row: { responses: number | null }) => row.responses === 5);
-	assert.deepEqual(launchRow.model, { provider: "openai-codex", id: "gpt-5.6-terra" });
-	assert.equal(launchRow.model_evidence, "selected");
-	assert.equal(launchRow.selected_effort, "high");
-	assert.deepEqual(responseRow.model, { provider: "openai-codex", id: "gpt-5.6-terra" });
-	assert.equal(responseRow.model_evidence, "selected");
-	assert.equal(responseRow.selected_effort, "high");
-	assert.equal(responseRow.responses, 5);
+	const launch = snapshot.launches[0];
+	assert.equal(launch.launches, 1);
+	assert.equal(launch.selectedProvider, "openai-codex");
+	assert.equal(launch.selectedModelId, "gpt-5.6-terra");
+	assert.equal(launch.selectedEffort, "high");
+	assert.equal(snapshot.responses.length, 1);
+	assert.equal(snapshot.responses[0].responses, 5);
+	assert.ok(snapshot.responses.every(row => row.selectedProvider === "openai-codex" && row.selectedModelId === "gpt-5.6-terra"));
 });
 
 test("dedupe reserves before async policy, rejects old sessions, and survives aggregate clearing", () => {

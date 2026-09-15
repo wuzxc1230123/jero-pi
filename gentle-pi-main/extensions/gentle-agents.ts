@@ -1,8 +1,9 @@
 import { fileURLToPath } from "node:url";
 import { extractParentConfirmedSddPreflightContext, getPackageAssetOwner, isParentConfirmedSddPreflightContext, SHIPPED_SDD_AGENT_NAMES } from "../lib/sdd-preflight.ts";
-import { NativeReviewCliV216, NativeReviewCliError, createNodeExecFileAdapter, decodeNativeSddStatusV2, type NativeReviewCli, type NativeSddAcquireRequest, type NativeSddSettleRequest } from "../lib/native-review-cli.ts";
+import { NativeReviewCliV216, NativeReviewCliError, createNodeExecFileAdapter, decodeNativeSddStatusV2, type NativeReviewCli, type NativeSddAcquireRequest, type NativeSddAttemptResult, type NativeSddSettleRequest } from "../lib/native-review-cli.ts";
 import { spawn } from "node:child_process";
 import { recordReviewMutation } from "../lib/review-reminder-receipt.ts";
+import { SESSION_CHANGE_RELAY } from "../lib/session-changes.ts";
 import { SessionWorktreeRegistry, resolveSessionWorktree, type WorktreeResolver } from "../lib/session-worktree-registry.ts";
 import { existsSync, mkdirSync, readFileSync, lstatSync, realpathSync } from "node:fs";
 import { createHash, randomUUID } from "node:crypto";
@@ -19,7 +20,7 @@ import { isFinished, TASK_STATUS, TaskStore, type AskRequest, type TaskRecord } 
 import { AgentRunner, piCommand, abortReasonText, plannedCommands, type RemediationPlan, type RemediationScope, REMEDIATION_PLAN_ENV, parseRemediationPlan, remediationEvidence, type AskAnswer, type RunnerDeps, type SddChangeSelection, type TaskRequest, type RemediationTerminalFacts } from "../lib/agents-runner.ts";
 import { ChildMessenger, type IpcEndpoint } from "../lib/agents-messaging.ts";
 import { hasReviewSessionPermission, resolveCanonicalGitRepositoryIdentitySync, type ReviewSessionManager } from "../lib/review-session-standing-permission.ts";
-import { historyDir, remediationUnresolved, loadHistory, loadStoredTask, pruneHistory, saveTask } from "../lib/agents-history.ts";
+import { acquireTaskLock, historyDir, remediationUnresolved, loadHistory, loadStoredTask, pruneHistory, saveTask } from "../lib/agents-history.ts";
 import { sessionToMarkdown } from "../lib/agents-transcript.ts";
 import { AgentsView } from "../lib/agents-view.ts";
 import { PresencePublisher } from "../lib/orchestrator-presence.ts";
@@ -30,7 +31,7 @@ import { openInExternalEditor } from "./gentle-shell.ts";
 import { resolveGentlePiAgentHome } from "../lib/agent-home.ts";
 import { assertResearchCheckpoint, parseResearchPersistence, RESEARCH_PERSISTENCE_ENTRY, canonicalArtifactPath, researchAgent, renderResearchCapabilities, RESEARCH_CHILD_TOOLS_ENV, RESEARCH_SELECTION_ENV, RESEARCH_ARTIFACT_ENV, parseResearchArtifactIntent, researchArtifactCall, researchArtifactReadback, type ResearchArtifactIntent, type ResearchWriteIdentity } from "../lib/sdd-research-capabilities.ts";
 import { CHILD_METRICS_EVENT, CHILD_METRICS_REVOKED, childEvent, launchSelection, type LaunchSelection } from "../lib/runtime-metrics-children.ts";
-import { runtimeMetricsEnvAllows, type RuntimeMetricsPolicyDeps } from "../lib/runtime-metrics-policy.ts";
+import { runtimeMetricsEnvAllows } from "../lib/runtime-metrics.ts";
 
 // Gentle Agents: subagents as isolated `pi --mode rpc` children, a task
 // store that notifies per task, and a Gentle Shell card above the editor.
@@ -127,6 +128,97 @@ export function remediationToolAllowed(scope: RemediationScope | undefined, cwd:
 		}
 		return tool === "subagent_parent_message";
 	} catch { return false; }
+}
+
+export interface RemediationReconciliationResult {
+	acquireState?: NativeSddAttemptResult["state"];
+	settlementState?: NativeSddAttemptResult["state"];
+}
+
+async function replayUncertainNativeMutation<T>(label: "acquire" | "settlement", invoke: () => Promise<T>): Promise<T> {
+	try { return await invoke(); }
+	catch (error) {
+		if (error instanceof TypeError || error instanceof NativeReviewCliError && error.mutationOutcome === "none") throw error;
+		try { return await invoke(); }
+		catch { throw new Error(`Native remediation ${label} remains unresolved; retry only this exact retained task`); }
+	}
+}
+
+function finishReconciledTask(task: TaskRecord, message: string): void {
+	task.status = TASK_STATUS.FAILED;
+	task.error = message;
+	task.lastStep = "reconciled";
+	task.endedAt ??= Date.now();
+	task.lastActivityAt = Date.now();
+}
+
+export async function reconcileManagedRemediation(task: TaskRecord, native: NativeReviewCli, persist: (task: TaskRecord) => Promise<void>): Promise<RemediationReconciliationResult> {
+	const state = task.sddRemediation;
+	if (task.agent !== "sdd-remediate" || !state?.acquire || state.acquire.workspaceRoot !== task.cwd) throw new Error("Task is not an exact managed remediation record");
+	if (state.settlement) throw new Error("Managed remediation task already has a terminal settlement");
+
+	const settleExact = async (settle: NativeSddSettleRequest, acquireState?: NativeSddAttemptResult["state"]): Promise<RemediationReconciliationResult> => {
+		if (!native.sddAttemptSettle) throw new Error("Native remediation settlement reconciliation is unavailable");
+		let settlement: NativeSddAttemptResult;
+		try { settlement = await replayUncertainNativeMutation("settlement", () => native.sddAttemptSettle!(structuredClone(settle))); }
+		catch (error) {
+			state.settlementUncertain = true;
+			await persist(task);
+			throw error;
+		}
+		state.settlement = structuredClone(settlement);
+		delete state.settlementUncertain;
+		finishReconciledTask(task, `Managed remediation settlement reconciled as ${settlement.state}${settlement.reason ? `(${settlement.reason})` : ""}; no actor started`);
+		await persist(task);
+		return { ...(acquireState === undefined ? {} : { acquireState }), settlementState: settlement.state };
+	};
+
+	if (state.settle) {
+		const settle = state.settle, acquire = state.acquire;
+		const sameUntracked = JSON.stringify({ scope: settle.untrackedScope, inventory: settle.expectedUntrackedInventory, intended: settle.intendedUntracked }) === JSON.stringify({ scope: acquire.untrackedScope, inventory: acquire.expectedUntrackedInventory, intended: acquire.intendedUntracked });
+		if (state.acquireResult?.state !== "proceed" || !state.token || state.acquireResult.token !== state.token || settle.token !== state.token || settle.workspaceRoot !== acquire.workspaceRoot || settle.changeName !== acquire.changeName || settle.remediatesEvidenceRevision !== acquire.remediatesEvidenceRevision || !sameUntracked) throw new Error("Retained remediation settlement does not match its exact acquired authority");
+		return settleExact(structuredClone(settle), state.acquireResult.state);
+	}
+	if (!state.acquireUncertain) throw new Error("Managed remediation task has no uncertain acquire or settlement to reconcile");
+	if (state.actorClaimed) throw new Error("Managed remediation actor effects are uncertain; exact settlement or maintainer intervention is required");
+	if (state.acquireResult || state.token || state.settlementUncertain) throw new Error("Managed remediation acquire history is inconsistent; maintainer intervention is required");
+	if (!native.sddAttemptAcquire) throw new Error("Native remediation acquire reconciliation is unavailable");
+
+	let acquired: NativeSddAttemptResult;
+	try { acquired = await replayUncertainNativeMutation("acquire", () => native.sddAttemptAcquire!(structuredClone(state.acquire))); }
+	catch (error) {
+		state.acquireUncertain = true;
+		await persist(task);
+		throw error;
+	}
+	if (acquired.state === "proceed" && !acquired.token) throw new Error("Native remediation acquire reconciliation returned no token");
+	state.acquireResult = structuredClone(acquired);
+	delete state.acquireUncertain;
+	if (acquired.state !== "proceed") {
+		delete state.token;
+		finishReconciledTask(task, `Managed remediation acquire reconciled as ${acquired.state}${acquired.reason ? `(${acquired.reason})` : ""}; no actor started`);
+		await persist(task);
+		return { acquireState: acquired.state };
+	}
+
+	state.token = acquired.token;
+	const acquire = state.acquire;
+	const settle: NativeSddSettleRequest = {
+		workspaceRoot: acquire.workspaceRoot,
+		changeName: acquire.changeName,
+		token: acquired.token!,
+		requestId: `reconcile-${createHash("sha256").update(JSON.stringify(acquire)).digest("hex").slice(0, 32)}`,
+		outcome: "interrupted",
+		diagnosis: "Acquire outcome was recovered after the actor launch boundary was refused; no managed actor was launched",
+		harnessDisposition: "invalidated",
+		cleanupEvidence: "No managed actor was spawned; no child cleanup was required",
+		processEvidence: "spawned=false; actor_claimed=false; reconciliation=acquire",
+		remediatesEvidenceRevision: acquire.remediatesEvidenceRevision,
+		...(acquire.untrackedScope === undefined ? {} : { untrackedScope: acquire.untrackedScope, expectedUntrackedInventory: acquire.expectedUntrackedInventory, intendedUntracked: acquire.intendedUntracked }),
+	};
+	state.settle = structuredClone(settle);
+	await persist(task); // Recovered token and exact settlement replay input become durable atomically before native mutation.
+	return settleExact(settle, acquired.state);
 }
 
 export async function admitManagedRemediation(request: TaskRequest, input: unknown, native: NativeReviewCli, persist: (task: TaskRecord) => Promise<void>, context?: Pick<ExtensionContext, "hasUI" | "ui">, preparedTask?: TaskRecord): Promise<Partial<TaskRequest>> {
@@ -243,7 +335,6 @@ export interface AgentsDeps extends RunnerDeps {
 	childIpc?: IpcEndpoint;
 	env: NodeJS.ProcessEnv;
 	resolveWorktree: WorktreeResolver;
-	runtimeMetricsPolicy?: RuntimeMetricsPolicyDeps;
 	metricsNow?: () => number;
 	metricsSchedule?: RunnerDeps["schedule"];
 }
@@ -794,6 +885,13 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 			const root = deps.resolveWorktree(tool.path, task.cwd)?.root;
 			const childRoot = deps.resolveWorktree(task.cwd, task.cwd)?.root;
 			if (!root || root !== childRoot || !worktrees.roots().includes(root)) return;
+			if (tool.evidence?.root === root) {
+				try {
+					let path = tool.path.replace(/^@/, "");
+					if (path === "~" || path.startsWith("~/")) path = os.homedir() + path.slice(1);
+					if (realpathSync(resolve(task.cwd, path)) === resolve(root, tool.evidence.path)) pi.events.emit(SESSION_CHANGE_RELAY, { sessionId: task.parentSessionId, evidence: { ...tool.evidence, id: `${task.id}:${tool.toolCallId}` } });
+				} catch { /* Missing or mismatched targets cannot supply session diffs. */ }
+			}
 			recordReviewMutation(pi, sessions, root, { source: "subagent", taskId: task.id, toolName: tool.toolName, toolCallId: tool.toolCallId });
 		},
 		onFinish: (task, observations) => {
@@ -871,7 +969,7 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 		const selected = store.get(task.id);
 		if (!isOwnedActive(selected)) return;
 		if (selected.status === TASK_STATUS.QUEUED) {
-			if (runner.cancel(selected.id)) ctx.ui.notify(`Stopped ${selected.agent}.`);
+			if (runner.cancel(selected.id, "stopped from the agents panel")) ctx.ui.notify(`Stopped ${selected.agent}.`);
 			else ctx.ui.notify(`Task ${selected.agent} already finished.`, "warning");
 			return;
 		}
@@ -885,7 +983,7 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 				ctx.ui.notify(`Task ${selected.agent} already finished.`, "warning");
 				return;
 			}
-			if (runner.cancel(current.id)) ctx.ui.notify(`Stopped ${current.agent}.`);
+			if (runner.cancel(current.id, "stopped from the agents panel")) ctx.ui.notify(`Stopped ${current.agent}.`);
 			else ctx.ui.notify(`Task ${current.agent} already finished.`, "warning");
 		} finally {
 			stoppingTaskIds.delete(selected.id);
@@ -904,7 +1002,7 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 		const confirmation = (async () => {
 			try {
 				if (!await ctx.ui.confirm(`Stop ${count} active ${noun}?`, `Only these ${count} ${noun} will stop. Current work may be incomplete.`)) return;
-				const cancelled = active.filter((task) => runner.cancel(task.id)).length;
+				const cancelled = active.filter((task) => runner.cancel(task.id, "stopped from the agents panel (stop all)")).length;
 				ctx.ui.notify(`Stopped ${cancelled} ${cancelled === 1 ? "subagent" : "subagents"}.`);
 			} finally {
 				stopAllConfirmation = undefined;
@@ -1136,7 +1234,7 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 		// no recorded reason. Cancel through the runner so the lifecycle runs and the
 		// record is persisted, and tell the user why.
 		const onAbort = (): void => {
-			if (runner.cancel(task.id)) {
+			if (runner.cancel(task.id, `cancelled: the tool call was aborted${abortReasonText(signal?.reason)}`)) {
 				ctx.ui.notify(
 					`Subagent ${task.agent} cancelled: the tool call was aborted${abortReasonText(signal?.reason)}. The run is recorded as cancelled.`,
 					"warning",
@@ -1220,6 +1318,25 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 		return task ? text(describeTask(task), taskDetails(task)) : text(`Error: no task ${String(params.task_id)}`, { error: "unknown task" });
 	});
 
+	tool("reconcile", "Reconcile one retained managed remediation mutation without launching an actor.", { required: ["task_id"], properties: { task_id: { type: "string" } } }, async (params, ctx) => {
+		const id = String(params.task_id);
+		const lock = acquireTaskLock(tasksDir, id);
+		try {
+			const stored = await loadStoredTask(tasksDir, id);
+			if (!stored) return text(`Error: no task ${id}`, { error: "unknown task" });
+			const task = stored.task, retainedThread = stored.thread;
+			const target = registryFor(ctx).validate(task.cwd);
+			if (target !== resolve(task.cwd) || task.sddRemediation?.acquire.workspaceRoot !== target) throw new Error("Retained remediation task must resolve to its exact worktree in the same Git clone as this session");
+			const native = deps.nativeSdd ?? new NativeReviewCliV216(createNodeExecFileAdapter());
+			const persist = async (current: TaskRecord) => {
+				await saveTask(tasksDir, current, retainedThread);
+				store.update(current.id, { status: current.status, error: current.error, lastStep: current.lastStep, endedAt: current.endedAt, lastActivityAt: current.lastActivityAt, sddRemediation: current.sddRemediation });
+			};
+			const result = await reconcileManagedRemediation(task, native, persist);
+			return text(`Managed remediation task ${task.id} reconciled; no actor started. Use fresh native status and admission for later work.`, { gentleAgents: { taskId: task.id, agent: task.agent, status: task.status, mode: task.mode }, reconciliation: { ...result, actorStarted: false } });
+		} finally { lock.release(); }
+	});
+
 	tool("result", "Return the final answer of a finished subagent task, or its current state if it is still running.", { required: ["task_id"], properties: { task_id: { type: "string" } } }, async (params) => {
 		const task = await resolveTask(String(params.task_id));
 		if (!task) return text(`Error: no task ${String(params.task_id)}`, { error: "unknown task" });
@@ -1241,7 +1358,7 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 
 	tool("cancel",  "Cancel a queued or running subagent task.", { required: ["task_id"], properties: { task_id: { type: "string" } } }, async (params) => {
 		const id = String(params.task_id);
-		return runner.cancel(id) ? text(`Cancelled task ${id}.`) : text(`Error: task ${id} is not running.`, { error: "not running" });
+		return runner.cancel(id, "cancelled by the cancel tool") ? text(`Cancelled task ${id}.`) : text(`Error: task ${id} is not running.`, { error: "not running" });
 	});
 
 	tool("send_message", "Steer a running subagent with a message delivered before its next model call.", { required: ["task_id", "message"], properties: { task_id: { type: "string" }, message: { type: "string" } } }, async (params) => {
@@ -1331,6 +1448,6 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 		sidebarTui = undefined;
 		worktrees?.close();
 		worktrees = undefined;
-		runner.cancelAll();
+		runner.cancelAll("cancelled: parent session shut down");
 	});
 }

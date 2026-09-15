@@ -29,7 +29,6 @@ import { spawn } from "node:child_process";
 import { chmod, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { isAbsolute, join } from "node:path";
-import { resolveGentleAiBinary } from "./gentle-ai-binary.ts";
 import {
 	OPAQUE_PI_REVIEWER_TRANSPORT_FAILURE,
 	OpaquePiReviewerTransportError,
@@ -488,7 +487,12 @@ function snapshotReviewHostRelayRequest(request: ReviewHostRelayRequest): Review
 	// slot without a provider-owned submission is a typed contract mismatch,
 	// never a synthesized invocation.
 	resolveReviewHostRelaySubmission(request.submission);
-	const gentleAiExecutable = request.gentleAiExecutable ?? resolveGentleAiBinary();
+	// Fail closed: no default binary is resolved or distributed in this build.
+	// A caller must supply an explicit absolute executable or nothing launches.
+	const gentleAiExecutable = request.gentleAiExecutable;
+	if (gentleAiExecutable === undefined) {
+		throw new Error("authority-unavailable: the native review authority runtime is not available in this build; the Pi host relay requires an explicit gentleAiExecutable");
+	}
 	if (!isAbsolute(gentleAiExecutable)) throw new TypeError("Pi host relay requires an absolute gentle-ai executable path");
 	const environment = Object.freeze({ ...(request.environment ?? process.env) }) as NodeJS.ProcessEnv;
 	const submission = request.submission === undefined ? undefined : Object.freeze({

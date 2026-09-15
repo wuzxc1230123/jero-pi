@@ -345,7 +345,6 @@ test("before_agent_start resolves the unnamed packaged executor and renders nati
 	createGentleAiExtension({
 		nativeReviewCli: { sddStatus: async (request: unknown) => { calls.push(request); return nativeReply; } } as unknown as NativeReviewCli,
 		processEnv: {},
-		resolveTelemetryTriggerBinary: () => { throw new Error("no telemetry in hook tests"); },
 	})(pi);
 	const result = await hooks.get("before_agent_start")!({ systemPrompt }, ctx);
 	assert.doesNotMatch(result.systemPrompt, /SDD selection blocked:/);

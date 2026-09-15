@@ -180,7 +180,7 @@ function reviewRepository(t: test.TestContext): ReviewStartRepository {
 	};
 }
 
-test("missing package-local binaries give a direct recovery without attributing the cause to lifecycle scripts", async () => {
+test("a missing authority transport fails closed without inventing a recovery command", async () => {
 	const result = await __testing.executeReviewControllerOperation(
 		{ operation: "inspect" },
 		process.cwd(),
@@ -198,11 +198,8 @@ test("missing package-local binaries give a direct recovery without attributing 
 	);
 
 	assert.equal(result.outcome, "native-status-package-binary-missing");
-	assert.equal(result.recovery_command, "node scripts/install-gentle-ai.mjs");
-	assert.match(String(result.next_action), /installed gentle-pi package directory/);
-	assert.match(String(result.next_action), /GENTLE_PI_SKIP_GENTLE_AI_INSTALL/);
-	assert.match(String(result.next_action), /remove or unset it before/);
-	assert.match(String(result.reason), /does not prove install lifecycle scripts were disabled/);
+	assert.match(String(result.next_action), /native authority transport is provided/);
+	assert.match(String(result.reason), /not available in this build; review operations fail closed/);
 });
 
 test("registered Gentle Review tools render reusable rose lifecycle call rows", () => {
@@ -1783,9 +1780,9 @@ test("bash tool_call confirms every compound action and centers a long git -C pu
 	assert.match(preview, /push origin main && npm publish --tag beta/);
 	assert.ok(preview.startsWith("…"));
 });
-// /gentle:profiles reopens its panel after every action, so a test that applies
-// once must confirm on the first visit and close on the next, or the panel and
-// the action loop feed each other forever.
+// /gentle:profiles reopens its panel after actions that finish the interaction,
+// so a test that applies once must confirm on the first visit and close on the
+// next, or the panel and the action loop feed each other forever.
 function applyOnce(
 	fixture: { onInput(action: (panel: { handleInput(data: string): void }) => void): void },
 ): void {
@@ -1875,6 +1872,179 @@ test("a profile store entry with only the orchestrator key counts zero roles", a
 	assert.match(applied, /Orchestrator set to nan\/glm5\.3 · high/);
 });
 
+test("applying a profile replaces materialized routing for agents the profile omits", async (t) => {
+	const { fixture, writeStore, writeSettings } = profilesStoreFixture(t);
+	writeSettings();
+	// Routing materialized earlier (a previous profile, /gentle:models, or a
+	// migration) for an agent the new profile does not mention.
+	const helperPath = join(fixture.root, ".pi", "agents", "helper.md");
+	writeMarkdown(helperPath, "---\nname: helper\ndescription: Helper\nmodel: openai/beta\nthinking: high\n---\nbody\n");
+	const subagentsPath = join(fixture.root, ".pi", "subagents.json");
+	writeFileSync(subagentsPath, `${JSON.stringify({ model_profiles: { helper: { model: "openai/beta", effort: "high" } } }, null, 2)}\n`);
+	writeStore({ team: { worker: { model: "openai/alpha" } } });
+	applyOnce(fixture);
+	await fixture.run("gentle:profiles");
+
+	const profiles = JSON.parse(readFileSync(subagentsPath, "utf8"));
+	assert.deepEqual(profiles.model_profiles, { worker: { model: "openai/alpha" } }, "omitted agents lose their materialized route");
+	const helper = readFileSync(helperPath, "utf8");
+	assert.doesNotMatch(helper, /^model:/m);
+	assert.doesNotMatch(helper, /^thinking:/m);
+	assert.match(readFileSync(join(fixture.root, ".pi", "agents", "worker.md"), "utf8"), /model: openai\/alpha/);
+	// models.json stays the profile itself, not a padded copy.
+	assert.deepEqual(JSON.parse(readFileSync(fixture.globalPath, "utf8")), { worker: { model: "openai/alpha" } });
+	const applied = fixture.notifications.at(-1)?.message ?? "";
+	assert.match(applied, /applied profile "team"/);
+});
+
+test("a failed apply restores the previous profile's routing with the same replacement semantics", async (t) => {
+	const { fixture, settingsPath, writeStore } = profilesStoreFixture(t);
+	// An unreadable settings.json makes the orchestrator write fail after the
+	// routing was already materialized, which triggers the rollback path.
+	writeFileSync(settingsPath, "{ not json\n");
+	const helperPath = join(fixture.root, ".pi", "agents", "helper.md");
+	writeMarkdown(helperPath, "---\nname: helper\ndescription: Helper\nmodel: openai/beta\n---\nbody\n");
+	const subagentsPath = join(fixture.root, ".pi", "subagents.json");
+	writeFileSync(subagentsPath, `${JSON.stringify({ model_profiles: { helper: { model: "openai/beta" } } }, null, 2)}\n`);
+	mkdirSync(fixture.configHome, { recursive: true });
+	writeFileSync(fixture.globalPath, `${JSON.stringify({ helper: { model: "openai/beta" } }, null, 2)}\n`);
+	// "team" is listed first, so Enter applies it while "old" stays the active one.
+	writeStore({
+		team: { orchestrator: { model: "nan/glm5.3" }, worker: { model: "openai/alpha" } },
+		old: { helper: { model: "openai/beta" } },
+	}, "old");
+	applyOnce(fixture);
+	await fixture.run("gentle:profiles");
+
+	const warning = fixture.notifications.find((entry) => /could not apply profile "team"/.test(entry.message));
+	assert.ok(warning, "the failed apply is reported");
+	assert.deepEqual(JSON.parse(readFileSync(fixture.globalPath, "utf8")), { helper: { model: "openai/beta" } });
+	const profiles = JSON.parse(readFileSync(subagentsPath, "utf8"));
+	assert.deepEqual(profiles.model_profiles, { helper: { model: "openai/beta" } }, "the previous routing is materialized again and the failed profile's routes are cleared");
+	assert.match(readFileSync(helperPath, "utf8"), /model: openai\/beta/);
+	assert.doesNotMatch(readFileSync(join(fixture.root, ".pi", "agents", "worker.md"), "utf8"), /^model:/m);
+	const store = JSON.parse(readFileSync(join(fixture.configHome, "profiles.json"), "utf8"));
+	assert.equal(store.active, "old");
+});
+
+test("s snapshots current routing in place without applying or reopening the profiles panel", async (t) => {
+	const { fixture, settingsPath, writeStore, writeSettings } = profilesStoreFixture(t);
+	writeSettings();
+	mkdirSync(fixture.configHome, { recursive: true });
+	writeFileSync(fixture.globalPath, `${JSON.stringify({ worker: { model: "openai/alpha", thinking: "minimal" } }, null, 2)}\n`);
+	const subagentsPath = join(fixture.root, ".pi", "subagents.json");
+	writeFileSync(subagentsPath, `${JSON.stringify({ model_profiles: { worker: { model: "openai/beta", effort: "high" } } }, null, 2)}\n`);
+	const workerPath = join(fixture.root, ".pi", "agents", "worker.md");
+	const before = {
+		models: readFileSync(fixture.globalPath, "utf8"),
+		subagents: readFileSync(subagentsPath, "utf8"),
+		worker: readFileSync(workerPath, "utf8"),
+		settings: readFileSync(settingsPath, "utf8"),
+	};
+	writeStore({
+		"a-target": {},
+		"z-active": { worker: { model: "openai/beta" } },
+	}, "z-active");
+
+	let firstPanel: RoutingConsumerPanel | undefined;
+	fixture.onInput((panel) => {
+		if (firstPanel === undefined) {
+			firstPanel = panel;
+			panel.handleInput("s");
+			panel.handleInput("\x1b");
+		} else {
+			panel.handleInput("\x1b");
+		}
+	});
+	await fixture.run("gentle:profiles");
+
+	const store = JSON.parse(readFileSync(join(fixture.configHome, "profiles.json"), "utf8"));
+	assert.deepEqual(store.profiles["a-target"], {
+		worker: { model: "openai/alpha", thinking: "minimal" },
+		orchestrator: { model: "nan/deepseek-v4-flash", thinking: "high" },
+	});
+	assert.deepEqual(store.profiles["z-active"], { worker: { model: "openai/beta" } });
+	assert.equal(store.active, "z-active");
+	assert.match(fixture.panels[0] ?? "", /enter apply · c create · s snapshot/);
+	assert.equal(readFileSync(fixture.globalPath, "utf8"), before.models);
+	assert.equal(readFileSync(subagentsPath, "utf8"), before.subagents);
+	assert.equal(readFileSync(workerPath, "utf8"), before.worker);
+	assert.equal(readFileSync(settingsPath, "utf8"), before.settings);
+	assert.equal(fixture.panelVisits(), 1, "snapshot keeps the same panel open");
+	assert.ok(firstPanel);
+	const targetRow = renderComponent(firstPanel!).split("\n");
+	const targetIndex = targetRow.findIndex((line) => line.includes("a-target"));
+	assert.ok(targetIndex >= 0, "selected profile remains in the list");
+	assert.match(targetRow[targetIndex + 1] ?? "", /1 role/);
+	assert.match(renderComponent(firstPanel!), /Snapshot saved; live routing unchanged\. Profile "a-target" saved from current routing\./);
+});
+
+test("snapshot feedback keeps both outcomes visible for long profile names at narrow widths", async (t) => {
+	const { fixture, storePath, writeStore } = profilesStoreFixture(t);
+	const longName = `a${"x".repeat(63)}`;
+	writeStore({ [longName]: {} });
+	let firstPanel: RoutingConsumerPanel | undefined;
+	fixture.onInput((panel) => {
+		if (firstPanel === undefined) {
+			firstPanel = panel;
+			panel.handleInput("s");
+			const success = stripAnsi(panel.render(60).join("\n"));
+			assert.match(success, /Snapshot saved; live routing unchanged\./);
+			rmSync(storePath);
+			mkdirSync(storePath);
+			panel.handleInput("s");
+			panel.handleInput("\x1b");
+		} else {
+			panel.handleInput("\x1b");
+		}
+	});
+	await fixture.run("gentle:profiles");
+	assert.ok(firstPanel);
+	const constrained = stripAnsi(firstPanel!.render(60).join("\n"));
+	assert.match(constrained, /Snapshot failed; live routing unchanged\./);
+});
+
+test("the profiles command seeds and shows the routing the runtime uses when models.json is sparse", async (t) => {
+	const { fixture } = profilesStoreFixture(t);
+	// No models.json at all, but routing is materialized where the runtime
+	// reads it: subagents.json for worker, frontmatter only for helper.
+	writeMarkdown(join(fixture.root, ".pi", "agents", "helper.md"), "---\nname: helper\ndescription: Helper\nmodel: openai/beta\n---\nbody\n");
+	writeFileSync(join(fixture.root, ".pi", "subagents.json"), `${JSON.stringify({ model_profiles: { worker: { model: "openai/alpha", effort: "high" } } }, null, 2)}\n`);
+	let rendered: string | undefined;
+	fixture.onInput((panel) => {
+		rendered = stripAnsi(renderComponent(panel));
+		panel.handleInput("\x1b");
+	});
+	await fixture.run("gentle:profiles");
+
+	const store = JSON.parse(readFileSync(join(fixture.configHome, "profiles.json"), "utf8"));
+	assert.equal(store.active, "current", "materialized routing counts as existing routing");
+	assert.deepEqual(store.profiles.current, {
+		worker: { model: "openai/alpha", thinking: "high" },
+		helper: { model: "openai/beta" },
+	});
+	assert.ok(rendered);
+	assert.match(rendered, /Current routing \(effective\)/);
+	assert.match(rendered, /worker\s+openai\/alpha\s+high/);
+	assert.match(rendered, /helper\s+openai\/beta/);
+	assert.doesNotMatch(rendered, /No routing entries/);
+});
+
+test("effective routing prefers models.json over the materialized stores", (t) => {
+	const fixture = routingConsumerFixture(t, ["worker", "helper"]);
+	mkdirSync(fixture.configHome, { recursive: true });
+	writeFileSync(fixture.globalPath, `${JSON.stringify({ worker: { model: "openai/alpha" } }, null, 2)}\n`);
+	writeFileSync(join(fixture.root, ".pi", "subagents.json"), `${JSON.stringify({
+		model_profiles: { worker: { model: "openai/beta", effort: "high" }, helper: { model: "openai/beta" } },
+	}, null, 2)}\n`);
+	const effective = JSON.parse(JSON.stringify(__testing.readEffectiveModelConfig(fixture.root)));
+	assert.deepEqual(effective, {
+		worker: { model: "openai/alpha" },
+		helper: { model: "openai/beta" },
+	});
+	assert.equal(existsSync(join(fixture.root, ".pi", "gentle-ai", "models.json")), false, "reading never writes");
+});
+
 test("the profiles panel fills the terminal, lists routing per agent, and scrolls", async (t) => {
 	const { fixture, writeStore } = profilesStoreFixture(t);
 	writeStore({
@@ -1903,7 +2073,7 @@ test("the profiles panel fills the terminal, lists routing per agent, and scroll
 	// Routing is listed one agent per line, aligned in columns, never collapsed
 	// into "N agents → model: a, b, …" summaries.
 	assert.match(text, /Profile routing/);
-	assert.match(text, /Current routing \(models\.json\)/);
+	assert.match(text, /Current routing \(effective\)/);
 	assert.match(text, /orchestrator\s+nan\/glm5\.3 · high/);
 	assert.match(text, /worker\s+openai\/alpha\s+high/);
 	assert.match(text, /sdd-design\s+nan\/glm5\.3\s+high/);

@@ -11,8 +11,6 @@ import {
 } from "@earendil-works/pi-coding-agent";
 import { Text, type Component } from "@earendil-works/pi-tui";
 import { homedir } from "node:os";
-import { isAbsolute } from "node:path";
-import { resolveGentleAiDevBinaryOverride, type GentleAiDevBinaryOverride } from "../lib/gentle-ai-binary.ts";
 import { quietToolsEnabled } from "../lib/quiet-tools-config.ts";
 import { getGentleAiRenderState, renderGentleAiLifecycleCall, renderGentleAiResult, type GentleAiRenderContext } from "../lib/gentle-ai-renderer.ts";
 import { sanitizeTerminalText } from "../lib/terminal-theme.ts";
@@ -171,12 +169,6 @@ export type GentleAiRoutineCommand = "sdd-status" | "sdd-continue" | "sdd-attemp
 
 const GENTLE_AI_EXECUTABLE = String.raw`(?:gentle-ai(?:\.exe)?|(?:\.{1,2}[\\/]|(?:[A-Za-z]:)?(?:[\\/][^\\/\r\n]+)*[\\/])\.gentle-ai[\\/]v\d+\.\d+\.\d+[\\/]gentle-ai(?:\.exe)?)`;
 const GENTLE_AI_COMMAND_ARGUMENTS = new RegExp(`^${GENTLE_AI_EXECUTABLE}$`);
-
-function createGentleAiCommandArguments(activeDevBinaryPath?: string): RegExp {
-	if (!activeDevBinaryPath) return GENTLE_AI_COMMAND_ARGUMENTS;
-	const escapedPath = activeDevBinaryPath.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
-	return new RegExp(`^(?:${GENTLE_AI_EXECUTABLE}|${escapedPath})$`);
-}
 
 type ShellTokenization =
 	| { kind: "complete" | "incomplete"; tokens: string[] }
@@ -592,12 +584,6 @@ function sanitizedRenderContext(context: ToolRenderContextLike | undefined): Too
 	};
 }
 
-type GentleAiDevBinaryOverrideResolver = () => GentleAiDevBinaryOverride | undefined;
-function resolveQuietToolsDevBinaryPath(resolveOverride: GentleAiDevBinaryOverrideResolver): string | undefined {
-	try { const path = resolveOverride()?.path; return typeof path === "string" && isAbsolute(path) ? path : undefined; }
-	catch { return undefined; }
-}
-
 function gentleAiRenderTransition(
 	args: Record<string, unknown> | undefined, context: ToolRenderContextLike | undefined,
 	commandArguments: RegExp, options: { result?: boolean; isPartial?: boolean } = {},
@@ -694,9 +680,9 @@ function registerQuietTool(pi: ExtensionAPI, toolName: QuietToolName, commandArg
 	});
 }
 
-export default function quietTools(pi: ExtensionAPI, resolveOverride: GentleAiDevBinaryOverrideResolver = () => resolveGentleAiDevBinaryOverride()): void {
+export default function quietTools(pi: ExtensionAPI): void {
 	if (!quietToolsEnabled()) return;
 	for (const toolName of Object.keys(TOOL_CREATORS) as QuietToolName[]) {
-		registerQuietTool(pi, toolName, () => createGentleAiCommandArguments(resolveQuietToolsDevBinaryPath(resolveOverride)));
+		registerQuietTool(pi, toolName, () => GENTLE_AI_COMMAND_ARGUMENTS);
 	}
 }

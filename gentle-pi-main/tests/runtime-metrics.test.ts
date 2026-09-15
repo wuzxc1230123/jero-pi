@@ -26,7 +26,8 @@ test("selected provider is independent from response provider without relabeling
 	assert.equal(row.provider, "anthropic");
 	// The provider dimension stays independent of a specific id's privacy outcome
 	// at record time; the pair is only coupled to a schema-conformant custom/custom
-	// model object later, at native encode time (see runtime-metrics-native.test.ts).
+	// model object later, at native encode time (the native transport is removed;
+	// normalization here mirrors the mirrored schema patterns).
 	assert.equal(recordRaw(metrics, { ...response("private"), selectedProvider: "openai-codex",
 		selectedModelId: "private-internal-finetune" }), "recorded");
 	assert.equal(metrics.snapshot()[1].selectedProvider, "openai-codex");
