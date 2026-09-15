@@ -222,7 +222,7 @@ A failed verify gate routes by the report's `## Defect List` section, relayed ve
 - **Native `remediate` selection:** the `sdd-remediate` launch prompt carries the same defect list plus the failed evidence revision.
 - **Replan signal:** a second consecutive verify failure whose defect IDs overlap the first round's is a planning defect, not an implementation defect. Stop the chain; when the user elects rework of spec/design/tasks, inject the accumulated defect list into that planning launch as binding constraints under a `## Constraints from failed verification` heading so the new plan does not repeat them.
 
-Category routing is binding: `coverage` defects may only add tests and never touch implementation; `security` and `functional` defects may touch implementation inside the authorized edit roots; `tdd-evidence` defects repair the evidence or the vacuous test, never the evidence text alone; `spec-drift` routes to planning rework, never to apply.
+Category routing is binding: `coverage` defects may only add tests and never touch implementation; `security` and `functional` defects may touch implementation inside the authorized edit roots; `tdd-evidence` defects repair the evidence or the vacuous test, never the evidence text alone; `spec-drift` routes to planning rework, never to apply; `terminology` is WARNING-only and resolves by registering the term in the project's vocabulary file.
 
 The gatekeeper is additive: it does not relax the Review Workload Guard, Strict TDD Forwarding, native status dependency checks, or mandatory delegation rules. It never creates a post-SDD review pass.
 

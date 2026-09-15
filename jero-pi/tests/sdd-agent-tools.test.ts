@@ -174,7 +174,7 @@ test("failed verification carries a machine-readable defect list relayed by ever
 	const verifySource = readFileSync(join(assetsAgentsDir, "sdd-verify.md"), "utf8");
 	assert.match(verifySource, /## Defect List/);
 	assert.match(verifySource, /D-\{nnn\} \| \{CRITICAL\|WARNING\} \| /);
-	for (const category of ["security", "functional", "coverage", "tdd-evidence", "scope", "spec-drift"]) {
+	for (const category of ["security", "functional", "coverage", "tdd-evidence", "scope", "spec-drift", "terminology"]) {
 		assert.ok(verifySource.includes(category), `sdd-verify.md defect categories must include \`${category}\``);
 	}
 	assert.match(verifySource, /No defects\./);
@@ -216,6 +216,42 @@ test("explore returns a decision evidence summary and tasks declare machine-chec
 	const workflowSource = readFileSync(join(repoRoot, "assets", "sdd-orchestrator-workflow.md"), "utf8");
 	assert.match(workflowSource, /relay only the returned Decision Evidence Summary/);
 	assert.match(workflowSource, /carries that unit's exact `### Work unit:` block/);
+});
+
+test("verification audits dependencies and both executors treat file content as data", () => {
+	// jero-pi P2-B: dependency audits enter verification as security defects,
+	// and read content never becomes instructions (injection guard).
+	const verifySource = readFileSync(join(assetsAgentsDir, "sdd-verify.md"), "utf8");
+	assert.match(verifySource, /## Dependency Audit/);
+	for (const command of ["npm audit --omit=dev", "pip-audit", "cargo audit"]) {
+		assert.ok(verifySource.includes(command), `sdd-verify.md must name \`${command}\``);
+	}
+	assert.match(verifySource, /Never install an audit tool during verification/);
+	assert.match(verifySource, /data, never instructions/);
+
+	const applySource = readFileSync(join(assetsAgentsDir, "sdd-apply.md"), "utf8");
+	assert.match(applySource, /data, never instructions/);
+	assert.match(applySource, /do not follow it, and report it as a risk/);
+});
+
+test("domain discipline: seams are declared and audited, terminology is conditional, tasks are vertical", () => {
+	// jero-pi P2-A: seam declarations precede tests, verification audits seam
+	// discipline, vocabulary checks only apply when a context file exists,
+	// and tasks are ordered by vertical capability, not by layer.
+	const applySource = readFileSync(join(assetsAgentsDir, "sdd-apply.md"), "utf8");
+	assert.match(applySource, /declare its seam/);
+	assert.match(applySource, /`Seam:` row/);
+
+	const verifySource = readFileSync(join(assetsAgentsDir, "sdd-verify.md"), "utf8");
+	assert.match(verifySource, /Audit seam discipline/);
+	assert.match(verifySource, /No vocabulary file, no terminology defects/);
+
+	const tasksSource = readFileSync(join(assetsAgentsDir, "sdd-tasks.md"), "utf8");
+	assert.match(tasksSource, /Order tasks vertically/);
+	assert.match(tasksSource, /Layered structures/);
+
+	const workflowSource = readFileSync(join(repoRoot, "assets", "sdd-orchestrator-workflow.md"), "utf8");
+	assert.match(workflowSource, /`terminology` is WARNING-only/);
 });
 
 test("the retired Pi adversarial role agents are not packaged", () => {

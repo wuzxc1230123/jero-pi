@@ -110,6 +110,7 @@ Use `implementation` for RED/GREEN/TRIANGULATE/REFACTOR, code, tests, and apply-
 
 - Every task references concrete file paths or concrete discovery targets.
 - Tasks are specific, actionable, verifiable, and dependency ordered.
+- Order tasks vertically: each task or work unit delivers one user-visible capability end-to-end (surface + behavior + its tests). Layered structures — all controllers, then all services, then all tests — are a planning defect: they defer integration risk to the end and make review order wrong. Restructure before delivering `tasks.md`.
 - If tests exist or strict TDD is enabled, sequence tasks as RED → GREEN → TRIANGULATE → REFACTOR.
 - Each task should fit one focused session; split oversized tasks.
 - Keep `tasks.md` concise and reviewable.

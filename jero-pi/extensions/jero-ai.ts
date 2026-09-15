@@ -1434,6 +1434,7 @@ const GUARDED_COMMAND_KEY = {
 	GIT_BRANCH_DELETE_FORCE: "gitBranchDeleteForce",
 	NPM_PUBLISH: "npmPublish",
 	PI_REMOVE: "piRemove",
+	INLINE_SCRIPT_WRITE: "inlineScriptWrite",
 } as const;
 
 type GuardedCommandKey = (typeof GUARDED_COMMAND_KEY)[keyof typeof GUARDED_COMMAND_KEY];
@@ -1456,6 +1457,9 @@ const GUARDED_KEY_PATTERNS: Record<GuardedCommandKey, RegExp> = {
 	gitBranchDeleteForce: /\bgit\s+(branch)\s+(?:-[a-zA-Z]*D[a-zA-Z]*|-[a-zA-Z]*d[a-zA-Z]*f[a-zA-Z]*|-[a-zA-Z]*f[a-zA-Z]*d[a-zA-Z]*|--delete\b[^\r\n;&|]*--force\b|--force\b[^\r\n;&|]*--delete\b)/,
 	npmPublish: /\bnpm\s+(publish)\b/,
 	piRemove: /\bpi\s+(remove)\b/,
+	// Inline interpreter writes bypass tool-level edit guards, so the eval
+	// flag AND a high-signal write call must both appear in the command.
+	inlineScriptWrite: /\b(node|bun|python3?|ruby)\b(?=[^\n]*\s--?(?:eval|e|c)\b)(?=[^\n]*(?:writeFileSync|appendFileSync|rmSync|unlinkSync|rmdirSync|renameSync|copyFileSync|shutil\.rmtree|os\.remove|os\.unlink|os\.rmdir|write_text|write_bytes|File\.write|FileUtils\.rm))/,
 };
 
 const AUTONOMOUS_DEFAULT_ACTIONS: Record<GuardedCommandKey, GuardAction> = {
@@ -1464,6 +1468,7 @@ const AUTONOMOUS_DEFAULT_ACTIONS: Record<GuardedCommandKey, GuardAction> = {
 	gitBranchDeleteForce: "confirm",
 	npmPublish: "block",
 	piRemove: "confirm",
+	inlineScriptWrite: "confirm",
 };
 
 const GUARDED_COMMAND_LABELS: Record<GuardedCommandKey, string> = {
@@ -1472,6 +1477,7 @@ const GUARDED_COMMAND_LABELS: Record<GuardedCommandKey, string> = {
 	gitBranchDeleteForce: "forced git branch deletion",
 	npmPublish: "npm publish",
 	piRemove: "pi remove",
+	inlineScriptWrite: "inline interpreter write",
 };
 
 const SAFE_GUARDRAILS_CONFIG: RuntimeGuardrailsConfig = {

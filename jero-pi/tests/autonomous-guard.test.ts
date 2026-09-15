@@ -650,3 +650,46 @@ test("loadRuntimeGuardrailsConfig: autonomousMode:{} (object) in JSON does NOT a
 		rmSync(dir, { recursive: true, force: true });
 	}
 });
+
+// ---------------------------------------------------------------------------
+// Inline interpreter write (jero-pi P2-B): eval flag + write call both required
+// ---------------------------------------------------------------------------
+
+test("classifyGuardedCommand: node -e writeFileSync → confirm", () => {
+	assert.equal(classifyGuardedCommand("node -e \"fs.writeFileSync('/tmp/x','y')\"", { autonomousMode: false, guardedCommands: {} }), "confirm");
+});
+
+test("classifyGuardedCommand: python -c shutil.rmtree → confirm", () => {
+	assert.equal(classifyGuardedCommand("python3 -c \"import shutil; shutil.rmtree('build')\"", { autonomousMode: false, guardedCommands: {} }), "confirm");
+});
+
+test("classifyGuardedCommand: ruby -e File.write → confirm", () => {
+	assert.equal(classifyGuardedCommand("ruby -e \"File.write('x','y')\"", { autonomousMode: false, guardedCommands: {} }), "confirm");
+});
+
+test("classifyGuardedCommand: bun --eval appendFileSync → confirm", () => {
+	assert.equal(classifyGuardedCommand("bun --eval \"fs.appendFileSync('log','x')\"", { autonomousMode: false, guardedCommands: {} }), "confirm");
+});
+
+test("classifyGuardedCommand: node -e without write calls → not-guarded", () => {
+	assert.equal(classifyGuardedCommand("node -e \"console.log(1)\"", { autonomousMode: false, guardedCommands: {} }), "not-guarded");
+});
+
+test("classifyGuardedCommand: python -c print without write calls → not-guarded", () => {
+	assert.equal(classifyGuardedCommand("python -c \"print('ok')\"", { autonomousMode: false, guardedCommands: {} }), "not-guarded");
+});
+
+test("classifyGuardedCommand: node script.js referencing writes in prose → not-guarded", () => {
+	assert.equal(classifyGuardedCommand("node build.js --mode write_text", { autonomousMode: false, guardedCommands: {} }), "not-guarded");
+});
+
+test("classifyGuardedCommand: inline write defaults to confirm in autonomous mode and honors config", () => {
+	assert.equal(classifyGuardedCommand("node -e \"fs.rmSync('x')\"", { autonomousMode: true, guardedCommands: {} }), "confirm");
+	assert.equal(classifyGuardedCommand("node -e \"fs.rmSync('x')\"", { autonomousMode: true, guardedCommands: { inlineScriptWrite: "block" } }), "block");
+	assert.equal(classifyGuardedCommand("node -e \"fs.rmSync('x')\"", { autonomousMode: true, guardedCommands: { inlineScriptWrite: "allow" } }), "allow");
+});
+
+test("guardedCommandTitle names the inline interpreter write key", () => {
+	const evaluation = evaluateGuardedCommand("node -e \"fs.writeFileSync('x','y')\"", { autonomousMode: false, guardedCommands: {} });
+	assert.equal(evaluation.key, "inlineScriptWrite");
+});
