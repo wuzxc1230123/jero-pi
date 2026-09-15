@@ -42,6 +42,18 @@ jobs:
       - name: Verify package contents
         run: node scripts/verify-package-files.mjs
 
+      # Design §5.5: the packed artifact itself must carry no distribution-chain
+      # residue. verify-package-files.mjs asserts the worktree; this gate
+      # asserts the tarball file list (files-array mistakes would only show here).
+      - name: Packed artifact contains no distribution-chain files
+        run: |
+          pnpm pack --dry-run --ignore-scripts > pack-listing.txt
+          cat pack-listing.txt
+          if grep -E "contracts/|\.gentle-ai/|install-gentle-ai|gentle-ai-installer|gentle-ai-binary|telemetry-trigger|provider-contract" pack-listing.txt; then
+            echo "::error::packed artifact contains distribution-chain files"
+            exit 1
+          fi
+
   review-repository-windows:
     runs-on: windows-latest
     steps:
