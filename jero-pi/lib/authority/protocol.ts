@@ -209,6 +209,22 @@ export interface JeroLensResultV1 {
 	result_hash: string;
 }
 
+// Recorded correction evidence for the evidence-first correction lifecycle
+// (spec §E): the capture outcome is recorded BEFORE targeted validation is
+// offered, a `verification_failed` capture reopens the correction without
+// charging anything, and every recapture must land under a distinct immutable
+// evidence identity (assertDistinctCorrectionEvidence). Persisting the last
+// recorded evidence is what makes those rules enforceable across processes.
+export const JERO_CORRECTION_EVIDENCE_OUTCOMES = ["passed", "verification_failed", "procedural_tooling_failed"] as const;
+export type JeroCorrectionEvidenceOutcome = (typeof JERO_CORRECTION_EVIDENCE_OUTCOMES)[number];
+
+export interface JeroCorrectionEvidenceRecordV1 {
+	outcome: JeroCorrectionEvidenceOutcome;
+	evidence_identity: string;
+	record_digest: string;
+	candidate_tree?: string;
+}
+
 export interface JeroReviewTransactionStateV1 {
 	schema: typeof JERO_REVIEW_TRANSACTION_SCHEMA;
 	lineage_id: string;
@@ -249,6 +265,7 @@ export interface JeroReviewTransactionStateV1 {
 	correction_budget?: number;
 	proposed_correction_lines?: number;
 	actual_correction_lines?: number;
+	correction_evidence?: JeroCorrectionEvidenceRecordV1;
 }
 
 function decodeSnapshot(value: unknown): JeroAuthoritySnapshotV1 {
@@ -326,6 +343,16 @@ function decodeReleaseEvidence(value: unknown): JeroReleaseEvidenceV1 {
 	};
 }
 
+function decodeCorrectionEvidence(value: unknown, label: string): JeroCorrectionEvidenceRecordV1 {
+	const evidence = exactObject(value, ["outcome", "evidence_identity", "record_digest"], ["candidate_tree"], label);
+	return {
+		outcome: requiredEnum(evidence.outcome, JERO_CORRECTION_EVIDENCE_OUTCOMES, `${label}.outcome`),
+		evidence_identity: requiredString(evidence.evidence_identity, `${label}.evidence_identity`),
+		record_digest: requiredString(evidence.record_digest, `${label}.record_digest`),
+		...(evidence.candidate_tree === undefined ? {} : { candidate_tree: stringValue(evidence.candidate_tree, `${label}.candidate_tree`) }),
+	};
+}
+
 function decodeCounters(value: unknown): JeroAuthorityCountersV1 {
 	const counters = exactObject(
 		value,
@@ -353,7 +380,7 @@ export function decodeJeroReviewTransactionStateV1(value: unknown): JeroReviewTr
 	const transaction = exactObject(
 		value,
 		["schema", "lineage_id", "mode", "generation", "state", "snapshot", "base_tree", "paths_digest", "initial_review_tree", "final_candidate_tree", "fix_delta_hash", "policy_hash", "ledger_hash", "ledger_findings_hash", "evidence_hash", "judge_proofs", "counters", "findings", "classifications", "outcomes", "fix_finding_ids", "pending_refuter_ids", "fix_caused_findings", "follow_ups"],
-		["genesis_paths", "invalidation_reason", "judge_proof_hash", "judge_agreement_hash", "release", "failed_evidence_revision", "original_criteria", "correction_regression", "risk_level", "selected_lenses", "lens_results", "original_changed_lines", "correction_budget", "proposed_correction_lines", "actual_correction_lines"],
+		["genesis_paths", "invalidation_reason", "judge_proof_hash", "judge_agreement_hash", "release", "failed_evidence_revision", "original_criteria", "correction_regression", "risk_level", "selected_lenses", "lens_results", "original_changed_lines", "correction_budget", "proposed_correction_lines", "actual_correction_lines", "correction_evidence"],
 		JERO_REVIEW_TRANSACTION_SCHEMA,
 	);
 	if (transaction.schema !== JERO_REVIEW_TRANSACTION_SCHEMA) throw new JeroAuthorityProtocolError(`${JERO_REVIEW_TRANSACTION_SCHEMA}: unsupported schema "${transaction.schema}"`);
@@ -418,6 +445,7 @@ export function decodeJeroReviewTransactionStateV1(value: unknown): JeroReviewTr
 		...(transaction.correction_budget === undefined ? {} : { correction_budget: nonNegativeInteger(transaction.correction_budget, "correction_budget") }),
 		...(transaction.proposed_correction_lines === undefined ? {} : { proposed_correction_lines: nonNegativeInteger(transaction.proposed_correction_lines, "proposed_correction_lines") }),
 		...(transaction.actual_correction_lines === undefined ? {} : { actual_correction_lines: nonNegativeInteger(transaction.actual_correction_lines, "actual_correction_lines") }),
+		...(transaction.correction_evidence === undefined ? {} : { correction_evidence: decodeCorrectionEvidence(transaction.correction_evidence, "correction_evidence") }),
 	};
 }
 
@@ -429,7 +457,15 @@ export function decodeJeroReviewTransactionStateV1(value: unknown): JeroReviewTr
 // pending entry blocks new mutating operations.
 // ---------------------------------------------------------------------------
 
-export const JERO_AUTHORITY_OPERATIONS = ["start", "freeze-ledger", "resolve-evidence", "authorize-fix", "validate-fix", "verify", "gate"] as const;
+// "acknowledge" is the M2 addition (spec §I.9): the approved-authority burn
+// is journaled exactly-once under this operation; the persisted 13-state enum
+// has no "burned" member, so the burn is authority-level (a completed journal
+// entry), never a state-level transition.
+// "apply-fix" is the M2 review-driven addition (findings F14): the bounded-edit
+// application journals its own apply-time events — most importantly the
+// correction-budget-exceeded escalation, which previously rode "authorize-fix"
+// and mislabeled an apply-time outcome as a plan-admission one.
+export const JERO_AUTHORITY_OPERATIONS = ["start", "freeze-ledger", "resolve-evidence", "authorize-fix", "apply-fix", "validate-fix", "verify", "gate", "acknowledge"] as const;
 export type JeroAuthorityOperation = (typeof JERO_AUTHORITY_OPERATIONS)[number];
 
 export const JERO_JOURNAL_STATUSES = ["pending", "completed"] as const;
@@ -561,5 +597,30 @@ export function decodeJeroVerifyResultV1(value: unknown): JeroVerifyResultV1 {
 		build_command: requiredString(record.build_command, "build_command"),
 		build_exit_code: nonNegativeInteger(record.build_exit_code, "build_exit_code"),
 		build_output_hash: requiredSha256Identity(record.build_output_hash, "build_output_hash"),
+	};
+}
+
+// ---------------------------------------------------------------------------
+// Review-mode record (`jero.authority.review-mode/v1`, spec §I.8)
+// The persisted RDD switch. M2 owns the clone-scoped record under the jero
+// authority store; the global value is read-only from the jero config home.
+// ---------------------------------------------------------------------------
+
+export const JERO_REVIEW_MODE_RECORD_SCHEMA = "jero.authority.review-mode/v1";
+
+export const JERO_REVIEW_MODE_VALUES = ["on", "off"] as const;
+export type JeroReviewModeValue = (typeof JERO_REVIEW_MODE_VALUES)[number];
+
+export interface JeroReviewModeRecordV1 {
+	schema: typeof JERO_REVIEW_MODE_RECORD_SCHEMA;
+	value: JeroReviewModeValue;
+}
+
+export function decodeJeroReviewModeRecordV1(value: unknown, label = JERO_REVIEW_MODE_RECORD_SCHEMA): JeroReviewModeRecordV1 {
+	const record = exactObject(value, ["schema", "value"], [], label);
+	if (record.schema !== JERO_REVIEW_MODE_RECORD_SCHEMA) throw new JeroAuthorityProtocolError(`${label}: unsupported schema "${String(record.schema)}"`);
+	return {
+		schema: JERO_REVIEW_MODE_RECORD_SCHEMA,
+		value: requiredEnum(record.value, JERO_REVIEW_MODE_VALUES, `${label}.value`),
 	};
 }

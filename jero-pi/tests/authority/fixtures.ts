@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import type { JeroLineageDraftV1 } from "../../lib/authority/lineage-store.ts";
 import { JERO_REVIEW_TRANSACTION_SCHEMA } from "../../lib/authority/canonical.ts";
 import type { JeroRequestJournalEntryV1, JeroReviewTransactionStateV1 } from "../../lib/authority/protocol.ts";
@@ -106,4 +106,154 @@ export function initialDraft(lineageId = LINEAGE_ID): JeroLineageDraftV1 {
 	const state = testTransactionState(lineageId);
 	state.state = "reviewing";
 	return { state, request_journal: [startJournalEntry(lineageId)] };
+}
+
+// ---------------------------------------------------------------------------
+// M2 state-machine helpers: one fixture repository per test file, reused
+// across tests (each capture is pure Git — no candidate-view registry, so no
+// PowerShell SID/DACL cost).
+// ---------------------------------------------------------------------------
+
+import assert from "node:assert/strict";
+import type { JeroAuthorityContextV1, } from "../../lib/authority/review.ts";
+import { resolveJeroAuthorityContextV1 } from "../../lib/authority/review.ts";
+import type { JeroReviewStartResultV1, JeroReviewStartSelectionV1 } from "../../lib/authority/start.ts";
+import { reviewStartV1 } from "../../lib/authority/start.ts";
+import { JeroLineageStoreV1 } from "../../lib/authority/lineage-store.ts";
+import { readJeroSnapshotRecordV1 } from "../../lib/authority/snapshots.ts";
+import { jeroDomainHash } from "../../lib/authority/canonical.ts";
+import { reviewGitEnvironment } from "../../lib/review-repository.ts";
+import { delimiter } from "node:path";
+
+export type FixtureRisk = "low" | "medium" | "high";
+
+/** Applies a workspace change of the requested risk class to a committed fixture repo. */
+export function applyRiskChange(repo: string, risk: FixtureRisk, lines = 4): void {
+	if (risk === "low") {
+		writeFileSync(join(repo, "README.md"), `base\n${"documentation line\n".repeat(lines)}`);
+		return;
+	}
+	mkdirSync(join(repo, "src"), { recursive: true });
+	if (risk === "medium") {
+		writeFileSync(join(repo, "src", "app.ts"), `${"export const placeholder = 0;\n".repeat(lines)}`);
+		return;
+	}
+	mkdirSync(join(repo, "src", "auth"), { recursive: true });
+	writeFileSync(join(repo, "src", "auth", "token.ts"), `${"export const secret = 1;\n".repeat(lines)}`);
+}
+
+export interface ReviewHarnessV1 {
+	repo: string;
+	context: JeroAuthorityContextV1;
+	git: (...args: string[]) => string;
+}
+
+export function reviewHarness(t: { after: (callback: () => void) => void }, risk: FixtureRisk = "medium", lines = 4): ReviewHarnessV1 {
+	const repo = repository(t);
+	applyRiskChange(repo, risk, lines);
+	const resolution = resolveJeroAuthorityContextV1(repo);
+	if (resolution.kind !== "ok") throw new Error(`fixture store resolution failed: ${resolution.code}: ${resolution.detail ?? ""}`);
+	return { repo, context: resolution.context, git: (...args: string[]) => git(repo, ...args) };
+}
+
+/** Starts an ordinary review and asserts the created/closed variant; fails the test on any refusal. */
+export function startCreatedReview(t: { after: (callback: () => void) => void }, risk: FixtureRisk = "medium", lines = 4, selection: JeroReviewStartSelectionV1 = {}): ReviewHarnessV1 & { start: Extract<JeroReviewStartResultV1, { kind: "created" | "closed" }> } {
+	const harness = reviewHarness(t, risk, lines);
+	// Reviews default ON (F4), so a medium/high creation start answers the
+	// §B.5 consent question granted unless the test overrides the answer.
+	const start = reviewStartV1(harness.context, { cwd: harness.repo }, { consent: "granted", ...selection });
+	assert.ok(start.kind === "created" || start.kind === "closed", `expected created/closed, got ${JSON.stringify(start)}`);
+	return { ...harness, start: start as Extract<JeroReviewStartResultV1, { kind: "created" | "closed" }> };
+}
+
+export interface FixtureFixApplicationV1 {
+	candidate_tree: string;
+	fix_delta_hash: string;
+	correction_paths: string[];
+	actual_correction_lines: number;
+}
+
+/** Captures the worktree byte state (minus .git) so a fixture fix can restore it after tree staging. */
+function snapshotWorktree(repo: string): Map<string, Buffer> {
+	const files = new Map<string, Buffer>();
+	const walk = (directory: string): void => {
+		for (const entry of readdirSync(directory, { withFileTypes: true })) {
+			if (entry.name === ".git") continue;
+			const full = join(directory, entry.name);
+			if (entry.isDirectory()) walk(full);
+			else if (entry.isFile()) files.set(full, readFileSync(full));
+		}
+	};
+	walk(repo);
+	return files;
+}
+
+function restoreWorktree(repo: string, files: Map<string, Buffer>): void {
+	const walk = (directory: string): string[] => {
+		const paths: string[] = [];
+		for (const entry of readdirSync(directory, { withFileTypes: true })) {
+			if (entry.name === ".git") continue;
+			const full = join(directory, entry.name);
+			if (entry.isDirectory()) paths.push(...walk(full));
+			else paths.push(full);
+		}
+		return paths;
+	};
+	for (const current of walk(repo)) {
+		if (files.has(current)) writeFileSync(current, files.get(current)!);
+		else rmSync(current, { force: true });
+	}
+	for (const [path, bytes] of files) {
+		if (!existsSync(path)) {
+			mkdirSync(dirname(path), { recursive: true });
+			writeFileSync(path, bytes);
+		}
+	}
+}
+
+/**
+ * Applies a REAL workspace edit as the correction and derives a verifiable
+ * `fix_application` (F5 fixtures): the fixed candidate tree is written into
+ * the lineage's isolated snapshot object store (the same GIT_* discipline as
+ * the snapshot capture), and the declared line count is the actual
+ * `git diff --numstat` derivation over the changed paths — never a lie.
+ * The fix API is tree-based, so after staging the tree the worktree is
+ * restored to the reviewed candidate (STATUS identity stays frozen).
+ */
+export function applyFixtureFix(harness: ReviewHarnessV1, lineageId: string, mutate: (repo: string) => void): FixtureFixApplicationV1 {
+	const store = JeroLineageStoreV1.forStore(harness.context.store.store_root);
+	const loaded = store.load(lineageId);
+	if (loaded.kind !== "ok") throw new Error(`fixture lineage load failed: ${loaded.kind}`);
+	const state = loaded.record.state;
+	const record = readJeroSnapshotRecordV1(harness.context.store.store_root, state.snapshot.identity);
+	const staging = mkdtempSync(join(tmpdir(), "jero-fixture-fix-"));
+	const run = (args: string[], environment: Record<string, string>): string =>
+		execFileSync("git", args, { cwd: harness.repo, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env: { ...reviewGitEnvironment(), ...environment } }).trim();
+	const worktree = snapshotWorktree(harness.repo);
+	try {
+		// The correction is authored against the ORIGINAL review tree: the fix
+		// tree's budget is charged relative to the reviewed candidate (F5).
+		const indexEnvironment = {
+			GIT_INDEX_FILE: join(staging, "index"),
+			GIT_OBJECT_DIRECTORY: record.object_store.object_directory,
+			GIT_ALTERNATE_OBJECT_DIRECTORIES: record.object_store.alternate_object_directory,
+		};
+		run(["read-tree", state.initial_review_tree], indexEnvironment);
+		mutate(harness.repo);
+		run(["add", "-A", "--", "."], indexEnvironment);
+		const tree = run(["write-tree"], indexEnvironment);
+		const diffEnvironment = { GIT_ALTERNATE_OBJECT_DIRECTORIES: `${record.object_store.object_directory}${delimiter}${record.object_store.alternate_object_directory}` };
+		const numstat = run(["diff", "--numstat", "--no-renames", state.initial_review_tree, tree], diffEnvironment);
+		let lines = 0;
+		const paths: string[] = [];
+		for (const line of numstat.split(/\r?\n/).filter(Boolean)) {
+			const [added, deleted, path] = line.split("\t");
+			lines += Number.parseInt(added ?? "0", 10) + Number.parseInt(deleted ?? "0", 10);
+			if (path !== undefined) paths.push(path);
+		}
+		return { candidate_tree: tree, fix_delta_hash: jeroDomainHash("fixture-fix-delta", { base: state.initial_review_tree, tree }), correction_paths: paths, actual_correction_lines: lines };
+	} finally {
+		restoreWorktree(harness.repo, worktree);
+		rmSync(staging, { recursive: true, force: true });
+	}
 }
