@@ -479,7 +479,12 @@ export function decodeJeroReviewTransactionStateV1(value: unknown): JeroReviewTr
 // (sdd-status-contract.md:68 — acquire before every runtime-bearing launch,
 // settle after; the ledger entries are the R1/R3 proof artifacts). Plain
 // sdd-status stays out of the journal: it is a pure projection.
-export const JERO_AUTHORITY_OPERATIONS = ["start", "freeze-ledger", "resolve-evidence", "authorize-fix", "apply-fix", "validate-fix", "verify", "gate", "acknowledge", "sdd-attempt-acquire", "sdd-attempt-settle", "sdd-continue"] as const;
+// "abandon" and "reconcile-authority" are the M5 maintenance additions (spec
+// _tools/p2-m5-maintenance-analysis.md): destructive maintenance transitions
+// are journaled exactly-once on the lineage they terminate; reclaim/recover
+// are store-level (their audit lives in the store maintenance log, not the
+// lineage journal).
+export const JERO_AUTHORITY_OPERATIONS = ["start", "freeze-ledger", "resolve-evidence", "authorize-fix", "apply-fix", "validate-fix", "verify", "gate", "acknowledge", "sdd-attempt-acquire", "sdd-attempt-settle", "sdd-continue", "abandon", "reconcile-authority"] as const;
 export type JeroAuthorityOperation = (typeof JERO_AUTHORITY_OPERATIONS)[number];
 
 export const JERO_JOURNAL_STATUSES = ["pending", "completed"] as const;

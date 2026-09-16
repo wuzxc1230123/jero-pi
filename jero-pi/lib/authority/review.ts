@@ -23,6 +23,7 @@ import { getJeroReviewModeV1, setJeroReviewModeV1, type JeroReviewModeOutcomeV1 
 import { jeroSddStatusV1, type JeroSddStatusResultV1 } from "./sdd-status.ts";
 import { jeroSddContinueV1, type JeroSddContinueResultV1 } from "./sdd-continue.ts";
 import { acquireJeroSddAttemptV1, jeroSddAttemptLedgerRevisionV1, settleJeroSddAttemptV1, type JeroSddAcquireInputV1, type JeroSddAttemptResultV1, type JeroSddSettleInputV1 } from "./sdd-attempt.ts";
+import { abandonJeroLineageV1, jeroAbandonAuthorizationV1, reclaimJeroAuthorityV1, reconcileJeroAuthorityV1, recoverJeroLineageV1, type JeroAbandonInputV1, type JeroMaintenanceResultV1, type JeroReconcileInputV1, type JeroRecoverInputV1 } from "./maintenance.ts";
 import type { JeroReviewModeValue } from "./protocol.ts";
 import type { ReviewAssessmentV1 } from "../review-risk-assessment.ts";
 
@@ -140,6 +141,22 @@ export const authority = {
 			revision: (context: JeroAuthorityContextV1, workspaceRoot: string, changeName: string): string | undefined =>
 				jeroSddAttemptLedgerRevisionV1(context, workspaceRoot, changeName),
 		},
+	},
+	maintenance: {
+		/** Spec _tools/p2-m5-maintenance-analysis.md — the exact eight-line binding derivation. */
+		abandonAuthorization: jeroAbandonAuthorizationV1,
+		/** §5.1.6 — audited discard of a live review; re-derives the discarded work fail-closed. */
+		abandon: (context: JeroAuthorityContextV1, input: JeroAbandonInputV1): JeroMaintenanceResultV1 =>
+			abandonJeroLineageV1(context, input),
+		/** §5.1.6 — repository-bound destructive recovery: quarantine the lineage, retain evidence. */
+		reclaim: (context: JeroAuthorityContextV1, input: { lineage: string; actor: string; reason: string }): JeroMaintenanceResultV1 =>
+			reclaimJeroAuthorityV1(context, input),
+		/** §5.1.6 — record the recovery linkage on the successor; predecessor untouched, no new budget. */
+		recover: (context: JeroAuthorityContextV1, input: JeroRecoverInputV1): JeroMaintenanceResultV1 =>
+			recoverJeroLineageV1(context, input),
+		/** §5.1.6 — narrow reconciliation: dual anomaly quarantines only the bound successor. */
+		reconcile: (context: JeroAuthorityContextV1, input: JeroReconcileInputV1): JeroMaintenanceResultV1 =>
+			reconcileJeroAuthorityV1(context, input),
 	},
 } as const;
 
