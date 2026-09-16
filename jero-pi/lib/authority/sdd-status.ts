@@ -37,7 +37,7 @@ export interface JeroSddStatusV2 {
 	changeRoot: string | null;
 	actionContext: { mode: "repo-local"; workspaceRoot: string; allowedEditRoots: readonly string[] };
 	dependencies: Record<SevenDependency, JeroSddDependencyStateV1>;
-	phaseInstructions?: { apply: readonly string[]; verify: readonly string[]; archive: readonly string[]; remediate?: readonly string[] };
+	phaseInstructions?: { apply: readonly string[]; verify: readonly string[]; remediate: readonly string[]; archive: readonly string[] };
 	blockedReasons: readonly string[];
 	nextRecommended: JeroSddNextRecommendedV1;
 }
@@ -76,7 +76,8 @@ function selfCheckV2(record: JeroSddStatusV2, workspaceRoot: string): void {
 	if ((record as unknown as Record<string, unknown>).instructions !== undefined) throw new Error("projected status must use phaseInstructions, not instructions");
 	if (record.actionContext.workspaceRoot !== workspaceRoot) throw new Error("projected action context workspace root mismatch");
 	if (!record.actionContext.allowedEditRoots.includes(workspaceRoot)) throw new Error("projected allowed edit roots must include the workspace root");
-	if (record.phaseInstructions !== undefined && Object.keys(record.phaseInstructions).some((phase) => !["apply", "verify", "archive", "remediate"].includes(phase))) throw new Error("projected phase instructions carry an unsupported phase");
+	if (record.phaseInstructions !== undefined && Object.keys(record.phaseInstructions).some((phase) => !["apply", "verify", "remediate", "archive"].includes(phase))) throw new Error("projected phase instructions carry an unsupported phase");
+	if (record.phaseInstructions !== undefined && Object.keys(record.phaseInstructions).length !== 4) throw new Error("projected phase instructions must carry exactly the four native phases");
 }
 
 /**
@@ -123,7 +124,7 @@ export function jeroSddStatusV1(_context: JeroAuthorityContextV1, request: { cha
 		changeRoot: resolved.changeRoot,
 		actionContext: { mode: "repo-local", workspaceRoot: resolved.actionContext.workspaceRoot, allowedEditRoots: [...resolved.actionContext.allowedEditRoots] },
 		dependencies,
-		...(resolved.instructions === undefined ? {} : { phaseInstructions: { apply: [...resolved.instructions.apply], verify: [...resolved.instructions.verify], archive: [...resolved.instructions.archive] } }),
+		...(resolved.instructions === undefined ? {} : { phaseInstructions: { apply: [...resolved.instructions.apply], verify: [...resolved.instructions.verify], remediate: [], archive: [...resolved.instructions.archive] } }),
 		blockedReasons: [...resolved.blockedReasons],
 		nextRecommended,
 	};
