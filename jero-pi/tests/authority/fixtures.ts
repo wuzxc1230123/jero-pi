@@ -4,6 +4,8 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import type { JeroLineageDraftV1 } from "../../lib/authority/lineage-store.ts";
 import { JERO_REVIEW_TRANSACTION_SCHEMA } from "../../lib/authority/canonical.ts";
+import { admitJeroReviewerResultV1 } from "../../lib/authority/result-artifacts.ts";
+import { jeroArtifactSubjectForRecordV1 } from "../../lib/authority/collect-inputs.ts";
 import type { JeroRequestJournalEntryV1, JeroReviewTransactionStateV1 } from "../../lib/authority/protocol.ts";
 
 export function tempRoot(prefix: string): string {
@@ -255,5 +257,49 @@ export function applyFixtureFix(harness: ReviewHarnessV1, lineageId: string, mut
 	} finally {
 		restoreWorktree(harness.repo, worktree);
 		rmSync(staging, { recursive: true, force: true });
+	}
+}
+
+/**
+ * MA4 (review): freeze-ledger requires the captured reviewer artifacts to be
+ * complete on disk, so every fixture that freezes via a hand-built
+ * review_result first admits one artifact per selected lens through the real
+ * admission path (result-artifacts.ts) — mapping the finalize submission rows
+ * onto full compact-v2 envelope rows with the evidence vocabulary filled in.
+ */
+export function admitFixtureReviewerResults(
+	harness: ReviewHarnessV1,
+	lineageId: string,
+	reviewResult: { readonly lens_results: readonly { readonly lens: import("../../lib/authority/protocol.ts").JeroLensName; readonly findings?: readonly { readonly id?: string; readonly severity?: "BLOCKER" | "CRITICAL" | "WARNING" | "SUGGESTION"; readonly claim?: string }[]; readonly evidence?: readonly string[] }[] },
+): void {
+	const loaded = JeroLineageStoreV1.forStore(harness.context.store.store_root).load(lineageId);
+	if (loaded.kind !== "ok") throw new Error(`fixture lineage load failed: ${loaded.kind}`);
+	const record = loaded.record;
+	const selected = record.state.selected_lenses ?? [];
+	for (const submitted of reviewResult.lens_results) {
+		const order = selected.indexOf(submitted.lens);
+		if (order < 0) throw new Error(`fixture lens ${submitted.lens} is not in the selected set`);
+		const subject = jeroArtifactSubjectForRecordV1(harness.context.store.store_root, record, submitted.lens, order);
+		const envelope = Buffer.from(JSON.stringify({
+			review_result: { lens_results: [{
+				lens: submitted.lens,
+				findings: (submitted.findings ?? []).map((finding, index) => ({
+					id: finding.id ?? `${submitted.lens}-${index}`,
+					lens: submitted.lens,
+					location: "src/app.ts:1",
+					severity: finding.severity ?? "WARNING",
+					claim: finding.claim ?? "fixture finding",
+					evidence_class: "deterministic",
+					causal_disposition: "introduced",
+					proof_refs: ["changed-hunk:src/app.ts:1"],
+				})),
+				evidence: submitted.evidence !== undefined && submitted.evidence.length > 0 ? [...submitted.evidence] : [`scope-reviewed evidence for ${submitted.lens}`],
+			}] },
+		}));
+		const admitted = admitJeroReviewerResultV1(harness.context, {
+			lineageId, lens: submitted.lens, selectedOrder: order,
+			subjectHash: subject.subject_hash, rawResultBytes: envelope, locator: "path",
+		});
+		if (admitted.kind !== "admitted") throw new Error(`fixture artifact admission failed: ${JSON.stringify(admitted)}`);
 	}
 }

@@ -407,19 +407,19 @@ test("an old binary reports the relay as unavailable without touching existing b
 	assert.equal(result.mutation_outcome, "none");
 });
 
-test("a handshake refusal surfaces the provider refusal verbatim through the controller envelope", async (t) => {
+test("a provider materialize refusal surfaces verbatim through the controller envelope (design 8: no handshake class)", async (t) => {
 	t.after(() => __testing.setReviewHostRelayRunnerForTesting());
 	const cwd = repository(t);
 	const lineageId = "relay-lineage";
 	const refusal = "the active runtime is not eligible for immutable receipt review; supported immutable review runtimes: claude-code, codex, opencode";
 	const harness = nativeHarness([finalizeStatus(lineageId, [relayCollectInput(lineageId, "review-reliability", 0)])]);
 	__testing.setReviewHostRelayRunnerForTesting(async () => {
-		throw new ReviewHostRelayError(REVIEW_HOST_RELAY_FAILURE.HANDSHAKE_REFUSED, "materialize", refusal, { exitCode: 1, stderr: refusal });
+		throw new ReviewHostRelayError(REVIEW_HOST_RELAY_FAILURE.MATERIALIZE_FAILED, "materialize", refusal, { exitCode: 1, stderr: refusal });
 	});
 
 	const result = await runCapture(cwd, harness, lineageId);
 
-	assert.equal(result.outcome, "pi-host-relay-handshake-refused");
+	assert.equal(result.outcome, "pi-host-relay-materialize-refused");
 	assert.equal(result.reason, refusal);
 	assert.equal(result.refusal, refusal);
 });

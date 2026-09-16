@@ -27,7 +27,6 @@ import {
 	type ReviewHostRelayPreparedResult,
 	type ReviewHostRelayRequest,
 } from "../lib/review-host-relay.ts";
-import { GENTLE_PI_REVIEW_RELAY_CONTRACT, GENTLE_PI_REVIEW_RELAY_CONTRACT_ENV } from "../lib/review-relay-contract.ts";
 import { decodeReviewNextTransitionV3, type ReviewCaptureSubmissionV1, type ReviewCollectInputV3 } from "../lib/review-integration-v2.ts";
 
 // ---------------------------------------------------------------------------
@@ -41,13 +40,12 @@ const FAKE_GENTLE_AI = `#!/usr/bin/env node
 const fs = require("node:fs");
 const path = require("node:path");
 const argv = process.argv.slice(2);
-if (process.env.RELAY_FAKE_LOG) fs.appendFileSync(process.env.RELAY_FAKE_LOG, JSON.stringify({ argv, cwd: process.cwd(), contract: process.env.${GENTLE_PI_REVIEW_RELAY_CONTRACT_ENV} ?? null }) + "\\n");
+if (process.env.RELAY_FAKE_LOG) fs.appendFileSync(process.env.RELAY_FAKE_LOG, JSON.stringify({ argv, cwd: process.cwd(), contract: process.env.GENTLE_PI_REVIEW_RELAY_CONTRACT ?? null }) + "\\n");
 if (argv.some((token) => token === "--materialize" || token.startsWith("--materialize="))) {
 	const mode = process.env.RELAY_FAKE_MATERIALIZE_MODE || "ok";
 	if (mode === "ok") { process.stdout.write(Buffer.from(process.env.RELAY_FAKE_PROMPT_B64 || "", "base64")); process.exit(0); }
 	if (mode === "empty") process.exit(0);
 	if (mode === "unknown-flag") { process.stderr.write("flag provided but not defined: -materialize\\nUsage of gentle-ai review capture-result:\\n"); process.exit(2); }
-	if (mode === "handshake") { process.stderr.write(process.env.RELAY_FAKE_HANDSHAKE_STDERR || "the active runtime is not eligible for immutable receipt review"); process.exit(1); }
 	process.stderr.write("materialize exploded\\n"); process.exit(3);
 }
 const inputToken = argv.find((token) => token === "--input" || token.startsWith("--input="));
@@ -98,7 +96,7 @@ const FAKE_PI = `#!/usr/bin/env node
 const fs = require("node:fs");
 const path = require("node:path");
 const argv = process.argv.slice(2);
-if (process.env.RELAY_FAKE_PI_LOG) fs.appendFileSync(process.env.RELAY_FAKE_PI_LOG, JSON.stringify({ argv, cwd: process.cwd(), entries: fs.readdirSync(process.cwd()), contract: process.env.${GENTLE_PI_REVIEW_RELAY_CONTRACT_ENV} ?? null }) + "\\n");
+if (process.env.RELAY_FAKE_PI_LOG) fs.appendFileSync(process.env.RELAY_FAKE_PI_LOG, JSON.stringify({ argv, cwd: process.cwd(), entries: fs.readdirSync(process.cwd()), contract: process.env.GENTLE_PI_REVIEW_RELAY_CONTRACT ?? null }) + "\\n");
 const chunks = [];
 process.stdin.on("data", (chunk) => chunks.push(chunk));
 process.stdin.on("end", () => {
@@ -168,9 +166,9 @@ function harness(t: test.TestContext, overrides: Record<string, string> = {}): R
 		RELAY_FAKE_SUBMIT_CAPTURE: submitCapturePath,
 		...overrides,
 	};
-	// The relay itself must add the handshake; the base environment never
-	// carries it, so the fake-binary log proves the injection.
-	delete environment[GENTLE_PI_REVIEW_RELAY_CONTRACT_ENV];
+	// jero-pi M3 (design 8): the relay handshake env is deleted — the base
+	// environment never carries it and the relay never injects it.
+	delete environment.GENTLE_PI_REVIEW_RELAY_CONTRACT;
 	return { directory, gentleAi, pi, logPath, piLogPath, stdinCapturePath, submitCapturePath, targetCwd, environment };
 }
 
@@ -265,28 +263,23 @@ async function rejectsWithRelayError(promise: Promise<unknown>, kind: string, st
 // Handshake — every gentle-ai CLI spawn carries the compiled declaration.
 // ---------------------------------------------------------------------------
 
-test("the central native CLI runner declares the relay contract on every gentle-ai spawn", async (t) => {
+test("the central native CLI runner no longer declares any relay contract on gentle-ai spawns (design 8)", async (t) => {
 	const fixture = harness(t);
 	const probe = join(fixture.directory, "env-probe");
-	writeFileSync(probe, `#!/usr/bin/env node\nprocess.stdout.write(JSON.stringify({ contract: process.env.${GENTLE_PI_REVIEW_RELAY_CONTRACT_ENV} ?? null }));\n`);
+	writeFileSync(probe, `#!/usr/bin/env node\nprocess.stdout.write(JSON.stringify({ contract: process.env.GENTLE_PI_REVIEW_RELAY_CONTRACT ?? null }));\n`);
 	chmodSync(probe, 0o755);
-	const hadContract = Object.prototype.hasOwnProperty.call(process.env, GENTLE_PI_REVIEW_RELAY_CONTRACT_ENV);
-	const previous = process.env[GENTLE_PI_REVIEW_RELAY_CONTRACT_ENV];
-	delete process.env[GENTLE_PI_REVIEW_RELAY_CONTRACT_ENV];
+	const hadContract = Object.prototype.hasOwnProperty.call(process.env, "GENTLE_PI_REVIEW_RELAY_CONTRACT");
+	const previous = process.env.GENTLE_PI_REVIEW_RELAY_CONTRACT;
+	delete process.env.GENTLE_PI_REVIEW_RELAY_CONTRACT;
 	t.after(() => {
-		if (hadContract) process.env[GENTLE_PI_REVIEW_RELAY_CONTRACT_ENV] = previous;
+		if (hadContract) process.env.GENTLE_PI_REVIEW_RELAY_CONTRACT = previous;
 	});
 	const adapter = createNodeExecFileAdapter();
 	for (const argv of [["version"], ["review", "status", "--cwd", fixture.directory]]) {
 		const result = await adapter({ file: probe, arguments: argv, cwd: fixture.directory, timeoutMs: 10_000, maxBufferBytes: 1024 * 1024 });
 		assert.equal(result.exitCode, 0);
-		assert.deepEqual(JSON.parse(result.stdout), { contract: GENTLE_PI_REVIEW_RELAY_CONTRACT });
+		assert.deepEqual(JSON.parse(result.stdout), { contract: null });
 	}
-});
-
-test("relay contract constants are the compiled gentle-ai handshake values", () => {
-	assert.equal(GENTLE_PI_REVIEW_RELAY_CONTRACT_ENV, "GENTLE_PI_REVIEW_RELAY_CONTRACT");
-	assert.equal(GENTLE_PI_REVIEW_RELAY_CONTRACT, "gentle-pi.review-relay/v1");
 });
 
 // ---------------------------------------------------------------------------
@@ -320,9 +313,9 @@ test("relay happy path moves prompt and result bytes verbatim through a fresh em
 	assert.equal(existsSync(substituted.slice("--input=".length)), false, "the coordinator removes its temporary result file after provider submission");
 	assert.equal(gentleAiCalls[1]!.argv.length, 2 + SUBMISSION.argumentTokens.length);
 	assert.equal(gentleAiCalls[1]!.argv.some((token) => token.includes("--agent") || token.includes("--materialize")), false);
-	// Handshake declared on both gentle-ai invocations even though the base
-	// environment carried none.
-	assert.deepEqual(gentleAiCalls.map((call) => call.contract), [GENTLE_PI_REVIEW_RELAY_CONTRACT, GENTLE_PI_REVIEW_RELAY_CONTRACT]);
+	// No handshake env on either gentle-ai invocation (design 8: the
+	// protocol string is deleted).
+	assert.deepEqual(gentleAiCalls.map((call) => call.contract), [null, null]);
 	assert.deepEqual(gentleAiCalls.map((call) => call.cwd), [fixture.targetCwd, fixture.targetCwd]);
 
 	const piCalls = readLog(fixture.piLogPath);
@@ -358,52 +351,72 @@ test("the pi lockdown argv is pinned exactly with no model or provider selection
 
 test("preparation snapshots mutable submission tokens and values before materialization", async (t) => {
 	const fixture = harness(t);
-	const barrierDirectory = join(fixture.directory, "submission-snapshot-barrier");
-	const releaseFile = join(fixture.directory, "submission-snapshot-release");
-	const submissionTokens = [...SUBMISSION.argumentTokens];
-	const submissionValues = SUBMISSION.values.map((value) => ({ ...value }));
-	const submission: ReviewCaptureSubmissionV1 = { ...SUBMISSION, argumentTokens: submissionTokens, values: submissionValues };
-	const prepared = prepareReviewHostRelaySlot(relayRequest(fixture, {
-		submission,
-		environment: {
-			...fixture.environment,
-			RELAY_FAKE_PROMPT_B64: PROMPT_BYTES.toString("base64"),
-			RELAY_FAKE_PI_OUTPUT_B64: PI_OUTPUT_BYTES.toString("base64"),
-			RELAY_FAKE_PI_BARRIER_DIR: barrierDirectory,
-			RELAY_FAKE_PI_BARRIER_COUNT: "1",
-			RELAY_FAKE_PI_RELEASE_FILE: releaseFile,
+	// M3: fully in-process through the render/admit seams, so the snapshot
+	// discipline is exercised without any spawn (the reviewer barrier is an
+	// injected async gate instead of a fake pi child).
+	let releaseReviewer: (() => void) | undefined;
+	const reviewerReachedBarrier = new Promise<void>((resolve) => {
+		releaseReviewer = resolve;
+	});
+	let admittedBytes: Buffer | undefined;
+	const request = relayRequest(fixture, { gentleAiExecutable: undefined });
+	const mutableSubmission: ReviewCaptureSubmissionV1 = {
+		...SUBMISSION,
+		argumentTokens: [...SUBMISSION.argumentTokens],
+		values: SUBMISSION.values.map((value) => ({ ...value })),
+	};
+	(request as { submission?: ReviewCaptureSubmissionV1 }).submission = mutableSubmission;
+	const prepared = prepareReviewHostRelaySlot(
+		request,
+		async () => {
+			await reviewerReachedBarrier;
+			return { stdout: Buffer.from(PI_OUTPUT_BYTES), promptByteLength: PROMPT_BYTES.length, stdoutByteLength: PI_OUTPUT_BYTES.length };
 		},
-	}));
-	await waitFor(() => readLog(fixture.piLogPath).length === 1, "reviewer did not reach the snapshot barrier");
-	submissionTokens[submissionTokens.length - 1] = "--input=mutated";
-	submissionValues[0]!.slot = "mutated";
-	writeFileSync(releaseFile, "release");
+		async () => ({ promptBytes: Buffer.from(PROMPT_BYTES) }),
+	);
+	await new Promise<void>((resolve) => setImmediate(resolve));
+	(mutableSubmission.argumentTokens as string[])[mutableSubmission.argumentTokens.length - 1] = "--input=mutated";
+	(mutableSubmission.values as unknown as { slot: string }[])[0]!.slot = "mutated";
+	releaseReviewer!();
 
 	const result = await prepared;
 	assert.deepEqual(result.request.submission, SUBMISSION);
-	await submitReviewHostRelayPreparedResult(result);
-	assert.deepEqual(readFileSync(fixture.submitCapturePath), PI_OUTPUT_BYTES);
+	await submitReviewHostRelayPreparedResult(result, async (_operationToken, tokens, resultFile) => {
+		admittedBytes = readFileSync(resultFile);
+		assert.equal(tokens.some((token) => token.startsWith("--input=")), true);
+		assert.equal(tokens.some((token) => token.includes("{{value}}")), false, "the value slot is substituted with the staged file path");
+		return JSON.stringify({ schema: "jero.authority.review-result-artifact/v1", admission_decision: "completed" });
+	});
+	assert.deepEqual(admittedBytes, PI_OUTPUT_BYTES, "the staged result file carries the reviewer bytes verbatim");
 });
 
 test("preparation keeps reviewer bytes private through deferred submission", async (t) => {
 	const fixture = harness(t);
 	const reviewerBytes = Buffer.from(PI_OUTPUT_BYTES);
-	const prepared = await prepareReviewHostRelaySlot(relayRequest(fixture), async () => ({
-		stdout: reviewerBytes,
-		promptByteLength: PROMPT_BYTES.length,
-		stdoutByteLength: reviewerBytes.length,
-	}));
+	const prepared = await prepareReviewHostRelaySlot(
+		relayRequest(fixture, { gentleAiExecutable: undefined }),
+		async () => ({
+			stdout: reviewerBytes,
+			promptByteLength: PROMPT_BYTES.length,
+			stdoutByteLength: reviewerBytes.length,
+		}),
+		async () => ({ promptBytes: Buffer.from(PROMPT_BYTES) }),
+	);
 	reviewerBytes.fill(0);
 	const mutablePrepared = prepared as unknown as { resultBytes?: Buffer };
 	mutablePrepared.resultBytes?.fill(0);
 	assert.throws(() => { mutablePrepared.resultBytes = Buffer.from("fabricated"); }, TypeError);
-	await submitReviewHostRelayPreparedResult(prepared);
-	assert.deepEqual(readFileSync(fixture.submitCapturePath), PI_OUTPUT_BYTES);
+	let admittedBytes: Buffer | undefined;
+	await submitReviewHostRelayPreparedResult(prepared, async (_operationToken, _tokens, resultFile) => {
+		admittedBytes = readFileSync(resultFile);
+		return '{"admission_decision":"completed"}';
+	});
+	assert.deepEqual(admittedBytes, PI_OUTPUT_BYTES);
 
 	const fabricated = { ...prepared, resultBytes: Buffer.from("fabricated") } as unknown as ReviewHostRelayPreparedResult;
 	await assert.rejects(submitReviewHostRelayPreparedResult(fabricated), /recognized prepared result/);
-	assert.equal(readLog(fixture.logPath).length, 2, "unrecognized results must not launch provider submission");
 });
+
 
 test("the supplied AbortSignal stays live through deferred submission", async (t) => {
 	const fixture = harness(t, { RELAY_FAKE_SUBMIT_DELAY_MS: "1000" });
@@ -764,20 +777,10 @@ test("an old binary's unknown-flag refusal classifies as relay-unavailable with 
 	assert.equal(existsSync(fixture.submitCapturePath), false);
 });
 
-test("a handshake refusal surfaces the provider refusal verbatim", async (t) => {
-	const refusal = "review capture-result --agent pi: the active runtime is not eligible for immutable receipt review; supported immutable review runtimes: claude-code, codex, opencode";
-	const fixture = harness(t, { RELAY_FAKE_MATERIALIZE_MODE: "handshake", RELAY_FAKE_HANDSHAKE_STDERR: refusal });
-	const error = await rejectsWithRelayError(runReviewHostRelaySlot(relayRequest(fixture)), REVIEW_HOST_RELAY_FAILURE.HANDSHAKE_REFUSED, "materialize");
-	assert.equal(error.message, refusal);
-	assert.equal(error.stderr, refusal);
-	assert.equal(readLog(fixture.piLogPath).length, 0);
-});
-
-test("refusal classification distinguishes unknown-flag, handshake, and other", () => {
+test("refusal classification distinguishes unknown-flag and other (the handshake class is deleted, design 8)", () => {
 	assert.equal(classifyReviewHostRelayRefusal("flag provided but not defined: -materialize\nUsage:"), "unknown-flag");
 	assert.equal(classifyReviewHostRelayRefusal("flag provided but not defined: -agent"), "unknown-flag");
-	assert.equal(classifyReviewHostRelayRefusal("the active runtime is not eligible for immutable receipt review"), "handshake");
-	assert.equal(classifyReviewHostRelayRefusal("declare GENTLE_PI_REVIEW_RELAY_CONTRACT=gentle-pi.review-relay/v1"), "handshake");
+
 	assert.equal(classifyReviewHostRelayRefusal("some unrelated explosion"), "other");
 });
 
@@ -799,7 +802,7 @@ test("the unachievable predicate names only deterministic slot failures", () => 
 	assert.equal(reviewHostRelayUnachievableReason(unknownOutcome), undefined, "an unknown mutation outcome is never deterministic");
 	assert.equal(reviewHostRelayUnachievableDetail(unknownOutcome), undefined);
 
-	for (const kind of [REVIEW_HOST_RELAY_FAILURE.PI_FAILED, REVIEW_HOST_RELAY_FAILURE.PI_LAUNCH_FAILED, REVIEW_HOST_RELAY_FAILURE.PI_EMPTY_OUTPUT, REVIEW_HOST_RELAY_FAILURE.MATERIALIZE_FAILED, REVIEW_HOST_RELAY_FAILURE.EMPTY_PROMPT, REVIEW_HOST_RELAY_FAILURE.RELAY_UNAVAILABLE, REVIEW_HOST_RELAY_FAILURE.HANDSHAKE_REFUSED, REVIEW_HOST_RELAY_FAILURE.SUBMISSION_CONTRACT_MISMATCH]) {
+	for (const kind of [REVIEW_HOST_RELAY_FAILURE.PI_FAILED, REVIEW_HOST_RELAY_FAILURE.PI_LAUNCH_FAILED, REVIEW_HOST_RELAY_FAILURE.PI_EMPTY_OUTPUT, REVIEW_HOST_RELAY_FAILURE.MATERIALIZE_FAILED, REVIEW_HOST_RELAY_FAILURE.EMPTY_PROMPT, REVIEW_HOST_RELAY_FAILURE.RELAY_UNAVAILABLE, REVIEW_HOST_RELAY_FAILURE.SUBMISSION_CONTRACT_MISMATCH]) {
 		assert.equal(reviewHostRelayUnachievableReason(new ReviewHostRelayError(kind, "pi", "transient")), undefined, `${kind} stays transient`);
 	}
 
@@ -968,4 +971,33 @@ test("the negotiated decoder carries the provider submission through the capture
 		...rawInput,
 		submission: { ...rawSubmission, values: [{ slot: "reviewer_result", domain: "artifact_path_or_stdin", substitution_location: rawSubmission.argument_tokens.length }] },
 	}] } }), /substitution_location/);
+});
+
+test("jero-pi M3 fail-closed defaults: the exact relay-unavailable messages without injected seams", async (t) => {
+	const fixture = harness(t);
+	// Materialize with NO render seam and NO executable: the default fails
+	// closed with the pinned M3 message and never launches anything.
+	const prepareError = await rejectsWithRelayError(
+		prepareReviewHostRelaySlot(relayRequest(fixture, { gentleAiExecutable: undefined })),
+		REVIEW_HOST_RELAY_FAILURE.RELAY_UNAVAILABLE,
+		"materialize",
+	);
+	assert.equal(prepareError.message, "authority-unavailable: no in-process renderSlot seam was injected and no binary transport exists (jero-pi M3)");
+	assert.equal(prepareError.mutationOutcome, "none");
+	assert.equal(readLog(fixture.logPath).length, 0, "no binary was spawned");
+	// Submit with NO admit seam and NO executable: prepared through the
+	// injected render/reviewer seams (no spawn), then the default submit
+	// fails closed with its own pinned message.
+	const prepared = await prepareReviewHostRelaySlot(
+		relayRequest(fixture, { gentleAiExecutable: undefined }),
+		async () => ({ stdout: Buffer.from(PI_OUTPUT_BYTES), promptByteLength: PROMPT_BYTES.length, stdoutByteLength: PI_OUTPUT_BYTES.length }),
+		async () => ({ promptBytes: Buffer.from(PROMPT_BYTES) }),
+	);
+	const submitError = await rejectsWithRelayError(
+		submitReviewHostRelayPreparedResult(prepared),
+		REVIEW_HOST_RELAY_FAILURE.RELAY_UNAVAILABLE,
+		"submit",
+	);
+	assert.equal(submitError.message, "authority-unavailable: no in-process admitResult seam was injected and no binary transport exists (jero-pi M3)");
+	assert.equal(readLog(fixture.logPath).length, 0, "still no binary was spawned");
 });

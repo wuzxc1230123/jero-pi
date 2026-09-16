@@ -24,7 +24,7 @@ import { canonicalJsonV1 } from "../review-canonical.ts";
 
 export type JeroValidateRefusalCode =
 	| "invalid-request" | "invalid-state" | "lineage-missing" | "corrupted" | "terminal-immutable"
-	| "evidence-first-required" | "request-hash-mismatch" | "correction-scope-mismatch" | "evidence-replaced"
+	| "cross-mode-operation-refused" | "evidence-first-required" | "request-hash-mismatch" | "correction-scope-mismatch" | "evidence-replaced"
 	| "authority-unavailable";
 
 export interface JeroCorrectionEvidenceSubmissionV1 {
@@ -117,6 +117,12 @@ export function reviewValidateV1(context: JeroAuthorityContextV1, input: JeroRev
 	const state = record.state;
 	if (state.state === "approved" || state.state === "escalated" || state.state === "invalidated") {
 		return { kind: "refused", code: "terminal-immutable", detail: `lineage ${state.lineage_id} is terminal (${state.state})` };
+	}
+	if (state.mode === "judgment_day") {
+		// M3 (§J.4 cross-mode): Judgment Day runs zero targeted validators —
+		// the scoped re-judgment admission in judgment-day.ts is the JD twin
+		// of the validate-fix transition.
+		return { kind: "refused", code: "cross-mode-operation-refused", detail: "the ordinary targeted validation is not a Judgment Day operation" };
 	}
 	// Evidence-first ordering (spec §E / openspec review-correction-lifecycle :9-11).
 	const step = resolveCorrectionStep(correctionStatusOfV1(state), evidenceOfV1(input.evidence));

@@ -10,7 +10,7 @@ import { reviewStatusV1 } from "../../lib/authority/status.ts";
 import { JeroLineageStoreV1 } from "../../lib/authority/lineage-store.ts";
 import { decodeJeroRequestJournalEntryV1 } from "../../lib/authority/protocol.ts";
 import { jeroDomainHash } from "../../lib/authority/canonical.ts";
-import { applyFixtureFix, reviewHarness } from "./fixtures.ts";
+import { admitFixtureReviewerResults, applyFixtureFix, reviewHarness } from "./fixtures.ts";
 
 // Spec §J.3 integration stories: the full happy path, one correction
 // round-trip, the crash-window journal completion, and terminal-mutation
@@ -20,10 +20,13 @@ function driveFullLifecycle(t: { after: (callback: () => void) => void }, applyF
 	const harness = reviewHarness(t, "medium", 4);
 	const start = reviewStartV1(harness.context, { cwd: harness.repo }, { consent: "granted" });
 	if (start.kind !== "created") throw new Error(JSON.stringify(start));
-	// START → FINALIZE: lens admission freezes the ledger.
+	// START → FINALIZE: lens admission freezes the ledger (MA4: the
+	// reviewer artifacts are admitted on disk first).
+	const lifecycleResult = { lens_results: [{ lens: "review-readability" as const, findings: [{ id: "sev-1", severity: "CRITICAL" as const, claim: "unhandled failure path" }], evidence: ["changed hunk"] }] };
+	admitFixtureReviewerResults(harness, start.lineage_id, lifecycleResult);
 	const frozen = reviewFinalizeV1(harness.context, {
 		cwd: harness.repo, lineageId: start.lineage_id, reviewer_run_acknowledged: true,
-		review_result: { lens_results: [{ lens: "review-readability", findings: [{ id: "sev-1", severity: "CRITICAL", claim: "unhandled failure path" }], evidence: ["changed hunk"] }] },
+		review_result: lifecycleResult,
 	});
 	if (frozen.kind !== "frozen") throw new Error(JSON.stringify(frozen));
 	const resolved = reviewFinalizeV1(harness.context, {
@@ -154,9 +157,11 @@ test("terminal-mutation refusal: approved, escalated, and invalidated lineages r
 	const harness = reviewHarness(t, "medium", 4);
 	const start = reviewStartV1(harness.context, { cwd: harness.repo }, { consent: "granted" });
 	if (start.kind !== "created") throw new Error(JSON.stringify(start));
+	const terminalResult = { lens_results: [{ lens: "review-readability" as const, findings: [], evidence: ["clean"] }] };
+	admitFixtureReviewerResults(harness, start.lineage_id, terminalResult);
 	reviewFinalizeV1(harness.context, {
 		cwd: harness.repo, lineageId: start.lineage_id, reviewer_run_acknowledged: true,
-		review_result: { lens_results: [{ lens: "review-readability", findings: [], evidence: ["clean"] }] },
+		review_result: terminalResult,
 	});
 	reviewFinalizeV1(harness.context, { cwd: harness.repo, lineageId: start.lineage_id, classifications: [] });
 	const approved = reviewFinalizeV1(harness.context, {

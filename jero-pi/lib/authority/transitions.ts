@@ -1,4 +1,5 @@
 import type { JeroLensName, JeroReviewMode, JeroReviewStateName } from "./protocol.ts";
+import type { JeroCollectTransitionPayloadV1, JeroExecuteTransitionPayloadV1 } from "./collect-inputs.ts";
 
 // Pure review-authority transition table (spec §A.2), the persisted→wire
 // state projection (spec §A.1), and status action/reason-code derivation
@@ -141,7 +142,11 @@ export function checkJeroReviewTransitionV1(
 				? { ...base, legal: true, next: "evidence_classified" }
 				: { ...base, legal: false, reason: "resolve-evidence-requires-frozen-ledger" };
 		case "authorize-fix": {
-			if (state !== "fix_required" && !(mode === "judgment_day" && state === "judges_confirmed")) {
+			// authorize-fix requires fix_required in EVERY mode. (The vestigial
+			// `judges_confirmed` disjunct is gone: a JD lineage never authorizes a
+			// fix from judges_confirmed — that state exits only via
+			// freeze-judgment-ledger, and the JD fix loop runs from fix_required.)
+			if (state !== "fix_required") {
 				return { ...base, legal: false, reason: "authorize-fix-requires-fix-required" };
 			}
 			// ILLEGAL #4: a second correction transaction fails closed.
@@ -214,6 +219,10 @@ export interface JeroNextTransitionV1 {
 	readonly kind: "execute" | "collect" | "stop";
 	readonly reason_code: string;
 	readonly operation?: string;
+	/** M3 (spec §I.2): the collect payload — capture inputs built by collect-inputs.ts. */
+	readonly collect?: JeroCollectTransitionPayloadV1;
+	/** M3 (spec §I.2): the execute payload — typed operation bindings with preconditions and admitted artifacts. */
+	readonly execute?: JeroExecuteTransitionPayloadV1;
 }
 
 export interface JeroStatusDerivationInputV1 {
@@ -261,7 +270,12 @@ export function deriveJeroStatusActionV1(input: JeroStatusDerivationInputV1): { 
 		case "fixing":
 			return { action: "finalize", next: { kind: "collect", reason_code: "correction_plan_required", operation: "review.finalize" } };
 		case "fix_validating":
-			return { action: "validate", next: { kind: "execute", reason_code: "targeted_validation_ready", operation: "review.validate" } };
+			// §A.4 (Mi5 review ruling): the provider-targeted-validator vector is
+			// a self-contained COLLECT input — STATUS offers it with kind "collect"
+			// carrying the validator's request document, and review.validate is
+			// executed via the capture→admit→validate path (the extension consumes
+			// kind === "collect"), never executed directly from STATUS.
+			return { action: "validate", next: { kind: "collect", reason_code: "targeted_validation_ready", operation: "review.validate" } };
 		case "ready_final_verification":
 			return { action: "finalize", next: { kind: "collect", reason_code: "final_evidence_required", operation: "review.finalize" } };
 		case "final_verifying":

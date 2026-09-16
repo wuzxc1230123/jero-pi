@@ -3,10 +3,11 @@ import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { reviewStatusV1 } from "../../lib/authority/status.ts";
+import { resolveJeroAuthorityContextV1 } from "../../lib/authority/review.ts";
 import { reviewStartV1 } from "../../lib/authority/start.ts";
 import { reviewFinalizeV1 } from "../../lib/authority/finalize.ts";
 import { JeroLineageStoreV1, JERO_LINEAGE_STATE_FILENAME } from "../../lib/authority/lineage-store.ts";
-import { repository, reviewHarness } from "./fixtures.ts";
+import { admitFixtureReviewerResults, git, repository, reviewHarness } from "./fixtures.ts";
 
 // Spec §C: STATUS applicability quadruple, receipt status, action and
 // replayability, the frozen block, candidate listing, and corrupted records.
@@ -55,11 +56,13 @@ test("action reaches finalize once every selected lens result is admitted", (t) 
 	const harness = reviewHarness(t, "medium", 4);
 	const start = reviewStartV1(harness.context, { cwd: harness.repo }, { consent: "granted" });
 	if (start.kind !== "created") throw new Error("start failed");
+	const reviewResult = { lens_results: [{ lens: "review-readability" as const, findings: [], evidence: ["complete candidate reviewed"] }] };
+	admitFixtureReviewerResults(harness, start.lineage_id, reviewResult);
 	const frozen = reviewFinalizeV1(harness.context, {
 		cwd: harness.repo,
 		lineageId: start.lineage_id,
 		reviewer_run_acknowledged: true,
-		review_result: { lens_results: [{ lens: "review-readability", findings: [], evidence: ["complete candidate reviewed"] }] },
+		review_result: reviewResult,
 	});
 	assert.equal(frozen.kind, "frozen");
 	const status = reviewStatusV1(harness.context, { cwd: harness.repo });
@@ -114,9 +117,11 @@ test("receipt status becomes present once FINALIZE approves the lineage", (t) =>
 	const harness = reviewHarness(t, "medium", 4);
 	const start = reviewStartV1(harness.context, { cwd: harness.repo }, { consent: "granted" });
 	if (start.kind !== "created") throw new Error("start failed");
+	const receiptResult = { lens_results: [{ lens: "review-readability" as const, findings: [], evidence: ["clean"] }] };
+	admitFixtureReviewerResults(harness, start.lineage_id, receiptResult);
 	reviewFinalizeV1(harness.context, {
 		cwd: harness.repo, lineageId: start.lineage_id, reviewer_run_acknowledged: true,
-		review_result: { lens_results: [{ lens: "review-readability", findings: [], evidence: ["clean"] }] },
+		review_result: receiptResult,
 	});
 	reviewFinalizeV1(harness.context, { cwd: harness.repo, lineageId: start.lineage_id, classifications: [] });
 	const approved = reviewFinalizeV1(harness.context, {
@@ -138,8 +143,10 @@ test("pairing rules fail closed exactly like START", (t) => {
 	const harness = reviewHarness(t, "medium", 4);
 	const refused = reviewStatusV1(harness.context, { cwd: harness.repo, baseRef: "HEAD" });
 	assert.equal(refused.kind, "refused");
-	const staged = reviewStatusV1(harness.context, { cwd: harness.repo, projection: "staged" as never });
-	assert.equal(staged.kind, "refused");
+	// M3 (§G): staged projection is implemented — the temporary-index
+	// candidate freezes what is about to be committed, not the worktree.
+	const staged = reviewStatusV1(harness.context, { cwd: harness.repo, projection: "staged" });
+	assert.equal(staged.kind, "status");
 	const malformed = reviewStatusV1(harness.context, { cwd: harness.repo, lineageId: "not-a-lineage" });
 	assert.equal(malformed.kind, "refused");
 	if (malformed.kind === "refused") assert.equal(malformed.code, "invalid-request");
@@ -172,4 +179,29 @@ test("F7: an explicitly named lineage whose identity drifted from the workspace 
 	assert.equal(current.applicability, "current_target");
 	assert.equal(current.authority?.lineage_id, start.lineage_id);
 	assert.equal(current.authority?.state, "reviewing");
+});
+
+test("Mi6: a current-target STATUS echoes the requested projection instead of hardcoding workspace", (t) => {
+	const repo = repository(t, "jero-status-projection-");
+	writeFileSync(join(repo, "staged-only.txt"), "staged content\n");
+	writeFileSync(join(repo, "unstaged-only.txt"), "unstaged content\n");
+	git(repo, "add", "staged-only.txt");
+	const resolution = resolveJeroAuthorityContextV1(repo);
+	assert.equal(resolution.kind, "ok");
+	if (resolution.kind !== "ok") return;
+	const start = reviewStartV1(resolution.context, { cwd: repo, projection: "staged" }, { consent: "granted" });
+	assert.equal(start.kind, "created");
+	if (start.kind !== "created") return;
+	const staged = reviewStatusV1(resolution.context, { cwd: repo, projection: "staged" });
+	assert.equal(staged.kind, "status");
+	if (staged.kind !== "status") return;
+	assert.equal(staged.applicability, "current_target");
+	assert.equal(staged.projection, "staged", "the current-target status echoes the requested projection");
+	// The default (workspace) query over the same repository does not match
+	// the staged lineage and defaults its echo to workspace.
+	const workspace = reviewStatusV1(resolution.context, { cwd: repo });
+	assert.equal(workspace.kind, "status");
+	if (workspace.kind !== "status") return;
+	assert.equal(workspace.applicability, "unrelated");
+	assert.equal(workspace.projection, "workspace");
 });

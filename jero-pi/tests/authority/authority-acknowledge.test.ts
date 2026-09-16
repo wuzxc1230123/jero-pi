@@ -6,7 +6,7 @@ import { reviewFinalizeV1 } from "../../lib/authority/finalize.ts";
 import { reviewAcknowledgeV1 } from "../../lib/authority/acknowledge.ts";
 import { reviewStatusV1 } from "../../lib/authority/status.ts";
 import { jeroReceiptPathV1 } from "../../lib/authority/receipts.ts";
-import { reviewHarness } from "./fixtures.ts";
+import { admitFixtureReviewerResults, reviewHarness } from "./fixtures.ts";
 
 // Spec §F: ACKNOWLEDGE — the approved-authority burn, journaled exactly-once
 // with consumed_revision binding, replay idempotency, and non-approved refusal.
@@ -22,9 +22,11 @@ function driveToApproved(t: { after: (callback: () => void) => void }): Approved
 	const harness = reviewHarness(t, "medium", 4);
 	const start = reviewStartV1(harness.context, { cwd: harness.repo }, { consent: "granted" });
 	if (start.kind !== "created") throw new Error(JSON.stringify(start));
+	const approvedResult = { lens_results: [{ lens: "review-readability" as const, findings: [], evidence: ["clean"] }] };
+	admitFixtureReviewerResults(harness, start.lineage_id, approvedResult);
 	reviewFinalizeV1(harness.context, {
 		cwd: harness.repo, lineageId: start.lineage_id, reviewer_run_acknowledged: true,
-		review_result: { lens_results: [{ lens: "review-readability", findings: [], evidence: ["clean"] }] },
+		review_result: approvedResult,
 	});
 	reviewFinalizeV1(harness.context, { cwd: harness.repo, lineageId: start.lineage_id, classifications: [] });
 	const approved = reviewFinalizeV1(harness.context, {
@@ -102,9 +104,11 @@ test("acknowledge on a non-approved lineage fails closed", (t) => {
 	const harness2 = reviewHarness(t, "medium", 4);
 	const start2 = reviewStartV1(harness2.context, { cwd: harness2.repo }, { consent: "granted" });
 	if (start2.kind !== "created") throw new Error("start failed");
+	const escalatedResult = { lens_results: [{ lens: "review-readability" as const, findings: [{ id: "s", severity: "BLOCKER" as const }], evidence: ["hunk"] }] };
+	admitFixtureReviewerResults(harness2, start2.lineage_id, escalatedResult);
 	reviewFinalizeV1(harness2.context, {
 		cwd: harness2.repo, lineageId: start2.lineage_id, reviewer_run_acknowledged: true,
-		review_result: { lens_results: [{ lens: "review-readability", findings: [{ id: "s", severity: "BLOCKER" }], evidence: ["hunk"] }] },
+		review_result: escalatedResult,
 	});
 	reviewFinalizeV1(harness2.context, {
 		cwd: harness2.repo, lineageId: start2.lineage_id,

@@ -7,6 +7,17 @@ import { reviewStatusV1, type JeroReviewStatusResultV1, type JeroReviewStatusTar
 import { reviewFinalizeV1, type JeroReviewFinalizeInputV1, type JeroReviewFinalizeResultV1 } from "./finalize.ts";
 import { reviewValidateV1, type JeroReviewValidateInputV1, type JeroReviewValidateResultV1 } from "./validate.ts";
 import { reviewAcknowledgeV1, type JeroReviewAcknowledgeInputV1, type JeroReviewAcknowledgeResultV1 } from "./acknowledge.ts";
+import { renderJeroCaptureBindingV1, nextJeroCaptureSlotsV1, type JeroCaptureRenderResultV1, type JeroCaptureSlotV1 } from "./capture.ts";
+import {
+	admitJeroJudgmentDayJudgesV1,
+	admitJeroJudgmentDayDiscoveryFreezeV1,
+	admitJeroJudgmentDayFixV1,
+	admitJeroJudgmentDayRejudgmentV1,
+	admitJeroJudgmentDayFinalVerificationV1,
+	renderJeroJudgmentDayJudgeVectorsV1,
+	buildJeroJudgmentDayRejudgmentRequestV1,
+	type JeroJudgmentDayResultV1,
+} from "./judgment-day.ts";
 import { assessJeroReviewRiskV1, type JeroRiskAssessRequestV1 } from "./risk-assess.ts";
 import { getJeroReviewModeV1, setJeroReviewModeV1, type JeroReviewModeOutcomeV1 } from "./mode.ts";
 import type { JeroReviewModeValue } from "./protocol.ts";
@@ -75,6 +86,28 @@ export const authority = {
 		/** Spec §F — ACKNOWLEDGE: the approved-authority burn, journaled exactly-once. */
 		acknowledge: (context: JeroAuthorityContextV1, input: JeroReviewAcknowledgeInputV1): JeroReviewAcknowledgeResultV1 =>
 			reviewAcknowledgeV1(context, input),
+	},
+	capture: {
+		/** Spec §A/§I.1 — renderBinding: the four capture slots rendered in-process (store-pure, spawn-free). */
+		renderBinding: (slot: JeroCaptureSlotV1): JeroCaptureRenderResultV1 => renderJeroCaptureBindingV1(slot),
+		/** Spec §I.1 — the slots the lineage's current state offers. */
+		nextSlots: (context: JeroAuthorityContextV1, lineageId: string) => nextJeroCaptureSlotsV1(context, lineageId),
+	},
+	judgmentDay: {
+		/** Spec §F — the two blind judge prompt vectors for discovery. */
+		renderJudgeVectors: (context: JeroAuthorityContextV1, lineageId: string) => renderJeroJudgmentDayJudgeVectorsV1(context, lineageId),
+		/** Spec §F — confirm-judges: admit exactly two blind judges, zero refuters. */
+		confirmJudges: (context: JeroAuthorityContextV1, input: Parameters<typeof admitJeroJudgmentDayJudgesV1>[1]): JeroJudgmentDayResultV1 => admitJeroJudgmentDayJudgesV1(context, input),
+		/** Spec §F — freeze-judgment-ledger: freeze the merged judge rows; zero severe skips to final verification. */
+		freezeDiscovery: (context: JeroAuthorityContextV1, input: { readonly lineageId: string }): JeroJudgmentDayResultV1 => admitJeroJudgmentDayDiscoveryFreezeV1(context, input),
+		/** Spec §F — the one-batch fix covering every surviving finding. */
+		applyFix: (context: JeroAuthorityContextV1, input: Parameters<typeof admitJeroJudgmentDayFixV1>[1]): JeroJudgmentDayResultV1 => admitJeroJudgmentDayFixV1(context, input),
+		/** Spec §F — the expected scoped re-judgment request. */
+		rejudgmentRequest: (context: JeroAuthorityContextV1, lineageId: string) => buildJeroJudgmentDayRejudgmentRequestV1(context, lineageId),
+		/** Spec §F — scoped re-judgment: survivor = not verified by BOTH judges; round-2 survivors escalate. */
+		rejudge: (context: JeroAuthorityContextV1, input: Parameters<typeof admitJeroJudgmentDayRejudgmentV1>[1]): JeroJudgmentDayResultV1 => admitJeroJudgmentDayRejudgmentV1(context, input),
+		/** Spec §F — the final-verification tail (ordinary verify + round-2-survivor escalation). */
+		finalVerification: (context: JeroAuthorityContextV1, input: Parameters<typeof admitJeroJudgmentDayFinalVerificationV1>[1]): JeroJudgmentDayResultV1 => admitJeroJudgmentDayFinalVerificationV1(context, input),
 	},
 	risk: {
 		/** Spec §I.7 — read-only risk assessment; failures fail closed to high. */

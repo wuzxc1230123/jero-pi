@@ -19,6 +19,8 @@ import { captureJeroReviewSnapshotV1, jeroReviewPolicyHashV1, jeroUntrackedInven
 import { projectJeroReviewStateV1, type JeroReplayability, type JeroWireReviewState } from "./transitions.ts";
 import { effectiveJeroReviewModeV1 } from "./mode.ts";
 import { issueJeroReviewReceiptV1 } from "./finalize.ts";
+import { mintJeroRepositoryContextV1, type JeroRepositoryContextV1 } from "./repository-context.ts";
+import { JERO_LINEAGE_STATE_SCHEMA } from "./canonical.ts";
 import type { ReviewDiffStat } from "../review-risk.ts";
 import { FULL_4R_LENSES } from "../review-triggers.ts";
 import type { JeroSnapshotKind } from "./protocol.ts";
@@ -31,8 +33,7 @@ import type { JeroSnapshotKind } from "./protocol.ts";
 export type JeroReviewStartRefusalCode =
 	| "not-a-git-repository" | "git-unavailable" | "authority-unavailable" | "foreign-authority-store"
 	| "invalid-request" | "authority-lock-held" | "authority-lock-ambiguous" | "lineage-not-startable"
-	| "identity-mismatch" | "lineage-consumed" | "snapshot-failed" | "corrupted"
-	| "judgment-day-unavailable";
+	| "identity-mismatch" | "lineage-consumed" | "snapshot-failed" | "corrupted";
 
 export interface JeroReviewStartTargetV1 {
 	readonly cwd: string;
@@ -40,8 +41,8 @@ export interface JeroReviewStartTargetV1 {
 	readonly baseRef?: string;
 	readonly committedOnly?: boolean;
 	readonly lineageId?: string;
-	/** Only `"workspace"` is implemented in M2 (staged lands with the M3 capture renderer). */
-	readonly projection?: "workspace";
+	/** M3 (§G): `"staged"` freezes the candidate from the Git INDEX via a temporary index — never the live worktree, never the real index. */
+	readonly projection?: "workspace" | "staged";
 	/** Drift detection only: `sha256:<64-hex>` the caller expects (spec §B.1). */
 	readonly targetIdentity?: string;
 	/** Judgment Day starts ONLY on explicit request (spec §G). */
@@ -98,8 +99,8 @@ interface JeroStartAuthorityFieldsV1 {
 	readonly risk_reasons: readonly JeroRiskReasonV1[];
 	readonly artifact_subjects: readonly JeroArtifactSubjectV1[];
 	readonly target_identity: string;
-	readonly projection: "workspace";
-	readonly repository_context?: { readonly handle: string; readonly revision: string; readonly target_identity: string };
+	readonly projection: "workspace" | "staged";
+	readonly repository_context?: JeroRepositoryContextV1;
 	readonly revision: string;
 	readonly replayability: JeroReplayability;
 	readonly mode: JeroReviewMode;
@@ -107,9 +108,9 @@ interface JeroStartAuthorityFieldsV1 {
 
 export type JeroReviewStartResultV1 =
 	| { readonly kind: "refused"; readonly code: JeroReviewStartRefusalCode; readonly detail?: string }
-	| { readonly kind: "blocked-scope-action"; readonly reason: string; readonly expected_untracked_inventory: string; readonly projection: "workspace" }
-	| { readonly kind: "consent_required"; readonly action: "consent_required"; readonly target_identity: string; readonly projection: "workspace"; readonly risk_level: "medium" | "high"; readonly changed_files: number; readonly changed_lines: number; readonly risk_evidence: readonly string[] }
-	| { readonly kind: "declined"; readonly action: "declined"; readonly consent: "declined_this_candidate"; readonly target_identity: string; readonly projection: "workspace"; readonly risk_level: "medium" | "high"; readonly changed_files: number; readonly changed_lines: number; readonly lineage_id: ""; readonly state: ""; readonly lenses_required: false; readonly selected_lenses: readonly []; readonly lens_bindings: readonly []; readonly correction_budget: 0 }
+	| { readonly kind: "blocked-scope-action"; readonly reason: string; readonly expected_untracked_inventory: string; readonly projection: "workspace" | "staged" }
+	| { readonly kind: "consent_required"; readonly action: "consent_required"; readonly target_identity: string; readonly projection: "workspace" | "staged"; readonly risk_level: "medium" | "high"; readonly changed_files: number; readonly changed_lines: number; readonly risk_evidence: readonly string[] }
+	| { readonly kind: "declined"; readonly action: "declined"; readonly consent: "declined_this_candidate"; readonly target_identity: string; readonly projection: "workspace" | "staged"; readonly risk_level: "medium" | "high"; readonly changed_files: number; readonly changed_lines: number; readonly lineage_id: ""; readonly state: ""; readonly lenses_required: false; readonly selected_lenses: readonly []; readonly lens_bindings: readonly []; readonly correction_budget: 0 }
 	| ({ readonly kind: "created" } & JeroStartAuthorityFieldsV1)
 	| ({ readonly kind: "resumed" } & JeroStartAuthorityFieldsV1)
 	| ({ readonly kind: "replayed" } & JeroStartAuthorityFieldsV1)
@@ -211,9 +212,7 @@ function assertPairingRulesV1(target: JeroReviewStartTargetV1, selection: JeroRe
 	if (target.baseRef === undefined && target.committedOnly === true) {
 		throw new TypeError("review start: committedOnly requires baseRef");
 	}
-	if (target.projection !== undefined && target.projection !== "workspace") {
-		throw new TypeError(`review start: projection ${JSON.stringify(target.projection)} is not implemented`);
-	}
+
 	if (target.targetIdentity !== undefined && !/^sha256:[0-9a-f]{64}$/.test(target.targetIdentity)) {
 		throw new TypeError("review start: targetIdentity must be a canonical sha256 identity");
 	}
@@ -312,6 +311,9 @@ function buildStartRecordV1(lineageId: string, mode: JeroReviewMode, derivation:
 		selected_lenses: derivation.record.lenses.filter((lens) => (JERO_LENS_NAMES as readonly string[]).includes(lens)) as JeroLensName[],
 		original_changed_lines: derivation.risk.original_changed_lines,
 		correction_budget: derivation.risk.correction_budget,
+		// M3 (§G/discrepancy #4): persisted so STATUS's frozen block always
+		// comes from the record, never a live re-derivation.
+		changed_path_manifest_sha256: derivation.changed_path_manifest_sha256,
 	};
 }
 
@@ -330,12 +332,6 @@ export function isJeroLineageConsumedV1(record: JeroLineageStateFileV1): boolean
 export function reviewStartV1(context: JeroAuthorityContextV1, target: JeroReviewStartTargetV1, selection: JeroReviewStartSelectionV1 = {}): JeroReviewStartResultV1 {
 	assertPairingRulesV1(target, selection);
 	const requestMode = target.requestMode ?? "ordinary";
-	if (requestMode === "judgment-day") {
-		// M3: judge admission driver — the two-blind-judge START (judge
-		// admission, judgment ledger freeze) lands with M3; M2 refuses the
-		// explicit request typed instead of dead-ending the lineage.
-		return { kind: "refused", code: "judgment-day-unavailable", detail: "Judgment Day starts land with the M3 judge admission driver; the ordinary line is the only startable mode in M2" };
-	}
 	// Lock discipline (spec §A.2 illegal #11): a live owned/ambiguous lock
 	// refuses START; a released (provably dead-owner) leftover does NOT block.
 	const lockStatus = context.locks.inspect();
@@ -352,13 +348,17 @@ export function reviewStartV1(context: JeroAuthorityContextV1, target: JeroRevie
 		}
 	}
 
-	const candidateKind = target.committedOnly === true && target.baseRef !== undefined ? "base-diff" as const : "workspace" as const;
+	const candidateKind = target.committedOnly === true && target.baseRef !== undefined
+		? "base-diff" as const
+		: target.projection === "staged" ? "staged" as const : "workspace" as const;
 	let derivation: JeroSnapshotDerivationV1;
 	try {
 		derivation = captureJeroReviewSnapshotV1({
 			cwd: target.cwd,
 			mode: requestMode,
-			candidate: candidateKind === "base-diff" ? { kind: "base-diff", baseRef: target.baseRef! } : { kind: "workspace" },
+			candidate: candidateKind === "base-diff"
+				? { kind: "base-diff", baseRef: target.baseRef! }
+				: candidateKind === "staged" ? { kind: "staged" } : { kind: "workspace" },
 			policyHash: jeroReviewPolicyHashV1(requestMode),
 			storeRoot: context.store.store_root,
 		});
@@ -390,7 +390,7 @@ export function reviewStartV1(context: JeroAuthorityContextV1, target: JeroRevie
 
 	const untrackedInventory = jeroUntrackedInventoryDigestV1(derivation.record.intended_untracked);
 	if (selection.expectedUntrackedInventory !== undefined && selection.expectedUntrackedInventory !== untrackedInventory) {
-		return { kind: "blocked-scope-action", reason: "intended-untracked inventory drifted; a fresh inspect is required", expected_untracked_inventory: untrackedInventory, projection: "workspace" };
+		return { kind: "blocked-scope-action", reason: "intended-untracked inventory drifted; a fresh inspect is required", expected_untracked_inventory: untrackedInventory, projection: target.projection ?? "workspace" };
 	}
 
 	const riskLevel = derivation.risk.tier;
@@ -442,7 +442,7 @@ export function reviewStartV1(context: JeroAuthorityContextV1, target: JeroRevie
 				risk_reasons: deriveJeroRiskReasonsV1(derivation.numstat, derivation.changed_path_manifest),
 				artifact_subjects: artifactSubjectsForV1(derivation, lineageId, computeJeroLineageRevisionV1({ state: record.state, request_journal: record.request_journal.filter((entry) => entry.idempotency_key !== idempotencyKey) }), record.state.selected_lenses ?? []),
 				target_identity: targetIdentity,
-				projection: "workspace",
+				projection: target.projection ?? "workspace",
 				revision: record.revision,
 				replayability: "exact_replay_safe" as const,
 				mode: record.state.mode,
@@ -468,12 +468,8 @@ export function reviewStartV1(context: JeroAuthorityContextV1, target: JeroRevie
 			risk_reasons: deriveJeroRiskReasonsV1(derivation.numstat, derivation.changed_path_manifest),
 			artifact_subjects: artifactSubjectsForV1(derivation, lineageId, computeJeroLineageRevisionV1({ state: record.state, request_journal: [] }), record.state.selected_lenses ?? []),
 			target_identity: targetIdentity,
-			projection: "workspace",
-			repository_context: {
-				handle: `rctx1_${jeroDomainHash("repository-context", { target_identity: targetIdentity, revision: record.revision })}`,
-				revision: record.revision,
-				target_identity: targetIdentity,
-			},
+			projection: target.projection ?? "workspace",
+			repository_context: mintJeroRepositoryContextV1(context, record, "status"),
 			revision: record.revision,
 			replayability: "not_replayable" as const,
 			mode: record.state.mode,
@@ -492,7 +488,7 @@ export function reviewStartV1(context: JeroAuthorityContextV1, target: JeroRevie
 			kind: "consent_required",
 			action: "consent_required",
 			target_identity: targetIdentity,
-			projection: "workspace",
+			projection: target.projection ?? "workspace",
 			risk_level: riskLevel as "medium" | "high",
 			changed_files: changedFiles,
 			changed_lines: changedLines,
@@ -505,7 +501,7 @@ export function reviewStartV1(context: JeroAuthorityContextV1, target: JeroRevie
 			action: "declined",
 			consent: "declined_this_candidate",
 			target_identity: targetIdentity,
-			projection: "workspace",
+			projection: target.projection ?? "workspace",
 			risk_level: riskLevel as "medium" | "high",
 			changed_files: changedFiles,
 			changed_lines: changedLines,
@@ -551,7 +547,7 @@ export function reviewStartV1(context: JeroAuthorityContextV1, target: JeroRevie
 		correction_budget: record.correction_budget,
 		risk_reasons: riskReasons,
 		target_identity: targetIdentity,
-		projection: "workspace" as const,
+		projection: target.projection ?? "workspace",
 		revision,
 		replayability: "exact_replay_safe" as const,
 		mode,
@@ -565,10 +561,6 @@ export function reviewStartV1(context: JeroAuthorityContextV1, target: JeroRevie
 		action: "created",
 		...shared,
 		artifact_subjects: artifactSubjectsForV1(derivation, lineageId, authorityRevision, lenses),
-		repository_context: {
-			handle: `rctx1_${jeroDomainHash("repository-context", { target_identity: targetIdentity, revision })}`,
-			revision,
-			target_identity: targetIdentity,
-		},
+		repository_context: mintJeroRepositoryContextV1(context, { schema: JERO_LINEAGE_STATE_SCHEMA, lineage_id: lineageId, revision, state: record, request_journal: [{ operation: "start" as const, idempotency_key: idempotencyKey, request_hash: requestHash, status: "completed" as const }] }, "start"),
 	};
 }

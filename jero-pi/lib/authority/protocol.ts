@@ -266,6 +266,14 @@ export interface JeroReviewTransactionStateV1 {
 	proposed_correction_lines?: number;
 	actual_correction_lines?: number;
 	correction_evidence?: JeroCorrectionEvidenceRecordV1;
+	/**
+	 * M3 (spec §G, discrepancy #4): the frozen changed-path manifest digest.
+	 * Persisted at START so the STATUS frozen block ALWAYS comes from the
+	 * record — never from a live manifest re-derivation that drifts when the
+	 * workspace moves under a correction. Optional: pre-M3 records re-derive
+	 * read-only from their frozen snapshot.
+	 */
+	changed_path_manifest_sha256?: string;
 }
 
 function decodeSnapshot(value: unknown): JeroAuthoritySnapshotV1 {
@@ -380,7 +388,7 @@ export function decodeJeroReviewTransactionStateV1(value: unknown): JeroReviewTr
 	const transaction = exactObject(
 		value,
 		["schema", "lineage_id", "mode", "generation", "state", "snapshot", "base_tree", "paths_digest", "initial_review_tree", "final_candidate_tree", "fix_delta_hash", "policy_hash", "ledger_hash", "ledger_findings_hash", "evidence_hash", "judge_proofs", "counters", "findings", "classifications", "outcomes", "fix_finding_ids", "pending_refuter_ids", "fix_caused_findings", "follow_ups"],
-		["genesis_paths", "invalidation_reason", "judge_proof_hash", "judge_agreement_hash", "release", "failed_evidence_revision", "original_criteria", "correction_regression", "risk_level", "selected_lenses", "lens_results", "original_changed_lines", "correction_budget", "proposed_correction_lines", "actual_correction_lines", "correction_evidence"],
+		["genesis_paths", "invalidation_reason", "judge_proof_hash", "judge_agreement_hash", "release", "failed_evidence_revision", "original_criteria", "correction_regression", "risk_level", "selected_lenses", "lens_results", "original_changed_lines", "correction_budget", "proposed_correction_lines", "actual_correction_lines", "correction_evidence", "changed_path_manifest_sha256"],
 		JERO_REVIEW_TRANSACTION_SCHEMA,
 	);
 	if (transaction.schema !== JERO_REVIEW_TRANSACTION_SCHEMA) throw new JeroAuthorityProtocolError(`${JERO_REVIEW_TRANSACTION_SCHEMA}: unsupported schema "${transaction.schema}"`);
@@ -446,6 +454,7 @@ export function decodeJeroReviewTransactionStateV1(value: unknown): JeroReviewTr
 		...(transaction.proposed_correction_lines === undefined ? {} : { proposed_correction_lines: nonNegativeInteger(transaction.proposed_correction_lines, "proposed_correction_lines") }),
 		...(transaction.actual_correction_lines === undefined ? {} : { actual_correction_lines: nonNegativeInteger(transaction.actual_correction_lines, "actual_correction_lines") }),
 		...(transaction.correction_evidence === undefined ? {} : { correction_evidence: decodeCorrectionEvidence(transaction.correction_evidence, "correction_evidence") }),
+		...(transaction.changed_path_manifest_sha256 === undefined ? {} : { changed_path_manifest_sha256: requiredString(transaction.changed_path_manifest_sha256, "changed_path_manifest_sha256") }),
 	};
 }
 

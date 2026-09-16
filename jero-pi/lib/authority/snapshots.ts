@@ -1,5 +1,5 @@
 import { execFileSync, type ExecFileSyncOptions } from "node:child_process";
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, isAbsolute, join, resolve, sep } from "node:path";
 import { reviewGitEnvironment } from "../review-repository.ts";
@@ -169,8 +169,13 @@ export function jeroPathsDigestV1(paths: readonly string[]): string {
 export interface JeroSnapshotDeriveOptionsV1 {
 	readonly cwd: string;
 	readonly mode: JeroSnapshotModeName;
-	/** `complete` reviews the live workspace (incl. untracked); a base diff reviews the committed range baseRef..HEAD. */
-	readonly candidate: { kind: "workspace" } | { kind: "base-diff"; baseRef: string };
+	/**
+	 * `complete` reviews the live workspace (incl. untracked); a base diff
+	 * reviews the committed range baseRef..HEAD; `staged` (M3, §G) freezes
+	 * the candidate from the Git INDEX — what is about to be committed — via
+	 * a temporary GIT_INDEX_FILE copy, never touching the real index.
+	 */
+	readonly candidate: { kind: "workspace" } | { kind: "base-diff"; baseRef: string } | { kind: "staged" };
 	readonly policyHash: string;
 	readonly projection?: JeroSnapshotProjectionV1;
 }
@@ -219,6 +224,24 @@ export function deriveJeroReviewSnapshotV1(options: JeroSnapshotDeriveOptionsV1 
 			baseTree = resolveBaseTree(root, options.candidate.baseRef);
 			completeSnapshotTree = resolveTree(root, runGit(root, ["rev-parse", "--verify", "HEAD^{tree}"]));
 			intendedUntracked = [];
+		} else if (options.candidate.kind === "staged") {
+				// M3 (spec G): freeze the candidate from the Git INDEX. The real
+				// index is COPIED into a temporary GIT_INDEX_FILE and every write
+				// (the tree object) lands in the isolated object directory, so the
+				// caller's real index is never opened for writing.
+				stagingDirectory = options.keepIsolatedStore ?? mkdtempSync(join(tmpdir(), "jero-snapshot-"));
+				mkdirSync(stagingDirectory, { recursive: true, mode: 0o700 });
+				chmodSync(stagingDirectory, 0o700);
+				const temporaryIndex = join(stagingDirectory, "index");
+				objectDirectory = join(stagingDirectory, "objects");
+				mkdirSync(objectDirectory, { mode: 0o700 });
+				environment = { GIT_INDEX_FILE: temporaryIndex, GIT_OBJECT_DIRECTORY: objectDirectory, GIT_ALTERNATE_OBJECT_DIRECTORIES: alternateObjectDirectory };
+				baseTree = resolveBaseTree(root);
+				const realIndex = runGit(root, ["rev-parse", "--path-format=absolute", "--git-path", "index"]);
+				if (existsSync(realIndex)) copyFileSync(realIndex, temporaryIndex);
+				else runGit(root, ["read-tree", "HEAD"], environment);
+				completeSnapshotTree = runGit(root, ["write-tree"], environment);
+				intendedUntracked = canonicalPaths(runGit(root, ["ls-files", "--others", "--exclude-standard", "-z"]));
 		} else {
 			stagingDirectory = options.keepIsolatedStore ?? mkdtempSync(join(tmpdir(), "jero-snapshot-"));
 			mkdirSync(stagingDirectory, { recursive: true, mode: 0o700 });

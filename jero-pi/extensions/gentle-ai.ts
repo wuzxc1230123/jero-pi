@@ -1,7 +1,6 @@
 import { consumeReviewMutation, pendingReviewMutation, recordReviewMutation } from "../lib/review-reminder-receipt.ts";
 import { resolveSessionWorktree } from "../lib/session-worktree-registry.ts";
 import { resolveResearchCapabilities, renderResearchCapabilities } from "../lib/sdd-research-capabilities.ts";
-import { declareReviewRelayHandshake } from "../lib/review-relay-contract.ts";
 import { execFileSync } from "node:child_process";
 import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 import {
@@ -5365,7 +5364,8 @@ function validateNativeStartUntrackedSelection(value: Record<string, unknown>): 
 	if (!declared) return {};
 	const scope = value.untrackedScope;
 	const expectedUntrackedInventory = value.expectedUntrackedInventory;
-	const intendedUntracked = value.intendedUntracked;
+	// Type assertion only: the rows are validated below before any use.
+	const intendedUntracked = value.intendedUntracked as string[] | undefined;
 	if (
 		(scope !== NATIVE_START_UNTRACKED_SCOPE.EXCLUDE && scope !== NATIVE_START_UNTRACKED_SCOPE.SELECT) ||
 		!isCanonicalProcessString(expectedUntrackedInventory) ||
@@ -6362,11 +6362,14 @@ async function executeReviewHostRelayCapture(
 				mutation_outcome: "none",
 			};
 		}
-		if (error.kind === REVIEW_HOST_RELAY_FAILURE.HANDSHAKE_REFUSED) {
+		if (error.kind === REVIEW_HOST_RELAY_FAILURE.MATERIALIZE_FAILED && /not eligible for immutable receipt review/.test(error.message)) {
+			// jero-pi M3 (design 8): the handshake refusal class is deleted;
+			// a provider refusal of that shape surfaces as a plain materialize
+			// failure carrying its verbatim reason.
 			return {
 				tool: "gentle_review_capture",
 				status: "blocked",
-				outcome: "pi-host-relay-handshake-refused",
+				outcome: "pi-host-relay-materialize-refused",
 				reason: error.message,
 				refusal: error.stderr,
 				mutation_performed: false,
@@ -6903,7 +6906,7 @@ function reviewHostRelayGroupFailure(
 	return {
 		tool: "gentle_review_capture_group",
 		status: "blocked",
-		outcome: error.kind === REVIEW_HOST_RELAY_FAILURE.RELAY_UNAVAILABLE ? "pi-host-relay-unavailable" : error.kind === REVIEW_HOST_RELAY_FAILURE.HANDSHAKE_REFUSED ? "pi-host-relay-handshake-refused" : error.kind === REVIEW_HOST_RELAY_FAILURE.PI_TIMED_OUT ? "pi-host-relay-timeout" : "pi-host-relay-transport-failure",
+		outcome: error.kind === REVIEW_HOST_RELAY_FAILURE.RELAY_UNAVAILABLE ? "pi-host-relay-unavailable" : error.kind === REVIEW_HOST_RELAY_FAILURE.PI_TIMED_OUT ? "pi-host-relay-timeout" : "pi-host-relay-transport-failure",
 		reason: error.message,
 		failure: reviewHostRelayFailureReport(error),
 		...reviewHostRelayGroupProgress(slots, prepared, submitted),
@@ -8217,7 +8220,6 @@ function createGentleAiExtensionForTesting(
 			description: "Internal launch-local selected SDD change identity for package-owned child agents.",
 			type: "string",
 		});
-	declareReviewRelayHandshake(dependencies.processEnv ?? process.env);
 	const pendingReviewConsentFallbackKey = Symbol("pending-review-consent-fallback");
 	const candidateViews = dependencies.candidateViews === undefined ? new CandidateViewRegistry() : dependencies.candidateViews;
 	const herdrLifecycle = createHerdrConfirmationLifecycle(pi.events);

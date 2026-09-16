@@ -12,7 +12,8 @@ import type { JeroAuthorityContextV1 } from "../../lib/authority/review.ts";
 import { JeroLineageStoreV1 } from "../../lib/authority/lineage-store.ts";
 import { JeroObjectCasV1 } from "../../lib/authority/object-cas.ts";
 import { JeroAuthorityLocksV1 } from "../../lib/authority/locks.ts";
-import { applyFixtureFix, reviewHarness, tempRoot, testTransactionState, LINEAGE_ID } from "./fixtures.ts";
+import { admitFixtureReviewerResults, applyFixtureFix, reviewHarness, tempRoot, testTransactionState, LINEAGE_ID } from "./fixtures.ts";
+import { jeroReviewerResultsDirectoryV1 } from "../../lib/authority/result-artifacts.ts";
 
 // Spec §D: FINALIZE — lens admission, evidence classification/refutation,
 // severe-only correction admission, follow-ups, malformed→escalated triggers,
@@ -22,9 +23,11 @@ function freezeWith(t: { after: (callback: () => void) => void}, findings: { id?
 	const harness = reviewHarness(t, "medium", 4);
 	const start = reviewStartV1(harness.context, { cwd: harness.repo }, { consent: "granted" });
 	if (start.kind !== "created") throw new Error(JSON.stringify(start));
+	const reviewResult = { lens_results: [{ lens: "review-readability" as const, findings, evidence }] };
+	admitFixtureReviewerResults(harness, start.lineage_id, reviewResult);
 	const frozen = reviewFinalizeV1(harness.context, {
 		cwd: harness.repo, lineageId: start.lineage_id, reviewer_run_acknowledged: true,
-		review_result: { lens_results: [{ lens: "review-readability", findings, evidence }] },
+		review_result: reviewResult,
 	});
 	if (frozen.kind !== "frozen") throw new Error(JSON.stringify(frozen));
 	return { harness, start, frozen };
@@ -51,9 +54,11 @@ test("happy approve: clean lens results resolve to final verification and an app
 	const harness = reviewHarness(t, "medium", 4);
 	const start = reviewStartV1(harness.context, { cwd: harness.repo }, { consent: "granted" });
 	if (start.kind !== "created") throw new Error("start failed");
+	const reviewResult = { lens_results: [{ lens: "review-readability" as const, findings: [], evidence: ["complete candidate reviewed"] }] };
+	admitFixtureReviewerResults(harness, start.lineage_id, reviewResult);
 	const frozen = reviewFinalizeV1(harness.context, {
 		cwd: harness.repo, lineageId: start.lineage_id, reviewer_run_acknowledged: true,
-		review_result: { lens_results: [{ lens: "review-readability", findings: [], evidence: ["complete candidate reviewed"] }] },
+		review_result: reviewResult,
 	});
 	assert.equal(frozen.kind, "frozen");
 	if (frozen.kind !== "frozen") return;
@@ -413,9 +418,11 @@ test("final verification outcome escalation: failed verification never approves"
 	const harness = reviewHarness(t, "medium", 4);
 	const start = reviewStartV1(harness.context, { cwd: harness.repo }, { consent: "granted" });
 	if (start.kind !== "created") throw new Error("start failed");
+	const reviewResult = { lens_results: [{ lens: "review-readability" as const, findings: [], evidence: ["clean"] }] };
+	admitFixtureReviewerResults(harness, start.lineage_id, reviewResult);
 	reviewFinalizeV1(harness.context, {
 		cwd: harness.repo, lineageId: start.lineage_id, reviewer_run_acknowledged: true,
-		review_result: { lens_results: [{ lens: "review-readability", findings: [], evidence: ["clean"] }] },
+		review_result: reviewResult,
 	});
 	reviewFinalizeV1(harness.context, { cwd: harness.repo, lineageId: start.lineage_id, classifications: [] });
 	const escalated = reviewFinalizeV1(harness.context, {
@@ -452,9 +459,11 @@ test("exact finalize replay returns the stored canonical result", (t) => {
 	const harness = reviewHarness(t, "medium", 4);
 	const start = reviewStartV1(harness.context, { cwd: harness.repo }, { consent: "granted" });
 	if (start.kind !== "created") throw new Error("start failed");
+	const reviewResult = { lens_results: [{ lens: "review-readability" as const, findings: [], evidence: ["clean"] }] };
+	admitFixtureReviewerResults(harness, start.lineage_id, reviewResult);
 	const input = {
 		cwd: harness.repo, lineageId: start.lineage_id, reviewer_run_acknowledged: true,
-		review_result: { lens_results: [{ lens: "review-readability" as const, findings: [], evidence: ["clean"] }] },
+		review_result: reviewResult,
 		idempotencyKey: "freeze-key",
 	};
 	const first = reviewFinalizeV1(harness.context, input);
@@ -465,4 +474,48 @@ test("exact finalize replay returns the stored canonical result", (t) => {
 	const divergent = reviewFinalizeV1(harness.context, { ...input, review_result: { lens_results: [{ lens: "review-readability", findings: [{ id: "f", severity: "WARNING" }], evidence: ["clean"] }] } });
 	assert.equal(divergent.kind, "refused");
 	if (divergent.kind === "refused") assert.match(divergent.detail ?? "", /reused with a different request/);
+});
+
+test("MA4: freeze-ledger requires complete captured artifacts on disk — deleted or rewritten files refuse, complete passes", (t) => {
+	// Complete artifacts on disk: the freeze proceeds.
+	const complete = (() => {
+		const harness = reviewHarness(t, "medium", 4);
+		const start = reviewStartV1(harness.context, { cwd: harness.repo }, { consent: "granted" });
+		if (start.kind !== "created") throw new Error("start failed");
+		const reviewResult = { lens_results: [{ lens: "review-readability" as const, findings: [], evidence: ["clean"] }] };
+		admitFixtureReviewerResults(harness, start.lineage_id, reviewResult);
+		return reviewFinalizeV1(harness.context, { cwd: harness.repo, lineageId: start.lineage_id, reviewer_run_acknowledged: true, review_result: reviewResult });
+	})();
+	assert.equal(complete.kind, "frozen", "complete captured artifacts admit the freeze");
+	// A DELETED per-lens result file: the manifest still lists the artifact,
+	// but the disk precondition fails — a hand-built review_result cannot
+	// freeze past a deleted artifact (the review's bypass-closure probe).
+	const deleted = (() => {
+		const harness = reviewHarness(t, "medium", 4);
+		const start = reviewStartV1(harness.context, { cwd: harness.repo }, { consent: "granted" });
+		if (start.kind !== "created") throw new Error("start failed");
+		const reviewResult = { lens_results: [{ lens: "review-readability" as const, findings: [], evidence: ["clean"] }] };
+		admitFixtureReviewerResults(harness, start.lineage_id, reviewResult);
+		rmSync(join(jeroReviewerResultsDirectoryV1(harness.context.store.store_root, start.lineage_id), "00-review-readability.json"), { force: true });
+		return reviewFinalizeV1(harness.context, { cwd: harness.repo, lineageId: start.lineage_id, reviewer_run_acknowledged: true, review_result: reviewResult });
+	})();
+	assert.equal(deleted.kind, "refused");
+	if (deleted.kind === "refused") {
+		assert.equal(deleted.code, "invalid-state");
+		assert.match(deleted.detail ?? "", /complete on disk/);
+		assert.match(deleted.detail ?? "", /review-readability@0/);
+	}
+	// A REWRITTEN result file: present, but its sha256 no longer matches the
+	// manifest row (post-admission edit).
+	const rewritten = (() => {
+		const harness = reviewHarness(t, "medium", 4);
+		const start = reviewStartV1(harness.context, { cwd: harness.repo }, { consent: "granted" });
+		if (start.kind !== "created") throw new Error("start failed");
+		const reviewResult = { lens_results: [{ lens: "review-readability" as const, findings: [], evidence: ["clean"] }] };
+		admitFixtureReviewerResults(harness, start.lineage_id, reviewResult);
+		writeFileSync(join(jeroReviewerResultsDirectoryV1(harness.context.store.store_root, start.lineage_id), "00-review-readability.json"), "tampered after admission\n");
+		return reviewFinalizeV1(harness.context, { cwd: harness.repo, lineageId: start.lineage_id, reviewer_run_acknowledged: true, review_result: reviewResult });
+	})();
+	assert.equal(rewritten.kind, "refused");
+	if (rewritten.kind === "refused") assert.equal(rewritten.code, "invalid-state");
 });

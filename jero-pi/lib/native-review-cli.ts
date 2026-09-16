@@ -2,7 +2,6 @@ import { execFile } from "node:child_process";
 import { realpath } from "node:fs/promises";
 import { isAbsolute, join, posix, win32 } from "node:path";
 import { promisify } from "node:util";
-import { GENTLE_PI_REVIEW_RELAY_CONTRACT, GENTLE_PI_REVIEW_RELAY_CONTRACT_ENV } from "./review-relay-contract.ts";
 import { decodeReviewAssessmentV1, type ReviewAssessmentV1 } from "./review-risk-assessment.ts";
 import {
 	REVIEW_INTEGRATION_CONTRACT,
@@ -1038,12 +1037,11 @@ export class NativeReviewCliError extends Error {
 }
 
 // The one central runner for every gentle-ai CLI invocation the extension
-// makes. It declares the Pi host relay handshake on each spawn: gentle-ai
-// refuses pi admission pre-authority without it (gentle-pi#311 P4), and a
-// single injection point keeps the declaration impossible to forget on any
-// individual operation.
+// makes. jero-pi M3 (design §8): the gentle-pi.review-relay/v1 handshake
+// declaration is DELETED — the relay renders and admits in-process, so there
+// is no cross-process contract to declare on any spawn.
 export function gentleAiProcessEnvironment(base: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
-	return { ...base, [GENTLE_PI_REVIEW_RELAY_CONTRACT_ENV]: GENTLE_PI_REVIEW_RELAY_CONTRACT };
+	return { ...base };
 }
 
 export function createNodeExecFileAdapter(): ExecFileAdapter {

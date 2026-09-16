@@ -11,7 +11,7 @@ import { reviewAcknowledgeV1 } from "../../lib/authority/acknowledge.ts";
 import { jeroReceiptPathV1 } from "../../lib/authority/receipts.ts";
 import { setJeroReviewModeV1 } from "../../lib/authority/mode.ts";
 import { JeroLineageStoreV1 } from "../../lib/authority/lineage-store.ts";
-import { applyRiskChange, git as fixturesGit, repository, reviewHarness, startCreatedReview } from "./fixtures.ts";
+import { applyRiskChange, git as fixturesGit, repository, admitFixtureReviewerResults, reviewHarness, startCreatedReview } from "./fixtures.ts";
 
 // Spec §B: START semantics — created/resumed/replayed/closed variants, the
 // consent gate, foreign-store refusal, lock discipline, budget formula, and
@@ -231,7 +231,6 @@ test("pairing rules fail closed as TypeErrors (§B.1)", (t) => {
 	const harness = reviewHarness(t, "medium", 4);
 	assert.throws(() => reviewStartV1(harness.context, { cwd: harness.repo, baseRef: "HEAD" }), /baseRef requires committedOnly/);
 	assert.throws(() => reviewStartV1(harness.context, { cwd: harness.repo, committedOnly: true }), /committedOnly requires baseRef/);
-	assert.throws(() => reviewStartV1(harness.context, { cwd: harness.repo, projection: "staged" as never }), /not implemented/);
 	assert.throws(() => reviewStartV1(harness.context, { cwd: harness.repo }, { untrackedScope: "exclude", intendedUntracked: ["x"] }), /exclude cannot carry/);
 	assert.throws(() => reviewStartV1(harness.context, { cwd: harness.repo }, { untrackedScope: "select" }), /select requires at least one/);
 	assert.throws(() => reviewStartV1(harness.context, { cwd: harness.repo }, { intendedUntracked: ["C:\\abs"] }), /POSIX/);
@@ -268,16 +267,24 @@ function writeFileSyncSafe(path: string, content: string): void {
 	writeFileSync(path, content);
 }
 
-test("F6: an explicit Judgment Day START is refused typed until the M3 judge admission driver lands", (t) => {
+test("J.4: an explicit Judgment Day START creates a reviewing lineage with no ordinary lenses", (t) => {
 	const harness = reviewHarness(t, "medium", 4);
-	const refused = reviewStartV1(harness.context, { cwd: harness.repo, requestMode: "judgment-day" });
-	assert.equal(refused.kind, "refused");
-	if (refused.kind === "refused") {
-		assert.equal(refused.code, "judgment-day-unavailable");
-		assert.match(refused.detail ?? "", /M3/);
-	}
-	// The refusal froze nothing.
-	assert.equal(JeroLineageStoreV1.forStore(harness.context.store.store_root).list().length, 0);
+	const started = reviewStartV1(harness.context, { cwd: harness.repo, requestMode: "judgment-day" }, { consent: "granted" });
+	assert.equal(started.kind, "created");
+	if (started.kind !== "created") throw new Error("start failed");
+	assert.equal(started.mode, "judgment_day");
+	assert.deepEqual(started.selected_lenses, []);
+	assert.equal(started.lenses_required, false);
+	const loaded = JeroLineageStoreV1.forStore(harness.context.store.store_root).load(started.lineage_id);
+	assert.equal(loaded.kind, "ok");
+	if (loaded.kind !== "ok") throw new Error("load failed");
+	assert.equal(loaded.record.state.state, "reviewing");
+	assert.equal(loaded.record.state.mode, "judgment_day");
+	// Immutable JD budgets start zeroed; the budget table is enforced at
+	// every admission (judgment-day.ts).
+	assert.equal(loaded.record.state.counters.judge_executions, 0);
+	assert.equal(loaded.record.state.counters.refuter_batches, 0);
+	assert.equal(loaded.record.state.counters.scoped_rejudgments, 0);
 });
 
 test("F10: the consent gate fires only while no authority is frozen — a resume is never re-asked", (t) => {
@@ -310,9 +317,11 @@ test("F9: a burned lineage refuses START-after-burn even under the default idemp
 	const harness = reviewHarness(t, "medium", 4);
 	const start = reviewStartV1(harness.context, { cwd: harness.repo }, { consent: "granted" });
 	if (start.kind !== "created") throw new Error(JSON.stringify(start));
+	const burnResult = { lens_results: [{ lens: "review-readability" as const, findings: [], evidence: ["clean"] }] };
+	admitFixtureReviewerResults(harness, start.lineage_id, burnResult);
 	reviewFinalizeV1(harness.context, {
 		cwd: harness.repo, lineageId: start.lineage_id, reviewer_run_acknowledged: true,
-		review_result: { lens_results: [{ lens: "review-readability", findings: [], evidence: ["clean"] }] },
+		review_result: burnResult,
 	});
 	reviewFinalizeV1(harness.context, { cwd: harness.repo, lineageId: start.lineage_id, classifications: [] });
 	reviewFinalizeV1(harness.context, {

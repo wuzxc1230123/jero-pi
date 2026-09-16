@@ -6,7 +6,7 @@ import { reviewStartV1 } from "../../lib/authority/start.ts";
 import { reviewFinalizeV1 } from "../../lib/authority/finalize.ts";
 import { reviewValidateV1, expectedJeroTargetedValidationRequestHashV1, type JeroReviewValidateInputV1 } from "../../lib/authority/validate.ts";
 import { JeroLineageStoreV1 } from "../../lib/authority/lineage-store.ts";
-import { applyFixtureFix, reviewHarness } from "./fixtures.ts";
+import { admitFixtureReviewerResults, applyFixtureFix, reviewHarness } from "./fixtures.ts";
 
 // Spec §E: VALIDATE — evidence-first ordering, the request_hash binding, the
 // 1:1 correction-scope pairing, fix-caused findings, regression escalation,
@@ -32,9 +32,11 @@ function driveToFixValidating(t: { after: (callback: () => void) => void }): Cor
 	const harness = reviewHarness(t, "medium", 4);
 	const start = reviewStartV1(harness.context, { cwd: harness.repo }, { consent: "granted" });
 	if (start.kind !== "created") throw new Error(JSON.stringify(start));
+	const driveResult = { lens_results: [{ lens: "review-readability" as const, findings: [{ id: "sev-1", severity: "BLOCKER" as const, claim: "introduced blocker" }], evidence: ["hunk"] }] };
+	admitFixtureReviewerResults(harness, start.lineage_id, driveResult);
 	reviewFinalizeV1(harness.context, {
 		cwd: harness.repo, lineageId: start.lineage_id, reviewer_run_acknowledged: true,
-		review_result: { lens_results: [{ lens: "review-readability", findings: [{ id: "sev-1", severity: "BLOCKER", claim: "introduced blocker" }], evidence: ["hunk"] }] },
+		review_result: driveResult,
 	});
 	reviewFinalizeV1(harness.context, {
 		cwd: harness.repo, lineageId: start.lineage_id,

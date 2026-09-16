@@ -19,6 +19,7 @@ import { parseNativeCompactFinalizeInput, CompactReviewContractError, type Compa
 import type { CorrectionOutcome } from "../review-correction-lifecycle.ts";
 import { writeFileSync, mkdirSync } from "node:fs";
 import { canonicalJsonV1 } from "../review-canonical.ts";
+import { capturedJeroArtifactsCompleteV1 } from "./result-artifacts.ts";
 
 // `authority.review.finalize` (spec §D): lens-result admission (`freeze-
 // ledger`), classification/refutation (`resolve-evidence`), correction-plan
@@ -142,7 +143,11 @@ function decodeFinalizeExtensionsV1(input: JeroReviewFinalizeInputV1): string | 
 			for (const key of Object.keys(result)) if (!["lens", "findings", "evidence"].includes(key)) return `review_result.lens_results[${index}] carries unknown field ${key}`;
 			if (typeof result.lens !== "string" || !(Object.keys(BARE_LENS) as readonly string[]).includes(result.lens)) return `review_result.lens_results[${index}].lens is unsupported`;
 			if (!Array.isArray(result.findings)) return `review_result.lens_results[${index}].findings must be an array`;
-			if (!Array.isArray(result.evidence) || result.evidence.length === 0) return `review_result.lens_results[${index}].evidence must be a non-empty array`;
+			// Mi8 (review ruling), mirroring capture.ts: findings present ⇒
+			// evidence may be empty (each finding carries its own proof_refs);
+			// clean (empty findings) ⇒ evidence must be non-empty.
+			if (!Array.isArray(result.evidence) || result.evidence.some((row: unknown) => typeof row !== "string" || row.length === 0)) return `review_result.lens_results[${index}].evidence must be a string array`;
+			if (result.findings.length === 0 && result.evidence.length === 0) return `review_result.lens_results[${index}]: empty findings require non-empty evidence`;
 			for (const [row, finding] of result.findings.entries()) {
 				if (typeof finding !== "object" || finding === null) return `review_result.lens_results[${index}].findings[${row}] must be an object`;
 				for (const key of Object.keys(finding)) if (!["id", "location", "severity", "claim", "proof_refs"].includes(key)) return `findings[${row}] carries unknown field ${key}`;
@@ -372,6 +377,21 @@ function finalizeFreezeLedgerV1(context: JeroAuthorityContextV1, record: JeroLin
 	// Lenses run exactly once, only over the selected set (illegal #2/#7).
 	if (submissionLenses.length !== selected.length || !selected.every((lens) => submissionLenses.includes(lens))) {
 		return { kind: "refused", code: "invalid-request", detail: "lens results must cover exactly the selected lenses" };
+	}
+	// MA4 (review ruling): freeze-ledger requires the captured reviewer
+	// artifacts to be complete ON DISK — every selected lens admitted through
+	// result-artifacts.ts with its per-lens result file present and hashing to
+	// the manifest row. A hand-built review_result can no longer freeze after
+	// an artifact was deleted (the STATUS execute path advertises the same
+	// `captured_artifacts=complete` precondition; the gate runs before the
+	// journal so an artifact deletion also refuses exact replays).
+	const completeness = capturedJeroArtifactsCompleteV1(context, record);
+	if (!completeness.complete) {
+		return {
+			kind: "refused",
+			code: "invalid-state",
+			detail: `freeze-ledger requires the captured reviewer artifacts to be complete on disk (missing: ${completeness.missing.map(({ lens, selected_order }) => `${lens}@${selected_order}`).join(", ")})`,
+		};
 	}
 	return runJournaledV1(context, record, "freeze-ledger", input, (next) => {
 		const transition = checkJeroReviewTransitionV1(next.state, next.mode, "freeze-ledger", { fixRounds: next.counters.fix_rounds, fixBatches: next.counters.fix_batches });
@@ -619,6 +639,11 @@ function escalateNowV1(context: JeroAuthorityContextV1, record: JeroLineageState
 
 function finalizeAuthorizeFixV1(context: JeroAuthorityContextV1, record: JeroLineageStateFileV1, input: JeroReviewFinalizeInputV1): JeroReviewFinalizeResultV1 {
 	const state = record.state;
+	if (!isJeroOrdinaryModeV1(state.mode)) {
+		// M3 (§J.4 cross-mode): the ordinary correction-plan admission never
+		// runs on a Judgment Day lineage; judgment-day.ts owns the JD fix loop.
+		return { kind: "refused", code: "cross-mode-operation-refused", detail: "the ordinary correction-plan admission is not a Judgment Day operation" };
+	}
 	if (input.correction_line_forecast === undefined) {
 		return { kind: "refused", code: "invalid-request", detail: "finalize from fix_required requires correction_line_forecast" };
 	}
@@ -651,6 +676,11 @@ function finalizeAuthorizeFixV1(context: JeroAuthorityContextV1, record: JeroLin
 
 function finalizeApplyFixV1(context: JeroAuthorityContextV1, record: JeroLineageStateFileV1, input: JeroReviewFinalizeInputV1): JeroReviewFinalizeResultV1 {
 	const state = record.state;
+	if (!isJeroOrdinaryModeV1(state.mode)) {
+		// M3 (§J.4 cross-mode): the ordinary bounded-edit application never
+		// runs on a Judgment Day lineage; judgment-day.ts owns the JD fix loop.
+		return { kind: "refused", code: "cross-mode-operation-refused", detail: "the ordinary bounded-edit application is not a Judgment Day operation" };
+	}
 	if (input.fix_application === undefined) {
 		return { kind: "refused", code: "invalid-request", detail: "finalize from fixing requires fix_application" };
 	}

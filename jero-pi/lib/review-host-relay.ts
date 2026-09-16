@@ -36,7 +36,6 @@ import {
 	type OpaquePiReviewerResult,
 } from "./opaque-pi-reviewer-adapter.ts";
 import { REVIEW_PROVIDER_ROLE_CAPTURE_OPERATION, REVIEW_PROVIDER_ROLE_CAPTURE_OPERATIONS, type ReviewCaptureSubmissionV1, type ReviewCollectInputV3 } from "./review-integration-v2.ts";
-import { GENTLE_PI_REVIEW_RELAY_CONTRACT, GENTLE_PI_REVIEW_RELAY_CONTRACT_ENV } from "./review-relay-contract.ts";
 
 // Compatibility export for existing relay consumers. The pure adapter owns the
 // fixed Pi process boundary and its locked-down argv.
@@ -47,7 +46,6 @@ export const REVIEW_HOST_RELAY_UNAVAILABLE_MESSAGE =
 
 export const REVIEW_HOST_RELAY_FAILURE = {
 	RELAY_UNAVAILABLE: "relay-unavailable",
-	HANDSHAKE_REFUSED: "handshake-refused",
 	SUBMISSION_CONTRACT_MISMATCH: "submission-contract-mismatch",
 	MATERIALIZE_FAILED: "materialize-failed",
 	EMPTY_PROMPT: "empty-prompt",
@@ -114,28 +112,15 @@ export function isReviewHostRelayAdmissionRefusal(capture: { exitCode: number | 
 	return capture.exitCode === 1 && !capture.timedOut && ADMISSION_REFUSAL.test(stderr);
 }
 
-// Refusal classification for the materialize invocation. The installed
-// gentle-ai is the only authority on whether the materialize form exists; Pi
-// never version-sniffs. Two typed refusal classes are distinguished:
-//
-//   unknown-flag  the Go flag package's exact refusal for a flag the binary
-//                 does not define (any binary older than v2.4.0) —
-//                 the relay is unavailable and existing behavior stays
-//                 untouched.
-//   handshake     the provider's pre-authority pi admission refusal — always
-//                 surfaced verbatim, never worked around.
+// Refusal classification for the binary-transport materialize invocation.
+// The installed gentle-ai is the only authority on whether the materialize
+// form exists; Pi never version-sniffs. jero-pi M3 (design §8): the
+// gentle-pi.review-relay/v1 handshake env and its refusal class are DELETED
+// — there is no cross-process contract left to declare.
 const UNKNOWN_FLAG_REFUSAL = /flag provided but not defined: -{1,2}(?:materialize|agent)\b/;
-const HANDSHAKE_REFUSAL = new RegExp(
-	[
-		GENTLE_PI_REVIEW_RELAY_CONTRACT_ENV,
-		GENTLE_PI_REVIEW_RELAY_CONTRACT.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&"),
-		"not eligible for immutable receipt review",
-	].join("|"),
-);
 
-export function classifyReviewHostRelayRefusal(stderr: string): "unknown-flag" | "handshake" | "other" {
+export function classifyReviewHostRelayRefusal(stderr: string): "unknown-flag" | "other" {
 	if (UNKNOWN_FLAG_REFUSAL.test(stderr)) return "unknown-flag";
-	if (HANDSHAKE_REFUSAL.test(stderr)) return "handshake";
 	return "other";
 }
 
@@ -324,6 +309,16 @@ const preparedResultBytes = new WeakMap<ReviewHostRelayPreparedResult, Buffer>()
 export type ReviewHostRelayRunner = (request: ReviewHostRelayRequest) => Promise<ReviewHostRelayResult>;
 export type ReviewHostRelayPreparationRunner = (request: ReviewHostRelayRequest) => Promise<ReviewHostRelayPreparedResult>;
 export type ReviewHostRelaySubmissionRunner = (prepared: ReviewHostRelayPreparedResult) => Promise<ReviewHostRelayResult>;
+
+// jero-pi M3 seams (spec §I.7): `renderSlot` replaces the binary materialize
+// stage with in-process authority.capture rendering (prompt bytes only — the
+// seam never spawns), and `admitResult` replaces the binary submit stage
+// with in-process capture admission reading the staged result file. Both
+// default to fail-closed exactly as the P1 stubs did. The extension (P4)
+// composes: STATUS(collect) → renderBinding → relay prepare (pi child) →
+// relay submit (in-process admit).
+export type ReviewHostRelayRenderSlot = (request: ReviewHostRelayRequest) => Promise<{ promptBytes: Buffer }>;
+export type ReviewHostRelayAdmitResult = (operationToken: string, argumentTokens: readonly string[], resultFile: string) => Promise<string>;
 
 const DEFAULT_GENTLE_AI_TIMEOUT_MS = 120_000;
 
@@ -518,17 +513,33 @@ function snapshotReviewHostRelayRequest(request: ReviewHostRelayRequest): Review
 export async function prepareReviewHostRelaySlot(
 	request: ReviewHostRelayRequest,
 	reviewer: typeof runOpaquePiReviewer = runOpaquePiReviewer,
+	render?: ReviewHostRelayRenderSlot,
 ): Promise<ReviewHostRelayPreparedResult> {
 	// Copy mutable transport configuration before the first async boundary. The
 	// supplied AbortSignal intentionally stays live across materialize, reviewer,
 	// and submit, preserving the established cancellation behavior.
 	const preparedRequest = snapshotReviewHostRelayRequest(request);
 
-	// jero-pi P1 fail-closed: with no packaged binary there is nothing to
-	// materialize through. P2 swaps this stage for in-process
-	// authority.capture rendering while keeping the opaque reviewer boundary.
+	// jero-pi M3: the render seam is the production path —
+	// authority.capture.renderBinding bytes, no spawn. Without a seam (and
+	// without the fixture-only executable) the relay fails closed exactly as
+	// the P1 stub did: nothing is materialized, nothing is submitted.
+	if (render !== undefined) {
+		let promptBytes: Buffer;
+		try {
+			promptBytes = Buffer.from((await render(preparedRequest)).promptBytes);
+		} catch (error) {
+			if (error instanceof ReviewHostRelayError) throw error;
+			throw new ReviewHostRelayError(REVIEW_HOST_RELAY_FAILURE.MATERIALIZE_FAILED, "materialize", `in-process capture rendering failed: ${error instanceof Error ? error.message : String(error)}`);
+		}
+		if (promptBytes.length === 0) {
+			throw new ReviewHostRelayError(REVIEW_HOST_RELAY_FAILURE.EMPTY_PROMPT, "materialize", "in-process capture rendering produced no bytes");
+		}
+		return await runPreparedReviewerV1(preparedRequest, promptBytes, reviewer);
+	}
+
 	if (preparedRequest.gentleAiExecutable === undefined) {
-		throw new ReviewHostRelayError(REVIEW_HOST_RELAY_FAILURE.RELAY_UNAVAILABLE, "materialize", "authority-unavailable: in-process capture rendering is not wired yet (jero-pi P2)");
+		throw new ReviewHostRelayError(REVIEW_HOST_RELAY_FAILURE.RELAY_UNAVAILABLE, "materialize", "authority-unavailable: no in-process renderSlot seam was injected and no binary transport exists (jero-pi M3)");
 	}
 
 	// The provider materializes the opaque prompt and detects whether this relay
@@ -537,7 +548,7 @@ export async function prepareReviewHostRelaySlot(
 	try {
 		materialized = await collectGentleAiProcess(preparedRequest.gentleAiExecutable!, ["review", "capture-result", ...preparedRequest.captureArgumentTokens], {
 			cwd: preparedRequest.targetCwd!,
-			env: { ...preparedRequest.environment!, [GENTLE_PI_REVIEW_RELAY_CONTRACT_ENV]: GENTLE_PI_REVIEW_RELAY_CONTRACT },
+			env: { ...preparedRequest.environment! },
 			timeoutMs: preparedRequest.gentleAiTimeoutMs!,
 			...(preparedRequest.signal === undefined ? {} : { signal: preparedRequest.signal }),
 		});
@@ -556,26 +567,33 @@ export async function prepareReviewHostRelaySlot(
 				...timing,
 			});
 		}
-		if (refusal === "handshake") {
-			throw new ReviewHostRelayError(REVIEW_HOST_RELAY_FAILURE.HANDSHAKE_REFUSED, "materialize", stderr, {
-				exitCode: materialized.exitCode,
-				stderr,
-				timedOut: materialized.timedOut,
-				...timing,
-			});
-		}
 		throw new ReviewHostRelayError(REVIEW_HOST_RELAY_FAILURE.MATERIALIZE_FAILED, "materialize", materialized.timedOut
 			? `gentle-ai prompt materialization exceeded its ${preparedRequest.gentleAiTimeoutMs!}ms bound after ${materialized.elapsedMs}ms`
 			: "gentle-ai prompt materialization failed", { exitCode: materialized.exitCode, stderr, timedOut: materialized.timedOut, ...timing });
 	}
 	const promptBytes = materialized.stdout;
-	if (promptBytes.length === 0) {
-		throw new ReviewHostRelayError(REVIEW_HOST_RELAY_FAILURE.EMPTY_PROMPT, "materialize", "gentle-ai prompt materialization produced no bytes", {
+	return await runPreparedReviewerV1(preparedRequest, promptBytes, reviewer, {
+		emptyPromptError: new ReviewHostRelayError(REVIEW_HOST_RELAY_FAILURE.EMPTY_PROMPT, "materialize", "gentle-ai prompt materialization produced no bytes", {
 			exitCode: 0,
 			stderr: materialized.stderr.toString("utf8"),
 			elapsedMs: materialized.elapsedMs,
 			timeoutMs: preparedRequest.gentleAiTimeoutMs!,
-		});
+		}),
+	});
+}
+
+// The reviewer stage shared by the render seam and the binary transport: the
+// bound is derived from the prompt bytes that were actually materialized, the
+// pure adapter owns the fresh isolated Pi process, and the prepared result
+// keeps its bytes in the private WeakMap.
+async function runPreparedReviewerV1(
+	preparedRequest: ReviewHostRelayRequest,
+	promptBytes: Buffer,
+	reviewer: typeof runOpaquePiReviewer,
+	options: { emptyPromptError?: ReviewHostRelayError } = {},
+): Promise<ReviewHostRelayPreparedResult> {
+	if (promptBytes.length === 0) {
+		throw options.emptyPromptError ?? new ReviewHostRelayError(REVIEW_HOST_RELAY_FAILURE.EMPTY_PROMPT, "materialize", "capture rendering produced no bytes");
 	}
 	// The reviewer bound is derived from the prompt the provider actually
 	// materialized. The explicit request timeout is a test seam that wins over
@@ -626,17 +644,19 @@ export async function runReviewHostRelayReviewerGroup(
  * Submits one already-reviewed opaque result through the exact provider-owned
  * completing form. Only the provider-declared artifact slot is substituted.
  */
-export async function submitReviewHostRelayPreparedResult(prepared: ReviewHostRelayPreparedResult): Promise<ReviewHostRelayResult> {
+export async function submitReviewHostRelayPreparedResult(prepared: ReviewHostRelayPreparedResult, admit?: ReviewHostRelayAdmitResult): Promise<ReviewHostRelayResult> {
 	const resultBytes = preparedResultBytes.get(prepared);
 	if (resultBytes === undefined) throw new TypeError("Pi host relay requires a recognized prepared result");
 	const { request } = prepared;
 	assertTokens("capture", request.captureArgumentTokens);
 	const submissionBinding = resolveReviewHostRelaySubmission(request.submission);
-	// jero-pi P1 fail-closed: submission runs through the in-process authority
-	// once P2 lands; without a binary transport there is no completing form to
-	// execute.
-	if (request.gentleAiExecutable === undefined) {
-		throw new ReviewHostRelayError(REVIEW_HOST_RELAY_FAILURE.RELAY_UNAVAILABLE, "submit", "authority-unavailable: in-process capture submission is not wired yet (jero-pi P2)");
+	// jero-pi M3: the admit seam is the production path — in-process capture
+	// admission over the same 0o600 staged result file. Without a seam (and
+	// without the fixture-only executable) the relay fails closed exactly as
+	// the P1 stub did.
+	const useInProcessAdmission = admit !== undefined;
+	if (!useInProcessAdmission && request.gentleAiExecutable === undefined) {
+		throw new ReviewHostRelayError(REVIEW_HOST_RELAY_FAILURE.RELAY_UNAVAILABLE, "submit", "authority-unavailable: no in-process admitResult seam was injected and no binary transport exists (jero-pi M3)");
 	}
 	const stagingDirectory = await mkdtemp(join(tmpdir(), "gentle-pi-host-relay-result-"));
 	let primaryFailure = false;
@@ -650,11 +670,46 @@ export async function submitReviewHostRelayPreparedResult(prepared: ReviewHostRe
 				? token.split(REVIEW_HOST_RELAY_SUBMISSION_VALUE_SLOT).join(resultFile)
 				: token,
 		);
+		if (useInProcessAdmission) {
+			let admitted: string;
+			try {
+				admitted = await admit!(submissionBinding.operationToken, submitTokens, resultFile);
+			} catch (error) {
+				if (error instanceof ReviewHostRelayError) throw error;
+				// Mi7 (review): the [invalid_request] heuristic below is the P4
+				// admit-wrapper CONTRACT, mirroring the binary discipline above
+				// (gentle-pi#522/#524: exit 1 + `<reason> [invalid_request]` is the
+				// provider's typed preflight refusal and proves the lens slot was
+				// not consumed). The P4 wrapper that adapts authority refusals onto
+				// this seam MUST surface the authority's typed refusal union as an
+				// Error whose message carries the `[invalid_request]` marker, so the
+				// relay classifies it as a proven non-mutation (mutationOutcome
+				// "none"); every other failure keeps "unknown" pending a fresh
+				// negotiated STATUS. The structured typed-refusal channel (typed
+				// error fields instead of the message marker) is deliberately left
+				// to P4 — this seam only documents the contract it must satisfy.
+				const message = error instanceof Error ? error.message : String(error);
+				throw new ReviewHostRelayError(
+					REVIEW_HOST_RELAY_FAILURE.SUBMISSION_REFUSED,
+					"submit",
+					/\[invalid_request\]/.test(message) ? message : `in-process capture admission failed: ${message}`,
+					{ mutationOutcome: /\[invalid_request\]/.test(message) ? "none" : "unknown" },
+				);
+			}
+			if (admitted.length === 0) {
+				throw new ReviewHostRelayError(REVIEW_HOST_RELAY_FAILURE.SUBMISSION_REFUSED, "submit", "in-process capture admission produced no bytes");
+			}
+			return {
+				promptByteLength: prepared.promptByteLength,
+				resultByteLength: prepared.resultByteLength,
+				submission: admitted,
+			};
+		}
 		let submission: ProcessCapture;
 		try {
 			submission = await collectGentleAiProcess(request.gentleAiExecutable!, ["review", submissionBinding.operationToken, ...submitTokens], {
 				cwd: request.targetCwd!,
-				env: { ...request.environment!, [GENTLE_PI_REVIEW_RELAY_CONTRACT_ENV]: GENTLE_PI_REVIEW_RELAY_CONTRACT },
+				env: { ...request.environment! },
 				timeoutMs: request.gentleAiTimeoutMs!,
 				...(request.signal === undefined ? {} : { signal: request.signal }),
 			});

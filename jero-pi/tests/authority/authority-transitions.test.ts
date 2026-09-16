@@ -63,7 +63,10 @@ test("judgment day line: judges confirm, judgment freeze, and re-fix (§A.2 JD t
 	const guards = { fixRounds: 0, fixBatches: 0 };
 	assert.equal(checkJeroReviewTransitionV1("reviewing", judgmentDay, "confirm-judges", guards).next, "judges_confirmed");
 	assert.equal(checkJeroReviewTransitionV1("judges_confirmed", judgmentDay, "freeze-judgment-ledger", guards).next, "findings_frozen");
-	assert.equal(checkJeroReviewTransitionV1("judges_confirmed", judgmentDay, "authorize-fix", guards).next, "fixing");
+	// NIT (review): authorize-fix requires fix_required in EVERY mode — the
+	// vestigial judges_confirmed disjunct is gone (a JD lineage exits
+	// judges_confirmed only via freeze-judgment-ledger).
+	assert.equal(checkJeroReviewTransitionV1("judges_confirmed", judgmentDay, "authorize-fix", guards).legal, false);
 	// JD allows a second fix batch (fix_batches budget 2).
 	assert.equal(checkJeroReviewTransitionV1("fix_required", judgmentDay, "authorize-fix", { fixRounds: 0, fixBatches: 1 }).legal, true);
 	assert.equal(checkJeroReviewTransitionV1("fix_required", judgmentDay, "authorize-fix", { fixRounds: 0, fixBatches: 2 }).legal, false);
@@ -155,4 +158,14 @@ test("the ordinary mode family excludes judgment day", () => {
 	assert.equal(isJeroOrdinaryModeV1("ordinary_4r"), true);
 	assert.equal(isJeroOrdinaryModeV1("ordinary_bounded"), true);
 	assert.equal(isJeroOrdinaryModeV1("judgment_day"), false);
+});
+
+test("Mi5 (§A.4): fix_validating derives a COLLECT targeted-validation vector, never a direct execute", () => {
+	const derived = deriveJeroStatusActionV1({
+		state: "fix_validating", mode: "ordinary_4r", selectedLenses: [], admittedLenses: [], pendingRefuterIds: [], fixFindingIds: [], consumed: false,
+	});
+	assert.equal(derived.action, "validate");
+	assert.equal(derived.next.kind, "collect");
+	assert.equal(derived.next.reason_code, "targeted_validation_ready");
+	assert.equal(derived.next.operation, "review.validate");
 });
