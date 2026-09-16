@@ -39,6 +39,10 @@ jobs:
       - name: Verify generated runtime modules
         run: pnpm run check:runtime-modules
 
+      # Design §9.1: the authority trust boundary is enforced structurally.
+      - name: Authority module boundary
+        run: pnpm run check:authority-boundary
+
       - name: Verify package contents
         run: node scripts/verify-package-files.mjs
 

@@ -38,8 +38,9 @@
 		"build:runtime-modules": "node scripts/build-runtime-modules.mjs --write",
 		"check:runtime-modules": "node scripts/build-runtime-modules.mjs --check",
 		"typecheck": "node scripts/check-types.mjs",
-		"prepack": "pnpm test && pnpm run check:runtime-modules && node scripts/verify-package-files.mjs",
-		"prepublishOnly": "pnpm test && pnpm run check:runtime-modules && node scripts/verify-package-files.mjs"
+		"prepack": "pnpm test && pnpm run check:runtime-modules && pnpm run check:authority-boundary && node scripts/verify-package-files.mjs",
+		"prepublishOnly": "pnpm test && pnpm run check:runtime-modules && pnpm run check:authority-boundary && node scripts/verify-package-files.mjs",
+		"check:authority-boundary": "node scripts/check-authority-boundary.mjs"
 	},
 	"pi": {
 		"image": "assets/jero-logo.png",
