@@ -59,7 +59,12 @@
 	},
 	"dependencies": {
 		"@earendil-works/pi-tui": "0.85.1",
-		"@heyhuynhgiabuu/pi-pretty": "0.6.14"
+		"@heyhuynhgiabuu/pi-pretty": "0.6.14",
+		"@juicesharp/rpiv-ask-user-question": "2.10.1",
+		"pi-fovea": "0.27.0",
+		"pi-intercom": "0.13.0",
+		"pi-lens": "4.1.6",
+		"pi-web-access": "0.29.0"
 	},
 	"peerDependencies": {
 		"@earendil-works/pi-coding-agent": ">=0.85.1",

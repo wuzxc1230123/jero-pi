@@ -1,6 +1,6 @@
 {
   "note": "Recorded TypeScript diagnostics. Regenerate with `node scripts/check-types.mjs --update` after fixing or deliberately accepting diagnostics. This file may only shrink without a review decision.",
-  "total": 147,
+  "total": 146,
   "byFileAndCode": {
     "extensions/gentle-agents.ts TS2322": 3,
     "extensions/gentle-ai.ts TS2322": 5,
@@ -31,7 +31,7 @@
     "tests/agents-runner-process.test.ts TS2322": 1,
     "tests/gentle-ai-renderer.test.ts TS2345": 6,
     "tests/gentle-ai.test.ts TS2339": 1,
-    "tests/gentle-ai.test.ts TS2352": 7,
+    "tests/gentle-ai.test.ts TS2352": 6,
     "tests/gentle-ai.test.ts TS2353": 1,
     "tests/gentle-shell.test.ts TS2352": 1,
     "tests/gentle-shell.test.ts TS2540": 1,
