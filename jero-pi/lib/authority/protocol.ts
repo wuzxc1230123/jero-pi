@@ -474,7 +474,12 @@ export function decodeJeroReviewTransactionStateV1(value: unknown): JeroReviewTr
 // application journals its own apply-time events — most importantly the
 // correction-budget-exceeded escalation, which previously rode "authorize-fix"
 // and mislabeled an apply-time outcome as a plan-admission one.
-export const JERO_AUTHORITY_OPERATIONS = ["start", "freeze-ledger", "resolve-evidence", "authorize-fix", "apply-fix", "validate-fix", "verify", "gate", "acknowledge"] as const;
+// The three "sdd-*" members are the M4 additions (spec _tools/p2-m4-sdd-analysis.md
+// §A.5): the runtime-attempt authority is journal-auditable by contract
+// (sdd-status-contract.md:68 — acquire before every runtime-bearing launch,
+// settle after; the ledger entries are the R1/R3 proof artifacts). Plain
+// sdd-status stays out of the journal: it is a pure projection.
+export const JERO_AUTHORITY_OPERATIONS = ["start", "freeze-ledger", "resolve-evidence", "authorize-fix", "apply-fix", "validate-fix", "verify", "gate", "acknowledge", "sdd-attempt-acquire", "sdd-attempt-settle", "sdd-continue"] as const;
 export type JeroAuthorityOperation = (typeof JERO_AUTHORITY_OPERATIONS)[number];
 
 export const JERO_JOURNAL_STATUSES = ["pending", "completed"] as const;
@@ -631,5 +636,93 @@ export function decodeJeroReviewModeRecordV1(value: unknown, label = JERO_REVIEW
 	return {
 		schema: JERO_REVIEW_MODE_RECORD_SCHEMA,
 		value: requiredEnum(record.value, JERO_REVIEW_MODE_VALUES, `${label}.value`),
+	};
+}
+
+// ---------------------------------------------------------------------------
+// SDD attempt ledger (`jero.authority.sdd-attempt-ledger/v1`, spec §A.2/A.3/D)
+// The runtime-attempt authority's persisted state: one ledger per
+// (workspaceRoot, changeName) under the store, at most one live attempt,
+// token stored as sha256 (never plaintext), untracked scope retained
+// verbatim on terminal settlements (R4).
+// ---------------------------------------------------------------------------
+
+export const JERO_SDD_ATTEMPT_LEDGER_SCHEMA = "jero.authority.sdd-attempt-ledger/v1";
+
+export const JERO_SDD_ATTEMPT_OUTCOMES = ["passed", "failed", "interrupted"] as const;
+export type JeroSddAttemptOutcome = (typeof JERO_SDD_ATTEMPT_OUTCOMES)[number];
+
+export const JERO_SDD_ATTEMPT_STATES = ["proceed", "blocked", "complete"] as const;
+export type JeroSddAttemptState = (typeof JERO_SDD_ATTEMPT_STATES)[number];
+
+export interface JeroSddAttemptRecordV1 {
+	request_id: string;
+	acquired_at_revision: string;
+	/** sha256 hex of the minted token — the plaintext token never persists. */
+	token_hash: string;
+	work_unit: string;
+	evidence_goal: string;
+	max_attempts: number;
+	max_changed_lines: number;
+	/** The acquire's expectedRevision ("" accepted a no-prior-state ledger). */
+	expected_revision: string;
+	remediates_evidence_revision?: string;
+	/** Untracked-selection trio frozen at acquire, replayed verbatim on settle. */
+	untracked_scope: "exclude" | "select";
+	expected_untracked_inventory?: string;
+	intended_untracked: readonly string[];
+	settlement?: {
+		request_id: string;
+		outcome: JeroSddAttemptOutcome;
+		evidence_revision?: string;
+		remediation_evidence?: string;
+		diagnosis: string;
+		harness_disposition: "reused" | "invalidated";
+		cleanup_evidence: string;
+		process_evidence: string;
+		/** R4: exact paths retained verbatim, never reconciled or truncated. */
+		settled_untracked: readonly string[];
+	};
+}
+
+export interface JeroSddAttemptLedgerV1 {
+	schema: typeof JERO_SDD_ATTEMPT_LEDGER_SCHEMA;
+	workspace_root: string;
+	change_name: string;
+	/** Attempt history, append-only; index length-1 is live only when unsettled. */
+	attempts: readonly JeroSddAttemptRecordV1[];
+}
+
+export function decodeJeroSddAttemptLedgerV1(value: unknown, label = JERO_SDD_ATTEMPT_LEDGER_SCHEMA): JeroSddAttemptLedgerV1 {
+	const record = exactObject(value, ["schema", "workspace_root", "change_name", "attempts"], [], label);
+	if (record.schema !== JERO_SDD_ATTEMPT_LEDGER_SCHEMA) throw new JeroAuthorityProtocolError(`${label}: unsupported schema "${String(record.schema)}"`);
+	if (!Array.isArray(record.attempts)) throw new JeroAuthorityProtocolError(`${label}: attempts must be an array`);
+	if (record.attempts.length === 0) throw new JeroAuthorityProtocolError(`${label}: attempts must not be empty`);
+	const seen = new Set<string>();
+	const attempts = record.attempts.map((raw, index) => {
+		const attempt = exactObject(raw, ["request_id", "acquired_at_revision", "token_hash", "work_unit", "evidence_goal", "max_attempts", "max_changed_lines", "expected_revision", "untracked_scope", "intended_untracked"], ["remediates_evidence_revision", "expected_untracked_inventory", "settlement"], `${label}.attempts[${index}]`);
+		const requestId = requiredString(attempt.request_id, `${label}.attempts[${index}].request_id`);
+		if (!/^[a-z0-9][a-z0-9._-]{0,127}$/.test(requestId)) throw new JeroAuthorityProtocolError(`${label}.attempts[${index}].request_id: malformed`);
+		if (seen.has(requestId)) throw new JeroAuthorityProtocolError(`${label}.attempts[${index}].request_id: duplicate`);
+		seen.add(requestId);
+		if (attempt.settlement !== undefined) {
+			const settlement = exactObject(attempt.settlement, ["request_id", "outcome", "diagnosis", "harness_disposition", "cleanup_evidence", "process_evidence", "settled_untracked"], ["evidence_revision", "remediation_evidence"], `${label}.attempts[${index}].settlement`);
+			const outcome = requiredEnum(settlement.outcome, JERO_SDD_ATTEMPT_OUTCOMES, `${label}.attempts[${index}].settlement.outcome`);
+			const evidenceRevision = settlement.evidence_revision === undefined ? undefined : requiredSha256Identity(settlement.evidence_revision, `${label}.attempts[${index}].settlement.evidence_revision`);
+			// The upstream evidence pairing (native-review-cli.ts:2173-2174), enforced
+			// on read as well as on write: interrupted carries no evidence, failed
+			// requires evidence_revision, passed requires one of the two evidence fields.
+			if (outcome === "interrupted" && (evidenceRevision !== undefined || settlement.remediation_evidence !== undefined)) throw new JeroAuthorityProtocolError(`${label}: interrupted settlement carries evidence`);
+			if (outcome !== "interrupted" && evidenceRevision === undefined && !(outcome === "passed" && settlement.remediation_evidence !== undefined)) throw new JeroAuthorityProtocolError(`${label}: ${outcome} settlement lacks evidence`);
+		}
+		return attempt as unknown as JeroSddAttemptRecordV1;
+	});
+	// At most one live (unsettled) attempt — the ledger is the single-live contract.
+	if (attempts.filter((attempt) => attempt.settlement === undefined).length > 1) throw new JeroAuthorityProtocolError(`${label}: more than one live attempt`);
+	return {
+		schema: JERO_SDD_ATTEMPT_LEDGER_SCHEMA,
+		workspace_root: requiredString(record.workspace_root, `${label}.workspace_root`),
+		change_name: requiredString(record.change_name, `${label}.change_name`),
+		attempts,
 	};
 }

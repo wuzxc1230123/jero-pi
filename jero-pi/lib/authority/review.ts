@@ -20,6 +20,9 @@ import {
 } from "./judgment-day.ts";
 import { assessJeroReviewRiskV1, type JeroRiskAssessRequestV1 } from "./risk-assess.ts";
 import { getJeroReviewModeV1, setJeroReviewModeV1, type JeroReviewModeOutcomeV1 } from "./mode.ts";
+import { jeroSddStatusV1, type JeroSddStatusResultV1 } from "./sdd-status.ts";
+import { jeroSddContinueV1, type JeroSddContinueResultV1 } from "./sdd-continue.ts";
+import { acquireJeroSddAttemptV1, jeroSddAttemptLedgerRevisionV1, settleJeroSddAttemptV1, type JeroSddAcquireInputV1, type JeroSddAttemptResultV1, type JeroSddSettleInputV1 } from "./sdd-attempt.ts";
 import type { JeroReviewModeValue } from "./protocol.ts";
 import type { ReviewAssessmentV1 } from "../review-risk-assessment.ts";
 
@@ -118,6 +121,25 @@ export const authority = {
 		get: (cwd: string): JeroReviewModeOutcomeV1 => getJeroReviewModeV1(cwd),
 		/** Spec §I.8 — clone-scoped mode mutation only. */
 		set: (cwd: string, value: JeroReviewModeValue): JeroReviewModeOutcomeV1 => setJeroReviewModeV1(cwd, value),
+	},
+	sdd: {
+		/** Spec §A.1 — the pure status projection over the openspec tree. */
+		status: (context: JeroAuthorityContextV1, request: { changeName?: string; workspaceRoot: string }): JeroSddStatusResultV1 =>
+			jeroSddStatusV1(context, request),
+		/** Spec §A.4 — the mutating continuation with an exact selected change. */
+		continue: (context: JeroAuthorityContextV1, request: { changeName: string; workspaceRoot: string }): JeroSddContinueResultV1 =>
+			jeroSddContinueV1(context, request),
+		attempt: {
+			/** Spec §A.2 — acquire: single live attempt, durable before launch (R1), token admission (R2). */
+			acquire: (context: JeroAuthorityContextV1, input: JeroSddAcquireInputV1): JeroSddAttemptResultV1 =>
+				acquireJeroSddAttemptV1(context, input),
+			/** Spec §A.3 — settle: single finalization (R3), verbatim untracked scope (R4), evidence pairing. */
+			settle: (context: JeroAuthorityContextV1, input: JeroSddSettleInputV1): JeroSddAttemptResultV1 =>
+				settleJeroSddAttemptV1(context, input),
+			/** The ledger revision callers pin as expectedRevision. */
+			revision: (context: JeroAuthorityContextV1, workspaceRoot: string, changeName: string): string | undefined =>
+				jeroSddAttemptLedgerRevisionV1(context, workspaceRoot, changeName),
+		},
 	},
 } as const;
 
