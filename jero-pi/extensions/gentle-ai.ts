@@ -116,6 +116,7 @@ import {
 	reviewHostRelayUnachievableReason,
 	reviewProviderRoleVectorSlots,
 	resolveReviewHostRelaySubmission,
+	prepareReviewHostRelaySlot,
 	runReviewHostRelayReviewerGroup,
 	runReviewHostRelaySlot,
 	submitReviewHostRelayPreparedResult,
@@ -125,6 +126,10 @@ import {
 	type ReviewHostRelaySlot,
 	type ReviewProviderRoleVectorSlot,
 } from "../lib/review-host-relay.ts";
+import {
+	admitJeroCaptureResultForRelayV1,
+	renderJeroCaptureSlotForRelayV1,
+} from "../lib/authority/capture-relay.ts";
 import {
 	JOURNAL_STATUS,
 	REVIEW_OPERATION,
@@ -6143,17 +6148,28 @@ function requiresExplicitTargetLifecycleRoot(requested: string | undefined, sess
 // gentle-pi#311 P4 — the thin Pi host relay. The provider decides which
 // capture slots the host satisfies by issuing the --materialize token on a
 // pi-bound `review.capture-result` collect input; nothing is ever inferred.
-// The runner is injectable for tests only; production always uses the real
-// relay in lib/review-host-relay.ts.
-let activeReviewHostRelayRunner: ReviewHostRelayRunner = runReviewHostRelaySlot;
-let activeReviewHostRelayReviewerGroupRunner = runReviewHostRelayReviewerGroup;
-let activeReviewHostRelaySubmissionRunner = submitReviewHostRelayPreparedResult;
+// P4b: production runners compose the relay with the in-process authority
+// seams (lib/authority/capture-relay.ts) — renderBinding for the prompt
+// bytes, in-process admission for the staged result. The runners stay
+// injectable for tests.
+const runJeroAuthorityRelaySlot: ReviewHostRelayRunner = async (request) =>
+	submitReviewHostRelayPreparedResult(
+		await prepareReviewHostRelaySlot(request, undefined, renderJeroCaptureSlotForRelayV1),
+		(requestForAdmit, operationToken, submitTokens, resultFile) => admitJeroCaptureResultForRelayV1(requestForAdmit, operationToken, submitTokens, resultFile),
+	);
+const runJeroAuthorityReviewerGroup: typeof runReviewHostRelayReviewerGroup = async (requests) =>
+	runReviewHostRelayReviewerGroup(requests, (request) => prepareReviewHostRelaySlot(request, undefined, renderJeroCaptureSlotForRelayV1));
+const submitJeroAuthorityPreparedResult: typeof submitReviewHostRelayPreparedResult = async (prepared) =>
+	submitReviewHostRelayPreparedResult(prepared, (request, operationToken, submitTokens, resultFile) => admitJeroCaptureResultForRelayV1(request, operationToken, submitTokens, resultFile));
+let activeReviewHostRelayRunner: ReviewHostRelayRunner = runJeroAuthorityRelaySlot;
+let activeReviewHostRelayReviewerGroupRunner = runJeroAuthorityReviewerGroup;
+let activeReviewHostRelaySubmissionRunner = submitJeroAuthorityPreparedResult;
 function setReviewHostRelayRunnerForTesting(runner?: ReviewHostRelayRunner): void {
-	activeReviewHostRelayRunner = runner ?? runReviewHostRelaySlot;
+	activeReviewHostRelayRunner = runner ?? runJeroAuthorityRelaySlot;
 }
 function setReviewHostRelayGroupRunnersForTesting(reviewerGroup?: typeof runReviewHostRelayReviewerGroup, submission?: typeof submitReviewHostRelayPreparedResult): void {
-	activeReviewHostRelayReviewerGroupRunner = reviewerGroup ?? runReviewHostRelayReviewerGroup;
-	activeReviewHostRelaySubmissionRunner = submission ?? submitReviewHostRelayPreparedResult;
+	activeReviewHostRelayReviewerGroupRunner = reviewerGroup ?? runJeroAuthorityReviewerGroup;
+	activeReviewHostRelaySubmissionRunner = submission ?? submitJeroAuthorityPreparedResult;
 }
 
 const REVIEW_HOST_RELAY_RETRY_ACTION =

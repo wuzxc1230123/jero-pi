@@ -381,7 +381,7 @@ test("preparation snapshots mutable submission tokens and values before material
 
 	const result = await prepared;
 	assert.deepEqual(result.request.submission, SUBMISSION);
-	await submitReviewHostRelayPreparedResult(result, async (_operationToken, tokens, resultFile) => {
+	await submitReviewHostRelayPreparedResult(result, async (_request, _operationToken, tokens, resultFile) => {
 		admittedBytes = readFileSync(resultFile);
 		assert.equal(tokens.some((token) => token.startsWith("--input=")), true);
 		assert.equal(tokens.some((token) => token.includes("{{value}}")), false, "the value slot is substituted with the staged file path");
@@ -407,7 +407,7 @@ test("preparation keeps reviewer bytes private through deferred submission", asy
 	mutablePrepared.resultBytes?.fill(0);
 	assert.throws(() => { mutablePrepared.resultBytes = Buffer.from("fabricated"); }, TypeError);
 	let admittedBytes: Buffer | undefined;
-	await submitReviewHostRelayPreparedResult(prepared, async (_operationToken, _tokens, resultFile) => {
+	await submitReviewHostRelayPreparedResult(prepared, async (_request, _operationToken, _tokens, resultFile) => {
 		admittedBytes = readFileSync(resultFile);
 		return '{"admission_decision":"completed"}';
 	});

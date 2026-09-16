@@ -318,7 +318,7 @@ export type ReviewHostRelaySubmissionRunner = (prepared: ReviewHostRelayPrepared
 // composes: STATUS(collect) → renderBinding → relay prepare (pi child) →
 // relay submit (in-process admit).
 export type ReviewHostRelayRenderSlot = (request: ReviewHostRelayRequest) => Promise<{ promptBytes: Buffer }>;
-export type ReviewHostRelayAdmitResult = (operationToken: string, argumentTokens: readonly string[], resultFile: string) => Promise<string>;
+export type ReviewHostRelayAdmitResult = (request: ReviewHostRelayRequest, operationToken: string, argumentTokens: readonly string[], resultFile: string) => Promise<string>;
 
 const DEFAULT_GENTLE_AI_TIMEOUT_MS = 120_000;
 
@@ -673,7 +673,7 @@ export async function submitReviewHostRelayPreparedResult(prepared: ReviewHostRe
 		if (useInProcessAdmission) {
 			let admitted: string;
 			try {
-				admitted = await admit!(submissionBinding.operationToken, submitTokens, resultFile);
+				admitted = await admit!(request, submissionBinding.operationToken, submitTokens, resultFile);
 			} catch (error) {
 				if (error instanceof ReviewHostRelayError) throw error;
 				// Mi7 (review): the [invalid_request] heuristic below is the P4
