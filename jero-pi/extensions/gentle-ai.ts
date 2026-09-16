@@ -1862,7 +1862,7 @@ function collectPathInputs(value: unknown, key?: string): string[] {
 	);
 }
 
-function hasWritableEngramTool(pi: ExtensionAPI): boolean {
+function hasWritableMemoryTool(pi: ExtensionAPI): boolean {
 	try {
 		const getActiveTools = (pi as unknown as { getActiveTools?: () => unknown[] })
 			.getActiveTools;
@@ -8933,7 +8933,7 @@ function createGentleAiExtensionForTesting(
 				join(ctx.cwd, ".atl", "skill-registry.md"),
 			);
 			const modelConfig = await readSavedModelConfigAsync(ctx.cwd);
-			const engramActive = hasWritableEngramTool(pi);
+			const engramActive = hasWritableMemoryTool(pi);
 			const lines = [
 				"el Gentleman doctor",
 				...assetLines,

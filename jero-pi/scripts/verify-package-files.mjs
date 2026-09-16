@@ -58,6 +58,8 @@ const requiredPaths = [
 	"docs/skill-style-guide.md",
 	"docs/review-integration.md",
 	"extensions/gentle-ai.ts",
+	"extensions/jero-memory.ts",
+	"lib/memory.ts",
 	"extensions/sdd-init.ts",
 	"extensions/skill-registry.ts",
 	"lib/native-review-cli.ts",

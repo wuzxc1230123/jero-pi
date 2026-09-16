@@ -873,7 +873,7 @@ export function sddPreflightSessionKey(ctx: ExtensionContext): string {
 	return ctx.cwd;
 }
 
-function hasWritableEngramTool(pi: ExtensionAPI): boolean {
+function hasWritableMemoryTool(pi: ExtensionAPI): boolean {
 	try {
 		const getActiveTools = (pi as unknown as { getActiveTools?: () => unknown[] })
 			.getActiveTools;
@@ -1025,7 +1025,7 @@ export async function ensureSddPreflight(
 	const inFlight = sddPreflightInFlight.get(sessionKey);
 	if (inFlight && !(resolutionOptions.promptFields?.length ?? 0)) return inFlight;
 	const promise = (async () => {
-		const engramAvailable = hasWritableEngramTool(callbacks.pi);
+		const engramAvailable = hasWritableMemoryTool(callbacks.pi);
 		const persisted = resolutionOptions.persisted ?? readSddPreflightFromDisk(ctx.cwd);
 		const prefs = await collectSddPreflightPreferences(ctx, engramAvailable, {
 			...resolutionOptions,
