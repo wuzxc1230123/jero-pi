@@ -485,3 +485,35 @@ export function buildJeroFinalizeExecuteTransitionV1(record: JeroLineageStateFil
 		artifacts,
 	};
 }
+
+/**
+ * The approved-state burn vector (extension contract
+ * assertReviewApprovedAcknowledgementExecuteV1): exactly five provider-issued
+ * arguments (cwd, lineage, target, expected-revision, token), the single
+ * approved precondition, and the binding the burn must equal. The token is
+ * authority-issued and deterministic in the lineage and revision — the
+ * extension re-parses these same tokens into reviewAcknowledgeV1, so a
+ * drifted burn fails closed as a binding mismatch. The command keeps the
+ * wire gentle-ai prefix until the P5 identity pass (port discipline).
+ */
+export function buildJeroAcknowledgeExecuteTransitionV1(record: JeroLineageStateFileV1, repositoryContext: JeroRepositoryContextV1, cwd: string): JeroExecuteTransitionPayloadV1 {
+	const arguments_ = [
+		argument("cwd", cwd),
+		argument("lineage", record.lineage_id),
+		argument("target", record.state.snapshot.identity),
+		argument("expected-revision", record.revision),
+		argument("token", `jero-burn:${record.lineage_id}:${record.revision}`),
+	];
+	return {
+		operation: "review.acknowledge-approved",
+		command: `gentle-ai review acknowledge-approved ${arguments_.map(({ token }) => token).join(" ")}`,
+		arguments: arguments_,
+		preconditions: [{ name: "state", value: "approved" }],
+		binding: {
+			lineage_id: record.lineage_id,
+			revision: record.revision,
+			target_identity: record.state.snapshot.identity,
+			repository_context: repositoryContext.handle,
+		},
+	};
+}

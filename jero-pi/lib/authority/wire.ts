@@ -123,7 +123,7 @@ export function projectJeroStatusToWireV1(status: Extract<JeroReviewStatusResult
 			nextTransition: {
 				kind: next.kind,
 				reasonCode: next.reason_code,
-				...(next.kind === "execute" && next.execute !== undefined ? { execute: next.execute } : {}),
+				...(next.kind === "execute" && next.execute !== undefined ? { execute: projectJeroExecuteToWireV1(next.execute) } : {}),
 				...(next.kind === "collect" && next.collect !== undefined ? { collect: { inputs: projectCollectInputsV1(next.collect.inputs as never) } } : {}),
 			},
 		}),
@@ -142,6 +142,51 @@ export function projectJeroStatusToWireV1(status: Extract<JeroReviewStatusResult
 // grounds every copy string; the invocations embed the untracked selection so
 // the answer path re-freezes the exact candidate the question was minted for
 // (flag form matches nativeUntrackedSelectionArguments: --flag=value).
+// P4d-g: the execute payload projection. The authority builders emit the
+// jero-cased binding (lineage_id/revision/target_identity/repository_context);
+// the wire contract (ReviewNextTransitionExecuteV3.binding) is camelCase with
+// a REQUIRED targetIdentity — the P4d read path previously passed the jero
+// binding through verbatim, leaving every execute consumer reading undefined
+// binding fields. Everything else on the payload is already wire-shaped.
+function projectJeroExecuteToWireV1(execute: { readonly operation: string; readonly command?: string; readonly arguments: readonly { readonly name: string; readonly value: string; readonly token: string }[]; readonly preconditions: readonly { readonly name: string; readonly value: string }[]; readonly binding: { readonly lineage_id: string; readonly revision: string; readonly target_identity: string; readonly repository_context?: string }; readonly artifacts?: readonly unknown[] }): Record<string, unknown> {
+	return {
+		operation: execute.operation,
+		...(execute.command === undefined ? {} : { command: execute.command }),
+		arguments: execute.arguments.map((row) => ({ name: row.name, value: row.value, token: row.token })),
+		preconditions: execute.preconditions.map((row) => ({ name: row.name, value: row.value })),
+		binding: { targetIdentity: execute.binding.target_identity, lineageId: execute.binding.lineage_id, revision: execute.binding.revision },
+		...(execute.artifacts === undefined ? {} : { artifacts: execute.artifacts }),
+	};
+}
+
+// P4d-g: the last-event closure projection. The authority's closure builder
+// emits the jero-cased record; the controller consumes the wire closure
+// through decodeReviewLastEventClosureV1 (schema gentle-ai.review-last-event-
+// closure/v1, camelCase top level, snake_case nested rows verbatim).
+export function projectJeroClosureToWireV1(closure: {
+	readonly schema: string; readonly operation: string; readonly lineage_id: string; readonly state: string; readonly store_revision: string;
+	readonly action?: string; readonly target_identity?: string; readonly request_hash?: string; readonly correction_lines?: number;
+	readonly advisory_findings?: unknown; readonly reviewer_results?: readonly unknown[]; readonly status_continuation?: unknown;
+	readonly acknowledgement?: unknown; readonly acknowledgement_undecodable?: boolean;
+}): Record<string, unknown> {
+	return {
+		schema: "gentle-ai.review-last-event-closure/v1",
+		operation: closure.operation,
+		lineageId: closure.lineage_id,
+		state: closure.state,
+		storeRevision: closure.store_revision,
+		...(closure.action === undefined ? {} : { action: closure.action }),
+		...(closure.target_identity === undefined ? {} : { targetIdentity: closure.target_identity }),
+		...(closure.request_hash === undefined ? {} : { requestHash: closure.request_hash }),
+		...(closure.correction_lines === undefined ? {} : { correctionLines: closure.correction_lines }),
+		...(closure.advisory_findings === undefined ? {} : { advisoryFindings: closure.advisory_findings }),
+		...(closure.reviewer_results === undefined ? {} : { reviewerResults: closure.reviewer_results }),
+		...(closure.status_continuation === undefined ? {} : { statusContinuation: closure.status_continuation }),
+		...(closure.acknowledgement === undefined ? {} : { acknowledgement: closure.acknowledgement }),
+		...(closure.acknowledgement_undecodable === true ? { acknowledgementUndecodable: true } : {}),
+	};
+}
+
 export function projectJeroConsentEnvelopeV1(
 	consent: Extract<JeroReviewStartResultV1, { kind: "consent_required" }>,
 	invocation: { cwd: string; untrackedScope?: "exclude" | "select"; expectedUntrackedInventory?: string; intendedUntracked?: readonly string[] },

@@ -13,6 +13,7 @@ import { mintJeroRepositoryContextV1, type JeroRepositoryContextV1 } from "./rep
 import {
 	buildJeroCorrectionPlanCollectInputV1,
 	buildJeroFinalizeExecuteTransitionV1,
+	buildJeroAcknowledgeExecuteTransitionV1,
 	buildJeroRefuterCollectInputV1,
 	buildJeroReviewerResultCollectInputsV1,
 	buildJeroValidationCollectInputV1,
@@ -125,7 +126,7 @@ function describeTransitionV1(next: JeroNextTransitionV1): JeroStatusForecastV1 
 }
 
 /** Attaches the M3 collect/execute payloads to a derived next transition. */
-function attachTransitionPayloadsV1(context: JeroAuthorityContextV1, record: JeroLineageStateFileV1, next: JeroNextTransitionV1, discovery: { readonly artifacts: readonly import("./result-artifacts.ts").JeroResultArtifactV1[] }): JeroNextTransitionV1 {
+function attachTransitionPayloadsV1(context: JeroAuthorityContextV1, record: JeroLineageStateFileV1, next: JeroNextTransitionV1, discovery: { readonly artifacts: readonly import("./result-artifacts.ts").JeroResultArtifactV1[] }, cwd: string): JeroNextTransitionV1 {
 	const repositoryContext = mintJeroRepositoryContextV1(context, record, "status");
 	if (next.reason_code === "targeted_validation_ready" && next.operation === "review.validate") {
 		// §A.4 (Mi5): the provider-targeted-validator vector is a self-contained
@@ -150,10 +151,13 @@ function attachTransitionPayloadsV1(context: JeroAuthorityContextV1, record: Jer
 	if (next.kind === "execute" && next.reason_code === "captured_results_ready" && next.operation === "review.finalize") {
 		return { ...next, execute: buildJeroFinalizeExecuteTransitionV1(record, repositoryContext, jeroResultArtifactSummariesV1(discovery.artifacts)) };
 	}
+	if (next.kind === "execute" && next.reason_code === "approved_awaiting_acknowledgement" && next.operation === "review.acknowledge-approved") {
+		return { ...next, execute: buildJeroAcknowledgeExecuteTransitionV1(record, repositoryContext, cwd) };
+	}
 	return next;
 }
 
-function currentTargetStatusV1(context: JeroAuthorityContextV1, record: JeroLineageStateFileV1, live: { readonly risk: { readonly tier: string; readonly original_changed_lines: number; readonly correction_budget: number }; readonly changed_path_manifest_sha256?: string; readonly target_identity: string }, lineageBound: boolean, requestedProjection: "workspace" | "staged"): JeroReviewStatusResultV1 {
+function currentTargetStatusV1(context: JeroAuthorityContextV1, record: JeroLineageStateFileV1, live: { readonly risk: { readonly tier: string; readonly original_changed_lines: number; readonly correction_budget: number }; readonly changed_path_manifest_sha256?: string; readonly target_identity: string }, lineageBound: boolean, requestedProjection: "workspace" | "staged", cwd: string): JeroReviewStatusResultV1 {
 	const state = record.state;
 	const consumed = isJeroLineageConsumedV1(record);
 	// Admitted lenses derive from BOTH the record and the on-disk artifact
@@ -186,7 +190,7 @@ function currentTargetStatusV1(context: JeroAuthorityContextV1, record: JeroLine
 	// identity-matched (non-lineage-bound) status may fall back to the live
 	// manifest digest for records that predate the persisted field.
 	const frozenManifest = state.changed_path_manifest_sha256 ?? (lineageBound ? undefined : live.changed_path_manifest_sha256);
-	const withPayloads = attachTransitionPayloadsV1(context, record, next, discovery);
+	const withPayloads = attachTransitionPayloadsV1(context, record, next, discovery, cwd);
 	return {
 		kind: "status",
 		applicability: "current_target",
@@ -302,7 +306,7 @@ export function reviewStatusV1(context: JeroAuthorityContextV1, target: JeroRevi
 	}
 
 	if (matches.length === 1) {
-		return currentTargetStatusV1(context, matches[0]!, live, false, requestedProjection);
+		return currentTargetStatusV1(context, matches[0]!, live, false, requestedProjection, target.cwd);
 	}
 	if (matches.length > 1) {
 		return {
@@ -320,7 +324,7 @@ export function reviewStatusV1(context: JeroAuthorityContextV1, target: JeroRevi
 	if (lineageBound.length === 1) {
 		// Exactly one live correction-phase lineage: current for this
 		// repository, bound to its frozen identity (§G auto-match pass).
-		return currentTargetStatusV1(context, lineageBound[0]!, live, true, requestedProjection);
+		return currentTargetStatusV1(context, lineageBound[0]!, live, true, requestedProjection, target.cwd);
 	}
 	if (lineageBound.length > 1) {
 		return {
