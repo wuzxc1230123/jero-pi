@@ -7,7 +7,7 @@ import test from "node:test";
 import { AGENT_MODE, type AgentDefinition } from "../lib/agents-config.ts";
 import { AgentRunner, type TaskRequest } from "../lib/agents-runner.ts";
 import { TaskStore } from "../lib/agents-protocol.ts";
-import { createNodeExecFileAdapter, NativeReviewCliV216, decodeNativeSddStatusV2, NATIVE_REVIEW_ERROR_CODE, NativeReviewCliError } from "../lib/authority/client-contract.ts";
+import { decodeNativeSddStatusV2, NATIVE_REVIEW_ERROR_CODE, NativeReviewCliError } from "../lib/authority/client-contract.ts";
 import { createGentleAiExtension, __testing } from "../extensions/gentle-ai.ts";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import type { NativeReviewCli, NativeSddStatusV2 } from "../lib/authority/client-contract.ts";
@@ -416,145 +416,7 @@ test("before_agent_start resolves the unnamed packaged executor and renders nati
 });
 
 // Opt-in controlled producer proof; never resolves or installs a global binary.
-test("producer v2 preservation: selected status is read-only and retains all seven dependencies", { skip: !process.env.SDD_TEST_PRODUCER }, async (t) => {
-	const root = workspace(t);
-	execFileSync("git", ["init", "--quiet", root]);
-	const args = ["sdd-status", "alpha", "--cwd", root, "--json", "--instructions"];
-	const first = execFileSync(process.env.SDD_TEST_PRODUCER!, args, { encoding: "utf8" });
-	const second = execFileSync(process.env.SDD_TEST_PRODUCER!, args, { encoding: "utf8" });
-	assert.equal(first, second);
-	const status = decodeNativeSddStatusV2(JSON.parse(first), { changeName: "alpha", workspaceRoot: root });
-	assert.deepEqual(Object.keys(status.dependencies).sort(), ["apply", "archive", "design", "proposal", "specs", "tasks", "verify"]);
-	assert.deepEqual(Object.keys(status.phaseInstructions!).sort(), ["apply", "archive", "remediate", "verify"]);
-	assert.equal(status.nextRecommended, "propose");
-	const verbs: string[] = [];
-	const adapter = createNodeExecFileAdapter();
-	const native = new NativeReviewCliV216(async (request) => { verbs.push(request.arguments[0]!); return adapter(request); }, process.env.SDD_TEST_PRODUCER!);
-	const h = commandHarness(root, status, true, true, native);
-	await h.run("status");
-	assert.deepEqual(JSON.parse(h.notices[0]!), status);
-	assert.deepEqual(verbs, ["sdd-status"]);
-	await h.run("continue");
-	assert.deepEqual(verbs, ["sdd-status", "sdd-status", "sdd-continue"]);
-	assert.equal(JSON.parse(h.notices[1]!).nextRecommended, "propose");
-	assert.throws(() => readFileSync(join(root, "openspec/changes/alpha/.gentle-ai-instance")), /ENOENT/);
-});
-
-function commandHarness(root: string, status: unknown, answer?: unknown, hasUI = true, native?: NativeReviewCli) {
-	const calls: string[] = [];
-	const notices: string[] = [];
-	const confirmations: string[] = [];
-	const commands = new Map<string, (args: string, ctx: ExtensionContext) => Promise<void>>();
-	const pi = {
-		on() {}, events: { emit() {} }, registerTool() {},
-		registerCommand(name: string, command: { handler: (args: string, ctx: ExtensionContext) => Promise<void> }) { commands.set(name, command.handler); },
-		sendUserMessage() { calls.push("launch"); }, sendMessage() { calls.push("launch"); },
-	} as unknown as ExtensionAPI;
-	createGentleAiExtension({ nativeReviewCli: native ?? {
-		sddStatus: async () => { calls.push("status"); return status; },
-		sddContinue: async () => { calls.push("continue"); return status; },
-	} as unknown as NativeReviewCli, processEnv: {} })(pi);
-	const ctx = { cwd: root, hasUI, ui: {
-		notify: (text: string) => notices.push(text),
-		confirm: async (title: string, text: string) => { confirmations.push(`${title}\n${text}`); return answer; },
-	} } as unknown as ExtensionContext;
-	return { calls, notices, confirmations, ctx, run: (verb: string) => commands.get(`gentle-sdd-${verb}`)!("alpha --json", ctx) };
-}
-
-function commandStatus(root: string) {
-	return {
-		schemaName: "gentle-ai.sdd-status", schemaVersion: 2, changeName: "alpha", artifactStore: "openspec",
-		planningHome: { mode: "repo-local", path: join(root, "openspec") }, changeRoot: join(root, "openspec/changes/alpha"),
-		actionContext: { mode: "repo-local", workspaceRoot: root, allowedEditRoots: [root] },
-		dependencies: { proposal: "ready", specs: "blocked", design: "blocked", tasks: "blocked", apply: "blocked", verify: "blocked", archive: "blocked" },
-		phaseInstructions: { apply: ["misleading prose: apply now"], verify: [], remediate: [], archive: [] },
-		blockedReasons: ["prepare only; source roots remain ungranted"], nextRecommended: "propose",
-	};
-}
-
-test("status command renders native facts without confirmation, mutation, or phase launch", async (t) => {
-	const root = workspace(t);
-	const status = commandStatus(root);
-	const h = commandHarness(root, status, true);
-	await h.run("status");
-	assert.deepEqual(h.calls, ["status"]);
-	assert.deepEqual(JSON.parse(h.notices[0]!), status);
-	assert.deepEqual(h.confirmations, []);
-});
-
-test("only exact marker confirmation permits continuation, never source authority or launch", async (t) => {
-	const root = workspace(t);
-	const status = commandStatus(root);
-	const h = commandHarness(root, status, true);
-	await h.run("continue");
-	assert.deepEqual(h.calls, ["status", "continue"]);
-	assert.equal(h.confirmations.length, 1);
-	assert.ok(h.confirmations[0]!.includes(join(root, "openspec/changes/alpha/.gentle-ai-instance")));
-	assert.match(h.confirmations[0]!, /no source.*no persistent/i);
-	assert.deepEqual(JSON.parse(h.notices[0]!), status);
-});
-
-test("read-only, excluded-marker, cancellation and headless scope suppress every mutation", async (t) => {
-	const root = workspace(t);
-	for (const [answer, hasUI] of [[false, true], [undefined, true], ["yes", true], [true, false]]) {
-		const h = commandHarness(root, commandStatus(root), answer, hasUI as boolean);
-		await h.run("continue");
-		assert.deepEqual(h.calls, ["status"]);
-	}
-});
-
-test("malformed recommendation and misleading prose refuse before continuation or phase launch", async (t) => {
-	const root = workspace(t);
-	for (const nextRecommended of ["sdd-apply", "unknown", null]) {
-		const h = commandHarness(root, { ...commandStatus(root), nextRecommended });
-		await assert.rejects(() => h.run("continue"), /native SDD|recommendation|enum|expected string/i);
-		assert.deepEqual(h.calls, ["status"]);
-		assert.deepEqual(h.confirmations, []);
-	}
-});
-
-test("continuation rejects workspace mismatch and missing UI; marker-only confirmation grants no roots", async (t) => {
-	const root = workspace(t);
-	const mismatch = commandHarness(root, { ...commandStatus(root), actionContext: { workspaceRoot: "/other" } }, true);
-	await assert.rejects(() => mismatch.run("continue"), /workspace/);
-	assert.deepEqual(mismatch.calls, ["status"]);
-	const missingUI = commandHarness(root, commandStatus(root), true);
-	Object.assign(missingUI.ctx, { ui: undefined });
-	await missingUI.run("continue");
-	assert.deepEqual(missingUI.calls, ["status"]);
-	const status = commandStatus(root);
-	status.actionContext.allowedEditRoots = [];
-	const markerOnly = commandHarness(root, status, true);
-	await assert.rejects(() => markerOnly.run("continue"), /allowed edit roots/i);
-	assert.deepEqual(markerOnly.calls, ["status"]);
-});
-
-test("managed apply guidance refuses local reconstruction and preserves native authority", () => {
-	const guidance = readFileSync(new URL("../assets/agents/sdd-apply.md", import.meta.url), "utf8");
-	assert.doesNotMatch(guidance, /resolve-via-engram|produce the same fields|Proceed with implementation once those artifacts/);
-	assert.match(guidance, /native.*v2/i);
-});
-
-test("unsafe planning context and marker symlink refuse before mutation", async (t) => {
-	const root = workspace(t);
-	for (const patch of [{ artifactStore: "engram" }, { actionContext: { mode: "unknown", workspaceRoot: root } }]) {
-		const h = commandHarness(root, { ...commandStatus(root), ...patch }, true);
-		await assert.rejects(() => h.run("continue"), /native SDD/i);
-		assert.deepEqual(h.calls, ["status"]);
-	}
-	symlinkSync(join(root, "openspec/changes/beta"), join(root, "openspec/changes/alpha/.gentle-ai-instance"));
-	const h = commandHarness(root, commandStatus(root), true);
-	await assert.rejects(() => h.run("continue"), /marker/i);
-	assert.deepEqual(h.calls, ["status"]);
-});
-
-
-test("typed remediation selection preserves native failed evidence and refuses stale binding", async (t) => {
-	const root = workspace(t), revision = `sha256:${"a".repeat(64)}`;
-	const selection = { changeName: "alpha", workspaceRoot: root, phase: "remediate", failedEvidenceRevision: revision };
-	const fixture: NativeSddStatusV2 = { schemaName: "gentle-ai.sdd-status", schemaVersion: 2, changeName: "alpha", artifactStore: "openspec", planningHome: { mode: "repo-local", path: join(root, "openspec") }, changeRoot: join(root, "openspec/changes/alpha"), actionContext: { mode: "repo-local", workspaceRoot: root, allowedEditRoots: [root] }, dependencies: Object.fromEntries(["proposal", "specs", "design", "tasks", "apply", "verify", "archive"].map(key => [key, "ready"])) as NativeSddStatusV2["dependencies"], phaseInstructions: { apply: [], verify: [], remediate: ["Correct failed evidence"], archive: [] }, blockedReasons: [], nextRecommended: "remediate", remediationState: { required: true, complete: false, failedEvidenceRevision: revision } };
-	const result = await __testing.resolveSelectedNativeSddChangeStartup(JSON.stringify(selection), root, "sdd-remediate", { sddStatus: async () => fixture });
-	assert.equal(result.selection.failedEvidenceRevision, revision);
-	await assert.rejects(__testing.resolveSelectedNativeSddChangeStartup(JSON.stringify({ ...selection, failedEvidenceRevision: `sha256:${"b".repeat(64)}` }), root, "sdd-remediate", { sddStatus: async () => fixture }), /remediation/);
-	assert.throws(() => decodeNativeSddStatusV2({ ...fixture, remediationState: { failedEvidenceRevision: "bad" } }, { workspaceRoot: root, changeName: "alpha" }), /remediation/);
-});
+// Retired (D7 slice 4): the producer cross-check test. Its premise — the
+// fail-closed stub wrapping a reference producer binary — could never
+// execute (the stub ignores its adapter by design since P1); the producer
+// harness belongs to the read-only reference repo, not this package.

@@ -6,7 +6,6 @@ import {
 	NATIVE_REVIEW_ERROR_CODE,
 	NATIVE_REVIEW_MODE_SOURCE,
 	NativeReviewCliError,
-	NativeReviewCliV216,
 	type ExecFileAdapter,
 	type NativeReviewCli,
 } from "../lib/authority/client-contract.ts";

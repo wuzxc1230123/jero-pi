@@ -153,7 +153,6 @@ import { renderGentleAiLifecycleCall, renderGentleAiResult, type GentleAiRenderC
 import { sanitizeTerminalText, stripAnsi } from "../lib/terminal-theme.ts";
 import { CandidateViewError, CandidateViewRegistry, injectReviewCandidateView, readCandidateContextManifestPage, resolveCanonicalCandidateBase, type CandidateView } from "../lib/review-candidate-view.ts";
 import {
-	createNativeReviewCli,
 	decodeNativeSddStatusV2,
 	isCanonicalProcessString,
 	isNativeReviewUnachievableVerbRefused,
@@ -8135,7 +8134,7 @@ function createGentleAiExtensionForTesting(
 	// (P4d-e) the START pair - direct starts and the consent ceremony - served
 	// in-process by the jero authority (lib/jero-authority-cli.ts).
 	const nativeReviewCli = dependencies.nativeReviewCli === undefined
-		? Object.assign(createNativeReviewCli(), createJeroAuthorityReviewCli())
+		? createJeroAuthorityReviewCli() as unknown as NativeReviewCli
 		: dependencies.nativeReviewCli;
 	const childStandingReviewPermissionLease = dependencies.childStandingReviewPermissionClient === undefined
 		? acquireChildStandingReviewPermissionClient(dependencies.processEnv ?? process.env)

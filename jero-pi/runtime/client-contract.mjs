@@ -779,7 +779,7 @@ export const NATIVE_CLI_CONTRACTS = Object.freeze({
 	//
 	// riskEvidence and hint stay dark deliberately. Both exist in gentle-ai
 	// v2.2.0 but only on the PLAIN start envelope; the negotiated
-	// `review-integration.start/v2` that NativeReviewCliV216 decodes carries
+	// `review-integration.start/v2` that the start decoder carries carries
 	// `risk_reasons` instead of `risk_evidence` and omits `hint` entirely.
 	// Lighting them would advertise data that cannot arrive. Closing that gap
 	// needs the negotiated start envelope extended upstream, which moves a
@@ -1554,42 +1554,7 @@ function decodeNativeUnachievableLensCaptureArtifact(value         )            
 	return Object.freeze({ schema: NATIVE_REVIEW_UNACHIEVABLE_LENS_CAPTURE_SCHEMA, lineageId: text("lineage_id"), targetIdentity: text("target_identity"), lens: text("lens"), selectedOrder: body.selected_order, reason: text("reason"), recorded: true });
 }
 
-export class NativeReviewCliV216                            {
-	// P1 stub: the gentle-ai binary transport is gone. Every operation fails
-	// closed with an authority-unavailable error until lib/authority/ (P2)
-	// replaces the transport with an in-process implementation.
-	constructor(
-		_adapter                  ,
-		_executable                          ,
-		_timeoutMs         ,
-		_maxBufferBytes         ,
-		_cleanupDirectory                                       ,
-	) {}
-
-	        unavailable(operation                       , mutating         )        {
-		throw nativeError(NATIVE_REVIEW_ERROR_CODE.UNAVAILABLE, operation, mutating, "authority-unavailable: in-process review authority is not wired yet (jero-pi P2); operation refused fail-closed");
-	}
-
-	start(_request                    )                             { this.unavailable(NATIVE_REVIEW_OPERATION.START, true); }
-	targetStatus (_request                           )                          { this.unavailable(NATIVE_REVIEW_OPERATION.STATUS, false); }
-	answerConsent (_request                                  )                                           { this.unavailable(NATIVE_REVIEW_OPERATION.START, true); }
-	reclaim (_request                            )                                      { this.unavailable(NATIVE_REVIEW_OPERATION.RECLAIM, true); }
-	recover (_request                            )                                      { this.unavailable(NATIVE_REVIEW_OPERATION.RECOVER, true); }
-	abandon (_request                            )                                      { this.unavailable(NATIVE_REVIEW_OPERATION.ABANDON, true); }
-	reconcileAuthority (_request                                       )                                      { this.unavailable(NATIVE_REVIEW_OPERATION.RECONCILE_AUTHORITY, true); }
-	captureCorrectionPlan (_request                                          )                                    { this.unavailable(NATIVE_REVIEW_OPERATION.CAPTURE_CORRECTION_PLAN, true); }
-	captureProviderRole (_request                                        )                                                  { this.unavailable(NATIVE_REVIEW_OPERATION.CAPTURE_PROVIDER_ROLE, true); }
-	captureUnachievableLens (_request                                            )                                                       { this.unavailable(NATIVE_REVIEW_OPERATION.CAPTURE_UNACHIEVABLE, true); }
-	reviewMode (_request                         )                                  { this.unavailable(NATIVE_REVIEW_OPERATION.MODE, true); }
-	assess (_request                           )                              { this.unavailable(NATIVE_REVIEW_OPERATION.ASSESS, false); }
-	sddStatus (_request                        )                             { this.unavailable(NATIVE_REVIEW_OPERATION.SDD_STATUS, false); }
-	sddContinue (_request                        )                             { this.unavailable(NATIVE_REVIEW_OPERATION.SDD_CONTINUE, true); }
-	sddAttemptAcquire (_request                         )                                  { this.unavailable(NATIVE_REVIEW_OPERATION.SDD_ATTEMPT, true); }
-	sddAttemptSettle (_request                        )                                  { this.unavailable(NATIVE_REVIEW_OPERATION.SDD_ATTEMPT, true); }
-}
-
-export function createNativeReviewCli(adapter                  , executable                          )                  {
-	void adapter;
-	void executable;
-	return new NativeReviewCliV216();
-}
+// D7 slice 4: the fail-closed stub class is deleted. The in-process adapter
+// (lib/jero-authority-cli.ts) is the one default CLI; operations it does not
+// serve are simply absent, which callers guard as capability-off (the
+// invocation-adjacent gates), never as a silent transport fallback.

@@ -196,6 +196,7 @@ test("approved closure preserves complete admitted reviewer results before ackno
 });
 
 test("retired legacy client no longer exposes a FINALIZE route", () => {
+	assert.equal("NativeReviewCliV216" in nativeReviewCliModule, false, "the fail-closed stub class is deleted (D7)");
 	assert.equal("NativeReviewCliV214" in nativeReviewCliModule, false);
 	assert.equal("NativeReviewCliV213" in nativeReviewCliModule, false);
 });
@@ -277,7 +278,6 @@ test("malformed, stale, duplicate, and incomplete collect bindings reject before
 		);
 		assert.equal(rejected.outcome, "capture-binding-rejected");
 	}
-	assert.equal(launches, 0);
 	assert.equal(statusCalls, 2);
 });
 
@@ -388,10 +388,13 @@ test("unknown-capture reconciliation preserves agentless legacy callers and forw
 		{ cwd: "/repo", lineageId: "reconcile-lineage", agent: "pi" },
 	]);
 	assert.equal(result.targetIdentity, SHA);
-	let launches = 0;
-	const strictNative = new nativeReviewCliModule.NativeReviewCliV216(async () => { launches += 1; throw new Error("must not launch"); }, "/package/.gentle-ai/gentle-ai");
+	// D7 slice 4: the stub class is gone. There is no transport to launch at
+	// all anymore; a strict fake whose target status refuses proves the three
+	// selector rejections propagate without any synthesized continuation.
+	const strictNative = {
+		targetStatus: async () => { throw new Error("target status refused"); },
+	} as unknown as Parameters<typeof reconcileUnknownReviewLastEventCapture>[0];
 	for (const selector of [{ committedOnly: true }, { baseRef: "refs/heads/main" }, { baseRef: "refs/heads/main", committedOnly: false }] as unknown as readonly Parameters<typeof reconcileUnknownReviewLastEventCapture>[3][]) await assert.rejects(() => reconcileUnknownReviewLastEventCapture(strictNative, "/repo", { lineageId: "reconcile-lineage", targetIdentity: SHA }, selector));
-	assert.equal(launches, 0);
 });
 
 test("unknown targeted-validator capture reconciliation requires current exact authority and target", async () => {

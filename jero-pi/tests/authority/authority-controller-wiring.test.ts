@@ -5,7 +5,6 @@ import { join } from "node:path";
 import test from "node:test";
 import { execFileSync } from "node:child_process";
 import { __testing } from "../../extensions/gentle-ai.ts";
-import { createNativeReviewCli } from "../../lib/authority/client-contract.ts";
 import { createJeroAuthorityReviewCli } from "../../lib/jero-authority-cli.ts";
 import { tempRoot } from "./fixtures.ts";
 
@@ -14,7 +13,7 @@ import { tempRoot } from "./fixtures.ts";
 // collect-binding rendering) running over the composed default CLI
 // (P1 stub ∘ jero authority review adapter). No mocks on the CLI path.
 
-function harness(t: { after(fn: () => void): void }): { repo: string; cli: ReturnType<typeof createNativeReviewCli> } {
+function harness(t: { after(fn: () => void): void }): { repo: string; cli: ReturnType<typeof createJeroAuthorityReviewCli> } {
 	const parent = tempRoot("jero-p4d-");
 	const repo = join(parent, "repo");
 	mkdirSync(repo, { recursive: true });
@@ -27,7 +26,10 @@ function harness(t: { after(fn: () => void): void }): { repo: string; cli: Retur
 	writeFileSync(join(repo, "app.ts"), "export const value = 2;\n");
 	t.after(() => rmSync(parent, { recursive: true, force: true }));
 	// Exactly what the extension constructs by default since P4c/P4d.
-	return { repo, cli: Object.assign(createNativeReviewCli(), createJeroAuthorityReviewCli()) };
+	// D7 slice 4: the fail-closed stub is gone; the in-process adapter is the
+	// whole default CLI (the unserved optionals are simply absent, which the
+	// extension guards treat as capability-off).
+	return { repo, cli: createJeroAuthorityReviewCli() };
 }
 
 test("controller STATUS routes over the in-process authority end to end", async (t) => {

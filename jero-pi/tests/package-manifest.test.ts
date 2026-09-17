@@ -134,8 +134,8 @@ test("package verification names the native review runtime boundary and packaged
 	assert.match(verifier, /"tests\/fixtures\/native-review-cli\/v2\.1\.3\/start\.json"/, "package verification must retain the pinned native decoder fixture");
 	assert.match(
 		readFileSync(join(PACKAGE_ROOT, "extensions", "gentle-ai.ts"), "utf8"),
-		/createNativeReviewCli\(\)/,
-		"the production extension must construct its native client from the packaged runtime module",
+		/createJeroAuthorityReviewCli\(\)/,
+		"the production extension must construct its native client from the in-process authority adapter",
 	);
 });
 
