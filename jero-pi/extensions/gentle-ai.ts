@@ -189,7 +189,7 @@ import {
 	type NativeStartResult,
 	type NativeReviewAssessRequest,
 } from "../lib/native-review-cli.ts";
-import { createJeroAuthoritySddCli } from "../lib/jero-authority-cli.ts";
+import { createJeroAuthorityReviewCli } from "../lib/jero-authority-cli.ts";
 import {
 	verificationPlan,
 	resolveWriterProfile,
@@ -8215,7 +8215,7 @@ function createGentleAiExtensionForTesting(
 	// P4c: the default CLI is the fail-closed P1 stub with the SDD projection
 	// methods served in-process by the jero authority (lib/jero-authority-cli.ts).
 	const nativeReviewCli = dependencies.nativeReviewCli === undefined
-		? Object.assign(createNativeReviewCli(), createJeroAuthoritySddCli())
+		? Object.assign(createNativeReviewCli(), createJeroAuthorityReviewCli())
 		: dependencies.nativeReviewCli;
 	const childStandingReviewPermissionLease = dependencies.childStandingReviewPermissionClient === undefined
 		? acquireChildStandingReviewPermissionClient(dependencies.processEnv ?? process.env)
