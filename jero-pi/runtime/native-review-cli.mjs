@@ -110,8 +110,6 @@ export const NATIVE_REVIEW_ERROR_CODE = {
 
 
 
-
-
 	                                                       
 
 
@@ -328,19 +326,10 @@ export const NATIVE_REVIEW_RECOVER_DISPOSITION = ["scope_changed", "invalidated"
 
 
 
-export const NATIVE_REVIEW_LEGACY_QUARANTINE = {
-	DIAGNOSTIC: "historical findings freeze changed unrelated transaction state",
-	DISPOSITION: "quarantine-malformed-freeze-event",
-}         ;
-
 export const NATIVE_REVIEW_RECONCILE_ANOMALIES = {
 	COMBINED: "unchanged_target,malformed_recovery_authorization",
 }         ;
 
-export const NATIVE_REVIEW_LEGACY_ALIAS_REPAIR = {
-	DIAGNOSTIC: "unsupported historical v1 operation alias",
-	DISPOSITION: "quarantine-approved-historical-alias",
-}         ;
 
 
 
@@ -368,41 +357,14 @@ export const NATIVE_REVIEW_LEGACY_ALIAS_REPAIR = {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/** Raw audited native record; Pi relays it verbatim and never reinterprets it. */
 
 
 // Net-new negotiated `review.repair` (contract v2). `repair(request)` always
 // runs a `--mode preflight` first; only an eligible assessment is ever
-// executed, using the exact provider_inputs that assessment published — Pi's
-// own NATIVE_REVIEW_LEGACY_ALIAS_REPAIR constants are never a source, only a
-// disagreement check (Design Decision #6, migrate-review-integration-v2).
+// executed, using the exact provider_inputs that assessment published
+// (Design Decision #6, migrate-review-integration-v2). The legacy
+// quarantine/alias-repair routes are deleted: jero-pi stores never carry
+// legacy authority.
 
 
 
@@ -737,7 +699,7 @@ function isNativeUntrackedPath(value         )                  {
 		&& value.split("/").every((segment) => segment.length > 0 && segment !== "." && segment !== "..");
 }
 
-function nativeUntrackedSelection(request                                 )                           {
+export function nativeUntrackedSelection(request                                 )                           {
 	const { untrackedScope, expectedUntrackedInventory, intendedUntracked } = request;
 	const declared = untrackedScope !== undefined || expectedUntrackedInventory !== undefined || intendedUntracked !== undefined;
 	if (!declared) return {};
@@ -789,7 +751,7 @@ const NATIVE_RISK_LEVEL = ["low", "medium", "high"]         ;
 // unrecognized reason code therefore renders nothing rather than guessing, and
 // nativeRiskEvidencePhrases is pinned against a gentle-ai fixture in
 // tests/native-review-parity.test.ts so a vocabulary change fails loudly.
-const REVIEW_EMPTY_CANDIDATE_HINT =
+export const REVIEW_EMPTY_CANDIDATE_HINT =
 	"the candidate has no pending changes; already-committed work can be reviewed by rerunning review start with --base-ref <commit> naming the base to compare against";
 const REVIEW_MEDIUM_RISK_REASON = "this change is not purely passive documentation, so it gets one consolidated review.";
 const REVIEW_EMPTY_CONTENT_CODE = "empty_content";
@@ -1512,34 +1474,6 @@ export function nativeReviewAbandonAuthorization(request                        
 	].join("\n");
 }
 
-export function nativeReviewLegacyQuarantineAuthorization(request                                                                                                                                              )         {
-	return [
-		"gentle-ai.review-legacy-quarantine-authorization/v1",
-		`repository=${request.repository}`,
-		`lineage=${request.lineage}`,
-		`revision=${request.expectedRevision}`,
-		`diagnostic=${request.diagnostic}`,
-		`disposition=${request.disposition}`,
-		`actor=${request.actor}`,
-		`reason=${request.reason}`,
-	].join("\n");
-}
-
-/**
- * The exact native `gentle-ai.review-recovery-authorization/v1` binding for one
- * recovery edge.
- *
- * Native `review recover` accepts a caller-supplied authorization only when it
- * reproduces this binding byte for byte, because it is copied verbatim into the
- * recovery provenance and read afterwards as a maintainer attestation. Pi
- * therefore derives it from freshly read native target status and never
- * forwards a caller-supplied one: a wrong binding is worse than an absent one,
- * since an absent field cannot lie about who approved what.
- *
- * `targetIdentity` is the live target identity the provider itself publishes in
- * the `review.recover` eligibility binding (`status.target_identity`), which is
- * the identity the successor's initial snapshot takes.
- */
 export function nativeReviewRecoverAuthorization(request                                                                                                                                          )         {
 	return [
 		"gentle-ai.review-recovery-authorization/v1",
@@ -1561,19 +1495,6 @@ export function nativeReviewReconcileAuthorization(request                      
 		`actor=${request.actor}`,
 		`reason=${request.reason}`,
 		...(request.anomalies === NATIVE_REVIEW_RECONCILE_ANOMALIES.COMBINED ? [`anomalies=${request.anomalies}`] : []),
-	].join("\n");
-}
-
-export function nativeReviewLegacyAliasRepairAuthorization(request                                                                                                                                               )         {
-	return [
-		"gentle-ai.review-legacy-alias-repair-authorization/v1",
-		`repository=${request.repository}`,
-		`lineage=${request.lineage}`,
-		`revision=${request.expectedRevision}`,
-		`diagnostic=${request.diagnostic}`,
-		`disposition=${request.disposition}`,
-		`actor=${request.actor}`,
-		`reason=${request.reason}`,
 	].join("\n");
 }
 
@@ -1726,7 +1647,7 @@ function optionalConsentLineageOption(arguments_                   )            
 
 
 
-function consentInvocationArguments(request                                  )                    {
+export function consentInvocationArguments(request                                  )                    {
 	validatePiConsentChoiceAgentBindings(request.consent);
 	const choice = request.consent.choices.find((candidate) => candidate.answer === request.answer);
 	if (choice === undefined) throw new NativeReviewConsentBindingError("consent-answer-unknown", "Native consent answer must be granted or declined");
@@ -1856,9 +1777,7 @@ export class NativeReviewCliV216                            {
 	reclaim (_request                            )                                      { this.unavailable(NATIVE_REVIEW_OPERATION.RECLAIM, true); }
 	recover (_request                            )                                      { this.unavailable(NATIVE_REVIEW_OPERATION.RECOVER, true); }
 	abandon (_request                            )                                      { this.unavailable(NATIVE_REVIEW_OPERATION.ABANDON, true); }
-	quarantineLegacy (_request                                     )                                      { this.unavailable(NATIVE_REVIEW_OPERATION.QUARANTINE_LEGACY, true); }
 	reconcileAuthority (_request                                       )                                      { this.unavailable(NATIVE_REVIEW_OPERATION.RECONCILE_AUTHORITY, true); }
-	repairLegacyAlias (_request                                      )                                      { this.unavailable(NATIVE_REVIEW_OPERATION.REPAIR_LEGACY_ALIAS, true); }
 	repair(_request                           )                          { this.unavailable(NATIVE_REVIEW_OPERATION.REPAIR, true); }
 	captureResult (_request                                  )                                            { this.unavailable(NATIVE_REVIEW_OPERATION.CAPTURE_RESULT, true); }
 	captureCorrectionPlan (_request                                          )                                    { this.unavailable(NATIVE_REVIEW_OPERATION.CAPTURE_CORRECTION_PLAN, true); }

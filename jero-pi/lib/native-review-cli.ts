@@ -100,9 +100,7 @@ export interface NativeReviewCli {
 	reclaim?(request: NativeReviewReclaimRequest): Promise<NativeReviewRecoveryResult>;
 	recover?(request: NativeReviewRecoverRequest): Promise<NativeReviewRecoveryResult>;
 	abandon?(request: NativeReviewAbandonRequest): Promise<NativeReviewRecoveryResult>;
-	quarantineLegacy?(request: NativeReviewLegacyQuarantineRequest): Promise<NativeReviewRecoveryResult>;
 	reconcileAuthority?(request: NativeReviewReconcileAuthorityRequest): Promise<NativeReviewRecoveryResult>;
-	repairLegacyAlias?(request: NativeReviewLegacyAliasRepairRequest): Promise<NativeReviewRecoveryResult>;
 	repair?(request: NativeReviewRepairRequest): Promise<ReviewRepairV2>;
 	captureResult?(request: NativeReviewCaptureResultRequest): Promise<NativeReviewCaptureResultOutcome>;
 	captureCorrectionPlan?(request: NativeReviewCorrectionPlanCaptureRequest): Promise<ReviewLastEventClosureV1>;
@@ -327,20 +325,9 @@ export interface NativeReviewRecoverRequest {
 	signal?: AbortSignal;
 }
 
-export const NATIVE_REVIEW_LEGACY_QUARANTINE = {
-	DIAGNOSTIC: "historical findings freeze changed unrelated transaction state",
-	DISPOSITION: "quarantine-malformed-freeze-event",
-} as const;
-
 export const NATIVE_REVIEW_RECONCILE_ANOMALIES = {
 	COMBINED: "unchanged_target,malformed_recovery_authorization",
 } as const;
-
-export const NATIVE_REVIEW_LEGACY_ALIAS_REPAIR = {
-	DIAGNOSTIC: "unsupported historical v1 operation alias",
-	DISPOSITION: "quarantine-approved-historical-alias",
-} as const;
-export type NativeReviewReconcileAnomalies = (typeof NATIVE_REVIEW_RECONCILE_ANOMALIES)[keyof typeof NATIVE_REVIEW_RECONCILE_ANOMALIES];
 
 export interface NativeReviewAbandonRequest {
 	cwd: string;
@@ -354,19 +341,7 @@ export interface NativeReviewAbandonRequest {
 	maintainerAuthorization: string;
 	signal?: AbortSignal;
 }
-
-export interface NativeReviewLegacyQuarantineRequest {
-	cwd: string;
-	repository: string;
-	lineage: string;
-	expectedRevision: string;
-	diagnostic: (typeof NATIVE_REVIEW_LEGACY_QUARANTINE)["DIAGNOSTIC"];
-	disposition: (typeof NATIVE_REVIEW_LEGACY_QUARANTINE)["DISPOSITION"];
-	actor: string;
-	reason: string;
-	maintainerAuthorization: string;
-	signal?: AbortSignal;
-}
+export type NativeReviewReconcileAnomalies = (typeof NATIVE_REVIEW_RECONCILE_ANOMALIES)[keyof typeof NATIVE_REVIEW_RECONCILE_ANOMALIES];
 
 export interface NativeReviewReconcileAuthorityRequest {
 	cwd: string;
@@ -381,27 +356,14 @@ export interface NativeReviewReconcileAuthorityRequest {
 	signal?: AbortSignal;
 }
 
-export interface NativeReviewLegacyAliasRepairRequest {
-	cwd: string;
-	repository: string;
-	lineage: string;
-	expectedRevision: string;
-	diagnostic: (typeof NATIVE_REVIEW_LEGACY_ALIAS_REPAIR)["DIAGNOSTIC"];
-	disposition: (typeof NATIVE_REVIEW_LEGACY_ALIAS_REPAIR)["DISPOSITION"];
-	actor: string;
-	reason: string;
-	maintainerAuthorization: string;
-	signal?: AbortSignal;
-}
-
-/** Raw audited native record; Pi relays it verbatim and never reinterprets it. */
 export interface NativeReviewRecoveryResult { record: Record<string, unknown>; }
 
 // Net-new negotiated `review.repair` (contract v2). `repair(request)` always
 // runs a `--mode preflight` first; only an eligible assessment is ever
-// executed, using the exact provider_inputs that assessment published — Pi's
-// own NATIVE_REVIEW_LEGACY_ALIAS_REPAIR constants are never a source, only a
-// disagreement check (Design Decision #6, migrate-review-integration-v2).
+// executed, using the exact provider_inputs that assessment published
+// (Design Decision #6, migrate-review-integration-v2). The legacy
+// quarantine/alias-repair routes are deleted: jero-pi stores never carry
+// legacy authority.
 export interface NativeReviewRepairRequest {
 	cwd: string;
 	actor: string;
@@ -1511,34 +1473,6 @@ export function nativeReviewAbandonAuthorization(request: Pick<NativeReviewAband
 	].join("\n");
 }
 
-export function nativeReviewLegacyQuarantineAuthorization(request: Pick<NativeReviewLegacyQuarantineRequest, "repository" | "lineage" | "expectedRevision" | "diagnostic" | "disposition" | "actor" | "reason">): string {
-	return [
-		"gentle-ai.review-legacy-quarantine-authorization/v1",
-		`repository=${request.repository}`,
-		`lineage=${request.lineage}`,
-		`revision=${request.expectedRevision}`,
-		`diagnostic=${request.diagnostic}`,
-		`disposition=${request.disposition}`,
-		`actor=${request.actor}`,
-		`reason=${request.reason}`,
-	].join("\n");
-}
-
-/**
- * The exact native `gentle-ai.review-recovery-authorization/v1` binding for one
- * recovery edge.
- *
- * Native `review recover` accepts a caller-supplied authorization only when it
- * reproduces this binding byte for byte, because it is copied verbatim into the
- * recovery provenance and read afterwards as a maintainer attestation. Pi
- * therefore derives it from freshly read native target status and never
- * forwards a caller-supplied one: a wrong binding is worse than an absent one,
- * since an absent field cannot lie about who approved what.
- *
- * `targetIdentity` is the live target identity the provider itself publishes in
- * the `review.recover` eligibility binding (`status.target_identity`), which is
- * the identity the successor's initial snapshot takes.
- */
 export function nativeReviewRecoverAuthorization(request: Pick<NativeReviewRecoverRequest, "predecessorLineage" | "expectedPredecessorRevision" | "actor" | "reason"> & { targetIdentity: string }): string {
 	return [
 		"gentle-ai.review-recovery-authorization/v1",
@@ -1560,19 +1494,6 @@ export function nativeReviewReconcileAuthorization(request: Pick<NativeReviewRec
 		`actor=${request.actor}`,
 		`reason=${request.reason}`,
 		...(request.anomalies === NATIVE_REVIEW_RECONCILE_ANOMALIES.COMBINED ? [`anomalies=${request.anomalies}`] : []),
-	].join("\n");
-}
-
-export function nativeReviewLegacyAliasRepairAuthorization(request: Pick<NativeReviewLegacyAliasRepairRequest, "repository" | "lineage" | "expectedRevision" | "diagnostic" | "disposition" | "actor" | "reason">): string {
-	return [
-		"gentle-ai.review-legacy-alias-repair-authorization/v1",
-		`repository=${request.repository}`,
-		`lineage=${request.lineage}`,
-		`revision=${request.expectedRevision}`,
-		`diagnostic=${request.diagnostic}`,
-		`disposition=${request.disposition}`,
-		`actor=${request.actor}`,
-		`reason=${request.reason}`,
 	].join("\n");
 }
 
@@ -1855,9 +1776,7 @@ export class NativeReviewCliV216 implements NativeReviewCli {
 	reclaim?(_request: NativeReviewReclaimRequest): Promise<NativeReviewRecoveryResult> { this.unavailable(NATIVE_REVIEW_OPERATION.RECLAIM, true); }
 	recover?(_request: NativeReviewRecoverRequest): Promise<NativeReviewRecoveryResult> { this.unavailable(NATIVE_REVIEW_OPERATION.RECOVER, true); }
 	abandon?(_request: NativeReviewAbandonRequest): Promise<NativeReviewRecoveryResult> { this.unavailable(NATIVE_REVIEW_OPERATION.ABANDON, true); }
-	quarantineLegacy?(_request: NativeReviewLegacyQuarantineRequest): Promise<NativeReviewRecoveryResult> { this.unavailable(NATIVE_REVIEW_OPERATION.QUARANTINE_LEGACY, true); }
 	reconcileAuthority?(_request: NativeReviewReconcileAuthorityRequest): Promise<NativeReviewRecoveryResult> { this.unavailable(NATIVE_REVIEW_OPERATION.RECONCILE_AUTHORITY, true); }
-	repairLegacyAlias?(_request: NativeReviewLegacyAliasRepairRequest): Promise<NativeReviewRecoveryResult> { this.unavailable(NATIVE_REVIEW_OPERATION.REPAIR_LEGACY_ALIAS, true); }
 	repair(_request: NativeReviewRepairRequest): Promise<ReviewRepairV2> { this.unavailable(NATIVE_REVIEW_OPERATION.REPAIR, true); }
 	captureResult?(_request: NativeReviewCaptureResultRequest): Promise<NativeReviewCaptureResultOutcome> { this.unavailable(NATIVE_REVIEW_OPERATION.CAPTURE_RESULT, true); }
 	captureCorrectionPlan?(_request: NativeReviewCorrectionPlanCaptureRequest): Promise<ReviewLastEventClosureV1> { this.unavailable(NATIVE_REVIEW_OPERATION.CAPTURE_CORRECTION_PLAN, true); }

@@ -20,7 +20,7 @@ test("technical reference documents the narrow published native maintenance cont
 });
 
 test("controller help keeps authorization, blocked outcomes, and recovery boundaries explicit", () => {
-	assert.match(CONTROLLER, /REPAIR_LEGACY_ALIAS.*freshly reads native inventory.*interactive approval/is);
+	assert.match(CONTROLLER, /legacy quarantine and alias-repair routes are retired/is);
 	assert.match(CONTROLLER, /unchanged_target,malformed_recovery_authorization/);
 	assert.match(CONTROLLER, /provider-selected recovery disposition/);
 	assert.match(CONTROLLER, /headlessly|headless/i);

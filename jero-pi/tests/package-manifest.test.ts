@@ -635,6 +635,9 @@ test("unowned legacy research migrates by exact normalized hash, preserving rout
 	const packaged = readFileSync(join(PACKAGE_ROOT, "assets", "agents", "sdd-research.md"), "utf8");
 	const oldAdmission = "- Evidence grants for this runtime are `documentation=[]; open-web=[]`. Never infer evidence capability from bash, persistence tools, or any inherited tool; persistence tools are not evidence grants. Unsupported or undeclared classes deny admission and emit no claims.\n- Because this runtime declares no evidence grants, retain the selected request, persist a `blocked` outcome with no claims, and stop.\n";
 	const legacy = packaged
+		.replace("  - mem_read" + String.fromCharCode(10), "  - mem_get_observation" + String.fromCharCode(10))
+		.replace("OpenSpec requires its exact absolute change-local `.md` path. Memory requires the exact `topic_key` (`sdd/<change>/<artifact>`).", "OpenSpec requires its exact absolute change-local `.md` path. Engram requires exact observation `id`, `project`, `topic_key`, and positive `revision_count`.")
+		.replace("OpenSpec requires complete JSON bytes, matching revision and digest; memory requires the rendered `mem_read` text (a `saved <timestamp>` header line, a blank separator, then the entry body verbatim) with a matching body digest.", "OpenSpec requires complete JSON bytes, matching revision and digest; Engram requires matching returned id/project/topic_key/revision_count and content digest.")
 		.replace(/## Parent Preflight Transport\n[\s\S]*?(?=## Skill Resolution Contract)/, "")
 		.replace(/## Bounded artifact handoff\n[\s\S]*?(?=## Memory Contract)/, "")
 		.replace(/  - fetch_content\n  - web_search\n  - source_check\n  - get_search_content\n/, "")
