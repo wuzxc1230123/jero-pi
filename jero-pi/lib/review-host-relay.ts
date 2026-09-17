@@ -35,7 +35,7 @@ import {
 	runOpaquePiReviewer,
 	type OpaquePiReviewerResult,
 } from "./opaque-pi-reviewer-adapter.ts";
-import { REVIEW_PROVIDER_ROLE_CAPTURE_OPERATION, REVIEW_PROVIDER_ROLE_CAPTURE_OPERATIONS, type ReviewCaptureSubmissionV1, type ReviewCollectInputV3 } from "./review-integration-v2.ts";
+import { REVIEW_PROVIDER_ROLE_CAPTURE_OPERATION, REVIEW_PROVIDER_ROLE_CAPTURE_OPERATIONS, type ReviewCaptureSubmissionV1, type ReviewCollectInputV3 } from "./authority/wire-contract.ts";
 
 // Compatibility export for existing relay consumers. The pure adapter owns the
 // fixed Pi process boundary and its locked-down argv.

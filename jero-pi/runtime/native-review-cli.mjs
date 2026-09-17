@@ -27,7 +27,7 @@ import {
 
 
 
-} from "./review-integration-v2.mjs";
+} from "./wire-contract.mjs";
 
 const execFileAsync = promisify(execFile);
 

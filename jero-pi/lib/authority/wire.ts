@@ -1,4 +1,4 @@
-import type { ReviewConsentChoiceV2, ReviewConsentV3, ReviewStatusV3 } from "../review-integration-v2.ts";
+import type { ReviewConsentChoiceV2, ReviewConsentV3, ReviewStatusV3 } from "./wire-contract.ts";
 import type { JeroReviewStatusResultV1 } from "./status.ts";
 import type { JeroReviewStartResultV1 } from "./start.ts";
 import type { JeroSnapshotDerivationV1 } from "./snapshots.ts";

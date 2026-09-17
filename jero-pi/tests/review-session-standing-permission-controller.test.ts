@@ -12,7 +12,7 @@ import { ChildStandingReviewPermissionClient, ParentStandingReviewPermissionBrok
 import { captureReviewSessionIdentity, grantReviewSessionPermission, hasReviewSessionPermission, revokeReviewSessionPermissionsForSession } from "../lib/review-session-standing-permission.ts";
 import { CandidateViewRegistry } from "../lib/review-candidate-view.ts";
 import { NativeReviewConsentRequiredError, type NativeReviewCli } from "../lib/native-review-cli.ts";
-import { decodeReviewConsentV2, decodeReviewConsentV3, type ReviewConsentEnvelope, type ReviewStatusV3 } from "../lib/review-integration-v2.ts";
+import { decodeReviewConsentV2, decodeReviewConsentV3, type ReviewConsentEnvelope, type ReviewStatusV3 } from "../lib/authority/wire-contract.ts";
 import {
 	HOST_REVIEW_SESSION_PERMISSION_LABEL,
 	formatReviewConsentUi,

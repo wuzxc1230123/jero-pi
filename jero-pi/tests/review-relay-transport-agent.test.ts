@@ -7,7 +7,7 @@ import test from "node:test";
 import { __testing } from "../extensions/gentle-ai.ts";
 import { NativeReviewIntegrationError, type NativeReviewCli } from "../lib/native-review-cli.ts";
 import { CandidateViewRegistry } from "../lib/review-candidate-view.ts";
-import type { ReviewCollectInputV3, ReviewStatusV3 } from "../lib/review-integration-v2.ts";
+import type { ReviewCollectInputV3, ReviewStatusV3 } from "../lib/authority/wire-contract.ts";
 import type { ReviewHostRelayRequest } from "../lib/review-host-relay.ts";
 
 // Third field failure on the recovered-lineage defect (2026-08-16, gentle-pi

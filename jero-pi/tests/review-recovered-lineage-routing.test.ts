@@ -7,7 +7,7 @@ import test from "node:test";
 import { __testing } from "../extensions/gentle-ai.ts";
 import type { NativeReviewCli } from "../lib/native-review-cli.ts";
 import { CandidateViewRegistry, injectReviewCandidateView } from "../lib/review-candidate-view.ts";
-import type { ReviewCollectInputV3, ReviewStatusV3 } from "../lib/review-integration-v2.ts";
+import type { ReviewCollectInputV3, ReviewStatusV3 } from "../lib/authority/wire-contract.ts";
 
 // Live-confirmed adapter defects (2026-08-16, gentle-ai 2.4.0-main, Engram
 // #12461/#12466), both around a lineage recovered EXTERNALLY through native

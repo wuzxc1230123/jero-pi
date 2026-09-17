@@ -27,7 +27,7 @@ import {
 	type ReviewHostRelayPreparedResult,
 	type ReviewHostRelayRequest,
 } from "../lib/review-host-relay.ts";
-import { decodeReviewNextTransitionV3, type ReviewCaptureSubmissionV1, type ReviewCollectInputV3 } from "../lib/review-integration-v2.ts";
+import { decodeReviewNextTransitionV3, type ReviewCaptureSubmissionV1, type ReviewCollectInputV3 } from "../lib/authority/wire-contract.ts";
 
 // ---------------------------------------------------------------------------
 // Fake binaries. Following the repo's fake-executable idiom (shell/git

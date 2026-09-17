@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { decodeReviewStatusV3, decodeReviewAcknowledgedV1, type ReviewAcknowledgedExpectationV1 } from "../../../lib/review-integration-v2.ts";
+import { decodeReviewStatusV3, decodeReviewAcknowledgedV1, type ReviewAcknowledgedExpectationV1 } from "../../../lib/authority/wire-contract.ts";
 
 // §J.1 coverage completion (M6): the five devbinary fixtures the M3 suite had
 // not yet consumed — declined START (item 2), zero-lens close (item 3), plain

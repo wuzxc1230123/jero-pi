@@ -5,8 +5,8 @@ import { renderJeroCaptureSlotForRelayV1, admitJeroCaptureResultForRelayV1 } fro
 import { reviewStatusV1 } from "../../lib/authority/status.ts";
 import { createJeroAuthorityReviewCli } from "../../lib/jero-authority-cli.ts";
 import { startCreatedReview, type ReviewHarnessV1 } from "./fixtures.ts";
-import type { ReviewStatusV3 } from "../../lib/review-integration-v2.ts";
-import { decodeReviewLastEventClosureV1 } from "../../lib/review-integration-v2.ts";
+import type { ReviewStatusV3 } from "../../lib/authority/wire-contract.ts";
+import { decodeReviewLastEventClosureV1 } from "../../lib/authority/wire-contract.ts";
 
 // Q-A: the artifact-set completion composition rides the relay admit seam —
 // the last admitted lens artifact atomically freezes findings and classifies

@@ -26,7 +26,7 @@ import {
 	type ReviewStartV4,
 	type ReviewStatusV3,
 	type ReviewLastEventClosureV1,
-} from "./review-integration-v2.ts";
+} from "./authority/wire-contract.ts";
 
 const execFileAsync = promisify(execFile);
 

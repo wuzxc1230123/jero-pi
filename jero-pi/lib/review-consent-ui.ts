@@ -1,6 +1,6 @@
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { ReviewConsentComponent, type ReviewConsentContent } from "./review-consent-component.ts";
-import type { ReviewConsentEnvelope, ReviewConsentV3 } from "./review-integration-v2.ts";
+import type { ReviewConsentEnvelope, ReviewConsentV3 } from "./authority/wire-contract.ts";
 
 export const HOST_REVIEW_SESSION_PERMISSION_LABEL = "Review and allow this session";
 

@@ -16,7 +16,7 @@ import {
 	decodeReviewStartV3,
 	decodeReviewStartV4,
 	decodeReviewStatusV3,
-} from "../lib/review-integration-v2.ts";
+} from "../lib/authority/wire-contract.ts";
 
 const DEV_FIXTURES = join(process.cwd(), "tests", "fixtures", "devbinary");
 const V2_FIXTURES = join(process.cwd(), "tests", "fixtures", "review-integration", "v2", "fixtures");

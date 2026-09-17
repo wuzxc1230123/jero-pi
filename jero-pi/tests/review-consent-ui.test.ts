@@ -5,7 +5,7 @@ import test from "node:test";
 import { visibleWidth } from "@earendil-works/pi-tui";
 import { ReviewConsentComponent } from "../lib/review-consent-component.ts";
 import { formatReviewConsentUi } from "../lib/review-consent-ui.ts";
-import { decodeReviewConsentV3 } from "../lib/review-integration-v2.ts";
+import { decodeReviewConsentV3 } from "../lib/authority/wire-contract.ts";
 
 function consent() {
 	const path = join(process.cwd(), "tests", "fixtures", "devbinary", "consent-v3.captured.json");

@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { decodeReviewNextTransitionV3, decodeReviewStartV3, type ReviewCollectInputV3 } from "../../../lib/review-integration-v2.ts";
+import { decodeReviewNextTransitionV3, decodeReviewStartV3, type ReviewCollectInputV3 } from "../../../lib/authority/wire-contract.ts";
 import { buildJeroReviewerResultCollectInputsV1, buildJeroFinalizeExecuteTransitionV1, JERO_CAPTURE_INPUT_SCHEMA_CONFORMANCE_MAP, jeroSubmissionArgumentTokensV1 } from "../../../lib/authority/collect-inputs.ts";
 import { mintJeroRepositoryContextV1 } from "../../../lib/authority/repository-context.ts";
 import { jeroAdvisoryFindingsFromStateV1 } from "../../../lib/authority/closures.ts";

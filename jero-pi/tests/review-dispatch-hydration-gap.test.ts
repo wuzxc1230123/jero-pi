@@ -7,7 +7,7 @@ import test from "node:test";
 import { __testing } from "../extensions/gentle-ai.ts";
 import type { NativeReviewCli } from "../lib/native-review-cli.ts";
 import { CandidateViewError, CandidateViewRegistry, injectReviewCandidateView } from "../lib/review-candidate-view.ts";
-import type { ReviewCollectInputV3, ReviewStatusV3 } from "../lib/review-integration-v2.ts";
+import type { ReviewCollectInputV3, ReviewStatusV3 } from "../lib/authority/wire-contract.ts";
 
 // Field report (2026-08-16, gentle-pi main 402f9f77 + gentle-ai
 // 2.4.0-main.20278905): after #340 the FINALIZE routing defect was fixed but

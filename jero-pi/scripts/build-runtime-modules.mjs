@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const sources = [
-	"review-integration-v2",
+	"authority/wire-contract",
 	"review-risk-assessment",
 	"native-review-cli",
 ];
@@ -20,9 +20,12 @@ function assertNoTrailingWhitespace(content, label) {
 
 async function generatedBytes(name) {
 	const source = await readFile(join(root, "lib", `${name}.ts`), "utf8");
+	// The runtime layout is FLAT: a lib/authority/ source generates
+	// runtime/<basename>.mjs; authority-internal imports flatten to match.
 	assertNoTrailingWhitespace(source, `lib/${name}.ts`);
 	const javascript = stripTypeScriptTypes(source, { mode: "strip" })
 		.replace(/\.ts(["'])/g, ".mjs$1")
+		.replace(/(\.{1,2}\/)?authority\/([a-z0-9-]+)\.mjs(["\'])/g, "./$2.mjs$3")
 		.replace(/[ \t]+$/gm, "")
 		.replace(/\s+$/u, "");
 	const generated = `${header}${javascript}\n`;
@@ -46,7 +49,8 @@ async function main() {
 	if (mode === "--write") await mkdir(runtime, { recursive: true });
 	const drift = [];
 	for (const name of sources) {
-		const destination = join(runtime, `${name}.mjs`);
+		const base = name.split("/").pop();
+		const destination = join(runtime, `${base}.mjs`);
 		const expected = await generatedBytes(name);
 		if (mode === "--write") {
 			await writeFile(destination, expected, "utf8");

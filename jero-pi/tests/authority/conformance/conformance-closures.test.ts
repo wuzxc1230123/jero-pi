@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { decodeReviewLastEventClosureV1, type ReviewLastEventClosureV1 } from "../../../lib/review-integration-v2.ts";
+import { decodeReviewLastEventClosureV1, type ReviewLastEventClosureV1 } from "../../../lib/authority/wire-contract.ts";
 import {
 	JERO_CAPTURE_CLOSURE_OPERATIONS,
 	JERO_CAPTURE_CLOSURE_OPERATION_CONFORMANCE_MAP,

@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { decodeReviewResultArtifactV2 } from "../../../lib/review-integration-v2.ts";
+import { decodeReviewResultArtifactV2 } from "../../../lib/authority/wire-contract.ts";
 import { jeroReviewerResultsDirectoryV1 } from "../../../lib/authority/result-artifacts.ts";
 
 // §J.1 assertion 8: result-artifact-v2 + result-artifact-v2-path — the same

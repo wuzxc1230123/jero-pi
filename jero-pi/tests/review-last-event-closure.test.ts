@@ -11,7 +11,7 @@ import {
 	decodeReviewStartV3,
 	type ReviewCollectInputV3,
 	type ReviewStatusV3,
-} from "../lib/review-integration-v2.ts";
+} from "../lib/authority/wire-contract.ts";
 
 const SHA = `sha256:${"a".repeat(64)}`;
 const TREE = "b".repeat(40);

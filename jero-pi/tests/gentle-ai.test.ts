@@ -18,7 +18,7 @@ import { PROFILES_KIND, PROFILES_VERSION } from "../lib/agent-profiles.ts";
 import { NATIVE_REVIEW_ERROR_CODE, NativeReviewCliError, type NativeReviewCli } from "../lib/native-review-cli.ts";
 import { CandidateViewError, type CandidateViewRegistry } from "../lib/review-candidate-view.ts";
 import { installPackageAssets } from "../lib/sdd-preflight.ts";
-import type { ReviewCollectInputV3, ReviewStatusV3 } from "../lib/review-integration-v2.ts";
+import type { ReviewCollectInputV3, ReviewStatusV3 } from "../lib/authority/wire-contract.ts";
 import { stripAnsi } from "../lib/terminal-theme.ts";
 import { cardBody, cardHint, cardTitle, cardTone } from "./gentle-card-text.ts";
 

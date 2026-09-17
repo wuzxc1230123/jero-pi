@@ -8,7 +8,7 @@ import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-a
 import { __testing, createGentleAiExtension } from "../extensions/gentle-ai.ts";
 import { NativeReviewIntegrationError, type NativeReviewCli } from "../lib/native-review-cli.ts";
 import { CandidateViewRegistry } from "../lib/review-candidate-view.ts";
-import { decodeReviewFailureV2, type AuthorityRepairAssessmentV1, type ReviewStatusV3 } from "../lib/review-integration-v2.ts";
+import { decodeReviewFailureV2, type AuthorityRepairAssessmentV1, type ReviewStatusV3 } from "../lib/authority/wire-contract.ts";
 
 interface RegisteredTool {
 	execute: (

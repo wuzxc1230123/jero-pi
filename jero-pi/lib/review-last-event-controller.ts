@@ -1,5 +1,5 @@
 import type { NativeReviewCli } from "./native-review-cli.ts";
-import type { ReviewLastEventClosureBinding, ReviewStatusV3 } from "./review-integration-v2.ts";
+import type { ReviewLastEventClosureBinding, ReviewStatusV3 } from "./authority/wire-contract.ts";
 
 export interface ReviewLastEventCaptureSelector {
 	readonly baseRef?: string;

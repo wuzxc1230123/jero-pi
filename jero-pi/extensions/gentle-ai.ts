@@ -205,7 +205,7 @@ import {
 	type ReviewLastEventClosureBinding,
 	type ReviewLastEventClosureV1,
 	type ReviewStatusV3,
-} from "../lib/review-integration-v2.ts";
+} from "../lib/authority/wire-contract.ts";
 import { reconcileUnknownReviewLastEventCapture } from "../lib/review-last-event-controller.ts";
 import { acquireChildStandingReviewPermissionClient, type ChildStandingReviewPermissionClient } from "../lib/review-session-standing-permission-ipc.ts";
 import { isPiConsentV3, presentReviewConsentUi } from "../lib/review-consent-ui.ts";

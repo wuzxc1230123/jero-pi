@@ -1,7 +1,7 @@
 import type { NativeReviewCli, NativeReviewModeRequest, NativeReviewModeResult, NativeReviewAssessRequest, NativeSddAcquireRequest, NativeSddAttemptResult, NativeSddSettleRequest, NativeSddStatusRequest, NativeSddStatusV2, NativeStartRequest, NativeStartResult, NativeReviewConsentAnswerRequest, NativeReviewConsentAnswerResult, NativeReviewAbandonRequest, NativeReviewReclaimRequest, NativeReviewRecoverRequest, NativeReviewReconcileAuthorityRequest, NativeReviewRecoveryResult, NativeReviewCorrectionPlanCaptureRequest, NativeReviewAcknowledgeApprovedRequest, NativeReviewAcknowledgeApprovedOutcome , NativeReviewProviderRoleCaptureOutcome } from "./native-review-cli.ts";
 import { NativeReviewConsentRequiredError, REVIEW_EMPTY_CANDIDATE_HINT, consentInvocationArguments, nativeRiskEvidencePhrases, nativeUntrackedSelection, isCanonicalProcessString, NATIVE_REVIEW_PROVIDER_ROLE_CAPTURE_SCHEMA, type NativeReviewProviderRoleCaptureRequest } from "./native-review-cli.ts";
-import type { ReviewLastEventClosureV1, ReviewStatusV3 } from "./review-integration-v2.ts";
-import { decodeReviewLastEventClosureV1 } from "./review-integration-v2.ts";
+import type { ReviewLastEventClosureV1, ReviewStatusV3 } from "./authority/wire-contract.ts";
+import { decodeReviewLastEventClosureV1 } from "./authority/wire-contract.ts";
 import { prepareReviewHostRelaySlot, submitReviewHostRelayPreparedResult, type ReviewHostRelayRequest, type ReviewHostRelayPreparationRunner } from "./review-host-relay.ts";
 import type { ReviewAssessmentV1 } from "./review-risk-assessment.ts";
 import { resolveJeroAuthorityContextV1, type JeroAuthorityContextV1 } from "./authority/review.ts";

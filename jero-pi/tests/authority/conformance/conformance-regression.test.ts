@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { decodeReviewConsentV3, decodeReviewCapabilitiesV2 } from "../../../lib/review-integration-v2.ts";
+import { decodeReviewConsentV3, decodeReviewCapabilitiesV2 } from "../../../lib/authority/wire-contract.ts";
 
 // §J.1 assertions 11-12: consent/v3 invocation vectors (a regression anchor —
 // unchanged by M3) and the capabilities/v2.2 vocabulary anchor. Fixture decode
