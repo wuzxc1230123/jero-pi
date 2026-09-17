@@ -5,7 +5,7 @@ import { join } from "node:path";
 import test from "node:test";
 import { execFileSync } from "node:child_process";
 import { __testing } from "../../extensions/gentle-ai.ts";
-import { createNativeReviewCli } from "../../lib/native-review-cli.ts";
+import { createNativeReviewCli } from "../../lib/authority/client-contract.ts";
 import { createJeroAuthorityReviewCli } from "../../lib/jero-authority-cli.ts";
 import { tempRoot } from "./fixtures.ts";
 

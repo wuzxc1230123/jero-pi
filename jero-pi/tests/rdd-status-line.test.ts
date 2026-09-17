@@ -8,7 +8,7 @@ import {
 	type NativeReviewModeRequest,
 	type NativeReviewModeResult,
 	type NativeReviewModeStatus,
-} from "../lib/native-review-cli.ts";
+} from "../lib/authority/client-contract.ts";
 
 // ---------------------------------------------------------------------------
 // gentle-pi#661: the always-on parent prompt renders a second status line,

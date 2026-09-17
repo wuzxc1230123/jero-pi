@@ -1,4 +1,4 @@
-import type { NativeReviewCli } from "./native-review-cli.ts";
+import type { NativeReviewCli } from "./authority/client-contract.ts";
 import type { ReviewLastEventClosureBinding, ReviewStatusV3 } from "./authority/wire-contract.ts";
 
 export interface ReviewLastEventCaptureSelector {

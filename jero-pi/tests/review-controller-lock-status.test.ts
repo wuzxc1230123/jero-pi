@@ -6,7 +6,7 @@ import { join } from "node:path";
 import test from "node:test";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { createGentleAiExtension } from "../extensions/gentle-ai.ts";
-import type { NativeReviewCli } from "../lib/native-review-cli.ts";
+import type { NativeReviewCli } from "../lib/authority/client-contract.ts";
 
 // The lock surface rides the negotiated target-status raw payload; the
 // retired inventory verb is gone from the client contract.

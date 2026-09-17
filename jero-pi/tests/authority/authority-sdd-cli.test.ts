@@ -5,7 +5,7 @@ import { join } from "node:path";
 import test from "node:test";
 import { execFileSync } from "node:child_process";
 import { createJeroAuthoritySddCli } from "../../lib/jero-authority-cli.ts";
-import { decodeNativeSddStatusV2 } from "../../lib/native-review-cli.ts";
+import { decodeNativeSddStatusV2 } from "../../lib/authority/client-contract.ts";
 import { tempRoot } from "./fixtures.ts";
 
 // P4c: the extension's default NativeReviewCli now serves the SDD projection

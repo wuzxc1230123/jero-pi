@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { __testing } from "../extensions/gentle-ai.ts";
-import type { NativeReviewCli } from "../lib/native-review-cli.ts";
+import type { NativeReviewCli } from "../lib/authority/client-contract.ts";
 import { assertReviewLastEventClosureBinding, decodeReviewLastEventClosureV1, type ReviewStatusV3 } from "../lib/authority/wire-contract.ts";
 
 const CAPTURED_FIXTURES = join(process.cwd(), "tests", "fixtures", "devbinary");

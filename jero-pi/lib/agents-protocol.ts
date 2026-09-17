@@ -1,5 +1,5 @@
 import type { RemediationObservations, RemediationScope } from "./agents-runner.ts";
-import type { NativeSddAcquireRequest, NativeSddSettleRequest, NativeSddAttemptResult } from "./native-review-cli.ts";
+import type { NativeSddAcquireRequest, NativeSddSettleRequest, NativeSddAttemptResult } from "./authority/client-contract.ts";
 import { sanitizeTerminalText } from "./terminal-theme.ts";
 
 // Gentle Agents protocol. A child pi process streams RPC events; the host

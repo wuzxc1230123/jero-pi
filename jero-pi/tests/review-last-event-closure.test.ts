@@ -4,8 +4,8 @@ import { join } from "node:path";
 import test from "node:test";
 import { __testing } from "../extensions/gentle-ai.ts";
 import { reconcileUnknownReviewLastEventCapture } from "../lib/review-last-event-controller.ts";
-import * as nativeReviewCliModule from "../lib/native-review-cli.ts";
-import type { NativeReviewCli } from "../lib/native-review-cli.ts";
+import * as nativeReviewCliModule from "../lib/authority/client-contract.ts";
+import type { NativeReviewCli } from "../lib/authority/client-contract.ts";
 import {
 	decodeReviewLastEventClosureV1,
 	decodeReviewStartV3,

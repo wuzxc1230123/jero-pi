@@ -128,8 +128,8 @@ test("package verification names the native review runtime boundary and packaged
 
 	assert.ok(manifest.files?.includes("lib/"), "the published package must include the native review runtime module directory");
 	assert.ok(manifest.files?.includes("runtime/"), "the published package must include generated JavaScript runtime modules");
-	assert.match(verifier, /"lib\/native-review-cli\.ts"/, "package verification must require the native review adapter from the packaged runtime");
-	assert.match(verifier, /"runtime\/native-review-cli\.mjs"/, "package verification must require the generated native review adapter");
+	assert.match(verifier, /"lib\/authority\/client-contract\.ts"/, "package verification must require the client contract under the authority");
+	assert.match(verifier, /"runtime\/client-contract\.mjs"/, "package verification must require the generated client contract module");
 	assert.match(verifier, /build-runtime-modules\.mjs.*--check/s, "package verification must reject generated-runtime drift");
 	assert.match(verifier, /"tests\/fixtures\/native-review-cli\/v2\.1\.3\/start\.json"/, "package verification must retain the pinned native decoder fixture");
 	assert.match(

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import * as nativeReviewCli from "../lib/native-review-cli.ts";
+import * as nativeReviewCli from "../lib/authority/client-contract.ts";
 import {
 	CompactReviewContractError,
 	parseNativeCompactFinalizeInput,

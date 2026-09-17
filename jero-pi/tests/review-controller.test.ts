@@ -23,7 +23,7 @@ import { domainHashV1 } from "../lib/review-canonical.ts";
 import { resolveRepositoryAuthorityV1 } from "../lib/review-repository.ts";
 import { REVIEW_LENS, REVIEW_ROUTE } from "../lib/review-triggers.ts";
 import { qualifiedReviewLockPlatform, testSnapshot } from "./review-test-fixtures.ts";
-import type { NativeReviewCli } from "../lib/native-review-cli.ts";
+import type { NativeReviewCli } from "../lib/authority/client-contract.ts";
 
 setReviewMutationLockPlatformForTesting(qualifiedReviewLockPlatform());
 

@@ -7,10 +7,10 @@ import test from "node:test";
 import { AGENT_MODE, type AgentDefinition } from "../lib/agents-config.ts";
 import { AgentRunner, type TaskRequest } from "../lib/agents-runner.ts";
 import { TaskStore } from "../lib/agents-protocol.ts";
-import { createNodeExecFileAdapter, NativeReviewCliV216, decodeNativeSddStatusV2, NATIVE_REVIEW_ERROR_CODE, NativeReviewCliError } from "../lib/native-review-cli.ts";
+import { createNodeExecFileAdapter, NativeReviewCliV216, decodeNativeSddStatusV2, NATIVE_REVIEW_ERROR_CODE, NativeReviewCliError } from "../lib/authority/client-contract.ts";
 import { createGentleAiExtension, __testing } from "../extensions/gentle-ai.ts";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import type { NativeReviewCli, NativeSddStatusV2 } from "../lib/native-review-cli.ts";
+import type { NativeReviewCli, NativeSddStatusV2 } from "../lib/authority/client-contract.ts";
 import { ensureSddPreflight } from "../lib/sdd-preflight.ts";
 import { fakeChild } from "./agents-fake-child.ts";
 

@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { __testing } from "../extensions/gentle-ai.ts";
-import { NativeReviewIntegrationError, type NativeReviewCli } from "../lib/native-review-cli.ts";
+import { NativeReviewIntegrationError, type NativeReviewCli } from "../lib/authority/client-contract.ts";
 import { CandidateViewRegistry } from "../lib/review-candidate-view.ts";
 import type { ReviewCollectInputV3, ReviewStatusV3 } from "../lib/authority/wire-contract.ts";
 import type { ReviewHostRelayRequest } from "../lib/review-host-relay.ts";

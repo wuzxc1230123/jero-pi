@@ -3,7 +3,7 @@ import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSy
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { createNodeExecFileAdapter } from "../lib/native-review-cli.ts";
+import { createNodeExecFileAdapter } from "../lib/authority/client-contract.ts";
 import {
 	REVIEW_HOST_RELAY_FAILURE,
 	REVIEW_HOST_RELAY_PI_ARGV,

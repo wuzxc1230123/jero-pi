@@ -1,6 +1,7 @@
 import { fileURLToPath } from "node:url";
 import { extractParentConfirmedSddPreflightContext, getPackageAssetOwner, isParentConfirmedSddPreflightContext, SHIPPED_SDD_AGENT_NAMES } from "../lib/sdd-preflight.ts";
-import { NativeReviewCliV216, NativeReviewCliError, createNodeExecFileAdapter, decodeNativeSddStatusV2, type NativeReviewCli, type NativeSddAcquireRequest, type NativeSddAttemptResult, type NativeSddSettleRequest } from "../lib/native-review-cli.ts";
+import { NativeReviewCliError, decodeNativeSddStatusV2, type NativeReviewCli, type NativeSddAcquireRequest, type NativeSddAttemptResult, type NativeSddSettleRequest } from "../lib/authority/client-contract.ts";
+import { createJeroAuthorityReviewCli } from "../lib/jero-authority-cli.ts";
 import { spawn } from "node:child_process";
 import { recordReviewMutation } from "../lib/review-reminder-receipt.ts";
 import { SESSION_CHANGE_RELAY } from "../lib/session-changes.ts";
@@ -1199,7 +1200,7 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 			prepared = runner.prepareRemediation(request);
 			const persist = (task: TaskRecord) => saveTask(tasksDir, task, store.thread(task.id));
 			try {
-				const native = deps.nativeSdd ?? new NativeReviewCliV216(createNodeExecFileAdapter());
+				const native = deps.nativeSdd ?? createJeroAuthorityReviewCli();
 				Object.assign(request, await admitManagedRemediation(request, request.remediationIntent, native, persist, ctx, prepared));
 				if (activeSessionId() !== request.parentSessionId) throw new Error("Parent session changed; retain admission and refuse actor replay");
 				prepared.sddRemediation!.actorClaimed = true;
@@ -1326,7 +1327,7 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 			const task = stored.task, retainedThread = stored.thread;
 			const target = registryFor(ctx).validate(task.cwd);
 			if (target !== resolve(task.cwd) || task.sddRemediation?.acquire.workspaceRoot !== target) throw new Error("Retained remediation task must resolve to its exact worktree in the same Git clone as this session");
-			const native = deps.nativeSdd ?? new NativeReviewCliV216(createNodeExecFileAdapter());
+			const native = deps.nativeSdd ?? createJeroAuthorityReviewCli();
 			const persist = async (current: TaskRecord) => {
 				await saveTask(tasksDir, current, retainedThread);
 				store.update(current.id, { status: current.status, error: current.error, lastStep: current.lastStep, endedAt: current.endedAt, lastActivityAt: current.lastActivityAt, sddRemediation: current.sddRemediation });

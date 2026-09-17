@@ -184,7 +184,7 @@ import {
 	type NativeReviewUnachievableLensCaptureArtifact,
 	type NativeStartResult,
 	type NativeReviewAssessRequest,
-} from "../lib/native-review-cli.ts";
+} from "../lib/authority/client-contract.ts";
 import { createJeroAuthorityReviewCli } from "../lib/jero-authority-cli.ts";
 import {
 	verificationPlan,

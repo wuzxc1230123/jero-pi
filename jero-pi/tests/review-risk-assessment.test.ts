@@ -9,7 +9,7 @@ import {
 	NativeReviewCliV216,
 	type ExecFileAdapter,
 	type NativeReviewCli,
-} from "../lib/native-review-cli.ts";
+} from "../lib/authority/client-contract.ts";
 import {
 	decodeReviewAssessmentV1,
 	isSmallWriterProfile,
@@ -544,7 +544,7 @@ test("gentle_review assess never requires a lineageId (unlike most other operati
 });
 
 // ---------------------------------------------------------------------------
-// Native reader (`NativeReviewCliV216.assess`, `lib/native-review-cli.ts`):
+// Native reader (`NativeReviewCliV216.assess`, `lib/authority/client-contract.ts`):
 // mirrors reviewMode's wiring -- bounded subprocess, typed decode, fail closed
 // on a non-zero exit or an "unknown command" older binary.
 // ---------------------------------------------------------------------------

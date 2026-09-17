@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { basename, join, relative, resolve } from "node:path";
-import type { NativeSddStatusV2 } from "./native-review-cli.ts";
+import type { NativeSddStatusV2 } from "./authority/client-contract.ts";
 import {
 	detectActiveDomainCollisions,
 	detectLegacyFlatSpec,

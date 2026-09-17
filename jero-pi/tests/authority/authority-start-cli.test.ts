@@ -3,7 +3,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import test from "node:test";
 import { createJeroAuthorityReviewCli } from "../../lib/jero-authority-cli.ts";
-import { NativeReviewConsentRequiredError, type NativeStartResult } from "../../lib/native-review-cli.ts";
+import { NativeReviewConsentRequiredError, type NativeStartResult } from "../../lib/authority/client-contract.ts";
 import { decodeReviewConsentV3 } from "../../lib/authority/wire-contract.ts";
 import { repository } from "./fixtures.ts";
 
