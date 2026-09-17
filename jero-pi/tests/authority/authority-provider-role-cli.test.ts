@@ -92,12 +92,14 @@ test("the validation vector derives the fix from the worktree and closes approve
 	if (!("operation" in outcome)) throw new Error("expected a closure outcome");
 	assert.equal(outcome.operation, "review/capture-validation");
 	assert.equal(outcome.state, "approved");
-	// Q-B2 (open): the corrected workspace drifted from the frozen pre-fix
-	// snapshot identity, and approved is not a correction-phase state, so the
-	// live STATUS cannot see this approved lineage anymore - the burn binding
-	// for corrected lineages needs an explicit matching decision.
+	// Q-B2 (closed): the live workspace IS the lineage's final corrected
+	// candidate tree, so STATUS resolves the approved lineage as the current
+	// target and the burn vector binds - the corrected review can be
+	// acknowledged instead of vanishing from the live surface.
 	const after = reviewStatusV1(harness.context, { cwd: harness.repo, lineageId: harness.start.lineage_id });
 	if (after.kind !== "status") throw new Error("status failed");
-	assert.equal(after.applicability, "unrelated");
+	assert.equal(after.applicability, "current_target");
+	assert.equal(after.next_transition?.reason_code, "approved_awaiting_acknowledgement");
+	if (after.next_transition?.execute === undefined || after.next_transition.execute.operation !== "review.acknowledge-approved") throw new Error("the burn vector must bind the corrected approval");
 	void readFileSync;
 });

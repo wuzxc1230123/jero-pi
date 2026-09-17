@@ -259,6 +259,14 @@ export function reviewStatusV1(context: JeroAuthorityContextV1, target: JeroRevi
 	const requestedProjection: "workspace" | "staged" = target.projection ?? "workspace";
 	const targetIdentity = live.target_identity;
 
+	// Q-B2: a lineage whose bounded correction was applied stores the final
+	// candidate tree; when the live workspace IS that tree, the lineage is the
+	// current target even though its START snapshot identity predates the fix.
+	// Without this, an approved corrected lineage is invisible to STATUS and
+	// its acknowledge burn can never bind.
+	const coversLiveCandidateV1 = (record: JeroLineageStateFileV1): boolean =>
+		record.state.final_candidate_tree !== undefined && record.state.final_candidate_tree === live.record.complete_snapshot_tree;
+
 	const matches: JeroLineageStateFileV1[] = [];
 	const lineageBound: JeroLineageStateFileV1[] = [];
 	const corrupted: { id: string; detail: string }[] = [];
@@ -283,10 +291,11 @@ export function reviewStatusV1(context: JeroAuthorityContextV1, target: JeroRevi
 		// under the fix; the named lineage binds by ID and its frozen identity.
 		if (CORRECTION_PHASE_STATES.has(loaded.record.state.state)) {
 			lineageBound.push(loaded.record);
-		} else if (loaded.record.state.snapshot.identity === targetIdentity) {
+		} else if (loaded.record.state.snapshot.identity === targetIdentity || coversLiveCandidateV1(loaded.record)) {
 			// The explicit path matches by identity exactly like the listing path
 			// (F7): a named lineage whose frozen identity drifted from the live
-			// candidate is NOT the current target.
+			// candidate is NOT the current target - unless the live tree is the
+			// lineage's own corrected final tree (Q-B2).
 			matches.push(loaded.record);
 		}
 	} else {
@@ -297,7 +306,7 @@ export function reviewStatusV1(context: JeroAuthorityContextV1, target: JeroRevi
 				continue;
 			}
 			if (loaded.kind !== "ok" || isJeroLineageConsumedV1(loaded.record)) continue;
-			if (loaded.record.state.snapshot.identity === targetIdentity) {
+			if (loaded.record.state.snapshot.identity === targetIdentity || coversLiveCandidateV1(loaded.record)) {
 				matches.push(loaded.record);
 			} else if (CORRECTION_PHASE_STATES.has(loaded.record.state.state)) {
 				lineageBound.push(loaded.record);
