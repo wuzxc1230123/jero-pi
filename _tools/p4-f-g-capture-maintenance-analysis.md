@@ -62,3 +62,8 @@ admit 缝组合落地：`admitJeroCaptureResultForRelayV1` 在非重放准入使
 - **fix_application 驱动落定**：纠正计划捕获一体完成 forecast + 从 live worktree 推导 fix（lib/authority/fix-application.ts，隔离索引对冻结树 staging，对象落权威库供 finalize 复核）+ 应用——语义为"先落修复再应答计划行数"（老二进制 derives actual correction lines from Git 的工具面印证）。
 - **Q-B2（新开放点）**：fix_application 记录 final_candidate_tree 但不重绑 snapshot.identity；approved 不在 CORRECTION_PHASE_STATES，修正后工作区对 live STATUS 不可见该血统（unrelated）——修正路径的燃烧绑定来源需显式决策（identity 匹配纳入 final_candidate_tree，或闭包直接携带 burn 向量）。
 - 测试：authority-provider-role-cli 3 项（corroborated→correction_required 闭包 / refuted→approved 闭包 / validation 全链含工作区修复推导）；P4b 端到端更新为新闭包契约。
+
+## P4e 误判修正
+
+- schemas/runtime-aggregate-v1.schema.json 不是遥测残留：lib/runtime-metrics.ts（§5.4 保留件）以其为封闭枚举数据源（agent_class、model 字段、anyOf 分支）。保留。
+- tests/fixtures/runtime-metrics-native-batches.json 同为本地记账测试夹具，保留。

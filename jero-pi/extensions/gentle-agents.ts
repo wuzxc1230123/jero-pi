@@ -515,7 +515,7 @@ const RESEARCH_ARTIFACT_SCHEMA = {
 		store: { type: "string", enum: ["openspec", "engram", "both", "none"] }, worktree: { type: "string" }, changeName: { type: "string" }, retainedIntent: { type: "string" },
 		locators: { type: "array", maxItems: 3, items: { type: "object", required: ["artifact", "revision", "digest"], properties: {
 			artifact: { type: "string", enum: ["research", "preproposal", "explore"] }, revision: { type: "integer", minimum: 1 }, digest: { type: "string", pattern: "^[a-f0-9]{64}$" }, path: { type: "string" },
-			engram: { type: "object", required: ["id", "project", "topic_key", "revision_count"], properties: { id: { type: "integer", minimum: 1 }, project: { type: "string" }, topic_key: { type: "string" }, revision_count: { type: "integer", minimum: 1 } } },
+			engram: { type: "object", required: ["topic_key"], properties: { topic_key: { type: "string" } } },
 		} } },
 	},
 };
@@ -583,18 +583,18 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 				let desired: ResearchWriteIdentity | undefined;
 				if (["write", "edit", "mem_save"].includes(event.toolName)) {
 					if (readbackMismatch || pending.size) throw new Error("Stale/divergent state requires explicit identical-scope re-entry.");
-					const tools = scope.store === "both" ? ["read", "mem_get_observation"] : [scope.store === "openspec" ? "read" : "mem_get_observation"];
+					const tools = scope.store === "both" ? ["read", "mem_read"] : [scope.store === "openspec" ? "read" : "mem_read"];
 					if (!scope.locators.every((_, i) => tools.every(tool => initialReads.has(`${i}:${tool}`)))) throw new Error("Every selected artifact requires matching initial readback before mutation.");
 					reads.clear();
 					const content = "content" in event.input ? event.input.content : undefined;
 					if (event.toolName === "edit" || typeof content !== "string") throw new Error("Use a full bounded write/save for post-write readback.");
-					const key = `${index}:${event.toolName === "write" ? "read" : "mem_get_observation"}`;
+					const key = `${index}:${event.toolName === "write" ? "read" : "mem_read"}`;
 					if (!initialReads.has(key) || writes.has(key)) throw new Error("Fresh matching readback required before mutation.");
 					const revision: unknown = JSON.parse(content).revision;
 					if (!Number.isSafeInteger(revision) || Number(revision) <= (accepted.get(key) ?? scope.locators[index]).revision) throw new Error("Full write requires a newer positive revision.");
 					desired = { revision: Number(revision), digest: createHash("sha256").update(content).digest("hex") };
 					if (scope.store === "both") {
-						const peerKey = `${index}:${event.toolName === "write" ? "mem_get_observation" : "read"}`;
+						const peerKey = `${index}:${event.toolName === "write" ? "mem_read" : "read"}`;
 						const peer = writes.get(peerKey) ?? accepted.get(peerKey);
 						if (peer && peer.revision > (accepted.get(key) ?? scope.locators[index]).revision && (peer.revision !== desired.revision || peer.digest !== desired.digest)) throw new Error("Hybrid desired identity divergence refused before mutation");
 					}
@@ -620,25 +620,25 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 				pending.delete(event.toolCallId); reads.clear();
 				return;
 			}
-			if (!["read", "mem_get_observation"].includes(event.toolName)) return;
+			if (!["read", "mem_read"].includes(event.toolName)) return;
 			if (pending.size) return { content: [...event.content, { type: "text" as const, text: "Research readback incomplete: proposal_ready=false; mutation pending." }] };
 			let matched = false, complete = false;
 			try {
 				const scope = artifactScope(ctx.cwd);
 				researchArtifactCall(scope, ctx.cwd, event.toolName, event.input);
 				const bytes = event.content.map(part => part.type === "text" ? part.text : "").join("");
-				const returned = event.toolName === "read" ? bytes : JSON.parse(bytes);
+				const returned = event.toolName === "read" || event.toolName === "mem_read" ? bytes : JSON.parse(bytes);
 				const key = `${index}:${event.toolName}`, written = writes.get(key);
 				const expected = { ...(accepted.get(key) ?? scope.locators[index]), ...written };
 				matched = !event.isError && researchArtifactReadback(expected, event.toolName, returned, written !== undefined);
 				if (matched) {
 					reads.set(key, expected.digest);
 					initialReads.add(key);
-					accepted.set(key, event.toolName === "read" ? expected : { ...expected, engram: { ...expected.engram!, revision_count: returned.revision_count } });
+					accepted.set(key, expected);
 					writes.delete(key);
 					checkpoint(ctx, { toolCallId: event.toolCallId, tool: event.toolName, index, matched: true });
 				}
-				const tools = scope.store === "both" ? ["read", "mem_get_observation"] : [scope.store === "openspec" ? "read" : "mem_get_observation"];
+				const tools = scope.store === "both" ? ["read", "mem_read"] : [scope.store === "openspec" ? "read" : "mem_read"];
 				const divergent = scope.locators.some((_, i) => tools.every(tool => reads.has(`${i}:${tool}`)) && new Set(tools.map(tool => reads.get(`${i}:${tool}`))).size !== 1);
 				if (divergent) matched = false;
 				complete = matched && !readbackMismatch && scope.store !== "none" && scope.locators.every((_, i) => tools.every(tool => reads.has(`${i}:${tool}`)));

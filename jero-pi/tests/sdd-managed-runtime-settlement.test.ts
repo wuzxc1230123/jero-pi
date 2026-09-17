@@ -258,7 +258,7 @@ test("remediation actor preserves separately authorized memory artifact tools", 
 	const { readFileSync } = await import("node:fs");
 	const agent = parseAgentDefinition(readFileSync("assets/agents/sdd-remediate.md", "utf8"), "/agents/sdd-remediate.md", "global");
 	assert.ok("instructions" in agent);
-	for (const tool of ["mem_search", "mem_get_observation", "mem_save", "mem_update"]) assert.ok(agent.tools.includes(tool), tool);
+	for (const tool of ["mem_search", "mem_read", "mem_save"]) assert.ok(agent.tools.includes(tool), tool);
 });
 
 
@@ -294,7 +294,7 @@ test("R1 confirms exact canonical paths and commands; data, denial and symlinks 
 	const scope = await confirmRemediationScope(candidate, native, ui);
 	assert.match(shown, /pnpm test/); assert.ok(shown.includes(target)); assert.ok(shown.includes(cwd));
 	assert.equal(remediationToolAllowed(scope, cwd, "write", { path: target }), true);
-	for (const tool of ["mem_search", "mem_get_observation", "mem_save", "mem_update"]) assert.equal(remediationToolAllowed(scope, cwd, tool, { id: 7, project: "other", content: "outside" }), false);
+	for (const tool of ["mem_search", "mem_read", "mem_save"]) assert.equal(remediationToolAllowed(scope, cwd, tool, { id: 7, project: "other", content: "outside" }), false);
 	assert.equal(remediationToolAllowed(scope, cwd, "write", { path: join(cwd, "other.ts") }), false);
 	assert.equal(remediationToolAllowed(scope, cwd, "bash", { command: "pnpm test; touch outside" }), false);
 	for (const bad of [{ ...candidate, editPaths: [join(cwd, "alias.ts")] }, { ...candidate, editPaths: [cwd] }, { ...candidate, editPaths: [target, target] }]) await assert.rejects(confirmRemediationScope(bad, native, ui));

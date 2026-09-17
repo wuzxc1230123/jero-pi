@@ -60,19 +60,19 @@ function assertGenericRoleBody(fileName: string, source: string): void {
 }
 
 const requiredToolsByAgent: Record<string, string[]> = {
-	"sdd-apply.md": ["read", "grep", "find", "edit", "write", "bash", "mem_search", "mem_get_observation", "mem_save", "mem_update"],
-	"sdd-archive.md": ["read", "grep", "find", "edit", "write", "bash", "mem_search", "mem_get_observation", "mem_save"],
-	"sdd-design.md": ["read", "grep", "find", "edit", "write", "mem_search", "mem_get_observation", "mem_save"],
+	"sdd-apply.md": ["read", "grep", "find", "edit", "write", "bash", "mem_search", "mem_read", "mem_save"],
+	"sdd-archive.md": ["read", "grep", "find", "edit", "write", "bash", "mem_search", "mem_read", "mem_save"],
+	"sdd-design.md": ["read", "grep", "find", "edit", "write", "mem_search", "mem_read", "mem_save"],
 	"sdd-explore.md": ["read", "grep", "find", "edit", "write", "mem_save"],
-	"sdd-init.md": ["read", "grep", "find", "edit", "write", "bash", "mem_search", "mem_get_observation", "mem_save", "mem_update"],
-	"sdd-onboard.md": ["read", "grep", "find", "edit", "write", "bash", "mem_search", "mem_get_observation", "mem_save", "mem_update"],
-	"sdd-proposal.md": ["read", "grep", "find", "edit", "write", "mem_search", "mem_get_observation", "mem_save"],
-	"sdd-research.md": ["read", "grep", "find", "edit", "write", "mem_search", "mem_get_observation", "mem_save", "fetch_content", "web_search", "source_check", "get_search_content"],
-	"sdd-spec.md": ["read", "grep", "find", "edit", "write", "mem_search", "mem_get_observation", "mem_save"],
-	"sdd-status.md": ["read", "grep", "find", "bash", "mem_search", "mem_get_observation"],
-	"sdd-sync.md": ["read", "grep", "find", "edit", "write", "bash", "mem_search", "mem_get_observation", "mem_save", "mem_update"],
-	"sdd-tasks.md": ["read", "grep", "find", "edit", "write", "mem_search", "mem_get_observation", "mem_save"],
-	"sdd-verify.md": ["read", "grep", "find", "edit", "write", "bash", "mem_search", "mem_get_observation", "mem_save"],
+	"sdd-init.md": ["read", "grep", "find", "edit", "write", "bash", "mem_search", "mem_read", "mem_save"],
+	"sdd-onboard.md": ["read", "grep", "find", "edit", "write", "bash", "mem_search", "mem_read", "mem_save"],
+	"sdd-proposal.md": ["read", "grep", "find", "edit", "write", "mem_search", "mem_read", "mem_save"],
+	"sdd-research.md": ["read", "grep", "find", "edit", "write", "mem_search", "mem_read", "mem_save", "fetch_content", "web_search", "source_check", "get_search_content"],
+	"sdd-spec.md": ["read", "grep", "find", "edit", "write", "mem_search", "mem_read", "mem_save"],
+	"sdd-status.md": ["read", "grep", "find", "bash", "mem_search", "mem_read"],
+	"sdd-sync.md": ["read", "grep", "find", "edit", "write", "bash", "mem_search", "mem_read", "mem_save"],
+	"sdd-tasks.md": ["read", "grep", "find", "edit", "write", "mem_search", "mem_read", "mem_save"],
+	"sdd-verify.md": ["read", "grep", "find", "edit", "write", "bash", "mem_search", "mem_read", "mem_save"],
 };
 
 test("SDD package agents declare role-appropriate tools as YAML arrays", () => {

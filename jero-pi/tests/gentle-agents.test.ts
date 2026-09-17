@@ -1973,7 +1973,7 @@ test("selected child routes recheck provenance and keep separately authorized lo
   const call = hooks.get("tool_call")!;
   assert.equal(call({ toolName: "fetch_content" })?.block, mismatch === "none" ? undefined : true, mismatch);
   assert.equal(call({ toolName: "web_search" })?.block, true, "available but unselected");
-  for (const toolName of names.slice(2)) assert.equal(call({ toolName, input: toolName === "mem_save" ? { project: "pi", topic_key: "sdd/demo/research", content: '{"revision":2}' } : { path, content: '{"revision":2}' } }, { cwd: root })?.block, ["write", "mem_save"].includes(toolName) ? true : undefined, toolName);
+  for (const toolName of names.slice(2)) assert.equal(call({ toolName, input: toolName === "mem_save" ? { topic: "sdd/demo/research", content: '{"revision":2}' } : { path, content: '{"revision":2}' } }, { cwd: root })?.block, ["write", "mem_save"].includes(toolName) ? true : undefined, toolName);
  }
 });
 
@@ -1982,10 +1982,10 @@ test("research child narrows artifact arguments and observes actual dual-store r
  const cwd = join(root, "bounded-child");
  mkdirSync(cwd, { recursive: true });
  const bytes = '{"revision":1,"outcome":"blocked"}';
- const locator = { artifact: "research", path: join(cwd, "openspec/changes/demo/research.md"), revision: 1, digest: createHash("sha256").update(bytes).digest("hex"), engram: { id: 12, project: "pi", topic_key: "sdd/demo/research", revision_count: 1 } };
+ const locator = { artifact: "research", path: join(cwd, "openspec/changes/demo/research.md"), revision: 1, digest: createHash("sha256").update(bytes).digest("hex"), engram: { topic_key: "sdd/demo/research" } };
  const scope = { store: "both", worktree: cwd, changeName: "demo", retainedIntent: "fetch missing; preserve questions", locators: [locator] };
  const hooks = new Map<string, (...args: unknown[]) => unknown>();
- let active = ["read", "write", "mem_get_observation", "mem_save", "subagent_parent_message"];
+ let active = ["read", "write", "mem_read", "mem_save", "subagent_parent_message"];
  const journal = join(cwd, "session.jsonl"); writeFileSync(journal, "");
  const pi = { appendEntry: (customType, data) => appendFileSync(journal, JSON.stringify({ type: "custom", customType, data }) + "\n"), on: (name: string, fn: (...args: unknown[]) => unknown) => hooks.set(name, fn), getActiveTools: () => active, getAllTools: () => active.map(name => ({ name })) };
  gentleAgents(pi as never, { GENTLE_PI_AGENTS_CHILD: "1", GENTLE_PI_RESEARCH_TOOLS: JSON.stringify(active), GENTLE_PI_RESEARCH_ARTIFACT: JSON.stringify(scope) });
@@ -1995,19 +1995,21 @@ test("research child narrows artifact arguments and observes actual dual-store r
  assert.match(prompt.systemPrompt, /never authority/);
  const call = (toolName: string, input: object, toolCallId = "c") => hooks.get("tool_call")!({ toolName, input, toolCallId }, ctx) as { block: boolean } | undefined;
  const result = (toolName: string, input: object, content: string, isError = false) => hooks.get("tool_result")!({ toolName, input, toolCallId: "c", content: [{ type: "text", text: content }], isError }, ctx) as { content: { text: string }[]; isError?: boolean };
+ const render = (body: string) => "saved 2026-01-01T00:00:00.000Z" + String.fromCharCode(10) + String.fromCharCode(10) + body;
+ const readInput = { topic: locator.engram.topic_key };
+ const save = (content: string) => ({ topic: locator.engram.topic_key, content });
  assert.equal(call("write", { path: locator.path, content: '{"revision":2,"outcome":"blocked"}' })?.block, true, "initial readback must precede mutation");
  assert.equal(call("write", { path: join(cwd, "outside.md") })?.block, true);
- assert.equal(call("mem_get_observation", { id: 13 })?.block, true);
- assert.equal(call("mem_save", { project: "pi", topic_key: "sdd/other/research" })?.block, true);
+ assert.equal(call("mem_read", { topic: "sdd/other/research" })?.block, true);
+ assert.equal(call("mem_save", { topic: "sdd/other/research" })?.block, true);
  assert.equal(call("read", { path: locator.path }), undefined);
  assert.match(result("read", { path: locator.path }, bytes).content.at(-1)!.text, /incomplete/);
- assert.equal(call("mem_get_observation", { id: 12 }), undefined);
- const observed = { ...locator.engram, content: bytes };
- assert.match(result("mem_get_observation", { id: 12 }, JSON.stringify(observed)).content.at(-1)!.text, /all selected stores/);
+ assert.equal(call("mem_read", readInput), undefined);
+ assert.match(result("mem_read", readInput, render(bytes)).content.at(-1)!.text, /all selected stores/);
  hooks.get("before_agent_start")!({ systemPrompt: "fresh generation" }, ctx);
  assert.equal(call("write", { path: locator.path, content: '{"revision":5}' })?.block, true, "new generation cannot reuse initial authorization");
  call("read", { path: locator.path }); result("read", { path: locator.path }, bytes);
- call("mem_get_observation", { id: 12 }); result("mem_get_observation", { id: 12 }, JSON.stringify(observed));
+ call("mem_read", readInput); result("mem_read", readInput, render(bytes));
  const next = '{"revision":5,"outcome":"partial"}';
  assert.equal(call("write", { path: locator.path, content: next }), undefined);
  call("read", { path: locator.path }, "pending-read");
@@ -2016,26 +2018,26 @@ test("research child narrows artifact arguments and observes actual dual-store r
  result("write", { path: locator.path, content: next }, "written");
  call("read", { path: locator.path });
  assert.match(result("read", { path: locator.path }, next).content.at(-1)!.text, /incomplete/);
- assert.equal(call("mem_save", { project: "pi", topic_key: locator.engram.topic_key, content: next }), undefined);
- result("mem_save", { project: "pi", topic_key: locator.engram.topic_key, content: next }, "saved");
+ assert.equal(call("mem_save", save(next)), undefined);
+ result("mem_save", save(next), "saved");
  call("read", { path: locator.path });
  result("read", { path: locator.path }, next);
- call("mem_get_observation", { id: 12 });
- assert.match(result("mem_get_observation", { id: 12 }, JSON.stringify({ ...observed, content: next, revision_count: 2 })).content.at(-1)!.text, /all selected stores/);
+ call("mem_read", readInput);
+ assert.match(result("mem_read", readInput, render(next)).content.at(-1)!.text, /all selected stores/);
  assert.equal(call("write", { path: locator.path, content: '{"revision":2}' })?.block, true, "revision 1 to 5 to 2 is refused");
  const newer = '{"revision":6}';
- assert.equal(call("mem_save", { project: "pi", topic_key: locator.engram.topic_key, content: newer }), undefined);
- result("mem_save", { project: "pi", topic_key: locator.engram.topic_key, content: newer }, "saved");
- call("mem_get_observation", { id: 12 });
- assert.equal(result("mem_get_observation", { id: 12 }, JSON.stringify({ ...observed, content: newer, revision_count: 2 })).isError, true, "each save must advance the accepted Engram revision count");
+ assert.equal(call("mem_save", save(newer)), undefined);
+ result("mem_save", save(newer), "saved");
+ call("mem_read", readInput);
+ assert.equal(result("mem_read", readInput, render(next)).isError, true, "a save supersedes the accepted body; only the written digest converges");
  call("write", { path: locator.path, content: '{"revision":3,"outcome":"partial"}' });
  result("write", { path: locator.path }, "permission denied", true);
- call("mem_get_observation", { id: 12 });
- assert.match(result("mem_get_observation", { id: 12 }, JSON.stringify({ ...observed, content: next, revision_count: 2 })).content.at(-1)!.text, /proposal_ready=false/, "write attempt invalidates prior readback even when denied");
- call("mem_get_observation", { id: 12 });
- assert.equal(result("mem_get_observation", { id: 12 }, JSON.stringify({ ...observed, project: "wrong" })).isError, true);
+ call("mem_read", readInput);
+ assert.match(result("mem_read", readInput, render(next)).content.at(-1)!.text, /proposal_ready=false/, "write attempt invalidates prior readback even when denied");
+ call("mem_read", readInput);
+ assert.equal(result("mem_read", readInput, render(bytes)).isError, true);
  assert.equal(call("write", { path: locator.path, content: '{"revision":4}' })?.block, true, "stale/divergent readback must refuse recovery writes");
- assert.equal(call("mem_save", { project: "pi", topic_key: locator.engram.topic_key, content: '{"revision":4}' })?.block, true);
+ assert.equal(call("mem_save", save('{"revision":4}'))?.block, true);
  active = active.filter(name => name !== "write");
  assert.equal(call("write", { path: locator.path })?.block, true);
  assert.equal((hooks.get("tool_call")!({ toolName: "read", input: { path: locator.path } }, { cwd: root }) as { block: boolean }).block, true);
@@ -2043,17 +2045,17 @@ test("research child narrows artifact arguments and observes actual dual-store r
  gentleAgents(pi as never, { GENTLE_PI_AGENTS_CHILD: "1", GENTLE_PI_RESEARCH_TOOLS: JSON.stringify(active), GENTLE_PI_RESEARCH_ARTIFACT: JSON.stringify(scope) });
  call("read", { path: locator.path });
  result("read", { path: locator.path }, bytes);
- call("mem_get_observation", { id: 12 });
- result("mem_get_observation", { id: 12 }, JSON.stringify(observed));
+ call("mem_read", readInput);
+ result("mem_read", readInput, render(bytes));
  call("write", { path: locator.path, content: next });
  result("write", { path: locator.path, content: next }, "written");
  const divergent = '{"revision":2,"outcome":"done"}';
- call("mem_save", { project: "pi", topic_key: locator.engram.topic_key, content: divergent });
- result("mem_save", { project: "pi", topic_key: locator.engram.topic_key, content: divergent }, "saved");
+ call("mem_save", save(divergent));
+ result("mem_save", save(divergent), "saved");
  call("read", { path: locator.path });
  result("read", { path: locator.path }, next);
- call("mem_get_observation", { id: 12 });
- assert.equal(result("mem_get_observation", { id: 12 }, JSON.stringify({ ...observed, content: divergent, revision_count: 2 })).isError, true, "individually matching but divergent hybrid writes never converge");
+ call("mem_read", readInput);
+ assert.equal(result("mem_read", readInput, render(divergent)).isError, true, "individually matching but divergent hybrid writes never converge");
  for (const completion of [[], [{ type: "text", text: "" }], [{ type: "text", text: "denied" }]]) {
   gentleAgents(pi as never, { GENTLE_PI_AGENTS_CHILD: "1", GENTLE_PI_RESEARCH_TOOLS: JSON.stringify(active), GENTLE_PI_RESEARCH_ARTIFACT: JSON.stringify({ ...scope, store: "openspec", locators: [{ ...locator, engram: undefined }] }) });
   call("read", { path: locator.path }); result("read", { path: locator.path }, bytes);
@@ -2065,43 +2067,42 @@ test("research child narrows artifact arguments and observes actual dual-store r
   assert.equal(call("write", { path: locator.path, content: '{"revision":6}' })?.block, true);
  }
  for (const tool of ["write", "mem_save"]) {
-  const memory = tool === "mem_save", readTool = memory ? "mem_get_observation" : "read";
-  const input = memory ? { id: 12 } : { path: locator.path };
-  const mutation = memory ? { project: "pi", topic_key: locator.engram.topic_key, content: next } : { path: locator.path, content: next };
+  const memory = tool === "mem_save", readTool = memory ? "mem_read" : "read";
+  const input = memory ? readInput : { path: locator.path };
+  const mutation = memory ? save(next) : { path: locator.path, content: next };
   gentleAgents(pi as never, { GENTLE_PI_AGENTS_CHILD: "1", GENTLE_PI_RESEARCH_TOOLS: JSON.stringify(active), GENTLE_PI_RESEARCH_ARTIFACT: JSON.stringify({ ...scope, store: memory ? "engram" : "openspec", locators: [{ ...locator, path: memory ? undefined : locator.path, engram: memory ? locator.engram : undefined }] }) });
-  call(readTool, input); result(readTool, input, memory ? JSON.stringify(observed) : bytes);
+  call(readTool, input); result(readTool, input, memory ? render(bytes) : bytes);
   assert.equal(call(tool, mutation), undefined);
   assert.doesNotThrow(() => hooks.get("tool_result")!({ toolName: tool, input: mutation, toolCallId: "c", content: [null], isError: false }, ctx));
   call(readTool, input);
-  assert.match(result(readTool, input, memory ? JSON.stringify({ ...observed, content: next, revision_count: 2 }) : next).content.at(-1)!.text, /proposal_ready=false/);
+  assert.match(result(readTool, input, memory ? render(next) : next).content.at(-1)!.text, /proposal_ready=false/);
   assert.equal(call(tool, { ...mutation, content: '{"revision":6}' })?.block, true);
  }
  for (const store of ["openspec", "engram", "both"]) {
-  for (const bad of ["missing", "malformed", "revision", "digest", "project", "topic", "id", "worktree"]) {
+  for (const bad of ["missing", "malformed", "revision", "digest", "header", "body", "worktree"]) {
    gentleAgents(pi as never, { GENTLE_PI_AGENTS_CHILD: "1", GENTLE_PI_RESEARCH_TOOLS: JSON.stringify(active), GENTLE_PI_RESEARCH_ARTIFACT: JSON.stringify({ ...scope, store, locators: [{ ...locator, path: store === "engram" ? undefined : locator.path, engram: store === "openspec" ? undefined : locator.engram }] }) });
    const memory = store !== "openspec";
-   const tool = memory ? "mem_get_observation" : "read";
-   const input = memory ? { id: 12 } : { path: locator.path };
+   const tool = memory ? "mem_read" : "read";
+   const input = memory ? readInput : { path: locator.path };
    if (store === "both") {
     call("read", { path: locator.path });
     result("read", { path: locator.path }, bytes);
     assert.equal(call("write", { path: locator.path, content: next })?.block, true, "both initial stores must match before either mutation");
    }
    if (bad !== "missing") {
-    const content = bad === "revision" ? '{"revision":0}' : bad === "digest" ? '{"revision":1,"different":true}' : bytes;
-    const value = { ...observed, content, ...(bad === "project" ? { project: "wrong" } : bad === "topic" ? { topic_key: "wrong" } : bad === "id" ? { id: 13 } : {}) };
+    const body = bad === "revision" ? '{"revision":0}' : bad === "digest" ? '{"revision":1,"different":true}' : bytes;
+    const content = bad === "header" ? "loaded 2026-01-01T00:00:00.000Z" + String.fromCharCode(10) + String.fromCharCode(10) + bytes : bad === "body" ? render(bytes) + " " : memory ? render(body) : body;
     if (bad === "worktree") {
      assert.equal((hooks.get("tool_call")!({ toolName: tool, input, toolCallId: "c" }, { cwd: root }) as { block: boolean }).block, true);
-    } else if (memory || !["project", "topic", "id"].includes(bad)) {
+    } else {
      call(tool, input);
-     assert.equal(result(tool, input, bad === "malformed" ? "{" : memory ? JSON.stringify(value) : content).isError, true);
+     assert.equal(result(tool, input, bad === "malformed" ? "{" : content).isError, true);
     }
    }
-   if (store !== "engram") assert.equal(call("write", { path: locator.path, content: next })?.block, true, `${store}/${bad}: zero writes`);
-   if (memory) assert.equal(call("mem_save", { project: "pi", topic_key: locator.engram.topic_key, content: next })?.block, true, `${store}/${bad}: zero saves`);
+   if (store !== "engram") assert.equal(call("write", { path: locator.path, content: next })?.block, true, store + "/" + bad + ": zero writes");
+   if (memory) assert.equal(call("mem_save", save(next))?.block, true, store + "/" + bad + ": zero saves");
   }
  }
-
 });
 
 

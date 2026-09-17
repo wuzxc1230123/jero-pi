@@ -9,7 +9,7 @@ tools:
   - write
   - edit
   - mem_search
-  - mem_get_observation
+  - mem_read
   - mem_save
 ---
 

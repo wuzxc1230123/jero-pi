@@ -39,7 +39,7 @@ test("class-specific grants remain exact when both classes are explicitly select
  assert.match(instructions, /sourceInfo\.path/);
  assert.match(instructions, /--extension/);
  assert.match(instructions, /research_artifact/);
- assert.match(instructions, /revision_count/);
+ assert.match(instructions, /mem_read/);
  assert.match(instructions, /full bounded write/);
  assert.match(instructions, /identical store.*worktree/);
 });
@@ -93,7 +93,7 @@ test("selected documentation never inherits available open-web routes or arbitra
 });
 
 test("selected grants refuse missing, inactive, SDK, restricted and unknown routes without removing local authorization", () => {
- const local = ["read", "grep", "find", "edit", "write", "mem_search", "mem_get_observation", "mem_save"];
+ const local = ["read", "grep", "find", "edit", "write", "mem_search", "mem_read", "mem_save"];
  const definition = { ...agent, tools: [...local, ...both["open-web"].tools, "bash", "mcp"] };
  for (const missing of both["open-web"].tools) {
   const full = inventory(definition.tools);
@@ -125,14 +125,14 @@ test("artifact intent narrows exact paths and topics without granting tools or r
   mkdirSync(join(cwd, "openspec/changes/demo"), { recursive: true });
   const bytes = '{"revision":1,"outcome":"blocked"}';
   writeFileSync(path, bytes);
-  const locator = { artifact: "research", revision: 1, digest: digest(bytes), path, engram: { id: 7, project: "pi", topic_key: "sdd/demo/research", revision_count: 2 } };
+  const locator = { artifact: "research", revision: 1, digest: digest(bytes), path, engram: { topic_key: "sdd/demo/research" } };
   const intent: ResearchArtifactIntent = { store: "both", worktree: cwd, changeName: "demo", retainedIntent: "docs requested; fetch missing", locators: [locator] };
   const scope = parseResearchArtifactIntent(intent, cwd);
   for (const name of ["read", "edit", "write", "grep"]) assert.equal(researchArtifactCall(scope, cwd, name, { path }), 0);
-  assert.equal(researchArtifactCall(scope, cwd, "mem_get_observation", { id: 7 }), 0);
-  assert.equal(researchArtifactCall(scope, cwd, "mem_save", { project: "pi", topic_key: "sdd/demo/research" }), 0);
-  assert.equal(researchArtifactCall(scope, cwd, "mem_search", { project: "pi", query: "sdd/demo/research" }), 0);
-  for (const [name, input] of [["write", { path: join(cwd, "source.ts") }], ["read", {}], ["find", { path: cwd }], ["mem_get_observation", { id: 8 }], ["mem_search", { project: "pi", query: "sdd/demo/research", all_projects: true }], ["mem_save", { project: "other", topic_key: "sdd/demo/research" }]] as const) {
+  assert.equal(researchArtifactCall(scope, cwd, "mem_read", { topic: "sdd/demo/research" }), 0);
+  assert.equal(researchArtifactCall(scope, cwd, "mem_save", { topic: "sdd/demo/research" }), 0);
+  assert.equal(researchArtifactCall(scope, cwd, "mem_search", { query: "sdd/demo/research" }), 0);
+  for (const [name, input] of [["write", { path: join(cwd, "source.ts") }], ["read", {}], ["find", { path: cwd }], ["mem_read", { topic: "sdd/other/research" }], ["mem_read", { topic: "sdd/demo/research", limit: 3 }], ["mem_search", { query: "sdd/other/research" }], ["mem_save", { topic: "sdd/other/research" }]] as const) {
    assert.throws(() => researchArtifactCall(scope, cwd, name, input), /scope/);
   }
   assert.throws(() => researchArtifactCall(scope, tmpdir(), "write", { path }), /worktree/);
@@ -150,23 +150,31 @@ test("artifact intent narrows exact paths and topics without granting tools or r
   assert.throws(() => researchArtifactCall(none, cwd, "write", { path }), /scope/);
   const explore = parseResearchArtifactIntent({ ...intent, store: "openspec", locators: [{ ...locator, artifact: "explore", path: join(cwd, "openspec/changes/demo/explore.md"), engram: undefined }] }, cwd);
   assert.throws(() => researchArtifactCall(explore, cwd, "write", { path: explore.locators[0].path }), /scope/);
-  const corrected = { ...intent, locators: [{ ...locator, revision: 2, digest: digest("corrected"), engram: { ...locator.engram, revision_count: 3 } }] };
+  const corrected = { ...intent, locators: [{ ...locator, revision: 2, digest: digest("corrected") }] };
   assert.equal(parseResearchArtifactIntent(corrected, cwd, scope).retainedIntent, intent.retainedIntent);
   assert.throws(() => parseResearchArtifactIntent({ ...intent, locators: [{ ...locator, path: cwd }] }, cwd), /scope/);
  } finally { rmSync(cwd, { recursive: true, force: true }); }
 });
 
-test("only actual exact OpenSpec bytes and Engram metadata satisfy readback identity", () => {
+test("only actual exact OpenSpec bytes and memory bodies satisfy readback identity", () => {
  const cwd = mkdtempSync(join(tmpdir(), "research-readback-"));
  try {
   const bytes = '{"revision":3,"outcome":"done"}';
-  const locator = { artifact: "research", revision: 3, digest: digest(bytes), path: join(cwd, "openspec/changes/demo/research.md"), engram: { id: 7, project: "pi", topic_key: "sdd/demo/research", revision_count: 4 } };
+  const locator = { artifact: "research", revision: 3, digest: digest(bytes), path: join(cwd, "openspec/changes/demo/research.md"), engram: { topic_key: "sdd/demo/research" } };
   const scope = parseResearchArtifactIntent({ store: "both", worktree: cwd, changeName: "demo", retainedIntent: "docs", locators: [locator] }, cwd);
-  const observation = { ...locator.engram, content: bytes };
+  const observation = `saved 2026-01-01T00:00:00.000Z
+
+${bytes}`;
   assert.equal(researchArtifactReadback(scope.locators[0], "read", bytes), true);
-  assert.equal(researchArtifactReadback(scope.locators[0], "mem_get_observation", observation), true);
-  for (const patch of [{ id: 9 }, { project: "other" }, { topic_key: "sdd/other/research" }, { revision_count: 3 }, { revision_count: undefined }, { content: bytes + " " }]) {
-   assert.equal(researchArtifactReadback(scope.locators[0], "mem_get_observation", { ...observation, ...patch }), false);
+  assert.equal(researchArtifactReadback(scope.locators[0], "mem_read", observation), true);
+  for (const bad of [bytes, `saved 2026-01-01T00:00:00.000Z
+
+${bytes} `, `loaded 2026-01-01T00:00:00.000Z
+
+${bytes}`, `saved 2026-01-01T00:00:00.000Z
+
+{"revision":2,"outcome":"done"}`]) {
+   assert.equal(researchArtifactReadback(scope.locators[0], "mem_read", bad), false);
   }
   for (const bad of ["", bytes + " ", '{"revision":2,"outcome":"done"}', { verified: true }, null]) assert.equal(researchArtifactReadback(scope.locators[0], "read", bad), false);
   assert.equal(researchArtifactReadback(scope.locators[0], "mem_search", [observation]), false, "search is discovery, not full readback");
@@ -182,50 +190,53 @@ test("R4 research write crash reload requires durable desired identity and actua
   const path = join(cwd, "openspec/changes/demo/research.md"), history = join(cwd, `${store}.jsonl`), memory = join(cwd, `${store}-memory.json`);
   mkdirSync(join(cwd, "openspec/changes/demo"), { recursive: true }); writeFileSync(history, "");
   const bytes = '{"revision":1}', next = '{"revision":2}', digest = value => createHash("sha256").update(value).digest("hex");
-  const engram = { id: 12, project: "pi", topic_key: "sdd/demo/research", revision_count: 1 };
-  writeFileSync(path, bytes); writeFileSync(memory, JSON.stringify({ ...engram, content: bytes }));
+  const engram = { topic_key: "sdd/demo/research" };
+  const render = (body) => `saved 2026-01-01T00:00:00.000Z
+
+${body}`;
+  writeFileSync(path, bytes); writeFileSync(memory, render(bytes));
   const scope: ResearchArtifactIntent = { store, worktree: cwd, changeName: "demo", retainedIntent: "retain uncertainty", locators: [{ artifact: "research", revision: 1, digest: digest(bytes), ...(store !== "engram" ? { path } : {}), ...(store !== "openspec" ? { engram } : {}) }] };
   const entries = () => readFileSync(history, "utf8").trim().split("\n").filter(Boolean).map(line => JSON.parse(line));
   const start = (durable = true) => {
-   const hooks = new Map(), active = ["read", "write", "mem_get_observation", "mem_save"];
+   const hooks = new Map(), active = ["read", "write", "mem_read", "mem_save"];
    const pi = { on: (name, fn) => hooks.set(name, fn), getAllTools: () => active.map(name => ({ name })), getActiveTools: () => active, appendEntry: (customType, data) => appendFileSync(history, JSON.stringify({ type: "custom", customType, data }) + "\n") };
    const ctx = { cwd, sessionManager: { getEntries: entries, getSessionFile: () => durable ? history : undefined } };
    gentleAgents(pi as never, { GENTLE_PI_AGENTS_CHILD: "1", GENTLE_PI_RESEARCH_TOOLS: JSON.stringify(active), GENTLE_PI_RESEARCH_ARTIFACT: JSON.stringify(scope) });
    hooks.get("before_agent_start")({ systemPrompt: "research" }, ctx);
    const call = (toolName, input, toolCallId = "call") => hooks.get("tool_call")({ toolName, input, toolCallId }, ctx);
    const read = toolName => {
-    const input = toolName === "read" ? { path } : { id: 12 }; assert.equal(call(toolName, input), undefined);
+    const input = toolName === "read" ? { path } : { topic: engram.topic_key }; assert.equal(call(toolName, input), undefined);
     return hooks.get("tool_result")({ toolName, input, toolCallId: "call", content: [{ type: "text", text: readFileSync(toolName === "read" ? path : memory, "utf8") }], isError: false }, ctx);
    };
    return { call, read, result: (toolName, input, toolCallId) => hooks.get("tool_result")({ toolName, input, toolCallId, content: [{ type: "text", text: "saved" }], isError: false }, ctx) };
   };
-  const unpersisted = start(false); if (store !== "engram") unpersisted.read("read"); if (store !== "openspec") unpersisted.read("mem_get_observation");
-  assert.equal(unpersisted.call(store === "engram" ? "mem_save" : "write", store === "engram" ? { project: "pi", topic_key: engram.topic_key, content: next } : { path, content: next })?.block, true, "in-memory session cannot authorize durable mutation");
+  const unpersisted = start(false); if (store !== "engram") unpersisted.read("read"); if (store !== "openspec") unpersisted.read("mem_read");
+  assert.equal(unpersisted.call(store === "engram" ? "mem_save" : "write", store === "engram" ? { topic: engram.topic_key, content: next } : { path, content: next })?.block, true, "in-memory session cannot authorize durable mutation");
   writeFileSync(history, "");
-  let child = start(); if (store !== "engram") child.read("read"); if (store !== "openspec") child.read("mem_get_observation");
-  const local = store !== "engram", tool = local ? "write" : "mem_save", input = local ? { path, content: next } : { project: "pi", topic_key: engram.topic_key, content: next };
+  let child = start(); if (store !== "engram") child.read("read"); if (store !== "openspec") child.read("mem_read");
+  const local = store !== "engram", tool = local ? "write" : "mem_save", input = local ? { path, content: next } : { topic: engram.topic_key, content: next };
   assert.equal(child.call(tool, input, "crash-write"), undefined);
   assert.ok(JSON.stringify(entries()).includes(digest(next)), "desired identity must precede backend mutation");
   if (store === "both") {
    child.result(tool, input, "crash-write");
    const before = readFileSync(history, "utf8");
    for (const content of ['{"revision":3}', '{"revision":2,"different":true}']) {
-    assert.equal(child.call("mem_save", { project: "pi", topic_key: engram.topic_key, content }, "diverge")?.block, true);
+    assert.equal(child.call("mem_save", { topic: engram.topic_key, content }, "diverge")?.block, true);
     assert.equal(readFileSync(history, "utf8"), before, "mismatch refused before checkpoint or mutation");
    }
-   assert.equal(child.call("mem_save", { project: "pi", topic_key: engram.topic_key, content: next }, "matching"), undefined);
+   assert.equal(child.call("mem_save", { topic: engram.topic_key, content: next }, "matching"), undefined);
   }
-  if (local) writeFileSync(path, next); else writeFileSync(memory, JSON.stringify({ ...engram, content: next, revision_count: 2 }));
+  if (local) writeFileSync(path, next); else writeFileSync(memory, render(next));
   // Recreate extension solely from retained session bytes; no mutation result delivered.
-  child = start(); const readback = child.read(local ? "read" : "mem_get_observation");
+  child = start(); const readback = child.read(local ? "read" : "mem_read");
   if (store === "both") {
-   assert.equal(child.read("mem_get_observation").isError, true, "partial hybrid never converges");
+   assert.equal(child.read("mem_read").isError, true, "partial hybrid never converges");
    assert.equal(child.call(tool, { ...input, content: '{"revision":3}' })?.block, true);
   } else {
    assert.match(readback.content.at(-1).text, /all selected stores/);
-   child = start(); assert.match(child.read(local ? "read" : "mem_get_observation").content.at(-1).text, /all selected stores/, "accepted recovery survives another reload");
+   child = start(); assert.match(child.read(local ? "read" : "mem_read").content.at(-1).text, /all selected stores/, "accepted recovery survives another reload");
    assert.equal(child.call(tool, { ...input, content: '{"revision":3}' }), undefined);
-   child = start(); assert.equal(child.read(local ? "read" : "mem_get_observation").isError, true, "crash before actual mutation refuses stale bytes");
+   child = start(); assert.equal(child.read(local ? "read" : "mem_read").isError, true, "crash before actual mutation refuses stale bytes");
    assert.equal(child.call(tool, { ...input, content: '{"revision":4}' })?.block, true);
   }
  }
@@ -235,16 +246,16 @@ test("R4 research write crash reload requires durable desired identity and actua
 test("R4 corrupted or broadened durable research scope is not a restart grant", async t => {
  const { parseResearchPersistence } = await import("../lib/sdd-research-capabilities.ts");
  const cwd = mkdtempSync(join(tmpdir(), "research-journal-")); t.after(() => rmSync(cwd, { recursive: true, force: true }));
- const locator = { artifact: "research", revision: 1, digest: "a".repeat(64), engram: { id: 12, project: "pi", topic_key: "sdd/demo/research", revision_count: 1 } };
+ const locator = { artifact: "research", revision: 1, digest: "a".repeat(64), engram: { topic_key: "sdd/demo/research" } };
  const scope: ResearchArtifactIntent = { store: "engram", worktree: cwd, changeName: "demo", retainedIntent: "retain uncertainty", locators: [locator] };
- const snapshot = { version: 1, scope, accepted: {}, writes: { "0:mem_get_observation": { revision: 2, digest: "b".repeat(64) } }, operation: { toolCallId: "write", tool: "mem_save", index: 0 } };
+ const snapshot = { version: 1, scope, accepted: {}, writes: { "0:mem_read": { revision: 2, digest: "b".repeat(64) } }, operation: { toolCallId: "write", tool: "mem_save", index: 0 } };
  assert.doesNotThrow(() => parseResearchPersistence(snapshot, scope, cwd));
  const hybrid: ResearchArtifactIntent = { ...scope, store: "both", locators: [{ ...locator, path: join(cwd, "openspec/changes/demo/research.md") }] };
  for (const desired of [{ revision: 3, digest: "b".repeat(64) }, { revision: 2, digest: "c".repeat(64) }]) {
   assert.throws(() => parseResearchPersistence({ ...snapshot, scope: hybrid, writes: { ...snapshot.writes, "0:read": desired } }, hybrid, cwd), /divergent/i);
  }
- assert.doesNotThrow(() => parseResearchPersistence({ ...snapshot, scope: hybrid, writes: { ...snapshot.writes, "0:read": snapshot.writes["0:mem_get_observation"] } }, hybrid, cwd));
- for (const bad of [{ ...snapshot, accepted: "unknown" }, { ...snapshot, writes: { "0:mem_get_observation": null } }, { ...snapshot, accepted: { "0:mem_get_observation": null } }, { ...snapshot, scope: { ...scope, store: "none", locators: [] } }, { ...snapshot, writes: { "0:mem_get_observation": { revision: 1, digest: "a".repeat(64) } } }]) assert.throws(() => parseResearchPersistence(bad, scope, cwd));
+ assert.doesNotThrow(() => parseResearchPersistence({ ...snapshot, scope: hybrid, writes: { ...snapshot.writes, "0:read": snapshot.writes["0:mem_read"] } }, hybrid, cwd));
+ for (const bad of [{ ...snapshot, accepted: "unknown" }, { ...snapshot, writes: { "0:mem_read": null } }, { ...snapshot, accepted: { "0:mem_read": null } }, { ...snapshot, scope: { ...scope, store: "none", locators: [] } }, { ...snapshot, writes: { "0:mem_read": { revision: 1, digest: "a".repeat(64) } } }]) assert.throws(() => parseResearchPersistence(bad, scope, cwd));
  for (const engram of [{ ...locator.engram, id: 13 }, { ...locator.engram, project: "other" }, { ...locator.engram, topic_key: "sdd/other/research" }]) assert.throws(() => parseResearchPersistence(snapshot, { ...scope, locators: [{ ...locator, engram }] }, cwd));
 });
 

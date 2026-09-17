@@ -7,7 +7,7 @@ tools:
   - find
   - bash
   - mem_search
-  - mem_get_observation
+  - mem_read
 ---
 
 You are the SDD status executor for Gentle AI.

@@ -82,18 +82,18 @@ export function researchAgent(agent: AgentDefinition, pi: Inventory, selection?:
 		}
 	}
 	const available = new Set(Object.values(capabilities).filter(value => value.status === "available").flatMap(value => value.tools));
-	const local = new Set(["read", "grep", "find", "edit", "write", "mem_search", "mem_get_observation", "mem_save"]);
+	const local = new Set(["read", "grep", "find", "edit", "write", "mem_search", "mem_read", "mem_save"]);
 	const tools = agent.tools.filter(name => local.has(name) || available.has(name));
 	return { agent: { ...agent, tools, instructions: `${agent.instructions}\n\n${renderResearchCapabilities(capabilities)}` }, capabilities, extensionPaths: [...extensionPaths] };
 }
 
 export const RESEARCH_ARTIFACT_ENV = "GENTLE_PI_RESEARCH_ARTIFACT";
 const ARTIFACT_STORES = ["openspec", "engram", "both", "none"] as const;
+// The store identifier stays "engram" until the P5 identity pass; the
+// LOCATOR carries the jero memory model: one topic key, replace-on-save
+// semantics, no numeric id or write counter.
 interface EngramLocator {
-	id: number;
-	project: string;
 	topic_key: string;
-	revision_count: number;
 }
 export interface ResearchWriteIdentity {
 	revision: number;
@@ -141,17 +141,15 @@ export function parseResearchArtifactIntent(value: unknown, cwd: string, previou
 		names.add(locator.artifact);
 		const path = resolve(cwd, "openspec/changes", scope.changeName, `${locator.artifact}.md`);
 		if (local ? item.path !== path || canonicalArtifactPath(path) !== path : item.path !== undefined) throw new Error("OpenSpec locator outside exact scope.");
-		if (memory ? !positive(engram.id) || !positive(engram.revision_count) || typeof engram.project !== "string" || !engram.project.trim() || engram.topic_key !== `sdd/${scope.changeName}/${locator.artifact}` : item.engram !== undefined) throw new Error("Engram locator outside exact scope.");
+		if (memory ? engram.topic_key !== `sdd/${scope.changeName}/${locator.artifact}` || Object.keys(engram).some(key => key !== "topic_key") : item.engram !== undefined) throw new Error("Engram locator outside exact scope.");
 	}
 	if (previous) {
 		if (scope.store !== previous.store || scope.worktree !== previous.worktree
 			|| scope.changeName !== previous.changeName || scope.retainedIntent !== previous.retainedIntent || scope.locators.length !== previous.locators.length) throw new Error("Research continuation cannot replace retained scope.");
 		for (const next of scope.locators) {
 			const old = previous.locators.find(item => item.artifact === next.artifact);
-			if (!old || old.path !== next.path || old.engram?.id !== next.engram?.id
-				|| old.engram?.project !== next.engram?.project || old.engram?.topic_key !== next.engram?.topic_key) throw new Error("Research continuation cannot broaden scope.");
-			if (next.revision < old.revision || (next.engram?.revision_count ?? 0) < (old.engram?.revision_count ?? 0)
-				|| next.revision === old.revision && next.digest !== old.digest) throw new Error("Research continuation has stale/divergent scope.");
+			if (!old || old.path !== next.path || old.engram?.topic_key !== next.engram?.topic_key) throw new Error("Research continuation cannot broaden scope.");
+			if (next.revision < old.revision || next.revision === old.revision && next.digest !== old.digest) throw new Error("Research continuation has stale/divergent scope.");
 		}
 	}
 	return scope;
@@ -168,9 +166,9 @@ export function researchArtifactCall(scope: ResearchArtifactIntent, cwd: string,
 			return path === locator.path && canonicalArtifactPath(path) === path;
 		}
 		if (!locator.engram) return false;
-		if (tool === "mem_get_observation") return input.id === locator.engram.id && Object.keys(input).every(key => key === "id");
-		if (tool === "mem_search") return input.project === locator.engram.project && input.query === locator.engram.topic_key && input.all_projects !== true;
-		if (tool === "mem_save") return input.project === locator.engram.project && input.topic_key === locator.engram.topic_key;
+		if (tool === "mem_read") return input.topic === locator.engram.topic_key && Object.keys(input).every(key => key === "topic");
+		if (tool === "mem_search") return input.query === locator.engram.topic_key;
+		if (tool === "mem_save") return input.topic === locator.engram.topic_key;
 		return false;
 	});
 	if (index < 0) throw new Error("Tool arguments outside retained research artifact scope.");
@@ -180,11 +178,15 @@ export function researchArtifactCall(scope: ResearchArtifactIntent, cwd: string,
 // Consume actual child tool results, never transported success assertions.
 export function researchArtifactReadback(locator: ResearchLocator, tool: string, returned: unknown, afterWrite = false): boolean {
 	let bytes: unknown = returned;
-	if (tool === "mem_get_observation") {
-		const value = record(returned), expected = locator.engram;
-		if (!expected || value.id !== expected.id || value.project !== expected.project || value.topic_key !== expected.topic_key
-			|| (afterWrite ? !positive(value.revision_count) || Number(value.revision_count) <= expected.revision_count : value.revision_count !== expected.revision_count)) return false;
-		bytes = value.content;
+	if (tool === "mem_read") {
+		// The jero memory tool answers with its rendered text: an optional
+		// one-line provenance header ("saved <iso> · tags: ..."), a blank
+		// separator, then the entry body verbatim. The digest binds the body.
+		const expected = locator.engram;
+		if (!expected || typeof returned !== "string" || !returned.includes("\n\n")) return false;
+		const [header] = returned.split("\n\n", 1);
+		if (!/^saved \S+/.test(header ?? "")) return false;
+		bytes = returned.slice(returned.indexOf("\n\n") + 2);
 	} else if (tool !== "read") return false;
 	if (typeof bytes !== "string" || createHash("sha256").update(bytes).digest("hex") !== locator.digest) return false;
 	try { return record(JSON.parse(bytes)).revision === locator.revision; } catch { return false; }
@@ -196,10 +198,10 @@ export function parseResearchPersistence(value: unknown, scope: ResearchArtifact
 	parseResearchArtifactIntent(scope, cwd, previous);
 	if (saved.version !== 1 || !saved.accepted || typeof saved.accepted !== "object" || Array.isArray(saved.accepted) || !saved.writes || typeof saved.writes !== "object" || Array.isArray(saved.writes)) throw new Error("Invalid research persistence snapshot");
 	const accepted = record(saved.accepted) as Record<string, ResearchLocator>, writes = record(saved.writes) as Record<string, ResearchWriteIdentity>;
-	const tools = scope.store === "both" ? ["read", "mem_get_observation"] : [scope.store === "openspec" ? "read" : "mem_get_observation"];
+	const tools = scope.store === "both" ? ["read", "mem_read"] : [scope.store === "openspec" ? "read" : "mem_read"];
 	for (const key of new Set([...Object.keys(accepted), ...Object.keys(writes)])) {
 		const [index, tool] = key.split(":"), old = previous.locators[Number(index)];
-		if (!/^[0-2]:(read|mem_get_observation)$/.test(key) || !old || !tools.includes(tool)) throw new Error("Research persistence key outside scope");
+		if (!/^[0-2]:(read|mem_read)$/.test(key) || !old || !tools.includes(tool)) throw new Error("Research persistence key outside scope");
 		if (Object.hasOwn(accepted, key)) parseResearchArtifactIntent({ ...previous, locators: [accepted[key]] }, cwd, { ...previous, locators: [old] });
 		const desired = writes[key];
 		if (Object.hasOwn(writes, key) && (!desired || !positive(desired.revision) || desired.revision <= (accepted[key] ?? old).revision || typeof desired.digest !== "string" || !/^[a-f0-9]{64}$/.test(desired.digest))) throw new Error("Invalid durable desired identity");
@@ -208,7 +210,7 @@ export function parseResearchPersistence(value: unknown, scope: ResearchArtifact
 		const identities = [previous.locators[index], ...tools.map(tool => ({ ...(accepted[`${index}:${tool}`] ?? previous.locators[index]), ...writes[`${index}:${tool}`] }))];
 		const advanced = identities.slice(1).filter(item => item.revision > previous.locators[index].revision);
 		if (scope.store === "both" && advanced.length === 2 && (advanced[0].revision !== advanced[1].revision || advanced[0].digest !== advanced[1].digest)) throw new Error("Divergent durable hybrid desired identity");
-		if (!identities.some(item => item.revision === locator.revision && item.digest === locator.digest && item.engram?.revision_count === locator.engram?.revision_count)) throw new Error("Transported research identity differs from retained operation");
+		if (!identities.some(item => item.revision === locator.revision && item.digest === locator.digest)) throw new Error("Transported research identity differs from retained operation");
 	}
 	return structuredClone({ accepted, writes });
 }

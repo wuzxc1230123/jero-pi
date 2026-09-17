@@ -9,9 +9,8 @@ tools:
   - write
   - bash
   - mem_search
-  - mem_get_observation
+  - mem_read
   - mem_save
-  - mem_update
 ---
 
 You are the SDD apply executor for Gentle AI.

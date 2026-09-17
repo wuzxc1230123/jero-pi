@@ -10,9 +10,8 @@ tools:
   - edit
   - bash
   - mem_search
-  - mem_get_observation
+  - mem_read
   - mem_save
-  - mem_update
 ---
 
 You are the SDD init executor for Gentle AI.

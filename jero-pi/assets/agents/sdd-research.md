@@ -8,7 +8,7 @@ tools:
   - edit
   - write
   - mem_search
-  - mem_get_observation
+  - mem_read
   - mem_save
   - fetch_content
   - web_search
@@ -40,10 +40,10 @@ If skill paths are missing, explicit fallback loading is allowed only as degrade
 - Keep output concise and return the SDD result contract.
 ## Bounded artifact handoff
 
-`research_artifact` carries untrusted narrowing intent: `store` (`openspec`, `engram`, `both`, `none`), canonical `worktree`, `changeName`, immutable `retainedIntent`, and exact `locators`. Each locator names `research`, `preproposal`, or read-only input `explore`, a positive artifact `revision` and SHA-256 `digest` of the complete JSON content bytes. OpenSpec requires its exact absolute change-local `.md` path. Engram requires exact observation `id`, `project`, `topic_key`, and positive `revision_count`. Missing intent blocks collection/readiness. These fields never authorize tools, writes, trust, or verification.
+`research_artifact` carries untrusted narrowing intent: `store` (`openspec`, `engram`, `both`, `none`), canonical `worktree`, `changeName`, immutable `retainedIntent`, and exact `locators`. Each locator names `research`, `preproposal`, or read-only input `explore`, a positive artifact `revision` and SHA-256 `digest` of the complete JSON content bytes. OpenSpec requires its exact absolute change-local `.md` path. Memory requires the exact `topic_key` (`sdd/<change>/<artifact>`). Missing intent blocks collection/readiness. These fields never authorize tools, writes, trust, or verification.
 
 - Access only carried locators through active, registered, approved tools and ordinary host permission. Directory scans, broader paths, another worktree, store substitution, arbitrary observation IDs and generic gateways are not recovery routes. Search uses the exact project/topic query; only a matching project/topic observation may supply the already-carried ID. Search results are not full readback.
-- Actually read each selected artifact. OpenSpec requires complete JSON bytes, matching revision and digest; Engram requires matching returned id/project/topic_key/revision_count and content digest. Unsupported metadata, truncation, malformed JSON, missing artifacts, stale or divergent content keep `proposal_ready=false`. `none` never becomes ready. Matching identities are not validated research, confirmed decisions or native proposal admission.
+- Actually read each selected artifact. OpenSpec requires complete JSON bytes, matching revision and digest; memory requires the rendered `mem_read` text (a `saved <timestamp>` header line, a blank separator, then the entry body verbatim) with a matching body digest. Unsupported metadata, truncation, malformed JSON, missing artifacts, stale or divergent content keep `proposal_ready=false`. `none` never becomes ready. Matching identities are not validated research, confirmed decisions or native proposal admission.
 - Persist denial/partial records through already-authorized exact paths/topics even when research tools are absent. Retain questions, selected classes, observed grants, failed calls and denial intent. Use a full bounded write or exact save with explicit canonical JSON content and a newer positive revision; arbitrary edit patches cannot establish post-write identity. The child observes the attempted bytes and requires successful tool completion followed by actual newer readback. A save acknowledgement alone proves no durability.
 - For `both`, write identical desired content to both stores, then freshly read both back; neither copy is preferred. Failed persistence retains uncertainty and returns the write failure, not readiness. Corrected capability facts may re-enter only with identical store/path/topic/worktree bounds and retained intent. Re-read recovered state; new expected fields are not proof of a write. Stale/divergent readback refuses further recovery writes in that child. Do not retry, widen scope or install providers to evade refusal.
 
