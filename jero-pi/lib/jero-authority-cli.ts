@@ -1,6 +1,8 @@
-import type { NativeReviewCli, NativeReviewModeRequest, NativeReviewModeResult, NativeReviewAssessRequest, NativeSddAcquireRequest, NativeSddAttemptResult, NativeSddSettleRequest, NativeSddStatusRequest, NativeSddStatusV2, NativeStartRequest, NativeStartResult, NativeReviewConsentAnswerRequest, NativeReviewConsentAnswerResult, NativeReviewAbandonRequest, NativeReviewReclaimRequest, NativeReviewRecoverRequest, NativeReviewReconcileAuthorityRequest, NativeReviewRecoveryResult, NativeReviewCorrectionPlanCaptureRequest, NativeReviewAcknowledgeApprovedRequest, NativeReviewAcknowledgeApprovedOutcome } from "./native-review-cli.ts";
-import { NativeReviewConsentRequiredError, REVIEW_EMPTY_CANDIDATE_HINT, consentInvocationArguments, nativeRiskEvidencePhrases, nativeUntrackedSelection, isCanonicalProcessString } from "./native-review-cli.ts";
+import type { NativeReviewCli, NativeReviewModeRequest, NativeReviewModeResult, NativeReviewAssessRequest, NativeSddAcquireRequest, NativeSddAttemptResult, NativeSddSettleRequest, NativeSddStatusRequest, NativeSddStatusV2, NativeStartRequest, NativeStartResult, NativeReviewConsentAnswerRequest, NativeReviewConsentAnswerResult, NativeReviewAbandonRequest, NativeReviewReclaimRequest, NativeReviewRecoverRequest, NativeReviewReconcileAuthorityRequest, NativeReviewRecoveryResult, NativeReviewCorrectionPlanCaptureRequest, NativeReviewAcknowledgeApprovedRequest, NativeReviewAcknowledgeApprovedOutcome , NativeReviewProviderRoleCaptureOutcome } from "./native-review-cli.ts";
+import { NativeReviewConsentRequiredError, REVIEW_EMPTY_CANDIDATE_HINT, consentInvocationArguments, nativeRiskEvidencePhrases, nativeUntrackedSelection, isCanonicalProcessString, NATIVE_REVIEW_PROVIDER_ROLE_CAPTURE_SCHEMA, type NativeReviewProviderRoleCaptureRequest } from "./native-review-cli.ts";
 import type { ReviewLastEventClosureV1, ReviewStatusV3 } from "./review-integration-v2.ts";
+import { decodeReviewLastEventClosureV1 } from "./review-integration-v2.ts";
+import { prepareReviewHostRelaySlot, submitReviewHostRelayPreparedResult, type ReviewHostRelayRequest, type ReviewHostRelayPreparationRunner } from "./review-host-relay.ts";
 import type { ReviewAssessmentV1 } from "./review-risk-assessment.ts";
 import { resolveJeroAuthorityContextV1, type JeroAuthorityContextV1 } from "./authority/review.ts";
 import { jeroSddStatusV1, type JeroSddStatusV2 } from "./authority/sdd-status.ts";
@@ -13,6 +15,8 @@ import { getJeroReviewModeV1, setJeroReviewModeV1 } from "./authority/mode.ts";
 import { assessJeroReviewRiskV1 } from "./authority/risk-assess.ts";
 import { acquireJeroSddAttemptV1, settleJeroSddAttemptV1 } from "./authority/sdd-attempt.ts";
 import { reviewAcknowledgeV1 } from "./authority/acknowledge.ts";
+import { deriveJeroFixApplicationV1 } from "./authority/fix-application.ts";
+import { renderJeroProviderRoleSlotForRelayV1, admitJeroProviderRoleResultForRelayV1, type JeroProviderRoleV1 } from "./authority/capture-relay.ts";
 import { reviewFinalizeV1 } from "./authority/finalize.ts";
 import { abandonJeroLineageV1, reclaimJeroAuthorityV1, recoverJeroLineageV1, reconcileJeroAuthorityV1, type JeroMaintenanceResultV1 } from "./authority/maintenance.ts";
 import { buildJeroLastEventClosureV1 } from "./authority/closures.ts";
@@ -173,7 +177,7 @@ function maintenanceOutcomeV1(result: JeroMaintenanceResultV1, kind: string): Na
 }
 
 /** The P4d-served slice of the NativeReviewCli surface. */
-export function createJeroAuthorityReviewCli(): Pick<NativeReviewCli, "sddStatus" | "sddContinue" | "targetStatus" | "reviewMode" | "assess" | "sddAttemptAcquire" | "sddAttemptSettle" | "start" | "answerConsent" | "captureCorrectionPlan" | "abandon" | "reclaim" | "recover" | "reconcileAuthority"> & { acknowledgeApproved?(request: NativeReviewAcknowledgeApprovedRequest): Promise<NativeReviewAcknowledgeApprovedOutcome> } {
+export function createJeroAuthorityReviewCli(dependencies: { providerRoleReviewer?: Parameters<typeof prepareReviewHostRelaySlot>[1] } = {}): Pick<NativeReviewCli, "sddStatus" | "sddContinue" | "targetStatus" | "reviewMode" | "assess" | "sddAttemptAcquire" | "sddAttemptSettle" | "start" | "answerConsent" | "captureCorrectionPlan" | "captureProviderRole" | "abandon" | "reclaim" | "recover" | "reconcileAuthority"> & { acknowledgeApproved?(request: NativeReviewAcknowledgeApprovedRequest): Promise<NativeReviewAcknowledgeApprovedOutcome> } {
 	return {
 		...createJeroAuthoritySddCli(),
 		async targetStatus(request: { cwd: string; projection?: "workspace" | "staged"; baseRef?: string; committedOnly?: boolean; signal?: AbortSignal }): Promise<ReviewStatusV3> {
@@ -272,6 +276,15 @@ export function createJeroAuthorityReviewCli(): Pick<NativeReviewCli, "sddStatus
 			const result = reviewFinalizeV1(context, { cwd: request.cwd, lineageId: lineage, correction_line_forecast: request.correctionLines });
 			if (result.kind === "refused") throw new Error(refusalDetail("correction plan", result.code, result.detail));
 			if (result.kind !== "fix_authorized") throw new Error(`authority-unavailable: correction plan capture expected fix_authorized (got ${result.kind})`);
+			// The bounded edit rides the same capture: the actual correction
+			// lines are DERIVED from the live worktree against the frozen review
+			// tree (never caller-declared; finalize re-verifies over the isolated
+			// store), so the plan answer lands with the workspace already settled
+			// and STATUS can offer the targeted validator vector next.
+			const fixOutcome = deriveJeroFixApplicationV1(context, lineage, request.cwd);
+			if (fixOutcome.kind !== "ok") throw new Error(refusalDetail("correction plan", fixOutcome.code === "derivation-failed" ? "authority-unavailable" : fixOutcome.code, fixOutcome.detail));
+			const applied = reviewFinalizeV1(context, { cwd: request.cwd, lineageId: lineage, fix_application: fixOutcome.fix });
+			if (applied.kind === "refused") throw new Error(refusalDetail("correction plan", applied.code, `the derived fix could not be applied: ${applied.detail ?? ""}`));
 			const loaded = context.lineages.load(lineage);
 			if (loaded.kind !== "ok") throw new Error(refusalDetail("correction plan", loaded.kind, "the corrected lineage could not be reloaded"));
 			const closure = buildJeroLastEventClosureV1({ operation: "review.capture-correction-plan", record: loaded.record, state: "correction_required", cwd: request.cwd, requestHash, correctionLines: request.correctionLines });
@@ -325,6 +338,41 @@ export function createJeroAuthorityReviewCli(): Pick<NativeReviewCli, "sddStatus
 				maintainerAuthorization: request.maintainerAuthorization,
 			});
 			return maintenanceOutcomeV1(result, "reconcile");
+		},
+		async captureProviderRole(request: NativeReviewProviderRoleCaptureRequest): Promise<NativeReviewProviderRoleCaptureOutcome> {
+			if (request.captureOperation !== "review.capture-refuter" && request.captureOperation !== "review.capture-validation") {
+				throw new TypeError(`Native CAPTURE_PROVIDER_ROLE supports only review.capture-refuter and review.capture-validation, received ${JSON.stringify(request.captureOperation)}`);
+			}
+			assertProviderTokensV1(request.argumentTokens);
+			const role: JeroProviderRoleV1 = request.captureOperation === "review.capture-refuter" ? "refuter" : "validator";
+			const lineage = exactFlagValueV1(request.argumentTokens, "lineage");
+			if (lineage === undefined) throw new TypeError("authority-unavailable: the role vector binding must carry --lineage");
+			const context = contextOrThrow(request.cwd);
+			if (role === "validator") {
+				// The bounded edit lands before the validator runs: the fix facts are
+				// derived from the live worktree against the frozen review tree (never
+				// caller-declared) and finalized; an already-validating lineage (a
+				// replay or a recapture round) skips straight to the render.
+				const pre = context.lineages.load(lineage);
+				if (pre.kind === "ok" && pre.record.state.state === "fixing") {
+					const derived = deriveJeroFixApplicationV1(context, lineage, request.cwd);
+					if (derived.kind !== "ok") throw new Error(refusalDetail("validation capture", derived.code === "derivation-failed" ? "authority-unavailable" : derived.code, derived.detail));
+					const applied = reviewFinalizeV1(context, { cwd: request.cwd, lineageId: lineage, fix_application: derived.fix });
+					if (applied.kind === "refused") throw new Error(refusalDetail("validation capture", applied.code, `the derived fix could not be applied: ${applied.detail ?? ""}`));
+				}
+			}
+			const relayRequest: ReviewHostRelayRequest = {
+				captureArgumentTokens: request.argumentTokens,
+				targetCwd: request.cwd,
+				submission: { operationToken: role === "refuter" ? "capture-refuter" : "capture-validation", argumentTokens: ["--result={{value}}"], values: [{ slot: "result", domain: "path", substitutionLocation: 0 }] },
+			};
+			const prepared = await prepareReviewHostRelaySlot(relayRequest, dependencies.providerRoleReviewer, (req) => renderJeroProviderRoleSlotForRelayV1(req, role));
+			const result = await submitReviewHostRelayPreparedResult(prepared, (req, operationToken, submitTokens, resultFile) => admitJeroProviderRoleResultForRelayV1(req, operationToken, submitTokens, resultFile, role));
+			const body = JSON.parse(result.submission) as Record<string, unknown>;
+			if (body.schema === "gentle-ai.review-last-event-closure/v1") return decodeReviewLastEventClosureV1(body);
+			const loaded = context.lineages.load(lineage);
+			if (loaded.kind !== "ok") throw new Error(refusalDetail("role capture", loaded.kind, "the role artifact could not reload the lineage"));
+			return { schema: NATIVE_REVIEW_PROVIDER_ROLE_CAPTURE_SCHEMA, lineageId: lineage, targetIdentity: loaded.record.state.snapshot.identity, role, captured: true };
 		},
 		async sddAttemptAcquire(request: NativeSddAcquireRequest): Promise<NativeSddAttemptResult> {
 			const context = contextOrThrow(request.workspaceRoot);

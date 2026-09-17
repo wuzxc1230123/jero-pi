@@ -431,7 +431,7 @@ function finalizeFreezeLedgerV1(context: JeroAuthorityContextV1, record: JeroLin
 
 // --- findings_frozen → evidence_classified / fix_required / escalated (§D.2-D.5) ---
 
-function pendingRefuterRequestHashV1(pending: readonly string[]): string {
+export function pendingRefuterRequestHashV1(pending: readonly string[]): string {
 	return `sha256:${jeroDomainHash("refuter-request", [...pending].toSorted())}`;
 }
 

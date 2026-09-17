@@ -6,6 +6,7 @@ import { reviewStatusV1 } from "../../lib/authority/status.ts";
 import { createJeroAuthorityReviewCli } from "../../lib/jero-authority-cli.ts";
 import { startCreatedReview, type ReviewHarnessV1 } from "./fixtures.ts";
 import type { ReviewStatusV3 } from "../../lib/review-integration-v2.ts";
+import { decodeReviewLastEventClosureV1 } from "../../lib/review-integration-v2.ts";
 
 // Q-A: the artifact-set completion composition rides the relay admit seam —
 // the last admitted lens artifact atomically freezes findings and classifies
@@ -18,6 +19,21 @@ type Harness = ReviewHarnessV1 & { start: Extract<import("../../lib/authority/st
 
 function envelopeFor(lens: string, findings: unknown[]): Buffer {
 	return Buffer.from(JSON.stringify({ review_result: { lens_results: [{ lens, findings, evidence: findings.length === 0 ? ["scope-reviewed evidence"] : [`scope-reviewed evidence for ${lens}`] }] } }));
+}
+
+async function admitThroughRelayRaw(harness: Harness, rawResult: Buffer): Promise<{ submission: string }> {
+	const wireStatus = await createJeroAuthorityReviewCli().targetStatus({ cwd: harness.repo });
+	const collectInput = wireStatus.nextTransition?.kind === "collect" ? wireStatus.nextTransition.collect?.inputs[0] : undefined;
+	if (collectInput?.submission === undefined) throw new Error("STATUS offers no reviewer collect input");
+	const request: ReviewHostRelayRequest = {
+		captureArgumentTokens: collectInput.arguments.map(({ token }) => token),
+		targetCwd: harness.repo,
+		submission: collectInput.submission as ReviewHostRelayRequest["submission"],
+	};
+	const fakeReviewer = async (promptBytes: Buffer) => ({ stdout: rawResult, promptByteLength: promptBytes.length, stdoutByteLength: rawResult.length });
+	const prepared = await prepareReviewHostRelaySlot(request, fakeReviewer, renderJeroCaptureSlotForRelayV1);
+	const result = await submitReviewHostRelayPreparedResult(prepared, admitJeroCaptureResultForRelayV1);
+	return { submission: result.submission };
 }
 
 async function admitThroughRelay(harness: Harness, rawResult: Buffer): Promise<{ manifest: Record<string, unknown>; wireStatus: ReviewStatusV3 }> {
@@ -54,14 +70,20 @@ test("admitting the last artifact freezes and classifies atomically; severe find
 	assert.equal(closure.state, "correction_required");
 });
 
-test("clean findings classify to the documented final-verification stopping point", async (t) => {
+test("clean findings close to an approved last-event closure riding the submission", async (t) => {
 	const harness = startCreatedReview(t, "medium", 4);
 	const clean = envelopeFor("review-readability", []);
-	const { manifest } = await admitThroughRelay(harness, clean);
-	const composition = manifest.finalize_composition as Record<string, unknown>;
-	assert.equal(composition.kind, "composed");
-	assert.deepEqual(composition.fix_finding_ids, []);
+	const { submission } = await admitThroughRelayRaw(harness, clean);
+	const body = JSON.parse(submission) as Record<string, unknown>;
+	assert.equal(body.schema, "gentle-ai.review-last-event-closure/v1");
+	assert.equal(body.operation, "review/capture-result");
+	assert.equal(body.state, "approved");
+	assert.match(String(body.action ?? ""), /burned; delivery follows ordinary repository policy/);
+	// The extension decodes exactly this body (decodeRelayLastEventClosure).
+	const decoded = decodeReviewLastEventClosureV1(body);
+	assert.equal(decoded.lineageId, harness.start.lineage_id);
+	assert.equal(decoded.state, "approved");
 	const after = reviewStatusV1(harness.context, { cwd: harness.repo, lineageId: harness.start.lineage_id });
 	if (after.kind !== "status") throw new Error("status failed");
-	assert.equal(after.next_transition?.reason_code, "final_evidence_required");
+	assert.equal(after.next_transition?.reason_code, "approved_awaiting_acknowledgement");
 });

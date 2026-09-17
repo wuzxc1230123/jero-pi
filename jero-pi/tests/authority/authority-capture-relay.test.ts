@@ -70,10 +70,14 @@ test("P4b: the relay composes renderBinding + in-process admission end to end", 
 	assert.equal(result.promptByteLength, prepared.promptByteLength);
 	assert.equal(result.resultByteLength, rawResult.length);
 	// The submission string is the admitted artifact's canonical JSON.
-	const admitted = JSON.parse(result.submission) as { lens?: string; selected_order?: number; admission_decision?: string };
-	assert.equal(admitted.lens, "review-readability");
-	assert.equal(admitted.selected_order, 0);
-	assert.equal(admitted.admission_decision, "completed");
+	// Q-A2: a clean single-lens artifact set closes the review inside the
+	// admission (the old binary's atomic capture-result boundary), so the
+	// submission is now the approved last-event closure; the artifact trail
+	// below still proves the admission itself.
+	const admitted = JSON.parse(result.submission) as { schema?: string; state?: string; operation?: string };
+	assert.equal(admitted.schema, "gentle-ai.review-last-event-closure/v1");
+	assert.equal(admitted.state, "approved");
+	assert.equal(admitted.operation, "review/capture-result");
 	// The artifact trail exists on disk: the verbatim reviewer bytes plus the
 	// discovery manifest entry.
 	assert.deepEqual(readFileSync(join(jeroReviewerResultsDirectoryV1(context.store.store_root, start.lineage_id), "00-review-readability.json")), rawResult);

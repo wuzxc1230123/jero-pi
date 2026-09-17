@@ -54,3 +54,11 @@ admit 缝组合落地：`admitJeroCaptureResultForRelayV1` 在非重放准入使
 - 两个投影缺口已修：acknowledge execute 负载补挂（status.ts）、execute.binding snake→camel wire 投影（wire.ts projectJeroExecuteToWireV1）。
 - Q-A 线索：评审信封 findings 行自带 evidence_class/causal_disposition（fixtures.ts admitFixtureReviewerResults 可证）——classifications 可由已准入信封行推导，finalize 聚合入口的入参来源解决；剩余决策仅为组合位置（admit 缝联动 vs execute 接线）。
 - Q-B/Q-C 未动，见正文。
+
+## Q-A2/Q-B 已实施（2026-09-17 第二批）
+
+- **Q-A2（clean 闭合）**：admit 组合在 evidence_resolved 且零修复项时直达终验——final_evidence 取评审信封 scope 证据连接，final_verification_passed=true；submission 以 wire 闭包返回（schema 换 gentle-ai.review-last-event-closure/v1，capture-result/capture-validation 斜杠词汇映射），扩展 decodeRelayLastEventClosure 零改动消费。
+- **Q-B（角色向量）**：capture-relay 增 renderJeroProviderRoleSlotForRelayV1/admitJeroProviderRoleResultForRelayV1；适配器 captureProviderRole 组合 relay 全链（合成 submission 描述符走 submit 缝）。refuter 准入把持久化 classifications 同包重放 + refuter_batch；validator 准入 reviewValidateV1 + 终验 → 闭包。
+- **fix_application 驱动落定**：纠正计划捕获一体完成 forecast + 从 live worktree 推导 fix（lib/authority/fix-application.ts，隔离索引对冻结树 staging，对象落权威库供 finalize 复核）+ 应用——语义为"先落修复再应答计划行数"（老二进制 derives actual correction lines from Git 的工具面印证）。
+- **Q-B2（新开放点）**：fix_application 记录 final_candidate_tree 但不重绑 snapshot.identity；approved 不在 CORRECTION_PHASE_STATES，修正后工作区对 live STATUS 不可见该血统（unrelated）——修正路径的燃烧绑定来源需显式决策（identity 匹配纳入 final_candidate_tree，或闭包直接携带 burn 向量）。
+- 测试：authority-provider-role-cli 3 项（corroborated→correction_required 闭包 / refuted→approved 闭包 / validation 全链含工作区修复推导）；P4b 端到端更新为新闭包契约。
