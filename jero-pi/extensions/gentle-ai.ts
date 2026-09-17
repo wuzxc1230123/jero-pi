@@ -8212,8 +8212,10 @@ export function createGentleAiExtension(dependencies: GentleAiRuntimeDependencie
 function createGentleAiExtensionForTesting(
 	dependencies: GentleAiRuntimeDependencies = {},
 ): (pi: ExtensionAPI) => void {
-	// P4c: the default CLI is the fail-closed P1 stub with the SDD projection
-	// methods served in-process by the jero authority (lib/jero-authority-cli.ts).
+	// P4c/P4d: the default CLI is the fail-closed P1 stub with the SDD projection
+	// pair, the review read path, the RDD mode pair, the SDD attempt pair, and
+	// (P4d-e) the START pair - direct starts and the consent ceremony - served
+	// in-process by the jero authority (lib/jero-authority-cli.ts).
 	const nativeReviewCli = dependencies.nativeReviewCli === undefined
 		? Object.assign(createNativeReviewCli(), createJeroAuthorityReviewCli())
 		: dependencies.nativeReviewCli;

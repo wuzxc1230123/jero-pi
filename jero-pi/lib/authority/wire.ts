@@ -1,5 +1,6 @@
-import type { ReviewStatusV3 } from "../review-integration-v2.ts";
+import type { ReviewConsentChoiceV2, ReviewConsentV3, ReviewStatusV3 } from "../review-integration-v2.ts";
 import type { JeroReviewStatusResultV1 } from "./status.ts";
+import type { JeroReviewStartResultV1 } from "./start.ts";
 import type { JeroSnapshotDerivationV1 } from "./snapshots.ts";
 
 // P4d: the jero→wire projection layer. The extension's review controller
@@ -131,4 +132,84 @@ export function projectJeroStatusToWireV1(status: Extract<JeroReviewStatusResult
 		raw: status as unknown as Record<string, unknown>,
 	};
 	return wire as unknown as ReviewStatusV3;
+}
+
+// P4d-e: the START consent gate's wire envelope. The authority emits the
+// typed `consent_required` union arm; the controller machinery (the pending
+// registry, reviewConsentDigest, the two-option UI, answerConsent's binding
+// re-parse) consumes the gentle-ai.review-integration.consent/v3 record.
+// Fixture parity: tests/fixtures/review-integration/v2/fixtures/consent.fixture.json
+// grounds every copy string; the invocations embed the untracked selection so
+// the answer path re-freezes the exact candidate the question was minted for
+// (flag form matches nativeUntrackedSelectionArguments: --flag=value).
+export function projectJeroConsentEnvelopeV1(
+	consent: Extract<JeroReviewStartResultV1, { kind: "consent_required" }>,
+	invocation: { cwd: string; untrackedScope?: "exclude" | "select"; expectedUntrackedInventory?: string; intendedUntracked?: readonly string[] },
+): ReviewConsentV3 {
+	const evidence = consent.risk_evidence;
+	const touches = evidence.length === 0 ? "" : ` because it touches ${evidence.join("; ")}`;
+	const reason = `this change gets a deeper review${touches}.`;
+	const selectionArguments = invocation.untrackedScope === undefined ? [] : [
+		`--untracked-scope=${invocation.untrackedScope}`,
+		`--expected-untracked-inventory=${invocation.expectedUntrackedInventory}`,
+		...(invocation.untrackedScope === "select" ? (invocation.intendedUntracked ?? []).map((path) => `--intended-untracked=${path}`) : []),
+	];
+	const choice = (answer: "granted" | "declined", label: string, effect: string): ReviewConsentChoiceV2 => ({
+		answer,
+		label,
+		effect,
+		invocation: ["gentle-ai", "review", "start",
+			"--contract", WIRE_CONTRACT,
+			"--cwd", invocation.cwd,
+			"--target", consent.target_identity,
+			"--projection", consent.projection,
+			"--agent", "pi",
+			...selectionArguments,
+			"--consent", answer,
+		].join(" "),
+	});
+	const choices: readonly [ReviewConsentChoiceV2, ReviewConsentChoiceV2] = [
+		choice("granted", "Run the review now", "Reviews this exact frozen candidate now; nothing is granted for later candidates, so each later medium- or high-risk candidate asks again."),
+		choice("declined", "Not now, just this once", "Skips the review for this exact candidate only; no review lineage or receipt is created, and ordinary delivery is unmanaged by candidate choice. The next candidate is asked again. This is not the kill switch."),
+	];
+	const offPath = { note: "To turn reviews off for good, run 'gentle-ai review mode disable'.", command: "gentle-ai review mode disable" } as const;
+	const raw = {
+		schema: "gentle-ai.review-integration.consent/v3",
+		contract: WIRE_CONTRACT,
+		operation: "review.start",
+		action: "consent_required",
+		blocking: true,
+		target_identity: consent.target_identity,
+		projection: consent.projection,
+		risk_level: consent.risk_level,
+		changed_files: consent.changed_files,
+		changed_lines: consent.changed_lines,
+		headline: "Gentle AI can review this change before you call it done.",
+		reason,
+		value: "Reviewing takes a bit longer, and it makes the result substantially safer.",
+		risk_evidence: [...evidence],
+		choices,
+		off_path: offPath,
+		agent: "pi",
+	};
+	return {
+		schema: "gentle-ai.review-integration.consent/v3",
+		agent: "pi",
+		contract: WIRE_CONTRACT,
+		operation: "review.start",
+		action: "consent_required",
+		blocking: true,
+		targetIdentity: consent.target_identity,
+		projection: consent.projection,
+		riskLevel: consent.risk_level,
+		changedFiles: consent.changed_files,
+		changedLines: consent.changed_lines,
+		headline: raw.headline,
+		reason,
+		value: raw.value,
+		riskEvidence: [...evidence],
+		choices,
+		offPath,
+		raw,
+	};
 }

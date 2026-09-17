@@ -557,7 +557,7 @@ export interface NativeIntendedUntrackedSelectionSubmission {
 	readonly argumentTokens: readonly string[];
 	readonly value: string;
 }
-interface NativeUntrackedSelectionRequest {
+export interface NativeUntrackedSelectionRequest {
 	untrackedScope?: NativeUntrackedScope;
 	expectedUntrackedInventory?: string;
 	intendedUntracked?: readonly string[];
@@ -736,7 +736,7 @@ function isNativeUntrackedPath(value: unknown): value is string {
 		&& value.split("/").every((segment) => segment.length > 0 && segment !== "." && segment !== "..");
 }
 
-function nativeUntrackedSelection(request: NativeUntrackedSelectionRequest): NativeUntrackedSelection {
+export function nativeUntrackedSelection(request: NativeUntrackedSelectionRequest): NativeUntrackedSelection {
 	const { untrackedScope, expectedUntrackedInventory, intendedUntracked } = request;
 	const declared = untrackedScope !== undefined || expectedUntrackedInventory !== undefined || intendedUntracked !== undefined;
 	if (!declared) return {};
@@ -788,7 +788,7 @@ const NATIVE_RISK_LEVEL = ["low", "medium", "high"] as const;
 // unrecognized reason code therefore renders nothing rather than guessing, and
 // nativeRiskEvidencePhrases is pinned against a gentle-ai fixture in
 // tests/native-review-parity.test.ts so a vocabulary change fails loudly.
-const REVIEW_EMPTY_CANDIDATE_HINT =
+export const REVIEW_EMPTY_CANDIDATE_HINT =
 	"the candidate has no pending changes; already-committed work can be reviewed by rerunning review start with --base-ref <commit> naming the base to compare against";
 const REVIEW_MEDIUM_RISK_REASON = "this change is not purely passive documentation, so it gets one consolidated review.";
 const REVIEW_EMPTY_CONTENT_CODE = "empty_content";
@@ -1725,7 +1725,7 @@ interface ConsentInvocation {
 	lineageId?: string;
 }
 
-function consentInvocationArguments(request: NativeReviewConsentAnswerRequest): ConsentInvocation {
+export function consentInvocationArguments(request: NativeReviewConsentAnswerRequest): ConsentInvocation {
 	validatePiConsentChoiceAgentBindings(request.consent);
 	const choice = request.consent.choices.find((candidate) => candidate.answer === request.answer);
 	if (choice === undefined) throw new NativeReviewConsentBindingError("consent-answer-unknown", "Native consent answer must be granted or declined");
