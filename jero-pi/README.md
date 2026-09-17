@@ -2,7 +2,7 @@
 
 Pi coding-agent 扩展包，从 gentle-pi v2.7.0 重构而来（见仓库根 `JERO-PI-DESIGN.md`）。
 
-**当前状态：绿地组装中（P1 阶段）。** 核心差异：
+**当前状态：P4 收尾（权威接线完成，P4e 清理中）。** 评审全生命周期已进程内闭环：START→consent→relay 评审→冻结/分类→纠正（计划+工作区修复推导）→校验闭包→燃烧→维护。核心差异：
 
 - 零原生二进制：无 postinstall 下载，评审权威为进程内 `lib/authority/`（P2）
 - 自研持久记忆 `lib/memory/` + `mem_*` 工具（P3）

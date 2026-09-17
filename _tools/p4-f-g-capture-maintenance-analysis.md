@@ -67,3 +67,11 @@ admit 缝组合落地：`admitJeroCaptureResultForRelayV1` 在非重放准入使
 
 - schemas/runtime-aggregate-v1.schema.json 不是遥测残留：lib/runtime-metrics.ts（§5.4 保留件）以其为封闭枚举数据源（agent_class、model 字段、anyOf 分支）。保留。
 - tests/fixtures/runtime-metrics-native-batches.json 同为本地记账测试夹具，保留。
+
+## P4e 批次记录（2026-09-17 第三批）
+
+- **P4e-1（0401891）**：研究-记忆功能迁移（mem_read/mem_save/mem_search jero 形状；locator {topic_key}；12 资产 YAML；peer optional/typebox 偏差修正；runtime-aggregate schema 误判修正——保留）。
+- **P4e-2（c5572de）**：Q-B2 关闭——final_candidate_tree 等价谓词，修正后 approved 血统对 live STATUS 可见，燃烧向量可绑定。
+- **P4e-3（f38807a）**：遗留恢复路由删除（quarantineLegacy/repairLegacyAlias 全表面；-265 行；v2.5.0 迁移重建配方逆向映射三处）。
+- **保留决策**：devBinary 卡片（注入式 UI、有测试覆盖、生产恒空——P5 UI 清理批处理）；契约能力表键（历史记录）；docs/telemetry.md（P5 文档批）。
+- **D7（P4e 主体）未启动**：native-review-cli.ts（~1600 行）+ review-integration-v2.ts（~2700 行）的 wire 类型面迁移至 authority 侧并删除双轨——独立阶段，建议按 4 子代理流水线专项实施（分析→迁移→审核→修复），且与 P5 改名顺序解耦（schema 字符串 P5 前保持 gentle-ai.*）。
