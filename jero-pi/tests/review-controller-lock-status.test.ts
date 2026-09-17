@@ -6,7 +6,11 @@ import { join } from "node:path";
 import test from "node:test";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { createGentleAiExtension } from "../extensions/gentle-ai.ts";
-import type { NativeReviewCli, NativeReviewStatusResult } from "../lib/native-review-cli.ts";
+import type { NativeReviewCli } from "../lib/native-review-cli.ts";
+
+// The lock surface rides the negotiated target-status raw payload; the
+// retired inventory verb is gone from the client contract.
+type LockStatusFixture = { repository: string; locks: readonly unknown[] };
 
 // Issue #184: gentle-ai 2.1.8 leaves review-transactions/v2/LOCK behind after
 // ORDINARY successful operations and inventories it as {"status":"released"}.
@@ -62,20 +66,11 @@ const RELEASED_LOCK = { version: "compact-v2", path: "/repo/.git/gentle-ai/revie
 const OWNED_LOCK = { version: "compact-v2", path: "/repo/.git/gentle-ai/review-transactions/v2/LOCK", status: "owned", owner: { schema: "gentle-ai.review-store-lock/v1", ownerId: "owner", pid: 1, host: "host", acquiredAt: "2026-07-14T00:00:00Z" } } as const;
 const AMBIGUOUS_LOCK = { version: "compact-v2", path: "/repo/.git/gentle-ai/review-transactions/v2/LOCK", status: "ambiguous", problem: "unreadable owner metadata" } as const;
 
-function nativeStatus(cwd: string, status: string, locks: readonly unknown[]): NativeReviewStatusResult {
-	return {
-		repository: cwd,
-		complete: true,
-		authoritative: true,
-		status,
-		entries: [],
-		locks,
-		diagnostics: [],
-		raw: { schema: "gentle-ai.review-authority-status/v1", operation: "review/status", repository: cwd, complete: true, authoritative: true, status, entries: [], locks, diagnostics: [] },
-	} as NativeReviewStatusResult;
+function nativeStatus(cwd: string, status: string, locks: readonly unknown[]): LockStatusFixture {
+	return { repository: cwd, locks };
 }
 
-function fakeNative(status: NativeReviewStatusResult, onStart?: (request: Parameters<NativeReviewCli["start"]>[0]) => void): NativeReviewCli {
+function fakeNative(status: LockStatusFixture, onStart?: (request: Parameters<NativeReviewCli["start"]>[0]) => void): NativeReviewCli {
 	const blocking = status.locks.some((lock) => (lock as { status?: string }).status !== "released");
 	const tree = execFileSync("git", ["rev-parse", "HEAD^{tree}"], { cwd: status.repository, encoding: "utf8" }).trim();
 	const targetIdentity = `sha256:${"a".repeat(64)}`;

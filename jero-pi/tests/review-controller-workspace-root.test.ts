@@ -483,7 +483,6 @@ test("workspaceRoot fails closed before any native call for invalid target paths
 	const counting = fakeNative({
 		start: async () => { nativeCalls += 1; throw new Error("native start must not run"); },
 		targetStatus: async () => { nativeCalls += 1; throw new Error("native status must not run"); },
-		reviewStatus: async () => { nativeCalls += 1; throw new Error("native review status must not run"); },
 	});
 	const { controller } = runtime(counting);
 	const rejected: Array<{ label: string; workspaceRoot: string }> = [

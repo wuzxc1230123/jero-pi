@@ -59,8 +59,6 @@ export const NATIVE_REVIEW_OPERATION = {
 	REPAIR_LEGACY_ALIAS: "review/repair-legacy-alias",
 	MODE: "review/mode",
 	ASSESS: "review/assess",
-	REPAIR: "review/repair",
-	CAPTURE_RESULT: "review/capture-result",
 	CAPTURE_CORRECTION_PLAN: "review/capture-correction-plan",
 	CAPTURE_PROVIDER_ROLE: "review/capture-provider-role",
 	CAPTURE_UNACHIEVABLE: "review/capture-unachievable",
@@ -87,9 +85,6 @@ export const NATIVE_REVIEW_ERROR_CODE = {
 	PACKAGE_BINARY_MISSING: "package-local-binary-missing",
 	UNSUPPORTED_TRANSITION_OPERATION: "unsupported-transition-operation",
 }         ;
-
-
-
 
 
 
@@ -372,48 +367,6 @@ export const NATIVE_REVIEW_RECONCILE_ANOMALIES = {
 
 
 
-
-// `capture-result` is an additive headless command, NOT a negotiated
-// repository operation: it accepts no --contract, and the provider's own
-// transition tokens already carry the repository context -- it takes that or
-// --cwd, never both. So Pi passes the tokens through verbatim and adds only
-// --input. Reconstructing them would mean re-deriving a lineage, revision,
-// target, lens slot, and subject hash the provider already issued.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/** A non-final reviewer capture acknowledges an admitted artifact; final captures close natively. */
-
-
-// The one continuation that burns approved authority. Its tokens are rendered
-// by the provider in a closed order and are relayed verbatim: Pi never builds,
-// reorders, or substitutes one, because a synthesized acknowledgement would be
-// Pi deciding that a review is over. `binding` is the lineage, target, and
-// revision the caller already holds from STATUS: when the provider answers the
-// burn with a review-acknowledged/v1 envelope (gentle-ai #3947), that envelope
-// must name exactly this burn.
-
-
-
-
-
-
-
 /** `undefined` is the pinned silent burn (every release up to v2.5.0-rc.3); an envelope is the #3947 typed burn. */
 
 
@@ -571,7 +524,6 @@ export const NATIVE_REVIEW_CONSENT_ANSWER = { GRANTED: "granted", DECLINED: "dec
 
 
 
-
 export const NATIVE_REVIEW_AUTHORITY_STATUS = {
 	CLEAN: "clean",
 	ACTIVE: "active",
@@ -628,16 +580,6 @@ export const NATIVE_REVIEW_RECOVERY_DISPOSITION = {
 	INVALIDATED: "invalidated",
 	ESCALATED: "escalated",
 }         ;
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1147,152 +1089,6 @@ function decodeReleaseEvidence(value         )       {
 	for (const field of ["release_tree", "configuration_hash", "generated_artifact_hash", "provenance_hash", "publication_boundary_hash", "evidence_freshness_hash"]) requiredString(release[field]);
 	if (release.publication_state !== "sealed" || release.evidence_freshness_state !== "current") throw new Error("invalid release evidence");
 }
-function decodeNonDecidingGateContext(value         , expectedGate        )                    {
-	const context = exactObject(value, ["gate"]);
-	const gate = enumString(context.gate, NATIVE_GATE);
-	if (gate !== expectedGate) throw new Error("native non-deciding gate context does not match the requested gate");
-	return { lineageId: "", storeRevision: "", raw: context };
-}
-function decodeGateContext(value         )                    {
-	const context = exactObject(
-		value,
-		["gate", "lineage_id", "generation", "base_tree", "candidate_tree", "paths_digest", "fix_delta_hash", "policy_hash", "ledger_hash", "evidence_hash", "base_relationship_valid"],
-		["store_revision", "genesis_revision", "chain_identity", "bundle_digest", "external_evidence", "base_advanced_compatible", "release", "pre_pr_boundary", "denial"],
-	);
-	const gate = stringValue(context.gate);
-	if (gate !== "" && !(NATIVE_GATE                     ).includes(gate)) throw new Error("invalid gate context gate");
-	for (const field of ["lineage_id", "base_tree", "candidate_tree", "paths_digest", "fix_delta_hash", "policy_hash", "ledger_hash", "evidence_hash"]) stringValue(context[field]);
-	for (const field of ["store_revision", "genesis_revision", "chain_identity", "bundle_digest"]) if (context[field] !== undefined) stringValue(context[field]);
-	nonNegativeInteger(context.generation);
-	booleanValue(context.base_relationship_valid);
-	if (context.external_evidence !== undefined) enumString(context.external_evidence, ["invalidating", "escalating"]);
-	let sanitizedContext = context;
-	if (context.denial !== undefined) {
-		const denial = exactObject(context.denial, ["stage", "code"]);
-		const stage = sanitizeNativeDiagnosticText(requiredString(denial.stage), NATIVE_REVIEW_DENIAL_TEXT_LIMIT);
-		const code = sanitizeNativeDiagnosticText(requiredString(denial.code), NATIVE_REVIEW_DENIAL_TEXT_LIMIT);
-		if (!isCanonicalProcessString(stage) || !isCanonicalProcessString(code)) throw new Error("non-canonical denial evidence");
-		sanitizedContext = { ...context, denial: { stage, code } };
-	}
-	if (context.pre_pr_boundary !== undefined) {
-		const boundary = exactObject(context.pre_pr_boundary, ["source", "selector", "commit"], ["remote", "remote_ref", "remote_identity"]);
-		enumString(boundary.source, ["explicit", "publication-default"]); requiredString(boundary.selector); stringValue(boundary.commit);
-		for (const field of ["remote", "remote_ref", "remote_identity"]) if (boundary[field] !== undefined) requiredString(boundary[field]);
-	}
-	if (context.base_advanced_compatible !== undefined) {
-		const proof = exactObject(context.base_advanced_compatible, ["status", "compatible", "old_base_tree", "new_base_tree", "original_patch_identity", "delivered_patch_identity", "delivered_paths_digest", "base_advance_paths_digest", "paths_disjoint", "merged_result_tree", "ci_attestation_artifact_hash", "ci_attestation_issuer", "ci_status"]);
-		for (const field of ["status", "old_base_tree", "new_base_tree", "original_patch_identity", "delivered_patch_identity", "delivered_paths_digest", "base_advance_paths_digest", "merged_result_tree", "ci_attestation_artifact_hash", "ci_attestation_issuer", "ci_status"]) requiredString(proof[field]);
-		booleanValue(proof.compatible); booleanValue(proof.paths_disjoint);
-	}
-	if (context.release !== undefined) decodeReleaseEvidence(context.release);
-	return {
-		lineageId: stringValue(context.lineage_id),
-		storeRevision: context.store_revision === undefined ? "" : stringValue(context.store_revision),
-		raw: sanitizedContext,
-	};
-}
-function decodeNativeReviewRecovery(value         )                       {
-	const recovery = exactObject(value, ["predecessor_lineage_id", "predecessor_revision", "disposition", "reason", "actor", "recovered_at"], ["maintainer_authorization"]);
-	return {
-		predecessorLineageId: requiredString(recovery.predecessor_lineage_id),
-		predecessorRevision: requiredString(recovery.predecessor_revision),
-		disposition: enumString(recovery.disposition, Object.values(NATIVE_REVIEW_RECOVERY_DISPOSITION))                                   ,
-		reason: requiredString(recovery.reason),
-		actor: requiredString(recovery.actor),
-		recoveredAt: requiredString(recovery.recovered_at),
-		...(recovery.maintainer_authorization === undefined ? {} : { maintainerAuthorization: requiredString(recovery.maintainer_authorization) }),
-	};
-}
-function decodeNativeReviewDiscardedWorkSummary(value         )                                   {
-	const discardedWork = exactObject(value, ["captured_lens_results", "findings_present"]);
-	return {
-		capturedLensResults: stringArray(discardedWork.captured_lens_results),
-		findingsPresent: booleanValue(discardedWork.findings_present),
-	};
-}
-function decodeNativeReviewStatusEntry(value         )                             {
-	const entry = exactObject(value, ["version", "path", "status", "problems"], ["lineage_id", "state", "revision", "snapshot_identity", "chain_identity", "recovery", "discarded_work"]);
-	return {
-		version: enumString(entry.version, Object.values(NATIVE_REVIEW_AUTHORITY_ENTRY_VERSION))                                     ,
-		...(entry.lineage_id === undefined ? {} : { lineageId: requiredString(entry.lineage_id) }),
-		path: requiredString(entry.path),
-		status: enumString(entry.status, Object.values(NATIVE_REVIEW_AUTHORITY_ENTRY_STATUS))                                    ,
-		...(entry.state === undefined ? {} : { state: requiredString(entry.state) }),
-		...(entry.revision === undefined ? {} : { revision: requiredString(entry.revision) }),
-		...(entry.snapshot_identity === undefined ? {} : { snapshotIdentity: sha256Identity(entry.snapshot_identity) }),
-		...(entry.chain_identity === undefined ? {} : { chainIdentity: requiredString(entry.chain_identity) }),
-		...(entry.recovery === undefined ? {} : { recovery: decodeNativeReviewRecovery(entry.recovery) }),
-		...(entry.discarded_work === undefined ? {} : { discardedWork: decodeNativeReviewDiscardedWorkSummary(entry.discarded_work) }),
-		problems: stringArray(entry.problems),
-	};
-}
-function decodeNativeReviewStatusLock(value         )                            {
-	const lock = exactObject(value, ["version", "path", "status"], ["lineage_id", "owner", "problem"]);
-	let owner                                   ;
-	if (lock.owner !== undefined) {
-		const decodedOwner = exactObject(lock.owner, ["schema", "owner_id", "pid", "host", "acquired_at"]);
-		owner = {
-			schema: enumString(decodedOwner.schema, Object.values(NATIVE_REVIEW_LOCK_OWNER_SCHEMA))                               ,
-			ownerId: requiredString(decodedOwner.owner_id),
-			pid: positiveInteger(decodedOwner.pid),
-			host: requiredString(decodedOwner.host),
-			acquiredAt: requiredString(decodedOwner.acquired_at),
-		};
-	}
-	return {
-		version: enumString(lock.version, Object.values(NATIVE_REVIEW_AUTHORITY_ENTRY_VERSION))                                     ,
-		...(lock.lineage_id === undefined ? {} : { lineageId: requiredString(lock.lineage_id) }),
-		path: requiredString(lock.path),
-		status: enumString(lock.status, Object.values(NATIVE_REVIEW_LOCK_STATUS))                          ,
-		...(owner === undefined ? {} : { owner }),
-		...(lock.problem === undefined ? {} : { problem: requiredString(lock.problem) }),
-	};
-}
-function decodeNativeReviewStatusDiagnostic(value         )                                  {
-	const diagnostic = exactObject(value, ["path", "problem"]);
-	return { path: requiredString(diagnostic.path), problem: requiredString(diagnostic.problem) };
-}
-function decodeNativeReviewModeStatus(value         )                         {
-	const status = exactObject(value, ["schema", "global", "clone_local", "effective", "source"], ["revision", "reach"]);
-	if (status.schema !== "gentle-ai.rdd-mode-status/v1") throw new Error("wrong review mode status schema");
-	return {
-		global: enumString(status.global, Object.values(NATIVE_REVIEW_MODE_VALUE))                         ,
-		cloneLocal: enumString(status.clone_local, Object.values(NATIVE_REVIEW_MODE_VALUE))                         ,
-		effective: enumString(status.effective, ["on", "off"])                ,
-		source: enumString(status.source, Object.values(NATIVE_REVIEW_MODE_SOURCE))                          ,
-		...(status.revision === undefined ? {} : { revision: requiredString(status.revision) }),
-		...(status.reach === undefined ? {} : { reach: enumString(status.reach, Object.values(NATIVE_REVIEW_MODE_REACH))                          }),
-	};
-}
-
-function decodeNativeReviewMode(value         , expectedOperation                           )                         {
-	const body = exactObject(value, ["schema", "operation", "scope", "status"]);
-	if (body.schema !== "gentle-ai.review-mode/v1" || body.operation !== expectedOperation) throw new Error("wrong review mode discriminator");
-	return {
-		operation: expectedOperation,
-		scope: enumString(body.scope, Object.values(NATIVE_REVIEW_MODE_SCOPE))                         ,
-		status: decodeNativeReviewModeStatus(body.status),
-	};
-}
-
-function decodeNativeReviewStatus(value         )                           {
-	const body = exactObject(value, ["schema", "operation", "repository", "complete", "authoritative", "status", "entries", "locks", "diagnostics"]);
-	if (body.schema !== "gentle-ai.review-authority-status/v1" || body.operation !== "review/status") throw new Error("wrong review status discriminator");
-	const complete = booleanValue(body.complete);
-	const authoritative = booleanValue(body.authoritative);
-	if (authoritative && !complete) throw new Error("incomplete inventory cannot be authoritative");
-	if (!Array.isArray(body.entries) || !Array.isArray(body.locks)) throw new Error("invalid native status inventory");
-	return {
-		repository: requiredString(body.repository),
-		complete,
-		authoritative,
-		status: enumString(body.status, Object.values(NATIVE_REVIEW_AUTHORITY_STATUS))                               ,
-		entries: body.entries.map(decodeNativeReviewStatusEntry),
-		locks: body.locks.map(decodeNativeReviewStatusLock),
-		diagnostics: body.diagnostics.map(decodeNativeReviewStatusDiagnostic),
-		raw: body,
-	};
-}
 function isWindowsRepositoryPath(value        )          { return /^[A-Za-z]:[\\/]/.test(value) || /^\\\\/.test(value); }
 export function normalizeNativeReviewCwd(value        , platform                  = process.platform)         {
 	if (platform !== "win32") return value;
@@ -1771,15 +1567,12 @@ export class NativeReviewCliV216                            {
 	}
 
 	start(_request                    )                             { this.unavailable(NATIVE_REVIEW_OPERATION.START, true); }
-	reviewStatus(_request                           )                                    { this.unavailable(NATIVE_REVIEW_OPERATION.STATUS, false); }
 	targetStatus (_request                           )                          { this.unavailable(NATIVE_REVIEW_OPERATION.STATUS, false); }
 	answerConsent (_request                                  )                                           { this.unavailable(NATIVE_REVIEW_OPERATION.START, true); }
 	reclaim (_request                            )                                      { this.unavailable(NATIVE_REVIEW_OPERATION.RECLAIM, true); }
 	recover (_request                            )                                      { this.unavailable(NATIVE_REVIEW_OPERATION.RECOVER, true); }
 	abandon (_request                            )                                      { this.unavailable(NATIVE_REVIEW_OPERATION.ABANDON, true); }
 	reconcileAuthority (_request                                       )                                      { this.unavailable(NATIVE_REVIEW_OPERATION.RECONCILE_AUTHORITY, true); }
-	repair(_request                           )                          { this.unavailable(NATIVE_REVIEW_OPERATION.REPAIR, true); }
-	captureResult (_request                                  )                                            { this.unavailable(NATIVE_REVIEW_OPERATION.CAPTURE_RESULT, true); }
 	captureCorrectionPlan (_request                                          )                                    { this.unavailable(NATIVE_REVIEW_OPERATION.CAPTURE_CORRECTION_PLAN, true); }
 	captureProviderRole (_request                                        )                                                  { this.unavailable(NATIVE_REVIEW_OPERATION.CAPTURE_PROVIDER_ROLE, true); }
 	captureUnachievableLens (_request                                            )                                                       { this.unavailable(NATIVE_REVIEW_OPERATION.CAPTURE_UNACHIEVABLE, true); }

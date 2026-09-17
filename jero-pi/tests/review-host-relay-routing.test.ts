@@ -173,14 +173,14 @@ function nativeHarness(statuses: readonly ReviewStatusV3[], unachievableResponde
 		native: undefined as unknown as NativeReviewCli,
 	};
 	harness.native = {
-		targetStatus: async (request) => {
+		targetStatus: async (request: { cwd: string; lineageId?: string; agent?: "pi" }) => {
 			harness.statusCalls.push({ cwd: request.cwd, ...(request.lineageId === undefined ? {} : { lineageId: request.lineageId }), ...(request.agent === undefined ? {} : { agent: request.agent }) });
 			const next = harness.statusQueue.shift();
 			if (next === undefined) throw new Error("status queue exhausted");
 			return next;
 		},
 		...(unachievableResponder === undefined ? {} : { captureUnachievableLens: async (request: NativeReviewUnachievableLensCaptureRequest) => { harness.unachievableCalls.push(request); return await unachievableResponder(request); } }),
-	};
+	} as Partial<NativeReviewCli> as NativeReviewCli;
 	return harness;
 }
 
