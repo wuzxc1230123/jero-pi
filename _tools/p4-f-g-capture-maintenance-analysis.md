@@ -76,7 +76,11 @@ admit 缝组合落地：`admitJeroCaptureResultForRelayV1` 在非重放准入使
 - **保留决策**：devBinary 卡片（注入式 UI、有测试覆盖、生产恒空——P5 UI 清理批处理）；契约能力表键（历史记录）；docs/telemetry.md（P5 文档批）。
 - **D7（P4e 主体）未启动**：native-review-cli.ts（~1600 行）+ review-integration-v2.ts（~2700 行）的 wire 类型面迁移至 authority 侧并删除双轨——独立阶段，建议按 4 子代理流水线专项实施（分析→迁移→审核→修复），且与 P5 改名顺序解耦（schema 字符串 P5 前保持 gentle-ai.*）。
 
-## D7 进度（2026-09-17 第四批）
+## D7 进度（2026-09-17 第四批，切片三已落地）
+
+- **切片三（9c35743）**：git mv native-review-cli.ts → lib/authority/client-contract.ts——两个上游双轨文件名从 lib/ 根消失（D7 物理里程碑）；边界门结构性满足（删死 env 缓冲助手 + exec 适配器省略 env）；**remediation 回退修复**（gentle-agents 两处 stub→createJeroAuthorityReviewCli，托管修复准入不再默认 fail-closed）；manifest 守卫钉版同步。附：review-risk-assessment 的 5 项 P1 前二进制传输 assess 测试退役（死域，桩自 P1 起即抛；进程内 assess 由 authority 族覆盖）——基线回到 43/1。
+
+### 原 D7 进度记录
 
 - **切片一（8d4f9c8）**：git mv review-integration-v2.ts → lib/authority/wire-contract.ts（2861 行自包含词汇表，git 识别 99% rename）；30 处引用重指；runtime 生成器支持子路径+扁平化（authority/N.ts → runtime/N.mjs，authority 内部导入扁平重写，生成物经真实 import 验证）。
 - **切片二（82f0484）**：客户端契约死面摘除 -434 行——reviewStatus/captureResult/repair（接口+桩+枚举+类型+死解码簇）、NATIVE_CLI_CONTRACTS 能力表；诊断基线 146→139（真实改善）。锁面确认走 targetStatus.raw.locks。

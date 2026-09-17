@@ -544,83 +544,10 @@ test("gentle_review assess never requires a lineageId (unlike most other operati
 });
 
 // ---------------------------------------------------------------------------
-// Native reader (`NativeReviewCliV216.assess`, `lib/authority/client-contract.ts`):
-// mirrors reviewMode's wiring -- bounded subprocess, typed decode, fail closed
-// on a non-zero exit or an "unknown command" older binary.
+// ---------------------------------------------------------------------------
+// Retired (D7): the binary-transport assess tests. The packaged binary and
+// its subprocess contract were deleted at P1; the in-process assess is
+// served by lib/jero-authority-cli.ts and covered by the authority test
+// families (authority-start-cli / review-risk-assessment TS-side below).
 // ---------------------------------------------------------------------------
 
-interface QueuedResult {
-	stdout: string;
-	stderr?: string;
-	exitCode?: number;
-}
-
-function queuedAdapter(results: readonly QueuedResult[]): { adapter: ExecFileAdapter; calls: Array<{ arguments: readonly string[]; cwd: string }> } {
-	const queue = [...results];
-	const calls: Array<{ arguments: readonly string[]; cwd: string }> = [];
-	return {
-		calls,
-		adapter: async (request) => {
-			calls.push({ arguments: request.arguments, cwd: request.cwd });
-			const result = queue.shift();
-			if (result === undefined) throw new Error("unexpected native invocation");
-			return { stdout: result.stdout, stderr: result.stderr ?? "", exitCode: result.exitCode ?? 0, signal: null, timedOut: false, outputLimitExceeded: false };
-		},
-	};
-}
-
-function nativeClient(adapter: ExecFileAdapter): NativeReviewCliV216 {
-	return new NativeReviewCliV216(adapter, "/package/.gentle-ai/gentle-ai", 30_000, 1024 * 1024);
-}
-
-test("native assess: decodes a well-formed envelope and sends the exact plain-versioned argv", async () => {
-	const queue = queuedAdapter([{ stdout: JSON.stringify({ schema: REVIEW_ASSESSMENT_SCHEMA, risk: "medium", reasons: [], changed_paths: 1, changed_lines: 2, candidate: { kind: "current-changes" } }) }]);
-	const result = await nativeClient(queue.adapter).assess!({ cwd: process.cwd() });
-	assert.equal(result.risk, "medium");
-	assert.deepEqual(queue.calls[0]?.arguments, ["review", "assess", "--cwd", process.cwd(), "--json"]);
-});
-
-test("native assess: passes baseRef/committedOnly through as --base-ref and --committed-only", async () => {
-	const queue = queuedAdapter([{ stdout: JSON.stringify({ schema: REVIEW_ASSESSMENT_SCHEMA, risk: "high", reasons: [], changed_paths: 5, changed_lines: 500, candidate: { kind: "base-diff", base_ref: "origin/main" } }) }]);
-	await nativeClient(queue.adapter).assess!({ cwd: process.cwd(), baseRef: "origin/main", committedOnly: true });
-	assert.deepEqual(queue.calls[0]?.arguments, ["review", "assess", "--cwd", process.cwd(), "--base-ref", "origin/main", "--committed-only", "--json"]);
-});
-
-test("native assess: baseRef requires explicit committedOnly acknowledgement", async () => {
-	const queue = queuedAdapter([]);
-	await assert.rejects(() => nativeClient(queue.adapter).assess!({ cwd: process.cwd(), baseRef: "origin/main" }), TypeError);
-	assert.equal(queue.calls.length, 0, "an invalid request must never reach the subprocess");
-});
-
-test("native assess: a non-zero exit (an older binary reporting an unknown command) fails closed with a native error, never a synthesized result", async () => {
-	// An older binary without the `assess` verb reports its "unknown command"
-	// diagnostic on stderr with nothing on stdout, or writes the same message
-	// to stdout instead -- either way the wrapper rejects rather than
-	// returning a synthesized envelope; the specific error code depends only
-	// on which stream carried the message.
-	const emptyStdout = queuedAdapter([{ stdout: "", stderr: "unknown command \"assess\" for \"gentle-ai review\"", exitCode: 1 }]);
-	await assert.rejects(
-		() => nativeClient(emptyStdout.adapter).assess!({ cwd: process.cwd() }),
-		(error: unknown) => error instanceof NativeReviewCliError && error.code === NATIVE_REVIEW_ERROR_CODE.EMPTY_OUTPUT,
-	);
-
-	const textOnStdout = queuedAdapter([{ stdout: "unknown command \"assess\" for \"gentle-ai review\"", exitCode: 1 }]);
-	await assert.rejects(
-		() => nativeClient(textOnStdout.adapter).assess!({ cwd: process.cwd() }),
-		(error: unknown) => error instanceof NativeReviewCliError && [NATIVE_REVIEW_ERROR_CODE.MALFORMED_JSON, NATIVE_REVIEW_ERROR_CODE.NON_ZERO].includes(error.code),
-	);
-});
-
-test("native assess: a wrong schema or unrecognized risk value fails closed as schema-incompatible", async () => {
-	const wrongSchema = queuedAdapter([{ stdout: JSON.stringify({ schema: "gentle-ai.review-assessment/v2", risk: "medium", reasons: [], changed_paths: 0, changed_lines: 0, candidate: { kind: "current-changes" } }) }]);
-	await assert.rejects(
-		() => nativeClient(wrongSchema.adapter).assess!({ cwd: process.cwd() }),
-		(error: unknown) => error instanceof NativeReviewCliError && error.code === NATIVE_REVIEW_ERROR_CODE.SCHEMA_INCOMPATIBLE,
-	);
-
-	const badRisk = queuedAdapter([{ stdout: JSON.stringify({ schema: REVIEW_ASSESSMENT_SCHEMA, risk: "critical", reasons: [], changed_paths: 0, changed_lines: 0, candidate: { kind: "current-changes" } }) }]);
-	await assert.rejects(
-		() => nativeClient(badRisk.adapter).assess!({ cwd: process.cwd() }),
-		(error: unknown) => error instanceof NativeReviewCliError && error.code === NATIVE_REVIEW_ERROR_CODE.SCHEMA_INCOMPATIBLE,
-	);
-});
