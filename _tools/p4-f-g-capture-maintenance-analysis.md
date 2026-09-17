@@ -75,3 +75,9 @@ admit 缝组合落地：`admitJeroCaptureResultForRelayV1` 在非重放准入使
 - **P4e-3（f38807a）**：遗留恢复路由删除（quarantineLegacy/repairLegacyAlias 全表面；-265 行；v2.5.0 迁移重建配方逆向映射三处）。
 - **保留决策**：devBinary 卡片（注入式 UI、有测试覆盖、生产恒空——P5 UI 清理批处理）；契约能力表键（历史记录）；docs/telemetry.md（P5 文档批）。
 - **D7（P4e 主体）未启动**：native-review-cli.ts（~1600 行）+ review-integration-v2.ts（~2700 行）的 wire 类型面迁移至 authority 侧并删除双轨——独立阶段，建议按 4 子代理流水线专项实施（分析→迁移→审核→修复），且与 P5 改名顺序解耦（schema 字符串 P5 前保持 gentle-ai.*）。
+
+## D7 进度（2026-09-17 第四批）
+
+- **切片一（8d4f9c8）**：git mv review-integration-v2.ts → lib/authority/wire-contract.ts（2861 行自包含词汇表，git 识别 99% rename）；30 处引用重指；runtime 生成器支持子路径+扁平化（authority/N.ts → runtime/N.mjs，authority 内部导入扁平重写，生成物经真实 import 验证）。
+- **切片二（82f0484）**：客户端契约死面摘除 -434 行——reviewStatus/captureResult/repair（接口+桩+枚举+类型+死解码簇）、NATIVE_CLI_CONTRACTS 能力表；诊断基线 146→139（真实改善）。锁面确认走 targetStatus.raw.locks。
+- **切片三（未做，终态）**：native-review-cli.ts（约 1600 行）彻底溶解——存留面为 NativeReviewCli 接口类型+consent 纪律+授权构造器+exec 适配器+sdd 解码+fail-closed 桩。终态需扩展直接消费 authority 拥有的类型面，桩删除；与 P5 改名顺序建议：先切片三后 P5（避免在将删面上改名）。
