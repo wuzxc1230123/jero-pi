@@ -42,6 +42,12 @@
 - 新增 adapter 测试：维护四联（授权串不匹配 fail-closed）、acknowledge burn/replay/binding-mismatch、correction plan（含 {{value}} 替换纪律与 closure wire 可解码）
 - 既有 261 权威测试 + conformance 必须保持全绿；typecheck 146 基线；authority-boundary 门洁净
 
+## Q-A 已实施（前半，2026-09-17）
+
+admit 缝组合落地：`admitJeroCaptureResultForRelayV1` 在非重放准入使工件集齐全时，从标准结果目录聚合信封 → `reviewFinalizeV1(review_result)` 冻结 → 由信封行推导 classifications 再 `reviewFinalizeV1(classifications)` 分类。发现行按 finalize 封闭键集（id/location/severity/claim/proof_refs）投影，class 沿 evidence_class、proof 取 proof_refs 连接。组合结果随 manifest 的 finalize_composition 诊断位透出（refused 不撤回已准入工件，不谎报非变更）。测试：tests/authority/authority-capture-composition.test.ts 2 项（severe→correction-plan 闭环经 P4d-g captureCorrectionPlan；clean→final_evidence_required 停靠点）。
+
+**仍开放的 Q-A2**：evidence_classified 无修复项后的 final evidence（`final_evidence_required` execute）驱动者未接——需要终验证据来源设计（wrapper 会话产出 vs 终验向量）。
+
 ## 实施后记（2026-09-17 本批已落地）
 
 - 维护四联 + acknowledgeApproved + captureCorrectionPlan 已接线并测试（tests/authority/authority-maintenance-cli.test.ts 5 项；全套 266 绿）。
