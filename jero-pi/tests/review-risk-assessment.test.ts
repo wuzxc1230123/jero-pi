@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { execFileSync } from "node:child_process";
+import { realpathSync } from "node:fs";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { createGentleAiExtension, __testing } from "../extensions/jero-ai.ts";
 import {
@@ -348,7 +350,10 @@ function reviewControllerTool(nativeReviewCli: Partial<NativeReviewCli> | null):
 	return tool;
 }
 
-const ctx = { cwd: process.cwd() } as ExtensionContext;
+// The controller resolves the assess workspace root to the Git worktree
+// top-level; in this monorepo the package cwd is a subdirectory of it, so
+// record/derive against the same canonical root.
+const ctx = { cwd: realpathSync(execFileSync("git", ["rev-parse", "--show-toplevel"], { encoding: "utf8" }).trim()) } as ExtensionContext;
 
 test("gentle_review assess: an older binary without the assess verb fails closed to high", async () => {
 	const nativeReviewCli: Partial<NativeReviewCli> = {

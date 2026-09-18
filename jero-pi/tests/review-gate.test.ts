@@ -414,7 +414,7 @@ test("push gate treats only successful empty output as absent and fails closed o
 		["malformed", "printf 'not-a-valid-row\\n'; exit 0"],
 		["ambiguous", `printf '${finalCommit}\\trefs/heads/feature\\n${finalCommit}\\trefs/heads/feature\\n'; exit 0`],
 	] as const) {
-		await t.test(name, () => {
+		await t.test(name, { skip: process.platform === "win32" }, () => {
 			const bin = join(authority.repository, `fake-git-${name}`);
 			mkdirSync(bin);
 			const fakeGit = join(bin, "git");

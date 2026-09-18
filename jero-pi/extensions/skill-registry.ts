@@ -462,7 +462,10 @@ function shouldSkipDuplicateExtensionLoad(
 ): boolean {
 	const currentPath = extensionSourcePath(source);
 	const projectLocalPath = comparablePath(join(cwd, "extensions", "skill-registry.ts"));
-	if (currentPath && currentPath !== projectLocalPath && existsSync(projectLocalPath)) {
+	// A source URL that cannot be converted to a native path (a POSIX file
+	// URL on Windows, say) is definitionally not the project-local copy: the
+	// project-local extension still wins when one exists.
+	if ((currentPath ?? projectLocalPath + " foreign") !== projectLocalPath && existsSync(projectLocalPath)) {
 		return true;
 	}
 

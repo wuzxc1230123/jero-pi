@@ -6,6 +6,7 @@ import {
 	mkdtempSync,
 	mkdirSync,
 	readFileSync,
+	realpathSync,
 	renameSync,
 	rmSync,
 	writeFileSync,
@@ -175,7 +176,9 @@ function runGit(
 }
 
 function repositoryRoot(cwd: string): string {
-	return runGit(cwd, ["rev-parse", "--show-toplevel"]);
+	// `--show-toplevel` prints forward slashes on Windows; native spelling
+	// keeps the recorded repository root comparable with path.join inputs.
+	return realpathSync.native(runGit(cwd, ["rev-parse", "--show-toplevel"]));
 }
 
 function repositoryObjectDirectory(root: string): string {

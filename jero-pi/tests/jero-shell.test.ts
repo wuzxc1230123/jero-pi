@@ -523,8 +523,12 @@ test("registered canonical root governs real Git discovery, status and diff desp
 	(ctx.sessionManager as unknown as { getCwd(): string }).getCwd = () => selected;
 	const run = shellGitRunner(selected, poisoned);
 	const discovery = await run(["worktree", "list", "--porcelain", "-z"]);
-	assert.match(discovery.stdout, new RegExp(`worktree ${selected}`));
-	assert.ok(!discovery.stdout.includes(foreign));
+	// Git porcelain always prints forward slashes; the native Windows paths
+	// in the fixture use backslashes, so normalize before matching (upstream
+	// only ever ran this on backslash-free paths).
+	const gitSpelled = (value: string) => value.replaceAll(String.fromCharCode(92), "/");
+	assert.ok(discovery.stdout.includes(`worktree ${gitSpelled(selected)}`));
+	assert.ok(!discovery.stdout.includes(`worktree ${gitSpelled(foreign)}`));
 	installGentleShell(h.pi, { JERO_PI_SHELL_CHANGES_WATCH_MS: "off" }, { devBinary: () => undefined, gitRunner: (cwd) => shellGitRunner(cwd, poisoned) });
 	await fire(h.handlers, "session_start", ctx);
 	t.after(() => fire(h.handlers, "session_shutdown", ctx));

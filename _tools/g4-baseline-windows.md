@@ -45,3 +45,22 @@
 | install-tui-mode-setting.test.ts | 测试仍造 gentle-pi 路径；另发现 scripts/install-tui-mode-setting.mjs G0 移植时丢失"调用方 packageRoot 必须等于 owned 位置"绑定（安全隐患） | 测试全部改 jero-pi 路径；postinstall 生命周期块（依赖已删 installer）整块删除；脚本恢复上游 ownership 判定 |
 | gentle-ai.test.ts | 3 个测试断言已删除域（二进制恢复指引、ask-user-choice blocked 通道） | 改为零二进制姿态断言（unavailable fail-closed、无 installer 引用）；rpiv 单监听断言；choice-blocker 测试删除（D6 删除域） |
 | verify-package-files.test.ts | 自身笔误：写 docs/ 前未建父目录 | mkdir recursive |
+
+## Windows 兼容修复批次（2026-09-18）
+
+对文档基线失败族的逐项修复（全部为移植缺陷或 Windows 特有路径/环境差异，非上游同败）：
+
+| 文件 | 修复 | 结果 |
+|---|---|---|
+| jero-shell | git porcelain 正斜杠 vs 原生路径 | 28/0 |
+| openspec-guardrails | 正则字符类补 \ 分隔符 | 4/0 |
+| orchestrator-budget | ESM 子进程 pathToFileURL；pre-diet 夹具品牌同步 | 38/0 |
+| skill-registry | 无法转换的外来 file URL 仍判非本地副本 | 17/0 |
+| review-snapshot | --show-toplevel 前斜杠→realpathSync.native 归一 | 9/0 |
+| review-transaction / review-gate | shebang 假 git 探针 POSIX 限定（Windows CreateProcess 不解析无扩展脚本） | 11/0、24/0 |
+| opaque-pi-reviewer-adapter | shebang 启动器经 execPath 路由；break-cleanup 用分离锁持进程（Windows 忽略目录只读位） | 7/0 |
+| review-agent-end-preflight | 夹具 cwd→git toplevel；own-write 绝对路径 | 21/5（剩 5 为逻辑级基线） |
+| review-risk-assessment | assess 夹具 cwd→git toplevel（键一致） | 44/0 |
+| review-candidate-view | owner-SID 记忆化+批量单次 PowerShell+创建者种子；DACL enforce 保留精确 SDDL 写 | 超时→122/19（仍超 170s 预算：PowerShell SetAccessControl 每边界 1.5-2.5s 冷启动） |
+
+候选视图根治需把全部 PowerShell ACL 操作换成 icacls（含 enforce 的精确三 ACE 重建——icacls /remove 逐 trustee 可行）或并行化——留作专项。

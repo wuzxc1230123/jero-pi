@@ -30,7 +30,18 @@ process.stdin.on("end", () => {
 	};
 	if (process.env.OPAQUE_PI_LOG) fs.appendFileSync(process.env.OPAQUE_PI_LOG, JSON.stringify(log) + "\\n");
 	if (mode === "break-cleanup" || process.env.OPAQUE_PI_BREAK_CLEANUP === "true") {
-		fs.chmodSync(path.dirname(process.cwd()), 0o500);
+		// POSIX: a read-only parent blocks recursive removal. Windows ignores
+		// the directory readonly bit for rmdir, so block it with a locked file:
+		// an open handle with no FILE_SHARE_DELETE makes unlink fail EBUSY.
+		if (process.platform === "win32") {
+			// A handle dies with the process, so the lock must outlive the fake
+			// pi: spawn a detached holder that keeps an open handle (no
+			// FILE_SHARE_DELETE) on a file inside the scratch directory.
+			const holder = require("node:child_process").spawn(process.execPath, ["-e", "const fs=require('node:fs');const h=fs.openSync(process.argv[1],'w');setInterval(()=>{},1e9);", require("node:path").join(process.cwd(), "locked.bin")], { detached: true, stdio: "ignore" });
+			holder.unref();
+		} else {
+			fs.chmodSync(path.dirname(process.cwd()), 0o500);
+		}
 	}
 	if (mode === "empty") process.exit(0);
 	if (mode === "hang") { setTimeout(() => process.exit(0), 10_000); return; }

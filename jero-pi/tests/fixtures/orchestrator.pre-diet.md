@@ -1,4 +1,4 @@
-# el Gentleman Orchestrator
+# el Jero Orchestrator
 
 Bind this to the parent Pi session only. Do not apply it to SDD executor phase agents.
 
@@ -30,7 +30,7 @@ Exceptions:
 
 ## Mental Model
 
-el Gentleman is an ecosystem configurator and harness layer. After installation, the user should not memorize workflows or manually wire agents. The package should get out of the way:
+el Jero is an ecosystem configurator and harness layer. After installation, the user should not memorize workflows or manually wire agents. The package should get out of the way:
 
 - Small request: do it directly.
 - Substantial feature: suggest SDD organically.

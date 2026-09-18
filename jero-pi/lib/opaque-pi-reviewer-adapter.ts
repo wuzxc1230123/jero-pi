@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { closeSync, openSync, readSync } from "node:fs";
 import { chmod, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, posix, win32 } from "node:path";
@@ -108,7 +109,23 @@ export function resolvePiLaunch(
 	platform: NodeJS.Platform = process.platform,
 	host: PiHostProcess = { execPath: process.execPath, entry: process.argv[1] },
 ): PiLaunch {
-	if (piExecutable !== undefined) return { file: piExecutable, arguments: [...OPAQUE_PI_REVIEWER_ARGV] };
+	if (piExecutable !== undefined) {
+		// A shebang Node script cannot be spawned extensionless on Windows
+		// (CreateProcess only resolves *.exe); route it through the current
+		// Node executable so POSIX-style shims keep working everywhere.
+		if (process.platform === "win32" && !/.(exe|cmd|bat)$/i.test(piExecutable)) {
+			try {
+				const fd = openSync(piExecutable, "r");
+				try {
+					const header = Buffer.alloc(64);
+					const bytes = readSync(fd, header, 0, 64, 0);
+					if (bytes > 2 && header[0] === 0x23 && header[1] === 0x21) return { file: process.execPath, arguments: [piExecutable, ...OPAQUE_PI_REVIEWER_ARGV] };
+				} finally { closeSync(fd); }
+			} catch { /* not readable: fall through to the direct spawn, which
+				will surface its own typed launch failure */ }
+		}
+		return { file: piExecutable, arguments: [...OPAQUE_PI_REVIEWER_ARGV] };
+	}
 	if (platform !== "win32") return { file: "pi", arguments: [...OPAQUE_PI_REVIEWER_ARGV] };
 	if (typeof host.entry !== "string" || host.entry.length === 0 || !(platform === "win32" ? win32 : posix).isAbsolute(host.entry)) {
 		throw new Error(`Pi host entry could not be resolved from the running process (received ${JSON.stringify(host.entry ?? null)}); a bare pi launcher cannot be spawned on Windows without a shell`);

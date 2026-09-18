@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import childProcess from "node:child_process";
 import { syncBuiltinESMExports } from "node:module";
 import { realpathSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -125,9 +126,13 @@ function stopStatus(targetIdentity: string): ReviewStatusV3 {
 
 const agentEndEvent = { type: "agent_end", messages: [] };
 let mutationCall = 0;
+const sessionGitRoot = realpathSync(childProcess.execFileSync("git", ["rev-parse", "--show-toplevel"], { encoding: "utf8" }).trim());
+const OWN_WRITE_PATH = fileURLToPath(import.meta.url);
 async function directWrite(handlers: Map<string, AnyHandler>, session: ExtensionContext): Promise<void> {
 	await handlers.get("tool_result")!({ type: "tool_result", toolName: "write", toolCallId: `own-${++mutationCall}`,
-		input: { path: session.cwd === process.cwd() || session.cwd === realpathSync(process.cwd()) ? "tests/review-agent-end-preflight.test.ts" : "src/example.ts" },
+		// An own write is any successful write inside the session worktree; this
+		// very test file is such a path on every machine, whatever the cwd is.
+		input: { path: session.cwd === sessionGitRoot ? OWN_WRITE_PATH : "src/example.ts" },
 		content: [], isError: false }, session);
 }
 
@@ -138,7 +143,10 @@ for (const scenario of ["same", "changed", "sibling-root", "nested-root", "faile
 	test(`agent_end after approved acknowledgement: ${scenario}`, async (t) => {
 		const changedTarget = scenario === "changed";
 		const unsuccessful = scenario === "failed" || scenario === "unknown";
-		const cwd = realpathSync(process.cwd());
+		// The controller resolves the workspace root to the Git worktree top-level;
+	// in this monorepo the test cwd is a subdirectory of it, so derive the same
+	// canonical root the controller will compute for the cwd token.
+	const cwd = realpathSync(childProcess.execFileSync("git", ["rev-parse", "--show-toplevel"], { encoding: "utf8" }).trim());
 		const siblingRoot = realpathSync(tmpdir());
 		if (scenario === "sibling-root") {
 			// Model a sibling worktree sharing the real common directory without

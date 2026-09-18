@@ -1,5 +1,5 @@
 import { execFileSync, type ExecFileSyncOptions } from "node:child_process";
-import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, isAbsolute, join, resolve, sep } from "node:path";
 import { reviewGitEnvironment } from "../review-repository.ts";
@@ -103,7 +103,9 @@ function runGit(cwd: string, args: readonly string[], environment: NodeJS.Proces
 }
 
 function repositoryRoot(cwd: string): string {
-	return runGit(cwd, ["rev-parse", "--show-toplevel"]);
+	// `--show-toplevel` prints forward slashes on Windows; native spelling
+	// keeps the recorded repository root comparable with path.join inputs.
+	return realpathSync.native(runGit(cwd, ["rev-parse", "--show-toplevel"]));
 }
 
 function repositoryObjectDirectory(root: string): string {
