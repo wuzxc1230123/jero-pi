@@ -89,3 +89,21 @@ admit 缝组合落地：`admitJeroCaptureResultForRelayV1` 在非重放准入使
 - **切片一（8d4f9c8）**：git mv review-integration-v2.ts → lib/authority/wire-contract.ts（2861 行自包含词汇表，git 识别 99% rename）；30 处引用重指；runtime 生成器支持子路径+扁平化（authority/N.ts → runtime/N.mjs，authority 内部导入扁平重写，生成物经真实 import 验证）。
 - **切片二（82f0484）**：客户端契约死面摘除 -434 行——reviewStatus/captureResult/repair（接口+桩+枚举+类型+死解码簇）、NATIVE_CLI_CONTRACTS 能力表；诊断基线 146→139（真实改善）。锁面确认走 targetStatus.raw.locks。
 - **切片三（未做，终态）**：native-review-cli.ts（约 1600 行）彻底溶解——存留面为 NativeReviewCli 接口类型+consent 纪律+授权构造器+exec 适配器+sdd 解码+fail-closed 桩。终态需扩展直接消费 authority 拥有的类型面，桩删除；与 P5 改名顺序建议：先切片三后 P5（避免在将删面上改名）。
+
+## P5a 已完成 + Q-C 关闭（2026-09-18）
+
+- **Q-C 关闭**：设计 §5.1.1 权威操作表本就裁剪 capture-unachievable；客户端声明机器保留（测试覆盖），生产默认=能力缺席（优雅降级）。权威侧写入操作不实现。
+- **P5a-1/2（4fb0a89）**：46 个 env GENTLE_PI_*→JERO_PI_*（含资产模板 token）；17 个 /gentle:*→/jero:* + gentle-sdd-*→jero-sdd-*。docs/readme-reference 保持上游原貌（P5b 重写）。
+- **logo 事故**：P5a-1/2 的 git add 误卷入悬置删除——d8ebd75 恢复（pi.image 引用有效；删除仍待用户明示）。
+- **P5a-3（a2ed4e4）**：extensions/lib/tests 文件名迁移（gentle-*.ts→jero-*.ts，10 件）。
+- **P5a-4（cb9baf4）**：主题 Gentle*→Jero*（3 件+测试）。
+
+## P5b 剩余（品牌耦合批——一次性做）
+
+1. skills 子系统：skills/gentle-ai→skills/jero-ai 目录 + SKILL.md name/prefix（gentle-ai-*→jero-*，~15 件）+ collision 测试映射 + _shared 引用 + 品牌散文
+2. 资产+迁移：assets/agents/gentle-ai-{worker,explore,verify}.md→jero-*; **migrations 清单 jero 重建**（附录 B：新清单记录 old→new 改名映射，历史清单保持上游事实）
+3. agent 名：BOUNDED_WRITER_AGENT_NAMES gentle-ai-worker 等
+4. 配置路径：.pi/gentle-ai→（设计定夺 .pi/jero?）——用户可见状态位置
+5. wire schema 字符串：gentle-ai.*→jero.*（wire-contract/client-contract/canonical + fixtures 对拍改写——最大单项）
+6. 文档：README 状态、readme-reference 重写、telemetry.md 删除、gentle-shell.md
+7. 收尾门：GENTLE_PI_|/gentle:|gentle-ai grep 零残留（白名单：外来存储探测名/历史 fixture/migrations 历史）+ 三重门 + 版本发布
