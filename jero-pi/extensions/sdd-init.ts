@@ -6,7 +6,7 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { basename, dirname, join, relative } from "node:path";
-import { applySavedModelConfig } from "./gentle-ai.ts";
+import { applySavedModelConfig } from "./jero-ai.ts";
 import { ensureSddPreflight, installPackageAssets } from "../lib/sdd-preflight.ts";
 type ExtensionAPI = any;
 

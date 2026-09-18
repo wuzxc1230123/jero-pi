@@ -4,11 +4,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { execFileSync } from "node:child_process";
-import { __testing } from "../../extensions/gentle-ai.ts";
+import { __testing } from "../../extensions/jero-ai.ts";
 import { createJeroAuthorityReviewCli } from "../../lib/jero-authority-cli.ts";
 import { tempRoot } from "./fixtures.ts";
 
-// P4d E2E: the REAL controller machinery (extensions/gentle-ai.ts
+// P4d E2E: the REAL controller machinery (extensions/jero-ai.ts
 // executeReviewControllerOperation — negotiated status routing, mapping,
 // collect-binding rendering) running over the composed default CLI
 // (P1 stub ∘ jero authority review adapter). No mocks on the CLI path.

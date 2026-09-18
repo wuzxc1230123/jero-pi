@@ -17,7 +17,7 @@ import { researchAgent, RESEARCH_CHILD_TOOLS_ENV } from "../lib/sdd-research-cap
 const enabled = process.env.JERO_PI_LIVE_RESEARCH_TEST === "1";
 const role = process.env.JERO_PI_LIVE_RESEARCH_ROLE;
 const tools = ["web_search", "source_check", "fetch_content", "get_search_content"];
-const candidate = fileURLToPath(new URL("../extensions/gentle-agents.ts", import.meta.url));
+const candidate = fileURLToPath(new URL("../extensions/jero-agents.ts", import.meta.url));
 const self = fileURLToPath(import.meta.url);
 const question = `Generic runtime capability probe, not an SDD workflow or proposal admission. Artifact store: none. Do not write files or launch agents. Use ALL FOUR tools web_search, source_check, fetch_content and get_search_content to answer: What does the Node.js fs module provide? Set web_search workflow to none. Search only public Node.js documentation (site:nodejs.org). Check and retrieve the original public documentation. Return ONLY JSON with source_url (an https://nodejs.org/ URL) and passage (a verbatim 40-300 character passage from retrieved documentation). Do not use remembered text as evidence. If any tool fails, report inability rather than inventing evidence.`;
 

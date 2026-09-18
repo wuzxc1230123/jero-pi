@@ -102,7 +102,7 @@ test("actual Pi SDK loader preserves permission only across reload and disposes 
 		else globalState[LIFECYCLE_SYMBOL] = previousLifecycle;
 	});
 
-	const extensionSource = pathToFileURL(join(import.meta.dirname, "..", "extensions", "gentle-ai.ts")).href;
+	const extensionSource = pathToFileURL(join(import.meta.dirname, "..", "extensions", "jero-ai.ts")).href;
 	const extensionPath = join(agentDir, "extensions", "runtime-permission.ts");
 	writeFileSync(extensionPath, `
 import { createGentleAiExtension } from ${JSON.stringify(extensionSource)};

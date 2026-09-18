@@ -44,7 +44,7 @@ test("orchestrator keeps conversation language separate from generated artifact 
 	const orchestrator = await readFile(join(ROOT, "assets/orchestrator.md"), "utf8");
 
 	// persona-single-channel: the conversation-language rule (previously a duplicated
-	// LB1 sentence here) now lives once, in the wrapper block (gentle-ai.ts), and this
+	// LB1 sentence here) now lives once, in the wrapper block (jero-ai.ts), and this
 	// section only carries a one-line pointer back to it.
 	assert.match(
 		orchestrator,

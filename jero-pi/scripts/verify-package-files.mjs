@@ -57,7 +57,7 @@ const requiredPaths = [
 	"docs/native-authority-architecture.md",
 	"docs/skill-style-guide.md",
 	"docs/review-integration.md",
-	"extensions/gentle-ai.ts",
+	"extensions/jero-ai.ts",
 	"extensions/jero-memory.ts",
 	"lib/memory.ts",
 	"extensions/sdd-init.ts",

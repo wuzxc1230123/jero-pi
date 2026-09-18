@@ -14,9 +14,9 @@ import { domainHashV1 } from "../lib/review-canonical.ts";
 import { canonicalHash } from "../lib/review-transaction.ts";
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
-const { createGentleAiExtension } = await import(pathToFileURL(join(ROOT, "extensions/gentle-ai.ts")).href);
+const { createGentleAiExtension } = await import(pathToFileURL(join(ROOT, "extensions/jero-ai.ts")).href);
 const EXTENSIONS = [
-	"extensions/gentle-ai.ts",
+	"extensions/jero-ai.ts",
 	"extensions/skill-registry.ts",
 	"extensions/sdd-init.ts",
 	"extensions/startup-banner.ts",
@@ -572,7 +572,7 @@ async function run() {
 
 		const scopedWriterDispatch = {
 			agent: "gentle-ai-worker",
-			task: "Implement the requested change.\n\n## Allowed edit surfaces\nextensions/gentle-ai.ts\ntests/runtime-harness.mjs",
+			task: "Implement the requested change.\n\n## Allowed edit surfaces\nextensions/jero-ai.ts\ntests/runtime-harness.mjs",
 			mode: "task",
 		};
 		assert.equal(
@@ -633,7 +633,7 @@ async function run() {
 			await rm(rpcChildCwd, { recursive: true, force: true });
 		}
 
-		const canonicalFrozenFindingRow = '{"id":"JD-A-001","lens":"judgment-day","location":"extensions/gentle-ai.ts:1","severity":"CRITICAL","status_at_freeze":"open","evidence_class":"deterministic","evidence_claim":"The frozen finding has concrete user impact."}';
+		const canonicalFrozenFindingRow = '{"id":"JD-A-001","lens":"judgment-day","location":"extensions/jero-ai.ts:1","severity":"CRITICAL","status_at_freeze":"open","evidence_class":"deterministic","evidence_claim":"The frozen finding has concrete user impact."}';
 		const canonicalFrozenFindingRows = [JSON.parse(canonicalFrozenFindingRow)];
 		const canonicalFrozenLedgerHash = canonicalHash(canonicalFrozenFindingRows);
 		const canonicalJdFixTask = [
@@ -653,7 +653,7 @@ async function run() {
 			canonicalFrozenFindingRow,
 			"",
 			"## Allowed edit surfaces",
-			"extensions/gentle-ai.ts",
+			"extensions/jero-ai.ts",
 			"tests/runtime-harness.mjs",
 		].join("\n");
 		const orderedFrozenFindingRows = [
@@ -667,7 +667,7 @@ async function run() {
 			.replace(canonicalFrozenFindingRow, reversedFrozenFindingRows.map((row) => JSON.stringify(row)).join("\n"));
 		const incorrectFrozenLedgerHash = `${canonicalFrozenLedgerHash.slice(0, -1)}${canonicalFrozenLedgerHash.endsWith("0") ? "1" : "0"}`;
 		for (const [label, input] of [
-			["missing activation", { agent: "jd-fix-agent", task: "## Allowed edit surfaces\nextensions/gentle-ai.ts", mode: "task" }],
+			["missing activation", { agent: "jd-fix-agent", task: "## Allowed edit surfaces\nextensions/jero-ai.ts", mode: "task" }],
 			["duplicate activation", { agent: "jd-fix-agent", task: `${canonicalJdFixTask}\n\n## Judgment Day activation\nUser explicitly requested Judgment Day.`, mode: "task" }],
 			["missing severe IDs", { agent: "jd-fix-agent", task: canonicalJdFixTask.replace("## Exact authorized severe IDs\n- `JD-A-001`\n", ""), mode: "task" }],
 			["duplicate severe ID bindings", { agent: "jd-fix-agent", task: canonicalJdFixTask.replace("- `JD-A-001`", "- `JD-A-001`\n- `JD-A-001`"), mode: "task" }],
@@ -693,8 +693,8 @@ async function run() {
 			["non-open frozen row", { agent: "jd-fix-agent", task: canonicalJdFixTask.replace("\"status_at_freeze\":\"open\"", "\"status_at_freeze\":\"closed\""), mode: "task" }],
 			["non-severe frozen row", { agent: "jd-fix-agent", task: canonicalJdFixTask.replace("\"severity\":\"CRITICAL\"", "\"severity\":\"WARNING\""), mode: "task" }],
 			["empty frozen evidence", { agent: "jd-fix-agent", task: canonicalJdFixTask.replace("\"evidence_claim\":\"The frozen finding has concrete user impact.\"", "\"evidence_claim\":\"\""), mode: "task" }],
-			["missing edit surface", { agent: "jd-fix-agent", task: canonicalJdFixTask.replace("## Allowed edit surfaces\nextensions/gentle-ai.ts\ntests/runtime-harness.mjs", ""), mode: "task" }],
-			["invalid edit surface", { agent: "jd-fix-agent", task: canonicalJdFixTask.replace("## Allowed edit surfaces\nextensions/gentle-ai.ts", "## Allowed edit surfaces\n."), mode: "task" }],
+			["missing edit surface", { agent: "jd-fix-agent", task: canonicalJdFixTask.replace("## Allowed edit surfaces\nextensions/jero-ai.ts\ntests/runtime-harness.mjs", ""), mode: "task" }],
+			["invalid edit surface", { agent: "jd-fix-agent", task: canonicalJdFixTask.replace("## Allowed edit surfaces\nextensions/jero-ai.ts", "## Allowed edit surfaces\n."), mode: "task" }],
 			["mixed", { agent: ["jd-fix-agent", "gentle-ai-worker"], task: canonicalJdFixTask, mode: "task" }],
 			["agent array", { agent: ["jd-fix-agent"], task: canonicalJdFixTask, mode: "task" }],
 			["agents array", { agents: ["jd-fix-agent"], task: canonicalJdFixTask, mode: "task" }],
@@ -719,7 +719,7 @@ async function run() {
 				"valid scope followed by a repository-root scope",
 				{
 					agent: "gentle-ai-worker",
-					task: "## Allowed edit surfaces\nextensions/gentle-ai.ts\n\n## Allowed edit surfaces\n.",
+					task: "## Allowed edit surfaces\nextensions/jero-ai.ts\n\n## Allowed edit surfaces\n.",
 					mode: "task",
 				},
 			],
@@ -727,7 +727,7 @@ async function run() {
 				"valid task scope plus invalid context scope",
 				{
 					agent: "gentle-ai-worker",
-					task: "## Allowed edit surfaces\nextensions/gentle-ai.ts",
+					task: "## Allowed edit surfaces\nextensions/jero-ai.ts",
 					context: "## Allowed edit surfaces\n.",
 					mode: "task",
 				},
@@ -736,7 +736,7 @@ async function run() {
 				"conflicting valid task and context scopes",
 				{
 					agent: "gentle-ai-worker",
-					task: "## Allowed edit surfaces\nextensions/gentle-ai.ts",
+					task: "## Allowed edit surfaces\nextensions/jero-ai.ts",
 					context: "## Allowed edit surfaces\ntests/runtime-harness.mjs",
 					mode: "task",
 				},
@@ -751,7 +751,7 @@ async function run() {
 					toolName: "subagent_run",
 					input: {
 						agent: "gentle-ai-worker",
-						task: "## Allowed edit surfaces\nextensions/gentle-ai.ts\ntests/runtime-harness.mjs\n\n## Allowed edit surfaces\n- `tests/runtime-harness.mjs`\n- `extensions/gentle-ai.ts`",
+						task: "## Allowed edit surfaces\nextensions/jero-ai.ts\ntests/runtime-harness.mjs\n\n## Allowed edit surfaces\n- `tests/runtime-harness.mjs`\n- `extensions/jero-ai.ts`",
 						mode: "task",
 					},
 				},
@@ -869,7 +869,7 @@ async function run() {
 	const candidateDriftCwd = await tempWorkspace();
 	try {
 		const { createGentleAiExtension } = await import(
-			pathToFileURL(join(ROOT, "extensions/gentle-ai.ts")).href
+			pathToFileURL(join(ROOT, "extensions/jero-ai.ts")).href
 		);
 		const { CandidateViewRegistry } = await import(
 			pathToFileURL(join(ROOT, "lib/review-candidate-view.ts")).href

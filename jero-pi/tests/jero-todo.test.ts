@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import type { Component } from "@earendil-works/pi-tui";
-import gentleTodo, { todoCollapseKey, todoEnabled } from "../extensions/gentle-todo.ts";
+import gentleTodo, { todoCollapseKey, todoEnabled } from "../extensions/jero-todo.ts";
 import { stripAnsi } from "../lib/terminal-theme.ts";
 
 // The Gentle Todo extension: the `todo` tool, the card above the editor,

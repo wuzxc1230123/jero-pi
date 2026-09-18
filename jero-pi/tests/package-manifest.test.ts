@@ -13,7 +13,7 @@ import { homedir, tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { applyModelConfig } from "../extensions/gentle-ai.ts";
+import { applyModelConfig } from "../extensions/jero-ai.ts";
 import { resolveGentlePiAgentHome } from "../lib/agent-home.ts";
 import { getPackageAssetOwner, installPackageAssets, installSddAssets, type PackageAssetOwner } from "../lib/sdd-preflight.ts";
 
@@ -133,7 +133,7 @@ test("package verification names the native review runtime boundary and packaged
 	assert.match(verifier, /build-runtime-modules\.mjs.*--check/s, "package verification must reject generated-runtime drift");
 	assert.match(verifier, /"tests\/fixtures\/native-review-cli\/v2\.1\.3\/start\.json"/, "package verification must retain the pinned native decoder fixture");
 	assert.match(
-		readFileSync(join(PACKAGE_ROOT, "extensions", "gentle-ai.ts"), "utf8"),
+		readFileSync(join(PACKAGE_ROOT, "extensions", "jero-ai.ts"), "utf8"),
 		/createJeroAuthorityReviewCli\(\)/,
 		"the production extension must construct its native client from the in-process authority adapter",
 	);
@@ -201,7 +201,7 @@ test("npm publication is bound to the exact package tag and triggering commit", 
 });
 
 test("Pi delivery relay is absent from the packaged extension", () => {
-	const extension = readFileSync(join(PACKAGE_ROOT, "extensions", "gentle-ai.ts"), "utf8");
+	const extension = readFileSync(join(PACKAGE_ROOT, "extensions", "jero-ai.ts"), "utf8");
 
 	assert.doesNotMatch(extension, /review-publication-gate/);
 });
@@ -1498,7 +1498,7 @@ test("pre-release package and runtime stop before publication", () => {
 	assert.match(verifier, /assets\/migrations\/managed-assets-v0\.13\.json/);
 	assert.match(verifier, /assets\/migrations\/managed-assets-v0\.14\.json/);
 
-	const runtime = readFileSync(join(PACKAGE_ROOT, "extensions", "gentle-ai.ts"), "utf8");
+	const runtime = readFileSync(join(PACKAGE_ROOT, "extensions", "jero-ai.ts"), "utf8");
 	assert.doesNotMatch(runtime, /execFileSync\("git", \["(?:commit|push|tag)"/);
 	assert.doesNotMatch(runtime, /execFileSync\("(?:npm|pnpm)", \["publish"/);
 });

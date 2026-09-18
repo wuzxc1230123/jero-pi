@@ -1112,7 +1112,7 @@ test("candidate registry still fails closed rebinding the same lineage to genuin
 // gentle-pi#323: `createOrReuse` reuses whatever view a replay key maps to,
 // with no awareness of live candidate content -- a content-independent key
 // reuses a stale view even after the candidate content it was frozen from
-// has changed. The fix lives at the START call site (extensions/gentle-ai.ts),
+// has changed. The fix lives at the START call site (extensions/jero-ai.ts),
 // which now folds the current candidate tree into the replay key; this test
 // documents both the registry's plain-key reuse contract and that folding
 // content identity into the key produces a fresh view once content changes.

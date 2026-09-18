@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { createGentleAiExtension, __testing } from "../extensions/gentle-ai.ts";
+import { createGentleAiExtension, __testing } from "../extensions/jero-ai.ts";
 import {
 	NATIVE_REVIEW_ERROR_CODE,
 	NATIVE_REVIEW_MODE_SOURCE,
@@ -327,7 +327,7 @@ test("resolveWriterProfile: an unknown or omitted profile fails closed to small,
 
 // ---------------------------------------------------------------------------
 // Tool-level fail-closed path: the `gentle_review` tool's `assess` operation
-// (`extensions/gentle-ai.ts`, gentle-pi#662) must treat a native CLI without
+// (`extensions/jero-ai.ts`, gentle-pi#662) must treat a native CLI without
 // the `assess` verb (an older binary) or a rejected `assess` call (a process
 // failure) the same way -- risk "unassessable", which `verificationPlan`
 // treats as `high`. `assess` is exposed as a `gentle_review` operation, not a

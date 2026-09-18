@@ -8,7 +8,7 @@ import { AGENT_MODE, type AgentDefinition } from "../lib/agents-config.ts";
 import { AgentRunner, type TaskRequest } from "../lib/agents-runner.ts";
 import { TaskStore } from "../lib/agents-protocol.ts";
 import { decodeNativeSddStatusV2, NATIVE_REVIEW_ERROR_CODE, NativeReviewCliError } from "../lib/authority/client-contract.ts";
-import { createGentleAiExtension, __testing } from "../extensions/gentle-ai.ts";
+import { createGentleAiExtension, __testing } from "../extensions/jero-ai.ts";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import type { NativeReviewCli, NativeSddStatusV2 } from "../lib/authority/client-contract.ts";
 import { ensureSddPreflight } from "../lib/sdd-preflight.ts";
@@ -55,7 +55,7 @@ function workspace(t: test.TestContext): string {
 }
 
 test("remediation read tools are limited to canonical relative paths inside the confirmed worktree", async (t) => {
-	const { remediationToolAllowed } = await import("../extensions/gentle-agents.ts");
+	const { remediationToolAllowed } = await import("../extensions/jero-agents.ts");
 	const cwd = workspace(t), outside = mkdtempSync(join(tmpdir(), "gentle-pi-remediation-outside-"));
 	t.after(() => rmSync(outside, { recursive: true, force: true }));
 	symlinkSync(outside, join(cwd, "escape"));

@@ -16,7 +16,7 @@ import test from "node:test";
 // not merely asserted.
 //
 // Each scenario runs the controller in its own child process with a fresh
-// module load of extensions/gentle-ai.ts. Module-level state and every closure
+// module load of extensions/jero-ai.ts. Module-level state and every closure
 // restart from scratch. The truthful restart protocol uses the public surface:
 //   1. Process A: INSPECT exposes one opaque collectBinding, which is copied
 //      unchanged to exactly one gentle_review_capture invocation. The relay
@@ -142,7 +142,7 @@ function repository(t) {
 }
 
 function restartWorkerSource() {
-	const extensionUrl = pathToFileURL(join(import.meta.dirname, "..", "extensions", "gentle-ai.ts")).href;
+	const extensionUrl = pathToFileURL(join(import.meta.dirname, "..", "extensions", "jero-ai.ts")).href;
 	const relayUrl = pathToFileURL(join(import.meta.dirname, "..", "lib", "review-host-relay.ts")).href;
 	const terminalSubmission = JSON.stringify({
 		schema: "gentle-ai.review-last-event-closure/v1",

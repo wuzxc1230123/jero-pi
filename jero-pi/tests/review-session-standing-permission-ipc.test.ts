@@ -70,7 +70,7 @@ test("the production child fd3 client gets grant, revocation, closure, denial, a
 
 test("fresh Jiti moduleCache:false reloads share fd3 structurally and reject stale terminal callbacks", async () => {
 	const ipcUrl = new URL("../lib/review-session-standing-permission-ipc.ts", import.meta.url).href;
-	const extensionUrl = new URL("../extensions/gentle-ai.ts", import.meta.url).href;
+	const extensionUrl = new URL("../extensions/jero-ai.ts", import.meta.url).href;
 	const source = `
 		import { createJiti } from "jiti";
 		import { fileURLToPath } from "node:url";

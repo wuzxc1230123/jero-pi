@@ -183,7 +183,7 @@ ${bytes}`, `saved 2026-01-01T00:00:00.000Z
 
 
 test("R4 research write crash reload requires durable desired identity and actual backend readback", async t => {
- const { default: gentleAgents } = await import("../extensions/gentle-agents.ts");
+ const { default: gentleAgents } = await import("../extensions/jero-agents.ts");
  const { appendFileSync } = await import("node:fs");
  const cwd = mkdtempSync(join(tmpdir(), "research-crash-")); t.after(() => rmSync(cwd, { recursive: true, force: true }));
  for (const store of ["openspec", "engram", "both"] as const) {

@@ -43,7 +43,7 @@ test("remediation plan is bounded and cannot select another working directory", 
 
 
 test("remediation shell captures numeric exit, preserves stock errors and executes once", async () => {
-	const { remediationBash } = await import("../extensions/gentle-agents.ts");
+	const { remediationBash } = await import("../extensions/jero-agents.ts");
 	for (const exitCode of [0, 7, null]) {
 		let calls = 0;
 		const shell = remediationBash(testCwd, { exec: async (command, cwd, options) => {
@@ -72,7 +72,7 @@ test("remediation owner and packaged actor are installed through existing owners
 });
 
 test("native remediation admission refuses unsupported owner before acquire", async () => {
-	const { admitManagedRemediation } = await import("../extensions/gentle-agents.ts");
+	const { admitManagedRemediation } = await import("../extensions/jero-agents.ts");
 	let acquires = 0;
 	await assert.rejects(admitManagedRemediation({ agent: { name: "sdd-remediate", filePath: "/absent" }, sddChange: { changeName: "fix", workspaceRoot: testCwd, phase: "remediate", failedEvidenceRevision: revision }, cwd: testCwd } as unknown as TaskRequest, {}, { sddAttemptAcquire: async () => { acquires++; } } as unknown as NativeReviewCli, async () => {}), /unsupported/i);
 	assert.equal(acquires, 0);
@@ -80,7 +80,7 @@ test("native remediation admission refuses unsupported owner before acquire", as
 
 
 test("admitted remediation retains exact settlement before one lost-reply replay", async () => {
-	const { admitManagedRemediation } = await import("../extensions/gentle-agents.ts");
+	const { admitManagedRemediation } = await import("../extensions/jero-agents.ts");
 	const { resolve } = await import("node:path");
 	const { readFileSync } = await import("node:fs");
 	const path = resolve("assets/agents/sdd-remediate.md");
@@ -104,7 +104,7 @@ test("admitted remediation retains exact settlement before one lost-reply replay
 
 
 async function admissionFixture(overrides = {}, persist: (task: TaskRecord) => Promise<void> = async () => {}, agentPatch = {}, attemptPatch = {}, context: Pick<ExtensionContext, "hasUI" | "ui"> = human) {
-	const { admitManagedRemediation } = await import("../extensions/gentle-agents.ts");
+	const { admitManagedRemediation } = await import("../extensions/jero-agents.ts");
 	const { parseAgentDefinition } = await import("../lib/agents-config.ts");
 	const { readFileSync } = await import("node:fs");
 	const { resolve } = await import("node:path");
@@ -153,7 +153,7 @@ test("runtime harness requires its own observed command; malformed content canno
 
 
 test("stock local shell wrapper observes real exit zero and preserves cancellation", async () => {
-	const { remediationBash } = await import("../extensions/gentle-agents.ts");
+	const { remediationBash } = await import("../extensions/jero-agents.ts");
 	const { createBashToolDefinition } = await import("@earendil-works/pi-coding-agent");
 	const shell = remediationBash(process.cwd(), undefined, shellScope(process.cwd(), ["printf wrapper-proof", "sleep 30"]));
 	assert.deepEqual(shell.definition.parameters, createBashToolDefinition(process.cwd()).parameters);
@@ -283,7 +283,7 @@ test("R3-duplicate-command-evidence requires a distinct execution for every inde
 
 
 test("R1 confirms exact canonical paths and commands; data, denial and symlinks grant nothing", async t => {
-	const { confirmRemediationScope, remediationToolAllowed } = await import("../extensions/gentle-agents.ts");
+	const { confirmRemediationScope, remediationToolAllowed } = await import("../extensions/jero-agents.ts");
 	const { mkdtempSync, writeFileSync, symlinkSync, rmSync } = await import("node:fs");
 	const { tmpdir } = await import("node:os"); const { join } = await import("node:path");
 	const cwd = mkdtempSync(join(tmpdir(), "remediation-scope-")); t.after(() => rmSync(cwd, { recursive: true, force: true }));
@@ -330,7 +330,7 @@ test("R1 denial/headless/cancellation gives zero acquisition and durable mutatio
 	}
 });
 test("R1 child invokes only the exact confirmed command/cwd/count with distinct call IDs", async () => {
-	const { remediationBash } = await import("../extensions/gentle-agents.ts");
+	const { remediationBash } = await import("../extensions/jero-agents.ts");
 	let executions = 0;
 	const shell = remediationBash(testCwd, { exec: async () => { executions++; return { exitCode: 0 }; } }, shellScope(testCwd, ["pnpm test", "pnpm test"]));
 	const execute = (id: string, command: string, cwd = testCwd) => shell.definition.execute(id, { command }, undefined, undefined, cwd === testCwd ? undefined : { cwd } as unknown as ExtensionContext);
@@ -360,7 +360,7 @@ test("R3/R4 known non-mutating acquire failures retain retryable blocked history
 });
 
 test("uncertain acquire reconciliation terminalizes blocked/complete exact replays", async () => {
-	const { reconcileManagedRemediation } = await import("../extensions/gentle-agents.ts");
+	const { reconcileManagedRemediation } = await import("../extensions/jero-agents.ts");
 	for (const nativeState of ["blocked", "complete"] as const) {
 		const acquire = { workspaceRoot: testCwd, changeName: "fix", requestId: `reconcile-${nativeState}`, workUnit: "fix", evidenceGoal: "Observed correction", remediatesEvidenceRevision: revision };
 		const task = { id: nativeState, agent: "sdd-remediate", cwd: testCwd, status: "failed", createdAt: 1, sddRemediation: { acquire, acquireUncertain: true } } as unknown as TaskRecord;
@@ -376,7 +376,7 @@ test("uncertain acquire reconciliation terminalizes blocked/complete exact repla
 });
 
 test("recovered proceed is durably settled as interrupted without actor replay", async () => {
-	const { reconcileManagedRemediation } = await import("../extensions/gentle-agents.ts");
+	const { reconcileManagedRemediation } = await import("../extensions/jero-agents.ts");
 	const acquire = { workspaceRoot: testCwd, changeName: "fix", requestId: "reconcile-proceed", workUnit: "fix", evidenceGoal: "Observed correction", remediatesEvidenceRevision: revision, untrackedScope: "exclude" as const };
 	const task = { id: "proceed", agent: "sdd-remediate", cwd: testCwd, status: "failed", createdAt: 1, sddRemediation: { acquire, acquireUncertain: true } } as unknown as TaskRecord;
 	const saved = [], calls = [];
@@ -404,7 +404,7 @@ test("recovered proceed is durably settled as interrupted without actor replay",
 });
 
 test("reconciliation retries only exact pending mutations and preserves uncertainty", async () => {
-	const { reconcileManagedRemediation } = await import("../extensions/gentle-agents.ts");
+	const { reconcileManagedRemediation } = await import("../extensions/jero-agents.ts");
 	const acquire = { workspaceRoot: testCwd, changeName: "fix", requestId: "reconcile-lost", workUnit: "fix", evidenceGoal: "Observed correction", remediatesEvidenceRevision: revision };
 	const acquireTask = { id: "lost-acquire", agent: "sdd-remediate", cwd: testCwd, status: "failed", createdAt: 1, sddRemediation: { acquire, acquireUncertain: true } } as unknown as TaskRecord;
 	let acquireCalls = 0;

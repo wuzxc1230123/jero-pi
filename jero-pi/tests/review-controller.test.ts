@@ -9,7 +9,7 @@ import type {
 	ExtensionContext,
 	ToolCallEventResult,
 } from "@earendil-works/pi-coding-agent";
-import gentleAi, { __testing, createGentleAiExtension } from "../extensions/gentle-ai.ts";
+import gentleAi, { __testing, createGentleAiExtension } from "../extensions/jero-ai.ts";
 import {
 	REVIEW_MODE,
 	REVIEW_TRANSITION,
@@ -374,7 +374,7 @@ test("general STATUS returns the typed native-status-unsupported boundary withou
 
 test("gentle-pi#185: general STATUS on a non-negotiated native CLI names the exact status command to run", async (t) => {
 	// The legacy `correctionForecast` restoration guard this issue originally
-	// reported (extensions/gentle-ai.ts, then around line 5329) was scoped to
+	// reported (extensions/jero-ai.ts, then around line 5329) was scoped to
 	// `targetStatus !== undefined` and skipped restoring a candidate view when
 	// the native CLI lacked negotiated STATUS support, reproducing the #176
 	// empty-registry failure. That entire manual FINALIZE lifecycle (and the

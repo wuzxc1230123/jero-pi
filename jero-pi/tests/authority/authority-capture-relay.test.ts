@@ -14,7 +14,7 @@ import { reviewHarness } from "./fixtures.ts";
 // from the lineage record) and admitJeroCaptureResultForRelayV1 (in-process
 // admission over the staged 0o600 result file) — with only the locked pi
 // child faked per the expected output contract. This is the wiring
-// extensions/gentle-ai.ts now runs by default (runJeroAuthorityRelaySlot).
+// extensions/jero-ai.ts now runs by default (runJeroAuthorityRelaySlot).
 
 function reviewerEnvelope(lens: string): Buffer {
 	return Buffer.from(JSON.stringify({

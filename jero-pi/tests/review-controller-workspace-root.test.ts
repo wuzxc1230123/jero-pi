@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { __testing, createGentleAiExtension } from "../extensions/gentle-ai.ts";
+import { __testing, createGentleAiExtension } from "../extensions/jero-ai.ts";
 import { NativeReviewIntegrationError, type NativeReviewCli } from "../lib/authority/client-contract.ts";
 import { CandidateViewRegistry } from "../lib/review-candidate-view.ts";
 import { decodeReviewFailureV2, type AuthorityRepairAssessmentV1, type ReviewStatusV3 } from "../lib/authority/wire-contract.ts";
