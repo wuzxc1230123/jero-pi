@@ -107,3 +107,14 @@ admit 缝组合落地：`admitJeroCaptureResultForRelayV1` 在非重放准入使
 5. wire schema 字符串：gentle-ai.*→jero.*（wire-contract/client-contract/canonical + fixtures 对拍改写——最大单项）
 6. 文档：README 状态、readme-reference 重写、telemetry.md 删除、gentle-shell.md
 7. 收尾门：GENTLE_PI_|/gentle:|gentle-ai grep 零残留（白名单：外来存储探测名/历史 fixture/migrations 历史）+ 三重门 + 版本发布
+
+## P5b 已完成（2026-09-18）
+
+- **P5b-1（435609d）**：附录 B 五契约串 jero.*、配置家 .pi/jero、候选视图存储入 jero-review 树、.jero-instance 标记。
+- **P5b-2（f53e021，50 文件）**：技能子系统（目录+15 name+碰撞映射）、资产三件 jero-*（YAML/目录键/support 目标）、RENAMED_MANAGED_ASSETS 哈希证明改名迁移、注册表 <home>/jero（读旧写新）、**managed-assets-jero-0.1.0.json（31 资产）**、工件前缀 jero-*、agent 分类器 jero- 前缀剥离（修复 composition 4 项）。
+- **P5b-3（e74630f）**：telemetry.md 删除、README 终态、.jero/policies 策略目录、分发时代诊断串更名、移植纪律注释定案。
+- **残留终审（260 行）**：全部剩余 gentle 串=wire 词汇（金向量字节锁定 §5.1.7）/外来存储探测/legacy 回退读/历史 fixture/上游参考文档——**零可行动残留**。wire 词汇有意存续（改它=破坏金向量对拍，设计明选）。
+
+## 项目状态：设计路线图 P0-P5 全部完成
+
+发布前剩余（用户决策/操作）：①三重门完整跑（pnpm test 全量+typecheck+打包断言——Windows 挂起族按文件带预算）②版本定稿与 npm 发布 ③readme-reference/gentle-shell 文档的 jero 重写（现保持上游参考原貌，非阻塞）④两 logo 删除决策仍悬置。
