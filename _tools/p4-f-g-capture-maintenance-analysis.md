@@ -118,3 +118,7 @@ admit 缝组合落地：`admitJeroCaptureResultForRelayV1` 在非重放准入使
 ## 项目状态：设计路线图 P0-P5 全部完成
 
 发布前剩余（用户决策/操作）：①三重门完整跑（pnpm test 全量+typecheck+打包断言——Windows 挂起族按文件带预算）②版本定稿与 npm 发布 ③readme-reference/gentle-shell 文档的 jero 重写（现保持上游参考原貌，非阻塞）④两 logo 删除决策仍悬置。
+
+## P5b-4 记录（2026-09-18 第二批，ece36c5 + 尾巴）
+
+全量逐文件清扫（125 文件带预算）暴露的漏网点修复：多行 join 的 .pi/jero 六文件；品牌显示面（Gentle AI→Jero/el Jero，渲染器/人设/技能散文）；docs/jero-reference.md 新技术参考（全部钉版测试重指向）；历史 fixture 字节精确恢复（v0.10.7 sed 误改 + autocrlf 污染——教训：**fixture 恢复必须 git show 直写，禁 git checkout**）；sdd 触发前缀 jero-)?sdd；分类器测试前缀剥离。清扫最终态：98+ 文件绿；失败全部对齐 g4-baseline-windows.md 文档基线（spawn/IPC/路径分隔/冷机慢族/4 挂起）。
