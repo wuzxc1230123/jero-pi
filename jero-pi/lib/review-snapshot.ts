@@ -292,7 +292,7 @@ export function captureLiveReviewCandidateBinding(options: {
 	repositoryId: string;
 }): LiveReviewCandidateBinding {
 	const root = repositoryRoot(options.cwd);
-	const temporaryDirectory = mkdtempSync(join(tmpdir(), "gentle-ai-live-candidate-"));
+	const temporaryDirectory = mkdtempSync(join(tmpdir(), "jero-live-candidate-"));
 	const temporaryIndex = join(temporaryDirectory, "index");
 	const temporaryObjectDirectory = join(temporaryDirectory, "objects");
 	mkdirSync(temporaryObjectDirectory, { mode: 0o700 });

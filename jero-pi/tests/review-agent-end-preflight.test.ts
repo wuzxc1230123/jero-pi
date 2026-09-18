@@ -362,7 +362,7 @@ test("agent_end pairs a named agent's start with its own end, then still nudges 
 	assert.equal(sent.length, 1, "the primary loop's end still nudges once the subagent's end is paired off");
 });
 
-test("gentle-ai-worker agent_end never queries native review", async () => {
+test("jero-worker agent_end never queries native review", async () => {
 	const statusRequests: unknown[] = [];
 	const native = {
 		reviewMode: onMode("on"),
@@ -376,7 +376,7 @@ test("gentle-ai-worker agent_end never queries native review", async () => {
 	const agentEnd = handlers.get("agent_end");
 	const session = ctx("agent-end-generic-worker");
 	assert.equal(typeof beforeAgentStart, "function");
-	await beforeAgentStart!({ agentName: "gentle-ai-worker", systemPrompt: "" }, session);
+	await beforeAgentStart!({ agentName: "jero-worker", systemPrompt: "" }, session);
 	await directWrite(handlers, session);
 	await agentEnd!(agentEndEvent, session);
 	assert.deepEqual(statusRequests, []);

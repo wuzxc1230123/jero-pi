@@ -105,8 +105,8 @@ test("agent model and effort outrank usage at sidebar widths without inventing u
 		assert.ok(lines.length <= 4, "narrow metadata gets at most one dedicated row");
 		for (const line of lines) assert.equal(visibleWidth(line), width);
 	}
-	const sidebar = renderAgentsCard([task({ agent: "gentle-ai-worker", model: "openai/gpt-5.6", thinking: "high" })], plainTheme, 32, 5000, { collapsed: false });
-	assert.match(sidebar.join("\n"), /gentle-ai-worker/);
+	const sidebar = renderAgentsCard([task({ agent: "jero-worker", model: "openai/gpt-5.6", thinking: "high" })], plainTheme, 32, 5000, { collapsed: false });
+	assert.match(sidebar.join("\n"), /jero-worker/);
 	assert.match(sidebar.join("\n"), /gpt-5\.6 · high/);
 	for (const line of sidebar) assert.equal(visibleWidth(line), 32);
 	const unknown = renderAgentsCard([task({ model: "default", thinking: undefined })], plainTheme, 80, 5000, { collapsed: false }).join("\n");

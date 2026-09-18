@@ -736,7 +736,7 @@ test("managed routing timeout leaves its profile, agent, and manifest unchanged"
 	process.env.JERO_PI_AGENT_HOME = agentHome;
 	installPackageAssets(root, false, ["sdd"]);
 	const agentPath = join(agentHome, "agents", "sdd-apply.md");
-	const manifestPath = join(agentHome, "gentle-ai", "managed-assets.json");
+	const manifestPath = join(agentHome, "jero", "managed-assets.json");
 	const profilePath = join(agentHome, "subagents.json");
 	const profileBefore = "{\n  \"unrelated\": true\n}\n";
 	writeFileSync(profilePath, profileBefore);
@@ -793,14 +793,14 @@ test("a later alias keeps managed-root precedence and manifest ownership", (t) =
 	const selected = __testing.listDiscoverableAgents(cwd).find((agent) => agent.name === "sdd-apply");
 	assert.equal(selected?.filePath, join(managed, "sdd-apply.md"));
 	applyModelConfig(cwd, { "sdd-apply": { model: "test/managed", thinking: "high" } });
-	const manifest = JSON.parse(readFileSync(join(agentHome, "gentle-ai", "managed-assets.json"), "utf8")) as { assets: Record<string, string> };
+	const manifest = JSON.parse(readFileSync(join(agentHome, "jero", "managed-assets.json"), "utf8")) as { assets: Record<string, string> };
 	const routed = readFileSync(join(managed, "sdd-apply.md"), "utf8");
 	assert.match(routed, /^model: test\/managed$/m);
 	assert.equal(manifest.assets["agents/sdd-apply.md"], createHash("sha256").update(routed).digest("hex"));
 });
 
 test("runtime guidance keeps review policy out of the static orchestrator and technical reference", () => {
-	const staticReferences = ["docs/readme-reference.md", "skills/gentle-ai/SKILL.md"];
+	const staticReferences = ["docs/readme-reference.md", "skills/jero-ai/SKILL.md"];
 	assert.match(readFileSync("README.md", "utf8"), /\]\(docs\/readme-reference\.md(?:#[^)]+)?\)/);
 	const forbiddenGenericRoutes = [
 		/fresh-context `reviewer`/,

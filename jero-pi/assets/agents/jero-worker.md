@@ -1,5 +1,5 @@
 ---
-name: gentle-ai-worker
+name: jero-worker
 description: Scoped package-owned implementation writer for bounded non-SDD work. Edits code, runs focused tests, and returns review-ready evidence without committing.
 tools:
   - read

@@ -52,7 +52,7 @@ function windowsLocalAdministratorSid(): string {
 }
 
 function windowsDacl(path: string): string {
-	const archive = `.gentle-ai-acl-${randomUUID()}.txt`;
+	const archive = `.jero-acl-${randomUUID()}.txt`;
 	const archivePath = join(dirname(path), archive);
 	try {
 		execFileSync(windowsSystemExecutable("icacls.exe"), [path, "/save", archive, "/c"], { cwd: dirname(path), encoding: "utf8", timeout: 5000, maxBuffer: 16384, stdio: ["ignore", "pipe", "pipe"], windowsHide: true });

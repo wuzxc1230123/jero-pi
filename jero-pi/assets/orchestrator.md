@@ -40,21 +40,21 @@ Delegation is not optional once complexity appears. If a task crosses the trigge
 Route work through the smallest harness that is safe. Three tiers:
 
 1. **Inline Direct** — small, mechanical, parent has context (typo, one-file edit, read-only check of 1-3 known files, bash for state). No SDD ceremony; stop when it is no longer small.
-2. **Simple Delegation** — generic non-SDD exploration → `gentle-ai-explore`; bounded implementation → `gentle-ai-worker`; command-running generic non-SDD verification → `gentle-ai-verify`. Try its package role; if missing/unusable, use native `Agent` under the same read-only mapping/verification constraints and report fallback. SDD roles stay inside SDD.
+2. **Simple Delegation** — generic non-SDD exploration → `jero-explore`; bounded implementation → `jero-worker`; command-running generic non-SDD verification → `jero-verify`. Try its package role; if missing/unusable, use native `Agent` under the same read-only mapping/verification constraints and report fallback. SDD roles stay inside SDD.
 3. **SDD (optional)** — selected only by an explicit request (`/jero-sdd-new`/`/jero-sdd-ff`/`/jero-sdd-continue` or a direct ask) or an accepted proposal; size, file count, or risk alone never selects it. Suggest it when proposal/spec/design/tasks would meaningfully reduce ambiguity. Once selected, create artifacts and gate for approval before implementing.
 
 ## Delegation Rules
 
 Core question: does this inflate parent context without need?
 
-Before launching bounded writer (`gentle-ai-worker` or `worker`), task/context needs nonempty `## Allowed edit surfaces`: narrow repository-relative paths/globs; never `.`, bare repo root, or absolute. Parent derives surfaces, maps unknown targets read-only, shows derived candidates only for genuine scope choices. Do not ask the human to author paths or globs.
+Before launching bounded writer (`jero-worker` or `worker`), task/context needs nonempty `## Allowed edit surfaces`: narrow repository-relative paths/globs; never `.`, bare repo root, or absolute. Parent derives surfaces, maps unknown targets read-only, shows derived candidates only for genuine scope choices. Do not ask the human to author paths or globs.
 
 Mandatory Delegation Triggers — once fired, delegate through the best available runtime (prefer `subagent_run`, else native `Agent`):
 
 1. **4-file rule** — 4+ files to understand → delegate a scout/mapping task.
 2. **Multi-file write rule** — 2+ non-trivial files touched → delegate one writer.
 3. **Incident rule** — diagnose wrong cwd/worktree/git/tooling incidents separately before resuming work.
-4. **Verification rule** — executing/delegating verification commands → `gentle-ai-verify`; only the 1-3-file read-only check stays inline.
+4. **Verification rule** — executing/delegating verification commands → `jero-verify`; only the 1-3-file read-only check stays inline.
 5. **Long-session rule** — ~20 tool calls, 5 exploratory reads, or 2 non-mechanical edits without delegation → pause and delegate.
 
 {{JERO_PI_BACKGROUND_POLICY}}; rules: the background-subagents block in the delegation contract.

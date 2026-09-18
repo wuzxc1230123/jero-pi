@@ -234,7 +234,7 @@ function packageAssetAudit(owner: PackageAssetOwner): { stale: number; overrides
 	for (const [assetSubdir, installedSubdir, ownershipPrefix] of [
 		["agents", "agents", "agents"],
 		["chains", "chains", "chains"],
-		["support", join("gentle-ai", "support"), "gentle-ai/support"],
+		["support", join("jero", "support"), "jero/support"],
 	] as const) {
 		const assetDir = join(ASSETS_DIR, assetSubdir);
 		if (!existsSync(assetDir)) continue;
@@ -554,7 +554,7 @@ function renderBackgroundSubagentsReport(
 const SUBAGENTS_PACKAGE_NAMES = ["pi-subagents-j0k3r", "pi-subagents"] as const;
 const SUBAGENT_RUN_TOOL = "subagent_run";
 const JUDGMENT_DAY_FIX_AGENT_NAME = "jd-fix-agent";
-const BOUNDED_WRITER_AGENT_NAMES = ["gentle-ai-worker", "worker", JUDGMENT_DAY_FIX_AGENT_NAME] as const;
+const BOUNDED_WRITER_AGENT_NAMES = ["jero-worker", "worker", JUDGMENT_DAY_FIX_AGENT_NAME] as const;
 const JUDGMENT_DAY_ACTIVATION_HEADING = "## Judgment Day activation";
 const JUDGMENT_DAY_ACTIVATION_SENTENCE = "User explicitly requested Judgment Day.";
 const JUDGMENT_DAY_AUTHORIZED_SEVERE_IDS_HEADING = "## Exact authorized severe IDs";

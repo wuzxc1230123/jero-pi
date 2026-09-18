@@ -388,13 +388,13 @@ for (const boundary of ["allowed", "env", "session", "replacement", "bus-throws"
 		const env: NodeJS.ProcessEnv = {};
 		const profile = join(root, `metrics-${boundary}`);
 		mkdirSync(join(profile, "agents"), { recursive: true });
-		writeFileSync(join(profile, "agents", "gentle-ai-worker.md"), readFileSync(new URL("../assets/agents/gentle-ai-worker.md", import.meta.url)));
-		writeFileSync(join(profile, "subagents.json"), JSON.stringify({ model_profiles: { "gentle-ai-worker": { model: "openai/gpt-4o", effort: "high" } } }));
+		writeFileSync(join(profile, "agents", "jero-worker.md"), readFileSync(new URL("../assets/agents/jero-worker.md", import.meta.url)));
+		writeFileSync(join(profile, "subagents.json"), JSON.stringify({ model_profiles: { "jero-worker": { model: "openai/gpt-4o", effort: "high" } } }));
 		gentleAgents(h.pi, env, { ...runtime.deps, env, agentHome: profile, metricsNow: () => clock, metricsSchedule });
 		const listenerCounts = () => [...h.listeners].map(([name, set]) => [name, set.size]);
 		const initialListeners = listenerCounts();
 		await h.fire("session_start", context.ctx);
-		const result = h.tools.get("subagent_run")!.execute("call", { agent: "gentle-ai-worker", task: "private task", mode: "task" }, undefined, undefined, context.ctx);
+		const result = h.tools.get("subagent_run")!.execute("call", { agent: "jero-worker", task: "private task", mode: "task" }, undefined, undefined, context.ctx);
 		await tick();
 		assert.equal(runtime.children.length, 1);
 		const child = runtime.children[0];

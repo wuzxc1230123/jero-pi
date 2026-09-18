@@ -19,7 +19,7 @@ import {
 function record(overrides: Partial<TaskRecord> = {}): TaskRecord {
 	return {
 		id: "t1",
-		agent: "gentle-ai-explore",
+		agent: "jero-explore",
 		mode: "task",
 		prompt: "Map the repo",
 		label: "map the repo",

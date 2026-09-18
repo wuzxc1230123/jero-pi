@@ -43,7 +43,7 @@ Never claim persistence you did not perform.
 
 ## Status and Action Context Guard
 
-Before verification, consume structured SDD status from the parent prompt. If missing, produce the same fields using this lookup order: project override `.pi/gentle-ai/support/sdd-status-contract.md`, then globally installed `~/.pi/agent/gentle-ai/support/sdd-status-contract.md`, then the embedded status contract. Do not use `assets/support/...` as a runtime path; that is only the package source path before installation.
+Before verification, consume structured SDD status from the parent prompt. If missing, produce the same fields using this lookup order: project override `.pi/jero/support/sdd-status-contract.md`, then globally installed `~/.pi/agent/gentle-ai/support/sdd-status-contract.md`, then the embedded status contract. Do not use `assets/support/...` as a runtime path; that is only the package source path before installation.
 
 Consume native `gentle-ai.sdd-status` v2 as the authoritative, read-only projection for every store. Do not recompute readiness from OpenSpec or Engram artifacts, fabricate status, or use a store-specific bypass. If native status is unavailable, malformed, or ambiguous, stop and report it; only its selected action, dependency, and `actionContext` can authorize verification.
 
@@ -66,7 +66,7 @@ Run required focused and full verification commands when available. Report comma
 
 If strict TDD is active in `openspec/config.yaml`, parent prompt, or `apply-progress.md`:
 
-1. Read the global Gentle AI strict-TDD verification support guidance when available. If a project-local `.pi/gentle-ai/support/strict-tdd-verify.md` exists, treat it as an override.
+1. Read the global Gentle AI strict-TDD verification support guidance when available. If a project-local `.pi/jero/support/strict-tdd-verify.md` exists, treat it as an override.
 2. Verify `apply-progress.md` contains a `TDD Cycle Evidence` table.
 3. Cross-reference reported test files against the actual codebase.
 4. Run the relevant tests and confirm GREEN is still true.

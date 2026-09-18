@@ -88,7 +88,7 @@ test("static prompts retain normal SDD and delegated-work guidance", () => {
 
 test("always-on parent prompt requires a narrow writer edit surface before launch", () => {
 	assert.match(core, /Before launching (?:a )?bounded writer/i);
-	assert.match(core, /`gentle-ai-worker`/);
+	assert.match(core, /`jero-worker`/);
 	assert.match(core, /`worker`/);
 	assert.match(core, /## Allowed edit surfaces/);
 	assert.match(core, /repository-relative/i);

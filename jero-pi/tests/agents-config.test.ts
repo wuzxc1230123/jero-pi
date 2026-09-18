@@ -24,7 +24,7 @@ const root = mkdtempSync(join(tmpdir(), "gentle-agents-config-"));
 after(() => rmSync(root, { recursive: true, force: true }));
 
 const EXPLORER = `---
-name: gentle-ai-explore
+name: jero-explore
 description: Read-only exploration and mapping.
 model: openai-codex/gpt-5.6-terra
 thinking: high
@@ -52,9 +52,9 @@ test("parseModelRef splits provider/id and accepts a bare id", () => {
 });
 
 test("parseAgentDefinition builds a definition from the gentle-ai agent format", () => {
-	const agent = parseAgentDefinition(EXPLORER, "/home/x/.pi/agent/agents/gentle-ai-explore.md", "global");
+	const agent = parseAgentDefinition(EXPLORER, "/home/x/.pi/agent/agents/jero-explore.md", "global");
 	assert.ok(!("error" in agent));
-	assert.equal(agent.name, "gentle-ai-explore");
+	assert.equal(agent.name, "jero-explore");
 	assert.equal(agent.description, "Read-only exploration and mapping.");
 	assert.deepEqual(agent.model, { provider: "openai-codex", id: "gpt-5.6-terra" });
 	assert.equal(agent.thinking, "high");
@@ -151,7 +151,7 @@ test("discoverAgents merges the four directories with project over global and su
 	writeFileSync(join(cwd, ".pi/agents/broken.md"), "---\nthinking: nope\n---\nx");
 	writeFileSync(join(cwd, ".pi/agents/notes.txt"), "ignored");
 	const { agents, errors } = discoverAgents({ cwd, home });
-	assert.deepEqual(agents.map((agent) => `${agent.name}:${agent.description}:${agent.scope}`), ["gentle-ai-explore:Read-only exploration and mapping.:global", "shared:project agents:project"]);
+	assert.deepEqual(agents.map((agent) => `${agent.name}:${agent.description}:${agent.scope}`), ["jero-explore:Read-only exploration and mapping.:global", "shared:project agents:project"]);
 	assert.equal(errors.length, 1);
 	assert.match(errors[0], /broken\.md/);
 	assert.deepEqual(discoverAgents({ cwd: join(root, "empty"), home: join(root, "nohome") }), { agents: [], errors: [] });
@@ -194,7 +194,7 @@ test("parseAgentsConfig applies defaults, validates values, and silently ignores
 });
 
 test("resolveAgentProfile prefers the profile, then the definition, then the defaults", () => {
-	const config = parseAgentsConfig({ default_model: "openai-codex/gpt-6-astra", default_effort: "medium", model_profiles: { "gentle-ai-explore": { effort: "high" } } }, undefined);
+	const config = parseAgentsConfig({ default_model: "openai-codex/gpt-6-astra", default_effort: "medium", model_profiles: { "jero-explore": { effort: "high" } } }, undefined);
 	const explore = parseAgentDefinition(EXPLORER, "/x/explore.md", "global");
 	assert.ok(!("error" in explore));
 	assert.deepEqual(resolveAgentProfile(explore, config), { model: { provider: "openai-codex", id: "gpt-5.6-terra" }, thinking: "high", source: { model: "definition", thinking: "profile" } });

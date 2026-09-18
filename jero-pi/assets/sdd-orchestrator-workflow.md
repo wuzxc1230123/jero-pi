@@ -56,7 +56,7 @@ Execute only the selected native action when its dependency and `actionContext` 
 
 ## SDD Status Contract
 
-Before `/jero-sdd-continue`, `sdd-apply`, `sdd-verify`, `sdd-sync`, or `sdd-archive`, resolve and carry structured status. Lookup order: parent-provided status, then project override `.pi/gentle-ai/support/sdd-status-contract.md`, then globally installed `~/.pi/agent/gentle-ai/support/sdd-status-contract.md`, then the embedded `sdd-status` prompt contract. Do not use `assets/support/...` as a runtime path; that is only the package source path before installation.
+Before `/jero-sdd-continue`, `sdd-apply`, `sdd-verify`, `sdd-sync`, or `sdd-archive`, resolve and carry structured status. Lookup order: parent-provided status, then project override `.pi/jero/support/sdd-status-contract.md`, then globally installed `~/.pi/agent/gentle-ai/support/sdd-status-contract.md`, then the embedded `sdd-status` prompt contract. Do not use `assets/support/...` as a runtime path; that is only the package source path before installation.
 
 Status must include:
 
@@ -254,7 +254,7 @@ Launch SDD phase subagents with `subagent_run` `mode: "task"` when the parent ne
 
 Read this table before the first SDD/Judgment-Day phase delegation in a session, cache it, and use it only for SDD/Judgment-Day phase agents. If a phase is missing, use the `default` row. If the assigned tier is unavailable, use the runtime's default model and continue.
 
-On Pi, phase model routing is user-owned and persisted, not prompt-passed: `/jero:models` writes `.pi/gentle-ai/models.json`, and the package applies each saved assignment to the installed phase agent definitions (frontmatter `model:`/`thinking:`) or `.pi/settings.json` overrides. The table below is the default capability tier per phase when the user has saved no assignment.
+On Pi, phase model routing is user-owned and persisted, not prompt-passed: `/jero:models` writes `.pi/jero/models.json`, and the package applies each saved assignment to the installed phase agent definitions (frontmatter `model:`/`thinking:`) or `.pi/settings.json` overrides. The table below is the default capability tier per phase when the user has saved no assignment.
 
 **Mandatory phase model gate:** before launching an SDD/Judgment-Day phase agent, confirm the phase resolves through the saved model config or these defaults. Never pass an ad-hoc `model` parameter for SDD/Judgment-Day phases, and never apply this table to generic Pi delegation — generic subagents resolve model/thinking through `pi-subagents` config, and `model` is passed there only on an explicit user override.
 
@@ -306,7 +306,7 @@ Pre-flight before every SDD/Judgment-Day phase launch:
 3. Resolve matching skill paths once per session from the registry and pass exact `SKILL.md` paths under `## Skills to load before work`.
 4. If a delegated result reports `skill_resolution` as `fallback-registry`, `fallback-path`, or `none`, re-read the registry before subsequent delegations.
 
-**Key Learnings closing (generic delegations):** when delegating to generic agents (`gentle-ai-explore`, `gentle-ai-worker`, `gentle-ai-verify`, scout/worker roles, or the native `Agent` fallback), apply the rule exactly as stated under "Key Learnings closing block" in `assets/orchestrator-delegation.md`. That file is the single statement of the rule; do not restate or paraphrase it here. SDD phase launch prompts need no such injection: every installed SDD phase executor already carries the effective contract in its own prompt (see "Key Learnings closing block (routing)" above).
+**Key Learnings closing (generic delegations):** when delegating to generic agents (`jero-explore`, `jero-worker`, `jero-verify`, scout/worker roles, or the native `Agent` fallback), apply the rule exactly as stated under "Key Learnings closing block" in `assets/orchestrator-delegation.md`. That file is the single statement of the rule; do not restate or paraphrase it here. SDD phase launch prompts need no such injection: every installed SDD phase executor already carries the effective contract in its own prompt (see "Key Learnings closing block (routing)" above).
 
 ## Strict TDD Forwarding
 

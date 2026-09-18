@@ -1,5 +1,5 @@
 ---
-name: gentle-ai-verify
+name: jero-verify
 description: Read-only technical verification for generic non-SDD work.
 tools:
   - read

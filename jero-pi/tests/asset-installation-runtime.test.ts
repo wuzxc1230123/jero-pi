@@ -16,8 +16,8 @@ async function proveLazyDiscovery(): Promise<void> {
 	const shim = join(cwd, "extensions.ts");
 	const source = (name: string) => JSON.stringify(new URL(`../extensions/${name}.ts`, import.meta.url).href);
 	writeFileSync(shim, `
-import { createGentleAiExtension } from ${source("gentle-ai")};
-import gentleAgents from ${source("gentle-agents")};
+import { createGentleAiExtension } from ${source("jero-ai")};
+import gentleAgents from ${source("jero-agents")};
 import sddInit from ${source("sdd-init")};
 export default function (pi) {
   createGentleAiExtension({ nativeReviewCli: null, candidateViews: null, processEnv: {} })(pi);
@@ -57,19 +57,19 @@ export default function (pi) {
 			return result.content.filter(part => part.type === "text").map(part => part.text).join("\n");
 		};
 		const before = await names();
-		assert.match(before, /- gentle-ai-explore \(global\)/);
+		assert.match(before, /- jero-explore \(global\)/);
 		assert.match(before, /- review-risk \(global\)/);
 		assert.doesNotMatch(before, /- sdd-/, "fresh startup must not install SDD definitions");
 		assert.equal(existsSync(join(agentDir, "chains", "sdd-full.chain.md")), false);
-		assert.equal(existsSync(join(agentDir, "gentle-ai", "support")), false);
+		assert.equal(existsSync(join(agentDir, "jero", "support")), false);
 		await session.prompt("/jero:install-sdd");
 		assert.strictEqual(runtime.session, session);
 		const after = await names();
-		for (const name of ["gentle-ai-explore", "review-risk", "sdd-init", "sdd-apply"]) {
+		for (const name of ["jero-explore", "review-risk", "sdd-init", "sdd-apply"]) {
 			assert.ok(after.includes(`- ${name} (global)`), `same-session discovery must include ${name}`);
 		}
 		for (const file of ["sdd-status-contract.md", "strict-tdd.md", "strict-tdd-verify.md"]) {
-			assert.ok(existsSync(join(agentDir, "gentle-ai", "support", file)), `missing support: ${file}`);
+			assert.ok(existsSync(join(agentDir, "jero", "support", file)), `missing support: ${file}`);
 		}
 		assert.ok(existsSync(join(agentDir, "chains", "sdd-full.chain.md")));
 		assert.equal(session.messages.length, 0, "slash activation must not start a model turn");

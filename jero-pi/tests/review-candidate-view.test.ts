@@ -2435,7 +2435,7 @@ test("candidate view materializes an unborn staged repository without mutating t
 		view.cleanup();
 	}
 	// Cleanup removed the orphan worktree; no worktree lingers and no commit appeared.
-	assert.equal(git(contributorRoot, "worktree", "list").split("\n").filter((line) => line.includes("gentle-ai-candidate")).length, 0);
+	assert.equal(git(contributorRoot, "worktree", "list").split("\n").filter((line) => line.includes("jero-candidate")).length, 0);
 	assert.equal(git(contributorRoot, "rev-list", "--all").length, 0);
 });
 
@@ -2553,7 +2553,7 @@ test("candidate view unborn worktree falls back when --orphan is unsupported, pr
 	} finally {
 		view.cleanup();
 	}
-	assert.equal(git(contributorRoot, "worktree", "list").split("\n").filter((line) => line.includes("gentle-ai-candidate")).length, 0);
+	assert.equal(git(contributorRoot, "worktree", "list").split("\n").filter((line) => line.includes("jero-candidate")).length, 0);
 	assert.equal(git(contributorRoot, "rev-list", "--all").length, 0);
 });
 
@@ -2590,7 +2590,7 @@ test("candidate view cleans up a partially registered unborn fallback worktree w
 	assert.ok(failure instanceof CandidateViewError, "the symbolic-ref failure must propagate");
 	assert.equal((failure as CandidateViewError).reason, "candidate-view-git-failure");
 	// No registered/admin worktree remains.
-	assert.equal(git(contributorRoot, "worktree", "list").split("\n").filter((line) => line.includes("gentle-ai-candidate")).length, 0);
+	assert.equal(git(contributorRoot, "worktree", "list").split("\n").filter((line) => line.includes("jero-candidate")).length, 0);
 	// No candidate directory remains under the candidate-view parent.
 	const parent = join(realpathSync(git(contributorRoot, "rev-parse", "--path-format=absolute", "--git-common-dir")), "jero-review", "candidate-views");
 	const leftover = existsSync(parent) ? readdirSync(parent).filter((entry) => lstatSync(join(parent, entry)).isDirectory()) : [];

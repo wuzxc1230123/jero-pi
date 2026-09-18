@@ -795,15 +795,15 @@ function addUnbornWorktree(cwd: string, root: string, branch: string, env: NodeJ
 	if (primary.status !== 129 || existsSync(root)) throw candidateGitFailure(CANDIDATE_VIEW_GIT_FAILURE_CATEGORY.GIT_FAILURE, ["worktree", "add", "--orphan", "-b", branch, root], resolveCandidateGitTimeoutMs(env));
 	const fallbackEnv = {
 		...env,
-		GIT_AUTHOR_NAME: "gentle-ai-candidate",
-		GIT_AUTHOR_EMAIL: "gentle-ai-candidate@example.invalid",
+		GIT_AUTHOR_NAME: "jero-candidate",
+		GIT_AUTHOR_EMAIL: "jero-candidate@example.invalid",
 		GIT_AUTHOR_DATE: "2000-01-01T00:00:00Z",
-		GIT_COMMITTER_NAME: "gentle-ai-candidate",
-		GIT_COMMITTER_EMAIL: "gentle-ai-candidate@example.invalid",
+		GIT_COMMITTER_NAME: "jero-candidate",
+		GIT_COMMITTER_EMAIL: "jero-candidate@example.invalid",
 		GIT_COMMITTER_DATE: "2000-01-01T00:00:00Z",
 	};
 	const emptyTree = git(cwd, ["mktree"], fallbackEnv, executor);
-	const tempCommit = git(cwd, ["commit-tree", "-m", "gentle-ai-candidate", emptyTree], fallbackEnv, executor);
+	const tempCommit = git(cwd, ["commit-tree", "-m", "jero-candidate", emptyTree], fallbackEnv, executor);
 	git(cwd, ["worktree", "add", "--no-checkout", "--detach", root, tempCommit], env, executor);
 	git(root, ["symbolic-ref", "HEAD", `refs/heads/${branch}`], env, executor);
 }
@@ -868,7 +868,7 @@ function materializeCandidateView(request: CreateCandidateViewRequest, executor:
 		: base;
 	const parent = candidateViewParent(canonicalCommonDir, platform);
 	sweepCandidateOwners(canonicalCommonDir, (args) => git(canonicalCommonDir, args, process.env, executor), makeWritableForCleanup, platform);
-	const index = mkdtempSync(join(tmpdir(), "gentle-ai-candidate-index-"));
+	const index = mkdtempSync(join(tmpdir(), "jero-candidate-index-"));
 	const indexPath = join(index, "index");
 	const environment = { ...process.env, GIT_INDEX_FILE: indexPath };
 	try {
@@ -908,7 +908,7 @@ function materializeCandidateView(request: CreateCandidateViewRequest, executor:
 			// creates an orphan worktree (unborn branch, no commit, no ref) to host the
 			// materialized candidate tree without a phantom commit, with a fallback for
 			// Git versions older than 2.42 that do not support --orphan.
-			if (unborn) addUnbornWorktree(contributorRoot, root, `gentle-ai-candidate-${randomUUID()}`, process.env, executor);
+			if (unborn) addUnbornWorktree(contributorRoot, root, `jero-candidate-${randomUUID()}`, process.env, executor);
 			else git(contributorRoot, ["worktree", "add", "--detach", "--no-checkout", root, candidateCommit.commit], process.env, executor);
 			git(root, ["read-tree", candidateTree], process.env, executor);
 			const tree = parseTree(root, candidateTree, executor);

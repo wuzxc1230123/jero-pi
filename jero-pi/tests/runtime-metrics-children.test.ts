@@ -8,7 +8,7 @@ import { parseAgentDefinition, type AgentDefinition } from "../lib/agents-config
 import { normalizeRpcEvent, TASK_EVENT } from "../lib/agents-protocol.ts";
 import { ChildComposition, childEvent, classifyBuiltinAgent, launchSelection } from "../lib/runtime-metrics-children.ts";
 
-const asset = new URL("../assets/agents/gentle-ai-worker.md", import.meta.url);
+const asset = new URL("../assets/agents/jero-worker.md", import.meta.url);
 const definition = parseAgentDefinition(readFileSync(asset, "utf8"), asset.pathname, "global");
 assert.ok("instructions" in definition);
 const workerDefinition = definition as AgentDefinition;

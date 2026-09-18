@@ -20,7 +20,10 @@ const tokenFields = ["input", "output", "cacheRead", "cacheWrite", "reasoning", 
 let definitions: Array<{ name: string; fingerprint: string; fingerprintClass?: AgentClass }> | undefined;
 const packagedAgentClassAliases = new Map([["sdd-proposal", "sdd-propose"]] as const);
 function fingerprintAgentClassName(name: string): string {
-	const compatibilityName = name.startsWith("gentle-ai-") ? name.slice("gentle-ai-".length) : name;
+	// The enum names are un-prefixed; packaged agents carry the jero- prefix
+	// (gentle-ai- kept for any historical installed copies still classifying).
+	const compatibilityName = name.startsWith("jero-") ? name.slice("jero-".length)
+		: name.startsWith("gentle-ai-") ? name.slice("gentle-ai-".length) : name;
 	return packagedAgentClassAliases.get(compatibilityName) ?? compatibilityName;
 }
 function fingerprint(agent: AgentDefinition): string {

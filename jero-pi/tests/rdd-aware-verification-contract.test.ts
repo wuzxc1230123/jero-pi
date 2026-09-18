@@ -8,12 +8,12 @@ import test from "node:test";
 //
 // The bounded writer always self-verifies: it runs the parent-authorized
 // `## Verification` commands itself and reports observed output. Whether a
-// SEPARATE `gentle-ai-verify` delegation is also required depends on the
+// SEPARATE `jero-verify` delegation is also required depends on the
 // rendered `Receipt-driven development:` line, stated normatively exactly
 // once in trigger 5 (Verification rule) and referenced -- not restated --
 // everywhere else in this asset:
 //   - `on`             -> the writer's own report is the verification of
-//                         record; `gentle-ai-verify` is on-demand, except
+//                         record; `jero-verify` is on-demand, except
 //                         passive risk, which gets a structural readback.
 //   - `off`/`unknown`  -> gentle-pi#662: the parent calls `gentle_review` with
 //                         `{"operation":"assess"}` over the writer's diff and
@@ -40,7 +40,7 @@ function countOccurrences(haystack: string, needle: string): number {
 }
 
 const delegation = read("assets/orchestrator-delegation.md");
-const worker = read("assets/agents/gentle-ai-worker.md");
+const worker = read("assets/agents/jero-worker.md");
 
 const ON_SENTENCE =
 	"When the line reads `on`, that writer report is the verification of record, and the native review is the independent check the writer cannot influence";
@@ -48,8 +48,8 @@ const OFF_UNKNOWN_SENTENCE =
 	'When the line reads `off` or `unknown`, after the writer returns, call `gentle_review` with `{"operation":"assess"}` over the writer\'s diff and follow the returned plan instead of judging non-triviality from the task description: the operation resolves the native risk tier and states exactly who verifies next.';
 const TIER_TABLE_HEADER = "| Native risk tier | Verification when RDD is `off`/`unknown` |";
 const PASSIVE_TIER_ROW = "| passive | structural readback by the parent; no separate verifier, no tests |";
-const MEDIUM_TIER_ROW = "| medium | writer self-verification stands; a separate `gentle-ai-verify` run is added only when the writer profile is a small model (mini or low effort) |";
-const HIGH_TIER_ROW = "| high | writer self-verification plus a separate `gentle-ai-verify` run, always |";
+const MEDIUM_TIER_ROW = "| medium | writer self-verification stands; a separate `jero-verify` run is added only when the writer profile is a small model (mini or low effort) |";
+const HIGH_TIER_ROW = "| high | writer self-verification plus a separate `jero-verify` run, always |";
 const UNASSESSABLE_TIER_ROW = "| unknown / assess failed | treated as high |";
 const SMALL_MODEL_BIAS_SENTENCE =
 	"The small-model bias raises the tier by one for verification purposes (medium becomes high); an unknown `Receipt-driven development:` line never lowers a tier below `off`.";
@@ -183,7 +183,7 @@ test("worker asset owns the canonical Known environmental failures definition", 
 test("delegation asset references the worker's Known environmental failures definition instead of restating it", () => {
 	assert.match(
 		delegation,
-		/`## Known environmental failures` follows the same definition as `gentle-ai-worker`'s Verification contract: exact pre-existing base failures reported as evidence, never blockers -- any other failing required command still forces `status: partial`\./,
+		/`## Known environmental failures` follows the same definition as `jero-worker`'s Verification contract: exact pre-existing base failures reported as evidence, never blockers -- any other failing required command still forces `status: partial`\./,
 	);
 	// The full canonical wording ("lists exact test names or exact command
 	// lines that already fail on the base") must not be duplicated here.

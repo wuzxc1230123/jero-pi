@@ -71,7 +71,7 @@ async function assertRejected(input: Record<string, unknown>, message: string) {
 
 test("task-scoped surfaces are accepted ahead of a deeper heading", async () => {
 	await assertAccepted({
-		agent: "gentle-ai-worker",
+		agent: "jero-worker",
 		mode: "task",
 		task: [
 			"Fix the decoder.",
@@ -91,7 +91,7 @@ test("task-scoped surfaces are accepted ahead of a deeper heading", async () => 
 
 test("task-scoped surfaces reject trailing prose before the next heading", async () => {
 	await assertRejected({
-		agent: "gentle-ai-worker",
+		agent: "jero-worker",
 		mode: "task",
 		task: [
 			"## Allowed edit surfaces",
@@ -105,7 +105,7 @@ test("task-scoped surfaces reject trailing prose before the next heading", async
 test("canonical headings close the surface section with up to three ASCII spaces", async () => {
 	for (const indentation of ["", " ", "  ", "   "]) {
 		await assertAccepted({
-			agent: "gentle-ai-worker",
+			agent: "jero-worker",
 			mode: "task",
 			task: [
 				"## Allowed edit surfaces",
@@ -120,7 +120,7 @@ test("canonical headings close the surface section with up to three ASCII spaces
 test("canonical empty headings with trailing spaces close the surface section", async () => {
 	for (const indentation of ["", "   "]) {
 		await assertAccepted({
-			agent: "gentle-ai-worker",
+			agent: "jero-worker",
 			mode: "task",
 			task: [
 				"## Allowed edit surfaces",
@@ -149,7 +149,7 @@ test("pseudo-headings remain inside the surface section and reject dangerous pat
 		["paragraph separator", "###\u2029Validation"],
 	] as const) {
 		await assertRejected({
-			agent: "gentle-ai-worker",
+			agent: "jero-worker",
 			mode: "task",
 			task: [
 				"## Allowed edit surfaces",
@@ -169,13 +169,13 @@ test("only ASCII spaces may separate Markdown list markers from entries", async 
 		["tab", "\t"],
 	] as const) {
 		await assertRejected({
-			agent: "gentle-ai-worker",
+			agent: "jero-worker",
 			mode: "task",
 			task: ["## Allowed edit surfaces", `-${separator}\`lib/sdd-status.ts\``].join("\n"),
 		}, `${label} cannot separate a list marker and entry`);
 	}
 	await assertAccepted({
-		agent: "gentle-ai-worker",
+		agent: "jero-worker",
 		mode: "task",
 		task: ["## Allowed edit surfaces", "- `lib/sdd-status.ts`", "1. tests/sdd-status.test.ts"].join("\n"),
 	}, "ASCII-space bullets and numbered entries remain accepted");
@@ -183,7 +183,7 @@ test("only ASCII spaces may separate Markdown list markers from entries", async 
 
 test("the documented task shape from issue #484 is accepted", async () => {
 	await assertAccepted({
-		agent: "gentle-ai-worker",
+		agent: "jero-worker",
 		mode: "task",
 		task: [
 			"## Allowed edit surfaces",
@@ -199,23 +199,23 @@ test("the documented task shape from issue #484 is accepted", async () => {
 test("bullet, backtick and plain-line surfaces reach the same decision", async () => {
 	const bulleted = ["## Allowed edit surfaces", "- `lib/sdd-status.ts`", "- `tests/sdd-status.test.ts`"].join("\n");
 	const plain = ["## Allowed edit surfaces", "lib/sdd-status.ts", "tests/sdd-status.test.ts"].join("\n");
-	await assertAccepted({ agent: "gentle-ai-worker", mode: "task", task: bulleted }, "bullets in task are accepted");
-	await assertAccepted({ agent: "gentle-ai-worker", mode: "task", task: plain }, "plain lines in task are accepted");
+	await assertAccepted({ agent: "jero-worker", mode: "task", task: bulleted }, "bullets in task are accepted");
+	await assertAccepted({ agent: "jero-worker", mode: "task", task: plain }, "plain lines in task are accepted");
 	await assertAccepted(
-		{ agent: "gentle-ai-worker", mode: "task", task: "Fix the decoder.", context: bulleted },
+		{ agent: "jero-worker", mode: "task", task: "Fix the decoder.", context: bulleted },
 		"bullets in context are accepted",
 	);
 	await assertAccepted(
-		{ agent: "gentle-ai-worker", mode: "task", task: "Fix the decoder.", context: plain },
+		{ agent: "jero-worker", mode: "task", task: "Fix the decoder.", context: plain },
 		"plain lines in context are accepted",
 	);
 	await assertAccepted(
-		{ agent: "gentle-ai-worker", mode: "task", task: bulleted, context: plain },
+		{ agent: "jero-worker", mode: "task", task: bulleted, context: plain },
 		"the same surfaces in both fields are accepted",
 	);
 	await assertAccepted(
 		{
-			agent: "gentle-ai-worker",
+			agent: "jero-worker",
 			mode: "task",
 			task: ["## Allowed edit surfaces", "extensions/**/*.ts", "tests/*.test.ts"].join("\n"),
 		},
@@ -225,17 +225,17 @@ test("bullet, backtick and plain-line surfaces reach the same decision", async (
 
 test("a list broken by a blank line still validates every entry", async () => {
 	await assertRejected({
-		agent: "gentle-ai-worker",
+		agent: "jero-worker",
 		mode: "task",
 		task: ["## Allowed edit surfaces", "- `lib/sdd-status.ts`", "", "- `/etc/passwd`"].join("\n"),
 	}, "a loose bulleted list cannot smuggle an absolute path past the guard");
 	await assertRejected({
-		agent: "gentle-ai-worker",
+		agent: "jero-worker",
 		mode: "task",
 		context: ["## Allowed edit surfaces", "lib/sdd-status.ts", "", "/etc/passwd"].join("\n"),
 	}, "a loose plain-line list cannot smuggle an absolute path past the guard");
 	await assertRejected({
-		agent: "gentle-ai-worker",
+		agent: "jero-worker",
 		mode: "task",
 		task: ["## Allowed edit surfaces", "lib/sdd-status.ts", "", "../other-repo/lib/a.ts"].join("\n"),
 	}, "a loose plain-line list cannot smuggle parent traversal past the guard");
@@ -243,7 +243,7 @@ test("a list broken by a blank line still validates every entry", async () => {
 
 test("an entry hidden below a paragraph is validated, not discarded", async () => {
 	await assertRejected({
-		agent: "gentle-ai-worker",
+		agent: "jero-worker",
 		mode: "task",
 		task: [
 			"## Allowed edit surfaces",
@@ -268,15 +268,15 @@ test("whitespace-bearing surfaces require whole-entry backticks", async () => {
 	];
 
 	await assertAccepted(
-		{ agent: "gentle-ai-worker", mode: "task", task: backtickedSpaced.join("\n") },
+		{ agent: "jero-worker", mode: "task", task: backtickedSpaced.join("\n") },
 		"whole-entry backticked ASCII and Unicode space-separator paths are accepted",
 	);
 	await assertAccepted(
-		{ agent: "gentle-ai-worker", mode: "task", task: backtickedSpaced.join("\n"), context: equivalentBacktickedSpaced.join("\n") },
+		{ agent: "jero-worker", mode: "task", task: backtickedSpaced.join("\n"), context: equivalentBacktickedSpaced.join("\n") },
 		"task and context compare equivalent backticked whitespace-bearing paths by value",
 	);
 	await assertAccepted({
-		agent: "gentle-ai-worker",
+		agent: "jero-worker",
 		mode: "task",
 		task: [...backtickedSpaced, "### Validation", "node --test"].join("\n"),
 	}, "the next Markdown heading closes a backticked whitespace-bearing surface section");
@@ -302,12 +302,12 @@ test("whitespace-bearing surfaces require whole-entry backticks", async () => {
 		["dangerous backticked bullet", "- `/tmp/Outside Directory/file.md`"],
 	] as const) {
 		await assertRejected({
-			agent: "gentle-ai-worker",
+			agent: "jero-worker",
 			mode: "task",
 			task: ["## Allowed edit surfaces", "lib/sdd-status.ts", entry].join("\n"),
 		}, `${label} after a valid entry is rejected`);
 		await assertRejected({
-			agent: "gentle-ai-worker",
+			agent: "jero-worker",
 			mode: "task",
 			task: ["## Allowed edit surfaces", entry, "lib/sdd-status.ts"].join("\n"),
 		}, `${label} before a valid entry is rejected`);
@@ -316,37 +316,37 @@ test("whitespace-bearing surfaces require whole-entry backticks", async () => {
 
 test("out-of-scope and empty surfaces stay rejected", async () => {
 	await assertRejected({
-		agent: "gentle-ai-worker",
+		agent: "jero-worker",
 		mode: "task",
 		task: "Fix the decoder.",
 	}, "a task with no section is rejected");
 	await assertRejected({
-		agent: "gentle-ai-worker",
+		agent: "jero-worker",
 		mode: "task",
 		task: ["## Edit ranges", "- `lib/sdd-status.ts`"].join("\n"),
 	}, "a semantically equivalent heading is rejected with the actionable canonical-heading reason");
 	await assertRejected({
-		agent: "gentle-ai-worker",
+		agent: "jero-worker",
 		mode: "task",
 		task: ["## Allowed edit surfaces", "", "## Skills to load before work", "- `skills/typescript/SKILL.md`"].join("\n"),
 	}, "an empty section is rejected");
 	await assertRejected({
-		agent: "gentle-ai-worker",
+		agent: "jero-worker",
 		mode: "task",
 		task: ["## Allowed edit surfaces", "- `/home/user/repo/lib/sdd-status.ts`"].join("\n"),
 	}, "an absolute path is rejected");
 	await assertRejected({
-		agent: "gentle-ai-worker",
+		agent: "jero-worker",
 		mode: "task",
 		task: ["## Allowed edit surfaces", "- `../other-repo/lib/sdd-status.ts`"].join("\n"),
 	}, "parent traversal is rejected");
 	await assertRejected({
-		agent: "gentle-ai-worker",
+		agent: "jero-worker",
 		mode: "task",
 		task: ["## Allowed edit surfaces", "- `.`"].join("\n"),
 	}, "the repository root is rejected");
 	await assertRejected({
-		agent: "gentle-ai-worker",
+		agent: "jero-worker",
 		mode: "task",
 		task: ["## Allowed edit surfaces", "- `*`"].join("\n"),
 	}, "a repository-wide glob is rejected");
@@ -359,7 +359,7 @@ test("out-of-scope and empty surfaces stay rejected", async () => {
 
 test("agents outside the bounded writer set are not scope-guarded", async () => {
 	await assertAccepted({
-		agent: "gentle-ai-explore",
+		agent: "jero-explore",
 		mode: "task",
 		task: "Map the decoder call sites.",
 	}, "a read-only explorer needs no edit surfaces");

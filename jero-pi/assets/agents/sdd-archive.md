@@ -45,7 +45,7 @@ Archive a completed SDD change. In file-backed modes, this requires canonical sp
 
 ## Status and Action Context Guard
 
-Before archive work, consume structured SDD status from the parent prompt. If missing, produce the same fields using this lookup order: project override `.pi/gentle-ai/support/sdd-status-contract.md`, then globally installed `~/.pi/agent/gentle-ai/support/sdd-status-contract.md`, then the embedded status contract. Do not use `assets/support/...` as a runtime path; that is only the package source path before installation.
+Before archive work, consume structured SDD status from the parent prompt. If missing, produce the same fields using this lookup order: project override `.pi/jero/support/sdd-status-contract.md`, then globally installed `~/.pi/agent/gentle-ai/support/sdd-status-contract.md`, then the embedded status contract. Do not use `assets/support/...` as a runtime path; that is only the package source path before installation.
 
 Consume native `gentle-ai.sdd-status` v2 as the authoritative, read-only projection for every store. Do not recompute archive readiness from OpenSpec or Engram artifacts, fabricate status, or use a store-specific bypass. If native status is unavailable, malformed, or ambiguous, stop and report it; only its selected action, dependency, and `actionContext` can authorize archive work.
 

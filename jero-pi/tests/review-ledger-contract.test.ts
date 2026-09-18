@@ -17,13 +17,13 @@ const JUDGES = ["assets/agents/jd-judge-a.md", "assets/agents/jd-judge-b.md"] as
 const FIX_AGENT = "assets/agents/jd-fix-agent.md";
 const JD_SKILL = "skills/judgment-day/SKILL.md";
 const JD_PROMPTS = "skills/judgment-day/references/prompts-and-formats.md";
-const GENTLE_SKILL = "skills/gentle-ai/SKILL.md";
+const GENTLE_SKILL = "skills/jero-ai/SKILL.md";
 const README = "README.md";
 const TECHNICAL_REFERENCE = "docs/readme-reference.md";
 const CHAIN = "assets/chains/4r-review.chain.md";
 const SDD_WORKFLOW = "assets/sdd-orchestrator-workflow.md";
 const RELEASE_SKILL = "skills/release/SKILL.md";
-const WORKER = "assets/agents/gentle-ai-worker.md";
+const WORKER = "assets/agents/jero-worker.md";
 const CANONICAL_LIFECYCLE_SPECS = [
 	"openspec/specs/review-orchestration/spec.md",
 	"openspec/specs/review-transaction/spec.md",

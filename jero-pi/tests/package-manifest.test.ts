@@ -18,7 +18,7 @@ import { resolveGentlePiAgentHome } from "../lib/agent-home.ts";
 import { getPackageAssetOwner, installPackageAssets, installSddAssets, type PackageAssetOwner } from "../lib/sdd-preflight.ts";
 
 const PACKAGE_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
-const MANAGED_EXEMPLAR_FILE = "gentle-ai-explore.md";
+const MANAGED_EXEMPLAR_FILE = "jero-explore.md";
 const RETIRED_REFUTER_FILE = "review-refuter.md";
 const REVIEW_RISK_FILE = "review-risk.md";
 const V013_REVIEW_RISK_FIXTURE = join(
@@ -52,7 +52,7 @@ const V014_MANAGED_ASSETS = join(
 	"managed-assets-v0.14.json",
 );
 // gentle-pi#311 P5: the managed-asset installer mechanism tests use
-// gentle-ai-explore.md as their exemplar (packaged, absent from the v0.13
+// jero-explore.md as their exemplar (packaged, absent from the v0.13
 // manifest) after review-refuter.md was retired together with every
 // Pi-authored adversarial review verdict.
 const MANAGED_EXEMPLAR_TOOLS = ["read", "grep", "find", "codegraph"];
@@ -362,11 +362,11 @@ function assertWorkerFallbackRouting(section: string, sectionName: string): void
 	)?.[0];
 	assert.ok(boundedWriterPolicy, `${sectionName} must define bounded writer routing`);
 
-	const preferred = boundedWriterPolicy.indexOf("`gentle-ai-worker`");
+	const preferred = boundedWriterPolicy.indexOf("`jero-worker`");
 	const configuredFallback = boundedWriterPolicy.indexOf("user-configured `worker`");
 	const nativeFallback = boundedWriterPolicy.indexOf("native `Agent`");
 
-	assert.ok(preferred >= 0, `${sectionName} must reference exact gentle-ai-worker name`);
+	assert.ok(preferred >= 0, `${sectionName} must reference exact jero-worker name`);
 	assert.ok(
 		configuredFallback > preferred,
 		`${sectionName} must prefer the package-owned worker before a user-configured worker`,
@@ -469,20 +469,21 @@ function withIsolatedAssetHome(run: (agentHome: string) => void): void {
 }
 
 function installedAssetManifest(agentHome: string): ManagedAssetsManifest {
-	return JSON.parse(readFileSync(join(agentHome, "gentle-ai", "managed-assets.json"), "utf8"));
+	const jero = join(agentHome, "jero", "managed-assets.json");
+	return JSON.parse(readFileSync(existsSync(jero) ? jero : join(agentHome, "jero", "managed-assets.json"), "utf8"));
 }
 
 test("selective delegation installation owns only generic agents", () => {
 	withIsolatedAssetHome((agentHome) => {
 		const result = installPackageAssets(agentHome, false, ["delegation"]);
 		assert.deepEqual(Object.keys(installedAssetManifest(agentHome).assets).sort(), [
-			"agents/gentle-ai-explore.md",
-			"agents/gentle-ai-verify.md",
-			"agents/gentle-ai-worker.md",
+			"agents/jero-explore.md",
+			"agents/jero-verify.md",
+			"agents/jero-worker.md",
 		]);
 		assert.deepEqual(result, { agents: 3, chains: 0, support: 0, skipped: 0 });
 		assert.deepEqual(readdirSync(join(agentHome, "agents")).sort(), [
-			"gentle-ai-explore.md", "gentle-ai-verify.md", "gentle-ai-worker.md",
+			"jero-explore.md", "jero-verify.md", "jero-worker.md",
 		]);
 		assert.equal(existsSync(join(agentHome, "chains")), false);
 		assert.equal(existsSync(join(agentHome, "gentle-ai", "support")), false);
@@ -492,7 +493,7 @@ test("selective delegation installation owns only generic agents", () => {
 test("selective installation retires only assets belonging to the selected owner", () => {
 	withIsolatedAssetHome((agentHome) => {
 		installSddAssets(agentHome, false);
-		const manifestPath = join(agentHome, "gentle-ai", "managed-assets.json");
+		const manifestPath = join(agentHome, "jero", "managed-assets.json");
 		const manifest = installedAssetManifest(agentHome);
 		for (const name of RETIRED_ADVERSARIAL_AGENTS) {
 			writeFileSync(join(agentHome, "agents", name), "Previously managed review agent\n");
@@ -518,7 +519,7 @@ test("selective installation retires only assets belonging to the selected owner
 
 const EXPECTED_OWNER_ASSETS: Record<PackageAssetOwner, readonly string[]> = {
 	delegation: [
-		"agents/gentle-ai-explore.md", "agents/gentle-ai-verify.md", "agents/gentle-ai-worker.md",
+		"agents/jero-explore.md", "agents/jero-verify.md", "agents/jero-worker.md",
 	],
 	review: [
 		"agents/jd-fix-agent.md", "agents/jd-judge-a.md", "agents/jd-judge-b.md",
@@ -531,8 +532,8 @@ const EXPECTED_OWNER_ASSETS: Record<PackageAssetOwner, readonly string[]> = {
 		"agents/sdd-proposal.md", "agents/sdd-remediate.md", "agents/sdd-research.md", "agents/sdd-spec.md",
 		"agents/sdd-status.md", "agents/sdd-sync.md", "agents/sdd-tasks.md", "agents/sdd-verify.md",
 		"chains/sdd-full.chain.md", "chains/sdd-plan.chain.md", "chains/sdd-verify.chain.md",
-		"gentle-ai/support/sdd-status-contract.md", "gentle-ai/support/strict-tdd-verify.md",
-		"gentle-ai/support/strict-tdd.md",
+		"jero/support/sdd-status-contract.md", "jero/support/strict-tdd-verify.md",
+		"jero/support/strict-tdd.md",
 	],
 };
 
@@ -550,10 +551,10 @@ for (const owner of Object.keys(EXPECTED_OWNER_ASSETS) as PackageAssetOwner[]) {
 			const expected = [...EXPECTED_OWNER_ASSETS[owner]].sort();
 			installPackageAssets(agentHome, false, [owner]);
 			assert.deepEqual(Object.keys(installedAssetManifest(agentHome).assets).sort(), expected);
-			assert.deepEqual(assetFileKeys(agentHome), [...expected, "gentle-ai/managed-assets.json"].sort());
+			assert.deepEqual(assetFileKeys(agentHome), [...expected, "jero/managed-assets.json"].sort());
 			for (const key of expected) {
 				assert.equal(getPackageAssetOwner(key), owner);
-				const source = join(PACKAGE_ROOT, "assets", key.replace(/^gentle-ai\//, ""));
+				const source = join(PACKAGE_ROOT, "assets", key.replace(/^jero\//, ""));
 				assert.equal(readFileSync(join(agentHome, key), "utf8"), readFileSync(source, "utf8"));
 			}
 			const counts = installPackageAssets(agentHome, false, [owner, owner]);
@@ -564,11 +565,11 @@ for (const owner of Object.keys(EXPECTED_OWNER_ASSETS) as PackageAssetOwner[]) {
 
 test("legacy all-assets installation covers every packaged file with explicit ownership", () => {
 	const packaged = ["agents", "chains", "support"].flatMap(group =>
-		assetFileKeys(join(PACKAGE_ROOT, "assets", group), group === "support" ? "gentle-ai/support/" : `${group}/`),
+		assetFileKeys(join(PACKAGE_ROOT, "assets", group), group === "support" ? "jero/support/" : `${group}/`),
 	).sort();
 	assert.deepEqual(packaged, Object.values(EXPECTED_OWNER_ASSETS).flat().sort());
 	for (const key of packaged) assert.notEqual(getPackageAssetOwner(key), undefined, key);
-	for (const key of ["agents/sdd-new.md", "gentle-ai/support/new.md", "toString", "__proto__"]) {
+	for (const key of ["agents/sdd-new.md", "jero/support/new.md", "toString", "__proto__"]) {
 		assert.equal(getPackageAssetOwner(key), undefined, "unknown assets must not default to SDD");
 	}
 	withIsolatedAssetHome((agentHome) => {
@@ -583,7 +584,7 @@ test("selective refresh preserves unselected ownership and selected user changes
 	withIsolatedAssetHome((agentHome) => {
 		installSddAssets(agentHome, false);
 		const manifest = installedAssetManifest(agentHome);
-		const selectedUserKey = "agents/gentle-ai-explore.md";
+		const selectedUserKey = "agents/jero-explore.md";
 		const unselectedUserKey = "agents/sdd-apply.md";
 		for (const key of [selectedUserKey, unselectedUserKey, "agents/custom.md"]) {
 			writeFileSync(join(agentHome, key), "User-authored instructions\n");
@@ -593,11 +594,11 @@ test("selective refresh preserves unselected ownership and selected user changes
 		delete manifest.assets[selectedUserKey];
 		assert.deepEqual(installedAssetManifest(agentHome), manifest);
 		for (const [key, content] of before) {
-			if (key !== "gentle-ai/managed-assets.json") assert.equal(readFileSync(join(agentHome, key), "utf8"), content, key);
+			if (key !== "jero/managed-assets.json") assert.equal(readFileSync(join(agentHome, key), "utf8"), content, key);
 		}
-		const manifestBytes = readFileSync(join(agentHome, "gentle-ai", "managed-assets.json"), "utf8");
+		const manifestBytes = readFileSync(join(agentHome, "jero", "managed-assets.json"), "utf8");
 		assert.deepEqual(installPackageAssets(agentHome, true, []), { agents: 0, chains: 0, support: 0, skipped: 0 });
-		assert.equal(readFileSync(join(agentHome, "gentle-ai", "managed-assets.json"), "utf8"), manifestBytes);
+		assert.equal(readFileSync(join(agentHome, "jero", "managed-assets.json"), "utf8"), manifestBytes);
 	});
 });
 
@@ -661,7 +662,7 @@ test("unowned legacy research migrates by exact normalized hash, preserving rout
 			else {
 				assert.match(actual, /  - fetch_content/);
 				assert.match(actual, /model: custom\/model\nthinking: high/);
-				const ownership = JSON.parse(readFileSync(join(agentHome, "gentle-ai", "managed-assets.json"), "utf8"));
+				const ownership = JSON.parse(readFileSync(join(agentHome, "jero", "managed-assets.json"), "utf8"));
 				assert.equal(ownership.assets["agents/sdd-research.md"], sha256(actual));
 				installSddAssets(temporary, true);
 				assert.equal(readFileSync(target, "utf8"), actual, "subsequent refresh keeps adopted model routing");
@@ -776,7 +777,7 @@ test("first forced sync migrates untouched v0.13 assets, preserves routing, and 
 	const installedExemplar = join(temporaryAgentHome, "agents", MANAGED_EXEMPLAR_FILE);
 	const managedAssetsManifest = join(
 		temporaryAgentHome,
-		"gentle-ai",
+		"jero",
 		"managed-assets.json",
 	);
 	const legacySource = readFileSync(V013_REVIEW_RISK_FIXTURE, "utf8");
@@ -903,7 +904,7 @@ test("first forced sync preserves a body-edited v0.13 asset byte-for-byte", () =
 
 		assert.deepEqual(readFileSync(installedReviewRisk), Buffer.from(editedLegacySource));
 		const manifest = JSON.parse(
-			readFileSync(join(temporaryAgentHome, "gentle-ai", "managed-assets.json"), "utf8"),
+			readFileSync(join(temporaryAgentHome, "jero", "managed-assets.json"), "utf8"),
 		) as ManagedAssetsManifest;
 		assert.equal(manifest.assets[`agents/${REVIEW_RISK_FILE}`], undefined);
 	} finally {
@@ -922,14 +923,14 @@ test("forced package installation refreshes an asset recorded as package-managed
 	const installedExemplar = join(temporaryAgentHome, "agents", MANAGED_EXEMPLAR_FILE);
 	const managedAssetsManifest = join(
 		temporaryAgentHome,
-		"gentle-ai",
+		"jero",
 		"managed-assets.json",
 	);
 	const previousPackageSource =
-		"---\nname: gentle-ai-explore\ntools:\n  - read\n  - bash\n---\nprevious package version\n";
+		"---\nname: jero-explore\ntools:\n  - read\n  - bash\n---\nprevious package version\n";
 	const routedPreviousPackageSource = previousPackageSource.replace(
-		"name: gentle-ai-explore\n",
-		"name: gentle-ai-explore\nmodel: openai/previous-package\nthinking: high\n",
+		"name: jero-explore\n",
+		"name: jero-explore\nmodel: openai/previous-package\nthinking: high\n",
 	);
 
 	try {
@@ -974,7 +975,7 @@ function assertManagedAgentUserEditIsPreserved(
 	const installedExemplar = join(temporaryAgentHome, "agents", MANAGED_EXEMPLAR_FILE);
 	const managedAssetsManifest = join(
 		temporaryAgentHome,
-		"gentle-ai",
+		"jero",
 		"managed-assets.json",
 	);
 
@@ -1014,8 +1015,8 @@ function assertManagedAgentUserEditIsPreserved(
 test("forced package installation preserves a model-only edit to a managed agent", () => {
 	assertManagedAgentUserEditIsPreserved("a model-only user edit", (source) =>
 		source.replace(
-			"name: gentle-ai-explore\n",
-			"name: gentle-ai-explore\nmodel: private/user-model\n",
+			"name: jero-explore\n",
+			"name: jero-explore\nmodel: private/user-model\n",
 		),
 	);
 });
@@ -1023,8 +1024,8 @@ test("forced package installation preserves a model-only edit to a managed agent
 test("forced package installation preserves a thinking-only edit to a managed agent", () => {
 	assertManagedAgentUserEditIsPreserved("a thinking-only user edit", (source) =>
 		source.replace(
-			"name: gentle-ai-explore\n",
-			"name: gentle-ai-explore\nthinking: xhigh\n",
+			"name: jero-explore\n",
+			"name: jero-explore\nthinking: xhigh\n",
 		),
 	);
 });
@@ -1045,7 +1046,7 @@ test("package model assignment keeps only package-managed agents owned", () => {
 	const userAgent = join(temporaryAgentHome, "agents", "user-router.md");
 	const managedAssetsManifest = join(
 		temporaryAgentHome,
-		"gentle-ai",
+		"jero",
 		"managed-assets.json",
 	);
 	const userAgentSource = "---\nname: user-router\n---\nuser-owned body\n";
@@ -1056,7 +1057,7 @@ test("package model assignment keeps only package-managed agents owned", () => {
 		writeFileSync(userAgent, userAgentSource);
 
 		applyModelConfig(PACKAGE_ROOT, {
-			"gentle-ai-explore": { model: "package/selected-model", thinking: "high" },
+			"jero-explore": { model: "package/selected-model", thinking: "high" },
 			"user-router": { model: "user/selected-model", thinking: "low" },
 		});
 
@@ -1128,10 +1129,10 @@ test("sdd-explore packages its CodeGraph-enabled exploration allowlist", () => {
 	]);
 });
 
-test("gentle-ai-worker packages the exact scoped writer contract", () => {
+test("jero-worker packages the exact scoped writer contract", () => {
 	const agentsDir = join(PACKAGE_ROOT, "assets", "agents");
-	const agentPath = join(agentsDir, "gentle-ai-worker.md");
-	assert.ok(existsSync(agentPath), "gentle-pi must package gentle-ai-worker.md");
+	const agentPath = join(agentsDir, "jero-worker.md");
+	assert.ok(existsSync(agentPath), "gentle-pi must package jero-worker.md");
 	for (const genericName of ["worker.md", "generic-writer.md"]) {
 		assert.ok(
 			!existsSync(join(agentsDir, genericName)),
@@ -1140,7 +1141,7 @@ test("gentle-ai-worker packages the exact scoped writer contract", () => {
 	}
 
 	const { name, source, tools } = readAgentDefinition(agentPath);
-	assert.equal(name, "gentle-ai-worker");
+	assert.equal(name, "jero-worker");
 	assert.deepEqual(tools, [
 		"read",
 		"grep",
@@ -1236,7 +1237,7 @@ test("gentle-ai-worker packages the exact scoped writer contract", () => {
 	assert.doesNotMatch(testDiscipline, /clearly required by the repository contract/);
 });
 
-test("installSddAssets installs gentle-ai-worker with a loader-compatible scoped identity", () => {
+test("installSddAssets installs jero-worker with a loader-compatible scoped identity", () => {
 	const temporaryAgentHome = mkdtempSync(join(tmpdir(), "gentle-pi-agent-home-"));
 	const previousAgentHome = process.env.JERO_PI_AGENT_HOME;
 
@@ -1245,8 +1246,8 @@ test("installSddAssets installs gentle-ai-worker with a loader-compatible scoped
 		installSddAssets(PACKAGE_ROOT, true);
 
 		const installedAgentsDir = join(temporaryAgentHome, "agents");
-		const installedAgentPath = join(installedAgentsDir, "gentle-ai-worker.md");
-		assert.ok(existsSync(installedAgentPath), "the production installer must install gentle-ai-worker.md");
+		const installedAgentPath = join(installedAgentsDir, "jero-worker.md");
+		assert.ok(existsSync(installedAgentPath), "the production installer must install jero-worker.md");
 		for (const genericName of ["worker.md", "generic-writer.md"]) {
 			assert.ok(
 				!existsSync(join(installedAgentsDir, genericName)),
@@ -1256,7 +1257,7 @@ test("installSddAssets installs gentle-ai-worker with a loader-compatible scoped
 
 		const { name, source, tools } = readAgentDefinition(installedAgentPath);
 		const normalizedRuntimeIdentity = name.trim().toLowerCase();
-		assert.equal(normalizedRuntimeIdentity, "gentle-ai-worker");
+		assert.equal(normalizedRuntimeIdentity, "jero-worker");
 		assert.deepEqual(tools, [
 			"read",
 			"grep",
@@ -1330,18 +1331,18 @@ test("asset installation uses PI_CODING_AGENT_DIR as the Pi agent home when no e
 
 		installSddAssets(PACKAGE_ROOT, true);
 
-		const installedPath = join(temporaryPiAgentDir, "agents", "gentle-ai-explore.md");
+		const installedPath = join(temporaryPiAgentDir, "agents", "jero-explore.md");
 		assert.ok(existsSync(installedPath), "managed agents must install where Pi Subagents reads global definitions");
 		assert.deepEqual(readAgentDefinition(installedPath).tools, MANAGED_EXEMPLAR_TOOLS);
 		assert.ok(
-			!existsSync(join(explicitGentleHome, "agents", "gentle-ai-explore.md")),
+			!existsSync(join(explicitGentleHome, "agents", "jero-explore.md")),
 			"the explicit override fixture must still be untouched before it is selected",
 		);
 
 		process.env.JERO_PI_AGENT_HOME = explicitGentleHome;
 		installSddAssets(PACKAGE_ROOT, true);
 		assert.ok(
-			existsSync(join(explicitGentleHome, "agents", "gentle-ai-explore.md")),
+			existsSync(join(explicitGentleHome, "agents", "jero-explore.md")),
 			"JERO_PI_AGENT_HOME remains the explicit test/operator override",
 		);
 	} finally {
@@ -1366,12 +1367,12 @@ test("global model routing uses PI_CODING_AGENT_DIR for package-installed agents
 		installSddAssets(PACKAGE_ROOT, true);
 
 		const result = applyModelConfig(temporaryProject, {
-			"gentle-ai-explore": { model: "provider/model", thinking: "high" },
+			"jero-explore": { model: "provider/model", thinking: "high" },
 		});
 
 		assert.equal(result.updated, 2);
 		const config = JSON.parse(readFileSync(join(temporaryPiAgentDir, "subagents.json"), "utf8"));
-		assert.deepEqual(config.model_profiles["gentle-ai-explore"], {
+		assert.deepEqual(config.model_profiles["jero-explore"], {
 			model: "provider/model",
 			effort: "high",
 		});
@@ -1388,8 +1389,8 @@ test("global model routing uses PI_CODING_AGENT_DIR for package-installed agents
 test("normal and forced installation copy generic agents with complete role contracts", () => {
 	const previousAgentHome = process.env.JERO_PI_AGENT_HOME;
 	const expectedTools = {
-		"gentle-ai-explore": ["read", "grep", "find", "codegraph"],
-		"gentle-ai-verify": ["read", "grep", "find", "bash"],
+		"jero-explore": ["read", "grep", "find", "codegraph"],
+		"jero-verify": ["read", "grep", "find", "bash"],
 	} as const;
 
 	try {
@@ -1408,7 +1409,7 @@ test("normal and forced installation copy generic agents with complete role cont
 					assert.deepEqual(installedTools, tools);
 					assert.match(source, /generic non-SDD work/);
 					assert.match(source, /Do not (?:fix findings, delegate to child agents|delegate to child agents, commit)/);
-					if (name === "gentle-ai-explore") {
+					if (name === "jero-explore") {
 						assert.match(source, /cwd-scoped `codegraph` tool/);
 						assert.match(source, /never ask it to target another path/);
 						assert.match(source, /sole permitted mutation/);
@@ -1419,7 +1420,7 @@ test("normal and forced installation copy generic agents with complete role cont
 					assert.match(source, /Do not (?:edit, write|edit, write, or fix findings)/);
 					assert.match(source, /compressed (?:handoff|evidence handoff)/);
 					assert.match(source, /Do not use SDD phase protocols or review lenses\./);
-					if (name === "gentle-ai-verify") {
+					if (name === "jero-verify") {
 						assert.match(source, /exact test, build, or lint commands explicitly authorized by the parent/);
 						assert.match(source, /only outputs the parent explicitly identified as expected/);
 						assert.match(source, /unexpected mutation as a blocker/);
@@ -1461,12 +1462,12 @@ test("bounded implementation routing uses the same explicit fallback in both pol
 test("orchestrator routes generic roles without static RDD lens routing", () => {
 	for (const file of ["orchestrator.md", "orchestrator-delegation.md"]) {
 		const routing = readFileSync(join(PACKAGE_ROOT, "assets", file), "utf8");
-		assert.match(routing, /generic non-SDD exploration[\s\S]*`gentle-ai-explore`/);
+		assert.match(routing, /generic non-SDD exploration[\s\S]*`jero-explore`/);
 		assert.match(
 			routing,
-			/bounded (?:non-SDD )?(?:implementation|multi-file writes)[\s\S]*`gentle-ai-worker`/,
+			/bounded (?:non-SDD )?(?:implementation|multi-file writes)[\s\S]*`jero-worker`/,
 		);
-		assert.match(routing, /generic non-SDD (?:technical )?verification[\s\S]*`gentle-ai-verify`/);
+		assert.match(routing, /generic non-SDD (?:technical )?verification[\s\S]*`jero-verify`/);
 		assert.match(routing, /SDD roles stay inside SDD|Use `sdd-explore` and `sdd-verify` only inside SDD/);
 		assert.match(routing, /(?:truly local )?read-only check(?:ing)? of (?:known )?1[-–]3 known files|1[-–]3-file read-only check/);
 		assert.match(routing, /(?:verification that |verification commands →).*executes? or delegates?|executing\/delegating verification commands/);

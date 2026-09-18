@@ -20,12 +20,13 @@ const LEGACY_MANAGED_ASSET_MANIFESTS = Object.freeze([
 	{ path: join(ASSETS_DIR, "migrations", "managed-assets-v0.13.json"), version: "0.13.0" },
 	{ path: join(ASSETS_DIR, "migrations", "managed-assets-v0.14.json"), version: "0.14.0" },
 	{ path: join(ASSETS_DIR, "migrations", "managed-assets-v2.5.0.json"), version: "2.5.0" },
+	{ path: join(ASSETS_DIR, "migrations", "managed-assets-jero-0.1.0.json"), version: "0.1.0" },
 ]);
 
 const ASSET_OWNER_BY_KEY = Object.freeze({
-	"agents/gentle-ai-explore.md": "delegation",
-	"agents/gentle-ai-verify.md": "delegation",
-	"agents/gentle-ai-worker.md": "delegation",
+	"agents/jero-explore.md": "delegation",
+	"agents/jero-verify.md": "delegation",
+	"agents/jero-worker.md": "delegation",
 	"agents/jd-fix-agent.md": "review",
 	"agents/jd-judge-a.md": "review",
 	"agents/jd-judge-b.md": "review",
@@ -53,9 +54,9 @@ const ASSET_OWNER_BY_KEY = Object.freeze({
 	"chains/sdd-full.chain.md": "sdd",
 	"chains/sdd-plan.chain.md": "sdd",
 	"chains/sdd-verify.chain.md": "sdd",
-	"gentle-ai/support/sdd-status-contract.md": "sdd",
-	"gentle-ai/support/strict-tdd.md": "sdd",
-	"gentle-ai/support/strict-tdd-verify.md": "sdd",
+	"jero/support/sdd-status-contract.md": "sdd",
+	"jero/support/strict-tdd.md": "sdd",
+	"jero/support/strict-tdd-verify.md": "sdd",
 } as const);
 
 export type PackageAssetOwner = (typeof ASSET_OWNER_BY_KEY)[keyof typeof ASSET_OWNER_BY_KEY];
@@ -304,7 +305,7 @@ function acquireManagedAssetsLock(
 	agentHome: string,
 	options: PackageAssetInstallLockOptions = {},
 ): { path: string; owner: ManagedAssetsLockOwner } {
-	const lockParent = join(agentHome, "gentle-ai");
+	const lockParent = join(agentHome, "jero");
 	const lockPath = join(lockParent, MANAGED_ASSETS_LOCK);
 	const timeoutMs = normalizedLockDuration(options.timeoutMs, MANAGED_ASSETS_LOCK_TIMEOUT_MS);
 	const retryMs = Math.max(1, normalizedLockDuration(options.retryMs, MANAGED_ASSETS_LOCK_RETRY_MS));
@@ -495,7 +496,10 @@ export function updatePackageManagedSddAgentOwnership(
 	}
 	const ownershipKey = `agents/${relativePath.split(sep).join("/")}`;
 	return withManagedAssetsLock(agentHome, () => {
-		const manifestPath = join(agentHome, "gentle-ai", MANAGED_ASSETS_MANIFEST);
+		const registryPath = join(agentHome, "jero", MANAGED_ASSETS_MANIFEST);
+		const legacyRegistryPath = join(agentHome, "gentle-ai", MANAGED_ASSETS_MANIFEST);
+		const manifestPath = existsSync(registryPath) ? registryPath : legacyRegistryPath;
+		// Read may fall back to the pre-rename registry; writes always land in the jero location.
 		const manifest = readManagedAssetsManifest(manifestPath);
 		if (manifest.assets[ownershipKey] !== managedAssetHash(previousContent)) {
 			return false;
@@ -514,7 +518,7 @@ export function updatePackageManagedSddAgentOwnership(
 			}
 			manifest.assets[ownershipKey] = managedAssetHash(nextContent);
 			replaceManagedAssetFileAtomically(
-				manifestPath,
+				registryPath,
 				JSON.stringify(manifest, null, 2),
 			);
 		} catch (error) {
@@ -534,7 +538,7 @@ export function updatePackageManagedSddAgentOwnership(
 
 export function hasPackageAssetOwnerInstallation(owner: PackageAssetOwner): boolean {
 	const agentHome = gentlePiAgentHome();
-	const manifest = readManagedAssetsManifest(join(agentHome, "gentle-ai", MANAGED_ASSETS_MANIFEST));
+	const manifest = readManagedAssetsManifest(join(agentHome, "jero", MANAGED_ASSETS_MANIFEST));
 	return Object.keys(manifest.assets).some((key) => getPackageAssetOwner(key) === owner) ||
 		Object.entries(ASSET_OWNER_BY_KEY).some(([key, candidate]) =>
 			candidate === owner && existsSync(join(agentHome, key)),
@@ -546,7 +550,7 @@ export function isPackageManagedSddAsset(
 	ownershipKey: string,
 ): boolean {
 	const manifest = readManagedAssetsManifest(
-		join(gentlePiAgentHome(), "gentle-ai", MANAGED_ASSETS_MANIFEST),
+		join(gentlePiAgentHome(), "jero", MANAGED_ASSETS_MANIFEST),
 	);
 	const expectedHash = manifest.assets[ownershipKey];
 	if (expectedHash === undefined || !existsSync(installedPath)) return false;
@@ -729,6 +733,52 @@ const RETIRED_MANAGED_ASSETS = Object.freeze([
 	"agents/review-validator.md",
 ]);
 
+// P5b: assets renamed into the jero namespace. History manifests stay
+// untouched (append-only adoption evidence); an installed OLD-name copy
+// is removed only when its hash proves package ownership, exactly like
+// retirement — the new-name file then installs through the normal copy.
+const RENAMED_MANAGED_ASSETS = Object.freeze({
+	"agents/gentle-ai-explore.md": "agents/jero-explore.md",
+	"agents/gentle-ai-verify.md": "agents/jero-verify.md",
+	"agents/gentle-ai-worker.md": "agents/jero-worker.md",
+	"gentle-ai/support/sdd-status-contract.md": "jero/support/sdd-status-contract.md",
+	"gentle-ai/support/strict-tdd.md": "jero/support/strict-tdd.md",
+	"gentle-ai/support/strict-tdd-verify.md": "jero/support/strict-tdd-verify.md",
+});
+
+function migrateRenamedManagedAssets(
+	agentHome: string,
+	manifest: ManagedAssetsManifest,
+	selected: ReadonlySet<string> | undefined,
+): void {
+	let legacyHashes: Record<string, readonly string[]> | undefined;
+	for (const [oldKey, newKey] of Object.entries(RENAMED_MANAGED_ASSETS)) {
+		if (selected && !selected.has(newKey) && !selected.has(oldKey)) continue;
+		const installedPath = join(agentHome, ...oldKey.split("/"));
+		if (!existsSync(installedPath)) {
+			delete manifest.assets[oldKey];
+			continue;
+		}
+		let installedContent: string | undefined;
+		try {
+			installedContent = readFileSync(installedPath, "utf8");
+		} catch {
+			installedContent = undefined;
+		}
+		if (installedContent === undefined) continue;
+		const installedHash = managedAssetHash(installedContent);
+		const managed = manifest.assets[oldKey] === installedHash;
+		const legacy = (legacyHashes ??= readLegacyManagedAssetHashes())[oldKey]?.includes(installedHash) === true;
+		if (managed || legacy) {
+			try {
+				rmSync(installedPath);
+			} catch {
+				continue;
+			}
+		}
+		delete manifest.assets[oldKey];
+	}
+}
 function removeRetiredManagedAssets(
 	agentHome: string,
 	manifest: ManagedAssetsManifest,
@@ -787,7 +837,10 @@ export function installPackageAssets(
 		const selected = owners === undefined ? undefined : new Set(
 			Object.entries(ASSET_OWNER_BY_KEY).filter(([, owner]) => owners.includes(owner)).map(([key]) => key),
 		);
-		const manifestPath = join(agentHome, "gentle-ai", MANAGED_ASSETS_MANIFEST);
+		const registryPath = join(agentHome, "jero", MANAGED_ASSETS_MANIFEST);
+		const legacyRegistryPath = join(agentHome, "gentle-ai", MANAGED_ASSETS_MANIFEST);
+		const manifestPath = existsSync(registryPath) ? registryPath : legacyRegistryPath;
+		// Read may fall back to the pre-rename registry; writes always land in the jero location.
 		let legacyAssetHashes: (() => Readonly<Record<string, readonly string[]>>) | undefined;
 		if (force) {
 			let cachedLegacyAssetHashes: Record<string, readonly string[]> | undefined;
@@ -796,6 +849,7 @@ export function installPackageAssets(
 		}
 		const manifest = readManagedAssetsManifest(manifestPath);
 		removeRetiredManagedAssets(agentHome, manifest, selected);
+		migrateRenamedManagedAssets(agentHome, manifest, selected);
 		const agents = copyDirectoryFiles(
 			join(ASSETS_DIR, "agents"),
 			join(agentHome, "agents"),
@@ -816,15 +870,15 @@ export function installPackageAssets(
 		);
 		const support = copyDirectoryFiles(
 			join(ASSETS_DIR, "support"),
-			join(agentHome, "gentle-ai", "support"),
-			"gentle-ai/support",
+			join(agentHome, "jero", "support"),
+			"jero/support",
 			force,
 			manifest,
 			legacyAssetHashes,
 			selected,
 		);
-		mkdirSync(dirname(manifestPath), { recursive: true });
-		writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+		mkdirSync(dirname(registryPath), { recursive: true });
+		writeFileSync(registryPath, JSON.stringify(manifest, null, 2));
 		return {
 			agents: agents.copied,
 			chains: chains.copied,

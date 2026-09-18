@@ -89,7 +89,7 @@ test("no-callback preflight fallback installs only SDD-owned assets", async () =
 			{ pi: { getActiveTools: () => [] } as never },
 		);
 		assert.equal(existsSync(join(agentHome, "agents", "sdd-apply.md")), true);
-		assert.equal(existsSync(join(agentHome, "agents", "gentle-ai-worker.md")), false);
+		assert.equal(existsSync(join(agentHome, "agents", "jero-worker.md")), false);
 		assert.equal(existsSync(join(agentHome, "agents", "review-risk.md")), false);
 	} finally {
 		if (previousAgentHome === undefined) delete process.env.JERO_PI_AGENT_HOME;
@@ -151,8 +151,8 @@ test("managed ownership update waits for installer lock and atomically updates t
 		assert.ok(Date.now() - startedAt >= 250, "ownership update must not bypass an active installer lock");
 		await held.completion;
 		assert.equal(readFileSync(target, "utf8"), next, "the managed file must be written under the installer lock");
-		const manifest = JSON.parse(readFileSync(join(agentHome, "gentle-ai", "managed-assets.json"), "utf8")) as { assets: Record<string, string> };
-		assert.ok(manifest.assets["agents/gentle-ai-worker.md"], "delegation ownership must survive the routed SDD update");
+		const manifest = JSON.parse(readFileSync(join(agentHome, "jero", "managed-assets.json"), "utf8")) as { assets: Record<string, string> };
+		assert.ok(manifest.assets["agents/jero-worker.md"], "delegation ownership must survive the routed SDD update");
 		assert.equal(manifest.assets["agents/sdd-apply.md"], createHash("sha256").update(next).digest("hex"));
 	} finally {
 		if (previousAgentHome === undefined) delete process.env.JERO_PI_AGENT_HOME;
@@ -170,7 +170,7 @@ test("managed ownership update exposes lock timeout without writing a partial ro
 		const target = join(agentHome, "agents", "sdd-apply.md");
 		const previous = readFileSync(target, "utf8");
 		const next = `${previous}\nmanaged routing update\n`;
-		const manifestPath = join(agentHome, "gentle-ai", "managed-assets.json");
+		const manifestPath = join(agentHome, "jero", "managed-assets.json");
 		const manifestBefore = readFileSync(manifestPath, "utf8");
 		writeFileSync(
 			join(agentHome, "gentle-ai", "managed-assets.lock"),
@@ -200,10 +200,10 @@ test("cross-process owner installations preserve both managed manifest entries",
 		await new Promise((resolve) => setTimeout(resolve, 100));
 		assert.equal(review.hasExited(), false, "the second owner must remain blocked while the first owner holds the lock");
 		await Promise.all([delegation.completion, review.completion]);
-		const assets = (JSON.parse(readFileSync(join(agentHome, "gentle-ai", "managed-assets.json"), "utf8")) as { assets: Record<string, string> }).assets;
+		const assets = (JSON.parse(readFileSync(join(agentHome, "jero", "managed-assets.json"), "utf8")) as { assets: Record<string, string> }).assets;
 		assert.deepEqual(
 			Object.keys(assets).filter((key) => key.startsWith("agents/gentle-ai-")).sort(),
-			["agents/gentle-ai-explore.md", "agents/gentle-ai-verify.md", "agents/gentle-ai-worker.md"],
+			["agents/jero-explore.md", "agents/jero-verify.md", "agents/jero-worker.md"],
 		);
 		assert.deepEqual(
 			Object.keys(assets).filter((key) => key === "chains/4r-review.chain.md" || key.startsWith("agents/jd-") || key.startsWith("agents/review-")).sort(),
@@ -221,7 +221,7 @@ test("installer preserves foreign, malformed, and unsafe lock paths", async () =
 	const lockPath = join(agentHome, "gentle-ai", "managed-assets.lock");
 	try {
 		process.env.JERO_PI_AGENT_HOME = agentHome;
-		mkdirSync(join(agentHome, "gentle-ai"), { recursive: true });
+		mkdirSync(join(agentHome, "jero"), { recursive: true });
 		for (const contents of ["", "not-json\n", JSON.stringify({ schemaVersion: 1, token: "foreign", pid: process.pid, createdAtMs: Date.now() })]) {
 			writeFileSync(lockPath, contents);
 			assert.throws(() => installPackageAssets(agentHome, false, ["delegation"], { timeoutMs: 0 }), /Timed out acquiring managed-assets lock file .*verify no installer is active/i);
@@ -393,7 +393,7 @@ test("forced asset refresh migrates the exact v0.10.7 malformed sdd-apply asset 
 		writeFileSync(installed, legacySource);
 		mkdirSync(join(temporaryAgentHome, "gentle-ai"), { recursive: true });
 		writeFileSync(
-			join(temporaryAgentHome, "gentle-ai", "managed-assets.json"),
+			join(temporaryAgentHome, "jero", "managed-assets.json"),
 			JSON.stringify({ schemaVersion: 1, assets: {} }),
 		);
 
@@ -403,7 +403,7 @@ test("forced asset refresh migrates the exact v0.10.7 malformed sdd-apply asset 
 		assert.match(readFileSync(installed, "utf8"), /^tools:\n  - read$/m);
 		const managedAssets = JSON.parse(
 			readFileSync(
-				join(temporaryAgentHome, "gentle-ai", "managed-assets.json"),
+				join(temporaryAgentHome, "jero", "managed-assets.json"),
 				"utf8",
 			),
 		) as { assets: Record<string, string> };

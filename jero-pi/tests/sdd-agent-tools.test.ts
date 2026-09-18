@@ -6,9 +6,9 @@ import test from "node:test";
 const repoRoot = process.cwd();
 const assetsAgentsDir = join(repoRoot, "assets", "agents");
 const GENERIC_ROLE_TOOLS: Record<string, string[]> = {
-	"gentle-ai-explore.md": ["read", "grep", "find", "codegraph"],
-	"gentle-ai-worker.md": ["read", "grep", "find", "edit", "write", "bash", "mem_save"],
-	"gentle-ai-verify.md": ["read", "grep", "find", "bash"],
+	"jero-explore.md": ["read", "grep", "find", "codegraph"],
+	"jero-worker.md": ["read", "grep", "find", "edit", "write", "bash", "mem_save"],
+	"jero-verify.md": ["read", "grep", "find", "bash"],
 };
 
 function readFrontmatter(path: string): string {
@@ -44,14 +44,14 @@ function assertGenericRoleBody(fileName: string, source: string): void {
 	assert.match(source, /supporting (?:paths|evidence)/);
 	assert.match(source, /Do not use SDD phase protocols or review lenses\./);
 
-	if (fileName === "gentle-ai-explore.md") {
+	if (fileName === "jero-explore.md") {
 		assert.match(source, /sole permitted mutation/);
 		assert.match(source, /all tracked files, source files, and other project content remain read-only/);
 		assert.match(source, /CodeGraph reports that it is unavailable or fails/);
 		assert.match(source, /Do not use that fallback before CodeGraph is unavailable or fails/);
 	}
 
-	if (fileName === "gentle-ai-verify.md") {
+	if (fileName === "jero-verify.md") {
 		assert.match(source, /execute only exact test, build, or lint commands explicitly authorized by the parent/);
 		assert.match(source, /only outputs the parent explicitly identified as expected/);
 		assert.match(source, /unexpected mutation as a blocker/);
@@ -126,7 +126,7 @@ test("generic non-SDD agents declare exact role tool allowlists", () => {
 		const path = join(assetsAgentsDir, fileName);
 		assert.ok(existsSync(path), `${fileName} must exist`);
 		assert.deepEqual(readTools(path), expectedTools);
-		if (fileName !== "gentle-ai-worker.md") {
+		if (fileName !== "jero-worker.md") {
 			assertGenericRoleBody(fileName, readFileSync(path, "utf8"));
 		}
 	}

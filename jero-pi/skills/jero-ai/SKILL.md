@@ -1,5 +1,5 @@
 ---
-name: gentle-ai
+name: jero
 description: "Use Gentle AI harness discipline for Pi work: clarify first, preserve OpenSpec artifacts, use strict TDD where available, delegate through subagents when useful, and protect review workload."
 ---
 

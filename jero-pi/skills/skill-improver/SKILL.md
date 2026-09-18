@@ -1,5 +1,5 @@
 ---
-name: gentle-ai-skill-improver
+name: jero-skill-improver
 description: "Trigger: improve skills, audit skills, refactor skills, skill quality. Audit and upgrade existing LLM-first skills."
 license: Apache-2.0
 metadata:
