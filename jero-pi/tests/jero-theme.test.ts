@@ -117,25 +117,25 @@ test("package manifest exposes bundled themes to Pi discovery", () => {
 	);
 });
 
-test("bundled Gentleman-Sexy Pi theme is available under its exact name", () => {
+test("bundled Jero-Sexy Pi theme is available under its exact name", () => {
 	const theme = readJson<GentleThemeJson>(
-		join(PACKAGE_ROOT, "themes", "Gentleman-Sexy.json"),
+		join(PACKAGE_ROOT, "themes", "Jero-Sexy.json"),
 	);
 
-	assert.equal(theme.name, "Gentleman-Sexy");
+	assert.equal(theme.name, "Jero-Sexy");
 });
 
-test("bundled Gentleman-Cute Pi theme is available under its exact name", () => {
+test("bundled Jero-Cute Pi theme is available under its exact name", () => {
 	const theme = readJson<GentleThemeJson>(
-		join(PACKAGE_ROOT, "themes", "Gentleman-Cute.json"),
+		join(PACKAGE_ROOT, "themes", "Jero-Cute.json"),
 	);
 
-	assert.equal(theme.name, "Gentleman-Cute");
+	assert.equal(theme.name, "Jero-Cute");
 });
 
-test("bundled Gentleman-Sexy Pi theme defines complete brand and semantic color mappings", () => {
+test("bundled Jero-Sexy Pi theme defines complete brand and semantic color mappings", () => {
 	const theme = readJson<GentleThemeJson>(
-		join(PACKAGE_ROOT, "themes", "Gentleman-Sexy.json"),
+		join(PACKAGE_ROOT, "themes", "Jero-Sexy.json"),
 	);
 	const colors = theme.colors ?? {};
 
@@ -191,9 +191,9 @@ test("bundled Gentleman-Sexy Pi theme defines complete brand and semantic color 
 	assert.equal(theme.export?.infoBg, "infoBg");
 });
 
-test("bundled Gentleman-Cute Pi theme defines complete brand and restrained color mappings", () => {
+test("bundled Jero-Cute Pi theme defines complete brand and restrained color mappings", () => {
 	const theme = readJson<GentleThemeJson>(
-		join(PACKAGE_ROOT, "themes", "Gentleman-Cute.json"),
+		join(PACKAGE_ROOT, "themes", "Jero-Cute.json"),
 	);
 	const colors = theme.colors ?? {};
 
@@ -250,12 +250,12 @@ test("bundled Gentleman-Cute Pi theme defines complete brand and restrained colo
 	assert.equal(theme.export?.infoBg, "infoBg");
 });
 
-test("bundled Pi theme is named exactly Gentle and defines all required colors", () => {
+test("bundled Pi theme is named exactly Jero and defines all required colors", () => {
 	const theme = readJson<GentleThemeJson>(
-		join(PACKAGE_ROOT, "themes", "Gentle.json"),
+		join(PACKAGE_ROOT, "themes", "Jero.json"),
 	);
 
-	assert.equal(theme.name, "Gentle");
+	assert.equal(theme.name, "Jero");
 	const colors = theme.colors ?? {};
 	assert.deepEqual(
 		REQUIRED_THEME_COLOR_KEYS.filter((key) => !(key in colors)),
@@ -265,7 +265,7 @@ test("bundled Pi theme is named exactly Gentle and defines all required colors",
 
 test("bundled Pi theme maps roles to the subtle OpenCode gentleman theme", () => {
 	const theme = readJson<GentleThemeJson>(
-		join(PACKAGE_ROOT, "themes", "Gentle.json"),
+		join(PACKAGE_ROOT, "themes", "Jero.json"),
 	);
 	const vars = theme.vars ?? {};
 	const colors = theme.colors ?? {};
