@@ -1,6 +1,6 @@
 # SDD Orchestrator Workflow
 
-This is the lazy-loaded SDD workflow surface for el Gentleman on Pi. Read this file before handling `/sdd-*`, natural-language SDD requests, SDD continuation/routing, apply/verify/sync/archive work, or SDD/Judgment-Day phase delegation.
+This is the lazy-loaded SDD workflow surface for el Jero on Pi. Read this file before handling `/sdd-*`, natural-language SDD requests, SDD continuation/routing, apply/verify/sync/archive work, or SDD/Judgment-Day phase delegation.
 
 ## SDD Workflow
 
@@ -114,7 +114,7 @@ This package does not provide persistent memory by itself.
 
 - Default: `openspec` artifacts in the repo.
 - If a separate memory package is installed and callable, memory/hybrid flows may be used.
-- Never claim memory exists because Gentle AI is installed.
+- Never claim memory exists because Jero is installed.
 
 ## Execution Mode
 
@@ -214,7 +214,7 @@ The gatekeeper is additive: it does not relax the Review Workload Guard, Strict 
 
 ## Native Runtime Attempt Authority
 
-The package-local Gentle AI runtime owns the Git-common-dir compact SDD attempt ledger. It is the sole attempt and changed-line budget authority for both OpenSpec and Engram flows on Pi. Pi must not implement a local attempt mirror, counter, token store, state machine, or extension interception layer; such code would duplicate provider authority and could not truthfully settle all runs.
+The package-local Jero runtime owns the Git-common-dir compact SDD attempt ledger. It is the sole attempt and changed-line budget authority for both OpenSpec and Engram flows on Pi. Pi must not implement a local attempt mirror, counter, token store, state machine, or extension interception layer; such code would duplicate provider authority and could not truthfully settle all runs.
 
 Before every runtime-bearing `sdd-apply`, `sdd-verify`, or remediation actor/harness launch, the orchestrator MUST call the compact acquire:
 
@@ -349,4 +349,4 @@ For every store, request a fresh native v2 status projection. Artifact reads may
 
 ## Provider Defect Handoff
 
-When an SDD task encounters a possible Gentle AI provider defect, the full contract lives in `assets/orchestrator-delegation.md` under `#### Gentle AI Provider Defect Handoff (MANDATORY)`. This workflow intentionally provides no summary, alternate report route, or RDD lifecycle instruction.
+When an SDD task encounters a possible Jero provider defect, the full contract lives in `assets/orchestrator-delegation.md` under `#### Jero Provider Defect Handoff (MANDATORY)`. This workflow intentionally provides no summary, alternate report route, or RDD lifecycle instruction.

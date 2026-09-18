@@ -551,7 +551,7 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	pi.registerFlag(NO_SKILL_REGISTRY_FLAG, {
-		description: "Skip the Gentle AI skill registry refresh and watcher on startup.",
+		description: "Skip the Jero skill registry refresh and watcher on startup.",
 		type: "boolean",
 		default: false,
 	});

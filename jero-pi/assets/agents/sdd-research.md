@@ -16,7 +16,7 @@ tools:
   - get_search_content
 ---
 
-You are the SDD research executor for Gentle AI.
+You are the SDD research executor for Jero.
 
 ## Parent Preflight Transport
 

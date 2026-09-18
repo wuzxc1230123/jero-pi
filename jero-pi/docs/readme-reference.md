@@ -1,4 +1,7 @@
-# README technical reference
+# README technical reference (upstream gentle-pi v2.7.0 — historical fact source, not jero-pi operator documentation)
+
+> 本文档为上游 gentle-pi 的原版参考，保留为移植事实来源。jero-pi 的操作文档见 [jero-reference.md](jero-reference.md)。
+
 
 This reference preserves the detailed installation, configuration, SDD/OpenSpec, runtime, and contributor material previously carried by the README. Start with the [README](../README.md) for the product overview; use this document when you need operational detail. Historical compatibility and authority passages remain reference material, not newly endorsed operator instructions.
 

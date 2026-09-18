@@ -105,10 +105,10 @@ test("technical reference declares the tested Pi minimum required for agent_sett
 	const manifest = readPackageJson();
 	assert.equal(manifest.peerDependencies?.["@earendil-works/pi-coding-agent"], ">=0.85.1");
 	assert.equal(manifest.devDependencies?.["@earendil-works/pi-coding-agent"], "0.85.1");
-	const reference = readFileSync(join(PACKAGE_ROOT, "docs", "readme-reference.md"), "utf8");
+	const reference = readFileSync(join(PACKAGE_ROOT, "docs", "jero-reference.md"), "utf8");
 	assert.match(reference, /Pi 0\.85\.1 or newer/);
 	assert.match(reference, /agent_settled/);
-	assert.match(readFileSync(join(PACKAGE_ROOT, "README.md"), "utf8"), /\]\(docs\/readme-reference\.md(?:#[^)]+)?\)/);
+	assert.match(readFileSync(join(PACKAGE_ROOT, "README.md"), "utf8"), /\]\(docs\/jero-reference\.md(?:#[^)]+)?\)/);
 });
 
 test("package manifest has no obsolete native activation build surface", () => {
@@ -636,6 +636,7 @@ test("unowned legacy research migrates by exact normalized hash, preserving rout
 	const packaged = readFileSync(join(PACKAGE_ROOT, "assets", "agents", "sdd-research.md"), "utf8");
 	const oldAdmission = "- Evidence grants for this runtime are `documentation=[]; open-web=[]`. Never infer evidence capability from bash, persistence tools, or any inherited tool; persistence tools are not evidence grants. Unsupported or undeclared classes deny admission and emit no claims.\n- Because this runtime declares no evidence grants, retain the selected request, persist a `blocked` outcome with no claims, and stop.\n";
 	const legacy = packaged
+		.replace("You are the SDD research executor for Jero.", "You are the SDD research executor for Gentle AI.")
 		.replace("  - mem_read" + String.fromCharCode(10), "  - mem_get_observation" + String.fromCharCode(10))
 		.replace("OpenSpec requires its exact absolute change-local `.md` path. Memory requires the exact `topic_key` (`sdd/<change>/<artifact>`).", "OpenSpec requires its exact absolute change-local `.md` path. Engram requires exact observation `id`, `project`, `topic_key`, and positive `revision_count`.")
 		.replace("OpenSpec requires complete JSON bytes, matching revision and digest; memory requires the rendered `mem_read` text (a `saved <timestamp>` header line, a blank separator, then the entry body verbatim) with a matching body digest.", "OpenSpec requires complete JSON bytes, matching revision and digest; Engram requires matching returned id/project/topic_key/revision_count and content digest.")
@@ -1514,9 +1515,9 @@ test("bounded review keeps the Judgment Day skill contract at canon metadata ver
 });
 
 test("technical reference documents dynamic Gentle AI RDD ownership and the installed permission boundary", () => {
-	const reference = readFileSync(join(PACKAGE_ROOT, "docs", "readme-reference.md"), "utf8");
+	const reference = readFileSync(join(PACKAGE_ROOT, "docs", "jero-reference.md"), "utf8");
 	for (const clause of [
-		"Gentle AI dynamically supplies runtime-specific RDD instructions",
+		"jero-pi dynamically supplies runtime-specific RDD instructions",
 		"does not define an RDD lifecycle",
 		"Dangerous-command safety remains independent and authoritative.",
 		"package-managed isolated installation",

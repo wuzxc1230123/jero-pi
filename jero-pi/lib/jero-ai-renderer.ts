@@ -3,7 +3,7 @@ import { wrapTextWithAnsi } from "@earendil-works/pi-tui";
 import { CARD_TONE, cardBottom, cardInnerWidth, cardLine, cardTop, type Card, type CardTheme, type CardTone } from "./shell-card.ts";
 import { sanitizeTerminalText } from "./terminal-theme.ts";
 
-// Gentle AI tool cards: every call into the gentle-ai binary and every
+// Jero tool cards: every call into the gentle-ai binary and every
 // gentle_review tool draws the same card as the other Gentle notices. The
 // call component owns the top rule; the result component closes the frame.
 
@@ -47,7 +47,7 @@ const STATUS_TONE: Record<LifecycleStatus, CardTone> = {
 	[LIFECYCLE_STATUS.FAILED]: CARD_TONE.ERROR,
 };
 
-const CARD_TITLE = "Gentle AI";
+const CARD_TITLE = "Jero";
 // The binary keeps its rose; Gentle Shell notices keep the flower.
 const CARD_GLYPH = "\u{1F339}\uFE0E";
 const DETAIL_ROLE = "dim";

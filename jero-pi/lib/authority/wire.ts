@@ -229,7 +229,7 @@ export function projectJeroConsentEnvelopeV1(
 		risk_level: consent.risk_level,
 		changed_files: consent.changed_files,
 		changed_lines: consent.changed_lines,
-		headline: "Gentle AI can review this change before you call it done.",
+		headline: "Jero can review this change before you call it done.",
 		reason,
 		value: "Reviewing takes a bit longer, and it makes the result substantially safer.",
 		risk_evidence: [...evidence],

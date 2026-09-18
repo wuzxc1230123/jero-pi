@@ -428,10 +428,10 @@ function spaced(component: { render(width: number): string[]; invalidate(): void
 
 export function devBinaryCard(notice: DevBinaryNotice): Card {
 	if (notice.state === "invalid") {
-		return { title: "Gentle AI", subtitle: "dev binary override invalid", body: [notice.reason], tone: CARD_TONE.ERROR };
+		return { title: "Jero", subtitle: "dev binary override invalid", body: [notice.reason], tone: CARD_TONE.ERROR };
 	}
 	return {
-		title: "Gentle AI",
+		title: "Jero",
 		subtitle: "dev binary override · field-test only",
 		body: [`${notice.path} · sha256:${notice.sha256.slice(0, SHA_PREFIX_LENGTH)}`],
 		tone: CARD_TONE.WARNING,
@@ -487,7 +487,7 @@ export default function gentleShell(pi: ExtensionAPI, env: NodeJS.ProcessEnv = p
 	pi.registerMessageRenderer(REVIEW_PREFLIGHT_TYPE, (message, options, theme) => {
 		const body = messageText(message.content as string | Array<{ type: string; text?: string }>).split("\n");
 		const hint = keyHint("app.tools.expand", options.expanded ? "collapse" : "expand");
-		return cardComponent({ title: "Gentle AI", subtitle: "review preflight", body, tone: CARD_TONE.INFO }, theme, { expanded: options.expanded, hint });
+		return cardComponent({ title: "Jero", subtitle: "review preflight", body, tone: CARD_TONE.INFO }, theme, { expanded: options.expanded, hint });
 	});
 	pi.registerCommand(USAGE_COMMAND_NAME, {
 		description: "Show subscription usage windows for the connected providers. Press r to refetch.",

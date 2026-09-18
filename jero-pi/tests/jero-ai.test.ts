@@ -256,10 +256,10 @@ test("registered Gentle Review tools render reusable rose lifecycle call rows", 
 		assert.strictEqual(initial, running);
 		assert.strictEqual(running, completed);
 		assert.strictEqual(completed, failed);
-		assert.equal(cardTitle(initialText), `🌹︎ Gentle AI · running · ${operationPath}`); assert.equal(cardTone(initialText), "warning");
-		assert.equal(cardTitle(runningText), `🌹︎ Gentle AI · running · ${operationPath}`); assert.equal(cardTone(runningText), "warning");
-		assert.equal(cardTitle(completedText), `🌹︎ Gentle AI · completed · ${operationPath}`); assert.equal(cardTone(completedText), "success");
-		assert.equal(cardTitle(failedText), `🌹︎ Gentle AI · failed · ${operationPath}`); assert.equal(cardTone(failedText), "error");
+		assert.equal(cardTitle(initialText), `🌹︎ Jero · running · ${operationPath}`); assert.equal(cardTone(initialText), "warning");
+		assert.equal(cardTitle(runningText), `🌹︎ Jero · running · ${operationPath}`); assert.equal(cardTone(runningText), "warning");
+		assert.equal(cardTitle(completedText), `🌹︎ Jero · completed · ${operationPath}`); assert.equal(cardTone(completedText), "success");
+		assert.equal(cardTitle(failedText), `🌹︎ Jero · failed · ${operationPath}`); assert.equal(cardTone(failedText), "error");
 		assert.doesNotMatch(renderComponent(failed), /future-operation|secret|private/);
 		for (const forbiddenValue of ["lineage-id", "binding-id", "sha256:hash-value", "secret-value", "arbitrary-value"]) {
 			assert.doesNotMatch(failedText, new RegExp(forbiddenValue));
@@ -743,7 +743,7 @@ test("managed routing timeout leaves its profile, agent, and manifest unchanged"
 	const agentBefore = readFileSync(agentPath, "utf8");
 	const manifestBefore = readFileSync(manifestPath, "utf8");
 	writeFileSync(
-		join(agentHome, "gentle-ai", "managed-assets.lock"),
+		join(agentHome, "jero", "managed-assets.lock"),
 		JSON.stringify({ schemaVersion: 1, token: "foreign", pid: process.pid, createdAtMs: Date.now() }),
 	);
 
@@ -800,8 +800,8 @@ test("a later alias keeps managed-root precedence and manifest ownership", (t) =
 });
 
 test("runtime guidance keeps review policy out of the static orchestrator and technical reference", () => {
-	const staticReferences = ["docs/readme-reference.md", "skills/jero-ai/SKILL.md"];
-	assert.match(readFileSync("README.md", "utf8"), /\]\(docs\/readme-reference\.md(?:#[^)]+)?\)/);
+	const staticReferences = ["docs/jero-reference.md", "skills/jero-ai/SKILL.md"];
+	assert.match(readFileSync("README.md", "utf8"), /\]\(docs\/jero-reference\.md(?:#[^)]+)?\)/);
 	const forbiddenGenericRoutes = [
 		/fresh-context `reviewer`/,
 		/fresh reviewer audits/,
@@ -1260,7 +1260,7 @@ test("guarded command confirmation emits a generic correlated permission lifecyc
 			requestId: deniedRequestId,
 			state: "waiting",
 			source: "tool_call",
-			message: "Gentle AI safety policy requires confirmation for this tool call.",
+			message: "Jero safety policy requires confirmation for this tool call.",
 			toolName: "bash",
 		});
 		assert.equal(Object.keys(emitted[0].data).includes("command"), false);
@@ -1270,7 +1270,7 @@ test("guarded command confirmation emits a generic correlated permission lifecyc
 		resolveConfirmation(false);
 		assert.deepEqual(await denied, {
 			block: true,
-			reason: "Gentle AI safety policy blocked the command because it was not confirmed.",
+			reason: "Jero safety policy blocked the command because it was not confirmed.",
 		});
 		assert.deepEqual(emitted[2], {
 			channel: "pi-permission-system:permission-request",
@@ -1278,7 +1278,7 @@ test("guarded command confirmation emits a generic correlated permission lifecyc
 				requestId: deniedRequestId,
 				state: "denied",
 				source: "tool_call",
-				message: "Gentle AI safety policy requires confirmation for this tool call.",
+				message: "Jero safety policy requires confirmation for this tool call.",
 				toolName: "bash",
 			},
 		});
@@ -1388,7 +1388,7 @@ test("concurrent guarded confirmations coalesce the Herdr lifecycle per extensio
 		first.confirmations[0]!(false);
 		assert.deepEqual(await firstRequest, {
 			block: true,
-			reason: "Gentle AI safety policy blocked the command because it was not confirmed.",
+			reason: "Jero safety policy blocked the command because it was not confirmed.",
 		});
 		assert.deepEqual(first.emitted.map(({ channel, data }) => ({ channel, state: data.state, active: data.active })), [
 			{ channel: "pi-permission-system:permission-request", state: "waiting", active: undefined },
@@ -1457,7 +1457,7 @@ test("permission lifecycle is inactive for unguarded and headless commands", asy
 			ui: { confirm },
 		} as ExtensionContext), {
 			block: true,
-			reason: "Gentle AI safety policy requires interactive confirmation before this command.",
+			reason: "Jero safety policy requires interactive confirmation before this command.",
 		});
 		assert.equal(confirmations, 0);
 		assert.deepEqual(emitted, []);
@@ -1469,15 +1469,15 @@ test("registered Gentle Review capture tools name the lens they run", () => {
 	const tools = registeredGentleTools();
 	const binding = (lens: string) => JSON.stringify({ name: "reviewer_result", captureOperation: "review.capture-result", arguments: [], artifactSubject: { lens } });
 	const single = tools.get("gentle_review_capture")!.renderCall({ lineageId: "l", collectBinding: binding("review-risk") }, lifecycleTheme, lifecycleContext({ executionStarted: true }));
-	assert.equal(cardTitle(renderComponent(single)), "🌹︎ Gentle AI · running · review capture · risk");
+	assert.equal(cardTitle(renderComponent(single)), "🌹︎ Jero · running · review capture · risk");
 	const bare = tools.get("gentle_review_capture")!.renderCall({ lineageId: "l", collectBinding: "{not json" }, lifecycleTheme, lifecycleContext({ executionStarted: true }));
-	assert.equal(cardTitle(renderComponent(bare)), "🌹︎ Gentle AI · running · review capture");
+	assert.equal(cardTitle(renderComponent(bare)), "🌹︎ Jero · running · review capture");
 	const group = tools.get("gentle_review_capture_group")!.renderCall(
 		{ lineageId: "l", collectBindings: [binding("review-risk"), binding("review-resilience"), binding("review-readability"), binding("review-reliability")] },
 		lifecycleTheme,
 		lifecycleContext({ executionStarted: true }),
 	);
-	assert.equal(cardTitle(renderComponent(group)), "🌹︎ Gentle AI · running · review capture group · risk · resilience · readability · reliability");
+	assert.equal(cardTitle(renderComponent(group)), "🌹︎ Jero · running · review capture group · risk · resilience · readability · reliability");
 });
 
 test("bash tool_call confirms a late guarded npm publish and denies on non-approval", async () => {
@@ -1521,7 +1521,7 @@ test("bash tool_call confirms a late guarded npm publish and denies on non-appro
 		assert.deepEqual(result, {
 			block: true,
 			reason:
-				"Gentle AI safety policy blocked the command because it was not confirmed.",
+				"Jero safety policy blocked the command because it was not confirmed.",
 		});
 	} finally {
 		if (previousConfigHome === undefined) delete process.env.JERO_PI_CONFIG_HOME;
@@ -1565,7 +1565,7 @@ test("bash tool_call confirms every compound action and centers a long git -C pu
 		} as ExtensionContext);
 		assert.deepEqual(result, {
 			block: true,
-			reason: "Gentle AI safety policy blocked the command because it was not confirmed.",
+			reason: "Jero safety policy blocked the command because it was not confirmed.",
 		});
 	} finally {
 		if (previousConfigHome === undefined) delete process.env.JERO_PI_CONFIG_HOME;

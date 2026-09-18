@@ -37,7 +37,7 @@ const SPANISH_PREFLIGHT_COPY = [
 	/\bPreguntarme\b/i,
 	/l[ií]neas cambiadas/i,
 	/\bhacelo\b/i,
-	/\bSoy el Gentleman\b/i,
+	/\bSoy el Jero\b/i,
 ];
 
 test("orchestrator keeps conversation language separate from generated artifact language", async () => {

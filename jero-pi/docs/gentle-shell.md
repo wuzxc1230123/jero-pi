@@ -1,4 +1,7 @@
-# Gentle Shell reference
+# Gentle Shell reference (upstream historical fact source)
+
+> 上游 gentle-pi 的 shell 行为参考，保留为移植事实来源；jero-pi 命令与路径见 [jero-reference.md](jero-reference.md)。
+
 
 Gentle Shell is the `gentle-shell` coding-agent workspace built for Pi, not a theme. The `gentle-pi` package integrates the shell bar, workspace changes, provider usage where Pi exposes it, and native agent orchestration views into a Pi session. Start with the [README](../README.md#features) for the product overview.
 

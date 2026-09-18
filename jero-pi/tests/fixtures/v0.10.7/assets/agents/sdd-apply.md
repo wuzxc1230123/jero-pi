@@ -32,7 +32,7 @@ Never claim persistence you did not perform.
 
 ## Status and Action Context Guard
 
-Before writing code, consume structured SDD status from the parent prompt. If missing, produce the same fields using this lookup order: project override `.pi/jero/support/sdd-status-contract.md`, then globally installed `~/.pi/agent/gentle-ai/support/sdd-status-contract.md`, then the embedded status contract. Do not use `assets/support/...` as a runtime path; that is only the package source path before installation.
+Before writing code, consume structured SDD status from the parent prompt. If missing, produce the same fields using this lookup order: project override `.pi/gentle-ai/support/sdd-status-contract.md`, then globally installed `~/.pi/agent/gentle-ai/support/sdd-status-contract.md`, then the embedded status contract. Do not use `assets/support/...` as a runtime path; that is only the package source path before installation.
 
 **Non-authoritative store carve-out:** when the native status JSON shows `nextRecommended: "resolve-via-engram"` (covers `artifactStore: engram`, `artifactStore: none`, and `artifactStore: both` without an `openspec/` directory), the status is non-authoritative. Do not treat `applyState`, `dependencies`, or `blockedReasons` from that status as real blockers. Resolve readiness as follows:
 - `engram` (or `both` without openspec/): search Engram for `sdd/{change}/tasks`, `sdd/{change}/spec`, and `sdd/{change}/design` using `mem_search` + `mem_get_observation`. Proceed with implementation once those artifacts are confirmed present.
@@ -81,7 +81,7 @@ If no delivery decision is provided, STOP before writing code and return `blocke
 
 If `openspec/config.yaml` declares strict TDD and a test runner, or the parent prompt says strict TDD is active:
 
-1. Read the global Gentle AI strict-TDD support guidance when available. If a project-local `.pi/jero/support/strict-tdd.md` exists, treat it as an override.
+1. Read the global Gentle AI strict-TDD support guidance when available. If a project-local `.pi/gentle-ai/support/strict-tdd.md` exists, treat it as an override.
 2. Follow RED → GREEN → TRIANGULATE → REFACTOR for every assigned task.
 3. Do not write production code before a failing test or equivalent RED test is written.
 4. Run relevant focused tests during GREEN and after refactors.

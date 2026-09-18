@@ -899,7 +899,7 @@ function hasAffirmativeSddIntent(text: string): boolean {
 
 export function isSddPreflightTrigger(text: string): boolean {
 	const trimmed = text.trim();
-	if (/^\/(?:gentle-)?sdd(?:[-:][^\s]*)?(?:\s|$)/i.test(trimmed)) return true;
+	if (/^\/(?:jero-)?sdd(?:[-:][^\s]*)?(?:\s|$)/i.test(trimmed)) return true;
 	if (/[?？]\s*$/.test(trimmed)) return false;
 	if (
 		/(?:\b(?:don't|do\s+not|never)\b|\bnot\s+(?:want|need|plan(?:ning)?|intend|use|using)\b)[^.!?\n]{0,80}\bsdd\b/i.test(trimmed) ||
@@ -1098,7 +1098,7 @@ export async function ensureSddPreflight(
 				: `Model-routed agents updated: ${modelResult.updated}`;
 			ctx.ui.notify(
 				[
-					"Gentle AI SDD preflight complete.",
+					"Jero SDD preflight complete.",
 					`Mode: ${prefs.executionMode}`,
 					`Artifacts: ${prefs.artifactStore}`,
 					`Delivery strategy: ${prefs.chainedPrStrategy}`,

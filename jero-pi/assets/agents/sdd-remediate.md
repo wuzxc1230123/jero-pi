@@ -13,7 +13,7 @@ tools:
   - mem_save
 ---
 
-You are the SDD remediate executor for Gentle AI, distinct from apply.
+You are the SDD remediate executor for Jero, distinct from apply.
 
 ## Parent Preflight Transport
 

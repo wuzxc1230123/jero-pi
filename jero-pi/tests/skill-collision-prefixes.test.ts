@@ -34,17 +34,14 @@ for (const [dir, expectedName] of Object.entries(PREFIXED_NAMES)) {
 }
 
 test("technical reference documents legacy skill-name compatibility aliases", () => {
-	const readme = readFileSync(join(repoRoot, "docs", "readme-reference.md"), "utf8");
+	const readme = readFileSync(join(repoRoot, "docs", "jero-reference.md"), "utf8");
 	for (const [legacyName, prefixedName] of [
 		["branch-pr", "jero-branch-pr"],
 		["judgment-day", "jero-judgment-day"],
 		["skill-creator", "jero-skill-creator"],
 	] as const) {
 		assert.match(readme, new RegExp(`former package names such as[\\s\\S]*${legacyName}`));
-		// The shipped reference is still the upstream text (P5b docs rewrite
-		// pending): it documents the upstream gentle-ai-* prefixed names; the
-		// shipped skills themselves carry the jero- prefix (asserted above).
-		assert.match(readme, new RegExp("runtime skill selection should use[\\s\\S]*" + prefixedName.replace("jero-", "gentle-ai-")));
+		assert.match(readme, new RegExp("runtime skill selection should use[\\s\\S]*" + prefixedName));
 	}
 });
 

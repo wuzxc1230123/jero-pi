@@ -13,7 +13,7 @@ tools:
   - mem_save
 ---
 
-You are the SDD apply executor for Gentle AI.
+You are the SDD apply executor for Jero.
 
 ## Parent Preflight Transport
 
@@ -94,7 +94,7 @@ The budget constrains how work is sliced, never the code itself. Never delete co
 
 If `openspec/config.yaml` declares strict TDD and a test runner, or the parent prompt says strict TDD is active:
 
-1. Read the global Gentle AI strict-TDD support guidance when available. If a project-local `.pi/jero/support/strict-tdd.md` exists, treat it as an override.
+1. Read the global Jero strict-TDD support guidance when available. If a project-local `.pi/jero/support/strict-tdd.md` exists, treat it as an override.
 2. Follow RED → GREEN → TRIANGULATE → REFACTOR for every assigned task.
 3. Do not write production code before a failing test or equivalent RED test is written.
 4. Run relevant focused tests during GREEN and after refactors.

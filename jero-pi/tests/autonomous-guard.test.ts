@@ -421,7 +421,7 @@ test("loadRuntimeGuardrailsConfig: invalid project config fails safe (autonomous
 		const projectConfigPath = join(
 			projectDir,
 			".pi",
-			"gentle-ai",
+			"jero",
 			"runtime-guardrails.json",
 		);
 		mkdirSync(dirname(projectConfigPath), { recursive: true });

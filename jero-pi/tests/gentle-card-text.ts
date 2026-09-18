@@ -18,7 +18,7 @@ export function cardTitle(rendered: string): string {
 }
 
 export function cardTone(rendered: string): string | undefined {
-	return (rendered.split("\n")[0] ?? "").match(/<([a-zA-Z]+)>(?:✿|🌹︎) Gentle AI<\//)?.[1];
+	return (rendered.split("\n")[0] ?? "").match(/<([a-zA-Z]+)>(?:✿|🌹︎) Jero<\//)?.[1];
 }
 
 export function cardBody(rendered: string): string {

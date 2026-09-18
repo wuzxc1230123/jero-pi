@@ -17,7 +17,7 @@ test("a running call card closes its own frame and a completed one leaves that t
 	card.update("running", "review capture · reliability", plainTheme);
 	const running = card.render(60).map(stripAnsi);
 	assert.equal(running.length, 2);
-	assert.match(running[0], /^╭─ 🌹︎ Gentle AI · running · review capture · reliability ─*╮$/);
+	assert.match(running[0], /^╭─ 🌹︎ Jero · running · review capture · reliability ─*╮$/);
 	assert.match(running[1], /^╰─+╯$/);
 	card.update("preparing", "review status", plainTheme, "$ gentle-ai review status");
 	assert.match(card.render(60).map(stripAnsi)[2], /^╰─+╯$/);
@@ -37,7 +37,7 @@ test("completed review cards fit Pi's default Box at terminal width 57", () => {
 		const lines = box.render(57).map(stripAnsi);
 		for (const line of lines) assert.equal(visibleWidth(line), 57, `${operationPath}: ${JSON.stringify(line)}`);
 		if (operationPath === "review inspect") {
-			assert.equal(lines[1], " ╭─ 🌹︎ Gentle AI · completed · review inspect ─────────╮ ");
+			assert.equal(lines[1], " ╭─ 🌹︎ Jero · completed · review inspect ─────────╮ ");
 		}
 	}
 });

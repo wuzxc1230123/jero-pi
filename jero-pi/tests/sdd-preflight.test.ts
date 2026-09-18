@@ -145,7 +145,7 @@ test("managed ownership update waits for installer lock and atomically updates t
 		const previous = readFileSync(target, "utf8");
 		const next = `${previous}\nmanaged routing update\n`;
 		const held = spawnOwnerInstall(agentHome, "delegation", 400);
-		await waitForFile(join(agentHome, "gentle-ai", "managed-assets.lock"));
+		await waitForFile(join(agentHome, "jero", "managed-assets.lock"));
 		const startedAt = Date.now();
 		assert.equal(updatePackageManagedSddAgentOwnership(target, previous, next), true);
 		assert.ok(Date.now() - startedAt >= 250, "ownership update must not bypass an active installer lock");
@@ -173,7 +173,7 @@ test("managed ownership update exposes lock timeout without writing a partial ro
 		const manifestPath = join(agentHome, "jero", "managed-assets.json");
 		const manifestBefore = readFileSync(manifestPath, "utf8");
 		writeFileSync(
-			join(agentHome, "gentle-ai", "managed-assets.lock"),
+			join(agentHome, "jero", "managed-assets.lock"),
 			JSON.stringify({ schemaVersion: 1, token: "foreign", pid: process.pid, createdAtMs: Date.now() }),
 		);
 
@@ -192,7 +192,7 @@ test("managed ownership update exposes lock timeout without writing a partial ro
 
 test("cross-process owner installations preserve both managed manifest entries", async () => {
 	const agentHome = await workspace();
-	const lockPath = join(agentHome, "gentle-ai", "managed-assets.lock");
+	const lockPath = join(agentHome, "jero", "managed-assets.lock");
 	try {
 		const delegation = spawnOwnerInstall(agentHome, "delegation", 500);
 		await waitForFile(lockPath);
@@ -202,7 +202,7 @@ test("cross-process owner installations preserve both managed manifest entries",
 		await Promise.all([delegation.completion, review.completion]);
 		const assets = (JSON.parse(readFileSync(join(agentHome, "jero", "managed-assets.json"), "utf8")) as { assets: Record<string, string> }).assets;
 		assert.deepEqual(
-			Object.keys(assets).filter((key) => key.startsWith("agents/gentle-ai-")).sort(),
+			Object.keys(assets).filter((key) => key.startsWith("agents/jero-")).sort(),
 			["agents/jero-explore.md", "agents/jero-verify.md", "agents/jero-worker.md"],
 		);
 		assert.deepEqual(
@@ -218,7 +218,7 @@ test("cross-process owner installations preserve both managed manifest entries",
 test("installer preserves foreign, malformed, and unsafe lock paths", async () => {
 	const agentHome = await workspace();
 	const previousAgentHome = process.env.JERO_PI_AGENT_HOME;
-	const lockPath = join(agentHome, "gentle-ai", "managed-assets.lock");
+	const lockPath = join(agentHome, "jero", "managed-assets.lock");
 	try {
 		process.env.JERO_PI_AGENT_HOME = agentHome;
 		mkdirSync(join(agentHome, "jero"), { recursive: true });
@@ -391,7 +391,7 @@ test("forced asset refresh migrates the exact v0.10.7 malformed sdd-apply asset 
 		process.env.JERO_PI_AGENT_HOME = temporaryAgentHome;
 		mkdirSync(join(temporaryAgentHome, "agents"), { recursive: true });
 		writeFileSync(installed, legacySource);
-		mkdirSync(join(temporaryAgentHome, "gentle-ai"), { recursive: true });
+		mkdirSync(join(temporaryAgentHome, "jero"), { recursive: true });
 		writeFileSync(
 			join(temporaryAgentHome, "jero", "managed-assets.json"),
 			JSON.stringify({ schemaVersion: 1, assets: {} }),

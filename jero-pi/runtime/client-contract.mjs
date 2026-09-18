@@ -263,9 +263,9 @@ export const NATIVE_REVIEW_MODE_SCOPE = {
 // line stderr is still expected in principle — these are separate Fprintln
 // calls, never one joined string — which is why membership is per line.
 export const REVIEW_CONSENT_NOTICES = Object.freeze([
-	"Gentle AI reviewed this change without asking, because this session has no terminal to answer on. Run 'gentle-ai review mode disable' to turn reviews off, or 'gentle-ai review mode status' to see the current setting.",
-	"Gentle AI could not read an answer, so it reviewed this change and will ask again next time.",
-	"Gentle AI did not recognize that answer, so it reviewed this change and will ask again next time.",
+	"Jero reviewed this change without asking, because this session has no terminal to answer on. Run 'gentle-ai review mode disable' to turn reviews off, or 'gentle-ai review mode status' to see the current setting.",
+	"Jero could not read an answer, so it reviewed this change and will ask again next time.",
+	"Jero did not recognize that answer, so it reviewed this change and will ask again next time.",
 	"Review skipped for this candidate at your request. It will be offered again on the next change.",
 ]);
 

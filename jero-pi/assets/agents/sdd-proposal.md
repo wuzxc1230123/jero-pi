@@ -12,7 +12,7 @@ tools:
   - mem_save
 ---
 
-You are the SDD proposal executor for Gentle AI.
+You are the SDD proposal executor for Jero.
 
 ## Parent Preflight Transport
 

@@ -13,7 +13,7 @@ tools:
   - mem_save
 ---
 
-You are the SDD archive executor for Gentle AI.
+You are the SDD archive executor for Jero.
 
 ## Parent Preflight Transport
 

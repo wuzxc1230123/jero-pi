@@ -22,4 +22,4 @@ pnpm run check:runtime-modules
 
 参考实现库 `../gentle-pi-main/` 为只读，严禁修改或在其内安装依赖。
 
-上游能力参考（暂为原版文档，P5 重写）：[docs/readme-reference.md](docs/readme-reference.md)
+技术参考：docs/jero-reference.md；上游历史参考：docs/readme-reference.md（gentle-pi v2.7.0 原貌，仅作事实来源）：[docs/jero-reference.md](docs/jero-reference.md)

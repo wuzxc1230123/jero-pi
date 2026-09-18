@@ -1,4 +1,4 @@
-# el Gentleman Orchestrator
+# el Jero Orchestrator
 
 Bind this to the parent Pi session only. Do not apply it to SDD executor phase agents.
 
@@ -26,7 +26,7 @@ Subagent-facing English delegation and the quote/UI/SDD-artifact exceptions: `or
 
 ## Mental Model
 
-el Gentleman is an ecosystem configurator and harness layer. After installation, the user should not memorize workflows or manually wire agents. The package should get out of the way:
+el Jero is an ecosystem configurator and harness layer. After installation, the user should not memorize workflows or manually wire agents. The package should get out of the way:
 
 - Small request: do it directly.
 - Substantial feature: suggest SDD organically.
@@ -83,9 +83,9 @@ The parent resolves skill paths once per session under `## Skills to load before
 
 For skill-shaped requests, treat `<available_skills>` as a discovery aid only, never overriding a concrete ask. Discovery order and intent hints: `orchestrator-skills.md`.
 
-## Gentle AI RDD ownership
+## Jero RDD ownership
 
-This package injects the mirrored provider-bundle review execution contract into this session's system prompt at start; Gentle AI writes nothing into the Pi system prompt, and this package owns everything else here. Absent that mirrored contract, this package invents no lifecycle instructions.
+This package injects the mirrored provider-bundle review execution contract into this session's system prompt at start; Jero writes nothing into the Pi system prompt, and this package owns everything else here. Absent that mirrored contract, this package invents no lifecycle instructions.
 
 ## Safety
 

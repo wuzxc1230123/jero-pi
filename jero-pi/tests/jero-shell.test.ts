@@ -720,7 +720,7 @@ test("gentleShell draws the review preflight message as a Gentle card", () => {
 		assert.doesNotMatch(renderer(message, { expanded }, sentinelTheme).render(80).join("\n"), /\x1b\[44m/);
 	}
 	const expanded = renderer(message, { expanded: true }, plainTheme).render(80).map(stripAnsi);
-	assert.match(expanded[0], /^╭─ ✿ Gentle AI · review preflight ─+ .*collapse ╮$/);
+	assert.match(expanded[0], /^╭─ ✿ Jero · review preflight ─+ .*collapse ╮$/);
 	assert.match(expanded[1], /^│ Receipt-driven development is enabled\. +│$/);
 	assert.ok(expanded.some((line) => line.includes("gentle_review")));
 	const collapsed = renderer({ ...message, content: [{ type: "text", text: message.content }] }, { expanded: false }, plainTheme).render(80).map(stripAnsi);
@@ -736,7 +736,7 @@ test("gentleShell keeps a dev-binary override visible above the editor for the w
 	const factory = ui.widgets.get("gentle-shell-dev-binary") as (tui: unknown, theme: unknown) => { render(width: number): string[] };
 	assert.ok(factory, "dev binary widget missing");
 	const lines = factory(fakeTui, plainTheme).render(100).map(stripAnsi);
-	assert.match(lines[0], /^╭─ ✿ Gentle AI · dev binary override · field-test only ─+╮$/);
+	assert.match(lines[0], /^╭─ ✿ Jero · dev binary override · field-test only ─+╮$/);
 	assert.match(lines[1], /^│ \/Users\/me\/go\/bin\/gentle-ai · sha256:6e53bfc6305a3949 +│$/);
 	assert.match(lines[2], /^╰─+╯$/);
 	assert.equal(lines[3], "", "a blank line keeps the card off the prompt frame");

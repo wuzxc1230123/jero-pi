@@ -10,7 +10,7 @@ tools:
   - mem_read
 ---
 
-You are the SDD status executor for Gentle AI.
+You are the SDD status executor for Jero.
 
 ## Parent Preflight Transport
 

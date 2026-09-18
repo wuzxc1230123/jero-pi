@@ -1174,7 +1174,7 @@ async function resolveRddModeStatus(
 		rddStatusUnavailableWarned = true;
 		if (ctx?.hasUI) {
 			ctx.ui.notify(
-				"Gentle AI: receipt-driven-development status is unavailable (native review CLI absent, timed out, or failed). The parent prompt renders \"unknown\" until this recovers; this notice will not repeat this session.",
+				"Jero: receipt-driven-development status is unavailable (native review CLI absent, timed out, or failed). The parent prompt renders \"unknown\" until this recovers; this notice will not repeat this session.",
 				"warning",
 			);
 		}
@@ -1235,7 +1235,7 @@ function renderOrchestratorPrompt(
 		.trim();
 }
 
-// gentle-pi#560 / gentle-ai#4056, #4057: Gentle AI stopped writing a
+// gentle-pi#560 / gentle-ai#4056, #4057: Jero stopped writing a
 // runtime-specific review execution contract into Pi's generated
 // APPEND_SYSTEM composition on 2026-08-01. This package now injects the
 // mirrored provider contract bundle's own `orchestration/pi.md` text
@@ -1268,7 +1268,7 @@ function readMirroredReviewContractFragment(mirrorRoot: string = PROVIDER_CONTRA
 		if (!timingSafeEqual(Buffer.from(expectedSha256, "hex"), Buffer.from(actualSha256, "hex"))) return null;
 		const text = rawBytes.toString("utf8").trim();
 		if (text.length === 0) return null;
-		return `## Gentle AI review execution contract (mirrored provider bundle ${lock.contract_semver})\n\n${text}`;
+		return `## Jero review execution contract (mirrored provider bundle ${lock.contract_semver})\n\n${text}`;
 	} catch {
 		return null;
 	}
@@ -1285,7 +1285,7 @@ function loadReviewContractPromptFragment(
 		reviewContractPromptMissingWarned = true;
 		if (ctx.hasUI) {
 			ctx.ui.notify(
-				"Gentle AI review execution contract is unavailable: the mirrored provider bundle is missing, unreadable, or fails digest verification. Review preflight instructions will not be injected this session.",
+				"Jero review execution contract is unavailable: the mirrored provider bundle is missing, unreadable, or fails digest verification. Review preflight instructions will not be injected this session.",
 				"warning",
 			);
 		}
@@ -1337,14 +1337,14 @@ function buildGentlePrompt(
 		persona === "neutral"
 			? "Language: neutral/professional Spanish when the user writes Spanish. Do NOT use voseo or Rioplatense regional expressions."
 			: "Language: natural Rioplatense Spanish with voseo when the user writes Spanish.";
-	return `## el Gentleman Identity and Harness
+	return `## el Jero Identity and Harness
 
 Current persona mode: ${persona}
 
-You are el Gentleman: a Pi-specific coding-agent harness for controlled development work.
+You are el Jero: a Pi-specific coding-agent harness for controlled development work.
 
 Identity contract:
-- When the user asks who or what you are, answer as el Gentleman, not as a generic assistant, and never introduce yourself as only "your assistant" or "the default assistant". Convey this meaning, translated into the user's language: "I am el Gentleman: a Pi-specific coding-agent harness for controlled development, with a senior architect persona. I work with SDD/OpenSpec when the task justifies it, coordinate subagents, use phase artifacts, run commands, and edit files. I am not a generic chatbot."
+- When the user asks who or what you are, answer as el Jero, not as a generic assistant, and never introduce yourself as only "your assistant" or "the default assistant". Convey this meaning, translated into the user's language: "I am el Jero: a Pi-specific coding-agent harness for controlled development, with a senior architect persona. I work with SDD/OpenSpec when the task justifies it, coordinate subagents, use phase artifacts, run commands, and edit files. I am not a generic chatbot."
 - Follow the currently selected persona mode.
 - Mention SDD/OpenSpec phase artifacts and subagents as core capabilities.
 - Mention memory only when memory packages or callable memory tools are actually active; never invent persistent memory.
@@ -1355,7 +1355,7 @@ ${personaPrompt}
 ${languageBoundary}
 
 Harness principles:
-- el Gentleman is not prompt engineering. It is runtime discipline around powerful agents.
+- el Jero is not prompt engineering. It is runtime discipline around powerful agents.
 - Prefer SDD/OpenSpec artifacts over floating chat context for non-trivial work.
 - Clarify scope, constraints, acceptance criteria, and non-goals before implementation.
 - Use subagents when available for exploration, planning, implementation, and review, while keeping one parent session responsible for orchestration.
@@ -1892,7 +1892,7 @@ function evaluateSensitivePathTool(
 	if (!sensitivePath) return undefined;
 	return {
 		block: true,
-		reason: `Gentle AI safety policy blocked access to sensitive path: ${sanitizeTerminalText(sensitivePath)}. Ask the user for an explicit safer plan.`,
+		reason: `Jero safety policy blocked access to sensitive path: ${sanitizeTerminalText(sensitivePath)}. Ask the user for an explicit safer plan.`,
 	};
 }
 
@@ -1950,7 +1950,7 @@ async function confirmCommand(
 		return {
 			block: true,
 			reason:
-				"Gentle AI safety policy blocked a destructive shell command. Ask the user for an explicit safer plan.",
+				"Jero safety policy blocked a destructive shell command. Ask the user for an explicit safer plan.",
 		};
 	}
 
@@ -1964,7 +1964,7 @@ async function confirmCommand(
 		return {
 			block: true,
 			reason:
-				"Gentle AI safety policy requires interactive confirmation before this command.",
+				"Jero safety policy requires interactive confirmation before this command.",
 		};
 	}
 	const title = guardedCommandTitle(evaluation.key, evaluation.matches);
@@ -1977,7 +1977,7 @@ async function confirmCommand(
 			requestId,
 			state,
 			source: "tool_call",
-			message: "Gentle AI safety policy requires confirmation for this tool call.",
+			message: "Jero safety policy requires confirmation for this tool call.",
 			toolName: "bash",
 		});
 	};
@@ -2003,7 +2003,7 @@ async function confirmCommand(
 	return {
 		block: true,
 		reason:
-			"Gentle AI safety policy blocked the command because it was not confirmed.",
+			"Jero safety policy blocked the command because it was not confirmed.",
 	};
 }
 
@@ -3397,7 +3397,7 @@ async function handleModelsCommand(ctx: ExtensionContext): Promise<void> {
 	);
 	if (savedConfig.status === "invalid") {
 		ctx.ui.notify(
-			`el Gentleman cannot open model config because ${savedConfig.path} is invalid JSON or not an object. Fix or remove the file, then run /jero:models again.`,
+			`el Jero cannot open model config because ${savedConfig.path} is invalid JSON or not an object. Fix or remove the file, then run /jero:models again.`,
 			"warning",
 		);
 		return;
@@ -3409,7 +3409,7 @@ async function handleModelsCommand(ctx: ExtensionContext): Promise<void> {
 		if (result.type === "export") {
 			try {
 				const count = await exportSavedModelConfig(ctx);
-				ctx.ui.notify(`el Gentleman exported ${count} saved model routing entr${count === 1 ? "y" : "ies"} to ${modelExportPath(ctx.cwd)}.`, "info");
+				ctx.ui.notify(`el Jero exported ${count} saved model routing entr${count === 1 ? "y" : "ies"} to ${modelExportPath(ctx.cwd)}.`, "info");
 			} catch (error) {
 				ctx.ui.notify(`Model routing export failed: ${error instanceof Error ? error.message : String(error)}`, "warning");
 			}
@@ -3436,14 +3436,14 @@ async function handleModelsCommand(ctx: ExtensionContext): Promise<void> {
 				try {
 					const applyResult = await applyModelConfigAsync(ctx.cwd, restored);
 					ctx.ui.notify([
-						"el Gentleman restored global model config.",
+						"el Jero restored global model config.",
 						`Import: ${modelExportPath(ctx.cwd)}`,
 						`Global config: ${modelConfigPath(ctx.cwd)}`,
 						`Agents updated: ${applyResult.updated}`,
 					].join("\n"), "info");
 				} catch (error) {
 					ctx.ui.notify([
-						"el Gentleman restored global model config, but applying it to agents failed.",
+						"el Jero restored global model config, but applying it to agents failed.",
 						`Global config: ${modelConfigPath(ctx.cwd)}`,
 						`Apply error: ${error instanceof Error ? error.message : String(error)}`,
 					].join("\n"), "warning");
@@ -3498,7 +3498,7 @@ async function handleModelsCommand(ctx: ExtensionContext): Promise<void> {
 	const applyResult = await applyModelConfigAsync(ctx.cwd, result.config);
 	ctx.ui.notify(
 		[
-			"el Gentleman global model config saved.",
+			"el Jero global model config saved.",
 			`Global config: ${modelConfigPath(ctx.cwd)}`,
 			`Agents updated: ${applyResult.updated}`,
 			...describeModelConfig(ctx.cwd, result.config),
@@ -3915,7 +3915,7 @@ function reportProfilesDrops(ctx: ExtensionContext, path: string, drops: Profile
 	}
 	if (parts.length > 0) {
 		ctx.ui.notify(
-			`el Gentleman dropped invalid entries while loading ${sanitizeTerminalText(path)} — ${parts.join("; ")}.`,
+			`el Jero dropped invalid entries while loading ${sanitizeTerminalText(path)} — ${parts.join("; ")}.`,
 			"warning",
 		);
 	}
@@ -3955,7 +3955,7 @@ async function runProfilesPanelAction(
 				writeProfilesFileSync(path, claimed);
 			} catch (error) {
 				ctx.ui.notify(
-					`el Gentleman could not update ${sanitizeTerminalText(path)}: ${profilesErrorMessage(error)}`,
+					`el Jero could not update ${sanitizeTerminalText(path)}: ${profilesErrorMessage(error)}`,
 					"warning",
 				);
 				return file;
@@ -4004,7 +4004,7 @@ async function runProfilesPanelAction(
 						? ` ${sanitizeTerminalText(modelConfigPath(ctx.cwd))} still holds this profile's routing because no previously active profile was recorded to restore.`
 						: "";
 				ctx.ui.notify(
-					`el Gentleman could not apply profile "${result.name}". Restored: ${restored}.${unresolved}`,
+					`el Jero could not apply profile "${result.name}". Restored: ${restored}.${unresolved}`,
 					"warning",
 				);
 				return file;
@@ -4013,7 +4013,7 @@ async function runProfilesPanelAction(
 				await writeModelConfigAsync(ctx.cwd, normalized);
 			} catch (error) {
 				ctx.ui.notify(
-					`el Gentleman could not write ${sanitizeTerminalText(modelConfigPath(ctx.cwd))}: ${profilesErrorMessage(error)}`,
+					`el Jero could not write ${sanitizeTerminalText(modelConfigPath(ctx.cwd))}: ${profilesErrorMessage(error)}`,
 					"warning",
 				);
 				return revertClaim(false);
@@ -4029,7 +4029,7 @@ async function runProfilesPanelAction(
 				);
 			} catch (error) {
 				ctx.ui.notify(
-					`el Gentleman could not materialize profile "${result.name}": ${profilesErrorMessage(error)}`,
+					`el Jero could not materialize profile "${result.name}": ${profilesErrorMessage(error)}`,
 					"warning",
 				);
 				return revertClaim(true);
@@ -4040,7 +4040,7 @@ async function runProfilesPanelAction(
 				const written = applyOrchestratorSettings(settingsPath, orchestratorEntry);
 				if (written.status === "invalid") {
 					ctx.ui.notify(
-						`el Gentleman could not set the orchestrator from profile "${result.name}": ${sanitizeTerminalText(written.reason)}. ${sanitizeTerminalText(settingsPath)} was left unchanged.`,
+						`el Jero could not set the orchestrator from profile "${result.name}": ${sanitizeTerminalText(written.reason)}. ${sanitizeTerminalText(settingsPath)} was left unchanged.`,
 						"warning",
 					);
 					return revertClaim(true);
@@ -4053,7 +4053,7 @@ async function runProfilesPanelAction(
 			}
 			ctx.ui.notify(
 				[
-					`el Gentleman applied profile "${result.name}" — ${applyResult.updated} agent${applyResult.updated === 1 ? "" : "s"} updated.`,
+					`el Jero applied profile "${result.name}" — ${applyResult.updated} agent${applyResult.updated === 1 ? "" : "s"} updated.`,
 					"New routing takes effect on the next subagent launch.",
 				].join("\n") + orchestratorNote,
 				"info",
@@ -4085,7 +4085,7 @@ async function runProfilesPanelAction(
 				const next = updateProfile(file, result.name, snapshot);
 				writeProfilesFileSync(path, next);
 				ctx.ui.notify(
-					`el Gentleman updated profile "${result.name}" from the current routing in ${modelConfigPath(ctx.cwd)}.`,
+					`el Jero updated profile "${result.name}" from the current routing in ${modelConfigPath(ctx.cwd)}.`,
 					"info",
 				);
 				return next;
@@ -4140,7 +4140,7 @@ async function runProfilesPanelAction(
 				const text = serializeProfileExport(result.name, file.profiles[result.name]);
 				await mkdir(dirname(exportPath), { recursive: true });
 				await writeFile(exportPath, text);
-				ctx.ui.notify(`el Gentleman exported profile "${result.name}" to ${exportPath}.`, "info");
+				ctx.ui.notify(`el Jero exported profile "${result.name}" to ${exportPath}.`, "info");
 			} catch (error) {
 				ctx.ui.notify(`Profile export failed: ${profilesErrorMessage(error)}`, "warning");
 			}
@@ -4165,7 +4165,7 @@ async function runProfilesPanelAction(
 			}
 			if (parsed.droppedAgents.length > 0) {
 				ctx.ui.notify(
-					`el Gentleman dropped invalid routing entries while importing profile "${parsed.name}": ${parsed.droppedAgents.join(", ")}.`,
+					`el Jero dropped invalid routing entries while importing profile "${parsed.name}": ${parsed.droppedAgents.join(", ")}.`,
 					"warning",
 				);
 			}
@@ -4183,7 +4183,7 @@ async function runProfilesPanelAction(
 				writeProfilesFileSync(path, next);
 				const entries = Object.keys(parsed.config).length;
 				ctx.ui.notify(
-					`el Gentleman imported profile "${parsed.name}" (${entries} routing ${entries === 1 ? "entry" : "entries"}) from ${importPath}.`,
+					`el Jero imported profile "${parsed.name}" (${entries} routing ${entries === 1 ? "entry" : "entries"}) from ${importPath}.`,
 					"info",
 				);
 				return next;
@@ -4200,7 +4200,7 @@ async function handleProfilesCommand(ctx: ExtensionContext): Promise<void> {
 	const read = readProfilesFileResult(path);
 	if (read.status === "invalid") {
 		ctx.ui.notify(
-			`el Gentleman cannot open agent profiles because ${path} is invalid JSON or not a profiles file. Fix or remove the file, then run /jero:profiles again.`,
+			`el Jero cannot open agent profiles because ${path} is invalid JSON or not a profiles file. Fix or remove the file, then run /jero:profiles again.`,
 			"warning",
 		);
 		return;
@@ -4212,12 +4212,12 @@ async function handleProfilesCommand(ctx: ExtensionContext): Promise<void> {
 			writeProfilesFileSync(path, file);
 		} catch (error) {
 			ctx.ui.notify(
-				`el Gentleman could not create ${path}: ${profilesErrorMessage(error)}`,
+				`el Jero could not create ${path}: ${profilesErrorMessage(error)}`,
 				"warning",
 			);
 			return;
 		}
-		ctx.ui.notify(`el Gentleman seeded the "current" profile in ${path} from the routing currently in effect.`, "info");
+		ctx.ui.notify(`el Jero seeded the "current" profile in ${path} from the routing currently in effect.`, "info");
 	} else {
 		file = read.file;
 		reportProfilesDrops(ctx, path, read.drops);
@@ -4259,14 +4259,14 @@ async function handleProfilesCommand(ctx: ExtensionContext): Promise<void> {
 async function handlePersonaCommand(ctx: ExtensionContext): Promise<void> {
 	const current = readPersonaMode(ctx.cwd);
 	const selected = await ctx.ui.select(
-		`el Gentleman persona (current: ${current})`,
+		`el Jero persona (current: ${current})`,
 		[...PERSONA_OPTIONS],
 	);
 	if (selected !== "gentleman" && selected !== "neutral") return;
 	const writtenPaths = writePersonaMode(ctx.cwd, selected);
 	ctx.ui.notify(
 		[
-			`el Gentleman persona set to: ${selected}`,
+			`el Jero persona set to: ${selected}`,
 			`Global config: ${personaConfigPath(ctx.cwd)}`,
 			...(writtenPaths.length > 1
 				? [`Project override updated: ${projectPersonaConfigPath(ctx.cwd)}`]
@@ -8485,14 +8485,14 @@ function createGentleAiExtensionForTesting(
 			const modelResult = await applySavedModelConfig(ctx);
 			if (ctx.hasUI && modelResult.invalidPath) {
 				ctx.ui.notify(
-					`el Gentleman skipped model config because ${modelResult.invalidPath} is invalid JSON or not an object. Fix or remove the file, then run /jero:models again.`,
+					`el Jero skipped model config because ${modelResult.invalidPath} is invalid JSON or not an object. Fix or remove the file, then run /jero:models again.`,
 					"warning",
 				);
 				return;
 			}
 			if (ctx.hasUI && modelResult.updated > 0) {
 				ctx.ui.notify(
-					`el Gentleman applied saved model config to ${modelResult.updated} agent(s). Global delegation/review assets ready: ${installResult.agents} new agent(s), ${installResult.chains} new chain(s), ${installResult.support} new support file(s).`,
+					`el Jero applied saved model config to ${modelResult.updated} agent(s). Global delegation/review assets ready: ${installResult.agents} new agent(s), ${installResult.chains} new chain(s), ${installResult.support} new support file(s).`,
 					"info",
 				);
 			}
@@ -8501,7 +8501,7 @@ function createGentleAiExtensionForTesting(
 				const message =
 					error instanceof Error ? error.message : String(error);
 				ctx.ui.notify(
-					`el Gentleman model config sweep failed: ${message}`,
+					`el Jero model config sweep failed: ${message}`,
 					"warning",
 				);
 			}
@@ -8742,12 +8742,12 @@ function createGentleAiExtensionForTesting(
 	for (const owner of ["delegation", "review", "sdd"] as const) {
 		const label = owner === "sdd" ? "SDD" : owner;
 		pi.registerCommand(`jero:install-${owner}`, {
-			description: `Repair or refresh only global Gentle AI ${label} assets.`,
+			description: `Repair or refresh only global Jero ${label} assets.`,
 			handler: async (args, ctx) => {
 				const force = args.includes("--force");
 				const result = installPackageAssets(ctx.cwd, force, [owner]);
 				ctx.ui.notify(
-					`Global Gentle AI ${label} assets installed: ${result.agents} agent(s), ${result.chains} chain(s), ${result.support} support file(s), ${result.skipped} already present.`,
+					`Global Jero ${label} assets installed: ${result.agents} agent(s), ${result.chains} chain(s), ${result.support} support file(s), ${result.skipped} already present.`,
 					"info",
 				);
 			},
@@ -8831,28 +8831,28 @@ function createGentleAiExtensionForTesting(
 	});
 
 	pi.registerCommand("jero:models", {
-		description: "Configure global per-agent models for el Gentleman.",
+		description: "Configure global per-agent models for el Jero.",
 		handler: async (_args, ctx) => {
 			await handleModelsCommand(ctx);
 		},
 	});
 
 	pi.registerCommand("jero:profiles", {
-		description: "Create, switch, and manage global agent-model profiles for el Gentleman.",
+		description: "Create, switch, and manage global agent-model profiles for el Jero.",
 		handler: async (_args, ctx) => {
 			await handleProfilesCommand(ctx);
 		},
 	});
 
 	pi.registerCommand("jero:persona", {
-		description: "Switch el Gentleman persona between gentleman and neutral.",
+		description: "Switch el Jero persona between gentleman and neutral.",
 		handler: async (_args, ctx) => {
 			await handlePersonaCommand(ctx);
 		},
 	});
 
 	pi.registerCommand("jero:doctor", {
-		description: "Run read-only Gentle AI diagnostics for this Pi workspace.",
+		description: "Run read-only Jero diagnostics for this Pi workspace.",
 		handler: async (_args, ctx) => {
 			const assetLines = packageAssetDiagnosticLines(ctx.cwd);
 			const openspecConfigured = existsSync(
@@ -8864,7 +8864,7 @@ function createGentleAiExtensionForTesting(
 			const modelConfig = await readSavedModelConfigAsync(ctx.cwd);
 			const engramActive = hasWritableMemoryTool(pi);
 			const lines = [
-				"el Gentleman doctor",
+				"el Jero doctor",
 				...assetLines,
 				`${openspecConfigured ? "pass" : "warn"}: OpenSpec config ${openspecConfigured ? "present" : "missing"}`,
 				`${skillRegistryPresent ? "pass" : "warn"}: Skill registry ${skillRegistryPresent ? "present" : "missing"}`,
@@ -8907,7 +8907,7 @@ function createGentleAiExtensionForTesting(
 	});
 
 	pi.registerCommand("jero:review-mode", {
-		description: "Show or set the Gentle AI receipt-driven development kill switch (status|enable|disable). Every sub-action is user-initiated only; Pi automation never toggles it.",
+		description: "Show or set the Jero receipt-driven development kill switch (status|enable|disable). Every sub-action is user-initiated only; Pi automation never toggles it.",
 		handler: async (args, ctx) => {
 			const subAction = args.trim().length === 0 ? NATIVE_REVIEW_MODE_OPERATION.STATUS : args.trim();
 			if (subAction !== NATIVE_REVIEW_MODE_OPERATION.STATUS && subAction !== NATIVE_REVIEW_MODE_OPERATION.ENABLE && subAction !== NATIVE_REVIEW_MODE_OPERATION.DISABLE) {
@@ -8915,7 +8915,7 @@ function createGentleAiExtensionForTesting(
 				return;
 			}
 			if (nativeReviewCli?.reviewMode === undefined) {
-				ctx.ui.notify("Gentle AI review mode is not available with the currently negotiated native version.", "info");
+				ctx.ui.notify("Jero review mode is not available with the currently negotiated native version.", "info");
 				return;
 			}
 			try {
@@ -8943,7 +8943,7 @@ function createGentleAiExtensionForTesting(
 				ctx.ui.notify(report, "info");
 			} catch (error) {
 				if (asNativeReviewCliError(error)?.code === NATIVE_REVIEW_ERROR_CODE.VERSION_INCOMPATIBLE) {
-					ctx.ui.notify("Gentle AI review mode is not available with the currently negotiated native version.", "info");
+					ctx.ui.notify("Jero review mode is not available with the currently negotiated native version.", "info");
 					return;
 				}
 				ctx.ui.notify(error instanceof Error ? error.message : String(error), "error");
@@ -8981,7 +8981,7 @@ function createGentleAiExtensionForTesting(
 	});
 
 	pi.registerCommand("jero:status", {
-		description: "Show Gentle AI package status for this project.",
+		description: "Show Jero package status for this project.",
 		handler: async (_args, ctx) => {
 			const assetLines = packageAssetDiagnosticLines(ctx.cwd);
 			const openspecConfigured = existsSync(
@@ -8993,7 +8993,7 @@ function createGentleAiExtensionForTesting(
 			);
 			ctx.ui.notify(
 				[
-					"el Gentleman package is active.",
+					"el Jero package is active.",
 						`Persona: ${readPersonaMode(ctx.cwd)}`,
 					...assetLines,
 					`OpenSpec config: ${openspecConfigured ? "present" : "missing"}`,

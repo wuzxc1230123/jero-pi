@@ -19,7 +19,7 @@ const JD_SKILL = "skills/judgment-day/SKILL.md";
 const JD_PROMPTS = "skills/judgment-day/references/prompts-and-formats.md";
 const GENTLE_SKILL = "skills/jero-ai/SKILL.md";
 const README = "README.md";
-const TECHNICAL_REFERENCE = "docs/readme-reference.md";
+const TECHNICAL_REFERENCE = "docs/jero-reference.md";
 const CHAIN = "assets/chains/4r-review.chain.md";
 const SDD_WORKFLOW = "assets/sdd-orchestrator-workflow.md";
 const RELEASE_SKILL = "skills/release/SKILL.md";
@@ -134,7 +134,7 @@ test("canonical contract defines compact risk, causal admission, correction, CAS
 		...JUDGMENT_DAY_DISCOVERY_PATTERNS,
 	]);
 	assert.match(read(TECHNICAL_REFERENCE), /Review outcomes and receipt state are informational; commit, push, pull-request, and release delivery follow ordinary repository policy\./);
-	assert.match(read(README), /\]\(docs\/readme-reference\.md(?:#[^)]+)?\)/);
+	assert.match(read(README), /\]\(docs\/jero-reference\.md(?:#[^)]+)?\)/);
 	assert.doesNotMatch(read(README), /one one-shot authorization for the exact command/i);
 	assert.doesNotMatch(read(README), /review-publication-gate/i);
 });
@@ -367,8 +367,8 @@ test("Judgment Day fix routing has one canonical shape and never falls back to g
 	assert.match(read(SDD_WORKFLOW), /\| default\s+\| balanced\s+\| SDD phase fallback; never a Judgment Day role\s+\|/);
 });
 
-test("orchestrator, injected skill, and technical reference defer RDD lifecycle ownership to Gentle AI", () => {
-	const boundary = "This package injects the mirrored provider-bundle review execution contract into this session's system prompt at start; Gentle AI writes nothing into the Pi system prompt, and this package owns everything else here. Absent that mirrored contract, this package invents no lifecycle instructions.";
+test("orchestrator, injected skill, and technical reference defer RDD lifecycle ownership to Jero", () => {
+	const boundary = "This package injects the mirrored provider-bundle review execution contract into this session's system prompt at start; Jero writes nothing into the Pi system prompt, and this package owns everything else here. Absent that mirrored contract, this package invents no lifecycle instructions.";
 	const orchestrator = union(ORCHESTRATOR);
 	assert.ok(orchestrator.includes(boundary), "orchestrator must carry the sole static ownership boundary");
 
@@ -377,7 +377,7 @@ test("orchestrator, injected skill, and technical reference defer RDD lifecycle 
 		[TECHNICAL_REFERENCE, read(TECHNICAL_REFERENCE)],
 	] as const) {
 		assertMatches(label, content, [
-			/Gentle AI dynamically supplies runtime-specific RDD instructions/i,
+			/jero-pi dynamically supplies runtime-specific RDD instructions/i,
 			/(?:sole lifecycle authority|does not define an RDD lifecycle)/i,
 		]);
 	}
@@ -392,7 +392,7 @@ test("orchestrator, injected skill, and technical reference defer RDD lifecycle 
 
 test("technical reference documents the dynamic runtime authority boundary without an old package route", () => {
 	const content = read(TECHNICAL_REFERENCE);
-	assert.match(content, /Gentle AI dynamically supplies runtime-specific RDD instructions/i);
+	assert.match(content, /jero-pi dynamically supplies runtime-specific RDD instructions/i);
 	assert.match(content, /does not define an RDD lifecycle/i);
 	assert.doesNotMatch(content, /New ordinary review uses compact `gentle_review` `start -> finalize -> validate`\./);
 	assert.match(content, /Dangerous-command safety remains independent and authoritative/);
