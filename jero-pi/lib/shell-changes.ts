@@ -44,7 +44,7 @@ interface NumstatEntry {
 	deleted: number;
 }
 
-export const CHANGES_COMMAND = "/gentle:changes";
+export const CHANGES_COMMAND = "/jero:changes";
 const WIDGET_GLYPH = "✎";
 const STATUS_BY_CODE: Record<string, ChangeStatus> = {
 	A: CHANGE_STATUS.ADDED,

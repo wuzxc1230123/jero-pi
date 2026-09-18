@@ -201,7 +201,7 @@ test("authority unavailability fails closed without installer recovery or lifecy
 	assert.equal(result.next_action, "require-complete-native-authority-inventory");
 	assert.equal(result.recovery_command, undefined);
 	assert.doesNotMatch(JSON.stringify(result), /install-gentle-ai/);
-	assert.doesNotMatch(JSON.stringify(result), /GENTLE_PI_SKIP_GENTLE_AI_INSTALL/);
+	assert.doesNotMatch(JSON.stringify(result), /JERO_PI_SKIP_GENTLE_AI_INSTALL/);
 });
 
 test("registered Gentle Review tools render reusable rose lifecycle call rows", () => {
@@ -338,8 +338,8 @@ function routingConsumerFixture(t: test.TestContext, agents = ["worker"]) {
 	for (const name of agents) {
 		writeMarkdown(join(root, ".pi", "agents", `${name}.md`), `---\nname: ${name}\ndescription: Worker\n---\nbody\n`);
 	}
-	const previousConfigHome = process.env.GENTLE_PI_CONFIG_HOME;
-	const previousAgentHome = process.env.GENTLE_PI_AGENT_HOME;
+	const previousConfigHome = process.env.JERO_PI_CONFIG_HOME;
+	const previousAgentHome = process.env.JERO_PI_AGENT_HOME;
 	const previousHome = process.env.HOME;
 	const previousUserProfile = process.env.USERPROFILE;
 	const isolatedHome = join(root, "home");
@@ -348,13 +348,13 @@ function routingConsumerFixture(t: test.TestContext, agents = ["worker"]) {
 	// Package-sibling legacy agents remain subject to discovery assertions.
 	process.env.HOME = isolatedHome;
 	process.env.USERPROFILE = isolatedHome;
-	process.env.GENTLE_PI_CONFIG_HOME = configHome;
-	process.env.GENTLE_PI_AGENT_HOME = agentHome;
+	process.env.JERO_PI_CONFIG_HOME = configHome;
+	process.env.JERO_PI_AGENT_HOME = agentHome;
 	t.after(() => {
-		if (previousConfigHome === undefined) delete process.env.GENTLE_PI_CONFIG_HOME;
-		else process.env.GENTLE_PI_CONFIG_HOME = previousConfigHome;
-		if (previousAgentHome === undefined) delete process.env.GENTLE_PI_AGENT_HOME;
-		else process.env.GENTLE_PI_AGENT_HOME = previousAgentHome;
+		if (previousConfigHome === undefined) delete process.env.JERO_PI_CONFIG_HOME;
+		else process.env.JERO_PI_CONFIG_HOME = previousConfigHome;
+		if (previousAgentHome === undefined) delete process.env.JERO_PI_AGENT_HOME;
+		else process.env.JERO_PI_AGENT_HOME = previousAgentHome;
 		if (previousHome === undefined) delete process.env.HOME;
 		else process.env.HOME = previousHome;
 		if (previousUserProfile === undefined) delete process.env.USERPROFILE;
@@ -449,7 +449,7 @@ test("models saves and clears independent provider review roles without local ar
 		}
 		panel.handleInput("\x13");
 	});
-	await fixture.run("gentle:models");
+	await fixture.run("jero:models");
 	assert.deepEqual(JSON.parse(readFileSync(fixture.globalPath, "utf8")), {
 		"review-refuter": { model: "openai/alpha", thinking: "off" },
 		"review-validator": { model: "openai/beta", thinking: "minimal" },
@@ -461,7 +461,7 @@ test("models saves and clears independent provider review roles without local ar
 		panel.handleInput("i");
 		panel.handleInput("\x13");
 	});
-	await fixture.run("gentle:models");
+	await fixture.run("jero:models");
 	assert.deepEqual(JSON.parse(readFileSync(fixture.globalPath, "utf8")), {
 		"review-refuter": {},
 		"review-validator": { model: "openai/beta", thinking: "minimal" },
@@ -474,7 +474,7 @@ test("models saves and clears independent provider review roles without local ar
 		panel.handleInput("i");
 		panel.handleInput("\x13");
 	});
-	await fixture.run("gentle:models");
+	await fixture.run("jero:models");
 	assert.deepEqual(JSON.parse(readFileSync(fixture.globalPath, "utf8")), {
 		"review-refuter": {},
 		"review-validator": {},
@@ -513,7 +513,7 @@ test("provider review roles skip migration and both projection paths even when d
 		rolePaths.forEach((path, index) => assert.equal(readFileSync(path, "utf8"), originals[index]));
 		for (const path of profilePaths) assert.equal(readFileSync(path, "utf8"), profile);
 	};
-	await fixture.run("gentle:models");
+	await fixture.run("jero:models");
 	assertReservedUnchanged();
 	for (const role of roles) assert.equal(fixture.panels[0].split(role).length - 1, 1);
 	assert.match(fixture.panels[0], /worker\s+model=inherit, effort=inherit/);
@@ -531,7 +531,7 @@ test("provider review roles skip migration and both projection paths even when d
 test("models rejects invalid project routing with its selected source path", async (t) => {
 	const fixture = routingConsumerFixture(t);
 	writeFileSync(fixture.projectPath, "[]");
-	await fixture.run("gentle:models");
+	await fixture.run("jero:models");
 	assert.equal(fixture.notifications[0]?.severity, "warning");
 	assert.ok(fixture.notifications[0]?.message.includes(fixture.projectPath));
 	assert.equal(fixture.panelVisits(), 0);
@@ -545,7 +545,7 @@ test("export re-reads saved routing and rejects invalid project before creating 
 		writeFileSync(fixture.projectPath, "[]");
 		return { type: "export", config: {} };
 	});
-	await fixture.run("gentle:models");
+	await fixture.run("jero:models");
 	assert.equal(fixture.notifications[0]?.severity, "warning");
 	assert.ok(fixture.notifications[0]?.message.includes(`Invalid model config: ${fixture.projectPath}`));
 	assert.equal(existsSync(fixture.exportPath), false);
@@ -555,7 +555,7 @@ test("export re-reads saved routing and rejects invalid project before creating 
 test("status reports invalid saved routing path instead of default agent routing", async (t) => {
 	const fixture = routingConsumerFixture(t);
 	writeFileSync(fixture.projectPath, "[]");
-	await fixture.run("gentle:status");
+	await fixture.run("jero:status");
 	const report = fixture.notifications.at(-1)!;
 	assert.match(report.message, /Saved model routing: invalid/);
 	assert.ok(report.message.includes(fixture.projectPath));
@@ -570,7 +570,7 @@ test("models exports missing, normalized project, and global-precedence saved ro
 			if (source !== "missing") writeFileSync(fixture.projectPath, '{"worker":" openai/gpt-5 ","ignored":null}');
 			if (source === "global") writeMarkdown(fixture.globalPath, '{"worker":{"model":" anthropic/opus ","thinking":"high"}}');
 			fixture.onPanel(() => ({ type: fixture.panelVisits() === 1 ? "export" : "cancel", config: {} }));
-			await fixture.run("gentle:models");
+			await fixture.run("jero:models");
 			const agents = source === "missing" ? {} : source === "project"
 				? { worker: { model: "openai/gpt-5" } }
 				: { worker: { model: "anthropic/opus", thinking: "high" } };
@@ -578,7 +578,7 @@ test("models exports missing, normalized project, and global-precedence saved ro
 			assert.equal(fixture.notifications[0]?.severity, "info");
 			assert.match(fixture.notifications[0]!.message, /exported/);
 			assert.equal(fixture.panelVisits(), 2);
-			await fixture.run("gentle:status");
+			await fixture.run("jero:status");
 			const report = fixture.notifications.at(-1)!.message;
 			assert.ok(report.includes(`Saved model routing: ${source === "missing" ? "missing" : "valid"}`));
 			assert.ok(report.includes(`Global model config: ${source === "global" ? "present" : "missing"}`));
@@ -601,13 +601,13 @@ test("invalid global routing overrides valid project in models, status, and expo
 				writeMarkdown(fixture.globalPath, "[]");
 				return { type: "export", config: {} };
 			});
-			await fixture.run("gentle:models");
+			await fixture.run("jero:models");
 			assert.equal(fixture.notifications[0]?.severity, "warning");
 			assert.ok(fixture.notifications[0]?.message.includes(fixture.globalPath));
 			assert.match(fixture.notifications[0]!.message, atExport ? /export failed/ : /cannot open model config/);
 			assert.equal(fixture.panelVisits(), atExport ? 2 : 0);
 			assert.equal(existsSync(fixture.exportPath), false);
-			await fixture.run("gentle:status");
+			await fixture.run("jero:status");
 			const report = fixture.notifications.at(-1)!;
 			assert.match(report.message, /Global model config: present\nSaved model routing: invalid/);
 			assert.ok(report.message.includes(fixture.globalPath));
@@ -636,15 +636,15 @@ test("session startup reports invalid project routing without mutating the profi
 	mkdirSync(agentHomeSubagentsDir, { recursive: true });
 	t.after(() => rmSync(root, { recursive: true, force: true }));
 
-	const previousConfigHome = process.env.GENTLE_PI_CONFIG_HOME;
-	const previousAgentHome = process.env.GENTLE_PI_AGENT_HOME;
-	process.env.GENTLE_PI_CONFIG_HOME = configHome;
-	process.env.GENTLE_PI_AGENT_HOME = agentHome;
+	const previousConfigHome = process.env.JERO_PI_CONFIG_HOME;
+	const previousAgentHome = process.env.JERO_PI_AGENT_HOME;
+	process.env.JERO_PI_CONFIG_HOME = configHome;
+	process.env.JERO_PI_AGENT_HOME = agentHome;
 	t.after(() => {
-		if (previousConfigHome === undefined) delete process.env.GENTLE_PI_CONFIG_HOME;
-		else process.env.GENTLE_PI_CONFIG_HOME = previousConfigHome;
-		if (previousAgentHome === undefined) delete process.env.GENTLE_PI_AGENT_HOME;
-		else process.env.GENTLE_PI_AGENT_HOME = previousAgentHome;
+		if (previousConfigHome === undefined) delete process.env.JERO_PI_CONFIG_HOME;
+		else process.env.JERO_PI_CONFIG_HOME = previousConfigHome;
+		if (previousAgentHome === undefined) delete process.env.JERO_PI_AGENT_HOME;
+		else process.env.JERO_PI_AGENT_HOME = previousAgentHome;
 	});
 
 	writeFileSync(join(projectConfigDir, "models.json"), "[]");
@@ -726,14 +726,14 @@ test("agent discovery skips skills directories", async (t) => {
 test("managed routing timeout leaves its profile, agent, and manifest unchanged", (t) => {
 	const root = mkdtempSync(join(tmpdir(), "gentle-pi-managed-routing-timeout-"));
 	const agentHome = join(root, "agent-home");
-	const previousAgentHome = process.env.GENTLE_PI_AGENT_HOME;
+	const previousAgentHome = process.env.JERO_PI_AGENT_HOME;
 	t.after(() => {
-		if (previousAgentHome === undefined) delete process.env.GENTLE_PI_AGENT_HOME;
-		else process.env.GENTLE_PI_AGENT_HOME = previousAgentHome;
+		if (previousAgentHome === undefined) delete process.env.JERO_PI_AGENT_HOME;
+		else process.env.JERO_PI_AGENT_HOME = previousAgentHome;
 		rmSync(root, { recursive: true, force: true });
 	});
 
-	process.env.GENTLE_PI_AGENT_HOME = agentHome;
+	process.env.JERO_PI_AGENT_HOME = agentHome;
 	installPackageAssets(root, false, ["sdd"]);
 	const agentPath = join(agentHome, "agents", "sdd-apply.md");
 	const manifestPath = join(agentHome, "gentle-ai", "managed-assets.json");
@@ -764,12 +764,12 @@ test("a later alias keeps managed-root precedence and manifest ownership", (t) =
 	const managed = join(agentHome, "agents");
 	const intervening = join(agentHome, "subagents");
 	const alias = join(home, ".agents");
-	const previousAgentHome = process.env.GENTLE_PI_AGENT_HOME;
+	const previousAgentHome = process.env.JERO_PI_AGENT_HOME;
 	const previousHome = process.env.HOME;
 	const previousUserProfile = process.env.USERPROFILE;
 	t.after(() => {
-		if (previousAgentHome === undefined) delete process.env.GENTLE_PI_AGENT_HOME;
-		else process.env.GENTLE_PI_AGENT_HOME = previousAgentHome;
+		if (previousAgentHome === undefined) delete process.env.JERO_PI_AGENT_HOME;
+		else process.env.JERO_PI_AGENT_HOME = previousAgentHome;
 		if (previousHome === undefined) delete process.env.HOME;
 		else process.env.HOME = previousHome;
 		if (previousUserProfile === undefined) delete process.env.USERPROFILE;
@@ -777,7 +777,7 @@ test("a later alias keeps managed-root precedence and manifest ownership", (t) =
 		rmSync(root, { recursive: true, force: true });
 	});
 
-	process.env.GENTLE_PI_AGENT_HOME = agentHome;
+	process.env.JERO_PI_AGENT_HOME = agentHome;
 	process.env.HOME = home;
 	process.env.USERPROFILE = home;
 	installPackageAssets(cwd, false, ["sdd"]);
@@ -1084,11 +1084,11 @@ test("agent model discovery prioritizes SDD and Judgment Day agents", (t) => {
 
 test("discoverable model agents include installed Judgment Day agents", (t) => {
 	const root = mkdtempSync(join(tmpdir(), "gentle-pi-installed-agents-"));
-	const previousHome = process.env.GENTLE_PI_AGENT_HOME;
-	process.env.GENTLE_PI_AGENT_HOME = root;
+	const previousHome = process.env.JERO_PI_AGENT_HOME;
+	process.env.JERO_PI_AGENT_HOME = root;
 	t.after(() => {
-		if (previousHome === undefined) delete process.env.GENTLE_PI_AGENT_HOME;
-		else process.env.GENTLE_PI_AGENT_HOME = previousHome;
+		if (previousHome === undefined) delete process.env.JERO_PI_AGENT_HOME;
+		else process.env.JERO_PI_AGENT_HOME = previousHome;
 		rmSync(root, { recursive: true, force: true });
 	});
 	writeMarkdown(join(root, "agents", "jd-judge-a.md"), "name: jd-judge-a\n");
@@ -1514,8 +1514,8 @@ test("bash tool_call confirms a late guarded npm publish and denies on non-appro
 
 	const prefix = "noise ".repeat(80);
 	const command = `${prefix}npm publish --tag beta`;
-	const previousConfigHome = process.env.GENTLE_PI_CONFIG_HOME;
-	process.env.GENTLE_PI_CONFIG_HOME = configHome;
+	const previousConfigHome = process.env.JERO_PI_CONFIG_HOME;
+	process.env.JERO_PI_CONFIG_HOME = configHome;
 	try {
 		const result = await toolCall!({ toolName: "bash", input: { command } }, ctx);
 		assert.deepEqual(result, {
@@ -1524,8 +1524,8 @@ test("bash tool_call confirms a late guarded npm publish and denies on non-appro
 				"Gentle AI safety policy blocked the command because it was not confirmed.",
 		});
 	} finally {
-		if (previousConfigHome === undefined) delete process.env.GENTLE_PI_CONFIG_HOME;
-		else process.env.GENTLE_PI_CONFIG_HOME = previousConfigHome;
+		if (previousConfigHome === undefined) delete process.env.JERO_PI_CONFIG_HOME;
+		else process.env.JERO_PI_CONFIG_HOME = previousConfigHome;
 		rmSync(configHome, { recursive: true, force: true });
 	}
 
@@ -1554,8 +1554,8 @@ test("bash tool_call confirms every compound action and centers a long git -C pu
 	assert.equal(typeof toolCall, "function");
 
 	const configHome = mkdtempSync(join(tmpdir(), "gentle-pi-guard-compound-"));
-	const previousConfigHome = process.env.GENTLE_PI_CONFIG_HOME;
-	process.env.GENTLE_PI_CONFIG_HOME = configHome;
+	const previousConfigHome = process.env.JERO_PI_CONFIG_HOME;
+	process.env.JERO_PI_CONFIG_HOME = configHome;
 	try {
 		const command = `git -C /${"very-long-path/".repeat(30)} push origin main && npm publish --tag beta`;
 		const result = await toolCall!({ toolName: "bash", input: { command } }, {
@@ -1568,8 +1568,8 @@ test("bash tool_call confirms every compound action and centers a long git -C pu
 			reason: "Gentle AI safety policy blocked the command because it was not confirmed.",
 		});
 	} finally {
-		if (previousConfigHome === undefined) delete process.env.GENTLE_PI_CONFIG_HOME;
-		else process.env.GENTLE_PI_CONFIG_HOME = previousConfigHome;
+		if (previousConfigHome === undefined) delete process.env.JERO_PI_CONFIG_HOME;
+		else process.env.JERO_PI_CONFIG_HOME = previousConfigHome;
 		rmSync(configHome, { recursive: true, force: true });
 	}
 
@@ -1579,7 +1579,7 @@ test("bash tool_call confirms every compound action and centers a long git -C pu
 	assert.match(preview, /push origin main && npm publish --tag beta/);
 	assert.ok(preview.startsWith("…"));
 });
-// /gentle:profiles reopens its panel after actions that finish the interaction,
+// /jero:profiles reopens its panel after actions that finish the interaction,
 // so a test that applies once must confirm on the first visit and close on the
 // next, or the panel and the action loop feed each other forever.
 function applyOnce(
@@ -1627,7 +1627,7 @@ test("applying a profile persists its orchestrator and never leaks the key into 
 		},
 	});
 	applyOnce(fixture);
-	await fixture.run("gentle:profiles");
+	await fixture.run("jero:profiles");
 
 	const after = JSON.parse(readFileSync(settingsPath, "utf8"));
 	assert.equal(after.defaultProvider, "nan");
@@ -1651,7 +1651,7 @@ test("applying a profile without an orchestrator entry leaves settings.json unto
 	writeSettings();
 	writeStore({ team: { worker: { model: "openai/alpha" } } });
 	applyOnce(fixture);
-	await fixture.run("gentle:profiles");
+	await fixture.run("jero:profiles");
 
 	const after = JSON.parse(readFileSync(settingsPath, "utf8"));
 	assert.equal(after.defaultProvider, "nan");
@@ -1665,7 +1665,7 @@ test("a profile store entry with only the orchestrator key counts zero roles", a
 	const { fixture, writeStore } = profilesStoreFixture(t);
 	writeStore({ team: { orchestrator: { model: "nan/glm5.3", thinking: "high" } } }, "team");
 	applyOnce(fixture);
-	await fixture.run("gentle:profiles");
+	await fixture.run("jero:profiles");
 	const applied = fixture.notifications.at(-1)?.message ?? "";
 	assert.match(applied, /0 agents updated/);
 	assert.match(applied, /Orchestrator set to nan\/glm5\.3 · high/);
@@ -1674,7 +1674,7 @@ test("a profile store entry with only the orchestrator key counts zero roles", a
 test("applying a profile replaces materialized routing for agents the profile omits", async (t) => {
 	const { fixture, writeStore, writeSettings } = profilesStoreFixture(t);
 	writeSettings();
-	// Routing materialized earlier (a previous profile, /gentle:models, or a
+	// Routing materialized earlier (a previous profile, /jero:models, or a
 	// migration) for an agent the new profile does not mention.
 	const helperPath = join(fixture.root, ".pi", "agents", "helper.md");
 	writeMarkdown(helperPath, "---\nname: helper\ndescription: Helper\nmodel: openai/beta\nthinking: high\n---\nbody\n");
@@ -1682,7 +1682,7 @@ test("applying a profile replaces materialized routing for agents the profile om
 	writeFileSync(subagentsPath, `${JSON.stringify({ model_profiles: { helper: { model: "openai/beta", effort: "high" } } }, null, 2)}\n`);
 	writeStore({ team: { worker: { model: "openai/alpha" } } });
 	applyOnce(fixture);
-	await fixture.run("gentle:profiles");
+	await fixture.run("jero:profiles");
 
 	const profiles = JSON.parse(readFileSync(subagentsPath, "utf8"));
 	assert.deepEqual(profiles.model_profiles, { worker: { model: "openai/alpha" } }, "omitted agents lose their materialized route");
@@ -1713,7 +1713,7 @@ test("a failed apply restores the previous profile's routing with the same repla
 		old: { helper: { model: "openai/beta" } },
 	}, "old");
 	applyOnce(fixture);
-	await fixture.run("gentle:profiles");
+	await fixture.run("jero:profiles");
 
 	const warning = fixture.notifications.find((entry) => /could not apply profile "team"/.test(entry.message));
 	assert.ok(warning, "the failed apply is reported");
@@ -1755,7 +1755,7 @@ test("s snapshots current routing in place without applying or reopening the pro
 			panel.handleInput("\x1b");
 		}
 	});
-	await fixture.run("gentle:profiles");
+	await fixture.run("jero:profiles");
 
 	const store = JSON.parse(readFileSync(join(fixture.configHome, "profiles.json"), "utf8"));
 	assert.deepEqual(store.profiles["a-target"], {
@@ -1797,7 +1797,7 @@ test("snapshot feedback keeps both outcomes visible for long profile names at na
 			panel.handleInput("\x1b");
 		}
 	});
-	await fixture.run("gentle:profiles");
+	await fixture.run("jero:profiles");
 	assert.ok(firstPanel);
 	const constrained = stripAnsi(firstPanel!.render(60).join("\n"));
 	assert.match(constrained, /Snapshot failed; live routing unchanged\./);
@@ -1814,7 +1814,7 @@ test("the profiles command seeds and shows the routing the runtime uses when mod
 		rendered = stripAnsi(renderComponent(panel));
 		panel.handleInput("\x1b");
 	});
-	await fixture.run("gentle:profiles");
+	await fixture.run("jero:profiles");
 
 	const store = JSON.parse(readFileSync(join(fixture.configHome, "profiles.json"), "utf8"));
 	assert.equal(store.active, "current", "materialized routing counts as existing routing");
@@ -1860,7 +1860,7 @@ test("the profiles panel fills the terminal, lists routing per agent, and scroll
 		rendered = renderComponent(visited);
 		visited.handleInput("\x1b");
 	});
-	await fixture.run("gentle:profiles");
+	await fixture.run("jero:profiles");
 
 	assert.ok(rendered);
 	const lines = rendered.split("\n");
@@ -1904,7 +1904,7 @@ test("j and k scroll the detail pane one line at a time, like the agents view", 
 		panel = visited;
 		visited.handleInput("\x1b");
 	});
-	await fixture.run("gentle:profiles");
+	await fixture.run("jero:profiles");
 	assert.ok(panel, "the panel must open");
 	const body = () => panel!.render(120).slice(1, -2).map((line) => line.replace(/[ \t]+$/, "")).join("\n");
 	const firstAgentRow = (text: string) => text.split("\n").findIndex((line) => line.includes("agent-01"));

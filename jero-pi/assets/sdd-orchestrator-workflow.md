@@ -18,13 +18,13 @@ proposal → spec ─┬→ tasks → apply → verify → sync → archive
 proposal → design ┘
 ```
 
-`/gentle-sdd-status [change]` is the read-only status action for resolving the active change, artifact paths, task progress, dependency readiness, and action context before apply/verify/sync/archive.
+`/jero-sdd-status [change]` is the read-only status action for resolving the active change, artifact paths, task progress, dependency readiness, and action context before apply/verify/sync/archive.
 
 ## Native SDD Dispatcher
 
 `gentle-ai sdd-status --contract gentle-ai.sdd-status/v2` is the sole, read-only status authority for every store. The orchestrator carries its projection unchanged; it never reconstructs readiness, selects a replacement action, uses an Engram bypass, or launches a recommendation merely because status displayed it.
 
-`/gentle-sdd-status` only inspects and renders that projection. Only explicitly authorized `/gentle-sdd-continue` may call native `sdd-continue` to prepare a missing change-instance marker; this is not a status fallback and grants no source roots. If native status is unavailable, malformed, or mismatched, stop and report the failure.
+`/jero-sdd-status` only inspects and renders that projection. Only explicitly authorized `/jero-sdd-continue` may call native `sdd-continue` to prepare a missing change-instance marker; this is not a status fallback and grants no source roots. If native status is unavailable, malformed, or mismatched, stop and report the failure.
 
 ## Bounded Planning Routing
 
@@ -56,7 +56,7 @@ Execute only the selected native action when its dependency and `actionContext` 
 
 ## SDD Status Contract
 
-Before `/gentle-sdd-continue`, `sdd-apply`, `sdd-verify`, `sdd-sync`, or `sdd-archive`, resolve and carry structured status. Lookup order: parent-provided status, then project override `.pi/gentle-ai/support/sdd-status-contract.md`, then globally installed `~/.pi/agent/gentle-ai/support/sdd-status-contract.md`, then the embedded `sdd-status` prompt contract. Do not use `assets/support/...` as a runtime path; that is only the package source path before installation.
+Before `/jero-sdd-continue`, `sdd-apply`, `sdd-verify`, `sdd-sync`, or `sdd-archive`, resolve and carry structured status. Lookup order: parent-provided status, then project override `.pi/gentle-ai/support/sdd-status-contract.md`, then globally installed `~/.pi/agent/gentle-ai/support/sdd-status-contract.md`, then the embedded `sdd-status` prompt contract. Do not use `assets/support/...` as a runtime path; that is only the package source path before installation.
 
 Status must include:
 
@@ -71,11 +71,11 @@ Do not guess the active change. If change selection is ambiguous, ask the user a
 
 ## Lazy SDD Preflight
 
-Do not ask SDD setup questions on session start. The first time the user initiates an SDD process in a Pi session, run the SDD preflight once and keep those choices for the rest of that session. Runtime trigger detection is intentionally deterministic: slash SDD flows and `/gentle-sdd-init` run preflight automatically; for natural-language requests, the parent/orchestrator decides semantically whether SDD is needed and must run/reuse `/gentle:sdd-preflight` before continuing.
+Do not ask SDD setup questions on session start. The first time the user initiates an SDD process in a Pi session, run the SDD preflight once and keep those choices for the rest of that session. Runtime trigger detection is intentionally deterministic: slash SDD flows and `/jero-sdd-init` run preflight automatically; for natural-language requests, the parent/orchestrator decides semantically whether SDD is needed and must run/reuse `/jero:sdd-preflight` before continuing.
 
 **Hard gate:** `openspec/config.yaml`, existing SDD changes, installed `.pi`/global SDD assets, or a todo named "preflight" are not session preflight. They are project context only. Do not mark SDD preflight complete, start `sdd-init`, launch SDD subagents/chains, or move to explore/proposal/spec/design/tasks until this session has an injected `## SDD Session Preflight` block or an equivalent resolution from the canonical authority order below.
 
-On the first SDD invocation of EACH new interactive session, confirm the preflight choices even when valid preferences are saved. Persisted preferences and canonical defaults are preselected suggestions, not current-session consent. Offer confirmation of the grouped suggestions or changes; cancellation leaves preflight unresolved. Explicit current-session choices take precedence and, once resolved, are reused throughout that session. If `/gentle:sdd-preflight` is unavailable, perform the same confirmation inline. The parent `subagent_run` dispatch boundary resolves this gate for every shipped SDD agent, prepends the exact rendered `## SDD Session Preflight` block to the existing child `context`, and blocks launch on cancellation or failure. An RPC child consumes that transport but never originates or persists defaults; missing or malformed transport fails closed before process spawn. Only a safely distinguishable standalone headless parent may retain canonical/persisted defaults without UI. Missing Engram constrains the artifact store to `openspec` unless an incompatible explicit request needs a human decision.
+On the first SDD invocation of EACH new interactive session, confirm the preflight choices even when valid preferences are saved. Persisted preferences and canonical defaults are preselected suggestions, not current-session consent. Offer confirmation of the grouped suggestions or changes; cancellation leaves preflight unresolved. Explicit current-session choices take precedence and, once resolved, are reused throughout that session. If `/jero:sdd-preflight` is unavailable, perform the same confirmation inline. The parent `subagent_run` dispatch boundary resolves this gate for every shipped SDD agent, prepends the exact rendered `## SDD Session Preflight` block to the existing child `context`, and blocks launch on cancellation or failure. An RPC child consumes that transport but never originates or persists defaults; missing or malformed transport fails closed before process spawn. Only a safely distinguishable standalone headless parent may retain canonical/persisted defaults without UI. Missing Engram constrains the artifact store to `openspec` unless an incompatible explicit request needs a human decision.
 
 Preflight canonical defaults are execution `auto`, artifact store `openspec`, delivery strategy `ask-on-risk`, and review budget `400`; capability and already-selected constraints may narrow them.
 
@@ -90,7 +90,7 @@ The package should ensure SDD assets are present as global Pi runtime assets wit
 ~/.pi/agent/chains/sdd-*.chain.md
 ```
 
-Manual install commands are recovery/debug paths, not the happy path. `/gentle:sdd-preflight` is the explicit preflight command for agent/orchestrator use. If the user explicitly changes SDD preferences later in the same session, follow the new instruction.
+Manual install commands are recovery/debug paths, not the happy path. `/jero:sdd-preflight` is the explicit preflight command for agent/orchestrator use. If the user explicitly changes SDD preferences later in the same session, follow the new instruction.
 
 ## Init Guard
 
@@ -102,9 +102,9 @@ When the store is `openspec` or `both`, the local artifact is:
 openspec/config.yaml
 ```
 
-If it is missing, ask the user for the minimal information needed or run `/gentle-sdd-init` if available.
+If it is missing, ask the user for the minimal information needed or run `/jero-sdd-init` if available.
 
-When the store is `engram` or `none`, `/gentle-sdd-init` never writes that file, so its absence is expected and is not a missing init. Never re-trigger `/gentle-sdd-init` over it. Resolve project context from the Engram `sdd-init/{project}` topic for `engram`, or inline from the session for `none`, and ask the user only when that context is genuinely absent.
+When the store is `engram` or `none`, `/jero-sdd-init` never writes that file, so its absence is expected and is not a missing init. Never re-trigger `/jero-sdd-init` over it. Resolve project context from the Engram `sdd-init/{project}` topic for `engram`, or inline from the session for `none`, and ask the user only when that context is genuinely absent.
 
 This init guard runs after the session preflight gate above; project config presence or absence never substitutes for session preflight choices. Do not proceed with a substantial SDD flow while pretending project context, testing capability, or session preflight choices are known.
 
@@ -254,7 +254,7 @@ Launch SDD phase subagents with `subagent_run` `mode: "task"` when the parent ne
 
 Read this table before the first SDD/Judgment-Day phase delegation in a session, cache it, and use it only for SDD/Judgment-Day phase agents. If a phase is missing, use the `default` row. If the assigned tier is unavailable, use the runtime's default model and continue.
 
-On Pi, phase model routing is user-owned and persisted, not prompt-passed: `/gentle:models` writes `.pi/gentle-ai/models.json`, and the package applies each saved assignment to the installed phase agent definitions (frontmatter `model:`/`thinking:`) or `.pi/settings.json` overrides. The table below is the default capability tier per phase when the user has saved no assignment.
+On Pi, phase model routing is user-owned and persisted, not prompt-passed: `/jero:models` writes `.pi/gentle-ai/models.json`, and the package applies each saved assignment to the installed phase agent definitions (frontmatter `model:`/`thinking:`) or `.pi/settings.json` overrides. The table below is the default capability tier per phase when the user has saved no assignment.
 
 **Mandatory phase model gate:** before launching an SDD/Judgment-Day phase agent, confirm the phase resolves through the saved model config or these defaults. Never pass an ad-hoc `model` parameter for SDD/Judgment-Day phases, and never apply this table to generic Pi delegation — generic subagents resolve model/thinking through `pi-subagents` config, and `model` is passed there only on an explicit user override.
 

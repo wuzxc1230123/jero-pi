@@ -340,15 +340,15 @@ const DEFAULT_GENTLE_AI_TIMEOUT_MS = 120_000;
 // actually needed — deliberately generous, because the reviewer model and
 // provider are user-owned and the relay cannot know their throughput.
 //
-// GENTLE_PI_REVIEW_RELAY_PI_TIMEOUT_MS replaces the derived bound entirely for
+// JERO_PI_REVIEW_RELAY_PI_TIMEOUT_MS replaces the derived bound entirely for
 // callers who know their own configuration. It follows the repository's
-// established numeric-override shape (GENTLE_PI_CANDIDATE_GIT_TIMEOUT_MS,
-// GENTLE_PI_REVIEW_MAX_BUFFER_BYTES): a positive decimal, silently ignored
+// established numeric-override shape (JERO_PI_CANDIDATE_GIT_TIMEOUT_MS,
+// JERO_PI_REVIEW_MAX_BUFFER_BYTES): a positive decimal, silently ignored
 // when malformed, and clamped to the same hard ceiling so no configuration can
 // turn a foreground FINALIZE into an unbounded child process.
 // ---------------------------------------------------------------------------
 
-export const REVIEW_HOST_RELAY_PI_TIMEOUT_ENV = "GENTLE_PI_REVIEW_RELAY_PI_TIMEOUT_MS";
+export const REVIEW_HOST_RELAY_PI_TIMEOUT_ENV = "JERO_PI_REVIEW_RELAY_PI_TIMEOUT_MS";
 export const REVIEW_HOST_RELAY_PI_TIMEOUT_FLOOR_MS = 900_000;
 export const REVIEW_HOST_RELAY_PI_TIMEOUT_PER_MEBIBYTE_MS = 900_000;
 export const REVIEW_HOST_RELAY_PI_TIMEOUT_MAX_MS = 7_200_000;

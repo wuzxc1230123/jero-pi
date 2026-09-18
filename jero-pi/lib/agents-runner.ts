@@ -186,11 +186,11 @@ export interface SddChangeSelection {
 	failedEvidenceRevision?: string;
 }
 
-export const SDD_CHANGE_FLAG = "--gentle-sdd-change";
+export const SDD_CHANGE_FLAG = "--jero-sdd-change";
 
 export interface RemediationTerminalFacts { spawned: boolean; exited: boolean; cleanupConfirmed: boolean }
 
-export const REMEDIATION_PLAN_ENV = "GENTLE_PI_SDD_REMEDIATION_PLAN";
+export const REMEDIATION_PLAN_ENV = "JERO_PI_SDD_REMEDIATION_PLAN";
 
 export interface TaskRequest {
 	remediationIntent?: unknown;
@@ -284,8 +284,8 @@ interface LiveTask {
 }
 
 const STDERR_TAIL_MAX = 512;
-const CHILD_MARKER = "GENTLE_PI_AGENTS_CHILD";
-const IPC_MARKER = "GENTLE_PI_AGENTS_OWNED_IPC";
+const CHILD_MARKER = "JERO_PI_AGENTS_CHILD";
+const IPC_MARKER = "JERO_PI_AGENTS_OWNED_IPC";
 const PARENT_NOTIFICATION_TOOL = "subagent_parent_message";
 const DEFAULT_TOOLS: readonly string[] = [];
 const TERMINATION_GRACE_MS = 250;
@@ -334,9 +334,9 @@ export function childArguments(request: TaskRequest): string[] {
 }
 
 // The child is the same pi that is running us: node plus its cli entry.
-// GENTLE_PI_AGENTS_PI overrides it with a command line.
+// JERO_PI_AGENTS_PI overrides it with a command line.
 export function piCommand(proc: ProcessLike = process): PiCommand {
-	const override = proc.env.GENTLE_PI_AGENTS_PI?.trim();
+	const override = proc.env.JERO_PI_AGENTS_PI?.trim();
 	if (override) {
 		const [command, ...args] = override.split(/\s+/);
 		return { command, args };
@@ -544,7 +544,7 @@ export class AgentRunner {
 			...(request.extensionPaths ? { [RESEARCH_SELECTION_ENV]: JSON.stringify(request.researchSelection ?? null), [RESEARCH_ARTIFACT_ENV]: JSON.stringify(request.researchArtifact ?? null) } : {}),
 			[CHILD_MARKER]: "1",
 			[IPC_MARKER]: `${this.deps.now()}-${Math.random().toString(36).slice(2)}`,
-			...(hasParentPermissionChannel ? { GENTLE_PI_AGENTS_PARENT_PERMISSION_FD: "3" } : {}),
+			...(hasParentPermissionChannel ? { JERO_PI_AGENTS_PARENT_PERMISSION_FD: "3" } : {}),
 		};
 		delete env[REMEDIATION_PLAN_ENV];
 		if (request.sddRemediation) env[REMEDIATION_PLAN_ENV] = JSON.stringify({ plan: request.sddRemediation.plan, scope: request.sddRemediation.scope, selection: request.sddChange });

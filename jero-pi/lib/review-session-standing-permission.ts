@@ -159,7 +159,7 @@ export async function captureReviewSessionIdentity(
 	resolveRoot: (cwd: string) => Promise<string | undefined> = resolveCanonicalGitWorktreeRoot,
 	resolveRepositoryIdentity: (cwd: string) => Promise<string | undefined> = resolveCanonicalGitRepositoryIdentity,
 ): Promise<ReviewSessionIdentity | undefined> {
-	if (processEnv.GENTLE_PI_AGENTS_CHILD === "1" || context.hasUI !== true || !hasInteractiveTui(context)) return undefined;
+	if (processEnv.JERO_PI_AGENTS_CHILD === "1" || context.hasUI !== true || !hasInteractiveTui(context)) return undefined;
 	const sessionManager = context.sessionManager;
 	if (typeof sessionManager !== "object" || sessionManager === null) return undefined;
 	const sessionId = exactSessionId(sessionManager);

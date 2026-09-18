@@ -286,7 +286,7 @@ function packageAssetDiagnosticLines(cwd: string): string[] {
 			? `info: Global ${label} assets: on demand (not installed)`
 			: `${stale > 0 ? "warn" : "pass"}: Global ${label} assets stale: ${stale} file(s)`];
 		if (!onDemand && stale > 0) {
-			lines[0] += ` — run /gentle:install-${owner} --force to refresh managed assets`;
+			lines[0] += ` — run /jero:install-${owner} --force to refresh managed assets`;
 		}
 		if (overrides > 0) {
 			lines.push(`info: Global ${label} user overrides: ${overrides} file(s); preserved, not package drift`);
@@ -393,8 +393,8 @@ function parseBackgroundSubagentsPolicyFile(
  * Resolution order (first hit wins, mirroring loadRuntimeGuardrailsConfig):
  *   1. Project file `${cwd}/.pi/gentle-ai/background-subagents.json`
  *   2. Global file `${configHome}/background-subagents.json`
- *      (configHome honors GENTLE_PI_CONFIG_HOME, default ~/.pi/gentle-ai)
- *   3. Env var GENTLE_PI_BACKGROUND_SUBAGENTS ("on" | "off")
+ *      (configHome honors JERO_PI_CONFIG_HOME, default ~/.pi/gentle-ai)
+ *   3. Env var JERO_PI_BACKGROUND_SUBAGENTS ("on" | "off")
  *   4. Default "off"
  *
  * A present-but-malformed file fails closed to "off" instead of falling
@@ -411,7 +411,7 @@ function resolveBackgroundSubagentsPolicy(
 	options: LoadBackgroundSubagentsOptions = {},
 ): BackgroundSubagentsResolution {
 	const env = options.env ?? process.env;
-	const envValue = env.GENTLE_PI_BACKGROUND_SUBAGENTS;
+	const envValue = env.JERO_PI_BACKGROUND_SUBAGENTS;
 	let projectFile = "";
 	let globalFile = "";
 	try {
@@ -490,7 +490,7 @@ function describeBackgroundSubagentsSource(
 		case "global_file":
 			return `global file ${resolution.globalFile}`;
 		case "environment":
-			return "GENTLE_PI_BACKGROUND_SUBAGENTS";
+			return "JERO_PI_BACKGROUND_SUBAGENTS";
 		default:
 			return "built-in default";
 	}
@@ -538,12 +538,12 @@ function renderBackgroundSubagentsReport(
 	if (resolution.envValue !== undefined && resolution.source !== "environment") {
 		lines.push(
 			resolution.envValue === "on" || resolution.envValue === "off"
-				? `GENTLE_PI_BACKGROUND_SUBAGENTS=${resolution.envValue} is set, but both files outrank it and it outranks the built-in default; it decides only when neither file exists.`
-				: `GENTLE_PI_BACKGROUND_SUBAGENTS="${resolution.envValue}" is not a recognized value ("on" or "off"), so it is ignored.`,
+				? `JERO_PI_BACKGROUND_SUBAGENTS=${resolution.envValue} is set, but both files outrank it and it outranks the built-in default; it decides only when neither file exists.`
+				: `JERO_PI_BACKGROUND_SUBAGENTS="${resolution.envValue}" is not a recognized value ("on" or "off"), so it is ignored.`,
 		);
 	}
 	lines.push(
-		"Resolution order (first hit wins): project file, global file, GENTLE_PI_BACKGROUND_SUBAGENTS, built-in default off.",
+		"Resolution order (first hit wins): project file, global file, JERO_PI_BACKGROUND_SUBAGENTS, built-in default off.",
 	);
 	return {
 		message: lines.join("\n"),
@@ -1151,7 +1151,7 @@ let rddStatusUnavailableWarned = false;
  * Best-effort native RDD mode status read for prompt rendering, memoized per
  * cwd for `RDD_STATUS_MEMO_TTL_MS`. Reuses the `reviewMode` STATUS reader
  * (`gentle-ai review mode status --json`, decoded to
- * `NativeReviewModeStatus`) that the `/gentle:review-mode` command also
+ * `NativeReviewModeStatus`) that the `/jero:review-mode` command also
  * calls. Never throws and never hangs past `signal`'s deadline when one is
  * given: an absent binary, a timed-out/aborted process, or a native CLI
  * failure all resolve to `undefined`. `ctx` is optional and used only for a
@@ -1227,9 +1227,9 @@ function renderOrchestratorPrompt(
 ): string {
 	const backgroundPolicyBlock = `${renderBackgroundSubagentsStatusLine(background)}\n${rddStatusLine}`;
 	return readFileSync(join(assetsDir, "orchestrator.md"), "utf8")
-		.replaceAll("{{GENTLE_PI_ASSETS_ROOT}}", assetsDir)
+		.replaceAll("{{JERO_PI_ASSETS_ROOT}}", assetsDir)
 		.replaceAll(
-			"{{GENTLE_PI_BACKGROUND_POLICY}}",
+			"{{JERO_PI_BACKGROUND_POLICY}}",
 			backgroundPolicyBlock,
 		)
 		.trim();
@@ -1583,7 +1583,7 @@ function parseGuardrailsConfigFile(
  * Load the runtime guardrails config.
  *
  * Resolution order (project overrides global):
- *   1. Check GENTLE_PI_AUTONOMOUS_MODE env var — if "1", forces autonomousMode=true
+ *   1. Check JERO_PI_AUTONOMOUS_MODE env var — if "1", forces autonomousMode=true
  *      and uses default guarded command actions.
  *   2. Read global config from ${gentlePiConfigHome}/runtime-guardrails.json
  *   3. Read project config from ${cwd}/.pi/gentle-ai/runtime-guardrails.json
@@ -1596,7 +1596,7 @@ function loadRuntimeGuardrailsConfig(
 ): RuntimeGuardrailsConfig {
 	try {
 		// Env var override: forces autonomous mode with default actions
-		if (process.env.GENTLE_PI_AUTONOMOUS_MODE === "1") {
+		if (process.env.JERO_PI_AUTONOMOUS_MODE === "1") {
 			return { autonomousMode: true, guardedCommands: {} };
 		}
 
@@ -1656,7 +1656,7 @@ const SENSITIVE_PATH_PATTERNS: RegExp[] = [
 ];
 
 const SDD_AGENT_NAME_SET = new Set<string>(SHIPPED_SDD_AGENT_NAMES);
-const SDD_CHANGE_FLAG = "gentle-sdd-change";
+const SDD_CHANGE_FLAG = "jero-sdd-change";
 const SDD_CHANGE_KEYS = ["changeName", "phase", "workspaceRoot"] as const;
 
 const JUDGMENT_DAY_AGENT_NAMES = [
@@ -2012,7 +2012,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function gentleAiConfigHome(): string {
-	return process.env.GENTLE_PI_CONFIG_HOME ?? join(homedir(), ".pi", "gentle-ai");
+	return process.env.JERO_PI_CONFIG_HOME ?? join(homedir(), ".pi", "gentle-ai");
 }
 
 function modelConfigPath(_cwd: string): string {
@@ -2301,7 +2301,7 @@ async function readEffectiveModelConfigAsync(cwd: string): Promise<AgentModelCon
  * discoverable agent it omits on inherit, not on whatever was materialized
  * before. Padding the omitted agents with clear entries makes
  * `applyModelConfig` remove their model profiles and frontmatter routing, the
- * same way `/gentle:models` clears an agent set to inherit.
+ * same way `/jero:models` clears an agent set to inherit.
  */
 async function withOmittedAgentsClearedAsync(
 	cwd: string,
@@ -3397,7 +3397,7 @@ async function handleModelsCommand(ctx: ExtensionContext): Promise<void> {
 	);
 	if (savedConfig.status === "invalid") {
 		ctx.ui.notify(
-			`el Gentleman cannot open model config because ${savedConfig.path} is invalid JSON or not an object. Fix or remove the file, then run /gentle:models again.`,
+			`el Gentleman cannot open model config because ${savedConfig.path} is invalid JSON or not an object. Fix or remove the file, then run /jero:models again.`,
 			"warning",
 		);
 		return;
@@ -4200,7 +4200,7 @@ async function handleProfilesCommand(ctx: ExtensionContext): Promise<void> {
 	const read = readProfilesFileResult(path);
 	if (read.status === "invalid") {
 		ctx.ui.notify(
-			`el Gentleman cannot open agent profiles because ${path} is invalid JSON or not a profiles file. Fix or remove the file, then run /gentle:profiles again.`,
+			`el Gentleman cannot open agent profiles because ${path} is invalid JSON or not a profiles file. Fix or remove the file, then run /jero:profiles again.`,
 			"warning",
 		);
 		return;
@@ -4805,9 +4805,9 @@ const REVIEW_MODE_DISABLED_OUTCOME = "review-mode-disabled";
 // same. Leaving this undefined would hand the single most common state a dead
 // end.
 function reviewModeContinuation(source: NativeReviewModeSource): string | undefined {
-	if (source === NATIVE_REVIEW_MODE_SOURCE.CLONE_LOCAL) return "Run `gentle-ai review mode enable --scope=global` if global RDD is still off, then run /gentle:review-mode enable to clear this clone-local override.";
-	if (source === NATIVE_REVIEW_MODE_SOURCE.GLOBAL) return "Run `gentle-ai review mode enable --scope=global` to turn reviews back on; /gentle:review-mode enable only clears the clone-local setting, which cannot override a global off.";
-	return "Run `gentle-ai review mode enable --scope=global` to opt in; RDD is off by default until explicitly enabled. /gentle:review-mode enable only clears a clone-local override and cannot enable global RDD.";
+	if (source === NATIVE_REVIEW_MODE_SOURCE.CLONE_LOCAL) return "Run `gentle-ai review mode enable --scope=global` if global RDD is still off, then run /jero:review-mode enable to clear this clone-local override.";
+	if (source === NATIVE_REVIEW_MODE_SOURCE.GLOBAL) return "Run `gentle-ai review mode enable --scope=global` to turn reviews back on; /jero:review-mode enable only clears the clone-local setting, which cannot override a global off.";
+	return "Run `gentle-ai review mode enable --scope=global` to opt in; RDD is off by default until explicitly enabled. /jero:review-mode enable only clears a clone-local override and cannot enable global RDD.";
 }
 
 // Names the situation before the mechanism, then the mechanism, mirroring
@@ -8485,7 +8485,7 @@ function createGentleAiExtensionForTesting(
 			const modelResult = await applySavedModelConfig(ctx);
 			if (ctx.hasUI && modelResult.invalidPath) {
 				ctx.ui.notify(
-					`el Gentleman skipped model config because ${modelResult.invalidPath} is invalid JSON or not an object. Fix or remove the file, then run /gentle:models again.`,
+					`el Gentleman skipped model config because ${modelResult.invalidPath} is invalid JSON or not an object. Fix or remove the file, then run /jero:models again.`,
 					"warning",
 				);
 				return;
@@ -8741,7 +8741,7 @@ function createGentleAiExtensionForTesting(
 
 	for (const owner of ["delegation", "review", "sdd"] as const) {
 		const label = owner === "sdd" ? "SDD" : owner;
-		pi.registerCommand(`gentle:install-${owner}`, {
+		pi.registerCommand(`jero:install-${owner}`, {
 			description: `Repair or refresh only global Gentle AI ${label} assets.`,
 			handler: async (args, ctx) => {
 				const force = args.includes("--force");
@@ -8754,12 +8754,12 @@ function createGentleAiExtensionForTesting(
 		});
 	}
 
-	pi.registerCommand("gentle:sdd-preflight", {
+	pi.registerCommand("jero:sdd-preflight", {
 		description:
 			"Run or reuse session SDD preflight; use --edit to change preferences.",
 		handler: async (args, ctx) => {
 			if (args.trim() !== "" && args.trim() !== "--edit") {
-				ctx.ui.notify("Usage: /gentle:sdd-preflight [--edit]", "warning");
+				ctx.ui.notify("Usage: /jero:sdd-preflight [--edit]", "warning");
 				return;
 			}
 			try {
@@ -8785,7 +8785,7 @@ function createGentleAiExtensionForTesting(
 		showCommandSddStatus(status, parsed.json, ctx);
 	};
 
-	pi.registerCommand("gentle-sdd-status", {
+	pi.registerCommand("jero-sdd-status", {
 		description: "Show deterministic SDD change status and instructions.",
 		handler: async (args, ctx) => {
 			await handleSddStatusCommand(args, ctx);
@@ -8823,35 +8823,35 @@ function createGentleAiExtensionForTesting(
 		showCommandSddStatus(decodeNativeSddStatusV2(await nativeReviewCli.sddContinue(selected), selected), parsed.json, ctx);
 	};
 
-	pi.registerCommand("gentle-sdd-continue", {
+	pi.registerCommand("jero-sdd-continue", {
 		description: "Resolve SDD status and route the next phase deterministically.",
 		handler: async (args, ctx) => {
 			await handleSddContinueCommand(args, ctx);
 		},
 	});
 
-	pi.registerCommand("gentle:models", {
+	pi.registerCommand("jero:models", {
 		description: "Configure global per-agent models for el Gentleman.",
 		handler: async (_args, ctx) => {
 			await handleModelsCommand(ctx);
 		},
 	});
 
-	pi.registerCommand("gentle:profiles", {
+	pi.registerCommand("jero:profiles", {
 		description: "Create, switch, and manage global agent-model profiles for el Gentleman.",
 		handler: async (_args, ctx) => {
 			await handleProfilesCommand(ctx);
 		},
 	});
 
-	pi.registerCommand("gentle:persona", {
+	pi.registerCommand("jero:persona", {
 		description: "Switch el Gentleman persona between gentleman and neutral.",
 		handler: async (_args, ctx) => {
 			await handlePersonaCommand(ctx);
 		},
 	});
 
-	pi.registerCommand("gentle:doctor", {
+	pi.registerCommand("jero:doctor", {
 		description: "Run read-only Gentle AI diagnostics for this Pi workspace.",
 		handler: async (_args, ctx) => {
 			const assetLines = packageAssetDiagnosticLines(ctx.cwd);
@@ -8882,12 +8882,12 @@ function createGentleAiExtensionForTesting(
 		},
 	});
 
-	pi.registerCommand("gentle:review-session-permission", {
+	pi.registerCommand("jero:review-session-permission", {
 		description: "Show or revoke the process-memory review permission for this exact Pi session and Git repository (status|revoke).",
 		handler: async (args, ctx) => {
 			const subAction = args.trim().length === 0 ? "status" : args.trim();
 			if (subAction !== "status" && subAction !== "revoke") {
-				ctx.ui.notify(`Unknown /gentle:review-session-permission sub-action "${subAction}". Use status or revoke.`, "warning");
+				ctx.ui.notify(`Unknown /jero:review-session-permission sub-action "${subAction}". Use status or revoke.`, "warning");
 				return;
 			}
 			if (subAction === "revoke") {
@@ -8901,17 +8901,17 @@ function createGentleAiExtensionForTesting(
 				return;
 			}
 			ctx.ui.notify(hasReviewSessionPermission(identity)
-				? "Reviews are allowed for this Pi session and Git repository. Use /gentle:review-session-permission revoke to ask again."
+				? "Reviews are allowed for this Pi session and Git repository. Use /jero:review-session-permission revoke to ask again."
 				: "Reviews are not pre-authorized for this Pi session; each medium- or high-risk candidate asks normally.", "info");
 		},
 	});
 
-	pi.registerCommand("gentle:review-mode", {
+	pi.registerCommand("jero:review-mode", {
 		description: "Show or set the Gentle AI receipt-driven development kill switch (status|enable|disable). Every sub-action is user-initiated only; Pi automation never toggles it.",
 		handler: async (args, ctx) => {
 			const subAction = args.trim().length === 0 ? NATIVE_REVIEW_MODE_OPERATION.STATUS : args.trim();
 			if (subAction !== NATIVE_REVIEW_MODE_OPERATION.STATUS && subAction !== NATIVE_REVIEW_MODE_OPERATION.ENABLE && subAction !== NATIVE_REVIEW_MODE_OPERATION.DISABLE) {
-				ctx.ui.notify(`Unknown /gentle:review-mode sub-action "${subAction}". Use status, disable, or enable.`, "warning");
+				ctx.ui.notify(`Unknown /jero:review-mode sub-action "${subAction}". Use status, disable, or enable.`, "warning");
 				return;
 			}
 			if (nativeReviewCli?.reviewMode === undefined) {
@@ -8937,7 +8937,7 @@ function createGentleAiExtensionForTesting(
 				// that, and name the global-scope command that resolves it.
 				const requested = subAction === NATIVE_REVIEW_MODE_OPERATION.ENABLE ? "on" : subAction === NATIVE_REVIEW_MODE_OPERATION.DISABLE ? "off" : result.status.effective;
 				if (result.status.effective !== requested) {
-					ctx.ui.notify(`${report}\nThat did not turn reviews back on: /gentle:review-mode enable only clears a clone-local override, which cannot override a global off. Run \`gentle-ai review mode enable --scope=global\` to turn them back on.`, "warning");
+					ctx.ui.notify(`${report}\nThat did not turn reviews back on: /jero:review-mode enable only clears a clone-local override, which cannot override a global off. Run \`gentle-ai review mode enable --scope=global\` to turn them back on.`, "warning");
 					return;
 				}
 				ctx.ui.notify(report, "info");
@@ -8955,16 +8955,16 @@ function createGentleAiExtensionForTesting(
 	// switches, and rate limiting); this command only runs the corresponding
 	// `gentle-ai telemetry <op> --json` in the foreground and relays its
 	// output, so a Pi user never has to leave Pi to check or change it.
-	// Mirrors gentle:review-mode: a user-owned switch, never an automated one.
+	// Mirrors jero:review-mode: a user-owned switch, never an automated one.
 	// It matters more here than there, because this policy governs whether
 	// background subagents may be launched at all, so nothing in Pi may write
 	// it. The only writer is this handler, reached only by explicit invocation.
-	pi.registerCommand("gentle:background-subagents", {
+	pi.registerCommand("jero:background-subagents", {
 		description: "Show or set the managed background-subagents policy (status|enable|disable). Every sub-action is user-initiated only; Pi automation never toggles it.",
 		handler: async (args, ctx) => {
 			const subAction = args.trim().length === 0 ? "status" : args.trim();
 			if (subAction !== "status" && subAction !== "enable" && subAction !== "disable") {
-				ctx.ui.notify(`Unknown /gentle:background-subagents sub-action "${subAction}". Use status, enable, or disable.`, "warning");
+				ctx.ui.notify(`Unknown /jero:background-subagents sub-action "${subAction}". Use status, enable, or disable.`, "warning");
 				return;
 			}
 			try {
@@ -8980,7 +8980,7 @@ function createGentleAiExtensionForTesting(
 		},
 	});
 
-	pi.registerCommand("gentle:status", {
+	pi.registerCommand("jero:status", {
 		description: "Show Gentle AI package status for this project.",
 		handler: async (_args, ctx) => {
 			const assetLines = packageAssetDiagnosticLines(ctx.cwd);

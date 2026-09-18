@@ -23,7 +23,7 @@ test("Gentle Shell startup never waits for a repository scan",async()=>{
 	const f=fixture();
 	await Promise.race([f.fire("session_start"),new Promise((_,reject)=>setTimeout(()=>reject(new Error("startup blocked by Git inventory")),100))]);
 	assert.equal(f.gitCalls(),0);
-	await f.commands.get("gentle:changes").handler("",f.ctx);
+	await f.commands.get("jero:changes").handler("",f.ctx);
 	assert.match(f.notices.join("\n"),/captured.*agent|agent.*changes/i);
 	await f.fire("session_shutdown");
 });

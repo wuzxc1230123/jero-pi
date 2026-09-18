@@ -323,7 +323,7 @@ test("child parent-message tooling admits notifications and the active parent pr
 	const child = fakePi();
 	const listeners = new Map<string, Array<(value: Record<string, unknown>) => void>>();
 	const frames: Array<Record<string, unknown>> = [];
-	gentleAgents(child.pi, { GENTLE_PI_AGENTS_CHILD: "1", GENTLE_PI_AGENTS_OWNED_IPC: "fixture" }, {
+	gentleAgents(child.pi, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_AGENTS_OWNED_IPC: "fixture" }, {
 		childIpc: {
 			send: (frame: Record<string, unknown>) => { frames.push(frame); return true; },
 			on: (event: string, listener: (value: Record<string, unknown>) => void) => listeners.set(event, [...(listeners.get(event) ?? []), listener]),
@@ -502,7 +502,7 @@ function liveInstance(t: test.TestContext, profile: string, sessionId: string) {
 }
 
 async function liveOverlay(instance: ReturnType<typeof liveInstance>) {
-	const opened = instance.commands.get("gentle:agents")!.handler("", instance.ctx);
+	const opened = instance.commands.get("jero:agents")!.handler("", instance.ctx);
 	await eventually(() => instance.overlays.length > 0, "overlay must mount without waiting for an unbounded directory scan");
 	const overlay = instance.overlays.at(-1)!;
 	const frame = () => overlay.render(160).map(stripAnsi).join("\n");
@@ -561,12 +561,12 @@ test("manual agents command warns once in RPC mode and stays quiet without UI", 
 	const local = liveInstance(t, liveProfile("live-non-tui"), "non-tui");
 	Object.assign(local.ctx, { mode: "rpc" });
 	const notify = t.mock.method(local.ctx.ui, "notify");
-	await local.commands.get("gentle:agents")!.handler("", local.ctx);
+	await local.commands.get("jero:agents")!.handler("", local.ctx);
 	assert.equal(notify.mock.callCount(), 1);
 	assert.equal(notify.mock.calls[0].arguments[1], "warning");
 	assert.deepEqual(local.overlays, []);
 	Object.assign(local.ctx, { hasUI: false });
-	await local.commands.get("gentle:agents")!.handler("", local.ctx);
+	await local.commands.get("jero:agents")!.handler("", local.ctx);
 	assert.equal(notify.mock.callCount(), 1, "headless invocation adds no notification");
 	assert.deepEqual(local.overlays, []);
 });
@@ -750,11 +750,11 @@ test("research launch transports selected grants and only matching existing exte
 	const argv = runtime.spawned[0];
 	assert.equal(argv[argv.indexOf("--tools") + 1], "read,write,fetch_content,subagent_parent_message");
 	assert.equal(argv[argv.indexOf("--extension") + 1], "/installed/web.ts");
-	assert.deepEqual(JSON.parse(childEnv.GENTLE_PI_RESEARCH_SELECTION!), selection);
-	assert.deepEqual(JSON.parse(childEnv.GENTLE_PI_RESEARCH_ARTIFACT!), artifact);
+	assert.deepEqual(JSON.parse(childEnv.JERO_PI_RESEARCH_SELECTION!), selection);
+	assert.deepEqual(JSON.parse(childEnv.JERO_PI_RESEARCH_ARTIFACT!), artifact);
 	assert.ok(fake.tools.get("subagent_continue")!.parameters.properties.research_artifact);
 	assert.ok(fake.tools.get("subagent_continue")!.parameters.properties.research_selection, "fresh selection must be expressible on continuation");
-	assert.ok(JSON.parse(childEnv.GENTLE_PI_RESEARCH_TOOLS!).includes("subagent_parent_message"));
+	assert.ok(JSON.parse(childEnv.JERO_PI_RESEARCH_TOOLS!).includes("subagent_parent_message"));
 	assert.match(argv[argv.indexOf("--append-system-prompt") + 1], /documentation: available/);
 	assert.match(argv[argv.indexOf("--append-system-prompt") + 1], /open-web: blocked/, "two reachable tools cannot admit open-web");
 	runtime.children[0].emit({ type: "agent_settled" });
@@ -768,8 +768,8 @@ test("research launch transports selected grants and only matching existing exte
 	assert.equal(runtime.spawned.length, 2);
 	assert.ok(!runtime.spawned[1].includes("--extension"), "no inherited research selection");
 	assert.equal(runtime.spawned[1][runtime.spawned[1].indexOf("--tools") + 1], "read,write,subagent_parent_message");
-	assert.equal(JSON.parse(childEnv.GENTLE_PI_RESEARCH_SELECTION!), null);
-	assert.deepEqual(JSON.parse(childEnv.GENTLE_PI_RESEARCH_ARTIFACT!), artifact, "denial intent and exact store/path survive re-entry");
+	assert.equal(JSON.parse(childEnv.JERO_PI_RESEARCH_SELECTION!), null);
+	assert.deepEqual(JSON.parse(childEnv.JERO_PI_RESEARCH_ARTIFACT!), artifact, "denial intent and exact store/path survive re-entry");
 	fake.pi.getActiveTools = () => ["web_search"];
 	runtime.children[1].emit({ type: "agent_settled" });
 	await tick();
@@ -782,7 +782,7 @@ test("research launch transports selected grants and only matching existing exte
 	await fake.tools.get("subagent_continue")!.execute("corrected", { task_id: (denied.details.gentleAgents as { taskId: string }).taskId, prompt: "Retry same scope", mode: "background", research_selection: selection, research_artifact: artifact }, undefined, undefined, ctx);
 	await tick();
 	assert.equal(runtime.spawned[3][runtime.spawned[3].indexOf("--extension") + 1], "/installed/web.ts");
-	assert.deepEqual(JSON.parse(childEnv.GENTLE_PI_RESEARCH_ARTIFACT!), artifact);
+	assert.deepEqual(JSON.parse(childEnv.JERO_PI_RESEARCH_ARTIFACT!), artifact);
 	await fake.fire("session_shutdown", ctx);
 });
 
@@ -792,7 +792,7 @@ test("research child inventory requires every canonical open-web tool", () => {
 		const hooks = new Map<string, (event: any) => any>();
 		const active = required.filter(name => name !== missing);
 		const pi = { on: (name: string, handler: (event: any) => any) => hooks.set(name, handler), getActiveTools: () => active, getAllTools: () => required.map(name => ({ name, sourceInfo: { source: "extension", path: "/installed/web.ts" } })) } as never;
-		gentleAgents(pi, { GENTLE_PI_AGENTS_CHILD: "1", GENTLE_PI_RESEARCH_TOOLS: JSON.stringify(required), GENTLE_PI_RESEARCH_SELECTION: JSON.stringify({ documentation: { tools: ["fetch_content"], extensions: { fetch_content: "/installed/web.ts" } }, "open-web": { tools: required, extensions: Object.fromEntries(required.map(name => [name, "/installed/web.ts"])) } }) });
+		gentleAgents(pi, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(required), JERO_PI_RESEARCH_SELECTION: JSON.stringify({ documentation: { tools: ["fetch_content"], extensions: { fetch_content: "/installed/web.ts" } }, "open-web": { tools: required, extensions: Object.fromEntries(required.map(name => [name, "/installed/web.ts"])) } }) });
 		const prompt = hooks.get("before_agent_start")!({ systemPrompt: "research" }).systemPrompt;
 		assert.match(prompt, new RegExp(`open-web: ${missing === undefined ? "available" : "blocked"}`));
 		assert.match(prompt, new RegExp(`documentation: ${missing === "fetch_content" ? "blocked" : "available"}`));
@@ -803,7 +803,7 @@ test("research child inventory requires every canonical open-web tool", () => {
 test("research child rechecks local inventory and blocks gateway calls", async () => {
 	const hooks = new Map<string, (event: any) => any>();
 	const pi = { on: (name: string, handler: (event: any) => any) => hooks.set(name, handler), getActiveTools: () => ["read", "mcp"], getAllTools: () => [{ name: "read" }, { name: "mcp" }] } as never;
-	gentleAgents(pi, { GENTLE_PI_AGENTS_CHILD: "1", GENTLE_PI_RESEARCH_TOOLS: '["read","fetch_content"]' });
+	gentleAgents(pi, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: '["read","fetch_content"]' });
 	assert.match(hooks.get("before_agent_start")!({ systemPrompt: "research" }).systemPrompt, /documentation: blocked/);
 	assert.equal(hooks.get("tool_call")!({ toolName: "mcp" }).block, true);
 	assert.equal(hooks.get("tool_call")!({ toolName: "fetch_content" }).block, true);
@@ -961,12 +961,12 @@ test("default Node spawn adapter distinguishes IPC-only and permission-capable c
 		assert.equal(captured.length, 3, "the extension reaches Node's spawn boundary for IPC-only and permission-channel launches");
 		for (const [index, fixture] of ["task", "background", "permission"].entries()) {
 			const permissionChannel = index === 2;
-			const ownedIpc = captured[index]?.options.env.GENTLE_PI_AGENTS_OWNED_IPC;
+			const ownedIpc = captured[index]?.options.env.JERO_PI_AGENTS_OWNED_IPC;
 			assert.match(ownedIpc ?? "", /^\d+-[a-z0-9]+$/, "the child receives an opaque owned-IPC marker");
 			assert.equal(captured[index]?.command, "/fixture/pi");
 			assert.deepEqual(captured[index]?.args, args);
 			assert.equal(captured[index]?.options.cwd, permissionChannel ? canonicalGitCwd : nonGitCwd);
-			assert.deepEqual(captured[index]?.options.env, { PATH: "/bin", FIXTURE: fixture, GENTLE_PI_AGENTS_CHILD: "1", GENTLE_PI_AGENTS_OWNED_IPC: ownedIpc, ...(permissionChannel ? { GENTLE_PI_AGENTS_PARENT_PERMISSION_FD: "3" } : {}) });
+			assert.deepEqual(captured[index]?.options.env, { PATH: "/bin", FIXTURE: fixture, JERO_PI_AGENTS_CHILD: "1", JERO_PI_AGENTS_OWNED_IPC: ownedIpc, ...(permissionChannel ? { JERO_PI_AGENTS_PARENT_PERMISSION_FD: "3" } : {}) });
 			assert.equal(captured[index]?.options.shell, undefined, "the adapter does not invoke a shell");
 			assert.equal(captured[index]?.options.windowsHide, true, "the adapter always hides a Windows console");
 			assert.equal(captured[index]?.options.detached, process.platform !== "win32", "the adapter forwards the runner's platform selection");
@@ -1112,7 +1112,7 @@ test("SDD phase continuation requires a fresh selection and launches only that s
 	await tick();
 	const taskId = (run.details.gentleAgents as { taskId: string }).taskId;
 	const first = runtime.spawned[0]!;
-	assert.deepEqual(JSON.parse(first[first.indexOf("--gentle-sdd-change") + 1]!), { changeName: "alpha", workspaceRoot: cwd, phase: "apply" });
+	assert.deepEqual(JSON.parse(first[first.indexOf("--jero-sdd-change") + 1]!), { changeName: "alpha", workspaceRoot: cwd, phase: "apply" });
 	runtime.children[0].emit({ type: "agent_end", messages: [{ role: "assistant", content: [{ type: "text", text: "done" }] }] });
 	runtime.children[0].emit({ type: "agent_settled" });
 	await tick();
@@ -1125,7 +1125,7 @@ test("SDD phase continuation requires a fresh selection and launches only that s
 	}, undefined, undefined, ctx);
 	await tick();
 	const second = runtime.spawned[1]!;
-	assert.deepEqual(JSON.parse(second[second.indexOf("--gentle-sdd-change") + 1]!), { changeName: "beta", workspaceRoot: cwd, phase: "apply" });
+	assert.deepEqual(JSON.parse(second[second.indexOf("--jero-sdd-change") + 1]!), { changeName: "beta", workspaceRoot: cwd, phase: "apply" });
 	await h.fire("session_shutdown", ctx);
 });
 
@@ -1207,7 +1207,7 @@ test("extension resolves each profile environment at setup time without changing
 		return overrides;
 	};
 	const principal = fakePi();
-	gentleAgents(principal.pi, { GENTLE_PI_AGENT_HOME: principalHome, PI_CODING_AGENT_DIR: labHome }, withoutExplicitHome());
+	gentleAgents(principal.pi, { JERO_PI_AGENT_HOME: principalHome, PI_CODING_AGENT_DIR: labHome }, withoutExplicitHome());
 	const principalContext = fakeContext();
 	await principal.fire("session_start", principalContext.ctx);
 	assert.match((await principal.tools.get("subagent_list_agents")!.execute("p1", {}, undefined, undefined, principalContext.ctx)).content[0].text, /principal/);
@@ -1218,7 +1218,7 @@ test("extension resolves each profile environment at setup time without changing
 	assert.match((await lab.tools.get("subagent_list_agents")!.execute("l1", {}, undefined, undefined, labContext.ctx)).content[0].text, /lab/);
 });
 
-for (const [key, tilde] of [["GENTLE_PI_AGENT_HOME", false], ["PI_CODING_AGENT_DIR", false], ["GENTLE_PI_AGENT_HOME", true], ["PI_CODING_AGENT_DIR", true]] as const) {
+for (const [key, tilde] of [["JERO_PI_AGENT_HOME", false], ["PI_CODING_AGENT_DIR", false], ["JERO_PI_AGENT_HOME", true], ["PI_CODING_AGENT_DIR", true]] as const) {
 	test(`${key} ${tilde ? "tilde" : "relative"} profile shares an absolute parent and child session root`, async () => {
 		const agentHome = join(root, `${key}-${tilde}`, "agent");
 		mkdirSync(join(agentHome, "agents"), { recursive: true });
@@ -1251,17 +1251,17 @@ for (const [key, tilde] of [["GENTLE_PI_AGENT_HOME", false], ["PI_CODING_AGENT_D
 
 test("agentsEnabled and agentsCollapseKey read their flags and stay off inside a child", () => {
 	assert.equal(agentsEnabled({}), true);
-	assert.equal(agentsEnabled({ GENTLE_PI_AGENTS: "off" }), false);
-	assert.equal(agentsEnabled({ GENTLE_PI_AGENTS_CHILD: "1" }), false);
+	assert.equal(agentsEnabled({ JERO_PI_AGENTS: "off" }), false);
+	assert.equal(agentsEnabled({ JERO_PI_AGENTS_CHILD: "1" }), false);
 	assert.equal(agentsCollapseKey({}), "ctrl+shift+a");
-	assert.equal(agentsCollapseKey({ GENTLE_PI_AGENTS_KEY: "off" }), undefined);
+	assert.equal(agentsCollapseKey({ JERO_PI_AGENTS_KEY: "off" }), undefined);
 	assert.equal(agentsViewKey({}), "alt+a");
-	assert.equal(agentsViewKey({ GENTLE_PI_AGENTS_VIEW_KEY: "off" }), undefined);
+	assert.equal(agentsViewKey({ JERO_PI_AGENTS_VIEW_KEY: "off" }), undefined);
 	assert.equal(agentsStopKey({}), "alt+s");
-	assert.equal(agentsStopKey({ GENTLE_PI_AGENTS_STOP_KEY: "" }), undefined);
-	assert.equal(agentsStopKey({ GENTLE_PI_AGENTS_STOP_KEY: "off" }), undefined);
+	assert.equal(agentsStopKey({ JERO_PI_AGENTS_STOP_KEY: "" }), undefined);
+	assert.equal(agentsStopKey({ JERO_PI_AGENTS_STOP_KEY: "off" }), undefined);
 	const off = fakePi();
-	gentleAgents(off.pi, { GENTLE_PI_AGENTS: "0" });
+	gentleAgents(off.pi, { JERO_PI_AGENTS: "0" });
 	assert.equal(off.tools.size, 0);
 });
 
@@ -1461,7 +1461,7 @@ test("AgentsView production composition observes each pointer event once and acc
 		};
 	});
 	try {
-		const opened = commands.get("gentle:agents")!.handler("", ctx);
+		const opened = commands.get("jero:agents")!.handler("", ctx);
 		for (let attempt = 0; attempt < 40 && overlays.length === 0; attempt += 1) await new Promise((resolve) => setTimeout(resolve, 25));
 		const overlay = overlays[0];
 		assert.ok(overlay, "the production extension mounted its fullscreen interaction");
@@ -1516,7 +1516,7 @@ test("AgentsView production footer uses rendered bounds and invalidates them bef
 		return subscribeSummary.apply(this, args);
 	});
 	try {
-		const opened = commands.get("gentle:agents")!.handler("", ctx);
+		const opened = commands.get("jero:agents")!.handler("", ctx);
 		for (let attempt = 0; attempt < 40 && overlays.length === 0; attempt += 1) await new Promise((resolve) => setTimeout(resolve, 25));
 		const overlay = overlays[0];
 		assert.ok(overlay, "the production extension mounted its fullscreen interaction");
@@ -1600,8 +1600,8 @@ test("finished tasks remain available through resolveTask but never reappear in 
 	await fresh.fire("session_start", again.ctx);
 	assert.equal((await fresh.tools.get("subagent_result")!.execute("c2", { task_id: id }, undefined, undefined, again.ctx)).content[0].text, "Kept.");
 
-	assert.ok(commands.has("gentle:agents") && shortcuts.has("alt+a"));
-	const opened = commands.get("gentle:agents")!.handler("", ctx);
+	assert.ok(commands.has("jero:agents") && shortcuts.has("alt+a"));
+	const opened = commands.get("jero:agents")!.handler("", ctx);
 	for (let attempt = 0; attempt < 40 && overlays.length === 0; attempt += 1) await new Promise((resolve) => setTimeout(resolve, 25));
 	const overlay = overlays[0];
 	assert.ok(overlay, "the overlay component was created");
@@ -1629,7 +1629,7 @@ test("the overlay confirms a running task once and reports when it finishes duri
 	await fire("session_start", ctx);
 	await tools.get("subagent_run")!.execute("c1", { agent: "explore", task: "Race", mode: "background" }, undefined, undefined, ctx);
 	await tick();
-	const opened = commands.get("gentle:agents")!.handler("", ctx);
+	const opened = commands.get("jero:agents")!.handler("", ctx);
 	for (let attempt = 0; attempt < 40 && overlays.length === 0; attempt += 1) await new Promise((resolve) => setTimeout(resolve, 25));
 	const overlay = overlays[0];
 	assert.ok(overlay, "the overlay component was created");
@@ -1663,7 +1663,7 @@ test("the overlay stops a queued selection immediately without confirmation", as
 	await tick();
 	const queued = await tools.get("subagent_run")!.execute("c2", { agent: "explore", task: "Queued", mode: "background" }, undefined, undefined, ctx);
 	const queuedId = (queued.details.gentleAgents as { taskId: string }).taskId;
-	const opened = commands.get("gentle:agents")!.handler("", ctx);
+	const opened = commands.get("jero:agents")!.handler("", ctx);
 	for (let attempt = 0; attempt < 40 && overlays.length === 0; attempt += 1) await new Promise((resolve) => setTimeout(resolve, 25));
 	overlays[0]!.handleInput("s");
 	await tick();
@@ -1690,7 +1690,7 @@ test("the overlay explains that stopping a waiting subagent dismisses its questi
 	await tick();
 	harness.children[0].emit({ type: "extension_ui_request", id: "wait", method: "input", title: "Need input" });
 	await tick();
-	const opened = commands.get("gentle:agents")!.handler("", ctx);
+	const opened = commands.get("jero:agents")!.handler("", ctx);
 	for (let attempt = 0; attempt < 40 && overlays.length === 0; attempt += 1) await new Promise((resolve) => setTimeout(resolve, 25));
 	overlays[0]!.handleInput("s");
 	await tick();
@@ -1712,7 +1712,7 @@ test("restored task history cannot enter the live panel or execute stop even wit
 	const { ctx, dialogs, overlays } = fakeContext();
 	await fire("session_start", ctx);
 	await tools.get("subagent_status")!.execute("restore", { task_id: historical.id }, undefined, undefined, ctx);
-	const opened = commands.get("gentle:agents")!.handler("", ctx);
+	const opened = commands.get("jero:agents")!.handler("", ctx);
 	for (let attempt = 0; attempt < 40 && overlays.length === 0; attempt += 1) await new Promise((resolve) => setTimeout(resolve, 25));
 	assert.doesNotMatch(stripAnsi(overlays[0]!.render(80).join("\n")), /Stop selected|Subagent explore/);
 	overlays[0]!.handleInput("s");
@@ -1768,7 +1768,7 @@ test("the card follows the active session: after /new the earlier session's task
 	await fire("session_start", ctx, { type: "session_start", reason: "new" });
 	assert.deepEqual(widget(), [], "the new session starts with an empty card");
 	assert.match((await tools.get("subagent_list_tasks")!.execute("c2", {}, undefined, undefined, ctx)).content[0].text, /No subagent tasks in this session/);
-	const opened = commands.get("gentle:agents")!.handler("", ctx);
+	const opened = commands.get("jero:agents")!.handler("", ctx);
 	for (let attempt = 0; attempt < 40 && overlays.length === 0; attempt += 1) await new Promise((resolve) => setTimeout(resolve, 25));
 	const overlay = overlays[0]!;
 	assert.match(stripAnsi(overlay.render(80)[0]), /this session · 0 active/, "the overlay opens on the active session");
@@ -1803,7 +1803,7 @@ test("the production overlay reads terminal rows at render time without a minimu
 	const overlayTui = { terminal: { get rows() { return rows; } }, requestRender() {} };
 	const { ctx, overlays, customOptions } = fakeContext(fakeTui, async () => true, async () => undefined, overlayTui);
 	await fire("session_start", ctx);
-	const opened = commands.get("gentle:agents")!.handler("", ctx);
+	const opened = commands.get("jero:agents")!.handler("", ctx);
 	for (let attempt = 0; attempt < 40 && overlays.length === 0; attempt += 1) await new Promise((resolve) => setTimeout(resolve, 25));
 	const overlay = overlays[0]!;
 	assert.deepEqual(customOptions[0], { overlay: true, overlayOptions: { width: "100%", maxHeight: "100%", margin: 0, anchor: "center" } });
@@ -1969,7 +1969,7 @@ test("selected child routes recheck provenance and keep separately authorized lo
   const registered = names.filter(name => mismatch !== "unregistered" || name !== "fetch_content");
   const pi = { on: (name: string, hook: typeof hooks extends Map<string, infer H> ? H : never) => hooks.set(name, hook), getActiveTools: () => active,
    getAllTools: () => registered.map(name => ({ name, sourceInfo: { source: mismatch === "sdk" && name === "fetch_content" ? "sdk" : "extension", path: mismatch === "path" ? "/other.ts" : "/installed/web.ts" } })) };
-  gentleAgents(pi as never, { GENTLE_PI_AGENTS_CHILD: "1", GENTLE_PI_RESEARCH_TOOLS: JSON.stringify(names.filter(name => mismatch !== "restriction" || name !== "fetch_content")), GENTLE_PI_RESEARCH_SELECTION: JSON.stringify(selection), GENTLE_PI_RESEARCH_ARTIFACT: JSON.stringify(scope) });
+  gentleAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(names.filter(name => mismatch !== "restriction" || name !== "fetch_content")), JERO_PI_RESEARCH_SELECTION: JSON.stringify(selection), JERO_PI_RESEARCH_ARTIFACT: JSON.stringify(scope) });
   const call = hooks.get("tool_call")!;
   assert.equal(call({ toolName: "fetch_content" })?.block, mismatch === "none" ? undefined : true, mismatch);
   assert.equal(call({ toolName: "web_search" })?.block, true, "available but unselected");
@@ -1988,7 +1988,7 @@ test("research child narrows artifact arguments and observes actual dual-store r
  let active = ["read", "write", "mem_read", "mem_save", "subagent_parent_message"];
  const journal = join(cwd, "session.jsonl"); writeFileSync(journal, "");
  const pi = { appendEntry: (customType, data) => appendFileSync(journal, JSON.stringify({ type: "custom", customType, data }) + "\n"), on: (name: string, fn: (...args: unknown[]) => unknown) => hooks.set(name, fn), getActiveTools: () => active, getAllTools: () => active.map(name => ({ name })) };
- gentleAgents(pi as never, { GENTLE_PI_AGENTS_CHILD: "1", GENTLE_PI_RESEARCH_TOOLS: JSON.stringify(active), GENTLE_PI_RESEARCH_ARTIFACT: JSON.stringify(scope) });
+ gentleAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(active), JERO_PI_RESEARCH_ARTIFACT: JSON.stringify(scope) });
  const ctx = { cwd, sessionManager: { getEntries: () => [], getSessionFile: () => journal } };
  const prompt = hooks.get("before_agent_start")!({ systemPrompt: "research" }, ctx) as { systemPrompt: string };
  assert.match(prompt.systemPrompt, /retainedIntent/);
@@ -2042,7 +2042,7 @@ test("research child narrows artifact arguments and observes actual dual-store r
  assert.equal(call("write", { path: locator.path })?.block, true);
  assert.equal((hooks.get("tool_call")!({ toolName: "read", input: { path: locator.path } }, { cwd: root }) as { block: boolean }).block, true);
  active.push("write");
- gentleAgents(pi as never, { GENTLE_PI_AGENTS_CHILD: "1", GENTLE_PI_RESEARCH_TOOLS: JSON.stringify(active), GENTLE_PI_RESEARCH_ARTIFACT: JSON.stringify(scope) });
+ gentleAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(active), JERO_PI_RESEARCH_ARTIFACT: JSON.stringify(scope) });
  call("read", { path: locator.path });
  result("read", { path: locator.path }, bytes);
  call("mem_read", readInput);
@@ -2057,7 +2057,7 @@ test("research child narrows artifact arguments and observes actual dual-store r
  call("mem_read", readInput);
  assert.equal(result("mem_read", readInput, render(divergent)).isError, true, "individually matching but divergent hybrid writes never converge");
  for (const completion of [[], [{ type: "text", text: "" }], [{ type: "text", text: "denied" }]]) {
-  gentleAgents(pi as never, { GENTLE_PI_AGENTS_CHILD: "1", GENTLE_PI_RESEARCH_TOOLS: JSON.stringify(active), GENTLE_PI_RESEARCH_ARTIFACT: JSON.stringify({ ...scope, store: "openspec", locators: [{ ...locator, engram: undefined }] }) });
+  gentleAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(active), JERO_PI_RESEARCH_ARTIFACT: JSON.stringify({ ...scope, store: "openspec", locators: [{ ...locator, engram: undefined }] }) });
   call("read", { path: locator.path }); result("read", { path: locator.path }, bytes);
   assert.equal(call("write", { path: locator.path, content: next }), undefined);
   assert.equal(call("write", { path: locator.path, content: next }, "overlap")?.block, true);
@@ -2070,7 +2070,7 @@ test("research child narrows artifact arguments and observes actual dual-store r
   const memory = tool === "mem_save", readTool = memory ? "mem_read" : "read";
   const input = memory ? readInput : { path: locator.path };
   const mutation = memory ? save(next) : { path: locator.path, content: next };
-  gentleAgents(pi as never, { GENTLE_PI_AGENTS_CHILD: "1", GENTLE_PI_RESEARCH_TOOLS: JSON.stringify(active), GENTLE_PI_RESEARCH_ARTIFACT: JSON.stringify({ ...scope, store: memory ? "engram" : "openspec", locators: [{ ...locator, path: memory ? undefined : locator.path, engram: memory ? locator.engram : undefined }] }) });
+  gentleAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(active), JERO_PI_RESEARCH_ARTIFACT: JSON.stringify({ ...scope, store: memory ? "engram" : "openspec", locators: [{ ...locator, path: memory ? undefined : locator.path, engram: memory ? locator.engram : undefined }] }) });
   call(readTool, input); result(readTool, input, memory ? render(bytes) : bytes);
   assert.equal(call(tool, mutation), undefined);
   assert.doesNotThrow(() => hooks.get("tool_result")!({ toolName: tool, input: mutation, toolCallId: "c", content: [null], isError: false }, ctx));
@@ -2080,7 +2080,7 @@ test("research child narrows artifact arguments and observes actual dual-store r
  }
  for (const store of ["openspec", "engram", "both"]) {
   for (const bad of ["missing", "malformed", "revision", "digest", "header", "body", "worktree"]) {
-   gentleAgents(pi as never, { GENTLE_PI_AGENTS_CHILD: "1", GENTLE_PI_RESEARCH_TOOLS: JSON.stringify(active), GENTLE_PI_RESEARCH_ARTIFACT: JSON.stringify({ ...scope, store, locators: [{ ...locator, path: store === "engram" ? undefined : locator.path, engram: store === "openspec" ? undefined : locator.engram }] }) });
+   gentleAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(active), JERO_PI_RESEARCH_ARTIFACT: JSON.stringify({ ...scope, store, locators: [{ ...locator, path: store === "engram" ? undefined : locator.path, engram: store === "openspec" ? undefined : locator.engram }] }) });
    const memory = store !== "openspec";
    const tool = memory ? "mem_read" : "read";
    const input = memory ? readInput : { path: locator.path };
@@ -2138,7 +2138,7 @@ test("managed remediation acquires before spawn and finalizes failure without ve
 test("only remediation children with the retained exact plan override stock bash", async () => {
 	for (const phase of ["apply", "remediate"]) {
 		const h = fakePi(); h.pi.getFlag = () => JSON.stringify({ phase, workspaceRoot: cwd, changeName: "alpha", ...(phase === "remediate" ? { failedEvidenceRevision: `sha256:${"a".repeat(64)}` } : {}) });
-		gentleAgents(h.pi, { GENTLE_PI_AGENTS_CHILD: "1", GENTLE_PI_SDD_REMEDIATION_PLAN: JSON.stringify({ scope: { cwd, commands: ["pnpm test", "git diff --check"], editPaths: [], allowedEditRoots: [cwd] }, plan: { cwd, commands: ["pnpm test"], runtimeHarness: { naReason: "Not applicable because this fixture has no runtime boundary." }, rollback: { boundary: "Revert fixture bytes", command: "git diff --check" } } }) });
+		gentleAgents(h.pi, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_SDD_REMEDIATION_PLAN: JSON.stringify({ scope: { cwd, commands: ["pnpm test", "git diff --check"], editPaths: [], allowedEditRoots: [cwd] }, plan: { cwd, commands: ["pnpm test"], runtimeHarness: { naReason: "Not applicable because this fixture has no runtime boundary." }, rollback: { boundary: "Revert fixture bytes", command: "git diff --check" } } }) });
 		await h.fire("session_start", { ...fakeContext().ctx, cwd });
 		assert.equal(h.tools.has("bash"), phase === "remediate");
 		assert.equal(h.tools.has("subagent_run"), false);
@@ -2160,7 +2160,7 @@ test("managed remediation tools publish the typed exact evidence plan and bracke
 test("R1 malformed child grant denies tools even before/after failed session initialization", () => {
 	const hooks = new Map(), registered = [];
 	const pi = { on: (name, fn) => hooks.set(name, fn), registerTool: tool => registered.push(tool), getFlag: () => "{}" };
-	gentleAgents(pi as never, { GENTLE_PI_AGENTS_CHILD: "1", GENTLE_PI_SDD_REMEDIATION_PLAN: "malformed" });
+	gentleAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_SDD_REMEDIATION_PLAN: "malformed" });
 	const denied = () => hooks.get("tool_call")?.({ toolName: "bash", input: { command: "touch outside" } }, { cwd })?.block;
 	assert.equal(denied(), true);
 	assert.doesNotThrow(() => hooks.get("session_start")({}, { cwd }));

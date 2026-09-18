@@ -15,7 +15,7 @@ export let liveSessionMetrics: () => { id: string; snapshot: readonly RuntimeMet
  * (Agents view).
  */
 export default function runtimeMetrics(pi: ExtensionAPI, env = process.env, now: () => number = () => performance.now()): void {
-	if (env.GENTLE_PI_AGENTS_CHILD === "1") return;
+	if (env.JERO_PI_AGENTS_CHILD === "1") return;
 	type Selection = Pick<FinalResponse, "selectedModelId" | "selectedProvider" | "effort">;
 	let selection: Selection | undefined;
 	let active = false;
@@ -90,8 +90,8 @@ export default function runtimeMetrics(pi: ExtensionAPI, env = process.env, now:
 			record(owner, [{ kind: "final_assistant_response", responseId: "",
 				selectedProvider: selected?.selectedProvider ?? "unknown", selectedModelId: selected?.selectedModelId,
 				effort: selected?.effort ?? "unavailable",
-				executor: env.GENTLE_PI_AGENTS_CHILD === undefined ? "orchestrator" : "unknown",
-				agentClass: env.GENTLE_PI_AGENTS_CHILD === undefined ? ORCHESTRATOR_AGENT_CLASS : UNKNOWN_AGENT_CLASS,
+				executor: env.JERO_PI_AGENTS_CHILD === undefined ? "orchestrator" : "unknown",
+				agentClass: env.JERO_PI_AGENTS_CHILD === undefined ? ORCHESTRATOR_AGENT_CLASS : UNKNOWN_AGENT_CLASS,
 				observedModelId: message.model, responseModelId: message.responseModel,
 				providerThinkingLevel: EFFORTS.includes(message.providerThinkingLevel as FinalResponse["effort"])
 					? message.providerThinkingLevel as FinalResponse["effort"] : "unavailable",

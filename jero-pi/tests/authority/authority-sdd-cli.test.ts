@@ -11,7 +11,7 @@ import { tempRoot } from "./fixtures.ts";
 // P4c: the extension's default NativeReviewCli now serves the SDD projection
 // methods in-process. The contract that matters is decodeNativeSddStatusV2
 // compatibility — the extension's command paths (selection transport,
-// /gentle-sdd-status, the consent-gated continue) consume the record through
+// /jero-sdd-status, the consent-gated continue) consume the record through
 // that decoder unchanged.
 
 function harness(t: { after(fn: () => void): void }): { repo: string; cli: ReturnType<typeof createJeroAuthoritySddCli> } {

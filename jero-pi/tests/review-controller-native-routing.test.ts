@@ -789,9 +789,9 @@ function repository(t: test.TestContext): string {
 
 test("candidate lifecycle sweeps startup and cleans every shutdown including reload", async (t) => {
 	const cwd = repository(t);
-	for (const key of ["HOME", "GENTLE_PI_AGENT_HOME", "PI_CODING_AGENT_DIR", "GENTLE_PI_CONFIG_HOME", "GENTLE_PI_GENTLE_AI_DEV_BINARY"]) {
+	for (const key of ["HOME", "JERO_PI_AGENT_HOME", "PI_CODING_AGENT_DIR", "JERO_PI_CONFIG_HOME", "JERO_PI_GENTLE_AI_DEV_BINARY"]) {
 		const previous = process.env[key];
-		process.env[key] = key === "GENTLE_PI_GENTLE_AI_DEV_BINARY" ? "" : join(cwd, key);
+		process.env[key] = key === "JERO_PI_GENTLE_AI_DEV_BINARY" ? "" : join(cwd, key);
 		if (process.env[key]) mkdirSync(process.env[key]!, { recursive: true });
 		t.after(() => { if (previous === undefined) delete process.env[key]; else process.env[key] = previous; });
 	}
@@ -799,8 +799,8 @@ test("candidate lifecycle sweeps startup and cleans every shutdown including rel
 	const homeAgent = join(cwd, "HOME", ".agents", "isolation-probe.md");
 	mkdirSync(dirname(homeAgent), { recursive: true });
 	writeFileSync(homeAgent, "---\nname: isolation-probe\ndescription: Fixture\n---\n");
-	writeFileSync(join(cwd, "GENTLE_PI_CONFIG_HOME", "models.json"), JSON.stringify({ "isolation-probe": { model: "fixture/model" } }));
-	t.diagnostic(`startup routing: cwd=${cwd}; HOME, GENTLE_PI_AGENT_HOME, PI_CODING_AGENT_DIR, GENTLE_PI_CONFIG_HOME are same-named children; dev-binary override disabled`);
+	writeFileSync(join(cwd, "JERO_PI_CONFIG_HOME", "models.json"), JSON.stringify({ "isolation-probe": { model: "fixture/model" } }));
+	t.diagnostic(`startup routing: cwd=${cwd}; HOME, JERO_PI_AGENT_HOME, PI_CODING_AGENT_DIR, JERO_PI_CONFIG_HOME are same-named children; dev-binary override disabled`);
 	const calls: string[] = [];
 	const destinations: string[] = [];
 	const violations: string[] = [];
@@ -857,10 +857,10 @@ test("candidate lifecycle sweeps startup and cleans every shutdown including rel
 		assert.deepEqual(violations, []);
 		assert.ok(destinations.length > 0, "startup must actually write fixture assets");
 		assert.ok(discovery.includes(join(cwd, "HOME", ".agents")), "home agent discovery must use the fixture");
-		assert.equal(existsSync(join(cwd, "GENTLE_PI_AGENT_HOME", "gentle-ai", "managed-assets.json")), true);
+		assert.equal(existsSync(join(cwd, "JERO_PI_AGENT_HOME", "gentle-ai", "managed-assets.json")), true);
 		assert.match(readFileSync(homeAgent, "utf8"), /model: fixture\/model/);
 		assert.ok(destinations.includes(homeAgent), "the discovered fixture agent must actually receive routing");
-		assert.ok(destinations.includes(join(cwd, "GENTLE_PI_AGENT_HOME", "subagents.json")));
+		assert.ok(destinations.includes(join(cwd, "JERO_PI_AGENT_HOME", "subagents.json")));
 		t.diagnostic(`confined startup: ${destinations.length} filesystem mutations; fixture home-agent routing and managed-assets manifest verified; external violations=0`);
 		assert.deepEqual(calls, ["sweep"]);
 	} finally {

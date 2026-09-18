@@ -88,8 +88,8 @@ test("selected SDD change snapshots at task construction and reaches child start
 	selection.changeName = "beta";
 	runner.run(request({ changeName: "beta", workspaceRoot: root, phase: "apply" }));
 	await tick();
-	const serialized = spawned[0]![spawned[0]!.indexOf("--gentle-sdd-change") + 1]!;
-	const concurrent = spawned[1]![spawned[1]!.indexOf("--gentle-sdd-change") + 1]!;
+	const serialized = spawned[0]![spawned[0]!.indexOf("--jero-sdd-change") + 1]!;
+	const concurrent = spawned[1]![spawned[1]!.indexOf("--jero-sdd-change") + 1]!;
 	assert.deepEqual(JSON.parse(serialized), { changeName: "alpha", workspaceRoot: root, phase: "apply" });
 	assert.deepEqual(JSON.parse(concurrent), { changeName: "beta", workspaceRoot: root, phase: "apply" });
 	const startup = __testing.resolveSddChangeStartup(serialized, root, "sdd-apply");

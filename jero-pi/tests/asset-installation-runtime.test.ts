@@ -62,7 +62,7 @@ export default function (pi) {
 		assert.doesNotMatch(before, /- sdd-/, "fresh startup must not install SDD definitions");
 		assert.equal(existsSync(join(agentDir, "chains", "sdd-full.chain.md")), false);
 		assert.equal(existsSync(join(agentDir, "gentle-ai", "support")), false);
-		await session.prompt("/gentle:install-sdd");
+		await session.prompt("/jero:install-sdd");
 		assert.strictEqual(runtime.session, session);
 		const after = await names();
 		for (const name of ["gentle-ai-explore", "review-risk", "sdd-init", "sdd-apply"]) {
@@ -73,13 +73,13 @@ export default function (pi) {
 		}
 		assert.ok(existsSync(join(agentDir, "chains", "sdd-full.chain.md")));
 		assert.equal(session.messages.length, 0, "slash activation must not start a model turn");
-		console.log("SDK discovery: delegation/review only -> /gentle:install-sdd -> same-session sdd-init/sdd-apply and support");
+		console.log("SDK discovery: delegation/review only -> /jero:install-sdd -> same-session sdd-init/sdd-apply and support");
 	} finally {
 		await runtime.dispose();
 	}
 }
 
-if (process.env.GENTLE_PI_ASSET_PROOF_CHILD === "1") {
+if (process.env.JERO_PI_ASSET_PROOF_CHILD === "1") {
 	await proveLazyDiscovery();
 } else {
 	test("actual SDK discovers SDD only after explicit activation in the same session", () => {
@@ -93,9 +93,9 @@ if (process.env.GENTLE_PI_ASSET_PROOF_CHILD === "1") {
 				cwd, encoding: "utf8", timeout: 30_000,
 				env: {
 					PATH: `${dirname(process.execPath)}:/usr/bin:/bin`, HOME: home, TMPDIR: root,
-					PI_CODING_AGENT_DIR: agentDir, GENTLE_PI_AGENT_HOME: agentDir,
-					GENTLE_PI_CONFIG_HOME: join(home, "config"), XDG_CONFIG_HOME: join(home, ".config"),
-					PI_OFFLINE: "1", GENTLE_PI_ASSET_PROOF_CHILD: "1",
+					PI_CODING_AGENT_DIR: agentDir, JERO_PI_AGENT_HOME: agentDir,
+					JERO_PI_CONFIG_HOME: join(home, "config"), XDG_CONFIG_HOME: join(home, ".config"),
+					PI_OFFLINE: "1", JERO_PI_ASSET_PROOF_CHILD: "1",
 				},
 			});
 			assert.ifError(result.error);

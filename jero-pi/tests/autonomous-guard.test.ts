@@ -316,9 +316,9 @@ test("loadRuntimeGuardrailsConfig: returns off config when no file exists", () =
 	}
 });
 
-test("loadRuntimeGuardrailsConfig: env var GENTLE_PI_AUTONOMOUS_MODE=1 activates mode", () => {
-	const original = process.env.GENTLE_PI_AUTONOMOUS_MODE;
-	process.env.GENTLE_PI_AUTONOMOUS_MODE = "1";
+test("loadRuntimeGuardrailsConfig: env var JERO_PI_AUTONOMOUS_MODE=1 activates mode", () => {
+	const original = process.env.JERO_PI_AUTONOMOUS_MODE;
+	process.env.JERO_PI_AUTONOMOUS_MODE = "1";
 	const dir = makeTmpDir();
 	try {
 		const config = __testing.loadRuntimeGuardrailsConfig(dir, {
@@ -327,8 +327,8 @@ test("loadRuntimeGuardrailsConfig: env var GENTLE_PI_AUTONOMOUS_MODE=1 activates
 		assert.equal(config.autonomousMode, true);
 	} finally {
 		rmSync(dir, { recursive: true, force: true });
-		if (original === undefined) delete process.env.GENTLE_PI_AUTONOMOUS_MODE;
-		else process.env.GENTLE_PI_AUTONOMOUS_MODE = original;
+		if (original === undefined) delete process.env.JERO_PI_AUTONOMOUS_MODE;
+		else process.env.JERO_PI_AUTONOMOUS_MODE = original;
 	}
 });
 
@@ -548,9 +548,9 @@ test("classifyGuardedCommand: autonomousMode=true, empty guardedCommands, gitPus
 // Fix 5c: env var negatives — only "1" activates autonomous mode
 // ---------------------------------------------------------------------------
 
-test("loadRuntimeGuardrailsConfig: GENTLE_PI_AUTONOMOUS_MODE=0 does NOT activate autonomous mode", () => {
-	const original = process.env.GENTLE_PI_AUTONOMOUS_MODE;
-	process.env.GENTLE_PI_AUTONOMOUS_MODE = "0";
+test("loadRuntimeGuardrailsConfig: JERO_PI_AUTONOMOUS_MODE=0 does NOT activate autonomous mode", () => {
+	const original = process.env.JERO_PI_AUTONOMOUS_MODE;
+	process.env.JERO_PI_AUTONOMOUS_MODE = "0";
 	const dir = makeTmpDir();
 	try {
 		const config = __testing.loadRuntimeGuardrailsConfig(dir, {
@@ -559,14 +559,14 @@ test("loadRuntimeGuardrailsConfig: GENTLE_PI_AUTONOMOUS_MODE=0 does NOT activate
 		assert.equal(config.autonomousMode, false);
 	} finally {
 		rmSync(dir, { recursive: true, force: true });
-		if (original === undefined) delete process.env.GENTLE_PI_AUTONOMOUS_MODE;
-		else process.env.GENTLE_PI_AUTONOMOUS_MODE = original;
+		if (original === undefined) delete process.env.JERO_PI_AUTONOMOUS_MODE;
+		else process.env.JERO_PI_AUTONOMOUS_MODE = original;
 	}
 });
 
-test("loadRuntimeGuardrailsConfig: GENTLE_PI_AUTONOMOUS_MODE=true does NOT activate autonomous mode", () => {
-	const original = process.env.GENTLE_PI_AUTONOMOUS_MODE;
-	process.env.GENTLE_PI_AUTONOMOUS_MODE = "true";
+test("loadRuntimeGuardrailsConfig: JERO_PI_AUTONOMOUS_MODE=true does NOT activate autonomous mode", () => {
+	const original = process.env.JERO_PI_AUTONOMOUS_MODE;
+	process.env.JERO_PI_AUTONOMOUS_MODE = "true";
 	const dir = makeTmpDir();
 	try {
 		const config = __testing.loadRuntimeGuardrailsConfig(dir, {
@@ -575,14 +575,14 @@ test("loadRuntimeGuardrailsConfig: GENTLE_PI_AUTONOMOUS_MODE=true does NOT activ
 		assert.equal(config.autonomousMode, false);
 	} finally {
 		rmSync(dir, { recursive: true, force: true });
-		if (original === undefined) delete process.env.GENTLE_PI_AUTONOMOUS_MODE;
-		else process.env.GENTLE_PI_AUTONOMOUS_MODE = original;
+		if (original === undefined) delete process.env.JERO_PI_AUTONOMOUS_MODE;
+		else process.env.JERO_PI_AUTONOMOUS_MODE = original;
 	}
 });
 
-test("loadRuntimeGuardrailsConfig: GENTLE_PI_AUTONOMOUS_MODE='' does NOT activate autonomous mode", () => {
-	const original = process.env.GENTLE_PI_AUTONOMOUS_MODE;
-	process.env.GENTLE_PI_AUTONOMOUS_MODE = "";
+test("loadRuntimeGuardrailsConfig: JERO_PI_AUTONOMOUS_MODE='' does NOT activate autonomous mode", () => {
+	const original = process.env.JERO_PI_AUTONOMOUS_MODE;
+	process.env.JERO_PI_AUTONOMOUS_MODE = "";
 	const dir = makeTmpDir();
 	try {
 		const config = __testing.loadRuntimeGuardrailsConfig(dir, {
@@ -591,8 +591,8 @@ test("loadRuntimeGuardrailsConfig: GENTLE_PI_AUTONOMOUS_MODE='' does NOT activat
 		assert.equal(config.autonomousMode, false);
 	} finally {
 		rmSync(dir, { recursive: true, force: true });
-		if (original === undefined) delete process.env.GENTLE_PI_AUTONOMOUS_MODE;
-		else process.env.GENTLE_PI_AUTONOMOUS_MODE = original;
+		if (original === undefined) delete process.env.JERO_PI_AUTONOMOUS_MODE;
+		else process.env.JERO_PI_AUTONOMOUS_MODE = original;
 	}
 });
 

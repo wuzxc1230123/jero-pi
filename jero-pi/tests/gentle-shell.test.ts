@@ -233,7 +233,7 @@ test("gentleShell installs the footer on session_start when a UI exists", () => 
 test("the fullscreen Status rail carries a live digest so a model switch refreshes it", async () => {
 	const { pi, handlers } = fakePi();
 	let profile: string | undefined = "team";
-	gentleShell(pi, { GENTLE_PI_SHELL_CHANGES_WATCH_MS: "off" }, { activeProfile: () => profile });
+	gentleShell(pi, { JERO_PI_SHELL_CHANGES_WATCH_MS: "off" }, { activeProfile: () => profile });
 	const entries: unknown[] = [];
 	const { ctx, ui } = fakeContext({ entries });
 	await fire(handlers, "session_start", ctx);
@@ -286,7 +286,7 @@ test("profile reader follows store changes and rejects missing or invalid active
 	const root = mkdtempSync(join(tmpdir(), "shell-profile-"));
 	t.after(() => rmSync(root, { recursive: true, force: true }));
 	const path = join(root, "profiles.json");
-	const read = createActiveProfileReader({ GENTLE_PI_CONFIG_HOME: root });
+	const read = createActiveProfileReader({ JERO_PI_CONFIG_HOME: root });
 	const save = (active: string | undefined) => writeFileSync(path, JSON.stringify({
 		kind: "gentle-pi.agent_model_profiles", version: 1, active, profiles: { team: {}, other: {} },
 	}));
@@ -300,7 +300,7 @@ test("profile reader follows store changes and rejects missing or invalid active
 	writeFileSync(replacement, JSON.stringify({ kind: "gentle-pi.agent_model_profiles", version: 1, active: "team", profiles: { team: {} } }));
 	renameSync(replacement, path);
 	assert.equal(read(), "team", "atomic replacement refreshes the cached profile");
-	const isolated = createActiveProfileReader({ GENTLE_PI_CONFIG_HOME: join(root, "other-home") });
+	const isolated = createActiveProfileReader({ JERO_PI_CONFIG_HOME: join(root, "other-home") });
 	assert.equal(isolated(), undefined);
 	assert.equal(read(), "team", "another shell's config home does not alter this cache");
 	save("missing");
@@ -317,7 +317,7 @@ test("profile reader follows store changes and rejects missing or invalid active
 
 test("gentleShell stays out of the way without a UI or when disabled", () => {
 	const disabled = fakePi();
-	gentleShell(disabled.pi, { GENTLE_PI_SHELL: "0" });
+	gentleShell(disabled.pi, { JERO_PI_SHELL: "0" });
 	assert.equal(disabled.commands.size, 0);
 	assert.ok(disabled.handlers.has("tool_call"), "capture remains available to headless children");
 
@@ -438,12 +438,12 @@ test("Changes opens only for captured mutations, not registered dirty roots", as
  const {ctx,ui,overlayReady}=fakeContext();
  await fire(handlers,"session_start",ctx);
  await tools.get("session_worktree_register")!.execute("r",{path:"/linked"},undefined,undefined,ctx);
- await commands.get("gentle:changes")!.handler("",ctx);
+ await commands.get("jero:changes")!.handler("",ctx);
  assert.match(ui.notices.join("\n"),/No captured agent changes/);
  assert.equal(ui.overlay,undefined);
  sessionChange(ctx,"a","/linked","file.ts");
  await fire(handlers,"agent_end",ctx);
- const opened=commands.get("gentle:changes")!.handler("",ctx);
+ const opened=commands.get("jero:changes")!.handler("",ctx);
  await overlayReady;
  assert.match(ui.overlayView!.render(140).join("\n"),/linked/);
  assert.equal(git.length,0);
@@ -453,12 +453,12 @@ test("Changes opens only for captured mutations, not registered dirty roots", as
 
 test("overlay groups captured roots and refreshes same-count diffs without HEAD or external files", async () => {
  const {pi,handlers,commands,git}=fakePi();
- gentleShell(pi,{GENTLE_PI_SHELL_CHANGES_POLL_MS:"5"});
+ gentleShell(pi,{JERO_PI_SHELL_CHANGES_POLL_MS:"5"});
  const {ctx,ui,overlayReady}=fakeContext();
  sessionChange(ctx,"a","/repo","same.ts","old\n","first\n");
  sessionChange(ctx,"child:a","/linked","same.ts","old\n","child\n");
  await fire(handlers,"session_start",ctx);
- const opened=commands.get("gentle:changes")!.handler("",ctx);
+ const opened=commands.get("jero:changes")!.handler("",ctx);
  await overlayReady;
  try {
   ui.overlayView!.handleInput("\r"); ui.overlayView!.handleInput("j");
@@ -525,7 +525,7 @@ test("registered canonical root governs real Git discovery, status and diff desp
 	const discovery = await run(["worktree", "list", "--porcelain", "-z"]);
 	assert.match(discovery.stdout, new RegExp(`worktree ${selected}`));
 	assert.ok(!discovery.stdout.includes(foreign));
-	installGentleShell(h.pi, { GENTLE_PI_SHELL_CHANGES_WATCH_MS: "off" }, { devBinary: () => undefined, gitRunner: (cwd) => shellGitRunner(cwd, poisoned) });
+	installGentleShell(h.pi, { JERO_PI_SHELL_CHANGES_WATCH_MS: "off" }, { devBinary: () => undefined, gitRunner: (cwd) => shellGitRunner(cwd, poisoned) });
 	await fire(h.handlers, "session_start", ctx);
 	t.after(() => fire(h.handlers, "session_shutdown", ctx));
 	assert.equal(ui.widgets.has("gentle-shell-changes"), false, "preexisting dirty files are not agent changes");
@@ -542,7 +542,7 @@ test("registered canonical root governs real Git discovery, status and diff desp
 	assert.equal(largeDiff.code, 0);
 	assert.ok(largeDiff.stdout.length > 1024 * 1024, "output must not inherit execFile's default one MiB cap");
 	assert.match(largeDiff.stdout, /\+selected final marker/);
-	await h.commands.get("gentle:changes")!.handler("", ctx);
+	await h.commands.get("jero:changes")!.handler("", ctx);
 	assert.equal(ui.overlay, undefined);
 });
 
@@ -602,9 +602,9 @@ test("external editor receives the selected worktree as process cwd", () => {
 
 test("changesShortcut defaults to alt+g and can be overridden or disabled", () => {
 	assert.equal(changesShortcut({}), "alt+g");
-	assert.equal(changesShortcut({ GENTLE_PI_SHELL_CHANGES_KEY: "ctrl+shift+g" }), "ctrl+shift+g");
-	assert.equal(changesShortcut({ GENTLE_PI_SHELL_CHANGES_KEY: "off" }), undefined);
-	assert.equal(changesShortcut({ GENTLE_PI_SHELL_CHANGES_KEY: "" }), undefined);
+	assert.equal(changesShortcut({ JERO_PI_SHELL_CHANGES_KEY: "ctrl+shift+g" }), "ctrl+shift+g");
+	assert.equal(changesShortcut({ JERO_PI_SHELL_CHANGES_KEY: "off" }), undefined);
+	assert.equal(changesShortcut({ JERO_PI_SHELL_CHANGES_KEY: "" }), undefined);
 });
 
 test("gentleShell binds the changes shortcut to the same handler as the command", async () => {
@@ -618,13 +618,13 @@ test("gentleShell binds the changes shortcut to the same handler as the command"
 	assert.match(ui.notices.join("\n"), /No captured agent changes/);
 
 	const silent = fakePi();
-	gentleShell(silent.pi, { GENTLE_PI_SHELL_CHANGES_KEY: "off" });
+	gentleShell(silent.pi, { JERO_PI_SHELL_CHANGES_KEY: "off" });
 	assert.equal(silent.shortcuts.size, 0);
 });
 
 test("external edits do not pollute Changes or trigger background Git scans", async () => {
  const {pi,handlers,git}=fakePi([{numstat:"4\t2\texternal.ts\n",porcelain:" M external.ts\0"}]);
- gentleShell(pi,{GENTLE_PI_SHELL_CHANGES_WATCH_MS:"5"});
+ gentleShell(pi,{JERO_PI_SHELL_CHANGES_WATCH_MS:"5"});
  const {ctx,ui}=fakeContext();
  await fire(handlers,"session_start",ctx);
  await new Promise(resolve=>setTimeout(resolve,30));
@@ -665,7 +665,7 @@ test("fetchCodexUsage sends the token and account id and parses the payload", as
 test("gentleShell fetches Codex usage on session start and shows it in the bar", async () => {
 	const { pi, handlers } = fakePi();
 	const { fetchFn, calls } = fakeFetch();
-	gentleShell(pi, { GENTLE_PI_SHELL_CHANGES_WATCH_MS: "off" }, { fetch: fetchFn, now: () => 1_788_600_000_000 });
+	gentleShell(pi, { JERO_PI_SHELL_CHANGES_WATCH_MS: "off" }, { fetch: fetchFn, now: () => 1_788_600_000_000 });
 	const { ctx, ui } = fakeContext({ token: JWT });
 	await fire(handlers, "session_start", ctx);
 	await new Promise((resolve) => setTimeout(resolve, 0));
@@ -679,7 +679,7 @@ test("gentleShell fetches Codex usage on session start and shows it in the bar",
 
 test("gentleShell records SSE rate-limit headers from provider responses", async () => {
 	const { pi, handlers } = fakePi();
-	gentleShell(pi, { GENTLE_PI_SHELL_CHANGES_WATCH_MS: "off" }, { fetch: fakeFetch({}, false).fetchFn, now: () => 0 });
+	gentleShell(pi, { JERO_PI_SHELL_CHANGES_WATCH_MS: "off" }, { fetch: fakeFetch({}, false).fetchFn, now: () => 0 });
 	const { ctx, ui } = fakeContext();
 	await fire(handlers, "session_start", ctx);
 	for (const handler of handlers.get("after_provider_response") ?? []) {
@@ -695,12 +695,12 @@ test("gentleShell records SSE rate-limit headers from provider responses", async
 	assert.doesNotMatch(renderFooter(ui), /codex/);
 });
 
-test("gentleShell registers /gentle:usage and opens the subscriptions overlay", async () => {
+test("gentleShell registers /jero:usage and opens the subscriptions overlay", async () => {
 	const { pi, handlers, commands } = fakePi();
-	gentleShell(pi, { GENTLE_PI_SHELL_CHANGES_WATCH_MS: "off" }, { fetch: fakeFetch().fetchFn, now: () => 1_788_600_000_000 });
+	gentleShell(pi, { JERO_PI_SHELL_CHANGES_WATCH_MS: "off" }, { fetch: fakeFetch().fetchFn, now: () => 1_788_600_000_000 });
 	const { ctx, ui } = fakeContext({ token: JWT });
 	await fire(handlers, "session_start", ctx);
-	const opened = commands.get("gentle:usage")!.handler("", ctx);
+	const opened = commands.get("jero:usage")!.handler("", ctx);
 	await new Promise((resolve) => setTimeout(resolve, 0));
 	const plain = ui.overlayView!.render(90).map(stripAnsi);
 	assert.match(plain[0], /Subscriptions/);
@@ -730,7 +730,7 @@ test("gentleShell draws the review preflight message as a Gentle card", () => {
 test("gentleShell keeps a dev-binary override visible above the editor for the whole session", async () => {
 	const { pi, handlers } = fakePi();
 	const deps = { fetch: fakeFetch({}, false).fetchFn, now: () => 0, devBinary: () => ({ state: "active" as const, path: "/Users/me/go/bin/gentle-ai", sha256: "6e53bfc6305a3949deadbeef" }) };
-	gentleShell(pi, { GENTLE_PI_SHELL_CHANGES_WATCH_MS: "off" }, deps);
+	gentleShell(pi, { JERO_PI_SHELL_CHANGES_WATCH_MS: "off" }, deps);
 	const { ctx, ui } = fakeContext();
 	await fire(handlers, "session_start", ctx);
 	const factory = ui.widgets.get("gentle-shell-dev-binary") as (tui: unknown, theme: unknown) => { render(width: number): string[] };
@@ -749,7 +749,7 @@ test("gentleShell keeps a dev-binary override visible above the editor for the w
 	assert.equal(ui.widgets.has("gentle-shell-dev-binary"), false, "the startup notice leaves with the first prompt");
 
 	const clean = fakePi();
-	gentleShell(clean.pi, { GENTLE_PI_SHELL_CHANGES_WATCH_MS: "off" }, { ...deps, devBinary: () => undefined });
+	gentleShell(clean.pi, { JERO_PI_SHELL_CHANGES_WATCH_MS: "off" }, { ...deps, devBinary: () => undefined });
 	const fresh = fakeContext();
 	await fire(clean.handlers, "session_start", fresh.ctx);
 	assert.equal(fresh.ui.widgets.has("gentle-shell-dev-binary"), false);

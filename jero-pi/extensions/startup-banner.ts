@@ -67,7 +67,7 @@ function rgb(r: number, g: number, b: number, text: string): string {
 }
 
 function gentleAiConfigHome(): string {
-  return process.env.GENTLE_PI_CONFIG_HOME ?? join(os.homedir(), ".pi", "gentle-ai");
+  return process.env.JERO_PI_CONFIG_HOME ?? join(os.homedir(), ".pi", "gentle-ai");
 }
 
 function bannerConfigPath(): string {
@@ -608,10 +608,10 @@ export default function (pi: ExtensionAPI) {
       },
     });
   };
-  registerBannerCommand("gentle:banner");
-  registerToggleCommand("gentle:toggle-rose", "showRose");
-  registerToggleCommand("gentle:toggle-text-logo", "showTextLogo");
-  registerColorCommand("gentle:banner-color");
+  registerBannerCommand("jero:banner");
+  registerToggleCommand("jero:toggle-rose", "showRose");
+  registerToggleCommand("jero:toggle-text-logo", "showTextLogo");
+  registerColorCommand("jero:banner-color");
 
   pi.on("session_start", async (_event, ctx) => {
     disposeHeader();

@@ -62,7 +62,7 @@ export interface ShellDeps {
 // not just mtime: profile writes replace the store atomically. Keep the cache
 // local to this shell instance and recheck on the next frame after panel edits.
 export function createActiveProfileReader(env: NodeJS.ProcessEnv = process.env): () => string | undefined {
-	const path = profilesFilePath(env.GENTLE_PI_CONFIG_HOME ?? join(os.homedir(), ".pi", "gentle-ai"));
+	const path = profilesFilePath(env.JERO_PI_CONFIG_HOME ?? join(os.homedir(), ".pi", "gentle-ai"));
 	let fingerprint: string | undefined;
 	let name: string | undefined;
 	return () => {
@@ -243,7 +243,7 @@ function installPrompt(ctx: ExtensionContext, onCreated: (prompt: GentlePromptEd
 }
 
 const CHANGES_WIDGET_KEY = "gentle-shell-changes";
-const CHANGES_COMMAND_NAME = "gentle:changes";
+const CHANGES_COMMAND_NAME = "jero:changes";
 const CHANGES_SHORTCUT_DEFAULT = "alt+g";
 const CHANGES_POLL_DEFAULT_MS = 2000;
 const GIT_TIMEOUT_MS = 5000;
@@ -297,7 +297,7 @@ export function openInExternalEditor(host: ExternalEditorHost, path: string, env
 }
 
 export function changesShortcut(env: NodeJS.ProcessEnv = process.env): string | undefined {
-	const value = env.GENTLE_PI_SHELL_CHANGES_KEY?.trim();
+	const value = env.JERO_PI_SHELL_CHANGES_KEY?.trim();
 	if (value === undefined) return CHANGES_SHORTCUT_DEFAULT;
 	return value === "" || value.toLowerCase() === "off" ? undefined : value;
 }
@@ -308,7 +308,7 @@ function positiveMs(value: string | undefined, fallback: number): number {
 }
 
 function changesPollMs(env: NodeJS.ProcessEnv): number {
-	return positiveMs(env.GENTLE_PI_SHELL_CHANGES_POLL_MS, CHANGES_POLL_DEFAULT_MS);
+	return positiveMs(env.JERO_PI_SHELL_CHANGES_POLL_MS, CHANGES_POLL_DEFAULT_MS);
 }
 
 function changesFingerprint(model: ChangesModel): string {
@@ -391,7 +391,7 @@ function showChanges(ctx: ExtensionContext, model: ChangesModel): void {
 	);
 }
 
-const USAGE_COMMAND_NAME = "gentle:usage";
+const USAGE_COMMAND_NAME = "jero:usage";
 const REVIEW_PREFLIGHT_TYPE = "gentle-pi.review-preflight";
 const DEV_BINARY_WIDGET_KEY = "gentle-shell-dev-binary";
 const SHA_PREFIX_LENGTH = 16;

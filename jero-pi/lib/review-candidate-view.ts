@@ -11,7 +11,7 @@ const REVIEW_LENS = ["review-risk", "review-resilience", "review-readability", "
 export type ReviewLens = (typeof REVIEW_LENS)[number];
 const CANDIDATE_GIT_TIMEOUT_MS = 10_000;
 const CANDIDATE_GIT_TIMEOUT_MAX_MS = 120_000;
-const CANDIDATE_GIT_TIMEOUT_ENV = "GENTLE_PI_CANDIDATE_GIT_TIMEOUT_MS";
+const CANDIDATE_GIT_TIMEOUT_ENV = "JERO_PI_CANDIDATE_GIT_TIMEOUT_MS";
 const CANDIDATE_GIT_MAX_BUFFER_BYTES = 64 * 1024 * 1024;
 // Keep the copied index at least one timestamp tick behind its source. The
 // two-second target also clears filesystems whose mtime granularity is a second

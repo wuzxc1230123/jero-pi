@@ -230,9 +230,9 @@ async function run() {
 	const globalConfigHome = await tempWorkspace();
 	const globalAgentHome = await tempWorkspace();
 	const ambientTestAssetsDir = await tempWorkspace();
-	process.env.GENTLE_PI_CONFIG_HOME = globalConfigHome;
-	process.env.GENTLE_PI_AGENT_HOME = globalAgentHome;
-	process.env.GENTLE_PI_TEST_ASSETS_DIR = ambientTestAssetsDir;
+	process.env.JERO_PI_CONFIG_HOME = globalConfigHome;
+	process.env.JERO_PI_AGENT_HOME = globalAgentHome;
+	process.env.JERO_PI_TEST_ASSETS_DIR = ambientTestAssetsDir;
 	const globalModelsPath = join(globalConfigHome, "models.json");
 	const globalSubagentsPath = join(globalAgentHome, "subagents.json");
 	const { pi, hooks, commands, flags, tools, emittedEvents } = createPi();
@@ -423,10 +423,10 @@ async function run() {
 		assert.doesNotMatch(
 			promptResult.systemPrompt,
 			new RegExp(ambientTestAssetsDir.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),
-			"normal runtime must ignore ambient GENTLE_PI_TEST_ASSETS_DIR",
+			"normal runtime must ignore ambient JERO_PI_TEST_ASSETS_DIR",
 		);
-		assert.doesNotMatch(promptResult.systemPrompt, /\{\{GENTLE_PI_SDD_WORKFLOW_PATH\}\}/);
-		delete process.env.GENTLE_PI_TEST_ASSETS_DIR;
+		assert.doesNotMatch(promptResult.systemPrompt, /\{\{JERO_PI_SDD_WORKFLOW_PATH\}\}/);
+		delete process.env.JERO_PI_TEST_ASSETS_DIR;
 		await rm(ambientTestAssetsDir, { recursive: true, force: true });
 		await writeFile(
 			join(globalConfigHome, "persona.json"),
@@ -616,7 +616,7 @@ async function run() {
 		const rpcChildCwd = await tempWorkspace();
 		try {
 			const rpcChild = createPi();
-			createGentleAiExtension({ processEnv: { GENTLE_PI_AGENTS_CHILD: "1" } })(rpcChild.pi);
+			createGentleAiExtension({ processEnv: { JERO_PI_AGENTS_CHILD: "1" } })(rpcChild.pi);
 			const rpcChildCtx = createCtx(rpcChildCwd, false, "delegated-rpc-sdd-child");
 			rpcChildCtx.mode = "rpc";
 			const rpcChildPrompt = await rpcChild.hooks.get("before_agent_start")[0](
@@ -1015,7 +1015,7 @@ async function run() {
 
 	const noUiCwd = await tempWorkspace();
 	const startupAgentHome = join(noUiCwd, "agent-home");
-	process.env.GENTLE_PI_AGENT_HOME = startupAgentHome;
+	process.env.JERO_PI_AGENT_HOME = startupAgentHome;
 	try {
 		const globalAgentHome = startupAgentHome;
 		for (const handler of hooks.get("session_start")) {
@@ -1180,13 +1180,13 @@ async function run() {
 			"a user-authored same-path retired asset must stay unowned",
 		);
 	} finally {
-		process.env.GENTLE_PI_AGENT_HOME = globalAgentHome;
+		process.env.JERO_PI_AGENT_HOME = globalAgentHome;
 		await rm(noUiCwd, { recursive: true, force: true });
 	}
 
 	const lazySddCwd = await tempWorkspace();
 	const lazyAgentHome = join(lazySddCwd, "agent-home");
-	process.env.GENTLE_PI_AGENT_HOME = lazyAgentHome;
+	process.env.JERO_PI_AGENT_HOME = lazyAgentHome;
 	try {
 		// This scenario must not inherit SDD definitions from earlier startup tests.
 		const globalAgentHome = lazyAgentHome;
@@ -1327,7 +1327,7 @@ async function run() {
 			"non-SDD subagents must not receive parent harness or SDD preflight prompts",
 		);
 	} finally {
-		process.env.GENTLE_PI_AGENT_HOME = globalAgentHome;
+		process.env.JERO_PI_AGENT_HOME = globalAgentHome;
 		await rm(lazySddCwd, { recursive: true, force: true });
 		await rm(globalModelsPath, { force: true });
 	}
@@ -1603,10 +1603,10 @@ async function run() {
 			review: "review-risk.md",
 		};
 		try {
-			process.env.GENTLE_PI_AGENT_HOME = agentHome;
-			process.env.GENTLE_PI_CONFIG_HOME = join(fixture, "config");
-			await mkdir(process.env.GENTLE_PI_CONFIG_HOME);
-			await writeFile(join(process.env.GENTLE_PI_CONFIG_HOME, "models.json"),
+			process.env.JERO_PI_AGENT_HOME = agentHome;
+			process.env.JERO_PI_CONFIG_HOME = join(fixture, "config");
+			await mkdir(process.env.JERO_PI_CONFIG_HOME);
+			await writeFile(join(process.env.JERO_PI_CONFIG_HOME, "models.json"),
 				JSON.stringify({ [representatives[owner].replace(/\.md$/, "")]: "test/installer-must-not-apply" }));
 			const ctx = createCtx(fixture, true);
 			const command = commands.get(`gentle:install-${owner}`);
@@ -1650,15 +1650,15 @@ async function run() {
 			const label = owner === "sdd" ? "SDD" : owner;
 			assert.ok(ctx.ui.notifications.at(-1).message.includes(`Global ${label} user overrides: 1 file(s)`));
 		} finally {
-			process.env.GENTLE_PI_CONFIG_HOME = globalConfigHome;
-			process.env.GENTLE_PI_AGENT_HOME = globalAgentHome;
+			process.env.JERO_PI_CONFIG_HOME = globalConfigHome;
+			process.env.JERO_PI_AGENT_HOME = globalAgentHome;
 			await rm(fixture, { recursive: true, force: true });
 		}
 	}
 
 	const repairFixture = await tempWorkspace();
 	try {
-		process.env.GENTLE_PI_AGENT_HOME = join(repairFixture, "agent-home");
+		process.env.JERO_PI_AGENT_HOME = join(repairFixture, "agent-home");
 		const ctx = createCtx(repairFixture, true);
 		await commands.get("gentle:install-sdd").handler("", ctx);
 		for (const diagnostic of ["gentle:status", "gentle:doctor"]) {
@@ -1670,9 +1670,9 @@ async function run() {
 				`${diagnostic} must provide a repair for missing review assets`);
 			assert.doesNotMatch(message, /install-sdd --force/);
 		}
-		const manifest = JSON.parse(await readFile(join(process.env.GENTLE_PI_AGENT_HOME, "gentle-ai", "managed-assets.json"), "utf8"));
+		const manifest = JSON.parse(await readFile(join(process.env.JERO_PI_AGENT_HOME, "gentle-ai", "managed-assets.json"), "utf8"));
 		for (const key of Object.keys(manifest.assets)) {
-			await rm(join(process.env.GENTLE_PI_AGENT_HOME, key));
+			await rm(join(process.env.JERO_PI_AGENT_HOME, key));
 		}
 		for (const diagnostic of ["gentle:status", "gentle:doctor"]) {
 			await commands.get(diagnostic).handler("", ctx);
@@ -1681,7 +1681,7 @@ async function run() {
 				"managed installation evidence must survive missing SDD files");
 		}
 	} finally {
-		process.env.GENTLE_PI_AGENT_HOME = globalAgentHome;
+		process.env.JERO_PI_AGENT_HOME = globalAgentHome;
 		await rm(repairFixture, { recursive: true, force: true });
 	}
 
@@ -1689,7 +1689,7 @@ async function run() {
 		const fixture = await tempWorkspace();
 		const agentHome = join(fixture, "agent-home");
 		try {
-			process.env.GENTLE_PI_AGENT_HOME = agentHome;
+			process.env.JERO_PI_AGENT_HOME = agentHome;
 			const command = commands.get(trigger);
 			await command.handler("", createCtx(fixture, true, `${trigger}-install`));
 			assert.equal(existsSync(join(agentHome, "agents", "gentle-ai-worker.md")), false,
@@ -1732,7 +1732,7 @@ async function run() {
 			assert.equal(await readFile(userPath, "utf8"), userEdit);
 			assert.equal(await readFile(projectOverride, "utf8"), "Project override must survive.\n");
 		} finally {
-			process.env.GENTLE_PI_AGENT_HOME = globalAgentHome;
+			process.env.JERO_PI_AGENT_HOME = globalAgentHome;
 			await rm(fixture, { recursive: true, force: true });
 		}
 	}
@@ -1751,13 +1751,13 @@ async function run() {
 	}
 
 	const staleAssetsCwd = await tempWorkspace();
-	const previousAgentHome = process.env.GENTLE_PI_AGENT_HOME;
+	const previousAgentHome = process.env.JERO_PI_AGENT_HOME;
 	const previousHome = process.env.HOME;
 	const previousUserProfile = process.env.USERPROFILE;
 	try {
 		const diagnosticsAgentHome = join(staleAssetsCwd, "agent-home");
 		const diagnosticsHome = staleAssetsCwd;
-		process.env.GENTLE_PI_AGENT_HOME = diagnosticsAgentHome;
+		process.env.JERO_PI_AGENT_HOME = diagnosticsAgentHome;
 		process.env.HOME = diagnosticsHome;
 		process.env.USERPROFILE = diagnosticsHome;
 		for (const [dir, name] of [
@@ -1807,8 +1807,8 @@ async function run() {
 		assert.match(ctx.ui.notifications.at(-1).message, /Engram memory tools not active in this session/);
 		pi.setActiveTools(["read", "bash", "edit", "write"]);
 	} finally {
-		if (previousAgentHome === undefined) delete process.env.GENTLE_PI_AGENT_HOME;
-		else process.env.GENTLE_PI_AGENT_HOME = previousAgentHome;
+		if (previousAgentHome === undefined) delete process.env.JERO_PI_AGENT_HOME;
+		else process.env.JERO_PI_AGENT_HOME = previousAgentHome;
 		if (previousHome === undefined) delete process.env.HOME;
 		else process.env.HOME = previousHome;
 		if (previousUserProfile === undefined) delete process.env.USERPROFILE;

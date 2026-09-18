@@ -7,8 +7,8 @@ import type { AgentDefinition } from "./agents-config.ts";
 // `mcp` and dynamic `mcp__context7` gateways are deliberately NOT grants: an
 // active gateway does not prove which remote methods it can safely expose.
 export const RESEARCH_TOOLS = ["fetch_content", "web_search", "source_check", "get_search_content"] as const;
-export const RESEARCH_CHILD_TOOLS_ENV = "GENTLE_PI_RESEARCH_TOOLS";
-export const RESEARCH_SELECTION_ENV = "GENTLE_PI_RESEARCH_SELECTION";
+export const RESEARCH_CHILD_TOOLS_ENV = "JERO_PI_RESEARCH_TOOLS";
+export const RESEARCH_SELECTION_ENV = "JERO_PI_RESEARCH_SELECTION";
 export interface ResearchGrant {
 	tools: string[];
 	extensions: Record<string, string>;
@@ -87,7 +87,7 @@ export function researchAgent(agent: AgentDefinition, pi: Inventory, selection?:
 	return { agent: { ...agent, tools, instructions: `${agent.instructions}\n\n${renderResearchCapabilities(capabilities)}` }, capabilities, extensionPaths: [...extensionPaths] };
 }
 
-export const RESEARCH_ARTIFACT_ENV = "GENTLE_PI_RESEARCH_ARTIFACT";
+export const RESEARCH_ARTIFACT_ENV = "JERO_PI_RESEARCH_ARTIFACT";
 const ARTIFACT_STORES = ["openspec", "engram", "both", "none"] as const;
 // The store identifier stays "engram" until the P5 identity pass; the
 // LOCATOR carries the jero memory model: one topic key, replace-on-save
@@ -192,7 +192,7 @@ export function researchArtifactReadback(locator: ResearchLocator, tool: string,
 	try { return record(JSON.parse(bytes)).revision === locator.revision; } catch { return false; }
 }
 
-export const RESEARCH_PERSISTENCE_ENTRY = "gentle-sdd-research-persistence";
+export const RESEARCH_PERSISTENCE_ENTRY = "jero-sdd-research-persistence";
 export function parseResearchPersistence(value: unknown, scope: ResearchArtifactIntent, cwd: string) {
 	const saved = record(value), previous = parseResearchArtifactIntent(saved.scope, cwd);
 	parseResearchArtifactIntent(scope, cwd, previous);

@@ -604,7 +604,7 @@ test("AgentRunner retains only a 64-notification duplicate window", async () => 
 test("piCommand reuses the running pi entry point and honors the override", () => {
 	assert.deepEqual(piCommand({ execPath: "/bin/node", argv: ["/bin/node", "/x/dist/cli.js"], env: {} }), { command: "/bin/node", args: ["/x/dist/cli.js"] });
 	assert.deepEqual(piCommand({ execPath: "/bin/node", argv: ["/bin/node", "/x/other.js"], env: {} }), { command: "pi", args: [] });
-	assert.deepEqual(piCommand({ execPath: "/bin/node", argv: [], env: { GENTLE_PI_AGENTS_PI: "/opt/pi --flag" } }), { command: "/opt/pi", args: ["--flag"] });
+	assert.deepEqual(piCommand({ execPath: "/bin/node", argv: [], env: { JERO_PI_AGENTS_PI: "/opt/pi --flag" } }), { command: "/opt/pi", args: ["--flag"] });
 });
 
 test("JsonLines splits on LF only, tolerates CRLF, and skips lines that are not JSON", () => {
@@ -761,12 +761,12 @@ for (const [platform, detached] of [["win32", false], ["linux", true]] as const)
 	}, { askUser: async () => ({ cancelled: true }) });
 	const task = runner.run(request({ env: { PATH: "/fixture", KEEP: "yes" } }));
 	await tick();
-	const ownedIpc = launches[0]?.options.env.GENTLE_PI_AGENTS_OWNED_IPC;
+	const ownedIpc = launches[0]?.options.env.JERO_PI_AGENTS_OWNED_IPC;
 	assert.match(ownedIpc ?? "", /^\d+-[a-z0-9]+$/, "the runner creates an opaque owned-IPC marker");
 	assert.deepEqual(launches, [{
 		command: "pi-fixture",
 		args: ["--from-host", "--mode", "rpc", "--session-dir", "/sessions", "--model", "openai-codex/gpt-5.6-terra:high", "--tools", "read,grep,subagent_parent_message", "--append-system-prompt", "You map things."],
-		options: { cwd: "/repo", env: { PATH: "/fixture", KEEP: "yes", GENTLE_PI_AGENTS_CHILD: "1", GENTLE_PI_AGENTS_OWNED_IPC: ownedIpc }, detached, stdio: ["pipe", "pipe", "pipe", "ipc"] },
+		options: { cwd: "/repo", env: { PATH: "/fixture", KEEP: "yes", JERO_PI_AGENTS_CHILD: "1", JERO_PI_AGENTS_OWNED_IPC: ownedIpc }, detached, stdio: ["pipe", "pipe", "pipe", "ipc"] },
 	}]);
 	child.emit({ type: "agent_end", messages: [{ role: "assistant", content: [{ type: "text", text: "platform checked" }], stopReason: "stop" }] });
 	child.emit({ type: "agent_settled" });
@@ -778,8 +778,8 @@ test("AgentRunner retains permission broker fd3 and assigns messaging IPC to fd4
 	const task = runner.run(request({ authorizeParentStandingReviewPermission: () => true }));
 	await tick();
 	const launch = spawnOptions[0];
-	assert.match(launch?.env.GENTLE_PI_AGENTS_OWNED_IPC ?? "", /^\d+-[a-z0-9]+$/, "the owned-IPC marker has the runner's opaque shape");
-	assert.deepEqual(launch?.env, { GENTLE_PI_AGENTS_CHILD: "1", GENTLE_PI_AGENTS_OWNED_IPC: launch?.env.GENTLE_PI_AGENTS_OWNED_IPC, GENTLE_PI_AGENTS_PARENT_PERMISSION_FD: "3" });
+	assert.match(launch?.env.JERO_PI_AGENTS_OWNED_IPC ?? "", /^\d+-[a-z0-9]+$/, "the owned-IPC marker has the runner's opaque shape");
+	assert.deepEqual(launch?.env, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_AGENTS_OWNED_IPC: launch?.env.JERO_PI_AGENTS_OWNED_IPC, JERO_PI_AGENTS_PARENT_PERMISSION_FD: "3" });
 	assert.deepEqual(launch?.stdio, ["pipe", "pipe", "pipe", "pipe", "ipc"]);
 	assert.equal(launch?.stdio?.length, 5);
 	children[0].emit({ type: "agent_end", messages: [{ role: "assistant", content: [{ type: "text", text: "channel checked" }], stopReason: "stop" }] });
@@ -1056,15 +1056,15 @@ test("research narrowing transport keeps exact argv paths and replaces inherited
   const artifact = { store: "none" as const, worktree: "/work", changeName: "demo", retainedIntent: "denied questions", locators: [] };
   const expected = structuredClone(artifact);
   const launch = request({ researchSelection, researchArtifact: artifact, extensionPaths: researchSelection ? ["/installed/docs tools.ts"] : [],
-   env: { PATH: "/bin", GENTLE_PI_RESEARCH_SELECTION: "stale broad selection", GENTLE_PI_RESEARCH_ARTIFACT: "stale broader scope" } });
+   env: { PATH: "/bin", JERO_PI_RESEARCH_SELECTION: "stale broad selection", JERO_PI_RESEARCH_ARTIFACT: "stale broader scope" } });
   const argv = childArguments(launch);
   assert.deepEqual(argv.filter((_, i) => argv[i - 1] === "--extension"), launch.extensionPaths);
   const task = h.runner.run(launch);
   artifact.worktree = "/wrong";
   await tick();
-  assert.deepEqual(JSON.parse(h.spawnOptions.at(-1)!.env.GENTLE_PI_RESEARCH_ARTIFACT!), expected);
+  assert.deepEqual(JSON.parse(h.spawnOptions.at(-1)!.env.JERO_PI_RESEARCH_ARTIFACT!), expected);
   assert.deepEqual("researchArtifact" in task ? task.researchArtifact : undefined, expected);
-  assert.deepEqual(JSON.parse(h.spawnOptions.at(-1)!.env.GENTLE_PI_RESEARCH_SELECTION!), researchSelection ?? null);
+  assert.deepEqual(JSON.parse(h.spawnOptions.at(-1)!.env.JERO_PI_RESEARCH_SELECTION!), researchSelection ?? null);
   assert.equal(h.spawnOptions.at(-1)!.env.PATH, "/bin");
   h.runner.cancel(task.id);
   assert.equal((await h.runner.waitFor(task.id)).status, TASK_STATUS.CANCELLED);

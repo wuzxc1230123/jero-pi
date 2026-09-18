@@ -42,7 +42,7 @@ import {
 import type { AgentModelConfig } from "../lib/model-routing-authority.ts";
 
 // Agent-model profiles: pure store, summary, and export logic for the
-// /gentle:profiles panel. These tests perform zero filesystem access — every
+// /jero:profiles panel. These tests perform zero filesystem access — every
 // tested function operates on strings and plain objects.
 
 const CONFIG: AgentModelConfig = {

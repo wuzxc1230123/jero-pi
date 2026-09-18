@@ -172,7 +172,7 @@ test("startup skip honors no skill registry controls", () => {
 	assert.equal(__testing.shouldSkipSkillRegistryStartup(disabled, ["--no-skills"], {}), true);
 	assert.equal(__testing.shouldSkipSkillRegistryStartup(disabled, ["-ns"], {}), true);
 	assert.equal(
-		__testing.shouldSkipSkillRegistryStartup(disabled, [], { GENTLE_PI_NO_SKILL_REGISTRY: "1" }),
+		__testing.shouldSkipSkillRegistryStartup(disabled, [], { JERO_PI_NO_SKILL_REGISTRY: "1" }),
 		true,
 	);
 	assert.equal(__testing.shouldSkipSkillRegistryStartup(disabled, [], {}), false);

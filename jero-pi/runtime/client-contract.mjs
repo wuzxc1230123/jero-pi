@@ -37,11 +37,11 @@ const execFileAsync = promisify(execFile);
 
 // Negotiated review/status responses can carry a complete authority inventory.
 // Keep the production default large enough for that payload while retaining a
-// hard 64 MiB ceiling even when GENTLE_PI_REVIEW_MAX_BUFFER_BYTES is set.
+// hard 64 MiB ceiling even when JERO_PI_REVIEW_MAX_BUFFER_BYTES is set.
 export const NATIVE_REVIEW_DEFAULT_MAX_BUFFER_BYTES = 16 * 1024 * 1024;
 const NATIVE_REVIEW_MAX_BUFFER_BYTES = 64 * 1024 * 1024;
-const NATIVE_REVIEW_MAX_BUFFER_BYTES_ENV = "GENTLE_PI_REVIEW_MAX_BUFFER_BYTES";
-const NATIVE_REVIEW_MAX_BUFFER_CONFIGURATION_HINT = "Inspect native review state before any new START; GENTLE_PI_REVIEW_MAX_BUFFER_BYTES accepts a positive decimal up to 67108864.";
+const NATIVE_REVIEW_MAX_BUFFER_BYTES_ENV = "JERO_PI_REVIEW_MAX_BUFFER_BYTES";
+const NATIVE_REVIEW_MAX_BUFFER_CONFIGURATION_HINT = "Inspect native review state before any new START; JERO_PI_REVIEW_MAX_BUFFER_BYTES accepts a positive decimal up to 67108864.";
 
 
 export const NATIVE_REVIEW_OPERATION = {

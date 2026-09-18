@@ -54,8 +54,8 @@ const RIGHT_PADDING = 2;
 const COMPACT_BRANCH_WIDTH = 15;
 
 export function shellEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
-	if (env.GENTLE_PI_AGENTS_CHILD === "1") return false;
-	const value = env.GENTLE_PI_SHELL?.trim().toLowerCase();
+	if (env.JERO_PI_AGENTS_CHILD === "1") return false;
+	const value = env.JERO_PI_SHELL?.trim().toLowerCase();
 	return !(value === "0" || value === "false" || value === "off");
 }
 

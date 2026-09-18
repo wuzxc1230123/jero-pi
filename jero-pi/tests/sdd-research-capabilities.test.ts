@@ -201,7 +201,7 @@ ${body}`;
    const hooks = new Map(), active = ["read", "write", "mem_read", "mem_save"];
    const pi = { on: (name, fn) => hooks.set(name, fn), getAllTools: () => active.map(name => ({ name })), getActiveTools: () => active, appendEntry: (customType, data) => appendFileSync(history, JSON.stringify({ type: "custom", customType, data }) + "\n") };
    const ctx = { cwd, sessionManager: { getEntries: entries, getSessionFile: () => durable ? history : undefined } };
-   gentleAgents(pi as never, { GENTLE_PI_AGENTS_CHILD: "1", GENTLE_PI_RESEARCH_TOOLS: JSON.stringify(active), GENTLE_PI_RESEARCH_ARTIFACT: JSON.stringify(scope) });
+   gentleAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(active), JERO_PI_RESEARCH_ARTIFACT: JSON.stringify(scope) });
    hooks.get("before_agent_start")({ systemPrompt: "research" }, ctx);
    const call = (toolName, input, toolCallId = "call") => hooks.get("tool_call")({ toolName, input, toolCallId }, ctx);
    const read = toolName => {

@@ -166,14 +166,14 @@ test("renderShellBar drops the session name, then trailing segments, before trun
 });
 
 test("shellEnabled stays off inside a Gentle Agents child", () => {
-	assert.equal(shellEnabled({ GENTLE_PI_AGENTS_CHILD: "1" }), false);
+	assert.equal(shellEnabled({ JERO_PI_AGENTS_CHILD: "1" }), false);
 });
 
-test("shellEnabled honors GENTLE_PI_SHELL=0", () => {
+test("shellEnabled honors JERO_PI_SHELL=0", () => {
 	assert.equal(shellEnabled({}), true);
-	assert.equal(shellEnabled({ GENTLE_PI_SHELL: "1" }), true);
-	assert.equal(shellEnabled({ GENTLE_PI_SHELL: "0" }), false);
-	assert.equal(shellEnabled({ GENTLE_PI_SHELL: "false" }), false);
+	assert.equal(shellEnabled({ JERO_PI_SHELL: "1" }), true);
+	assert.equal(shellEnabled({ JERO_PI_SHELL: "0" }), false);
+	assert.equal(shellEnabled({ JERO_PI_SHELL: "false" }), false);
 });
 
 test("sidebar profile wraps long names without changing the compact bar", () => {

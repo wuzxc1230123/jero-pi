@@ -107,7 +107,7 @@ test("headless, child, empty-session, and non-Git contexts cannot offer or consu
 	assert.equal(await captureReviewSessionIdentity(context(root, manager, "session", { mode: "rpc", ui: { getAllThemes: () => [{}] } }), {}), undefined);
 	assert.equal(await captureReviewSessionIdentity(context(root, manager, "session", { mode: undefined }), {}), undefined, "an omitted mode with no verified TUI surface fails closed");
 	assert.ok(await captureReviewSessionIdentity(context(root, manager, "session", { mode: undefined, ui: { getAllThemes: () => [{}] } }), {}), "Pi 0.85 compatibility contexts prove TUI support through their nonempty theme surface");
-	assert.equal(await captureReviewSessionIdentity(context(root, manager, "session"), { GENTLE_PI_AGENTS_CHILD: "1" }), undefined);
+	assert.equal(await captureReviewSessionIdentity(context(root, manager, "session"), { JERO_PI_AGENTS_CHILD: "1" }), undefined);
 	assert.equal(await captureReviewSessionIdentity(context(root, manager, ""), {}), undefined);
 	assert.equal(await captureReviewSessionIdentity(context(tmpdir(), manager, "session"), {}), undefined);
 });

@@ -42,7 +42,7 @@ Use the parent-provided native v2 projection when present. Otherwise run `gentle
 
 Status is read-only. Do not inspect artifacts to recreate selection, task progress, dependencies, `actionContext`, or `nextRecommended`; do not call continuation, prepare a marker, grant roots, launch a phase, or use an Engram bypass. Display the producer's `blockedReasons` and instructions without executing them.
 
-Only the explicit `/gentle-sdd-continue` path may prepare consent. `ensureChangeInstanceMarker` is reached solely through `PrepareChangeInstanceConsent` and native `sdd-continue`, never through status.
+Only the explicit `/jero-sdd-continue` path may prepare consent. `ensureChangeInstanceMarker` is reached solely through `PrepareChangeInstanceConsent` and native `sdd-continue`, never through status.
 
 ## Output
 

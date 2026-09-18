@@ -409,7 +409,7 @@ test("explicit revocation ends the host grant without changing provider mode or 
 	const ctx = interactiveContext(cwd, manager, async (_title, options) => options[prompts++ === 0 ? 2 : 1]);
 	const start = { operation: "start", input: JSON.stringify({ mode: "ordinary" }) };
 	await runtime.controller.execute("grant-session", start, undefined, undefined, ctx);
-	const command = runtime.commands.get("gentle:review-session-permission");
+	const command = runtime.commands.get("jero:review-session-permission");
 	assert.ok(command);
 	await command!.handler("revoke", ctx);
 	writeFileSync(join(cwd, "app.ts"), "export const value = 3;\n");
@@ -516,7 +516,7 @@ test("headless, child, and changed post-UI identity never use host permission", 
 	const start = { operation: "start", input: JSON.stringify({ mode: "ordinary" }) };
 	for (const [label, processEnv, makeContext, parameters] of [
 		["headless", {}, () => ({ ...interactiveContext(cwd, {}, async () => { throw new Error("must not prompt"); }), mode: "print", hasUI: false }) as ExtensionContext, start],
-		["child", { GENTLE_PI_AGENTS_CHILD: "1" }, () => interactiveContext(cwd, {}, async () => { throw new Error("must not prompt"); }), start],
+		["child", { JERO_PI_AGENTS_CHILD: "1" }, () => interactiveContext(cwd, {}, async () => { throw new Error("must not prompt"); }), start],
 	] as const) {
 		const runtime = controllerHarness(cwd, processEnv);
 		const result = (await runtime.controller.execute(label, parameters, undefined, undefined, makeContext())).details;
@@ -572,7 +572,7 @@ test("a child never asks its broker to replay provider v2 or non-Pi v3 consents"
 		["non-Pi v3", nonPiV3Consent()],
 	] as const) {
 		let brokerRequests = 0;
-		const runtime = controllerHarness(cwd, { GENTLE_PI_AGENTS_CHILD: "1" }, {
+		const runtime = controllerHarness(cwd, { JERO_PI_AGENTS_CHILD: "1" }, {
 			consent: providerConsent,
 			childStandingReviewPermissionClient: {
 				requestAuthorization: async () => {
@@ -593,7 +593,7 @@ test("a child never asks its broker to replay provider v2 or non-Pi v3 consents"
 test("child permission transport survives reload shutdown but closes on terminal session shutdown", (t) => {
 	const cwd = reviewRepository(t);
 	let closes = 0;
-	const runtime = controllerHarness(cwd, { GENTLE_PI_AGENTS_CHILD: "1" }, {
+	const runtime = controllerHarness(cwd, { JERO_PI_AGENTS_CHILD: "1" }, {
 		childStandingReviewPermissionClient: { close: () => { closes += 1; } } as unknown as ChildStandingReviewPermissionClient,
 	});
 	const shutdown = runtime.events.get("session_shutdown");
@@ -630,7 +630,7 @@ test("a package-owned child replays its exact pending ordinary grant from a sibl
 		{ readable: parentToChild, writable: childToParent },
 		{ timeoutMs: 25 },
 	);
-	const runtime = controllerHarness(childRoot, { GENTLE_PI_AGENTS_CHILD: "1" }, { childStandingReviewPermissionClient: childPermission });
+	const runtime = controllerHarness(childRoot, { JERO_PI_AGENTS_CHILD: "1" }, { childStandingReviewPermissionClient: childPermission });
 	const childContext = interactiveContext(childRoot, {}, async () => { throw new Error("a child must not open its own consent UI"); }, "child-session");
 	const explicitStart = { operation: "start", input: JSON.stringify({ mode: "ordinary" }), workspaceRoot: childRoot };
 

@@ -106,11 +106,11 @@ test("model routing authority normalizes and preserves sync/async source status"
 		assert.deepEqual(await authority.readSavedModelConfigAsync(globalSource, projectSource), expected);
 	}
 
-	const previousConfigHome = process.env.GENTLE_PI_CONFIG_HOME;
-	process.env.GENTLE_PI_CONFIG_HOME = globalDir;
+	const previousConfigHome = process.env.JERO_PI_CONFIG_HOME;
+	process.env.JERO_PI_CONFIG_HOME = globalDir;
 	t.after(() => {
-		if (previousConfigHome === undefined) delete process.env.GENTLE_PI_CONFIG_HOME;
-		else process.env.GENTLE_PI_CONFIG_HOME = previousConfigHome;
+		if (previousConfigHome === undefined) delete process.env.JERO_PI_CONFIG_HOME;
+		else process.env.JERO_PI_CONFIG_HOME = previousConfigHome;
 	});
 	writeFileSync(projectPath, JSON.stringify({ project: "google/gemini" }));
 	assert.deepEqual(readModelConfig(projectDir), { project: { model: "google/gemini" } });
@@ -148,15 +148,15 @@ test("saved-routing apply fails closed for invalid project and global sources", 
 	mkdirSync(agentHomeSubagentsDir, { recursive: true });
 	t.after(() => rmSync(root, { recursive: true, force: true }));
 
-	const previousConfigHome = process.env.GENTLE_PI_CONFIG_HOME;
-	const previousAgentHome = process.env.GENTLE_PI_AGENT_HOME;
-	process.env.GENTLE_PI_CONFIG_HOME = configHome;
-	process.env.GENTLE_PI_AGENT_HOME = agentHome;
+	const previousConfigHome = process.env.JERO_PI_CONFIG_HOME;
+	const previousAgentHome = process.env.JERO_PI_AGENT_HOME;
+	process.env.JERO_PI_CONFIG_HOME = configHome;
+	process.env.JERO_PI_AGENT_HOME = agentHome;
 	t.after(() => {
-		if (previousConfigHome === undefined) delete process.env.GENTLE_PI_CONFIG_HOME;
-		else process.env.GENTLE_PI_CONFIG_HOME = previousConfigHome;
-		if (previousAgentHome === undefined) delete process.env.GENTLE_PI_AGENT_HOME;
-		else process.env.GENTLE_PI_AGENT_HOME = previousAgentHome;
+		if (previousConfigHome === undefined) delete process.env.JERO_PI_CONFIG_HOME;
+		else process.env.JERO_PI_CONFIG_HOME = previousConfigHome;
+		if (previousAgentHome === undefined) delete process.env.JERO_PI_AGENT_HOME;
+		else process.env.JERO_PI_AGENT_HOME = previousAgentHome;
 	});
 
 	const agentPath = join(projectAgentsDir, "worker.md");
@@ -213,15 +213,15 @@ test("saved-routing apply preserves missing, valid, null, inherit, and omission 
 	mkdirSync(agentHomeSubagentsDir, { recursive: true });
 	t.after(() => rmSync(root, { recursive: true, force: true }));
 
-	const previousConfigHome = process.env.GENTLE_PI_CONFIG_HOME;
-	const previousAgentHome = process.env.GENTLE_PI_AGENT_HOME;
-	process.env.GENTLE_PI_CONFIG_HOME = configHome;
-	process.env.GENTLE_PI_AGENT_HOME = agentHome;
+	const previousConfigHome = process.env.JERO_PI_CONFIG_HOME;
+	const previousAgentHome = process.env.JERO_PI_AGENT_HOME;
+	process.env.JERO_PI_CONFIG_HOME = configHome;
+	process.env.JERO_PI_AGENT_HOME = agentHome;
 	t.after(() => {
-		if (previousConfigHome === undefined) delete process.env.GENTLE_PI_CONFIG_HOME;
-		else process.env.GENTLE_PI_CONFIG_HOME = previousConfigHome;
-		if (previousAgentHome === undefined) delete process.env.GENTLE_PI_AGENT_HOME;
-		else process.env.GENTLE_PI_AGENT_HOME = previousAgentHome;
+		if (previousConfigHome === undefined) delete process.env.JERO_PI_CONFIG_HOME;
+		else process.env.JERO_PI_CONFIG_HOME = previousConfigHome;
+		if (previousAgentHome === undefined) delete process.env.JERO_PI_AGENT_HOME;
+		else process.env.JERO_PI_AGENT_HOME = previousAgentHome;
 	});
 
 	const agentPath = join(projectAgentsDir, "worker.md");

@@ -81,9 +81,9 @@ test("disk preferences are suggestions and resolved choices are reused only in s
 test("no-callback preflight fallback installs only SDD-owned assets", async () => {
 	const cwd = await workspace();
 	const agentHome = await workspace();
-	const previousAgentHome = process.env.GENTLE_PI_AGENT_HOME;
+	const previousAgentHome = process.env.JERO_PI_AGENT_HOME;
 	try {
-		process.env.GENTLE_PI_AGENT_HOME = agentHome;
+		process.env.JERO_PI_AGENT_HOME = agentHome;
 		await ensureSddPreflight(
 			preflightContext(cwd, false),
 			{ pi: { getActiveTools: () => [] } as never },
@@ -92,8 +92,8 @@ test("no-callback preflight fallback installs only SDD-owned assets", async () =
 		assert.equal(existsSync(join(agentHome, "agents", "gentle-ai-worker.md")), false);
 		assert.equal(existsSync(join(agentHome, "agents", "review-risk.md")), false);
 	} finally {
-		if (previousAgentHome === undefined) delete process.env.GENTLE_PI_AGENT_HOME;
-		else process.env.GENTLE_PI_AGENT_HOME = previousAgentHome;
+		if (previousAgentHome === undefined) delete process.env.JERO_PI_AGENT_HOME;
+		else process.env.JERO_PI_AGENT_HOME = previousAgentHome;
 		rmSync(agentHome, { recursive: true, force: true });
 	}
 });
@@ -108,13 +108,13 @@ async function waitForFile(path: string, timeoutMs = 2_000): Promise<void> {
 
 function spawnOwnerInstall(agentHome: string, owner: "delegation" | "review", holdLockMs = 0) {
 	const moduleUrl = pathToFileURL(join(import.meta.dirname, "..", "lib", "sdd-preflight.ts")).href;
-	const script = `import { installPackageAssets } from ${JSON.stringify(moduleUrl)}; installPackageAssets(process.env.GENTLE_PI_AGENT_HOME, false, [process.env.GENTLE_PI_TEST_ASSET_OWNER], { holdLockMs: Number(process.env.GENTLE_PI_TEST_HOLD_LOCK_MS) });`;
+	const script = `import { installPackageAssets } from ${JSON.stringify(moduleUrl)}; installPackageAssets(process.env.JERO_PI_AGENT_HOME, false, [process.env.JERO_PI_TEST_ASSET_OWNER], { holdLockMs: Number(process.env.JERO_PI_TEST_HOLD_LOCK_MS) });`;
 	const child = spawn(process.execPath, ["--experimental-strip-types", "--input-type=module", "--eval", script], {
 		env: {
 			...process.env,
-			GENTLE_PI_AGENT_HOME: agentHome,
-			GENTLE_PI_TEST_ASSET_OWNER: owner,
-			GENTLE_PI_TEST_HOLD_LOCK_MS: String(holdLockMs),
+			JERO_PI_AGENT_HOME: agentHome,
+			JERO_PI_TEST_ASSET_OWNER: owner,
+			JERO_PI_TEST_HOLD_LOCK_MS: String(holdLockMs),
 		},
 		stdio: "inherit",
 	});
@@ -137,9 +137,9 @@ test("managed asset replacements use exclusive same-directory temporary files", 
 
 test("managed ownership update waits for installer lock and atomically updates the file and manifest", async () => {
 	const agentHome = await workspace();
-	const previousAgentHome = process.env.GENTLE_PI_AGENT_HOME;
+	const previousAgentHome = process.env.JERO_PI_AGENT_HOME;
 	try {
-		process.env.GENTLE_PI_AGENT_HOME = agentHome;
+		process.env.JERO_PI_AGENT_HOME = agentHome;
 		installPackageAssets(agentHome, false, ["sdd"]);
 		const target = join(agentHome, "agents", "sdd-apply.md");
 		const previous = readFileSync(target, "utf8");
@@ -155,17 +155,17 @@ test("managed ownership update waits for installer lock and atomically updates t
 		assert.ok(manifest.assets["agents/gentle-ai-worker.md"], "delegation ownership must survive the routed SDD update");
 		assert.equal(manifest.assets["agents/sdd-apply.md"], createHash("sha256").update(next).digest("hex"));
 	} finally {
-		if (previousAgentHome === undefined) delete process.env.GENTLE_PI_AGENT_HOME;
-		else process.env.GENTLE_PI_AGENT_HOME = previousAgentHome;
+		if (previousAgentHome === undefined) delete process.env.JERO_PI_AGENT_HOME;
+		else process.env.JERO_PI_AGENT_HOME = previousAgentHome;
 		rmSync(agentHome, { recursive: true, force: true });
 	}
 });
 
 test("managed ownership update exposes lock timeout without writing a partial routed file", async () => {
 	const agentHome = await workspace();
-	const previousAgentHome = process.env.GENTLE_PI_AGENT_HOME;
+	const previousAgentHome = process.env.JERO_PI_AGENT_HOME;
 	try {
-		process.env.GENTLE_PI_AGENT_HOME = agentHome;
+		process.env.JERO_PI_AGENT_HOME = agentHome;
 		installPackageAssets(agentHome, false, ["sdd"]);
 		const target = join(agentHome, "agents", "sdd-apply.md");
 		const previous = readFileSync(target, "utf8");
@@ -184,8 +184,8 @@ test("managed ownership update exposes lock timeout without writing a partial ro
 		assert.equal(readFileSync(target, "utf8"), previous, "a timed-out managed update must not write the agent file");
 		assert.equal(readFileSync(manifestPath, "utf8"), manifestBefore, "a timed-out managed update must not write the manifest");
 	} finally {
-		if (previousAgentHome === undefined) delete process.env.GENTLE_PI_AGENT_HOME;
-		else process.env.GENTLE_PI_AGENT_HOME = previousAgentHome;
+		if (previousAgentHome === undefined) delete process.env.JERO_PI_AGENT_HOME;
+		else process.env.JERO_PI_AGENT_HOME = previousAgentHome;
 		rmSync(agentHome, { recursive: true, force: true });
 	}
 });
@@ -217,10 +217,10 @@ test("cross-process owner installations preserve both managed manifest entries",
 
 test("installer preserves foreign, malformed, and unsafe lock paths", async () => {
 	const agentHome = await workspace();
-	const previousAgentHome = process.env.GENTLE_PI_AGENT_HOME;
+	const previousAgentHome = process.env.JERO_PI_AGENT_HOME;
 	const lockPath = join(agentHome, "gentle-ai", "managed-assets.lock");
 	try {
-		process.env.GENTLE_PI_AGENT_HOME = agentHome;
+		process.env.JERO_PI_AGENT_HOME = agentHome;
 		mkdirSync(join(agentHome, "gentle-ai"), { recursive: true });
 		for (const contents of ["", "not-json\n", JSON.stringify({ schemaVersion: 1, token: "foreign", pid: process.pid, createdAtMs: Date.now() })]) {
 			writeFileSync(lockPath, contents);
@@ -235,8 +235,8 @@ test("installer preserves foreign, malformed, and unsafe lock paths", async () =
 		installPackageAssets(agentHome, false, ["review"]);
 		assert.equal(existsSync(lockPath), false, "an installer must release only its own completed lock file");
 	} finally {
-		if (previousAgentHome === undefined) delete process.env.GENTLE_PI_AGENT_HOME;
-		else process.env.GENTLE_PI_AGENT_HOME = previousAgentHome;
+		if (previousAgentHome === undefined) delete process.env.JERO_PI_AGENT_HOME;
+		else process.env.JERO_PI_AGENT_HOME = previousAgentHome;
 		rmSync(agentHome, { recursive: true, force: true });
 	}
 });
@@ -380,7 +380,7 @@ test("forced asset refresh migrates the exact v0.10.7 malformed sdd-apply asset 
 	);
 	const temporaryAgentHome = mkdtempSync(join(tmpdir(), "gentle-pi-v0107-preflight-"));
 	const temporaryUserAgentHome = mkdtempSync(join(tmpdir(), "gentle-pi-v0107-user-preflight-"));
-	const previousAgentHome = process.env.GENTLE_PI_AGENT_HOME;
+	const previousAgentHome = process.env.JERO_PI_AGENT_HOME;
 	const installed = join(temporaryAgentHome, "agents", "sdd-apply.md");
 	const userInstalled = join(temporaryUserAgentHome, "agents", "sdd-apply.md");
 	const userEdited = legacySource.replace(
@@ -388,7 +388,7 @@ test("forced asset refresh migrates the exact v0.10.7 malformed sdd-apply asset 
 		"You are the user-customized SDD apply executor for Gentle AI.",
 	);
 	try {
-		process.env.GENTLE_PI_AGENT_HOME = temporaryAgentHome;
+		process.env.JERO_PI_AGENT_HOME = temporaryAgentHome;
 		mkdirSync(join(temporaryAgentHome, "agents"), { recursive: true });
 		writeFileSync(installed, legacySource);
 		mkdirSync(join(temporaryAgentHome, "gentle-ai"), { recursive: true });
@@ -420,7 +420,7 @@ test("forced asset refresh migrates the exact v0.10.7 malformed sdd-apply asset 
 			"a current package-managed asset must remain refreshable",
 		);
 
-		process.env.GENTLE_PI_AGENT_HOME = temporaryUserAgentHome;
+		process.env.JERO_PI_AGENT_HOME = temporaryUserAgentHome;
 		mkdirSync(join(temporaryUserAgentHome, "agents"), { recursive: true });
 		writeFileSync(userInstalled, userEdited);
 		installSddAssets(packageRoot, true);
@@ -430,8 +430,8 @@ test("forced asset refresh migrates the exact v0.10.7 malformed sdd-apply asset 
 			"a user-edited variant of the malformed legacy asset must remain untouched",
 		);
 	} finally {
-		if (previousAgentHome === undefined) delete process.env.GENTLE_PI_AGENT_HOME;
-		else process.env.GENTLE_PI_AGENT_HOME = previousAgentHome;
+		if (previousAgentHome === undefined) delete process.env.JERO_PI_AGENT_HOME;
+		else process.env.JERO_PI_AGENT_HOME = previousAgentHome;
 		rmSync(temporaryAgentHome, { recursive: true, force: true });
 		rmSync(temporaryUserAgentHome, { recursive: true, force: true });
 	}
@@ -444,11 +444,11 @@ test("forced asset refresh migrates only untouched v0.14 package contracts and p
 		"utf8",
 	);
 	const temporaryAgentHome = mkdtempSync(join(tmpdir(), "gentle-pi-v014-preflight-"));
-	const previousAgentHome = process.env.GENTLE_PI_AGENT_HOME;
+	const previousAgentHome = process.env.JERO_PI_AGENT_HOME;
 	const untouched = join(temporaryAgentHome, "agents", "review-risk.md");
 	const edited = join(temporaryAgentHome, "agents", "review-readability.md");
 	try {
-		process.env.GENTLE_PI_AGENT_HOME = temporaryAgentHome;
+		process.env.JERO_PI_AGENT_HOME = temporaryAgentHome;
 		mkdirSync(join(temporaryAgentHome, "agents"), { recursive: true });
 		writeFileSync(untouched, fixture);
 		writeFileSync(edited, `${fixture}\nuser-owned edit\n`);
@@ -458,8 +458,8 @@ test("forced asset refresh migrates only untouched v0.14 package contracts and p
 		assert.match(readFileSync(untouched, "utf8"), /initial_review_tree/);
 		assert.equal(readFileSync(edited, "utf8"), `${fixture}\nuser-owned edit\n`);
 	} finally {
-		if (previousAgentHome === undefined) delete process.env.GENTLE_PI_AGENT_HOME;
-		else process.env.GENTLE_PI_AGENT_HOME = previousAgentHome;
+		if (previousAgentHome === undefined) delete process.env.JERO_PI_AGENT_HOME;
+		else process.env.JERO_PI_AGENT_HOME = previousAgentHome;
 		rmSync(temporaryAgentHome, { recursive: true, force: true });
 	}
 });
@@ -527,10 +527,10 @@ test("affirmative natural-language SDD requests trigger preflight without matchi
 });
 
 test("slash SDD preflight trigger accepts the gentle-sdd command prefix", () => {
-	for (const text of ["/gentle-sdd-init", "/gentle-sdd-continue", "/gentle-sdd-status fix-rose --json", "/sdd", "/sdd:plan", "/sdd-plan this change"]) {
+	for (const text of ["/jero-sdd-init", "/jero-sdd-continue", "/jero-sdd-status fix-rose --json", "/sdd", "/sdd:plan", "/sdd-plan this change"]) {
 		assert.equal(isSddPreflightTrigger(text), true, text);
 	}
-	for (const text of ["/gentle-sddx", "/gentle:sdd-preflight", "/gentle-status", "gentle-sdd-init"]) {
+	for (const text of ["/gentle-sddx", "/jero:sdd-preflight", "/gentle-status", "jero-sdd-init"]) {
 		assert.equal(isSddPreflightTrigger(text), false, text);
 	}
 });

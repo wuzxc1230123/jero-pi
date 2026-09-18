@@ -39,7 +39,7 @@ import { CHILD_METRICS_EVENT, CHILD_METRICS_REVOKED, childEvent, launchSelection
 // and gentle-ai's delegation rules keep working unchanged.
 
 export const AGENTS_WIDGET_KEY = "gentle-agents";
-export const AGENTS_COMMAND_NAME = "gentle:agents";
+export const AGENTS_COMMAND_NAME = "jero:agents";
 export const AGENTS_RESULT_TYPE = "gentle-agents.result";
 export const AGENTS_MESSAGE_TYPE = "gentle-agents.message";
 export const AGENTS_STALE_RESULT_TYPE = "gentle-agents.stale-result";
@@ -365,8 +365,8 @@ const defaultDeps = (env: NodeJS.ProcessEnv): AgentsDeps => ({
 });
 
 export function agentsEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
-	if (env.GENTLE_PI_AGENTS_CHILD === "1") return false;
-	const value = env.GENTLE_PI_AGENTS?.trim().toLowerCase();
+	if (env.JERO_PI_AGENTS_CHILD === "1") return false;
+	const value = env.JERO_PI_AGENTS?.trim().toLowerCase();
 	return !(value === "0" || value === "false" || value === "off");
 }
 
@@ -390,19 +390,19 @@ function legacySubagentsInstalledAt(agentHome: string): boolean {
 }
 
 export function agentsViewKey(env: NodeJS.ProcessEnv = process.env): string | undefined {
-	const value = env.GENTLE_PI_AGENTS_VIEW_KEY?.trim();
+	const value = env.JERO_PI_AGENTS_VIEW_KEY?.trim();
 	if (value === undefined) return VIEW_KEY_DEFAULT;
 	return value === "" || value.toLowerCase() === "off" ? undefined : value;
 }
 
 export function agentsCollapseKey(env: NodeJS.ProcessEnv = process.env): string | undefined {
-	const value = env.GENTLE_PI_AGENTS_KEY?.trim();
+	const value = env.JERO_PI_AGENTS_KEY?.trim();
 	if (value === undefined) return COLLAPSE_KEY_DEFAULT;
 	return value === "" || value.toLowerCase() === "off" ? undefined : value;
 }
 
 export function agentsStopKey(env: NodeJS.ProcessEnv = process.env): string | undefined {
-	const value = env.GENTLE_PI_AGENTS_STOP_KEY?.trim();
+	const value = env.JERO_PI_AGENTS_STOP_KEY?.trim();
 	if (value === undefined) return STOP_KEY_DEFAULT;
 	return value === "" || value.toLowerCase() === "off" ? undefined : value;
 }
@@ -418,7 +418,7 @@ function messageText(content: unknown): string {
 }
 
 function ownedChildIpc(env: NodeJS.ProcessEnv, candidate: IpcEndpoint | undefined): IpcEndpoint | undefined {
-	if (env.GENTLE_PI_AGENTS_CHILD !== "1" || !env.GENTLE_PI_AGENTS_OWNED_IPC || !candidate || typeof candidate.send !== "function" || typeof candidate.on !== "function") return undefined;
+	if (env.JERO_PI_AGENTS_CHILD !== "1" || !env.JERO_PI_AGENTS_OWNED_IPC || !candidate || typeof candidate.send !== "function" || typeof candidate.on !== "function") return undefined;
 	return candidate;
 }
 
@@ -534,7 +534,7 @@ const RESEARCH_SELECTION_SCHEMA = {
 };
 
 export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = process.env, overrides: Partial<AgentsDeps> = {}): void {
-	if (env.GENTLE_PI_AGENTS_CHILD === "1" && env[RESEARCH_CHILD_TOOLS_ENV] !== undefined) {
+	if (env.JERO_PI_AGENTS_CHILD === "1" && env[RESEARCH_CHILD_TOOLS_ENV] !== undefined) {
 		let allowed: string[] = [];
 		try {
 			const parsed: unknown = JSON.parse(env[RESEARCH_CHILD_TOOLS_ENV]!);
@@ -650,7 +650,7 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 		});
 	}
 	const childIpc = ownedChildIpc(env, overrides.childIpc ?? (process.send ? process as unknown as IpcEndpoint : undefined));
-	if (env.GENTLE_PI_AGENTS_CHILD === "1") {
+	if (env.JERO_PI_AGENTS_CHILD === "1") {
 		if (env[REMEDIATION_PLAN_ENV] !== undefined) {
 			let granted: RemediationScope | undefined;
 			pi.on("tool_call", (event, current) => remediationToolAllowed(granted, current.cwd, event.toolName, event.input) ? undefined : { block: true, reason: "Outside exact remediation human authorization" });
@@ -659,7 +659,7 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 				try {
 					const retained = JSON.parse(env[REMEDIATION_PLAN_ENV]!);
 					// SDK flags are owner-local; the runner transports the same selected context.
-					const selection = Object.hasOwn(retained, "selection") ? retained.selection : JSON.parse(String(pi.getFlag("gentle-sdd-change")));
+					const selection = Object.hasOwn(retained, "selection") ? retained.selection : JSON.parse(String(pi.getFlag("jero-sdd-change")));
 					parseSddChange(selection, "sdd-remediate");
 					const plan = parseRemediationPlan(retained.plan, ctx.cwd);
 					if (selection.workspaceRoot !== ctx.cwd || JSON.stringify(plannedCommands(plan)) !== JSON.stringify(retained.scope?.commands) || JSON.stringify(plan.editPaths ?? []) !== JSON.stringify(retained.scope?.editPaths)) throw new Error("Remediation grant/plan mismatch");

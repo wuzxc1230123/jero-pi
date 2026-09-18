@@ -595,14 +595,14 @@ test("candidate view Git commands classify bounded timeouts and block materializ
 
 test("candidate-view Git timeouts use a bounded strict-decimal override with safe fallback", (t) => {
 	const withTimeout = <T>(value: string | undefined, callback: () => T): T => {
-		const previous = process.env.GENTLE_PI_CANDIDATE_GIT_TIMEOUT_MS;
+		const previous = process.env.JERO_PI_CANDIDATE_GIT_TIMEOUT_MS;
 		try {
-			if (value === undefined) delete process.env.GENTLE_PI_CANDIDATE_GIT_TIMEOUT_MS;
-			else process.env.GENTLE_PI_CANDIDATE_GIT_TIMEOUT_MS = value;
+			if (value === undefined) delete process.env.JERO_PI_CANDIDATE_GIT_TIMEOUT_MS;
+			else process.env.JERO_PI_CANDIDATE_GIT_TIMEOUT_MS = value;
 			return callback();
 		} finally {
-			if (previous === undefined) delete process.env.GENTLE_PI_CANDIDATE_GIT_TIMEOUT_MS;
-			else process.env.GENTLE_PI_CANDIDATE_GIT_TIMEOUT_MS = previous;
+			if (previous === undefined) delete process.env.JERO_PI_CANDIDATE_GIT_TIMEOUT_MS;
+			else process.env.JERO_PI_CANDIDATE_GIT_TIMEOUT_MS = previous;
 		}
 	};
 	for (const [name, value, expected] of [

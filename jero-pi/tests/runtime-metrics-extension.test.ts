@@ -110,7 +110,7 @@ test("policy gates are gone: local accounting stays on in CI-style environments"
 });
 
 test("child-marker processes opt out entirely", async () => {
-	const h = harness({ GENTLE_PI_AGENTS_CHILD: "1" });
+	const h = harness({ JERO_PI_AGENTS_CHILD: "1" });
 	await h.emit("session_start");
 	assert.equal(h.handlers.size, 0);
 	h.emit("message_end", { message: final() }); await tick();

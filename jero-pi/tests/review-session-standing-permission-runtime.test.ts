@@ -115,11 +115,11 @@ export default function (pi) {
 }
 `, "utf8");
 
-	const previousAgentHome = process.env.GENTLE_PI_AGENT_HOME;
-	process.env.GENTLE_PI_AGENT_HOME = agentDir;
+	const previousAgentHome = process.env.JERO_PI_AGENT_HOME;
+	process.env.JERO_PI_AGENT_HOME = agentDir;
 	t.after(() => {
-		if (previousAgentHome === undefined) delete process.env.GENTLE_PI_AGENT_HOME;
-		else process.env.GENTLE_PI_AGENT_HOME = previousAgentHome;
+		if (previousAgentHome === undefined) delete process.env.JERO_PI_AGENT_HOME;
+		else process.env.JERO_PI_AGENT_HOME = previousAgentHome;
 	});
 	const statuses: Array<{ key: string; text?: string }> = [];
 	const uiContext = testUi(statuses);

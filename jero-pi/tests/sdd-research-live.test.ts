@@ -14,15 +14,15 @@ import { researchAgent, RESEARCH_CHILD_TOOLS_ENV } from "../lib/sdd-research-cap
 // Runtime-owned authentication references the existing profile; no credentials
 // are copied, extracted or symlinked. Only native OAuth refresh may persist there.
 // All resource discovery, settings, model caches and sessions remain isolated.
-const enabled = process.env.GENTLE_PI_LIVE_RESEARCH_TEST === "1";
-const role = process.env.GENTLE_PI_LIVE_RESEARCH_ROLE;
+const enabled = process.env.JERO_PI_LIVE_RESEARCH_TEST === "1";
+const role = process.env.JERO_PI_LIVE_RESEARCH_ROLE;
 const tools = ["web_search", "source_check", "fetch_content", "get_search_content"];
 const candidate = fileURLToPath(new URL("../extensions/gentle-agents.ts", import.meta.url));
 const self = fileURLToPath(import.meta.url);
 const question = `Generic runtime capability probe, not an SDD workflow or proposal admission. Artifact store: none. Do not write files or launch agents. Use ALL FOUR tools web_search, source_check, fetch_content and get_search_content to answer: What does the Node.js fs module provide? Set web_search workflow to none. Search only public Node.js documentation (site:nodejs.org). Check and retrieve the original public documentation. Return ONLY JSON with source_url (an https://nodejs.org/ URL) and passage (a verbatim 40-300 character passage from retrieved documentation). Do not use remembered text as evidence. If any tool fails, report inability rather than inventing evidence.`;
 
 function record(value: Record<string, unknown>): void {
-	appendFileSync(process.env.GENTLE_PI_LIVE_RESEARCH_TRACE!, `${JSON.stringify({ role, ...value })}\n`, { mode: 0o600 });
+	appendFileSync(process.env.JERO_PI_LIVE_RESEARCH_TRACE!, `${JSON.stringify({ role, ...value })}\n`, { mode: 0o600 });
 }
 
 // Only the eval entry invokes launchRpc; loading this file as an extension does
@@ -42,7 +42,7 @@ export async function launchRpc(): Promise<void> {
 		assert.equal(values.get("--mode"), "rpc");
 		stage = "sdk_load";
 		const { ModelRuntime, SettingsManager, SessionManager, createAgentSessionServices, createAgentSessionFromServices, createAgentSessionRuntime, runRpcMode } = await import("@earendil-works/pi-coding-agent");
-		const agentDir = process.env.PI_CODING_AGENT_DIR!, authPath = process.env.GENTLE_PI_LIVE_RESEARCH_AUTH_PATH!;
+		const agentDir = process.env.PI_CODING_AGENT_DIR!, authPath = process.env.JERO_PI_LIVE_RESEARCH_AUTH_PATH!;
 		assert.ok(isAbsolute(authPath) && existsSync(authPath), "Existing runtime auth storage required");
 		stage = "native_auth_and_model_catalog";
 		const modelRuntime = await ModelRuntime.create({ authPath, modelsPath: join(agentDir, "models.json"), modelsStorePath: join(agentDir, "models-store.json"), allowModelNetwork: false, signal: AbortSignal.timeout(30_000) });
@@ -54,7 +54,7 @@ export async function launchRpc(): Promise<void> {
 			settingsManager.applyOverrides({ retry: { enabled: false }, compaction: { enabled: false } });
 			const services = await createAgentSessionServices({ cwd, agentDir, modelRuntime, settingsManager, resourceLoaderOptions: {
 				noExtensions: true, noSkills: true, noPromptTemplates: true, noThemes: true, noContextFiles: true,
-				additionalExtensionPaths: [process.env.GENTLE_PI_LIVE_RESEARCH_WEB_EXTENSION!, candidate, self],
+				additionalExtensionPaths: [process.env.JERO_PI_LIVE_RESEARCH_WEB_EXTENSION!, candidate, self],
 				appendSystemPrompt: values.has("--append-system-prompt") ? [values.get("--append-system-prompt")!] : [],
 			} });
 			assert.equal(services.resourceLoader.getExtensions().errors.length, 0, "Extension load failed");
@@ -129,7 +129,7 @@ export default function liveProbe(pi: ExtensionAPI): void {
 				record({ event: "prerequisite_failed", reason: "inherited model is unavailable in the isolated profile" });
 				ctx.shutdown(); return;
 			}
-			const selection = { "open-web": { tools, extensions: Object.fromEntries(tools.map(name => [name, process.env.GENTLE_PI_LIVE_RESEARCH_WEB_EXTENSION!])) } };
+			const selection = { "open-web": { tools, extensions: Object.fromEntries(tools.map(name => [name, process.env.JERO_PI_LIVE_RESEARCH_WEB_EXTENSION!])) } };
 			const mapped = researchAgent({ name: "runtime-research-probe", description: "Public-only generic capability probe", tools, instructions: question } as never, pi, selection);
 			if (mapped.capabilities["open-web"].status !== "available") {
 				record({ event: "prerequisite_failed", reason: "four active approved installed web tools required" });
@@ -149,7 +149,7 @@ export default function liveProbe(pi: ExtensionAPI): void {
 			}, { askUser: async () => ({ cancelled: true }) });
 			const timer = setTimeout(() => runner.cancelAll(), 145_000);
 			try {
-				const task = runner.run({ agent: mapped.agent, prompt: question, label: "Public Node.js docs probe", context: undefined, mode: "task", cwd: ctx.cwd, parentSessionId: ctx.sessionManager.getSessionId(), model: undefined, thinking: undefined, sessionDir: join(ctx.cwd, "sessions"), resumeSessionPath: undefined, env: { ...process.env, GENTLE_PI_LIVE_RESEARCH_ROLE: "child", [RESEARCH_CHILD_TOOLS_ENV]: JSON.stringify(mapped.agent.tools), GENTLE_PI_RESEARCH_SELECTION: JSON.stringify(selection) } });
+				const task = runner.run({ agent: mapped.agent, prompt: question, label: "Public Node.js docs probe", context: undefined, mode: "task", cwd: ctx.cwd, parentSessionId: ctx.sessionManager.getSessionId(), model: undefined, thinking: undefined, sessionDir: join(ctx.cwd, "sessions"), resumeSessionPath: undefined, env: { ...process.env, JERO_PI_LIVE_RESEARCH_ROLE: "child", [RESEARCH_CHILD_TOOLS_ENV]: JSON.stringify(mapped.agent.tools), JERO_PI_RESEARCH_SELECTION: JSON.stringify(selection) } });
 				const outcome = await runner.waitFor(task.id);
 				record({ event: "runner_result", status: outcome.status });
 			} finally { clearTimeout(timer); runner.cancelAll(); ctx.shutdown(); }
@@ -157,9 +157,9 @@ export default function liveProbe(pi: ExtensionAPI): void {
 	});
 }
 
-if (role === undefined) test("LIVE installed web tools execute through the candidate research runner", { skip: !enabled && "opt in with GENTLE_PI_LIVE_RESEARCH_TEST=1; no live execution performed", timeout: 180_000 }, async t => {
-	const web = process.env.GENTLE_PI_LIVE_RESEARCH_WEB_EXTENSION;
-	assert.ok(web && isAbsolute(web) && existsSync(web), "Prerequisite: GENTLE_PI_LIVE_RESEARCH_WEB_EXTENSION must identify an already-installed web-tool extension.");
+if (role === undefined) test("LIVE installed web tools execute through the candidate research runner", { skip: !enabled && "opt in with JERO_PI_LIVE_RESEARCH_TEST=1; no live execution performed", timeout: 180_000 }, async t => {
+	const web = process.env.JERO_PI_LIVE_RESEARCH_WEB_EXTENSION;
+	assert.ok(web && isAbsolute(web) && existsSync(web), "Prerequisite: JERO_PI_LIVE_RESEARCH_WEB_EXTENSION must identify an already-installed web-tool extension.");
 	assert.ok(process.env.PI_MODEL && process.env.PI_PROVIDER, "Prerequisites: inherit PI_MODEL and PI_PROVIDER from the selected installed runtime; do not choose an ad hoc model.");
 	const { getAgentDir } = await import("@earendil-works/pi-coding-agent");
 	const authPath = join(getAgentDir(), "auth.json");
@@ -171,7 +171,7 @@ if (role === undefined) test("LIVE installed web tools execute through the candi
 	writeFileSync(join(profile, "settings.json"), JSON.stringify({ defaultProvider: process.env.PI_PROVIDER, defaultModel: process.env.PI_MODEL, ...(process.env.PI_REASONING_LEVEL ? { defaultThinkingLevel: process.env.PI_REASONING_LEVEL } : {}), packages: [] }), { mode: 0o600 });
 	const child = spawn(launcher.command, [...launcher.args, "--mode", "rpc", "--session-dir", join(root, "sessions"), "--tools", tools.join(",")], {
 		cwd: root, detached: process.platform !== "win32", stdio: ["pipe", "pipe", "pipe"],
-		env: { ...process.env, HOME: root, USERPROFILE: root, XDG_CONFIG_HOME: profile, XDG_CACHE_HOME: join(root, "cache"), TMPDIR: root, PI_CODING_AGENT_DIR: profile, GENTLE_PI_AGENT_HOME: profile, GENTLE_PI_AGENTS_CHILD: "0", GENTLE_PI_LIVE_RESEARCH_ROLE: "host", GENTLE_PI_LIVE_RESEARCH_TRACE: trace, GENTLE_PI_LIVE_RESEARCH_AUTH_PATH: authPath },
+		env: { ...process.env, HOME: root, USERPROFILE: root, XDG_CONFIG_HOME: profile, XDG_CACHE_HOME: join(root, "cache"), TMPDIR: root, PI_CODING_AGENT_DIR: profile, JERO_PI_AGENT_HOME: profile, JERO_PI_AGENTS_CHILD: "0", JERO_PI_LIVE_RESEARCH_ROLE: "host", JERO_PI_LIVE_RESEARCH_TRACE: trace, JERO_PI_LIVE_RESEARCH_AUTH_PATH: authPath },
 	});
 	child.stderr.resume(); child.stdin.on("error", () => {});
 	let hostCommandCompleted = false, rpcBuffer = "";

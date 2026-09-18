@@ -181,7 +181,7 @@ export class ParentStandingReviewPermissionBroker {
 }
 
 function configuredChildPermissionRegistry(processEnv: NodeJS.ProcessEnv): ChildPermissionRegistry | undefined {
-	if (processEnv.GENTLE_PI_AGENTS_CHILD !== "1" || processEnv.GENTLE_PI_AGENTS_PARENT_PERMISSION_FD !== "3") return undefined;
+	if (processEnv.JERO_PI_AGENTS_CHILD !== "1" || processEnv.JERO_PI_AGENTS_PARENT_PERMISSION_FD !== "3") return undefined;
 	return childPermissionRegistry();
 }
 

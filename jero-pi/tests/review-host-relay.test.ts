@@ -40,7 +40,7 @@ const FAKE_GENTLE_AI = `#!/usr/bin/env node
 const fs = require("node:fs");
 const path = require("node:path");
 const argv = process.argv.slice(2);
-if (process.env.RELAY_FAKE_LOG) fs.appendFileSync(process.env.RELAY_FAKE_LOG, JSON.stringify({ argv, cwd: process.cwd(), contract: process.env.GENTLE_PI_REVIEW_RELAY_CONTRACT ?? null }) + "\\n");
+if (process.env.RELAY_FAKE_LOG) fs.appendFileSync(process.env.RELAY_FAKE_LOG, JSON.stringify({ argv, cwd: process.cwd(), contract: process.env.JERO_PI_REVIEW_RELAY_CONTRACT ?? null }) + "\\n");
 if (argv.some((token) => token === "--materialize" || token.startsWith("--materialize="))) {
 	const mode = process.env.RELAY_FAKE_MATERIALIZE_MODE || "ok";
 	if (mode === "ok") { process.stdout.write(Buffer.from(process.env.RELAY_FAKE_PROMPT_B64 || "", "base64")); process.exit(0); }
@@ -96,7 +96,7 @@ const FAKE_PI = `#!/usr/bin/env node
 const fs = require("node:fs");
 const path = require("node:path");
 const argv = process.argv.slice(2);
-if (process.env.RELAY_FAKE_PI_LOG) fs.appendFileSync(process.env.RELAY_FAKE_PI_LOG, JSON.stringify({ argv, cwd: process.cwd(), entries: fs.readdirSync(process.cwd()), contract: process.env.GENTLE_PI_REVIEW_RELAY_CONTRACT ?? null }) + "\\n");
+if (process.env.RELAY_FAKE_PI_LOG) fs.appendFileSync(process.env.RELAY_FAKE_PI_LOG, JSON.stringify({ argv, cwd: process.cwd(), entries: fs.readdirSync(process.cwd()), contract: process.env.JERO_PI_REVIEW_RELAY_CONTRACT ?? null }) + "\\n");
 const chunks = [];
 process.stdin.on("data", (chunk) => chunks.push(chunk));
 process.stdin.on("end", () => {
@@ -168,7 +168,7 @@ function harness(t: test.TestContext, overrides: Record<string, string> = {}): R
 	};
 	// jero-pi M3 (design 8): the relay handshake env is deleted — the base
 	// environment never carries it and the relay never injects it.
-	delete environment.GENTLE_PI_REVIEW_RELAY_CONTRACT;
+	delete environment.JERO_PI_REVIEW_RELAY_CONTRACT;
 	return { directory, gentleAi, pi, logPath, piLogPath, stdinCapturePath, submitCapturePath, targetCwd, environment };
 }
 
@@ -266,13 +266,13 @@ async function rejectsWithRelayError(promise: Promise<unknown>, kind: string, st
 test("the central native CLI runner no longer declares any relay contract on gentle-ai spawns (design 8)", async (t) => {
 	const fixture = harness(t);
 	const probe = join(fixture.directory, "env-probe");
-	writeFileSync(probe, `#!/usr/bin/env node\nprocess.stdout.write(JSON.stringify({ contract: process.env.GENTLE_PI_REVIEW_RELAY_CONTRACT ?? null }));\n`);
+	writeFileSync(probe, `#!/usr/bin/env node\nprocess.stdout.write(JSON.stringify({ contract: process.env.JERO_PI_REVIEW_RELAY_CONTRACT ?? null }));\n`);
 	chmodSync(probe, 0o755);
-	const hadContract = Object.prototype.hasOwnProperty.call(process.env, "GENTLE_PI_REVIEW_RELAY_CONTRACT");
-	const previous = process.env.GENTLE_PI_REVIEW_RELAY_CONTRACT;
-	delete process.env.GENTLE_PI_REVIEW_RELAY_CONTRACT;
+	const hadContract = Object.prototype.hasOwnProperty.call(process.env, "JERO_PI_REVIEW_RELAY_CONTRACT");
+	const previous = process.env.JERO_PI_REVIEW_RELAY_CONTRACT;
+	delete process.env.JERO_PI_REVIEW_RELAY_CONTRACT;
 	t.after(() => {
-		if (hadContract) process.env.GENTLE_PI_REVIEW_RELAY_CONTRACT = previous;
+		if (hadContract) process.env.JERO_PI_REVIEW_RELAY_CONTRACT = previous;
 	});
 	const adapter = createNodeExecFileAdapter();
 	for (const argv of [["version"], ["review", "status", "--cwd", fixture.directory]]) {

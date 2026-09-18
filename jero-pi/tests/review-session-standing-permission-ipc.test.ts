@@ -37,7 +37,7 @@ async function productionChild(requests: number, authorize: () => boolean, optio
 		process.stdout.write(JSON.stringify(answers));
 	`;
 	const child = spawn(process.execPath, ["--experimental-strip-types", "--input-type=module", "--eval", source], {
-		env: { ...process.env, GENTLE_PI_AGENTS_CHILD: "1", GENTLE_PI_AGENTS_PARENT_PERMISSION_FD: "3" },
+		env: { ...process.env, JERO_PI_AGENTS_CHILD: "1", JERO_PI_AGENTS_PARENT_PERMISSION_FD: "3" },
 		stdio: options.withoutChannel ? ["ignore", "pipe", "pipe"] : ["ignore", "pipe", "pipe", "pipe"],
 	});
 	const pipe = child.stdio[3];
@@ -100,7 +100,7 @@ test("fresh Jiti moduleCache:false reloads share fd3 structurally and reject sta
 		process.stdout.write(JSON.stringify({ answers, classIdentityDiffers: firstIpc.ChildStandingReviewPermissionClient !== secondIpc.ChildStandingReviewPermissionClient }));
 	`;
 	const child = spawn(process.execPath, ["--experimental-strip-types", "--input-type=module", "--eval", source], {
-		env: { ...process.env, GENTLE_PI_AGENTS_CHILD: "1", GENTLE_PI_AGENTS_PARENT_PERMISSION_FD: "3" },
+		env: { ...process.env, JERO_PI_AGENTS_CHILD: "1", JERO_PI_AGENTS_PARENT_PERMISSION_FD: "3" },
 		stdio: ["ignore", "pipe", "pipe", "pipe"],
 	});
 	const pipe = child.stdio[3];
@@ -124,7 +124,7 @@ test("an incompatible process registry fails closed rather than replacing owners
 	const previous = globalRegistry[CHILD_STANDING_REVIEW_PERMISSION_REGISTRY_SYMBOL];
 	try {
 		globalRegistry[CHILD_STANDING_REVIEW_PERMISSION_REGISTRY_SYMBOL] = { schema: "wrong" };
-		assert.equal(createChildStandingReviewPermissionClient({ GENTLE_PI_AGENTS_CHILD: "1", GENTLE_PI_AGENTS_PARENT_PERMISSION_FD: "3" }), undefined);
+		assert.equal(createChildStandingReviewPermissionClient({ JERO_PI_AGENTS_CHILD: "1", JERO_PI_AGENTS_PARENT_PERMISSION_FD: "3" }), undefined);
 	} finally {
 		if (previous === undefined) delete globalRegistry[CHILD_STANDING_REVIEW_PERMISSION_REGISTRY_SYMBOL];
 		else globalRegistry[CHILD_STANDING_REVIEW_PERMISSION_REGISTRY_SYMBOL] = previous;

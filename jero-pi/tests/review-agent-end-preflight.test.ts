@@ -20,7 +20,7 @@ import type { ReviewStatusV3 } from "../lib/authority/wire-contract.ts";
 // gentle-pi#568/#777: startup negotiates STATUS, but only successful own
 // mutation receipts authorize agent_end to query a candidate. Pre-session
 // work and foreign-session changes are not this session's output. These tests point
-// `GENTLE_PI_AGENT_HOME` and the session `cwd` at fresh temp directories so
+// `JERO_PI_AGENT_HOME` and the session `cwd` at fresh temp directories so
 // `session_start`'s real SDD asset install and model config sweep never
 // touch this machine's actual home directory. The cwd is an isolated Git
 // fixture so mutation receipts exercise canonical root resolution.
@@ -67,13 +67,13 @@ function ctx(sessionId: string, hasUI = true, cwd = process.cwd()): ExtensionCon
 }
 
 async function withSessionStartEnv<T>(callback: (cwd: string) => Promise<T>): Promise<T> {
-	const previousAgentHome = process.env.GENTLE_PI_AGENT_HOME;
-	const previousConfigHome = process.env.GENTLE_PI_CONFIG_HOME;
-	process.env.GENTLE_PI_AGENT_HOME = await mkdtemp(join(tmpdir(), "gentle-pi-session-baseline-agent-home-"));
+	const previousAgentHome = process.env.JERO_PI_AGENT_HOME;
+	const previousConfigHome = process.env.JERO_PI_CONFIG_HOME;
+	process.env.JERO_PI_AGENT_HOME = await mkdtemp(join(tmpdir(), "gentle-pi-session-baseline-agent-home-"));
 	// Isolates both the model-config sweep and the dev-binary registration
 	// lookup from this machine's real ~/.pi/gentle-ai, so `session_start`'s
 	// unrelated notifications never leak into these assertions.
-	process.env.GENTLE_PI_CONFIG_HOME = await mkdtemp(join(tmpdir(), "gentle-pi-session-baseline-config-home-"));
+	process.env.JERO_PI_CONFIG_HOME = await mkdtemp(join(tmpdir(), "gentle-pi-session-baseline-config-home-"));
 	try {
 		const cwd = await mkdtemp(join(tmpdir(), "gentle-pi-session-baseline-cwd-"));
 		childProcess.execFileSync("git", ["init", "--quiet", cwd]);
@@ -81,10 +81,10 @@ async function withSessionStartEnv<T>(callback: (cwd: string) => Promise<T>): Pr
 		await writeFile(join(cwd, "src/example.ts"), "export const value = 1;");
 		return await callback(cwd);
 	} finally {
-		if (previousAgentHome === undefined) delete process.env.GENTLE_PI_AGENT_HOME;
-		else process.env.GENTLE_PI_AGENT_HOME = previousAgentHome;
-		if (previousConfigHome === undefined) delete process.env.GENTLE_PI_CONFIG_HOME;
-		else process.env.GENTLE_PI_CONFIG_HOME = previousConfigHome;
+		if (previousAgentHome === undefined) delete process.env.JERO_PI_AGENT_HOME;
+		else process.env.JERO_PI_AGENT_HOME = previousAgentHome;
+		if (previousConfigHome === undefined) delete process.env.JERO_PI_CONFIG_HOME;
+		else process.env.JERO_PI_CONFIG_HOME = previousConfigHome;
 	}
 }
 
