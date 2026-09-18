@@ -945,8 +945,8 @@ async function run() {
 
 	// issue-301: cancelling the color picker must be a no-op — no write,
 	// no notify, and the previously saved color must survive byte/semantically
-	// unchanged. Covers both entry points: /gentle:banner-color picker
-	// (cancelled), and /gentle:banner -> Color row -> nested picker (cancelled).
+	// unchanged. Covers both entry points: /jero:banner-color picker
+	// (cancelled), and /jero:banner -> Color row -> nested picker (cancelled).
 	// Also covers an invalid non-empty argument, which must still open the
 	// picker and treat its cancellation as a no-op.
 	const cancelPickerCwd = await tempWorkspace();
@@ -962,7 +962,7 @@ async function run() {
 
 		const cancelCtx = createCtx(cancelPickerCwd, true);
 
-		// (a) /gentle:banner-color picker cancelled: seeded color unchanged, no notify.
+		// (a) /jero:banner-color picker cancelled: seeded color unchanged, no notify.
 		cancelCtx.ui.notifications.length = 0;
 		cancelCtx.ui.selections.length = 0;
 		cancelCtx.ui.select = async (label, options) => {
@@ -975,7 +975,7 @@ async function run() {
 		assert.equal(cancelCtx.ui.selections.length, 1, "banner-color cancel must open the picker once");
 		assert.equal(cancelCtx.ui.notifications.length, 0, "banner-color cancel must not notify");
 
-		// (d) invalid non-empty /gentle:banner-color input still opens picker;
+		// (d) invalid non-empty /jero:banner-color input still opens picker;
 		//     cancelling it is a no-op.
 		cancelCtx.ui.notifications.length = 0;
 		cancelCtx.ui.selections.length = 0;
@@ -985,7 +985,7 @@ async function run() {
 		assert.equal(cancelCtx.ui.selections.length, 1, "invalid banner-color arg must still open the picker");
 		assert.equal(cancelCtx.ui.notifications.length, 0, "banner-color invalid+cancel must not notify");
 
-		// (b) /gentle:banner selects the Color row, then the nested picker is
+		// (b) /jero:banner selects the Color row, then the nested picker is
 		//     cancelled: seeded color unchanged, no notify. The outer select
 		//     returns the Color row; the nested select returns undefined.
 		cancelCtx.ui.notifications.length = 0;
@@ -1664,9 +1664,9 @@ async function run() {
 		for (const diagnostic of ["gentle:status", "gentle:doctor"]) {
 			await commands.get(diagnostic).handler("", ctx);
 			const message = ctx.ui.notifications.at(-1).message;
-			assert.match(message, /\/gentle:install-delegation --force/,
+			assert.match(message, /\/jero:install-delegation --force/,
 				`${diagnostic} must provide a repair for missing delegation assets`);
-			assert.match(message, /\/gentle:install-review --force/,
+			assert.match(message, /\/jero:install-review --force/,
 				`${diagnostic} must provide a repair for missing review assets`);
 			assert.doesNotMatch(message, /install-sdd --force/);
 		}
@@ -2320,7 +2320,7 @@ async function run() {
 		assert.equal(
 			existsSync(join(modelsCwd, ".pi", "gentle-ai", "models.json")),
 			false,
-			"/gentle:models must save model routing globally, not per project",
+			"/jero:models must save model routing globally, not per project",
 		);
 
 		const applyAgent = await readFile(

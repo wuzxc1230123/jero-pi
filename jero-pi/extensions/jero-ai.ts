@@ -4976,7 +4976,7 @@ async function executeNativeAuthorityMaintenance(
 	const method = nativeOperation === "abandon" ? nativeReviewCli?.abandon : nativeReviewCli?.reconcileAuthority;
 	const nativeCommand = nativeOperation === "reconcileAuthority" ? "review reconcile-authority" : "review abandon";
 	if (method === undefined) {
-		return { operation, status: "blocked", outcome: "native-maintenance-unavailable", native_operation: nativeCommand, mutation_performed: false, mutation_outcome: "none", next_action: "install-package-local-gentle-ai-or-run-native-review-cli-directly" };
+		return { operation, status: "blocked", outcome: "native-maintenance-unavailable", native_operation: nativeCommand, mutation_performed: false, mutation_outcome: "none", next_action: "in-process-review-authority-unavailable" };
 	}
 	const missing = missingNativeMaintenanceInputs(nativeOperation, input);
 	if (missing.length > 0) {
@@ -5023,7 +5023,7 @@ async function executeNativeRecoveryRoute(
 			native_operation: nativeCommand,
 			mutation_performed: false,
 			mutation_outcome: "none",
-			next_action: "install-package-local-gentle-ai-or-run-native-review-cli-directly",
+			next_action: "in-process-review-authority-unavailable",
 		};
 	}
 	const missing = NATIVE_RECOVERY_INPUT[nativeOperation].filter((key) =>
@@ -5185,10 +5185,10 @@ function validateNativeStartPolicyPath(cwd: string, value: unknown): NativeStart
 	} catch {
 		return { reason: "policy-path-outside-scope" };
 	}
-	const policyRoot = join(repository, ".gentle-ai", "policies");
+	const policyRoot = join(repository, ".jero", "policies");
 	const candidate = resolve(repository, value);
 	if (!isStrictDescendantPath(policyRoot, candidate)) return { reason: "policy-path-outside-scope" };
-	const gentleDirectory = join(repository, ".gentle-ai");
+	const gentleDirectory = join(repository, ".jero");
 	for (const directory of [gentleDirectory, policyRoot]) {
 		try {
 			const metadata = lstatSync(directory);

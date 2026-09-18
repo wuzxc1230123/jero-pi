@@ -494,7 +494,8 @@ export function buildJeroFinalizeExecuteTransitionV1(record: JeroLineageStateFil
  * authority-issued and deterministic in the lineage and revision — the
  * extension re-parses these same tokens into reviewAcknowledgeV1, so a
  * drifted burn fails closed as a binding mismatch. The command keeps the
- * wire gentle-ai prefix until the P5 identity pass (port discipline).
+ * wire gentle-ai prefix: the wire vocabulary is byte-pinned by the relocated
+ * golden vectors (design 5.1.7) and intentionally survives the identity pass.
  */
 export function buildJeroAcknowledgeExecuteTransitionV1(record: JeroLineageStateFileV1, repositoryContext: JeroRepositoryContextV1, cwd: string): JeroExecuteTransitionPayloadV1 {
 	const arguments_ = [
