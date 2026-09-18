@@ -329,7 +329,7 @@ function routingConsumerFixture(t: test.TestContext, agents = ["worker"]) {
 	const root = mkdtempSync(join(tmpdir(), "gentle-pi-routing-consumers-"));
 	const configHome = join(root, "global");
 	const agentHome = join(root, "agent-home");
-	const projectPath = join(root, ".pi", "gentle-ai", "models.json");
+	const projectPath = join(root, ".pi", "jero", "models.json");
 	const globalPath = join(configHome, "models.json");
 	const exportPath = join(configHome, "models.export.json");
 	for (const dir of [dirname(projectPath), join(root, "agents"), join(agentHome, "agents"), join(agentHome, "subagents")]) {
@@ -620,7 +620,7 @@ test("invalid global routing overrides valid project in models, status, and expo
 test("session startup reports invalid project routing without mutating the profile", async (t) => {
 	const root = mkdtempSync(join(tmpdir(), "gentle-pi-model-routing-startup-"));
 	const configHome = join(root, "global");
-	const projectConfigDir = join(root, ".pi", "gentle-ai");
+	const projectConfigDir = join(root, ".pi", "jero");
 	const projectAgentsDir = join(root, ".pi", "agents");
 	const projectProfileDir = join(root, ".pi");
 	const rootAgentsDir = join(root, "agents");
@@ -1841,7 +1841,7 @@ test("effective routing prefers models.json over the materialized stores", (t) =
 		worker: { model: "openai/alpha" },
 		helper: { model: "openai/beta" },
 	});
-	assert.equal(existsSync(join(fixture.root, ".pi", "gentle-ai", "models.json")), false, "reading never writes");
+	assert.equal(existsSync(join(fixture.root, ".pi", "jero", "models.json")), false, "reading never writes");
 });
 
 test("the profiles panel fills the terminal, lists routing per agent, and scrolls", async (t) => {

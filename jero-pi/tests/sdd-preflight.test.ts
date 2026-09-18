@@ -49,7 +49,7 @@ function preflightContext(cwd: string, hasUI: boolean, calls: string[] = [], ans
 	return { cwd, hasUI, ui: { select: async (title: string) => (calls.push(`select:${title}`), answers[title]), input: async (title: string) => (calls.push(`input:${title}`), answers[title]), notify: () => {} } } as Parameters<typeof collectSddPreflightPreferences>[0];
 }
 function writeRawPreflight(cwd: string, chainedPrStrategy: string, prompted = true): string {
-	const path = sddPreflightDiskPath(cwd); mkdirSync(join(cwd, ".pi", "gentle-ai"), { recursive: true }); writeFileSync(path, JSON.stringify({ executionMode: "auto", artifactStore: "openspec", chainedPrStrategy, reviewBudgetLines: 400, engramAvailable: false, prompted })); return path;
+	const path = sddPreflightDiskPath(cwd); mkdirSync(join(cwd, ".pi", "jero"), { recursive: true }); writeFileSync(path, JSON.stringify({ executionMode: "auto", artifactStore: "openspec", chainedPrStrategy, reviewBudgetLines: 400, engramAvailable: false, prompted })); return path;
 }
 test("production callers distinguish first-session confirmation from explicit field editing", () => {
 	const root = join(import.meta.dirname, ".."), gentleAi = readFileSync(join(root, "extensions", "jero-ai.ts"), "utf8"), sddInit = readFileSync(join(root, "extensions", "sdd-init.ts"), "utf8");
@@ -279,10 +279,10 @@ test("exception-ok requires narrow delivery-gate provenance", async () => {
 	const durable = await workspace(); writeSddPreflightToDisk(durable, accepted); assert.equal(readSddPreflightFromDisk(durable)?.chainedPrStrategy, "ask-on-risk");
 });
 
-test("sddPreflightDiskPath returns project-local .pi/gentle-ai/sdd-preflight.json", async () => {
+test("sddPreflightDiskPath returns project-local .pi/jero/sdd-preflight.json", async () => {
 	const cwd = await workspace();
 	const path = sddPreflightDiskPath(cwd);
-	assert.equal(path, join(cwd, ".pi", "gentle-ai", "sdd-preflight.json"));
+	assert.equal(path, join(cwd, ".pi", "jero", "sdd-preflight.json"));
 });
 
 test("writeSddPreflightToDisk creates parent dirs and writes valid JSON", async () => {
@@ -318,7 +318,7 @@ test("persisted preferences require fresh session confirmation", async () => {
 test("readSddPreflightFromDisk returns undefined for corrupt JSON", async () => {
 	const cwd = await workspace();
 	const path = sddPreflightDiskPath(cwd);
-	mkdirSync(join(cwd, ".pi", "gentle-ai"), { recursive: true });
+	mkdirSync(join(cwd, ".pi", "jero"), { recursive: true });
 	writeFileSync(path, "not-json{{{");
 
 	assert.equal(readSddPreflightFromDisk(cwd), undefined);
@@ -327,7 +327,7 @@ test("readSddPreflightFromDisk returns undefined for corrupt JSON", async () => 
 test("readSddPreflightFromDisk returns undefined for JSON with invalid fields", async () => {
 	const cwd = await workspace();
 	const path = sddPreflightDiskPath(cwd);
-	mkdirSync(join(cwd, ".pi", "gentle-ai"), { recursive: true });
+	mkdirSync(join(cwd, ".pi", "jero"), { recursive: true });
 	writeFileSync(path, JSON.stringify({ executionMode: "invalid", artifactStore: "openspec", chainedPrStrategy: "auto-forecast", reviewBudgetLines: 400, engramAvailable: false, prompted: false }));
 
 	// executionMode "invalid" is not "interactive" | "auto" → should reject
@@ -337,7 +337,7 @@ test("readSddPreflightFromDisk returns undefined for JSON with invalid fields", 
 test("readSddPreflightFromDisk normalizes unknown chainedPrStrategy to ask-on-risk", async () => {
 	const cwd = await workspace();
 	const path = sddPreflightDiskPath(cwd);
-	mkdirSync(join(cwd, ".pi", "gentle-ai"), { recursive: true });
+	mkdirSync(join(cwd, ".pi", "jero"), { recursive: true });
 	writeFileSync(path, JSON.stringify({
 		executionMode: "interactive",
 		artifactStore: "openspec",
@@ -471,7 +471,7 @@ test("forced asset refresh migrates only untouched v0.14 package contracts and p
 // files on disk, so it must keep loading rather than fall back to the default.
 test("a persisted legacy 'both' artifact store loads as hybrid", async () => {
 	const cwd = await mkdtemp(join(tmpdir(), "sdd-preflight-legacy-"));
-	mkdirSync(join(cwd, ".pi", "gentle-ai"), { recursive: true });
+	mkdirSync(join(cwd, ".pi", "jero"), { recursive: true });
 	writeFileSync(
 		sddPreflightDiskPath(cwd),
 		JSON.stringify({ executionMode: "auto", artifactStore: "hybrid", chainedPrStrategy: "ask-on-risk", reviewBudgetLines: 400, engramAvailable: true, prompted: true }),
@@ -483,7 +483,7 @@ test("a persisted legacy 'both' artifact store loads as hybrid", async () => {
 
 test("a persisted canonical 'hybrid' artifact store loads unchanged", async () => {
 	const cwd = await mkdtemp(join(tmpdir(), "sdd-preflight-hybrid-"));
-	mkdirSync(join(cwd, ".pi", "gentle-ai"), { recursive: true });
+	mkdirSync(join(cwd, ".pi", "jero"), { recursive: true });
 	writeFileSync(
 		sddPreflightDiskPath(cwd),
 		JSON.stringify({ executionMode: "auto", artifactStore: "hybrid", chainedPrStrategy: "ask-on-risk", reviewBudgetLines: 400, engramAvailable: true, prompted: true }),

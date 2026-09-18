@@ -360,7 +360,7 @@ test("loadRuntimeGuardrailsConfig: project config overrides global config", () =
 			autonomousMode: true,
 			guardedCommands: { gitPush: "allow", npmPublish: "confirm" },
 		});
-		writeConfig(projectDir, join(".pi", "gentle-ai", "runtime-guardrails.json"), {
+		writeConfig(projectDir, join(".pi", "jero", "runtime-guardrails.json"), {
 			autonomousMode: true,
 			guardedCommands: { gitPush: "confirm", npmPublish: "block" },
 		});

@@ -60,7 +60,7 @@ function writePolicyFile(dir: string, policy: string): void {
 	mkdirSync(dir, { recursive: true });
 	writeFileSync(
 		join(dir, "background-subagents.json"),
-		JSON.stringify({ schema: "gentle-pi.background-subagents/v1", policy }),
+		JSON.stringify({ schema: "jero.background-subagents/v1", policy }),
 	);
 }
 
@@ -96,13 +96,13 @@ function installSubagentsPackage(
 test("strict decode accepts exactly the v1 schema with policy on|off", () => {
 	assert.equal(
 		parseBackgroundSubagentsPolicyFile(
-			'{"schema":"gentle-pi.background-subagents/v1","policy":"on"}',
+			'{"schema":"jero.background-subagents/v1","policy":"on"}',
 		),
 		"on",
 	);
 	assert.equal(
 		parseBackgroundSubagentsPolicyFile(
-			'{"schema":"gentle-pi.background-subagents/v1","policy":"off"}',
+			'{"schema":"jero.background-subagents/v1","policy":"off"}',
 		),
 		"off",
 	);
@@ -115,9 +115,9 @@ test("strict decode rejects malformed shapes", () => {
 		"null",
 		'{"policy":"on"}',
 		'{"schema":"gentle-pi.background-subagents/v2","policy":"on"}',
-		'{"schema":"gentle-pi.background-subagents/v1","policy":"ON"}',
-		'{"schema":"gentle-pi.background-subagents/v1","policy":true}',
-		'{"schema":"gentle-pi.background-subagents/v1","policy":"on","extra":1}',
+		'{"schema":"jero.background-subagents/v1","policy":"ON"}',
+		'{"schema":"jero.background-subagents/v1","policy":true}',
+		'{"schema":"jero.background-subagents/v1","policy":"on","extra":1}',
 	]) {
 		assert.equal(
 			parseBackgroundSubagentsPolicyFile(raw),
@@ -143,7 +143,7 @@ test("default is off with no file and no env", () => {
 test("project file overrides global file and env", () => {
 	const cwd = makeScratch("gp-bg-proj-");
 	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
-	writePolicyFile(join(cwd, ".pi", "gentle-ai"), "on");
+	writePolicyFile(join(cwd, ".pi", "jero"), "on");
 	writePolicyFile(configHome, "off");
 	assert.equal(
 		loadBackgroundSubagentsPolicy(cwd, {
@@ -192,7 +192,7 @@ test("env var applies only when no policy file exists, and only exact on|off", (
 test("a malformed higher-priority file fails closed to off instead of falling through", () => {
 	const cwd = makeScratch("gp-bg-mal-");
 	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
-	const projectDir = join(cwd, ".pi", "gentle-ai");
+	const projectDir = join(cwd, ".pi", "jero");
 	mkdirSync(projectDir, { recursive: true });
 	writeFileSync(join(projectDir, "background-subagents.json"), "{malformed");
 	writePolicyFile(configHome, "on");
@@ -340,7 +340,7 @@ test("renderOrchestratorPrompt defaults to the fail-closed off/absent rendering"
 // assertions never depend on the developer's ambient global config.
 test("the rendered status line flips to ready when the subagents package is installed", () => {
 	const cwd = makeScratch("gp-bg-cap-render-");
-	writePolicyFile(join(cwd, ".pi", "gentle-ai"), "on");
+	writePolicyFile(join(cwd, ".pi", "jero"), "on");
 	assert.match(
 		getOrchestratorPrompt(cwd),
 		/Background subagent policy: on \(capability: absent\)/,
@@ -355,7 +355,7 @@ test("the rendered status line flips to ready when the subagents package is inst
 
 test("the rendered status line reports ready from a live registry alone", () => {
 	const cwd = makeScratch("gp-bg-cap-render-tools-");
-	writePolicyFile(join(cwd, ".pi", "gentle-ai"), "on");
+	writePolicyFile(join(cwd, ".pi", "jero"), "on");
 	assert.match(
 		getOrchestratorPrompt(cwd, ["read", "subagent_run"]),
 		/Background subagent policy: on \(capability: ready\)/,
@@ -380,7 +380,7 @@ test("getOrchestratorPrompt renders exactly one background status line", () => {
 test("the resolver attributes the project file, with its path", () => {
 	const cwd = makeScratch("gp-bg-src-project-");
 	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
-	writePolicyFile(join(cwd, ".pi", "gentle-ai"), "on");
+	writePolicyFile(join(cwd, ".pi", "jero"), "on");
 	writePolicyFile(configHome, "off");
 	const resolution = resolveBackgroundSubagentsPolicy(cwd, {
 		gentlePiConfigHome: configHome,
@@ -390,7 +390,7 @@ test("the resolver attributes the project file, with its path", () => {
 	assert.equal(resolution.source, "project_file");
 	assert.equal(
 		resolution.projectFile,
-		join(cwd, ".pi", "gentle-ai", "background-subagents.json"),
+		join(cwd, ".pi", "jero", "background-subagents.json"),
 	);
 	assert.equal(resolution.globalFile, join(configHome, "background-subagents.json"));
 	assert.equal(resolution.projectFileExists, true);
@@ -444,7 +444,7 @@ test("the resolver attributes the built-in default when nothing else decides", (
 test("the resolver attributes a malformed file to that file and does not fall through", () => {
 	const cwd = makeScratch("gp-bg-src-malformed-");
 	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
-	const projectDir = join(cwd, ".pi", "gentle-ai");
+	const projectDir = join(cwd, ".pi", "jero");
 	mkdirSync(projectDir, { recursive: true });
 	writeFileSync(join(projectDir, "background-subagents.json"), "{malformed");
 	writePolicyFile(configHome, "on");
@@ -469,12 +469,12 @@ test("loadBackgroundSubagentsPolicy delegates to the resolver so the two can nev
 	scenarios.push({ cwd: bare, env: {} });
 	scenarios.push({ cwd: bare, env: { JERO_PI_BACKGROUND_SUBAGENTS: "on" } });
 	const projectOn = makeScratch("gp-bg-agree-project-");
-	writePolicyFile(join(projectOn, ".pi", "gentle-ai"), "off");
+	writePolicyFile(join(projectOn, ".pi", "jero"), "off");
 	scenarios.push({ cwd: projectOn, env: { JERO_PI_BACKGROUND_SUBAGENTS: "on" } });
 	const malformed = makeScratch("gp-bg-agree-malformed-");
-	mkdirSync(join(malformed, ".pi", "gentle-ai"), { recursive: true });
+	mkdirSync(join(malformed, ".pi", "jero"), { recursive: true });
 	writeFileSync(
-		join(malformed, ".pi", "gentle-ai", "background-subagents.json"),
+		join(malformed, ".pi", "jero", "background-subagents.json"),
 		"{malformed",
 	);
 	scenarios.push({ cwd: malformed, env: { JERO_PI_BACKGROUND_SUBAGENTS: "on" } });
@@ -593,7 +593,7 @@ test("no argument reports the effective policy, the deciding default, and the ca
 test("status names the project file that decided and the global file it shadows", async (t) => {
 	const cwd = makeScratch("gp-bg-cmd-project-");
 	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
-	writePolicyFile(join(cwd, ".pi", "gentle-ai"), "on");
+	writePolicyFile(join(cwd, ".pi", "jero"), "on");
 	writePolicyFile(configHome, "off");
 	installSubagentsPackage(cwd, "pi-subagents-j0k3r");
 	const notice = await runBackgroundSubagents(t, "status", cwd, configHome);
@@ -601,7 +601,7 @@ test("status names the project file that decided and the global file it shadows"
 	assert.equal(
 		notice.message,
 		[
-			`background subagents: on (decided by project file ${join(cwd, ".pi", "gentle-ai", "background-subagents.json")}; capability: ready)`,
+			`background subagents: on (decided by project file ${join(cwd, ".pi", "jero", "background-subagents.json")}; capability: ready)`,
 			`The global file ${join(configHome, "background-subagents.json")} exists but is outranked by that project file.`,
 			"Resolution order (first hit wins): project file, global file, JERO_PI_BACKGROUND_SUBAGENTS, built-in default off.",
 		].join("\n"),
@@ -653,8 +653,8 @@ test("status calls an unrecognized environment value inert instead of silently i
 test("status reports a malformed deciding file as fail-closed, not as a real off", async (t) => {
 	const cwd = makeScratch("gp-bg-cmd-malformed-");
 	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
-	const projectFile = join(cwd, ".pi", "gentle-ai", "background-subagents.json");
-	mkdirSync(join(cwd, ".pi", "gentle-ai"), { recursive: true });
+	const projectFile = join(cwd, ".pi", "jero", "background-subagents.json");
+	mkdirSync(join(cwd, ".pi", "jero"), { recursive: true });
 	writeFileSync(projectFile, "{malformed");
 	writePolicyFile(configHome, "on");
 	const notice = await runBackgroundSubagents(t, "status", cwd, configHome);
@@ -677,7 +677,7 @@ test("enable writes the global file and reports that it decides", async (t) => {
 	const globalFile = join(configHome, "background-subagents.json");
 	const notice = await runBackgroundSubagents(t, "enable", cwd, configHome);
 	assert.deepEqual(JSON.parse(readFileSync(globalFile, "utf8")), {
-		schema: "gentle-pi.background-subagents/v1",
+		schema: "jero.background-subagents/v1",
 		policy: "on",
 	});
 	assert.equal(notice.type, "info");
@@ -698,7 +698,7 @@ test("disable writes the global file off and reports that it decides", async (t)
 	writePolicyFile(configHome, "on");
 	const notice = await runBackgroundSubagents(t, "disable", cwd, configHome);
 	assert.deepEqual(JSON.parse(readFileSync(globalFile, "utf8")), {
-		schema: "gentle-pi.background-subagents/v1",
+		schema: "jero.background-subagents/v1",
 		policy: "off",
 	});
 	assert.equal(notice.type, "info");
@@ -714,13 +714,13 @@ test("disable writes the global file off and reports that it decides", async (t)
 test("enable under an outranking project file writes the global file and says it does not take effect", async (t) => {
 	const cwd = makeScratch("gp-bg-cmd-outranked-");
 	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
-	const projectFile = join(cwd, ".pi", "gentle-ai", "background-subagents.json");
+	const projectFile = join(cwd, ".pi", "jero", "background-subagents.json");
 	const globalFile = join(configHome, "background-subagents.json");
-	writePolicyFile(join(cwd, ".pi", "gentle-ai"), "off");
+	writePolicyFile(join(cwd, ".pi", "jero"), "off");
 	const notice = await runBackgroundSubagents(t, "enable", cwd, configHome);
 	assert.deepEqual(
 		JSON.parse(readFileSync(globalFile, "utf8")),
-		{ schema: "gentle-pi.background-subagents/v1", policy: "on" },
+		{ schema: "jero.background-subagents/v1", policy: "on" },
 		"the requested global write still happens",
 	);
 	assert.equal(notice.type, "warning");

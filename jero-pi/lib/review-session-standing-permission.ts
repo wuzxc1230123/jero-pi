@@ -5,7 +5,7 @@ import { realpathSync } from "node:fs";
 import { isAbsolute, resolve } from "node:path";
 import { promisify } from "node:util";
 
-export const REVIEW_SESSION_PERMISSION_REGISTRY_SCHEMA = "gentle-pi.review-session-standing-permission/v1";
+export const REVIEW_SESSION_PERMISSION_REGISTRY_SCHEMA = "jero.child-standing-review-permission/v1";
 export const REVIEW_SESSION_PERMISSION_REGISTRY_SYMBOL = Symbol.for(REVIEW_SESSION_PERMISSION_REGISTRY_SCHEMA);
 
 const execFileAsync = promisify(execFile);

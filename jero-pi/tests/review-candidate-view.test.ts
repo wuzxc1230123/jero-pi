@@ -169,7 +169,7 @@ test("private candidate owner fails closed when Windows owner resolution is unav
 });
 
 test("private candidate owner rejects a different Windows owner at the ancestor replacement boundary", (t) => {
-	const cwd = repository(t), commonDir = join(cwd, ".git"), control = join(commonDir, "gentle-ai"), parent = join(control, "candidate-views");
+	const cwd = repository(t), commonDir = join(cwd, ".git"), control = join(commonDir, "jero-review"), parent = join(control, "candidate-views");
 	mkdirSync(parent, { recursive: true });
 	setWindowsAclAuthorityForTesting((path) => {
 		if (path === control) validatePrivateWindowsOwner("S-1-5-21-4-5-6-1002", "S-1-5-21-1-2-3-1001");
@@ -179,7 +179,7 @@ test("private candidate owner rejects a different Windows owner at the ancestor 
 });
 
 test("private candidate owner revalidates every Windows ancestor replacement boundary", (t) => {
-	const cwd = repository(t), commonDir = join(cwd, ".git"), control = join(commonDir, "gentle-ai"), parent = join(control, "candidate-views");
+	const cwd = repository(t), commonDir = join(cwd, ".git"), control = join(commonDir, "jero-review"), parent = join(control, "candidate-views");
 	mkdirSync(parent, { recursive: true });
 	const checked: string[] = [];
 	setWindowsAclAuthorityForTesting((path) => checked.push(path));
@@ -202,7 +202,7 @@ test("private candidate owner rejects a controlled foreign Windows owner", { ski
 });
 
 test("private candidate owner reads trusted Windows directory and marker file owners", { skip: process.platform !== "win32" }, (t) => {
-	const cwd = repository(t), commonDir = join(cwd, ".git"), parent = join(commonDir, "gentle-ai", "candidate-views");
+	const cwd = repository(t), commonDir = join(cwd, ".git"), parent = join(commonDir, "jero-review", "candidate-views");
 	const view = new CandidateViewRegistry().create({ contributorRoot: cwd });
 	try {
 		assert.doesNotThrow(() => assertTrustedWindowsOwner(parent, "directory"));
@@ -214,7 +214,7 @@ test("private candidate owner reads trusted Windows directory and marker file ow
 });
 
 test("private candidate owner removes unrelated explicit Windows grants during enforcement", { skip: process.platform !== "win32" }, (t) => {
-	const cwd = repository(t), commonDir = join(cwd, ".git"), parent = join(commonDir, "gentle-ai", "candidate-views");
+	const cwd = repository(t), commonDir = join(cwd, ".git"), parent = join(commonDir, "jero-review", "candidate-views");
 	const initial = new CandidateViewRegistry().create({ contributorRoot: cwd });
 	initial.cleanup();
 	const system = process.env.SystemRoot!;
@@ -306,7 +306,7 @@ function publicationFailure(t: test.TestContext, phase: "write" | "fsync" | "dir
 		Object.defineProperty(process, "platform", { configurable: true, value: "linux" });
 		t.after(() => Object.defineProperty(process, "platform", descriptor));
 	}
-	const cwd = repository(t), parent = join(cwd, ".git", "gentle-ai", "candidate-views");
+	const cwd = repository(t), parent = join(cwd, ".git", "jero-review", "candidate-views");
 	let adds = 0;
 	if (phase === "write") t.mock.method(fs, "writeFileSync", () => { throw new Error("fixture marker write failure"); });
 	if (phase === "fsync") t.mock.method(fs, "fsyncSync", () => { throw new Error("fixture marker fsync failure"); });
@@ -338,7 +338,7 @@ for (const [phase, label] of [["write", "marker write"], ["fsync", "marker fsync
 
 test("candidate owner publication never removes a replaced marker", (t) => {
 	mockWindowsAcl(t);
-	const cwd = repository(t), parent = join(cwd, ".git", "gentle-ai", "candidate-views");
+	const cwd = repository(t), parent = join(cwd, ".git", "jero-review", "candidate-views");
 	const write = fs.writeFileSync;
 	t.mock.method(fs, "fsyncSync", () => {
 		const marker = readdirSync(parent).find((name) => name.endsWith(".owner.json"));
@@ -486,7 +486,7 @@ test("materialization rejects a symlinked owner ancestor without creating an ext
 	const cwd = repository(t);
 	const outside = join(cwd, "outside");
 	mkdirSync(outside);
-	symlinkSync(outside, join(cwd, ".git", "gentle-ai"));
+	symlinkSync(outside, join(cwd, ".git", "jero-review"));
 	assert.throws(() => new CandidateViewRegistry().create({ contributorRoot: cwd }));
 	assert.equal(existsSync(join(outside, "candidate-views")), false);
 });
@@ -2592,7 +2592,7 @@ test("candidate view cleans up a partially registered unborn fallback worktree w
 	// No registered/admin worktree remains.
 	assert.equal(git(contributorRoot, "worktree", "list").split("\n").filter((line) => line.includes("gentle-ai-candidate")).length, 0);
 	// No candidate directory remains under the candidate-view parent.
-	const parent = join(realpathSync(git(contributorRoot, "rev-parse", "--path-format=absolute", "--git-common-dir")), "gentle-ai", "candidate-views");
+	const parent = join(realpathSync(git(contributorRoot, "rev-parse", "--path-format=absolute", "--git-common-dir")), "jero-review", "candidate-views");
 	const leftover = existsSync(parent) ? readdirSync(parent).filter((entry) => lstatSync(join(parent, entry)).isDirectory()) : [];
 	assert.deepEqual(leftover, [], "no candidate directory remains after a partial unborn fallback failure");
 });

@@ -14,7 +14,7 @@ import {
 	type AgentRoutingEntry,
 } from "./model-routing-authority.ts";
 
-export const PROFILES_KIND = "gentle-pi.agent_model_profiles";
+export const PROFILES_KIND = "jero.agent_model_profiles/v1";
 export const PROFILES_VERSION = 1;
 export const PROFILE_EXPORT_KIND = "gentle-pi.agent_model_profile";
 export const PROFILE_EXPORT_VERSION = 1;

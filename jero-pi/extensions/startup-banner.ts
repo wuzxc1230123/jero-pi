@@ -67,7 +67,7 @@ function rgb(r: number, g: number, b: number, text: string): string {
 }
 
 function gentleAiConfigHome(): string {
-  return process.env.JERO_PI_CONFIG_HOME ?? join(os.homedir(), ".pi", "gentle-ai");
+  return process.env.JERO_PI_CONFIG_HOME ?? join(os.homedir(), ".pi", "jero");
 }
 
 function bannerConfigPath(): string {

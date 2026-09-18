@@ -62,7 +62,7 @@ export interface ShellDeps {
 // not just mtime: profile writes replace the store atomically. Keep the cache
 // local to this shell instance and recheck on the next frame after panel edits.
 export function createActiveProfileReader(env: NodeJS.ProcessEnv = process.env): () => string | undefined {
-	const path = profilesFilePath(env.JERO_PI_CONFIG_HOME ?? join(os.homedir(), ".pi", "gentle-ai"));
+	const path = profilesFilePath(env.JERO_PI_CONFIG_HOME ?? join(os.homedir(), ".pi", "jero"));
 	let fingerprint: string | undefined;
 	let name: string | undefined;
 	return () => {

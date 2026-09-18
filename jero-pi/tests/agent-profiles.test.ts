@@ -488,7 +488,7 @@ test("formatProfileSummaryLines renders counts, models, and roles", () => {
 // ---- Triangulation: adversarial and alternate cases ----
 
 test("parseProfilesFileText drops a __proto__ profile key without polluting the object", () => {
-	const text = '{"kind":"gentle-pi.agent_model_profiles","version":1,"profiles":{"__proto__":{"explore":{"model":"m/x"}},"team":{"explore":{"model":"m/x"}}}}';
+	const text = '{"kind":"jero.agent_model_profiles/v1","version":1,"profiles":{"__proto__":{"explore":{"model":"m/x"}},"team":{"explore":{"model":"m/x"}}}}';
 	const parsed = parseProfilesFileText(text);
 	assert.equal(parsed.status, "valid");
 	if (parsed.status !== "valid") return;

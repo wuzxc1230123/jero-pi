@@ -635,7 +635,7 @@ function makeWritableForCleanup(path: string): void {
 }
 
 function candidateViewParent(commonDir: string, platform: NodeJS.Platform): string {
-	const control = join(commonDir, "gentle-ai");
+	const control = join(commonDir, "jero-review");
 	mkdirSync(control, { recursive: true, mode: 0o700 });
 	const controlStat = lstatSync(control);
 	if (!controlStat.isDirectory() || controlStat.isSymbolicLink() || realpathSync(control) !== control) throw new CandidateViewError("candidate view ancestor is unsafe");

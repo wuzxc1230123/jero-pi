@@ -565,7 +565,7 @@ export function isPackageManagedSddAsset(
 // ---------------------------------------------------------------------------
 
 export function sddPreflightDiskPath(cwd: string): string {
-	return join(cwd, ".pi", "gentle-ai", "sdd-preflight.json");
+	return join(cwd, ".pi", "jero", "sdd-preflight.json");
 }
 
 export function readSddPreflightFromDisk(cwd: string): SddPreflightPreferences | undefined {

@@ -71,7 +71,7 @@ async function withSessionStartEnv<T>(callback: (cwd: string) => Promise<T>): Pr
 	const previousConfigHome = process.env.JERO_PI_CONFIG_HOME;
 	process.env.JERO_PI_AGENT_HOME = await mkdtemp(join(tmpdir(), "gentle-pi-session-baseline-agent-home-"));
 	// Isolates both the model-config sweep and the dev-binary registration
-	// lookup from this machine's real ~/.pi/gentle-ai, so `session_start`'s
+	// lookup from this machine's real ~/.pi/jero, so `session_start`'s
 	// unrelated notifications never leak into these assertions.
 	process.env.JERO_PI_CONFIG_HOME = await mkdtemp(join(tmpdir(), "gentle-pi-session-baseline-config-home-"));
 	try {

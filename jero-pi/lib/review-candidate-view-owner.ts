@@ -186,7 +186,7 @@ function privateWindowsDacl(path: string, kind: WindowsObjectKind, protectedDacl
 }
 
 function privateWindowsCandidateOwnerBoundary(commonDir: string, enforce = false): void {
-	const boundary = [commonDir, join(commonDir, "gentle-ai"), join(commonDir, "gentle-ai", "candidate-views")];
+	const boundary = [commonDir, join(commonDir, "jero-review"), join(commonDir, "jero-review", "candidate-views")];
 	if (testingWindowsAclAuthority !== undefined) {
 		for (const path of boundary) testingWindowsAclAuthority(path);
 		return;
@@ -241,9 +241,9 @@ function directory(path: string, privateMode = false, platform: NodeJS.Platform 
 
 export function assertCandidateOwnerParent(commonDir: string, platform: NodeJS.Platform = process.platform): string {
 	directory(commonDir, false, platform);
-	const control = join(commonDir, "gentle-ai");
+	const control = join(commonDir, "jero-review");
 	directory(control, false, platform);
-	const parent = join(commonDir, "gentle-ai", "candidate-views");
+	const parent = join(commonDir, "jero-review", "candidate-views");
 	directory(parent, false, platform);
 	if (platform === "win32") privateWindowsCandidateOwnerBoundary(commonDir);
 	else directory(parent, true, platform);
@@ -252,9 +252,9 @@ export function assertCandidateOwnerParent(commonDir: string, platform: NodeJS.P
 
 export function prepareCandidateOwnerParent(commonDir: string, platform: NodeJS.Platform = process.platform): string {
 	directory(commonDir, false, platform);
-	const control = join(commonDir, "gentle-ai");
+	const control = join(commonDir, "jero-review");
 	directory(control, false, platform);
-	const parent = join(commonDir, "gentle-ai", "candidate-views");
+	const parent = join(commonDir, "jero-review", "candidate-views");
 	directory(parent, false, platform);
 	if (platform === "win32") {
 		privateWindowsCandidateOwnerBoundary(commonDir, true);

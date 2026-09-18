@@ -358,7 +358,7 @@ interface LoadBackgroundSubagentsOptions {
 	env?: Record<string, string | undefined>;
 }
 
-const BACKGROUND_SUBAGENTS_SCHEMA = "gentle-pi.background-subagents/v1";
+const BACKGROUND_SUBAGENTS_SCHEMA = "jero.background-subagents/v1";
 const BACKGROUND_SUBAGENTS_FILE = "background-subagents.json";
 
 const DEFAULT_BACKGROUND_SUBAGENTS_RENDERING: BackgroundSubagentsRendering = {
@@ -367,7 +367,7 @@ const DEFAULT_BACKGROUND_SUBAGENTS_RENDERING: BackgroundSubagentsRendering = {
 };
 
 /**
- * Strict decode of {"schema":"gentle-pi.background-subagents/v1","policy":"on"|"off"}.
+ * Strict decode of {"schema":"jero.background-subagents/v1","policy":"on"|"off"}.
  * Any malformed shape (bad JSON, wrong schema, unknown keys, invalid policy)
  * returns undefined so the caller fails closed to "off".
  */
@@ -391,9 +391,9 @@ function parseBackgroundSubagentsPolicyFile(
  * Resolve the background-subagents policy AND the source that decided it.
  *
  * Resolution order (first hit wins, mirroring loadRuntimeGuardrailsConfig):
- *   1. Project file `${cwd}/.pi/gentle-ai/background-subagents.json`
+ *   1. Project file `${cwd}/.pi/jero/background-subagents.json`
  *   2. Global file `${configHome}/background-subagents.json`
- *      (configHome honors JERO_PI_CONFIG_HOME, default ~/.pi/gentle-ai)
+ *      (configHome honors JERO_PI_CONFIG_HOME, default ~/.pi/jero)
  *   3. Env var JERO_PI_BACKGROUND_SUBAGENTS ("on" | "off")
  *   4. Default "off"
  *
@@ -416,7 +416,7 @@ function resolveBackgroundSubagentsPolicy(
 	let globalFile = "";
 	try {
 		const configHome = options.gentlePiConfigHome ?? gentleAiConfigHome();
-		projectFile = join(cwd, ".pi", "gentle-ai", BACKGROUND_SUBAGENTS_FILE);
+		projectFile = join(cwd, ".pi", "jero", BACKGROUND_SUBAGENTS_FILE);
 		globalFile = join(configHome, BACKGROUND_SUBAGENTS_FILE);
 		const projectFileExists = existsSync(projectFile);
 		const globalFileExists = existsSync(globalFile);
@@ -1586,7 +1586,7 @@ function parseGuardrailsConfigFile(
  *   1. Check JERO_PI_AUTONOMOUS_MODE env var — if "1", forces autonomousMode=true
  *      and uses default guarded command actions.
  *   2. Read global config from ${gentlePiConfigHome}/runtime-guardrails.json
- *   3. Read project config from ${cwd}/.pi/gentle-ai/runtime-guardrails.json
+ *   3. Read project config from ${cwd}/.pi/jero/runtime-guardrails.json
  *      (project values are merged on top of global)
  *   4. Any parse/read error anywhere → fail safe (return SAFE_GUARDRAILS_CONFIG)
  */
@@ -1602,7 +1602,7 @@ function loadRuntimeGuardrailsConfig(
 
 		const configHome = options.gentlePiConfigHome ?? gentleAiConfigHome();
 		const globalConfigPath = join(configHome, "runtime-guardrails.json");
-		const projectConfigPath = join(cwd, ".pi", "gentle-ai", "runtime-guardrails.json");
+		const projectConfigPath = join(cwd, ".pi", "jero", "runtime-guardrails.json");
 
 		let merged: RuntimeGuardrailsConfig = { autonomousMode: false, guardedCommands: {} };
 
@@ -2012,7 +2012,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function gentleAiConfigHome(): string {
-	return process.env.JERO_PI_CONFIG_HOME ?? join(homedir(), ".pi", "gentle-ai");
+	return process.env.JERO_PI_CONFIG_HOME ?? join(homedir(), ".pi", "jero");
 }
 
 function modelConfigPath(_cwd: string): string {
@@ -2027,11 +2027,11 @@ const MODEL_EXPORT_KIND = "gentle-pi.agent_model_routing";
 const MODEL_EXPORT_VERSION = 1;
 
 function legacyProjectModelConfigPath(cwd: string): string {
-	return join(cwd, ".pi", "gentle-ai", "models.json");
+	return join(cwd, ".pi", "jero", "models.json");
 }
 
 function projectPersonaConfigPath(cwd: string): string {
-	return join(cwd, ".pi", "gentle-ai", "persona.json");
+	return join(cwd, ".pi", "jero", "persona.json");
 }
 
 function personaConfigPath(_cwd: string): string {
@@ -8803,7 +8803,7 @@ function createGentleAiExtensionForTesting(
 		}
 		if (typeof planning !== "object" || planning === null || !("path" in planning) || typeof planning.path !== "string" || typeof changeRoot !== "string") throw new Error("Native SDD continuation lacks an exact planning path.");
 		if (!["openspec", "both"].includes(String(status.artifactStore)) || !["repo-local", "workspace-planning"].includes(String(status.actionContext.mode))) throw new Error("Native SDD continuation has unsupported planning context.");
-		const marker = join(changeRoot, ".gentle-ai-instance");
+		const marker = join(changeRoot, ".jero-instance");
 		const checkMarker = () => {
 			try {
 				if (!lstatSync(marker).isFile() || realpathSync(marker) !== marker) throw new Error("Native SDD marker is not a canonical regular file.");

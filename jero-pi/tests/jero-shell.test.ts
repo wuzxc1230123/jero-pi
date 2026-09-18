@@ -288,7 +288,7 @@ test("profile reader follows store changes and rejects missing or invalid active
 	const path = join(root, "profiles.json");
 	const read = createActiveProfileReader({ JERO_PI_CONFIG_HOME: root });
 	const save = (active: string | undefined) => writeFileSync(path, JSON.stringify({
-		kind: "gentle-pi.agent_model_profiles", version: 1, active, profiles: { team: {}, other: {} },
+		kind: "jero.agent_model_profiles/v1", version: 1, active, profiles: { team: {}, other: {} },
 	}));
 	assert.equal(read(), undefined);
 	save("team");
@@ -297,7 +297,7 @@ test("profile reader follows store changes and rejects missing or invalid active
 	save("other");
 	assert.equal(read(), "other");
 	const replacement = join(root, "replacement.json");
-	writeFileSync(replacement, JSON.stringify({ kind: "gentle-pi.agent_model_profiles", version: 1, active: "team", profiles: { team: {} } }));
+	writeFileSync(replacement, JSON.stringify({ kind: "jero.agent_model_profiles/v1", version: 1, active: "team", profiles: { team: {} } }));
 	renameSync(replacement, path);
 	assert.equal(read(), "team", "atomic replacement refreshes the cached profile");
 	const isolated = createActiveProfileReader({ JERO_PI_CONFIG_HOME: join(root, "other-home") });
@@ -409,7 +409,7 @@ function renderFooter(ui: FakeUi): string {
 
 function sessionChange(ctx: ExtensionContext, id: string, root: string, path: string, before = "", after = "agent\n"): void {
  const entries = ctx.sessionManager.getEntries() as any[];
- entries.push({ type: "custom", customType: "gentle-pi.session-change/v1", data: {
+ entries.push({ type: "custom", customType: "jero.session-change/v1", data: {
   sessionId: ctx.sessionManager.getSessionId(),
   evidence: { id, root, path, before: before ? {kind:"text",text:before} : {kind:"absent"}, after:{kind:"text",text:after} },
  } });
