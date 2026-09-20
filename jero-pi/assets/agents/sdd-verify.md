@@ -29,13 +29,13 @@ If skill paths are missing, explicit fallback loading is allowed only as degrade
 
 Read your own input artifacts directly from the active backend before doing the phase work; do not wait for the parent to inline them. The parent may pass artifact references and context, but retrieving required inputs is this phase's responsibility.
 
-Inputs to read (`engram`/`both`: use the injected Engram memory read tools for the topic key, then fetch the full observation; `openspec`: read the file under `openspec/changes/{change}/`):
+Inputs to read (`engram`/`both`: use `mem_read` with the topic key, falling back to `mem_search`/`mem_list` when the exact key is unknown; `openspec`: read the file under `openspec/changes/{change}/`):
 - Spec (required): `sdd/{change}/spec`
 - Tasks (required): `sdd/{change}/tasks`
 - Apply-progress (required): `sdd/{change}/apply-progress`
 
 Persist this phase's artifact to the active backend before returning (mandatory):
-- `engram`/`both`: call the injected Engram save tool with title and `topic_key` `"sdd/{change}/verify-report"`, `type: "architecture"`, `project` from context, and `capture_prompt: false` when the tool schema supports it (omit the field if an older schema rejects it).
+- `engram`/`both`: call `mem_save` with `topic` `"sdd/{change}/verify-report"` and the full artifact body as `content` (saving again with the same topic replaces the entry).
 - `openspec`: write/update `openspec/changes/{change}/verify-report.md`.
 - `none`: return the verify report inline.
 
@@ -43,7 +43,7 @@ Never claim persistence you did not perform.
 
 ## Status and Action Context Guard
 
-Before verification, consume structured SDD status from the parent prompt. If missing, produce the same fields using this lookup order: project override `.pi/jero/support/sdd-status-contract.md`, then globally installed `~/.pi/agent/gentle-ai/support/sdd-status-contract.md`, then the embedded status contract. Do not use `assets/support/...` as a runtime path; that is only the package source path before installation.
+Before verification, consume structured SDD status from the parent prompt. If missing, produce the same fields using this lookup order: project override `.pi/jero/support/sdd-status-contract.md`, then globally installed `~/.pi/agent/jero/support/sdd-status-contract.md`, then the embedded status contract. Do not use `assets/support/...` as a runtime path; that is only the package source path before installation.
 
 Consume native `gentle-ai.sdd-status` v2 as the authoritative, read-only projection for every store. Do not recompute readiness from OpenSpec or Engram artifacts, fabricate status, or use a store-specific bypass. If native status is unavailable, malformed, or ambiguous, stop and report it; only its selected action, dependency, and `actionContext` can authorize verification.
 
@@ -122,7 +122,7 @@ build_exit_code: 0
 build_output_hash: sha256:{exact-output-digest}
 ```
 
-Before the first persistence attempt, hold the complete report as exact candidate bytes and run `gentle-ai sdd-verify-validate --input <path|-> --requirements <n> --scenarios <n>` before any OpenSpec or Engram write. If the validator is unavailable or denies admission, make zero writes and preserve the prior report; otherwise persist the same bytes, including a valid `fail`.
+Before the first persistence attempt, hold the complete report as exact candidate bytes and check the envelope against the fenced schema above: the `gentle-ai.verify-result/v1` YAML block is the first non-empty content, `requirements` and `scenarios` equal the exact executed counts, and every field is present and well-formed. jero-pi ships no separate validator command — the in-process authority strict-decodes this envelope wherever an attempt settles with one, and an `evidence_revision` mismatch refuses the settlement. If your check finds any deviation, make zero writes and preserve the prior report; otherwise persist the same bytes, including a valid `fail`.
 
 The report is `openspec/changes/{change}/verify-report.md`. After the envelope, it continues with:
 
@@ -143,4 +143,4 @@ Return the standard phase envelope with status, executive_summary, artifacts, ne
 
 ## Key Learnings Closing
 
-Close your final report text with a `## Key Learnings` block (no trailing colon). Use 1–5 numbered items, each a standalone factual sentence of at least 20 characters and at least 4 words. This applies to final report text only — not intermediate tool output or saved artifact content. The Engram memory provider automatically extracts and persists these items as passive capture; you do not parse the block or invoke passive-capture tools yourself. Omit the block when there is genuinely no reusable learning; no filler or speculation. This closing block is separate from explicit `mem_save` artifact/decision persistence.
+Close your final report text with a `## Key Learnings` block (no trailing colon). Use 1–5 numbered items, each a standalone factual sentence of at least 20 characters and at least 4 words. This applies to final report text only — not intermediate tool output or saved artifact content. Nothing extracts this block automatically — durable capture happens only through the explicit `mem_save` persistence required by the Memory Contract above, or when the parent or user directs a save; you do not parse the block yourself. Omit the block when there is genuinely no reusable learning; no filler or speculation. This closing block is separate from explicit `mem_save` artifact/decision persistence.

@@ -94,35 +94,31 @@ test("rendered SDD preflight prompt is English artifact copy", () => {
 	assert.match(headless, /ambiguous-scope/);
 });
 
-test("orchestrator Memory Contract carries the Engram memory lifecycle rule", async () => {
-	// orchestrator-lazy-diet: the lifecycle rule moved verbatim to
-	// assets/orchestrator-memory.md; core keeps only the intro + pointer.
-	// Union read so this assertion is repointed, not weakened.
+test("orchestrator Memory Contract carries the jero-pi memory staleness rule", async () => {
+	// orchestrator-lazy-diet: the rule lives in assets/orchestrator-memory.md;
+	// core keeps only the intro + pointer. Union read so this assertion is
+	// repointed, not weakened. jero-pi's built-in mem_* store replaced the
+	// external Engram provider and has no lifecycle tooling, so the rule pins
+	// staleness discipline instead of provider actions: list before relying,
+	// treat out-of-date entries as stale, never claim lifecycle actions that
+	// do not exist.
 	const orchestrator =
 		(await readFile(join(ROOT, "assets/orchestrator.md"), "utf8")) +
 		(await readFile(join(ROOT, "assets/orchestrator-memory.md"), "utf8"));
 
-	// Mirrors gentle-ai's engram-protocol/engram-convention lifecycle rule (PRs #842 + #844),
-	// in its final availability-gated form: agents must treat needs_review memories as stale,
-	// use the memory-provider-injected lifecycle tool when present, fall back safely when it is not,
-	// and never auto-mark reviewed.
 	for (const required of [
-		"when Engram exposes lifecycle metadata/tooling",
-		"At session start or before architecture-sensitive work",
-		"call the injected Engram review tool with action `list`",
-		"for the current project when the tool is available",
-		"If the injected Engram review tool is unavailable, do not fail the task",
-		"Continue with the injected Engram context/search tools",
-		"still apply lifecycle metadata from any returned observations when present",
-		"`active` memories may be used normally",
-		"`needs_review` memories are stale context, not trusted facts",
-		"verify it against current evidence before relying on it",
-		"Do NOT call the injected Engram review tool with action `mark_reviewed` automatically",
-		"Only call `mark_reviewed` after explicit user confirmation or through a dedicated memory maintenance command",
+		"jero-pi's built-in memory has no lifecycle tooling",
+		"carries no review lifecycle metadata or tools",
+		"saving the same topic again replaces the entry (last write wins)",
+		"At session start or before architecture-sensitive work, list the current project's topics with `mem_list`",
+		"Treat out-of-date memories as stale context, not trusted facts",
+		"surface that stale context to the user and verify it against current evidence before relying on it",
+		"There is no `mark_reviewed` action and no memory maintenance command",
+		"never claim to have marked, reviewed, promoted, or expired a memory entry",
 	]) {
 		assert.ok(
 			orchestrator.includes(required),
-			`orchestrator.md missing memory lifecycle rule: ${required}`,
+			`orchestrator.md missing memory staleness rule: ${required}`,
 		);
 	}
 });

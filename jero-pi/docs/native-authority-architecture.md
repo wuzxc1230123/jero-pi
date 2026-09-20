@@ -1,4 +1,6 @@
-# Native Authority Architecture After #191
+# Native Authority Architecture After #191 (upstream gentle-pi — historical fact source)
+
+> 历史参考：本文描述的是 gentle-pi 上游的二进制权威架构（gentle-ai Go 二进制、`review-integration/v2` 信封协商）。jero-pi 已将评审权威进程内化到 `lib/authority/`，该架构不再存在于本包；本文保留为移植事实来源。jero-pi 的现行文档见 [jero-reference.md](jero-reference.md)。
 
 ← [Back to README](../README.md)
 
@@ -20,7 +22,7 @@ Pi no longer owns an ordinary compact store, compact gate, compatibility facade,
 
 ## Naming note: "compact-v2" is not contract v2
 
-This document and `gentle_review`'s recovery/maintenance commands use "compact-v2" to name Pi's own internal review-authority storage generation (historically `lib/review-compact.ts`, now only the reduced `lib/review-compact-contract.ts` after gentle-pi#311 P5), predating and unrelated to gentle-ai's negotiated protocol contract `gentle-ai.review-integration/v2`. The two share a digit and nothing else: "compact-v2" is Pi-internal authority-state vocabulary; `review-integration/v2` is gentle-ai's wire contract replacing the Base64 `candidate_diff` transport with immutable `base_tree`/`candidate_tree` and an ordered `changed_path_manifest`. Do not conflate them when reading the maintenance-boundary section below.
+This document and `jero_review`'s recovery/maintenance commands use "compact-v2" to name Pi's own internal review-authority storage generation (historically `lib/review-compact.ts`, now only the reduced `lib/review-compact-contract.ts` after gentle-pi#311 P5), predating and unrelated to gentle-ai's negotiated protocol contract `gentle-ai.review-integration/v2`. The two share a digit and nothing else: "compact-v2" is Pi-internal authority-state vocabulary; `review-integration/v2` is gentle-ai's wire contract replacing the Base64 `candidate_diff` transport with immutable `base_tree`/`candidate_tree` and an ordered `changed_path_manifest`. Do not conflate them when reading the maintenance-boundary section below.
 
 ## Contract migration status: `review-integration/v1` → `/v2` (complete)
 

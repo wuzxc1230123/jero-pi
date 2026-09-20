@@ -24,11 +24,10 @@ Each SDD phase subagent reads its own required inputs directly from the active b
 - When the optional research lane is selected, `sdd-research` uses the additional topic keys `sdd/<change>/research` and `sdd/<change>/preproposal` (openspec: `openspec/changes/<change>/research.md`).
 - If memory tools are unavailable, do not pretend persistence exists; return artifacts inline and/or write OpenSpec files.
 
-Memory lifecycle rule (when Engram exposes lifecycle metadata/tooling):
+Memory lifecycle rule (jero-pi's built-in memory has no lifecycle tooling):
 
-- At session start or before architecture-sensitive work, call the injected Engram review tool with action `list` for the current project when the tool is available.
-- If the injected Engram review tool is unavailable, do not fail the task. Continue with the injected Engram context/search tools, and still apply lifecycle metadata from any returned observations when present.
-- `active` memories may be used normally.
-- `needs_review` memories are stale context, not trusted facts.
-- When a retrieved memory is marked `needs_review`, surface that stale context to the user and verify it against current evidence before relying on it.
-- Do NOT call the injected Engram review tool with action `mark_reviewed` automatically. Only call `mark_reviewed` after explicit user confirmation or through a dedicated memory maintenance command.
+- jero-pi's `mem_*` store carries no review lifecycle metadata or tools: each topic holds one snapshot with a `saved_at` frontmatter, and saving the same topic again replaces the entry (last write wins).
+- At session start or before architecture-sensitive work, list the current project's topics with `mem_list` (for example prefix `sdd/<change>/`) so stale context is visible before it is relied on.
+- An entry is only as current as its `saved_at` stamp and the evidence behind it. Treat out-of-date memories as stale context, not trusted facts.
+- When a retrieved memory looks stale relative to the work at hand, surface that stale context to the user and verify it against current evidence before relying on it.
+- There is no `mark_reviewed` action and no memory maintenance command; never claim to have marked, reviewed, promoted, or expired a memory entry.

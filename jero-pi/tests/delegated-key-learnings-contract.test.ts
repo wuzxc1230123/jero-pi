@@ -28,9 +28,9 @@ const KL_SEMANTICS: Array<[string, RegExp]> = [
 	["at least 20 characters", /at least 20 characters/],
 	["at least 4 words", /at least 4 words/],
 	["final report text only", /final (?:report|response) text only/],
-	["Engram extracts and persists", /Engram[^\n]*automatically extracts[^\n]*persists/i],
+	["no automatic extraction", /Nothing extracts this block automatically/],
 	["executor does not parse", /do(?:es)? not parse/],
-	["passive-capture tool wording", /passive.capture/i],
+	["durable capture only via mem_save", /durable capture happens only through[^\n]*mem_save/],
 	["omit when no reusable learning", /[Oo]mit[^\n]*no reusable learning/],
 	["separate from mem_save", /separate from[^\n]*mem_save/],
 ];

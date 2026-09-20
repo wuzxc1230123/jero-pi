@@ -22,9 +22,9 @@ proposal → design ┘
 
 ## Native SDD Dispatcher
 
-`gentle-ai sdd-status --contract gentle-ai.sdd-status/v2` is the sole, read-only status authority for every store. The orchestrator carries its projection unchanged; it never reconstructs readiness, selects a replacement action, uses an Engram bypass, or launches a recommendation merely because status displayed it.
+The in-process authority's `gentle-ai.sdd-status/v2` projection (rendered by `/jero-sdd-status`) is the sole, read-only status authority for every store. The orchestrator carries its projection unchanged; it never reconstructs readiness, selects a replacement action, uses a memory bypass, or launches a recommendation merely because status displayed it.
 
-`/jero-sdd-status` only inspects and renders that projection. Only explicitly authorized `/jero-sdd-continue` may call native `sdd-continue` to prepare a missing change-instance marker; this is not a status fallback and grants no source roots. If native status is unavailable, malformed, or mismatched, stop and report the failure.
+`/jero-sdd-status` only inspects and renders that projection. Only explicitly authorized `/jero-sdd-continue` may resolve continuation; it routes by the same projection and grants no source roots. If native status is unavailable, malformed, or mismatched, stop and report the failure.
 
 ## Bounded Planning Routing
 
@@ -56,7 +56,7 @@ Execute only the selected native action when its dependency and `actionContext` 
 
 ## SDD Status Contract
 
-Before `/jero-sdd-continue`, `sdd-apply`, `sdd-verify`, `sdd-sync`, or `sdd-archive`, resolve and carry structured status. Lookup order: parent-provided status, then project override `.pi/jero/support/sdd-status-contract.md`, then globally installed `~/.pi/agent/gentle-ai/support/sdd-status-contract.md`, then the embedded `sdd-status` prompt contract. Do not use `assets/support/...` as a runtime path; that is only the package source path before installation.
+Before `/jero-sdd-continue`, `sdd-apply`, `sdd-verify`, `sdd-sync`, or `sdd-archive`, resolve and carry structured status. Lookup order: parent-provided status, then project override `.pi/jero/support/sdd-status-contract.md`, then globally installed `~/.pi/agent/jero/support/sdd-status-contract.md`, then the embedded `sdd-status` prompt contract. Do not use `assets/support/...` as a runtime path; that is only the package source path before installation.
 
 Status must include:
 
@@ -167,7 +167,7 @@ When delivery planning yields chained PRs, ask once for chain strategy and cache
 - `stacked-to-main` — each PR targets the previous PR branch or main in sequence.
 - `feature-branch-chain` — PR #1 targets the tracker branch; child PRs target the immediate previous PR branch; only the tracker merges to main.
 
-When chained PRs are selected, treat the registry skill `gentle-ai-chained-pr` as a required skill match. Resolve and forward it by registry path to `sdd-tasks` and `sdd-apply`; do not hardcode its path.
+When chained PRs are selected, treat the registry skill `jero-chained-pr` as a required skill match. Resolve and forward it by registry path to `sdd-tasks` and `sdd-apply`; do not hardcode its path.
 
 Pass it as `chain_strategy` to `sdd-tasks` and `sdd-apply` prompts alongside `delivery_strategy`.
 
@@ -188,7 +188,7 @@ The parent should synthesize these envelopes, not paste long raw reports unless 
 
 ### Key Learnings closing block (routing)
 
-Every installed SDD phase executor agent (`assets/agents/sdd-*.md`) carries the effective `## Key Learnings Closing` contract in its own loaded prompt; this workflow file documents routing only and is not the executor authority. Each phase executor closes its final report text with a `## Key Learnings` block that the Engram memory provider passively extracts. Generic delegated workers receive the same closing instruction via `assets/orchestrator-delegation.md`.
+Every installed SDD phase executor agent (`assets/agents/sdd-*.md`) carries the effective `## Key Learnings Closing` contract in its own loaded prompt; this workflow file documents routing only and is not the executor authority. Each phase executor closes its final report text with a `## Key Learnings` block for the orchestrator and user to read; nothing parses it automatically — durable capture happens only through the explicit Memory Contract `mem_save`. Generic delegated workers receive the same closing instruction via `assets/orchestrator-delegation.md`.
 
 ## Automatic Mode Gatekeeper
 
@@ -214,37 +214,18 @@ The gatekeeper is additive: it does not relax the Review Workload Guard, Strict 
 
 ## Native Runtime Attempt Authority
 
-The package-local Jero runtime owns the Git-common-dir compact SDD attempt ledger. It is the sole attempt and changed-line budget authority for both OpenSpec and Engram flows on Pi. Pi must not implement a local attempt mirror, counter, token store, state machine, or extension interception layer; such code would duplicate provider authority and could not truthfully settle all runs.
+The in-process Jero authority (`lib/authority/`, stored under the Git common dir) owns the compact SDD attempt ledger. It is the sole attempt and changed-line budget authority for both OpenSpec and Engram flows on Pi. Pi must not implement a local attempt mirror, counter, token store, state machine, or extension interception layer; such code would duplicate provider authority and could not truthfully settle all runs. jero-pi ships no attempt CLI — acquire/settle are internal typed operations invoked by the package's own runtime, never by prose or a shell command.
 
-Before every runtime-bearing `sdd-apply`, `sdd-verify`, or remediation actor/harness launch, the orchestrator MUST call the compact acquire:
+- Managed remediation launches (the `sdd-remediate` agent through `subagent_run`) are wrapped automatically: the runtime acquires a bounded attempt before launch, routes only on the authority-returned `proceed`, `blocked`, or `complete`, and settles after the run with the exact outcome fields (`outcome`, `evidence_revision`, `diagnosis`, `harness_disposition`, `cleanup_evidence`, `process_evidence`). The orchestrator adds nothing around this path and never invents continuation or remediation state the authority has not returned.
+- `sdd-apply` and `sdd-verify` launches are not attempt-wrapped by the runtime. Their single-flight discipline is the orchestrator's responsibility: never launch two runtime-bearing actors for the same change concurrently, treat the authoritative status projection as the only launch gate, and stop when status reports the phase blocked or already complete.
 
-```text
-gentle-ai sdd-attempt acquire --cwd <repo> --change <change> --request-id <id> --work-unit <label> --evidence-goal <goal> --max-attempts <count> --max-changed-lines <count>
-```
+Never persist caller-authored attempt counters, tokens, or state in OpenSpec artifacts, memory, prompts, or any Pi-owned state.
 
-Pass `--token` only to continue an active attempt; pass `--remediates-evidence-revision` only for an unmanaged remediation. Do not invent continuation or remediation state the provider has not returned.
-
-The provider returns exactly one routing state from `proceed|blocked|complete`:
-
-- `proceed`: launch only on `proceed`; retain the opaque token for settle.
-- `blocked`: do not launch; stop and report.
-- `complete`: do not launch; the objective is settled.
-
-Never persist caller-authored attempt counters, tokens, or state in OpenSpec artifacts, Engram memory, prompts, or any Pi-owned state.
-
-After the external run completes, call the compact settle with a request ID distinct from acquire, reusing an operation's own ID only for idempotent replay of that exact operation:
-
-```text
-gentle-ai sdd-attempt settle --cwd <repo> --change <change> --token <token> --request-id <id> --outcome <failed|interrupted|passed> [--evidence-revision <sha256:...>] --diagnosis <text> --harness-disposition <reused|invalidated> --cleanup-evidence <text> --process-evidence <text>
-```
-
-Every settle field except `evidence-revision` is required: `cwd`, `change`, `token`, `request-id`, `outcome`, `diagnosis`, `harness-disposition`, `cleanup-evidence`, and `process-evidence`. For `failed` or `passed`, include `--evidence-revision` with the `sha256:...` evidence hash. For `interrupted`, omit the entire `--evidence-revision` flag. Pass `--successor-lineage` only for a distinct approved successor; the current/bound lineage remains itself otherwise. Pass `--remediates-evidence-revision` only when repairing a specific failed evidence revision. Settle derives binding and remediation inputs; the orchestrator never invents them.
-
-`status`, `begin`, `finish`, and `reset` are diagnostic/compatibility surfaces, not the normal runtime route. Route continuation only from the provider-returned `proceed|blocked|complete`. `reset` is never automatic and requires an explicit maintainer scope decision.
+`reset` is never automatic and requires an explicit maintainer scope decision.
 
 ### Gatekeeper Reconciliation
 
-The Automatic Mode Gatekeeper one-rerun rule above is a quality gate, not a launch authorization. A rerun never bypasses native attempt authority: every rerun still requires a fresh compact acquire, and the rerun must stop immediately if the provider returns `blocked` or `complete`. The gatekeeper quality rule is preserved and remains subordinate to this authority.
+The Automatic Mode Gatekeeper one-rerun rule above is a quality gate, not a launch authorization. A rerun never bypasses attempt authority: a managed remediation rerun still goes through the automatic acquire/settle wrap, and an apply/verify rerun still requires a fresh authoritative status read that admits the phase. The gatekeeper quality rule is preserved and remains subordinate to this authority.
 
 ## SDD Phase Delegation Mode
 

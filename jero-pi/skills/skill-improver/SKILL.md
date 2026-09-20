@@ -9,7 +9,7 @@ metadata:
 
 ## Activation Contract
 
-Use this skill when auditing, refactoring, normalizing, or improving existing `SKILL.md` files. Use `gentle-ai-skill-creator` when creating a brand-new skill from a reusable pattern.
+Use this skill when auditing, refactoring, normalizing, or improving existing `SKILL.md` files. Use `jero-skill-creator` when creating a brand-new skill from a reusable pattern.
 
 ## Hard Rules
 

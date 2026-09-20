@@ -46,13 +46,13 @@ If skill paths are missing, explicit fallback loading is allowed only as degrade
 
 Read your own input artifacts directly from the active backend before doing the phase work; do not wait for the parent to inline them. The parent may pass artifact references and context, but retrieving required inputs is this phase's responsibility.
 
-Inputs to read (`engram`/`both`: use the injected Engram memory read tools for the topic key, then fetch the full observation; `openspec`: read the file under `openspec/changes/{change}/`):
+Inputs to read (`engram`/`both`: use `mem_read` with the topic key, falling back to `mem_search`/`mem_list` when the exact key is unknown; `openspec`: read the file under `openspec/changes/{change}/`):
 - Exploration (optional): `sdd/{change}/explore`
 - Research + pre-proposal state (optional, present only when research was selected): `sdd/{change}/research` and `sdd/{change}/preproposal` (openspec: `openspec/changes/{change}/research.md`)
 - The proposer receives the confirmed pre-proposal handoff from the orchestrator and MUST NOT interview the user about those confirmed product decisions or infer consent; the orchestrator owns product discovery.
 
 Persist this phase's artifact to the active backend before returning (mandatory):
-- `engram`/`both`: call the injected Engram save tool with title and `topic_key` `"sdd/{change}/proposal"`, `type: "architecture"`, `project` from context, and `capture_prompt: false` when the tool schema supports it (omit the field if an older schema rejects it).
+- `engram`/`both`: call `mem_save` with `topic` `"sdd/{change}/proposal"` and the full artifact body as `content` (saving again with the same topic replaces the entry).
 - `openspec`: write/update `openspec/changes/{change}/proposal.md`.
 - `none`: return the proposal inline.
 
@@ -61,4 +61,4 @@ Never claim persistence you did not perform.
 
 ## Key Learnings Closing
 
-Close your final report text with a `## Key Learnings` block (no trailing colon). Use 1–5 numbered items, each a standalone factual sentence of at least 20 characters and at least 4 words. This applies to final report text only — not intermediate tool output or saved artifact content. The Engram memory provider automatically extracts and persists these items as passive capture; you do not parse the block or invoke passive-capture tools yourself. Omit the block when there is genuinely no reusable learning; no filler or speculation. This closing block is separate from explicit `mem_save` artifact/decision persistence.
+Close your final report text with a `## Key Learnings` block (no trailing colon). Use 1–5 numbered items, each a standalone factual sentence of at least 20 characters and at least 4 words. This applies to final report text only — not intermediate tool output or saved artifact content. Nothing extracts this block automatically — durable capture happens only through the explicit `mem_save` persistence required by the Memory Contract above, or when the parent or user directs a save; you do not parse the block yourself. Omit the block when there is genuinely no reusable learning; no filler or speculation. This closing block is separate from explicit `mem_save` artifact/decision persistence.

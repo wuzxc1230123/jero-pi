@@ -28,7 +28,7 @@ Requires Pi 0.85.1 or newer (the tested minimum for `agent_settled`).
 
 | Surface | Value |
 |---|---|
-| Commands | `/jero:*` (inspect/start/answer-consent/status/assess/review-mode/profiles/models/usage/doctor/banner*/toggle*/agents/background-subagents/review-session-permission/sdd-preflight/install-*), `/jero-sdd-*` flows |
+| Commands | `/jero:*` (status/review-mode/persona/profiles/models/usage/doctor/agents/changes/background-subagents/review-session-permission/sdd-preflight/banner*/toggle*/install-*), `/jero-sdd-*` flows. Review lifecycle verbs (`inspect`/`start`/`answer-consent`/`assess`/`finalize`/`validate`) are `jero_review` tool operations, not slash commands |
 | Environment | `JERO_PI_*` (AGENT_HOME honors `PI_CODING_AGENT_DIR`) |
 | Config home | `~/.pi/jero/` (global), `<repo>/.pi/jero/` (project), `<repo>/.jero/policies/` (review policies) |
 | Contracts | `jero.session-change/v1`, `jero.session-worktree/v1`, `jero.child-standing-review-permission/v1`, `jero.background-subagents/v1`, `jero.agent_model_profiles/v1`, `jero.verify-result/v1`, `jero.authority/v1` |

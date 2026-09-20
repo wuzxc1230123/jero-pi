@@ -17,7 +17,7 @@ Use this agent only for scoped implementation work that is too large for the par
 
 ## Native review boundary
 
-The primary parent owns candidate review disposition and lifecycle, including preflight and any explicit candidate-level opt-out. Never search for, request, or invoke review tools, including `gentle_review`. Missing review tools never block this worker's implementation or verification handoff. Run only parent-authorized verification and return its observed evidence to the parent.
+The primary parent owns candidate review disposition and lifecycle, including preflight and any explicit candidate-level opt-out. Never search for, request, or invoke review tools, including `jero_review`. Missing review tools never block this worker's implementation or verification handoff. Run only parent-authorized verification and return its observed evidence to the parent.
 
 ## Context contract
 

@@ -15,11 +15,11 @@ Any phase that selects, continues, applies, verifies, syncs, or archives an SDD 
 
 ## Native Engine
 
-- `gentle-ai sdd-status --contract gentle-ai.sdd-status/v2` is the sole status authority for every store. It is read-only: inspect its native projection unchanged and never launch a phase, prepare consent, or grant roots while reading it.
+- The in-process authority's `gentle-ai.sdd-status/v2` projection (rendered by `/jero-sdd-status`) is the sole status authority for every store. It is read-only: inspect its native projection unchanged and never launch a phase, prepare consent, or grant roots while reading it.
 - If native status is unavailable, malformed, or does not select the requested change/workspace, stop and report that failure. Do not construct a local status, infer readiness from artifacts, substitute continuation, or bypass it through Engram.
 - `nextRecommended`, `dependencies`, `blockedReasons`, `actionContext`, and optional `phaseInstructions` are producer facts. Route only by their typed values, never by prose or a local lifecycle graph. A genuine blocker's human-readable explanation belongs in `blockedReasons`; a non-blocking diagnostic belongs in `notes`; neither belongs in `nextRecommended`.
-- Runtime-attempt authority is separate from status: runtime-bearing work uses the provider `sdd-attempt acquire|settle` flow and its `proceed`, `blocked`, or `complete` result.
-- Only an explicitly authorized `gentle-ai sdd-continue` may prepare a missing change-instance marker. `ensureChangeInstanceMarker` has no status caller; its sole production path is `PrepareChangeInstanceConsent` through `sdd-continue`.
+- Runtime-attempt authority is separate from status: managed remediation launches are acquire/settle-wrapped by the package runtime in-process (`proceed`, `blocked`, or `complete` routing); apply/verify single-flight is enforced through this same authoritative projection.
+- Only explicitly authorized `/jero-sdd-continue` may resolve continuation; it routes by the same projection and grants no source roots.
 
 ## Bounded Planning Routing
 
@@ -65,7 +65,7 @@ The orchestrator MUST carry `actionContext` into any phase launch.
 
 The compact SDD runtime attempt authority is separate from artifact dispatch and status. It is artifact-store agnostic: the same acquire/settle discipline applies to `openspec`, `engram`, `both`, and `none` stores. Its payload MUST NOT be embedded in the SDD v1 status schema above; status reports artifact state only, never attempt tokens or attempt counters. No OpenSpec or Engram attempt ledger may be created or mirrored by Pi.
 
-Before every runtime-bearing `sdd-apply`, `sdd-verify`, or remediation launch, the orchestrator MUST acquire a bounded attempt from the provider compact CLI; after the external run completes it MUST settle. The acquire and settle request IDs are distinct; an operation's own request ID is reused only for idempotent replay of that exact operation. Continuation routes only from the provider-returned `proceed|blocked|complete` — launch only on `proceed`, stop on `blocked` or `complete`. `reset` is never automatic and requires an explicit maintainer scope decision.
+Managed remediation launches are acquire/settle-wrapped automatically by the package runtime (in-process, no CLI): the authority returns exactly one routing state from `proceed|blocked|complete` — launch only on `proceed`, stop on `blocked` or `complete` — and the runtime settles after the run. `sdd-apply` and `sdd-verify` are not attempt-wrapped; the orchestrator enforces their single-flight through the authoritative status projection: never two runtime-bearing actors for one change, never a launch that status does not admit. `reset` is never automatic and requires an explicit maintainer scope decision.
 
 For the exact compact acquire/settle shapes and the full field semantics, see the `Native Runtime Attempt Authority` section of the lazy-loaded `SDD Orchestrator Workflow` contract. Do not look up `assets/...` paths at runtime; those are package source paths before installation.
 

@@ -6,7 +6,7 @@ Do not report the mere ability of the trusted local orchestrator to submit actor
 
 ## Ordinary facade
 
-Use `gentle_review` as `start -> finalize -> validate` for every new ordinary review.
+Use `jero_review` as `start -> finalize -> validate` for every new ordinary review.
 
 `start` derives the repository root, complete Git snapshot, untracked set, lineage, risk tier, selected lenses, original authored changed lines, and correction budget. The tier, scope, original lines, and budget never change after start.
 
@@ -28,7 +28,7 @@ Reviewer, refuter, and validator verdicts are admitted natively, never Pi-author
 
 ### Concurrent Reviewer Group (MANDATORY)
 
-When one fresh `collect.inputs` set contains multiple distinct independent `review.capture-result` reviewer slots, call `gentle_review_capture_group` once with the complete ordered provider bindings and its forecast acknowledgement. Before any materialization it validates the whole current group, its common binding fields, unique slot identities, and every provider submission descriptor; then it starts all reviewers before waiting. For canonical 4R, preserve `review-risk`, `review-resilience`, `review-readability`, `review-reliability` order.
+When one fresh `collect.inputs` set contains multiple distinct independent `review.capture-result` reviewer slots, call `jero_review_capture_group` once with the complete ordered provider bindings and its forecast acknowledgement. Before any materialization it validates the whole current group, its common binding fields, unique slot identities, and every provider submission descriptor; then it starts all reviewers before waiting. For canonical 4R, preserve `review-risk`, `review-resilience`, `review-readability`, `review-reliability` order.
 
 Each grouped launch runs only its own provider-issued `review.capture-result` binding, and admission remains in provider order. A typed terminal or nonterminal closure returns directly; a later stop after earlier admission reports bounded partial progress and never claims no mutation. If every submission returns without closure, reconcile fresh bound STATUS and return its declared action rather than inferring group success. On `correction_required`, continue only through exact bound STATUS and the provider-issued `review.capture-correction-plan` binding.
 

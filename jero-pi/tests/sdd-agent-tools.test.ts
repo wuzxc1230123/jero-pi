@@ -6,7 +6,7 @@ import test from "node:test";
 const repoRoot = process.cwd();
 const assetsAgentsDir = join(repoRoot, "assets", "agents");
 const GENERIC_ROLE_TOOLS: Record<string, string[]> = {
-	"jero-explore.md": ["read", "grep", "find", "codegraph"],
+	"jero-explore.md": ["read", "grep", "find", "fovea_focus", "fovea_sketch", "fovea_dwell"],
 	"jero-worker.md": ["read", "grep", "find", "edit", "write", "bash", "mem_save"],
 	"jero-verify.md": ["read", "grep", "find", "bash"],
 };
@@ -47,8 +47,8 @@ function assertGenericRoleBody(fileName: string, source: string): void {
 	if (fileName === "jero-explore.md") {
 		assert.match(source, /sole permitted mutation/);
 		assert.match(source, /all tracked files, source files, and other project content remain read-only/);
-		assert.match(source, /CodeGraph reports that it is unavailable or fails/);
-		assert.match(source, /Do not use that fallback before CodeGraph is unavailable or fails/);
+		assert.match(source, /If the fovea tools are unavailable or fail/);
+		assert.match(source, /Do not use that fallback before they are unavailable or fail/);
 	}
 
 	if (fileName === "jero-verify.md") {
@@ -159,12 +159,12 @@ test("sdd-verify phase text carries the verify-result envelope and validate-befo
 	assert.match(agentSource, /first non-empty content/);
 	assert.match(
 		agentSource,
-		/gentle-ai sdd-verify-validate --input <path\|-> --requirements <n> --scenarios <n>/,
+		/the in-process authority strict-decodes this envelope wherever an attempt settles with one/,
 	);
 
 	const chainSource = readFileSync(join(repoRoot, "assets", "chains", "sdd-verify.chain.md"), "utf8");
 	assert.match(chainSource, /gentle-ai\.verify-result\/v1/);
-	assert.match(chainSource, /sdd-verify-validate/);
+	assert.match(chainSource, /byte-check the envelope/);
 });
 
 test("the retired Pi adversarial role agents are not packaged", () => {

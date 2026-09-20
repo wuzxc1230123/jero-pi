@@ -55,7 +55,7 @@ const V014_MANAGED_ASSETS = join(
 // jero-explore.md as their exemplar (packaged, absent from the v0.13
 // manifest) after review-refuter.md was retired together with every
 // Pi-authored adversarial review verdict.
-const MANAGED_EXEMPLAR_TOOLS = ["read", "grep", "find", "codegraph"];
+const MANAGED_EXEMPLAR_TOOLS = ["read", "grep", "find", "fovea_focus", "fovea_sketch", "fovea_dwell"];
 const RETIRED_ADVERSARIAL_AGENTS = ["review-refuter.md", "review-validator.md"];
 
 interface ManagedAssetsManifest {
@@ -640,6 +640,10 @@ test("unowned legacy research migrates by exact normalized hash, preserving rout
 		.replace("  - mem_read" + String.fromCharCode(10), "  - mem_get_observation" + String.fromCharCode(10))
 		.replace("OpenSpec requires its exact absolute change-local `.md` path. Memory requires the exact `topic_key` (`sdd/<change>/<artifact>`).", "OpenSpec requires its exact absolute change-local `.md` path. Engram requires exact observation `id`, `project`, `topic_key`, and positive `revision_count`.")
 		.replace("OpenSpec requires complete JSON bytes, matching revision and digest; memory requires the rendered `mem_read` text (a `saved <timestamp>` header line, a blank separator, then the entry body verbatim) with a matching body digest.", "OpenSpec requires complete JSON bytes, matching revision and digest; Engram requires matching returned id/project/topic_key/revision_count and content digest.")
+		.replace("arbitrary topic keys and generic gateways are not recovery routes. Search uses the exact project/topic query; only a matching project/topic entry may supply the already-carried topic key.", "arbitrary observation IDs and generic gateways are not recovery routes. Search uses the exact project/topic query; only a matching project/topic observation may supply the already-carried ID.")
+		.replace("(`engram`/`both`: use `mem_read` with the topic key, falling back to `mem_search`/`mem_list` when the exact key is unknown; `openspec`: read the file under `openspec/changes/{change}/`)", "(`engram`/`both`: use the injected Engram memory read tools for the topic key, then fetch the full observation; `openspec`: read the file under `openspec/changes/{change}/`)")
+		.replace("- `engram`/`both`: call `mem_save` with `topic` `\"sdd/{change}/research\"` and the full artifact body as `content` (saving again with the same topic replaces the entry).", "- `engram`/`both`: call the injected Engram save tool with title and `topic_key` `\"sdd/{change}/research\"`, `type: \"architecture\"`, `project` from context, and `capture_prompt: false` when the tool schema supports it (omit the field if an older schema rejects it).")
+		.replace("Nothing extracts this block automatically — durable capture happens only through the explicit `mem_save` persistence required by the Memory Contract above, or when the parent or user directs a save; you do not parse the block yourself.", "The Engram memory provider automatically extracts and persists these items as passive capture; you do not parse the block or invoke passive-capture tools yourself.")
 		.replace(/## Parent Preflight Transport\n[\s\S]*?(?=## Skill Resolution Contract)/, "")
 		.replace(/## Bounded artifact handoff\n[\s\S]*?(?=## Memory Contract)/, "")
 		.replace(/  - fetch_content\n  - web_search\n  - source_check\n  - get_search_content\n/, "")
@@ -1123,7 +1127,9 @@ test("sdd-explore packages its CodeGraph-enabled exploration allowlist", () => {
 		"read",
 		"grep",
 		"find",
-		"codegraph",
+		"fovea_focus",
+		"fovea_sketch",
+		"fovea_dwell",
 		"edit",
 		"write",
 		"mem_save",
@@ -1390,7 +1396,7 @@ test("global model routing uses PI_CODING_AGENT_DIR for package-installed agents
 test("normal and forced installation copy generic agents with complete role contracts", () => {
 	const previousAgentHome = process.env.JERO_PI_AGENT_HOME;
 	const expectedTools = {
-		"jero-explore": ["read", "grep", "find", "codegraph"],
+		"jero-explore": ["read", "grep", "find", "fovea_focus", "fovea_sketch", "fovea_dwell"],
 		"jero-verify": ["read", "grep", "find", "bash"],
 	} as const;
 
@@ -1411,12 +1417,12 @@ test("normal and forced installation copy generic agents with complete role cont
 					assert.match(source, /generic non-SDD work/);
 					assert.match(source, /Do not (?:fix findings, delegate to child agents|delegate to child agents, commit)/);
 					if (name === "jero-explore") {
-						assert.match(source, /cwd-scoped `codegraph` tool/);
-						assert.match(source, /never ask it to target another path/);
+						assert.match(source, /cwd-scoped fovea tools/);
+						assert.match(source, /never ask them to target another path/);
 						assert.match(source, /sole permitted mutation/);
 						assert.match(source, /all tracked files, source files, and other project content remain read-only/);
-						assert.match(source, /CodeGraph reports that it is unavailable or fails/);
-						assert.match(source, /Do not use that fallback before CodeGraph is unavailable or fails/);
+						assert.match(source, /If the fovea tools are unavailable or fail/);
+						assert.match(source, /Do not use that fallback before they are unavailable or fail/);
 					}
 					assert.match(source, /Do not (?:edit, write|edit, write, or fix findings)/);
 					assert.match(source, /compressed (?:handoff|evidence handoff)/);

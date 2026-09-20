@@ -26,7 +26,7 @@ If skill paths are missing, explicit fallback loading is allowed only as degrade
 
 ## Memory Contract
 
-This phase is READ-ONLY. Obtain the native v2 status projection; do not compute it from artifacts, write files, or call the injected Engram save tool.
+This phase is READ-ONLY. Obtain the native v2 status projection; do not compute it from artifacts, write files, or call `mem_save`.
 
 Do not persist anything — status is a read-only report. Never claim persistence.
 
@@ -38,11 +38,11 @@ Do not persist anything — status is a read-only report. Never claim persistenc
 
 ## Native Status Contract
 
-Use the parent-provided native v2 projection when present. Otherwise run `gentle-ai sdd-status [change] --cwd <canonical-workspace> --json --instructions` and render its result unchanged. `gentle-ai.sdd-status` v2 is authoritative for every store; if it is unavailable, malformed, or has ambiguous selection, report the native failure and stop.
+Use the parent-provided native v2 projection when present. Otherwise ask the parent to run `/jero-sdd-status [change]` in the canonical workspace and render its result unchanged — there is no status CLI to run yourself. `gentle-ai.sdd-status` v2 is authoritative for every store; if the projection is unavailable, malformed, or has ambiguous selection, report the native failure and stop.
 
-Status is read-only. Do not inspect artifacts to recreate selection, task progress, dependencies, `actionContext`, or `nextRecommended`; do not call continuation, prepare a marker, grant roots, launch a phase, or use an Engram bypass. Display the producer's `blockedReasons` and instructions without executing them.
+Status is read-only. Do not inspect artifacts to recreate selection, task progress, dependencies, `actionContext`, or `nextRecommended`; do not call continuation, grant roots, launch a phase, or use a memory bypass. Display the producer's `blockedReasons` and instructions without executing them.
 
-Only the explicit `/jero-sdd-continue` path may prepare consent. `ensureChangeInstanceMarker` is reached solely through `PrepareChangeInstanceConsent` and native `sdd-continue`, never through status.
+Only the explicit `/jero-sdd-continue` parent path may resolve continuation; it grants no source roots.
 
 ## Output
 
@@ -51,4 +51,4 @@ Return the standard phase envelope with status, executive_summary, artifacts, ne
 
 ## Key Learnings Closing
 
-Close your final report text with a `## Key Learnings` block (no trailing colon). Use 1–5 numbered items, each a standalone factual sentence of at least 20 characters and at least 4 words. This applies to final report text only — not intermediate tool output or saved artifact content. The Engram memory provider automatically extracts and persists these items as passive capture; you do not parse the block or invoke passive-capture tools yourself. Omit the block when there is genuinely no reusable learning; no filler or speculation. This closing block is separate from explicit `mem_save` artifact/decision persistence.
+Close your final report text with a `## Key Learnings` block (no trailing colon). Use 1–5 numbered items, each a standalone factual sentence of at least 20 characters and at least 4 words. This applies to final report text only — not intermediate tool output or saved artifact content. Nothing extracts this block automatically — durable capture happens only through the explicit `mem_save` persistence required by the Memory Contract above, or when the parent or user directs a save; you do not parse the block yourself. Omit the block when there is genuinely no reusable learning; no filler or speculation. This closing block is separate from explicit `mem_save` artifact/decision persistence.

@@ -141,9 +141,9 @@ Exceptions:
 // text"), frozen here so the apply commit and this test move together.
 // ---------------------------------------------------------------------------
 
-/** design.md "Wrapper Identity contract" — replaces jero-ai.ts :179-184 (817 B). */
+/** design.md "Wrapper Identity contract" — replaces jero-ai.ts :179-184 (807 B after the el Jero identity pass). */
 const POST_WRAPPER_IDENTITY_BLOCK = `Identity contract:
-- When the user asks who or what you are, answer as el Gentleman, not as a generic assistant, and never introduce yourself as only "your assistant" or "the default assistant". Convey this meaning, translated into the user's language: "I am el Gentleman: a Pi-specific coding-agent harness for controlled development, with a senior architect persona. I work with SDD/OpenSpec when the task justifies it, coordinate subagents, use phase artifacts, run commands, and edit files. I am not a generic chatbot."
+- When the user asks who or what you are, answer as el Jero, not as a generic assistant, and never introduce yourself as only "your assistant" or "the default assistant". Convey this meaning, translated into the user's language: "I am el Jero: a Pi-specific coding-agent harness for controlled development, with a senior architect persona. I work with SDD/OpenSpec when the task justifies it, coordinate subagents, use phase artifacts, run commands, and edit files. I am not a generic chatbot."
 - Follow the currently selected persona mode.
 - Mention SDD/OpenSpec phase artifacts and subagents as core capabilities.
 - Mention memory only when memory packages or callable memory tools are actually active; never invent persistent memory.
@@ -186,16 +186,16 @@ Exceptions:
 // ---------------------------------------------------------------------------
 
 const PRE_WRAPPER_BYTES = 438; // PRE_WRAPPER_IDENTITY_BLOCK
-const POST_WRAPPER_BYTES = 817; // POST_WRAPPER_IDENTITY_BLOCK
-const WRAPPER_IDENTITY_DELTA_BYTES = 379; // POST_WRAPPER_BYTES - PRE_WRAPPER_BYTES
+const POST_WRAPPER_BYTES = 807; // POST_WRAPPER_IDENTITY_BLOCK (817 B design figure − 10 B for the el Gentleman → el Jero identity pass)
+const WRAPPER_IDENTITY_DELTA_BYTES = 369; // POST_WRAPPER_BYTES - PRE_WRAPPER_BYTES
 
 const PRE_ORCH_IDENTITY_BYTES = 831; // PRE_ORCH_IDENTITY
 const ORCH_IDENTITY_DELTA_BYTES = 682; // PRE_ORCH_IDENTITY_BYTES - POST_ORCH_IDENTITY (149 B)
 
 const PRE_ORCH_LANGBOUNDARY_BYTES = 2117; // PRE_ORCH_LANGBOUNDARY
 
-const GENTLEMAN_NET_DELTA_BYTES = -283; // section-sum method, gentleman mode
-const NEUTRAL_NET_DELTA_BYTES = -341; // section-sum method, neutral mode
+const GENTLEMAN_NET_DELTA_BYTES = -293; // section-sum method, gentleman mode (identity pass −10 B)
+const NEUTRAL_NET_DELTA_BYTES = -351; // section-sum method, neutral mode (identity pass −10 B)
 
 // ---------------------------------------------------------------------------
 // Frozen fixture integrity — self-check the transcription against the design's
@@ -222,11 +222,11 @@ test("fixture integrity: PRE byte counts match design.md judge-measured figures"
 	);
 });
 
-test("fixture integrity: POST_WRAPPER_IDENTITY_BLOCK matches design.md converged 817 B", () => {
+test("fixture integrity: POST_WRAPPER_IDENTITY_BLOCK matches the el Jero identity-pass 807 B", () => {
 	assert.equal(
 		Buffer.byteLength(POST_WRAPPER_IDENTITY_BLOCK),
 		POST_WRAPPER_BYTES,
-		"POST_WRAPPER_IDENTITY_BLOCK must equal the round-2/round-3 converged 817 B",
+		"POST_WRAPPER_IDENTITY_BLOCK must equal the converged 817 B minus 10 B for the el Gentleman → el Jero identity pass",
 	);
 });
 
@@ -236,12 +236,12 @@ test("fixture integrity: POST_WRAPPER_IDENTITY_BLOCK matches design.md converged
 // combined injection: __testing.buildGentlePrompt(persona).
 // ---------------------------------------------------------------------------
 
-test("Table A rule: wrapper :177 'You are el Gentleman...' survives verbatim (KEEP once, wrapper)", () => {
+test("Table A rule: wrapper :177 'You are el Jero...' survives verbatim (KEEP once, wrapper)", () => {
 	for (const persona of ["gentleman", "neutral"] as const) {
 		const prompt = __testing.buildGentlePrompt(persona);
 		assert.match(
 			prompt,
-			/You are el Gentleman: a Pi-specific coding-agent harness for controlled development work\./,
+			/You are el Jero: a Pi-specific coding-agent harness for controlled development work\./,
 			`[${persona}] wrapper :177 opening sentence must survive`,
 		);
 	}
@@ -252,8 +252,8 @@ test("Table A rule: wrapper :180/:181 + orchestrator :9,:12 self-description MER
 		const prompt = __testing.buildGentlePrompt(persona);
 		assert.match(
 			prompt,
-			/answer as el Gentleman, not as a generic assistant/,
-			`[${persona}] merged bullet must keep 'answer as el Gentleman, not as a generic assistant' (subsumes wrapper :180)`,
+			/answer as el Jero, not as a generic assistant/,
+			`[${persona}] merged bullet must keep 'answer as el Jero, not as a generic assistant' (subsumes wrapper :180)`,
 		);
 		assert.match(
 			prompt,
@@ -262,7 +262,7 @@ test("Table A rule: wrapper :180/:181 + orchestrator :9,:12 self-description MER
 		);
 		assert.match(
 			prompt,
-			/I am el Gentleman: a Pi-specific coding-agent harness for controlled development, with a senior architect persona\. I work with SDD\/OpenSpec when the task justifies it, coordinate subagents, use phase artifacts, run commands, and edit files\. I am not a generic chatbot\./,
+			/I am el Jero: a Pi-specific coding-agent harness for controlled development, with a senior architect persona\. I work with SDD\/OpenSpec when the task justifies it, coordinate subagents, use phase artifacts, run commands, and edit files\. I am not a generic chatbot\./,
 			`[${persona}] the richer translated self-description paragraph (orchestrator :9,:12) must survive in the wrapper`,
 		);
 	}
@@ -439,7 +439,7 @@ test("dup guard (exact-string): 'Do not claim portability outside the Pi runtime
 
 test("dup guard (exact-string): identity self-description sentence occurs exactly once", () => {
 	const selfDescription =
-		"I am el Gentleman: a Pi-specific coding-agent harness for controlled development, with a senior architect persona. I work with SDD/OpenSpec when the task justifies it, coordinate subagents, use phase artifacts, run commands, and edit files. I am not a generic chatbot.";
+		"I am el Jero: a Pi-specific coding-agent harness for controlled development, with a senior architect persona. I work with SDD/OpenSpec when the task justifies it, coordinate subagents, use phase artifacts, run commands, and edit files. I am not a generic chatbot.";
 	for (const persona of ["gentleman", "neutral"] as const) {
 		const prompt = __testing.buildGentlePrompt(persona);
 		assert.equal(
@@ -547,8 +547,8 @@ test("byte delta: wrapper Identity contract block grows by the measured delta (p
 	const pre = Buffer.byteLength(PRE_WRAPPER_IDENTITY_BLOCK);
 	const post = Buffer.byteLength(POST_WRAPPER_IDENTITY_BLOCK);
 	assert.equal(pre, PRE_WRAPPER_BYTES, "pre wrapper Identity block must be 438 B");
-	assert.equal(post, POST_WRAPPER_BYTES, "post wrapper Identity block must be 817 B");
-	assert.equal(post - pre, WRAPPER_IDENTITY_DELTA_BYTES, "wrapper Identity block delta must be +379 B");
+	assert.equal(post, POST_WRAPPER_BYTES, "post wrapper Identity block must be 807 B (817 B design figure minus the identity-pass rename)");
+	assert.equal(post - pre, WRAPPER_IDENTITY_DELTA_BYTES, "wrapper Identity block delta must be +369 B");
 });
 
 test("byte delta: orchestrator.md Identity Contract shrinks to the measured pointer size (149 B, ±1 B of design's 148 B estimate)", () => {
@@ -591,12 +591,12 @@ test("byte delta: net per-session injection delta matches byte-measurements.md (
 	assert.equal(
 		wrapperDelta + orchDelta + gentlemanClauseDelta,
 		GENTLEMAN_NET_DELTA_BYTES,
-		"gentleman net per-session injection delta must be -283 B (section-sum method)",
+		"gentleman net per-session injection delta must be -293 B (section-sum method, el Jero identity pass)",
 	);
 	assert.equal(
 		wrapperDelta + orchDelta,
 		NEUTRAL_NET_DELTA_BYTES,
-		"neutral net per-session injection delta must be -341 B (section-sum method, no persona-prompt change)",
+		"neutral net per-session injection delta must be -351 B (section-sum method, el Jero identity pass, no persona-prompt change)",
 	);
 });
 

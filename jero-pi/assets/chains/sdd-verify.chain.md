@@ -31,7 +31,7 @@ output: verify-report.md
 outputMode: file-only
 progress: true
 
-Run focused and full verification for {task} using the apply-progress and project artifacts. Include review/judgment blockers. Start `verify-report.md` with the mandatory fenced `gentle-ai.verify-result/v1` YAML envelope as the first non-empty content, and run `gentle-ai sdd-verify-validate` on the exact report bytes before persisting; on denial or unavailable validator, persist nothing.
+Run focused and full verification for {task} using the apply-progress and project artifacts. Include review/judgment blockers. Start `verify-report.md` with the mandatory fenced `gentle-ai.verify-result/v1` YAML envelope as the first non-empty content, and byte-check the envelope (exact `requirements`/`scenarios` counts, all fields well-formed) before persisting; on any deviation persist nothing — the in-process authority refuses a settlement whose `evidence_revision` does not match the envelope.
 
 ## sdd-sync
 

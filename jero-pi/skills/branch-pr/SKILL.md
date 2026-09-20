@@ -67,7 +67,7 @@ Branch names MUST match this regex:
 
 ## PR Body Format
 
-The PR template is at `.github/PULL_REQUEST_TEMPLATE.md`. Every PR body MUST contain:
+Every PR body MUST contain:
 
 ### 1. Linked Issue (REQUIRED)
 
@@ -126,12 +126,12 @@ All boxes must be checked:
 
 ## Automated Checks (all must pass)
 
+The jero-pi repository CI runs these jobs on every PR; other target repositories run their own — check `.github/workflows/` there instead of assuming these.
+
 | Check | Job name | What it verifies |
 |-------|----------|-----------------|
-| PR Validation | `Check Issue Reference` | Body contains `Closes/Fixes/Resolves #N` |
-| PR Validation | `Check Issue Has status:approved` | Linked issue has `status:approved` |
-| PR Validation | `Check PR Has type:* Label` | PR has exactly one `type:*` label |
-| CI | `Shellcheck` | Shell scripts pass `shellcheck` |
+| CI | `verify` | Tests (incl. offline gate), typecheck, runtime modules, authority boundary, package contents, packed-artifact gate, dependency audit |
+| CI | `review-repository-windows` | Windows Git authority probe and candidate-view regression |
 
 ---
 

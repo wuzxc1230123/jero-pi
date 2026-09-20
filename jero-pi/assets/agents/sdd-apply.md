@@ -29,15 +29,15 @@ If skill paths are missing, explicit fallback loading is allowed only as degrade
 
 Read your own input artifacts directly from the active backend before doing the phase work; do not wait for the parent to inline them. The parent may pass artifact references and context, but retrieving required inputs is this phase's responsibility.
 
-Inputs to read (`engram`/`both`: use the injected Engram memory read tools for the topic key, then fetch the full observation; `openspec`: read the file under `openspec/changes/{change}/`):
+Inputs to read (`engram`/`both`: use `mem_read` with the topic key, falling back to `mem_search`/`mem_list` when the exact key is unknown; `openspec`: read the file under `openspec/changes/{change}/`):
 - Tasks (required): `sdd/{change}/tasks`
 - Spec (required): `sdd/{change}/spec`
 - Design (required): `sdd/{change}/design`
 - Previous apply-progress (if it exists): `sdd/{change}/apply-progress` — read and MERGE with your new progress; do NOT overwrite.
 
 Persist this phase's artifact to the active backend before returning (mandatory):
-- `engram`/`both`: call the injected Engram save tool with title and `topic_key` `"sdd/{change}/apply-progress"`, `type: "architecture"`, `project` from context, and `capture_prompt: false` when the tool schema supports it (omit the field if an older schema rejects it).
-- Also update the tasks artifact checkboxes via the injected Engram update tool (`engram`/`both`) or file edit (`openspec`).
+- `engram`/`both`: call `mem_save` with `topic` `"sdd/{change}/apply-progress"` and the full artifact body as `content` (saving again with the same topic replaces the entry).
+- Also update the tasks artifact checkboxes via `mem_save` with the same topic (`engram`/`both` — saving again replaces the entry) or file edit (`openspec`).
 - `openspec`: write/update the apply-progress and tasks files under `openspec/changes/{change}/`.
 - `none`: return progress inline.
 
@@ -113,7 +113,7 @@ After implementation completion, `sdd-apply` returns `sdd-verify`. SDD verificat
 `sdd-apply` owns persisted task completion. In all modes, including strict TDD, mark each completed implementation task in the persisted tasks artifact immediately after completion:
 
 - `openspec` / `both`: update `openspec/changes/{change}/tasks.md` from `- [ ]` to `- [x]` for completed tasks.
-- `engram`: update the `sdd/{change}/tasks` observation when memory tools are explicitly available.
+- `engram`: update the `sdd/{change}/tasks` entry via `mem_save` when memory tools are explicitly available.
 - `none`: report task progress inline and state that no persisted task artifact was updated.
 
 Internal todos and `apply-progress.md` are not enough completion evidence.
@@ -153,4 +153,4 @@ Return the standard phase envelope with status, executive_summary, artifacts, ne
 
 ## Key Learnings Closing
 
-Close your final report text with a `## Key Learnings` block (no trailing colon). Use 1–5 numbered items, each a standalone factual sentence of at least 20 characters and at least 4 words. This applies to final report text only — not intermediate tool output or saved artifact content. The Engram memory provider automatically extracts and persists these items as passive capture; you do not parse the block or invoke passive-capture tools yourself. Omit the block when there is genuinely no reusable learning; no filler or speculation. This closing block is separate from explicit `mem_save` artifact/decision persistence.
+Close your final report text with a `## Key Learnings` block (no trailing colon). Use 1–5 numbered items, each a standalone factual sentence of at least 20 characters and at least 4 words. This applies to final report text only — not intermediate tool output or saved artifact content. Nothing extracts this block automatically — durable capture happens only through the explicit `mem_save` persistence required by the Memory Contract above, or when the parent or user directs a save; you do not parse the block yourself. Omit the block when there is genuinely no reusable learning; no filler or speculation. This closing block is separate from explicit `mem_save` artifact/decision persistence.

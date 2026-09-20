@@ -29,11 +29,11 @@ If skill paths are missing, explicit fallback loading is allowed only as degrade
 
 Read your own input artifacts directly from the active backend before doing the phase work; do not wait for the parent to inline them. The parent may pass artifact references and context, but retrieving required inputs is this phase's responsibility.
 
-Inputs to read (`engram`/`both`: use the injected Engram memory read tools for the topic key, then fetch the full observation; `openspec`: read the files under `openspec/changes/{change}/`):
+Inputs to read (`engram`/`both`: use `mem_read` with the topic key, falling back to `mem_search`/`mem_list` when the exact key is unknown; `openspec`: read the files under `openspec/changes/{change}/`):
 - All change artifacts: `sdd/{change}/proposal`, `sdd/{change}/spec`, `sdd/{change}/design`, `sdd/{change}/tasks`, `sdd/{change}/apply-progress`, `sdd/{change}/verify-report`, and `sdd/{change}/sync-report` if present.
 
 Persist this phase's artifact to the active backend before returning (mandatory):
-- `engram`/`both`: call the injected Engram save tool with title and `topic_key` `"sdd/{change}/archive-report"`, `type: "architecture"`, `project` from context, and `capture_prompt: false` when the tool schema supports it (omit the field if an older schema rejects it).
+- `engram`/`both`: call `mem_save` with `topic` `"sdd/{change}/archive-report"` and the full artifact body as `content` (saving again with the same topic replaces the entry).
 - `openspec`: write the archive report and perform the file moves described in the sections below.
 - `none`: return the archive report inline.
 
@@ -45,7 +45,7 @@ Archive a completed SDD change. In file-backed modes, this requires canonical sp
 
 ## Status and Action Context Guard
 
-Before archive work, consume structured SDD status from the parent prompt. If missing, produce the same fields using this lookup order: project override `.pi/jero/support/sdd-status-contract.md`, then globally installed `~/.pi/agent/gentle-ai/support/sdd-status-contract.md`, then the embedded status contract. Do not use `assets/support/...` as a runtime path; that is only the package source path before installation.
+Before archive work, consume structured SDD status from the parent prompt. If missing, produce the same fields using this lookup order: project override `.pi/jero/support/sdd-status-contract.md`, then globally installed `~/.pi/agent/jero/support/sdd-status-contract.md`, then the embedded status contract. Do not use `assets/support/...` as a runtime path; that is only the package source path before installation.
 
 Consume native `gentle-ai.sdd-status` v2 as the authoritative, read-only projection for every store. Do not recompute archive readiness from OpenSpec or Engram artifacts, fabricate status, or use a store-specific bypass. If native status is unavailable, malformed, or ambiguous, stop and report it; only its selected action, dependency, and `actionContext` can authorize archive work.
 
@@ -85,7 +85,7 @@ Stop with `blocked` if:
 Immediately before any archive-time sync fallback, archive report write, or folder move, re-read the persisted tasks artifact:
 
 - `openspec` / `both`: `openspec/changes/{change}/tasks.md`
-- `engram`: `sdd/{change}/tasks` observation when memory tools are explicitly available
+- `engram`: `sdd/{change}/tasks` entry (via `mem_save`) when memory tools are explicitly available
 
 If any implementation task remains unchecked (`- [ ]`):
 
@@ -102,7 +102,7 @@ CRITICAL verification issues always block archive and cannot be overridden. Expl
 
 - `openspec`: require completed filesystem sync, then perform archive move.
 - `both` / `hybrid`: require completed filesystem sync, move the archive, and save the archive report to memory when tools are available.
-- `engram`: skip filesystem sync/archive. Engram is working memory; do not create or require `sdd/canonical/<domain>/spec` topics. Record proposal/spec/design/tasks/verify observation IDs in the archive report.
+- `engram`: skip filesystem sync/archive. Engram is working memory; do not create or require `sdd/canonical/<domain>/spec` topics. Record proposal/spec/design/tasks/verify topic keys in the archive report.
 - `none`: return a closure summary only.
 
 ## Archive-Time Sync Fallback
@@ -176,7 +176,7 @@ Archive report handling depends on mode:
 
 - `openspec`: write `openspec/changes/{change}/archive-report.md` before moving the change.
 - `both` / `hybrid`: write the file report before moving the change and save `sdd/{change}/archive-report` to memory when tools are available.
-- `engram`: save or return the archive report with observation-ID traceability only; do not perform filesystem sync/archive.
+- `engram`: save or return the archive report with topic-key traceability only; do not perform filesystem sync/archive.
 
 Include:
 
@@ -190,7 +190,7 @@ Include:
 - structured status and `actionContext` findings;
 - destructive merge approvals or blockers;
 - archived path;
-- memory observation IDs when using Engram or `both` / `hybrid` mode.
+- memory topic keys persisted via `mem_save` when using Engram or `both` / `hybrid` mode.
 
 ## Rules
 
@@ -206,4 +206,4 @@ Return the standard phase envelope with status, executive_summary, artifacts, ne
 
 ## Key Learnings Closing
 
-Close your final report text with a `## Key Learnings` block (no trailing colon). Use 1–5 numbered items, each a standalone factual sentence of at least 20 characters and at least 4 words. This applies to final report text only — not intermediate tool output or saved artifact content. The Engram memory provider automatically extracts and persists these items as passive capture; you do not parse the block or invoke passive-capture tools yourself. Omit the block when there is genuinely no reusable learning; no filler or speculation. This closing block is separate from explicit `mem_save` artifact/decision persistence.
+Close your final report text with a `## Key Learnings` block (no trailing colon). Use 1–5 numbered items, each a standalone factual sentence of at least 20 characters and at least 4 words. This applies to final report text only — not intermediate tool output or saved artifact content. Nothing extracts this block automatically — durable capture happens only through the explicit `mem_save` persistence required by the Memory Contract above, or when the parent or user directs a save; you do not parse the block yourself. Omit the block when there is genuinely no reusable learning; no filler or speculation. This closing block is separate from explicit `mem_save` artifact/decision persistence.

@@ -77,7 +77,7 @@ const requiredPaths = [
 	"skills/chained-pr/SKILL.md",
 	"skills/cognitive-doc-design/SKILL.md",
 	"skills/comment-writer/SKILL.md",
-	"skills/gentle-ai/SKILL.md",
+	"skills/jero-ai/SKILL.md",
 	"skills/issue-creation/SKILL.md",
 	"skills/judgment-day/SKILL.md",
 	"skills/rdd-defect-workflow/SKILL.md",
@@ -121,7 +121,7 @@ const forbiddenPaths = [
 // carry over unchanged. These bytes are the behavioral spec for lib/authority/
 // conformance at P2.
 const contractHashes = {
-	"schemas/runtime-aggregate-v1.schema.json": "eb0f2993d9271f55cb42eca343e6fbb601a733fb90bd40daeebc92ee60ae1ba9",
+	"schemas/runtime-aggregate-v1.schema.json": "fa76fb931029b2044d575358ac2bc001bcf461ff91ac0e0e2db6ac2e0970b510",
 	"docs/review-integration.md": "95a3df92785bc4d9f3b99e702aaf817ae0440bd16c83218d2c3f2aca67c280fb",
 	"tests/fixtures/review-integration/v1/fixtures/binding-revision-conflict.fixture.json": "c2e294843cee5185324cb7a41702574ef94852517239d99e7493a1414a60b363",
 	"tests/fixtures/review-integration/v1/fixtures/capabilities-v1.1.fixture.json": "1b3dc40dce7bfb5d3ecc7e92af68d66e71b733ba0b0f71ba94d3c633adc48bcf",
@@ -249,7 +249,10 @@ export function reconcileGeneratedRuntimeSources(packageRoot, sources, paths) {
 		.filter((relativePath) => relativePath.startsWith("runtime/") && relativePath.endsWith(".mjs"))
 		.map((relativePath) => relativePath.slice("runtime/".length, -".mjs".length));
 
-	const sourceSet = new Set(sources);
+	// Generator `sources` entries carry their lib/ directory prefix
+	// (`authority/wire-contract` -> runtime `wire-contract.mjs`); reconcile on
+	// basenames exactly like the generator's own destination naming does.
+	const sourceSet = new Set(sources.map((name) => name.split("/").pop()));
 	const runtimeSet = new Set(runtimeBasenames);
 	const requiredSet = new Set(requiredRuntimeBasenames);
 	const names = new Set([...sourceSet, ...runtimeSet, ...requiredSet]);

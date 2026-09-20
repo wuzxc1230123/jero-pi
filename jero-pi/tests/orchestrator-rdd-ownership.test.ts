@@ -6,7 +6,7 @@ import test from "node:test";
 const ROOT = join(import.meta.dirname, "..");
 const ASSETS = join(ROOT, "assets");
 const BOUNDARY =
-	"This package injects the mirrored provider-bundle review execution contract into this session's system prompt at start; Gentle AI writes nothing into the Pi system prompt, and this package owns everything else here. Absent that mirrored contract, this package invents no lifecycle instructions.";
+	"This package injects the mirrored provider-bundle review execution contract into this session's system prompt at start; Jero writes nothing into the Pi system prompt, and this package owns everything else here. Absent that mirrored contract, this package invents no lifecycle instructions.";
 
 function read(relativePath: string): string {
 	return readFileSync(join(ROOT, relativePath), "utf8");
@@ -33,21 +33,21 @@ test("static prompts omit stale native RDD lifecycle mirrors", () => {
 	}
 });
 
-test("lossless blocking prompts route every closed single-select envelope through the native closed tool", () => {
+test("lossless blocking prompts keep strict closed envelopes off the free-text questionnaire tool", () => {
 	for (const clause of [
-		"For every strictly closed single-select envelope",
-		"ask_user_choice",
-		"envelope-owned canonical option token as opaque `value`",
-		"returns exactly one `value`",
-		"externally owned open/free-text questionnaire",
-		"never for a closed domain",
-		"exact captured provider-owned choice invocation",
+		"No closed single-select questionnaire tool ships with jero-pi",
+		"The externally owned `ask_user_question` always appends its own free-text sentinel row, so a strictly closed envelope is never exactly representable through it",
+		"never use it for provider-owned consent prompts, maintenance authorizations, or any exact opaque-token decision",
+		"never pass its free-text answer through opaque-token mapping",
+		"the selected continuation remains the exact captured provider-owned choice invocation",
+		"Never append that host action to the decoded or relayed provider envelope",
+		"If the runtime returns the envelope unresolved, the original two-choice fallback above applies unchanged",
 	]) {
 		assert.ok(delegation.includes(clause), `lossless prompt is missing: ${clause}`);
 	}
 });
 
-test("static prompts declare one dynamic Gentle AI RDD ownership boundary", () => {
+test("static prompts declare one dynamic Jero RDD ownership boundary", () => {
 	assert.equal(staticPrompts.split(BOUNDARY).length - 1, 1, "expected one dynamic RDD ownership boundary");
 	assert.ok(core.includes(BOUNDARY), "the Pi parent prompt owns the single boundary");
 	assert.ok(!delegation.includes(BOUNDARY), "generic delegation detail must not gain RDD text");
