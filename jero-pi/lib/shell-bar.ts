@@ -98,7 +98,7 @@ function buildSegments(model: ShellBarModel, theme: ShellBarTheme): string[] {
 // its last segment and a long branch is clipped, so the trailing statuses
 // (MCP servers, extension notices) survive on ordinary terminal widths.
 function compactModel(model: ShellBarModel): ShellBarModel {
-	const cwd = model.cwd.split("/").filter((part) => part.length > 0).pop() ?? model.cwd;
+	const cwd = model.cwd.split(/[\\/]/).filter((part) => part.length > 0).pop() ?? model.cwd;
 	const branch = model.branch && visibleWidth(model.branch) > COMPACT_BRANCH_WIDTH ? clipText(model.branch, COMPACT_BRANCH_WIDTH) : model.branch;
 	return { ...model, cwd, branch };
 }

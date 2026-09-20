@@ -2106,7 +2106,11 @@ function decodeConsentSemantics(body                         )                  
 	}
 
 	const offPathSource = exactRecord(body.off_path, "consent.off_path", ["note", "command"]);
-	if (offPathSource.command !== "gentle-ai review mode disable") throw new TypeError("consent.off_path.command is unsupported");
+	// The historical fixtures carry the gentle-ai binary's kill-switch command
+	// verbatim (golden vectors stay byte-exact); jero-pi's own projection
+	// names the user-facing /jero:review-mode command. Both decode; the
+	// normalized output always speaks the jero surface.
+	if (offPathSource.command !== "gentle-ai review mode disable" && offPathSource.command !== "/jero:review-mode disable") throw new TypeError("consent.off_path.command is unsupported");
 
 	return {
 		contract: REVIEW_INTEGRATION_CONTRACT,
@@ -2123,7 +2127,7 @@ function decodeConsentSemantics(body                         )                  
 		value: nonempty(body.value, "consent.value"),
 		riskEvidence: stringArray(body.risk_evidence, "consent.risk_evidence"),
 		choices: [granted, declined],
-		offPath: { note: nonempty(offPathSource.note, "consent.off_path.note"), command: "gentle-ai review mode disable" },
+		offPath: { note: nonempty(offPathSource.note, "consent.off_path.note"), command: "/jero:review-mode disable" },
 	};
 }
 

@@ -38,8 +38,13 @@ export type JeroReviewModeOutcomeV1 =
 
 export const JERO_REVIEW_MODE_FILENAME = "review-mode.json";
 
-function globalModePath(): string {
+/** The default global record location; callers apply their env override before the context exists. */
+export function defaultGlobalReviewModePathV1(): string {
 	return join(homedir(), ".pi", "jero", JERO_REVIEW_MODE_FILENAME);
+}
+
+function globalModePath(): string {
+	return defaultGlobalReviewModePathV1();
 }
 
 function cloneModePath(storeRoot: string): string {

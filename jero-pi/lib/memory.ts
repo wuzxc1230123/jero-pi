@@ -143,6 +143,45 @@ function writeIndex(root: string, map: Map<string, MemoryIndexEntry>): void {
 	atomicWrite(join(root, "index.json"), `${JSON.stringify({ kind: MEMORY_INDEX_KIND, version: 1, entries }, null, "\t")}\n`);
 }
 
+// The index is a read-modify-write file shared by every process that owns a
+// mem_* tool (the parent orchestrator plus one `pi --mode rpc` child per
+// delegated task). Two concurrent saves must not lose each other's rows, so
+// mutations serialize on a mkdir-based lock directory: atomic on every
+// platform, no native modules. A lock older than the stale window is a
+// crashed holder's leftover and is taken over; waiting past the same window
+// gives up loudly instead of blocking the event loop forever.
+const INDEX_LOCK_DIR = ".index-lock";
+const INDEX_LOCK_STALE_MS = 5_000;
+
+function sleepSync(ms: number): void {
+	Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+function withIndexLock<T>(root: string, action: () => T): T {
+	mkdirSync(root, { recursive: true });
+	const lockPath = join(root, INDEX_LOCK_DIR);
+	const deadline = Date.now() + INDEX_LOCK_STALE_MS;
+	for (;;) {
+		try {
+			mkdirSync(lockPath);
+		} catch (error) {
+			if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+			if (Date.now() - statSync(lockPath).mtimeMs > INDEX_LOCK_STALE_MS) {
+				rmSync(lockPath, { recursive: true, force: true });
+				continue;
+			}
+			if (Date.now() > deadline) throw new Error("timed out acquiring the memory index lock");
+			sleepSync(15);
+			continue;
+		}
+		try {
+			return action();
+		} finally {
+			rmSync(lockPath, { recursive: true, force: true });
+		}
+	}
+}
+
 /** Rebuilds index.json from the entries directory; used when the index is missing or stale. */
 export function rebuildMemoryIndex(root: string): number {
 	const map = new Map<string, MemoryIndexEntry>();
@@ -173,10 +212,15 @@ export function saveMemory(root: string, topic: string, content: string, meta: P
 		tags,
 	})}${content.endsWith("\n") ? content : `${content}\n`}`;
 	atomicWrite(path, rendered);
-	const map = readIndex(root);
-	const parsed = parseEntry(rendered);
-	map.set(topic, { topic, saved_at: parsed.meta.saved_at, tags, summary: summarize(parsed.body) });
-	writeIndex(root, map);
+	withIndexLock(root, () => {
+		// Index the bytes actually on disk under the lock: a concurrent saver of
+		// the same topic may have replaced ours between the write and the lock,
+		// and the index must describe the surviving file, not our own copy.
+		const map = readIndex(root);
+		const onDisk = parseEntry(readFileSync(path, "utf8"));
+		map.set(topic, { topic, saved_at: onDisk.meta.saved_at, tags: onDisk.meta.tags, summary: summarize(onDisk.body) });
+		writeIndex(root, map);
+	});
 	return { topic, path, bytes, created };
 }
 
@@ -202,8 +246,10 @@ export interface MemoryListOptions {
 export function listMemory(root: string, options: MemoryListOptions = {}): MemoryIndexEntry[] {
 	const limit = options.limit ?? 50;
 	let entries = readIndex(root);
-	if (entries.size === 0 && existsSync(join(root, "entries"))) {
-		// An empty index over a populated entries directory is stale, not empty.
+	if (existsSync(join(root, "entries")) && indexIsStale(root, entries)) {
+		// The index disagrees with the entries directory (missing after a lost
+		// concurrent update, or carrying rows for deleted files): rebuild from
+		// the files, which are always the source of truth.
 		rebuildMemoryIndex(root);
 		entries = readIndex(root);
 	}
@@ -237,6 +283,30 @@ export function searchMemory(root: string, query: string, options: MemorySearchO
 		hits.push({ topic, line: line.slice(0, 200), score });
 	}
 	return hits.sort((a, b) => b.score - a.score || a.topic.localeCompare(b.topic)).slice(0, limit).map(({ topic, line }) => ({ topic, line }));
+}
+
+/** Cheap staleness probe: the topics on disk must match the index keys exactly. */
+function indexIsStale(root: string, entries: Map<string, MemoryIndexEntry>): boolean {
+	const entriesDir = join(root, "entries");
+	const onDisk = new Set<string>();
+	const walk = (directory: string, prefix: string): void => {
+		for (const entry of readdirSync(directory, { withFileTypes: true })) {
+			if (entry.isDirectory()) {
+				walk(join(directory, entry.name), `${prefix}${entry.name}/`);
+				continue;
+			}
+			if (entry.isFile() && entry.name.endsWith(".md")) {
+				const topic = `${prefix}${entry.name.slice(0, -3)}`;
+				if (isValidMemoryTopic(topic)) onDisk.add(topic);
+			}
+		}
+	};
+	walk(entriesDir, "");
+	if (onDisk.size !== entries.size) return true;
+	for (const topic of onDisk) {
+		if (!entries.has(topic)) return true;
+	}
+	return false;
 }
 
 /** Walks entries/ recursively so hierarchical topics (a/b/c) are found at any depth. */
@@ -281,8 +351,10 @@ export function deleteMemory(root: string, topic: string): boolean {
 	if (!existsSync(path)) return false;
 	rmSync(path, { force: true });
 	pruneEmptyAncestorDirs(dirname(path), join(root, "entries"));
-	const map = readIndex(root);
-	if (map.delete(topic)) writeIndex(root, map);
+	withIndexLock(root, () => {
+		const map = readIndex(root);
+		if (map.delete(topic)) writeIndex(root, map);
+	});
 	return true;
 }
 

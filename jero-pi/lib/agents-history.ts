@@ -42,7 +42,7 @@ function fileFor(dir: string, id: string): string {
 	return join(dir, `${id}${FILE_SUFFIX}`);
 }
 
-const TASK_LOCK_SCHEMA = "gentle-pi.task-reconciliation-lock/v1" as const;
+const TASK_LOCK_SCHEMA = "jero.task-reconciliation-lock/v1" as const;
 const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 type TaskLockOwner = { schema: typeof TASK_LOCK_SCHEMA; taskId: string; token: string; pid: number; host: string | null };
 export interface TaskLock { readonly path: string; readonly taskId: string; readonly token: string; release(): void; }
@@ -140,7 +140,7 @@ export async function saveTask(dir: string, task: TaskRecord, thread: TaskThread
 	const target = fileFor(dir, task.id);
 	const temp = `${target}.${process.pid}-${Math.random().toString(36).slice(2, 8)}.tmp`;
 	await writeFile(temp, JSON.stringify({ task, thread }), "utf8");
-	await rename(temp, target);
+	try { await rename(temp, target); } catch (error) { await rm(temp, { force: true }); throw error; }
 }
 
 export async function loadStoredTask(dir: string, id: string): Promise<StoredTask | undefined> {

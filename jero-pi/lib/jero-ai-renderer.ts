@@ -4,7 +4,7 @@ import { CARD_TONE, cardBottom, cardInnerWidth, cardLine, cardTop, type Card, ty
 import { sanitizeTerminalText } from "./terminal-theme.ts";
 
 // Jero tool cards: every call into the gentle-ai binary and every
-// gentle_review tool draws the same card as the other Gentle notices. The
+// jero_review tool draws the same card as the other Gentle notices. The
 // call component owns the top rule; the result component closes the frame.
 
 export interface GentleAiRenderTheme extends CardTheme {
@@ -20,7 +20,7 @@ export interface GentleAiRenderState {
 	failed?: boolean;
 }
 
-export interface GentleAiRenderContext {
+export interface JeroRenderContext {
 	argsComplete?: boolean;
 	executionStarted?: boolean;
 	isPartial?: boolean;
@@ -138,11 +138,11 @@ export interface GentleAiResultRenderOptions {
 	isError?: boolean;
 }
 
-export function renderGentleAiResult(
+export function renderJeroResult(
 	result: AgentToolResult<unknown>,
 	options: GentleAiResultRenderOptions,
 	theme: GentleAiRenderTheme = passthroughTheme,
-	context?: GentleAiRenderContext,
+	context?: JeroRenderContext,
 ): GentleAiResultCard {
 	const textItems = result.content.flatMap((content) => (content.type === "text" ? [sanitizeTerminalText(content.text)] : []));
 	const text = textItems.some((item) => item.length > 0) ? textItems.join("\n") : "";
@@ -160,10 +160,10 @@ export function renderGentleAiResult(
 	return new GentleAiResultCard(text, options.expanded === true, tone, theme, options.isPartial === true);
 }
 
-export function renderGentleAiLifecycleCall(
+export function renderJeroLifecycleCall(
 	operationPath: string,
 	theme: GentleAiRenderTheme,
-	context?: GentleAiRenderContext,
+	context?: JeroRenderContext,
 	detail?: string,
 ): GentleAiCallCard {
 	// A finished execution is completed even when pi replays it without

@@ -143,7 +143,13 @@ export class ReviewMutationLockV1 {
 		const intentPath = join(intentRoot, `${owner.token}.json`);
 		writeFileSync(intentPath, canonicalJsonV1(owner), { mode: 0o600, flag: "wx" }); this.fsyncFile(intentPath); this.fsyncDirectory(intentRoot);
 		mkdirSync(join(this.path, ".."), { recursive: true, mode: 0o700 });
-		try { mkdirSync(this.path, { mode: 0o700 }); } catch (error) { throw new ReviewLockError(`Review authority lock is active or ambiguous: ${error instanceof Error ? error.message : String(error)}`); }
+		try { mkdirSync(this.path, { mode: 0o700 }); } catch (error) {
+			// Contention: someone else's live lock; we changed nothing, so our
+			// intent record is garbage, not evidence — take it with us instead
+			// of accumulating one JSON per failed acquire.
+			try { unlinkSync(intentPath); this.fsyncDirectory(intentRoot); } catch { /* a leftover intent is inert */ }
+			throw new ReviewLockError(`Review authority lock is active or ambiguous: ${error instanceof Error ? error.message : String(error)}`);
+		}
 		try {
 			writeFileSync(join(this.path, "owner.json"), canonicalJsonV1(owner), { mode: 0o600, flag: "wx" });
 			this.fsyncFile(join(this.path, "owner.json"));
@@ -152,7 +158,9 @@ export class ReviewMutationLockV1 {
 			unlinkSync(intentPath);
 			this.fsyncDirectory(intentRoot);
 		} catch (error) {
-			// The incomplete directory is deliberately retained: stealing it is ambiguous.
+			// The incomplete directory is deliberately retained: stealing it is
+			// ambiguous. The intent file is retained alongside it on purpose —
+			// it names the owner whose failed attempt produced the ambiguity.
 			throw new ReviewLockError(`Review authority lock owner is ambiguous: ${error instanceof Error ? error.message : String(error)}`);
 		}
 		return Object.freeze(owner);

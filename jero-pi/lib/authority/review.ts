@@ -19,7 +19,7 @@ import {
 	type JeroJudgmentDayResultV1,
 } from "./judgment-day.ts";
 import { assessJeroReviewRiskV1, type JeroRiskAssessRequestV1 } from "./risk-assess.ts";
-import { getJeroReviewModeV1, setJeroReviewModeV1, type JeroReviewModeOutcomeV1 } from "./mode.ts";
+import { getJeroReviewModeV1, setJeroReviewModeV1, defaultGlobalReviewModePathV1, type JeroReviewModeOutcomeV1 } from "./mode.ts";
 import { jeroSddStatusV1, type JeroSddStatusResultV1 } from "./sdd-status.ts";
 import { jeroSddContinueV1, type JeroSddContinueResultV1 } from "./sdd-continue.ts";
 import { acquireJeroSddAttemptV1, jeroSddAttemptLedgerRevisionV1, settleJeroSddAttemptV1, type JeroSddAcquireInputV1, type JeroSddAttemptResultV1, type JeroSddSettleInputV1 } from "./sdd-attempt.ts";
@@ -44,6 +44,14 @@ export interface JeroAuthorityContextV1 {
 	readonly cas: JeroObjectCasV1;
 	/** Authority mutation lock; backs the lineage store's mutating APIs and START's live-lock gate (released leftovers never block). */
 	readonly locks: JeroAuthorityLocksV1;
+	/**
+	 * The caller-resolved location of the global review-mode record. The
+	 * authority never reads the environment (boundary §9.1): the host's
+	 * `JERO_PI_CONFIG_HOME` override is applied by the caller before the
+	 * context exists, so every mode read — START's consent gate included —
+	 * sees the same global record as the rest of the package.
+	 */
+	readonly globalReviewModePath: string;
 }
 
 export type JeroAuthorityContextResolutionV1 =
@@ -51,7 +59,7 @@ export type JeroAuthorityContextResolutionV1 =
 	| { readonly kind: "refused"; readonly code: "not-a-git-repository" | "git-unavailable" | "authority-unavailable" | "foreign-authority-store"; readonly detail?: string };
 
 /** Resolves the jero authority store and derives every substrate handle. */
-export function resolveJeroAuthorityContextV1(cwd: string): JeroAuthorityContextResolutionV1 {
+export function resolveJeroAuthorityContextV1(cwd: string, options: { globalReviewModePath?: string } = {}): JeroAuthorityContextResolutionV1 {
 	const store = resolveJeroAuthorityStoreV1(cwd);
 	if (store.kind !== "ok") {
 		return { kind: "refused", code: store.kind, ...("detail" in store ? { detail: store.detail } : { detail: (store as { hits: readonly string[] }).hits.join(", ") }) };
@@ -69,6 +77,7 @@ export function resolveJeroAuthorityContextV1(cwd: string): JeroAuthorityContext
 		lineages: JeroLineageStoreV1.forStore(store.store_root, { lock: locks }),
 		cas: JeroObjectCasV1.forStore(store.store_root),
 		locks,
+		globalReviewModePath: options.globalReviewModePath ?? defaultGlobalReviewModePathV1(),
 	};
 	return { kind: "ok", context };
 }

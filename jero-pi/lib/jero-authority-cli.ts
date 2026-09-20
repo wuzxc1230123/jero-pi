@@ -1,3 +1,5 @@
+import { homedir } from "node:os";
+import { join } from "node:path";
 import type { NativeReviewCli, NativeReviewModeRequest, NativeReviewModeResult, NativeReviewAssessRequest, NativeSddAcquireRequest, NativeSddAttemptResult, NativeSddSettleRequest, NativeSddStatusRequest, NativeSddStatusV2, NativeStartRequest, NativeStartResult, NativeReviewConsentAnswerRequest, NativeReviewConsentAnswerResult, NativeReviewAbandonRequest, NativeReviewReclaimRequest, NativeReviewRecoverRequest, NativeReviewReconcileAuthorityRequest, NativeReviewRecoveryResult, NativeReviewCorrectionPlanCaptureRequest, NativeReviewAcknowledgeApprovedRequest, NativeReviewAcknowledgeApprovedOutcome , NativeReviewProviderRoleCaptureOutcome } from "./authority/client-contract.ts";
 import { NativeReviewConsentRequiredError, REVIEW_EMPTY_CANDIDATE_HINT, consentInvocationArguments, nativeRiskEvidencePhrases, nativeUntrackedSelection, isCanonicalProcessString, NATIVE_REVIEW_PROVIDER_ROLE_CAPTURE_SCHEMA, type NativeReviewProviderRoleCaptureRequest } from "./authority/client-contract.ts";
 import type { ReviewLastEventClosureV1, ReviewStatusV3 } from "./authority/wire-contract.ts";
@@ -39,9 +41,18 @@ function projectV2(status: JeroSddStatusV2): NativeSddStatusV2 {
 }
 
 function contextOrThrow(cwd: string): JeroAuthorityContextV1 {
-	const resolution = resolveJeroAuthorityContextV1(cwd);
+	const resolution = resolveJeroAuthorityContextV1(cwd, { globalReviewModePath: globalReviewModePathFromEnv() });
 	if (resolution.kind !== "ok") throw new Error(`authority-unavailable: the jero authority refused to resolve ${cwd}: ${resolution.code}${resolution.detail === undefined ? "" : ` (${resolution.detail})`}`);
 	return resolution.context;
+}
+
+// The authority never reads the environment (boundary §9.1); this adapter is
+// the seam where the host's JERO_PI_CONFIG_HOME override enters, so RDD mode
+// reads see the same global record as every other jero-pi config consumer.
+function globalReviewModePathFromEnv(env: NodeJS.ProcessEnv = process.env): string {
+	const override = env.JERO_PI_CONFIG_HOME?.trim();
+	const home = override && override !== "" ? override : join(homedir(), ".pi", "jero");
+	return join(home, "review-mode.json");
 }
 
 function refusalDetail(kind: string, code: string, detail?: string): string {
@@ -202,8 +213,8 @@ export function createJeroAuthorityReviewCli(dependencies: { providerRoleReviewe
 		},
 		async reviewMode(request: NativeReviewModeRequest): Promise<NativeReviewModeResult> {
 			const outcome = request.operation === "status"
-				? getJeroReviewModeV1(request.cwd)
-				: setJeroReviewModeV1(request.cwd, request.operation === "enable" ? "on" : "off");
+				? getJeroReviewModeV1(request.cwd, { globalModePath: globalReviewModePathFromEnv() })
+				: setJeroReviewModeV1(request.cwd, request.operation === "enable" ? "on" : "off", { globalModePath: globalReviewModePathFromEnv() });
 			if (outcome.kind === "refused") throw new Error(refusalDetail("review mode", outcome.code, outcome.detail));
 			return outcome.result as unknown as NativeReviewModeResult;
 		},

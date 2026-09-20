@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { sha256Hex } from "../review-canonical.ts";
 import { isJeroLineageId, jeroLineageDirectory } from "./store-root.ts";
@@ -133,7 +133,7 @@ function appendMaintenanceV1(context: JeroAuthorityContextV1, lineageId: string,
 	mkdirSync(directory, { recursive: true, mode: 0o700 });
 	const temporary = join(directory, `.maintenance.${randomUUID()}.tmp`);
 	writeFileSync(temporary, `${JSON.stringify([...sidecar.entries, entry], null, 2)}\n`, { mode: 0o600 });
-	renameSync(temporary, sidecar.path);
+	try { renameSync(temporary, sidecar.path); } catch (error) { rmSync(temporary, { force: true }); throw error; }
 }
 
 function appendStoreLogV1(context: JeroAuthorityContextV1, entry: Record<string, unknown>): void {
@@ -149,7 +149,7 @@ function appendStoreLogV1(context: JeroAuthorityContextV1, entry: Record<string,
 	mkdirSync(context.store.store_root, { recursive: true, mode: 0o700 });
 	const temporary = join(context.store.store_root, `.maintenance-log.${randomUUID()}.tmp`);
 	writeFileSync(temporary, `${JSON.stringify([...entries, entry], null, 2)}\n`, { mode: 0o600 });
-	renameSync(temporary, logPath);
+	try { renameSync(temporary, logPath); } catch (error) { rmSync(temporary, { force: true }); throw error; }
 }
 
 function loadForMaintenanceV1(context: JeroAuthorityContextV1, lineageId: string): { kind: "ok"; record: JeroLineageStateFileV1 } | { kind: "refused"; code: JeroMaintenanceRefusalCode; detail: string } {

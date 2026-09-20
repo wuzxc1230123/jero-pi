@@ -217,7 +217,7 @@ export function projectJeroConsentEnvelopeV1(
 		choice("granted", "Run the review now", "Reviews this exact frozen candidate now; nothing is granted for later candidates, so each later medium- or high-risk candidate asks again."),
 		choice("declined", "Not now, just this once", "Skips the review for this exact candidate only; no review lineage or receipt is created, and ordinary delivery is unmanaged by candidate choice. The next candidate is asked again. This is not the kill switch."),
 	];
-	const offPath = { note: "To turn reviews off for good, run 'gentle-ai review mode disable'.", command: "gentle-ai review mode disable" } as const;
+	const offPath = { note: "To turn reviews off for good in this repository, run /jero:review-mode disable.", command: "/jero:review-mode disable" } as const;
 	const raw = {
 		schema: "gentle-ai.review-integration.consent/v3",
 		contract: WIRE_CONTRACT,

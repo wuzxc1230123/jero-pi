@@ -171,7 +171,7 @@ export function remediationEvidence(state: RemediationObservations) {
 	if (state.invalid || Object.keys(state.pending).length || !/^sha256:[0-9a-f]{64}$/.test(state.failedEvidenceRevision) || !plannedCommands(state.plan).every((_, slot) => find(slot))) return undefined;
 	const result = (slot: number) => `cwd ${state.plan.cwd}; retained command observation ${evidenceDigest(JSON.stringify(find(slot)))}`;
 	return {
-		schema: "gentle-ai.remediation-evidence/v1",
+		schema: "jero.remediation-evidence/v1",
 		failed_evidence_revision: state.failedEvidenceRevision,
 		commands: state.plan.commands.map((command, slot) => ({ command, exit_code: 0, result: result(slot) })),
 		runtime_harness: state.plan.runtimeHarness.command ? { status: "passed", command: state.plan.runtimeHarness.command, result: result(state.plan.commands.length) } : { status: "not_applicable", na_reason: state.plan.runtimeHarness.naReason },
@@ -334,11 +334,38 @@ export function childArguments(request: TaskRequest): string[] {
 }
 
 // The child is the same pi that is running us: node plus its cli entry.
-// JERO_PI_AGENTS_PI overrides it with a command line.
+// JERO_PI_AGENTS_PI overrides it with a command line. Quoted segments
+// ("..." / '...') keep spaces intact, so a Windows pi under "C:\Program
+// Files\..." stays one argument; quotes are not shell-processed beyond that.
+function splitCommandLine(line: string): string[] {
+	const parts: string[] = [];
+	let current = "";
+	let quote: '"' | "'" | undefined;
+	for (const character of line) {
+		if (quote !== undefined) {
+			if (character === quote) quote = undefined;
+			else current += character;
+			continue;
+		}
+		if (character === '"' || character === "'") {
+			quote = character;
+			continue;
+		}
+		if (/\s/.test(character)) {
+			if (current !== "") parts.push(current);
+			current = "";
+			continue;
+		}
+		current += character;
+	}
+	if (current !== "") parts.push(current);
+	return parts;
+}
+
 export function piCommand(proc: ProcessLike = process): PiCommand {
 	const override = proc.env.JERO_PI_AGENTS_PI?.trim();
 	if (override) {
-		const [command, ...args] = override.split(/\s+/);
+		const [command, ...args] = splitCommandLine(override);
 		return { command, args };
 	}
 	const entry = proc.argv[1];

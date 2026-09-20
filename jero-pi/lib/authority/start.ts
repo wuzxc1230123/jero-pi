@@ -480,7 +480,7 @@ export function reviewStartV1(context: JeroAuthorityContextV1, target: JeroRevie
 	// without an answer or a standing grant freezes no authority. Upstream asks
 	// only while no authority has been frozen for the candidate yet
 	// (native-review-cli.ts:1806-1820), so resumes and replays above bypass it.
-	const modeState = effectiveJeroReviewModeV1(context.store.store_root);
+	const modeState = effectiveJeroReviewModeV1(context.store.store_root, { globalModePath: context.globalReviewModePath });
 	const consentRequired = (riskLevel === "medium" || riskLevel === "high") &&
 		modeState.effective === "on" && selection.consent === undefined && selection.standingGrant !== true;
 	if (consentRequired) {

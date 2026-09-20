@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import { jeroDomainHash } from "./canonical.ts";
@@ -96,7 +96,7 @@ function writeJudgmentLedgerV1(context: JeroAuthorityContextV1, lineageId: strin
 	mkdirSync(directory, { recursive: true, mode: 0o700 });
 	const temporary = join(directory, `.judgment-ledger.${randomUUID()}.tmp`);
 	writeFileSync(temporary, `${JSON.stringify(ledger, null, 2)}\n`, { mode: 0o600 });
-	renameSync(temporary, judgmentLedgerPathV1(context.store.store_root, lineageId));
+	try { renameSync(temporary, judgmentLedgerPathV1(context.store.store_root, lineageId)); } catch (error) { rmSync(temporary, { force: true }); throw error; }
 }
 
 export type JeroJudgmentLedgerReadResultV1 =

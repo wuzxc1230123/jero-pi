@@ -80,7 +80,7 @@ export interface TodoRenderOptions {
 }
 
 /** Tool results carry the snapshot under this key; the old rpiv-todo shape is read too. */
-export const TODO_DETAILS_KEY = "gentleTodo";
+export const TODO_DETAILS_KEY = "jeroTodo";
 export const TODO_TOOL_NAME = "todo";
 export const TODO_GLYPH = "❀";
 const STATUS_ALIASES: Record<string, TodoStatus> = { completed: TODO_STATUS.DONE, complete: TODO_STATUS.DONE, doing: TODO_STATUS.IN_PROGRESS, todo: TODO_STATUS.PENDING };
@@ -215,7 +215,7 @@ function fromRpiv(details: { tasks?: RpivTask[]; nextId?: number }): TodoState {
 }
 
 // The last successful `todo` result on the branch is the state: ours carries
-// the snapshot under `gentleTodo`; rpiv-todo carried `tasks` + `nextId` at the top.
+// the snapshot under `jeroTodo`; rpiv-todo carried `tasks` + `nextId` at the top.
 export function replayTodo(entries: readonly unknown[]): TodoState {
 	let state = emptyTodo();
 	for (const entry of entries as ReplayEntry[]) {
