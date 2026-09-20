@@ -2284,3 +2284,28 @@ test("R3/R4 a known native-blocked settlement lets native admission decide the n
 		await h.fire("session_shutdown", ctx);
 	}
 });
+
+test("remediation child registers the bash-result forwarder once across session_start replays", async (t) => {
+	const dir = mkdtempSync(join(tmpdir(), "jero-rem-forwarder-"));
+	t.after(() => rmSync(dir, { recursive: true, force: true }));
+	const handlers = new Map<string, Array<(payload: unknown, ctx: ExtensionContext) => unknown>>();
+	const tools = new Map<string, { name: string }>();
+	const pi = {
+		on: (event: string, handler: (payload: unknown, ctx: ExtensionContext) => unknown) => { handlers.set(event, [...(handlers.get(event) ?? []), handler]); },
+		registerTool: (tool: { name: string }) => { tools.set(tool.name, tool); },
+	} as unknown as ExtensionAPI;
+	const selection = { changeName: "fix-auth", workspaceRoot: dir, phase: "remediate", failedEvidenceRevision: `sha256:${"a".repeat(64)}` };
+	const plan = { cwd: dir, commands: ["pytest -q"], rollback: { boundary: "git reset --hard", command: "git reset --hard" }, runtimeHarness: { command: "pytest -q" } };
+	const scope = { commands: ["pytest -q", "pytest -q", "git reset --hard"], editPaths: [] };
+	gentleAgents(pi, {
+		JERO_PI_AGENTS_CHILD: "1",
+		JERO_PI_SDD_REMEDIATION_PLAN: JSON.stringify({ selection, plan, scope }),
+	});
+	const ctx = { cwd: dir } as ExtensionContext;
+	const starts = handlers.get("session_start") ?? [];
+	assert.equal(starts.length, 1);
+	await starts[0]({}, ctx);
+	await starts[0]({}, ctx); // resume/reload replays the session boundary
+	assert.equal(handlers.get("tool_result")?.length, 1, "the bash forwarder must not accumulate across session_start replays");
+	assert.ok(tools.has("bash"), "the remediation bash tool is registered from the grant");
+});

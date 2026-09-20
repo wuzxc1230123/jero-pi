@@ -282,11 +282,11 @@ export interface ExternalEditorHost {
 	requestRender(force?: boolean): void;
 }
 
-export function openInExternalEditor(host: ExternalEditorHost, path: string, env: NodeJS.ProcessEnv = process.env, spawn: typeof spawnSync = spawnSync, cwd?: string): boolean {
+export function openInExternalEditor(host: ExternalEditorHost, path: string, env: NodeJS.ProcessEnv = process.env, spawn: typeof spawnSync = spawnSync, cwd?: string, platform: NodeJS.Platform = process.platform): boolean {
 	const command = env.VISUAL || env.EDITOR;
 	if (!command) return false;
 	const [editor, ...editorArgs] = command.split(" ");
-	const useShell = process.platform === "win32";
+	const useShell = platform === "win32";
 	host.stop();
 	try {
 		// With `shell: true` Node hands cmd.exe a raw space-joined command line,

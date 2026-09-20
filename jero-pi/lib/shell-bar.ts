@@ -47,7 +47,7 @@ const ROLE = {
 	SESSION: "dim",
 } as const;
 
-export const SHELL_BAR_BRAND = "✿ gentle-pi";
+export const SHELL_BAR_BRAND = "✿ jero-pi";
 export const SHELL_BAR_SEPARATOR = "⟡";
 export const SHELL_BAR_GAUGE_CELLS = GAUGE_CELLS;
 const RIGHT_PADDING = 2;
@@ -97,7 +97,7 @@ function buildSegments(model: ShellBarModel, theme: ShellBarTheme): string[] {
 // When the line overflows, the location gives way first: the path shrinks to
 // its last segment and a long branch is clipped, so the trailing statuses
 // (MCP servers, extension notices) survive on ordinary terminal widths.
-function compactModel(model: ShellBarModel): ShellBarModel {
+export function compactModel(model: ShellBarModel): ShellBarModel {
 	const cwd = model.cwd.split(/[\\/]/).filter((part) => part.length > 0).pop() ?? model.cwd;
 	const branch = model.branch && visibleWidth(model.branch) > COMPACT_BRANCH_WIDTH ? clipText(model.branch, COMPACT_BRANCH_WIDTH) : model.branch;
 	return { ...model, cwd, branch };

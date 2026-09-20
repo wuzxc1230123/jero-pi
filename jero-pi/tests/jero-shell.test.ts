@@ -6,10 +6,10 @@ import { join } from "node:path";
 import test from "node:test";
 import { initTheme, type ExtensionAPI, type ExtensionContext } from "@earendil-works/pi-coding-agent";
 import type { TUI } from "@earendil-works/pi-tui";
-import installGentleShell, { buildShellBarModel, createActiveProfileReader, changesShortcut, devBinaryCard, fetchCodexUsage, loadFileDiff, shellGitRunner, openInExternalEditor, type GentlePromptEditor } from "../extensions/jero-shell.ts";
+import installGentleShell, { buildShellBarModel, createActiveProfileReader, changesShortcut, devBinaryCard, fetchCodexUsage, loadFileDiff, shellGitRunner, openInExternalEditor, type ExternalEditorHost, type GentlePromptEditor } from "../extensions/jero-shell.ts";
 import { CHANGE_STATUS } from "../lib/shell-changes.ts";
 import { sidebarState, type SidebarRail } from "../lib/shell-sidebar.ts";
-import type { ShellBarTheme } from "../lib/shell-bar.ts";
+import { compactModel, type ShellBarModel, type ShellBarTheme } from "../lib/shell-bar.ts";
 import { stripAnsi } from "../lib/terminal-theme.ts";
 
 // The Gentle Shell extension wires the pure bar renderer into pi's footer
@@ -759,4 +759,37 @@ test("gentleShell keeps a dev-binary override visible above the editor for the w
 	assert.equal(fresh.ui.widgets.has("gentle-shell-dev-binary"), false);
 
 	assert.equal(devBinaryCard({ state: "invalid", reason: "binary missing" }).tone, "error");
+});
+
+test("openInExternalEditor quotes spaced arguments for cmd on Windows and leaves POSIX spawning alone", () => {
+	const calls: Array<{ command: string; args: string[]; shell: boolean | undefined }> = [];
+	const fakeSpawn = ((command: string, args: string[], options: { shell?: boolean }) => {
+		calls.push({ command, args, shell: options.shell });
+		return { status: 0 };
+	}) as Parameters<typeof openInExternalEditor>[3];
+	const host: ExternalEditorHost = { stop() {}, start() {}, requestRender() {} };
+	const spaced = "C:\Users\Alan Mu\transcripts\t.md";
+	assert.equal(openInExternalEditor(host, spaced, { VISUAL: "code -w" }, fakeSpawn, undefined, "win32"), true);
+	assert.deepEqual(calls[0], { command: "code", args: ["-w", `"${spaced}"`], shell: true });
+	assert.equal(openInExternalEditor(host, "/home/alan mu/t.md", { EDITOR: "vim" }, fakeSpawn, undefined, "linux"), true);
+	assert.deepEqual(calls[1], { command: "vim", args: ["/home/alan mu/t.md"], shell: false });
+});
+
+test("compactModel takes the last path segment across both separators", () => {
+	const model: ShellBarModel = {
+		cwd: "D:\\jero pi\\repo",
+		branch: null,
+		dirty: undefined,
+		sessionName: undefined,
+		modelId: "m",
+		effort: undefined,
+		contextPercent: null,
+		contextWindow: 1000,
+		costTotal: 0,
+		subscription: false,
+		usage: undefined,
+		statuses: [],
+	};
+	assert.equal(compactModel(model).cwd, "repo");
+	assert.equal(compactModel({ ...model, cwd: "/home/alan/repo" }).cwd, "repo");
 });

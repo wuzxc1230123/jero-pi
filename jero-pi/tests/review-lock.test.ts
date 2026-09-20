@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -179,4 +179,20 @@ test("incomplete acquisition may be quarantined only with a dead durable intent"
 		mkdirSync(lock.path, { recursive: true, mode: 0o700 });
 		assert.throws(() => lock.recoverIncomplete("missing"), /intent|ambiguous/i);
 	} finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test("a contended acquire removes its own intent record instead of leaking it", () => {
+	const root = temporaryRoot();
+	try {
+		const lock = new ReviewMutationLockV1(root, "a".repeat(64), "b".repeat(64), qualifiedAdapter());
+		const intentsDir = join(root, "locks", "authority.lock-intents");
+		const intentFiles = () => (existsSync(intentsDir) ? readdirSync(intentsDir).filter((name) => name.endsWith(".json")) : []);
+		const owner = lock.acquire();
+		assert.equal(intentFiles().length, 0, "a successful acquire consumes its intent");
+		assert.throws(() => lock.acquire(), ReviewLockError);
+		assert.equal(intentFiles().length, 0, "a contended acquire takes its intent with it");
+		lock.release(owner);
+	} finally {
+		rmSync(root, { recursive: true, force: true });
+	}
 });

@@ -4,6 +4,7 @@ import { join } from "node:path";
 import test from "node:test";
 import { canonicalJsonV1 } from "../../lib/review-canonical.ts";
 import { getJeroReviewModeV1, setJeroReviewModeV1 } from "../../lib/authority/mode.ts";
+import { createJeroAuthorityReviewCli } from "../../lib/jero-authority-cli.ts";
 import { JERO_REVIEW_MODE_RECORD_SCHEMA } from "../../lib/authority/protocol.ts";
 import { repository } from "./fixtures.ts";
 
@@ -112,4 +113,23 @@ test("the persisted record is the strict jero.authority.review-mode/v1 shape", (
 	setJeroReviewModeV1(repo, "on", { globalModePath: globalPath });
 	const parsed = JSON.parse(readFileSync(join(repo, ".git", "jero-review", "review-mode.json"), "utf8"));
 	assert.deepEqual(parsed, { schema: JERO_REVIEW_MODE_RECORD_SCHEMA, value: "on" });
+});
+
+test("the cli seam honors JERO_PI_CONFIG_HOME for the global mode record", async (t) => {
+	const repo = repository(t);
+	const configHome = join(repo, "..", "jero-config-home");
+	mkdirSync(configHome, { recursive: true });
+	t.after(() => rmSync(configHome, { recursive: true, force: true }));
+	writeFileSync(join(configHome, "review-mode.json"), canonicalJsonV1({ schema: JERO_REVIEW_MODE_RECORD_SCHEMA, value: "off" }));
+	const previous = process.env.JERO_PI_CONFIG_HOME;
+	process.env.JERO_PI_CONFIG_HOME = configHome;
+	t.after(() => {
+		if (previous === undefined) delete process.env.JERO_PI_CONFIG_HOME;
+		else process.env.JERO_PI_CONFIG_HOME = previous;
+	});
+	const cli = createJeroAuthorityReviewCli();
+	const result = await cli.reviewMode({ cwd: repo, operation: "status" });
+	assert.equal(result.status.global, "off");
+	assert.equal(result.status.effective, "off");
+	assert.equal(result.status.source, "global");
 });

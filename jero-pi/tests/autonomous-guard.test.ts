@@ -650,3 +650,17 @@ test("loadRuntimeGuardrailsConfig: autonomousMode:{} (object) in JSON does NOT a
 		rmSync(dir, { recursive: true, force: true });
 	}
 });
+
+test("loadRuntimeGuardrailsConfig honors the injected env seam for the autonomous-mode override", () => {
+	const forced = __testing.loadRuntimeGuardrailsConfig(join(tmpdir()), { env: { JERO_PI_AUTONOMOUS_MODE: "1" } });
+	assert.deepEqual(forced, { autonomousMode: true, guardedCommands: {} });
+	// The seam also reads through when the override is absent: an empty env
+	// over a clean config home fails safe to the default (non-autonomous).
+	const clean = mkdtempSync(join(tmpdir(), "jero-guardrails-seam-"));
+	try {
+		const fallback = __testing.loadRuntimeGuardrailsConfig(clean, { env: {}, gentlePiConfigHome: join(clean, "config-home") });
+		assert.equal(fallback.autonomousMode, false);
+	} finally {
+		rmSync(clean, { recursive: true, force: true });
+	}
+});

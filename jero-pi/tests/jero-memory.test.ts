@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, existsSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, existsSync, utimesSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -211,5 +211,53 @@ test("mem_save reports invalid arguments without writing", async () => {
 		assert.equal(existsSync(join(project, ".jero")), false);
 	} finally {
 		rmSync(base, { recursive: true, force: true });
+	}
+});
+
+test("listMemory rebuilds the index when an entry file is removed behind its back", () => {
+	const root = tempRoot();
+	try {
+		saveMemory(root, "sdd/x/proposal", "kept");
+		saveMemory(root, "sdd/x/tasks", "gone");
+		rmSync(join(root, "entries", "sdd", "x", "tasks.md"));
+		const topics = listMemory(root).map((entry) => entry.topic);
+		assert.deepEqual(topics, ["sdd/x/proposal"]);
+		// A later save keeps the rebuilt index consistent.
+		saveMemory(root, "sdd/x/tasks", "back");
+		assert.deepEqual(listMemory(root).map((entry) => entry.topic), ["sdd/x/proposal", "sdd/x/tasks"]);
+	} finally {
+		rmSync(root, { recursive: true, force: true });
+	}
+});
+
+test("listMemory drops index rows whose entry file no longer exists", () => {
+	const root = tempRoot();
+	try {
+		saveMemory(root, "sdd/x/proposal", "kept");
+		rmSync(join(root, "entries", "sdd", "x", "proposal.md"));
+		// Forge a stale index that still carries the removed topic.
+		const indexPath = join(root, "index.json");
+		const parsed = JSON.parse(readFileSync(indexPath, "utf8")) as { entries: Record<string, unknown> };
+		parsed.entries["sdd/x/proposal"] = { topic: "sdd/x/proposal", saved_at: "2026-09-20T00:00:00.000Z", tags: [], summary: "ghost" };
+		writeFileSync(indexPath, `${JSON.stringify(parsed, null, "\t")}\n`);
+		assert.deepEqual(listMemory(root).map((entry) => entry.topic), []);
+	} finally {
+		rmSync(root, { recursive: true, force: true });
+	}
+});
+
+test("a stale index lock directory is taken over instead of blocking saves", () => {
+	const root = tempRoot();
+	try {
+		saveMemory(root, "a/b", "first");
+		const lockPath = join(root, ".index-lock");
+		mkdirSync(lockPath);
+		const stale = new Date(Date.now() - 60_000);
+		utimesSync(lockPath, stale, stale);
+		saveMemory(root, "c/d", "second");
+		assert.equal(existsSync(lockPath), false);
+		assert.deepEqual(listMemory(root).map((entry) => entry.topic), ["a/b", "c/d"]);
+	} finally {
+		rmSync(root, { recursive: true, force: true });
 	}
 });

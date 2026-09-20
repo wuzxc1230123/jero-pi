@@ -14,7 +14,7 @@ import { domainHashV1 } from "../lib/review-canonical.ts";
 import { canonicalHash } from "../lib/review-transaction.ts";
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
-const { createGentleAiExtension } = await import(pathToFileURL(join(ROOT, "extensions/jero-ai.ts")).href);
+const { createJeroAiExtension } = await import(pathToFileURL(join(ROOT, "extensions/jero-ai.ts")).href);
 const EXTENSIONS = [
 	"extensions/jero-ai.ts",
 	"extensions/skill-registry.ts",
@@ -331,7 +331,7 @@ async function run() {
 			},
 		};
 		const lastEventPi = createPi();
-		createGentleAiExtension({ nativeReviewCli })(lastEventPi.pi);
+		createJeroAiExtension({ nativeReviewCli })(lastEventPi.pi);
 		const controller = lastEventPi.tools.get("jero_review");
 		const capture = lastEventPi.tools.get("jero_review_capture");
 		assert.ok(controller, "runtime must register the public status controller");
@@ -647,7 +647,7 @@ async function run() {
 		const rpcChildCwd = await tempWorkspace();
 		try {
 			const rpcChild = createPi();
-			createGentleAiExtension({ processEnv: { JERO_PI_AGENTS_CHILD: "1" } })(rpcChild.pi);
+			createJeroAiExtension({ processEnv: { JERO_PI_AGENTS_CHILD: "1" } })(rpcChild.pi);
 			const rpcChildCtx = createCtx(rpcChildCwd, false, "delegated-rpc-sdd-child");
 			rpcChildCtx.mode = "rpc";
 			const rpcChildPrompt = await rpcChild.hooks.get("before_agent_start")[0](
@@ -891,13 +891,13 @@ async function run() {
 	// strictly between the controller-owned candidate binding and reviewer
 	// dispatch must diverge the live candidate tree from the frozen one, and
 	// dispatch must fail closed rather than expose a substituted view to the
-	// lens sub-agent. This drives the real `createGentleAiExtension` tool_call
+	// lens sub-agent. This drives the real `createJeroAiExtension` tool_call
 	// wiring (not the bare library function tested in
 	// tests/review-candidate-view.test.ts) with an injected candidate-view
 	// registry, so the actual production dispatch path is exercised.
 	const candidateDriftCwd = await tempWorkspace();
 	try {
-		const { createGentleAiExtension } = await import(
+		const { createJeroAiExtension } = await import(
 			pathToFileURL(join(ROOT, "extensions/jero-ai.ts")).href
 		);
 		const { CandidateViewRegistry } = await import(
@@ -919,7 +919,7 @@ async function run() {
 		registry.bindCurrent({ token: view.token, lineageId: "harness-candidate-drift", selectedLenses: ["review-risk"] });
 
 		const dispatchPi = createPi();
-		createGentleAiExtension({ candidateViews: registry })(dispatchPi.pi);
+		createJeroAiExtension({ candidateViews: registry })(dispatchPi.pi);
 		const dispatchToolHook = dispatchPi.hooks.get("tool_call")[0];
 
 		// The contributor edits the tracked file strictly after the candidate
@@ -1082,7 +1082,7 @@ async function run() {
 		assert.equal(existsSync(installedExplorePath), true);
 		assert.deepEqual(
 			readAgentDefinition(await readFile(installedExplorePath, "utf8")),
-			{ name: "jero-explore", tools: ["read", "grep", "find", "codegraph"] },
+			{ name: "jero-explore", tools: ["read", "grep", "find", "fovea_focus", "fovea_sketch", "fovea_dwell"] },
 			"isolated package installation must activate only the explorer inspection tools",
 		);
 		const installedRiskSource = await readFile(
