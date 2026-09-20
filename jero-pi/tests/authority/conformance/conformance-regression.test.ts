@@ -35,7 +35,7 @@ test("conformance 11: consent/v3 invocation vectors are unchanged by M3", () => 
 		assert.ok(choice.invocation.endsWith(`--consent ${choice.answer}`));
 	}
 	// The off-path command is the mode switch, not a kill switch.
-	assert.ok(consent.offPath.command.includes("review mode"));
+	assert.ok(consent.offPath.command.includes("/jero:review-mode"));
 });
 
 // 12. capabilities-v2.2

@@ -3,7 +3,7 @@ import test from "node:test";
 import { execFileSync } from "node:child_process";
 import { realpathSync } from "node:fs";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { createGentleAiExtension, __testing } from "../extensions/jero-ai.ts";
+import { createJeroAiExtension, __testing } from "../extensions/jero-ai.ts";
 import {
 	NATIVE_REVIEW_ERROR_CODE,
 	NATIVE_REVIEW_MODE_SOURCE,
@@ -328,11 +328,11 @@ test("resolveWriterProfile: an unknown or omitted profile fails closed to small,
 });
 
 // ---------------------------------------------------------------------------
-// Tool-level fail-closed path: the `gentle_review` tool's `assess` operation
+// Tool-level fail-closed path: the `jero_review` tool's `assess` operation
 // (`extensions/jero-ai.ts`, gentle-pi#662) must treat a native CLI without
 // the `assess` verb (an older binary) or a rejected `assess` call (a process
 // failure) the same way -- risk "unassessable", which `verificationPlan`
-// treats as `high`. `assess` is exposed as a `gentle_review` operation, not a
+// treats as `high`. `assess` is exposed as a `jero_review` operation, not a
 // dedicated tool, so the fixed `gentle_*` tool registry stays unchanged.
 
 function reviewControllerTool(nativeReviewCli: Partial<NativeReviewCli> | null): { execute: (id: string, params: Record<string, unknown>, signal: AbortSignal | undefined, onUpdate: undefined, ctx: ExtensionContext) => Promise<{ content: readonly { type: string; text: string }[]; details: unknown }> } {
@@ -344,9 +344,9 @@ function reviewControllerTool(nativeReviewCli: Partial<NativeReviewCli> | null):
 			tools.set(tool.name, tool);
 		},
 	} as unknown as ExtensionAPI;
-	createGentleAiExtension({ nativeReviewCli: nativeReviewCli as NativeReviewCli | null })(pi);
-	const tool = tools.get("gentle_review");
-	assert.ok(tool, "gentle_review must be registered");
+	createJeroAiExtension({ nativeReviewCli: nativeReviewCli as NativeReviewCli | null })(pi);
+	const tool = tools.get("jero_review");
+	assert.ok(tool, "jero_review must be registered");
 	return tool;
 }
 
@@ -355,7 +355,7 @@ function reviewControllerTool(nativeReviewCli: Partial<NativeReviewCli> | null):
 // record/derive against the same canonical root.
 const ctx = { cwd: realpathSync(execFileSync("git", ["rev-parse", "--show-toplevel"], { encoding: "utf8" }).trim()) } as ExtensionContext;
 
-test("gentle_review assess: an older binary without the assess verb fails closed to high", async () => {
+test("jero_review assess: an older binary without the assess verb fails closed to high", async () => {
 	const nativeReviewCli: Partial<NativeReviewCli> = {
 		reviewMode: async () => ({ operation: "status", scope: "clone", status: { global: "off", cloneLocal: "off", effective: "off", source: NATIVE_REVIEW_MODE_SOURCE.GLOBAL } }),
 		// assess intentionally absent: pre-gentle-ai#4295 binary.
@@ -375,7 +375,7 @@ test("gentle_review assess: an older binary without the assess verb fails closed
 	assert.equal(JSON.parse(result.content[0].text).risk, VERIFICATION_TIER.UNASSESSABLE);
 });
 
-test("gentle_review assess: a rejected assess call fails closed to high, and RDD status read failure fails closed to unknown", async () => {
+test("jero_review assess: a rejected assess call fails closed to high, and RDD status read failure fails closed to unknown", async () => {
 	const nativeReviewCli: Partial<NativeReviewCli> = {
 		reviewMode: async () => {
 			throw new Error("native review mode is unavailable");
@@ -394,7 +394,7 @@ test("gentle_review assess: a rejected assess call fails closed to high, and RDD
 	assert.equal(details.plan.independentVerifier, true);
 });
 
-test("gentle_review assess: a successful native assessment is reflected directly in the returned plan", async () => {
+test("jero_review assess: a successful native assessment is reflected directly in the returned plan", async () => {
 	const nativeReviewCli: Partial<NativeReviewCli> = {
 		reviewMode: async () => ({ operation: "status", scope: "clone", status: { global: "on", cloneLocal: "", effective: "on", source: NATIVE_REVIEW_MODE_SOURCE.GLOBAL } }),
 		assess: async () => ({
@@ -414,7 +414,7 @@ test("gentle_review assess: a successful native assessment is reflected directly
 	assert.equal(details.plan.structuralReadbackOnly, true);
 });
 
-test("gentle_review assess: baseRef without committedOnly is rejected", async () => {
+test("jero_review assess: baseRef without committedOnly is rejected", async () => {
 	const tool = reviewControllerTool({});
 	await assert.rejects(
 		() => tool.execute("call-4", { operation: "assess", input: JSON.stringify({ baseRef: "origin/main" }) }, undefined, undefined, ctx),
@@ -422,7 +422,7 @@ test("gentle_review assess: baseRef without committedOnly is rejected", async ()
 	);
 });
 
-test("gentle_review assess: writerModelId/writerEffort in input select the writer profile, and an omitted profile fails closed to small", async () => {
+test("jero_review assess: writerModelId/writerEffort in input select the writer profile, and an omitted profile fails closed to small", async () => {
 	const nativeReviewCli: Partial<NativeReviewCli> = {
 		reviewMode: async () => ({ operation: "status", scope: "clone", status: { global: "off", cloneLocal: "off", effective: "off", source: NATIVE_REVIEW_MODE_SOURCE.GLOBAL } }),
 		assess: async () => ({
@@ -463,7 +463,7 @@ test("gentle_review assess: writerModelId/writerEffort in input select the write
 	assert.equal((gemini.details as { plan: { independentVerifier: boolean } }).plan.independentVerifier, false);
 });
 
-test("gentle_review assess: an explicit nativeReviewOutcome:\"declined\" input falls back to the risk-gated plan even when RDD is on (gentle-pi#668)", async () => {
+test("jero_review assess: an explicit nativeReviewOutcome:\"declined\" input falls back to the risk-gated plan even when RDD is on (gentle-pi#668)", async () => {
 	const nativeReviewCli: Partial<NativeReviewCli> = {
 		reviewMode: async () => ({ operation: "status", scope: "clone", status: { global: "on", cloneLocal: "", effective: "on", source: NATIVE_REVIEW_MODE_SOURCE.GLOBAL } }),
 		assess: async () => ({
@@ -486,7 +486,7 @@ test("gentle_review assess: an explicit nativeReviewOutcome:\"declined\" input f
 	assert.equal(details.plan.structuralReadbackOnly, false);
 });
 
-test("gentle_review assess: an unrecognized nativeReviewOutcome value is rejected", async () => {
+test("jero_review assess: an unrecognized nativeReviewOutcome value is rejected", async () => {
 	const tool = reviewControllerTool({});
 	await assert.rejects(
 		() => tool.execute("call-10", { operation: "assess", input: JSON.stringify({ nativeReviewOutcome: "approved" }) }, undefined, undefined, ctx),
@@ -504,7 +504,7 @@ function assessOnNativeCli(currentTargetIdentity: () => string): Partial<NativeR
 	};
 }
 
-test("gentle_review assess: derivation is bound to the exact candidate recorded, closed can only ever be passed explicitly (gentle-pi#668 correction)", async (t) => {
+test("jero_review assess: derivation is bound to the exact candidate recorded, closed can only ever be passed explicitly (gentle-pi#668 correction)", async (t) => {
 	t.after(() => __testing.clearNativeReviewOutcomeMemoForTesting());
 	__testing.clearNativeReviewOutcomeMemoForTesting();
 	let current = "target-a";
@@ -540,7 +540,7 @@ test("gentle_review assess: derivation is bound to the exact candidate recorded,
 	assert.equal(closed.plan.independentVerifier, false, "an explicit closed outcome restores the on-path: no separate verifier");
 });
 
-test("gentle_review assess never requires a lineageId (unlike most other operations)", async () => {
+test("jero_review assess never requires a lineageId (unlike most other operations)", async () => {
 	const tool = reviewControllerTool({});
 	// Would throw "Review controller requires a lineageId" if ASSESS were not
 	// exempted from that check.

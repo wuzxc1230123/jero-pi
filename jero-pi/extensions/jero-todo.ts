@@ -82,7 +82,7 @@ function sessionKey(ctx: ExtensionContext): string {
 	return ctx.sessionManager.getSessionId() ?? "";
 }
 
-export default function gentleTodo(pi: ExtensionAPI, env: NodeJS.ProcessEnv = process.env): void {
+export default function jeroTodo(pi: ExtensionAPI, env: NodeJS.ProcessEnv = process.env): void {
 	if (!todoEnabled(env)) return;
 	const sessions = new Map<string, TodoSession>();
 	const collapseKey = todoCollapseKey(env);

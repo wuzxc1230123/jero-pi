@@ -653,6 +653,12 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 	if (env.JERO_PI_AGENTS_CHILD === "1") {
 		if (env[REMEDIATION_PLAN_ENV] !== undefined) {
 			let granted: RemediationScope | undefined;
+			// The bash-result forwarder is registered once: session_start may
+			// re-fire (resume/reload), and re-registering per firing would
+			// accumulate listeners and double-process results. It consults the
+			// current shell instead of closing over one.
+			let activeRemediationShell: ReturnType<typeof remediationBash> | undefined;
+			pi.on("tool_result", event => event.toolName === "bash" && activeRemediationShell !== undefined ? activeRemediationShell.result(event) : undefined);
 			pi.on("tool_call", (event, current) => remediationToolAllowed(granted, current.cwd, event.toolName, event.input) ? undefined : { block: true, reason: "Outside exact remediation human authorization" });
 			pi.on("session_start", (_event, ctx) => {
 				granted = undefined;
@@ -665,7 +671,7 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 					if (selection.workspaceRoot !== ctx.cwd || JSON.stringify(plannedCommands(plan)) !== JSON.stringify(retained.scope?.commands) || JSON.stringify(plan.editPaths ?? []) !== JSON.stringify(retained.scope?.editPaths)) throw new Error("Remediation grant/plan mismatch");
 					const shell = remediationBash(ctx.cwd, undefined, retained.scope);
 					pi.registerTool(shell.definition);
-					pi.on("tool_result", event => event.toolName === "bash" ? shell.result(event) : undefined);
+					activeRemediationShell = shell;
 					granted = retained.scope;
 				} catch { /* No valid host grant: deny every tool, even if Pi continues initialization. */ }
 			});

@@ -605,6 +605,7 @@ test("piCommand reuses the running pi entry point and honors the override", () =
 	assert.deepEqual(piCommand({ execPath: "/bin/node", argv: ["/bin/node", "/x/dist/cli.js"], env: {} }), { command: "/bin/node", args: ["/x/dist/cli.js"] });
 	assert.deepEqual(piCommand({ execPath: "/bin/node", argv: ["/bin/node", "/x/other.js"], env: {} }), { command: "pi", args: [] });
 	assert.deepEqual(piCommand({ execPath: "/bin/node", argv: [], env: { JERO_PI_AGENTS_PI: "/opt/pi --flag" } }), { command: "/opt/pi", args: ["--flag"] });
+	assert.deepEqual(piCommand({ execPath: "/bin/node", argv: [], env: { JERO_PI_AGENTS_PI: '"C:\\Program Files\\pi\\pi.exe" --mode rpc --cwd "D:\\work dir"' } }), { command: "C:\\Program Files\\pi\\pi.exe", args: ["--mode", "rpc", "--cwd", "D:\\work dir"] });
 });
 
 test("JsonLines splits on LF only, tolerates CRLF, and skips lines that are not JSON", () => {

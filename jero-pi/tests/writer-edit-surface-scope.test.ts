@@ -7,7 +7,7 @@ import type {
 	ExtensionAPI,
 	ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
-import { createGentleAiExtension } from "../extensions/jero-ai.ts";
+import { createJeroAiExtension } from "../extensions/jero-ai.ts";
 
 // ---------------------------------------------------------------------------
 // Bounded writer edit-surface scope guard (issue #484).
@@ -49,7 +49,7 @@ function dispatchWriter(input: Record<string, unknown>) {
 		registerCommand() {},
 		registerTool() {},
 	} as unknown as ExtensionAPI;
-	createGentleAiExtension({ nativeReviewCli: null })(pi);
+	createJeroAiExtension({ nativeReviewCli: null })(pi);
 	const toolCall = handlers.get("tool_call");
 	assert.equal(typeof toolCall, "function");
 	const cwd = mkdtempSync(join(tmpdir(), "gentle-pi-writer-surfaces-"));

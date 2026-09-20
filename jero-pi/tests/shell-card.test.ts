@@ -30,7 +30,7 @@ function card(overrides: Partial<Card> = {}): Card {
 	return {
 		title: "Gentle AI",
 		subtitle: "review preflight",
-		body: ["Receipt-driven development is enabled, and this worktree holds an unreviewed candidate.", "", "Call the gentle_review tool with inspect and follow the transition it returns."],
+		body: ["Receipt-driven development is enabled, and this worktree holds an unreviewed candidate.", "", "Call the jero_review tool with inspect and follow the transition it returns."],
 		tone: CARD_TONE.INFO,
 		...overrides,
 	};
@@ -42,7 +42,7 @@ test("renderCard draws the rounded frame with the title in the top rule and wrap
 	assert.match(lines[1], /^│ Receipt-driven development is enabled, and +│$/);
 	for (const line of lines) assert.equal(visibleWidth(line), 48, `"${line}" is not 48 wide`);
 	assert.ok(lines.some((line) => /^│ +│$/.test(line)), "blank body lines keep the frame");
-	assert.ok(lines.some((line) => line.includes("gentle_review")), "every paragraph is rendered when expanded");
+	assert.ok(lines.some((line) => line.includes("jero_review")), "every paragraph is rendered when expanded");
 	assert.match(lines[lines.length - 1], /^╰─+╯$/);
 });
 

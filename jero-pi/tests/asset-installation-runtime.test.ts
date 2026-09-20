@@ -16,11 +16,11 @@ async function proveLazyDiscovery(): Promise<void> {
 	const shim = join(cwd, "extensions.ts");
 	const source = (name: string) => JSON.stringify(new URL(`../extensions/${name}.ts`, import.meta.url).href);
 	writeFileSync(shim, `
-import { createGentleAiExtension } from ${source("jero-ai")};
+import { createJeroAiExtension } from ${source("jero-ai")};
 import gentleAgents from ${source("jero-agents")};
 import sddInit from ${source("sdd-init")};
 export default function (pi) {
-  createGentleAiExtension({ nativeReviewCli: null, candidateViews: null, processEnv: {} })(pi);
+  createJeroAiExtension({ nativeReviewCli: null, candidateViews: null, processEnv: {} })(pi);
   gentleAgents(pi);
   sddInit(pi);
 }

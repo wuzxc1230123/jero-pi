@@ -149,7 +149,7 @@ import {
 	type ReviewMode,
 	type ReviewProjectionV1,
 } from "../lib/review-snapshot.ts";
-import { renderGentleAiLifecycleCall, renderGentleAiResult, type GentleAiRenderContext } from "../lib/jero-ai-renderer.ts";
+import { renderJeroLifecycleCall, renderJeroResult, type JeroRenderContext } from "../lib/jero-ai-renderer.ts";
 import { sanitizeTerminalText, stripAnsi } from "../lib/terminal-theme.ts";
 import { CandidateViewError, CandidateViewRegistry, injectReviewCandidateView, readCandidateContextManifestPage, resolveCanonicalCandidateBase, type CandidateView } from "../lib/review-candidate-view.ts";
 import {
@@ -1062,13 +1062,13 @@ async function readRddModeStatusOnce(
 }
 
 // gentle-pi#662: read-only combined native risk assessment plus the computed
-// verification plan (`lib/review-risk-assessment.ts`), for the `gentle_review`
+// verification plan (`lib/review-risk-assessment.ts`), for the `jero_review`
 // tool's `assess` operation. Never throws: an unavailable/failed native
 // assess call (older binary without the verb, timeout, malformed response)
 // resolves to the `unassessable` tier, which `verificationPlan` treats the
 // same as `high` -- the fail-closed rule from gentle-pi#662.
 interface ReviewAssessmentPlanDetails {
-	schema: "gentle-pi.review-assessment-plan/v1";
+	schema: "jero.review-assessment-plan/v1";
 	risk: VerificationTier;
 	reasons: readonly { code: string; path: string; detail: string }[];
 	changedPaths: number;
@@ -1131,7 +1131,7 @@ async function resolveReviewAssessmentPlan(
 	const outcomeSource: "explicit" | "derived" | "unknown" = input.nativeReviewOutcome !== undefined ? "explicit" : derived === undefined ? "unknown" : "derived";
 	const plan = verificationPlan({ rddLine, risk, writerProfile, nativeReviewOutcome });
 	return {
-		schema: "gentle-pi.review-assessment-plan/v1",
+		schema: "jero.review-assessment-plan/v1",
 		risk,
 		reasons: assessment?.reasons ?? (unassessableDetail === undefined ? [] : [{ code: "native-assess-unavailable", path: "", detail: unassessableDetail }]),
 		changedPaths: assessment?.changedPaths ?? 0,
@@ -1430,6 +1430,8 @@ interface RuntimeGuardrailsConfig {
 interface LoadGuardrailsOptions {
 	/** Override the config home directory (used in tests to avoid touching ~/.pi). */
 	gentlePiConfigHome?: string;
+	/** Override the environment for the autonomous-mode check (injected processEnv seam). */
+	env?: NodeJS.ProcessEnv;
 }
 
 const GUARDED_KEY_PATTERNS: Record<GuardedCommandKey, RegExp> = {
@@ -1590,13 +1592,18 @@ function parseGuardrailsConfigFile(
  *      (project values are merged on top of global)
  *   4. Any parse/read error anywhere → fail safe (return SAFE_GUARDRAILS_CONFIG)
  */
+// The host-injected processEnv (test seam): set at extension creation so the
+// guardrails env check honors the same environment the rest of the runtime
+// reads, instead of reaching for the real process.env behind the seam.
+let guardrailsProcessEnv: NodeJS.ProcessEnv = process.env;
+
 function loadRuntimeGuardrailsConfig(
 	cwd: string,
 	options: LoadGuardrailsOptions = {},
 ): RuntimeGuardrailsConfig {
 	try {
 		// Env var override: forces autonomous mode with default actions
-		if (process.env.JERO_PI_AUTONOMOUS_MODE === "1") {
+		if ((options.env ?? guardrailsProcessEnv).JERO_PI_AUTONOMOUS_MODE === "1") {
 			return { autonomousMode: true, guardedCommands: {} };
 		}
 
@@ -2023,7 +2030,7 @@ function modelExportPath(_cwd: string): string {
 	return join(gentleAiConfigHome(), "models.export.json");
 }
 
-const MODEL_EXPORT_KIND = "gentle-pi.agent_model_routing";
+const MODEL_EXPORT_KIND = "jero.agent_model_routing";
 const MODEL_EXPORT_VERSION = 1;
 
 function legacyProjectModelConfigPath(cwd: string): string {
@@ -4347,7 +4354,7 @@ const REVIEW_CONTROLLER_PARAMETERS = {
 		},
 		input: {
 			type: "string",
-			description: "A JSON-serialized object string, not a nested object. New native ordinary START uses {\"mode\":\"ordinary\"}; answer-consent uses exactly {\"consentBinding\":\"<opaque id>\",\"answer\":\"granted|declined\"}. Ordinary provider capture belongs only to gentle_review_capture. An explicit baseRef requires committedOnly: true and requests a committed range, while repository-local policyPath remains optional. ASSESS accepts an optional object with baseRef, committedOnly, writerModelId, writerEffort, and nativeReviewOutcome (gentle-pi#662/#668); omitting writerModelId and writerEffort assesses the ambient working tree and fails closed to a small writer profile (never large) because the writer's actual profile is unknown to this call. nativeReviewOutcome (one of closed, declined, unavailable, unknown) tells ASSESS whether the native review actually closed for this candidate: when Receipt-driven development reads on but the review was declined for this candidate, is unavailable, or its outcome is unknown, ASSESS falls back to the exact risk-gated plan it returns when RDD is off, re-enabling the separate verifier -- a decline is candidate-scoped and never lowers the bar below the RDD-off path. Omitting it lets ASSESS try to derive declined/unavailable from what this process itself recorded for this exact candidate (never a different one, and never from repository state alone), failing closed to unknown when it cannot; `closed` is never derived -- pass it explicitly, and only right after acknowledging the approved review for this same candidate. The returned outcome_source (explicit|derived|unknown) says which of these produced the value. Legacy controller input remains separate.",
+			description: "A JSON-serialized object string, not a nested object. New native ordinary START uses {\"mode\":\"ordinary\"}; answer-consent uses exactly {\"consentBinding\":\"<opaque id>\",\"answer\":\"granted|declined\"}. Ordinary provider capture belongs only to jero_review_capture. An explicit baseRef requires committedOnly: true and requests a committed range, while repository-local policyPath remains optional. ASSESS accepts an optional object with baseRef, committedOnly, writerModelId, writerEffort, and nativeReviewOutcome (gentle-pi#662/#668); omitting writerModelId and writerEffort assesses the ambient working tree and fails closed to a small writer profile (never large) because the writer's actual profile is unknown to this call. nativeReviewOutcome (one of closed, declined, unavailable, unknown) tells ASSESS whether the native review actually closed for this candidate: when Receipt-driven development reads on but the review was declined for this candidate, is unavailable, or its outcome is unknown, ASSESS falls back to the exact risk-gated plan it returns when RDD is off, re-enabling the separate verifier -- a decline is candidate-scoped and never lowers the bar below the RDD-off path. Omitting it lets ASSESS try to derive declined/unavailable from what this process itself recorded for this exact candidate (never a different one, and never from repository state alone), failing closed to unknown when it cannot; `closed` is never derived -- pass it explicitly, and only right after acknowledging the approved review for this same candidate. The returned outcome_source (explicit|derived|unknown) says which of these produced the value. Legacy controller input remains separate.",
 		},
 		outputPath: { type: "string", description: "Retired with legacy bundle export; ignored. Export returns legacy-operation-retired." },
 		inputPath: { type: "string", description: "Repository-local JSON input file for the separate legacy controller flow (alternative to input). Legacy bundle import is retired." },
@@ -4438,7 +4445,7 @@ interface ReviewScopeParameters {
 // gentle-pi#662: read-only native risk assessment, gating the separate
 // verifier on native risk instead of a task-description judgment when the
 // rendered `Receipt-driven development:` line is `off` or `unknown`. Exposed
-// as `gentle_review` operation `assess` (not a dedicated tool), taking its
+// as `jero_review` operation `assess` (not a dedicated tool), taking its
 // optional fields through the controller's existing generic `input` JSON
 // string, exactly like START's `{"mode":...,"baseRef":...}`.
 interface ReviewAssessInput {
@@ -4805,9 +4812,9 @@ const REVIEW_MODE_DISABLED_OUTCOME = "review-mode-disabled";
 // same. Leaving this undefined would hand the single most common state a dead
 // end.
 function reviewModeContinuation(source: NativeReviewModeSource): string | undefined {
-	if (source === NATIVE_REVIEW_MODE_SOURCE.CLONE_LOCAL) return "Run `gentle-ai review mode enable --scope=global` if global RDD is still off, then run /jero:review-mode enable to clear this clone-local override.";
-	if (source === NATIVE_REVIEW_MODE_SOURCE.GLOBAL) return "Run `gentle-ai review mode enable --scope=global` to turn reviews back on; /jero:review-mode enable only clears the clone-local setting, which cannot override a global off.";
-	return "Run `gentle-ai review mode enable --scope=global` to opt in; RDD is off by default until explicitly enabled. /jero:review-mode enable only clears a clone-local override and cannot enable global RDD.";
+	if (source === NATIVE_REVIEW_MODE_SOURCE.CLONE_LOCAL) return "If global RDD is still off, write {\"schema\":\"jero.authority.review-mode/v1\",\"value\":\"on\"} to ~/.pi/jero/review-mode.json, then run /jero:review-mode enable to clear this clone-local override.";
+	if (source === NATIVE_REVIEW_MODE_SOURCE.GLOBAL) return "Write {\"schema\":\"jero.authority.review-mode/v1\",\"value\":\"on\"} to ~/.pi/jero/review-mode.json to turn reviews back on; /jero:review-mode enable only clears the clone-local setting, which cannot override a global off.";
+	return "Write {\"schema\":\"jero.authority.review-mode/v1\",\"value\":\"on\"} to ~/.pi/jero/review-mode.json to opt in; RDD is off by default until explicitly enabled. /jero:review-mode enable only clears a clone-local override and cannot enable global RDD.";
 }
 
 // Names the situation before the mechanism, then the mechanism, mirroring
@@ -4850,9 +4857,10 @@ async function resolveReviewModeGate(
 // before any candidate-view restoration is attempted, so it can never
 // reproduce the #176 empty-registry failure — but the boundary's own
 // `next_action` was a machine token with nothing a human or an agent could
-// run. `remediation_command` names the exact upstream command that
-// re-establishes negotiated STATUS for this session's Pi host identity.
-const NATIVE_STATUS_UNSUPPORTED_REMEDIATION_COMMAND = "gentle-ai review status --cwd <repo> --contract gentle-ai.review-integration/v2 --agent pi --next-transition";
+// run. `remediation_command` names the recovery action; since the binary
+// retirement, STATUS is served by the in-process authority, so the only way
+// to lose it is a broken jero-pi install.
+const NATIVE_STATUS_UNSUPPORTED_REMEDIATION_COMMAND = "reinstall the jero-pi package (pnpm install); review STATUS is served in-process and there is no external CLI to run";
 
 function nativeStatusUnsupported(operation: ReviewControllerOperation): Record<string, unknown> {
 	return {
@@ -5097,7 +5105,7 @@ function requiredStatusActionText(lineageId?: string): string {
 }
 
 // The public collect projection is collectBindings: each provider collect
-// input serialized once as the opaque binding gentle_review_capture consumes.
+// input serialized once as the opaque binding jero_review_capture consumes.
 // The raw next_transition.collect.inputs carry the same bytes, so a four-lens
 // collect state used to cost about 28k characters per STATUS, INSPECT, or
 // START answer and again on every blocked retry (#465). The raw transition
@@ -5733,7 +5741,7 @@ function deferredPostBurnCleanup(step: (typeof POST_BURN_CLEANUP)[keyof typeof P
 	}
 }
 
-function nativeOperationFailure(operation: ReviewControllerOperation | "gentle_review_capture", error: unknown): Record<string, unknown> {
+function nativeOperationFailure(operation: ReviewControllerOperation | "jero_review_capture", error: unknown): Record<string, unknown> {
 	const value = error as { mutationOutcome?: unknown; nextAction?: unknown; diagnostics?: unknown; auditRecord?: unknown; launchAttempted?: unknown; candidateViewPreNative?: unknown; failureEnvelope?: { raw?: unknown; mutationOutcome?: unknown; replayability?: unknown; nextAction?: unknown; code?: unknown; continuation?: { command?: unknown } } };
 	if (isRecord(value.failureEnvelope) && isRecord(value.failureEnvelope.raw)) {
 		const mutationOutcome = value.failureEnvelope.mutationOutcome;
@@ -6148,7 +6156,7 @@ function mapLastEventClosure(
 		throw new CandidateViewError("last-event closure returned a different target", "last-event-closure-binding-drift");
 	}
 	return {
-		tool: "gentle_review_capture",
+		tool: "jero_review_capture",
 		status: "closed",
 		outcome: "native-last-event-closure",
 		closure: {
@@ -6206,7 +6214,7 @@ async function reconcileUnknownReviewCaptureFailure(
 	expectedReviewCaptureSuffix?: readonly string[],
 	agent?: "pi",
 ): Promise<Record<string, unknown>> {
-	const failure = error === undefined ? undefined : nativeOperationFailure("gentle_review_capture", error);
+	const failure = error === undefined ? undefined : nativeOperationFailure("jero_review_capture", error);
 	if (error !== undefined && !nativeMutationRequiresStatus(error)) return failure;
 	try {
 		const selector = agent === undefined ? route : { ...route, agent };
@@ -6214,7 +6222,7 @@ async function reconcileUnknownReviewCaptureFailure(
 		syncRetainedNativeStatusSelections(selections, cwd, status, route?.baseRef);
 		if (expectedReviewCaptureSuffix !== undefined && !hasExactReviewCaptureSuffix(status, expectedReviewCaptureSuffix)) return captureGroupAuthorityDrift(status);
 		return {
-			tool: "gentle_review_capture",
+			tool: "jero_review_capture",
 			status: "reconciled",
 			outcome: "native-capture-outcome-unknown",
 			...(failure === undefined ? {} : { native_failure: failure }),
@@ -6225,7 +6233,7 @@ async function reconcileUnknownReviewCaptureFailure(
 			result: status.raw,
 		};
 	} catch (statusError) {
-		const reconciliationFailure = nativeOperationFailure("gentle_review_capture", statusError);
+		const reconciliationFailure = nativeOperationFailure("jero_review_capture", statusError);
 		return { ...(failure ?? reconciliationFailure), outcome: "native-capture-status-reconciliation-failed", reconciliation_failure: reconciliationFailure };
 	}
 }
@@ -6256,7 +6264,7 @@ async function executeReviewHostRelayCapture(
 		const closure = decodeRelayLastEventClosure(result.submission);
 		if (closure !== undefined) return mapAndClearLastEventClosure(closure, binding, selections, cwd);
 		return {
-			tool: "gentle_review_capture",
+			tool: "jero_review_capture",
 			status: "captured",
 			outcome: "native-reviewer-result-captured",
 			lineage_id: binding.lineageId,
@@ -6281,7 +6289,7 @@ async function executeReviewHostRelayCapture(
 		}
 		if (error.kind === REVIEW_HOST_RELAY_FAILURE.RELAY_UNAVAILABLE) {
 			return {
-				tool: "gentle_review_capture",
+				tool: "jero_review_capture",
 				status: "blocked",
 				outcome: "pi-host-relay-unavailable",
 				reason: REVIEW_HOST_RELAY_UNAVAILABLE_MESSAGE,
@@ -6294,7 +6302,7 @@ async function executeReviewHostRelayCapture(
 			// a provider refusal of that shape surfaces as a plain materialize
 			// failure carrying its verbatim reason.
 			return {
-				tool: "gentle_review_capture",
+				tool: "jero_review_capture",
 				status: "blocked",
 				outcome: "pi-host-relay-materialize-refused",
 				reason: error.message,
@@ -6314,7 +6322,7 @@ async function executeReviewHostRelayCapture(
 				// Fail open only on the unknown-verb capability refusal: an older binary without `capture-unachievable` keeps today's transport-failure behavior below. Every other declaration failure is surfaced, never hidden behind the relay failure it followed.
 				if (!isNativeReviewUnachievableVerbRefused(declarationError)) {
 					// gentle-pi#822 (outside-diff): the declaration failure's own envelope carries the mutation truth — the process may have recorded the declaration before failing — so the mutation fields are derived from it instead of hardcoded none, and an unknown outcome is proven or disproven by one bound STATUS re-query without ever changing the failure outcome.
-					const declarationFailureReport = nativeOperationFailure("gentle_review_capture", declarationError);
+					const declarationFailureReport = nativeOperationFailure("jero_review_capture", declarationError);
 					let declarationMutationPerformed = declarationFailureReport.mutation_performed === true;
 					let declarationMutationOutcome: "none" | "unknown" | "committed" = declarationFailureReport.mutation_outcome === "committed" ? "committed" : declarationFailureReport.mutation_outcome === "unknown" ? "unknown" : "none";
 					if (declarationMutationOutcome === "unknown") {
@@ -6332,7 +6340,7 @@ async function executeReviewHostRelayCapture(
 						}
 					}
 					return {
-						tool: "gentle_review_capture",
+						tool: "jero_review_capture",
 						status: "blocked",
 						outcome: "unachievable-lens-declaration-failed",
 						reason: error.message,
@@ -6355,20 +6363,20 @@ async function executeReviewHostRelayCapture(
 					// gentle-pi#822: success is proven, never assumed — a STATUS with no unachievable_lens_slot stop at all (no transition, a different reason code, or a collect reoffer) is a reconciliation failure exactly like a stop whose entries do not match the declared identity.
 					if (declaredSlot === undefined) {
 						return {
-							tool: "gentle_review_capture",
+							tool: "jero_review_capture",
 							status: "blocked",
 							outcome: "unachievable-lens-declaration-reconciliation-failed",
 							reason: error.message,
 							failure: reviewHostRelayFailureReport(error),
 							declaration,
-							reconciliation_failure: { operation: "gentle_review_capture", status: "blocked", outcome: "unachievable-lens-slot-declaration-unmatched", reason: stop === undefined ? "the bound STATUS did not return the unachievable_lens_slot stop" : "no unachievable_lens_slots entry matches the declared slot identity", declared_slot: { lens: declaration.lens, selected_order: declaration.selected_order, subject_hash: declaration.subject_hash }, mutation_performed: true, mutation_outcome: "committed" },
+							reconciliation_failure: { operation: "jero_review_capture", status: "blocked", outcome: "unachievable-lens-slot-declaration-unmatched", reason: stop === undefined ? "the bound STATUS did not return the unachievable_lens_slot stop" : "no unachievable_lens_slots entry matches the declared slot identity", declared_slot: { lens: declaration.lens, selected_order: declaration.selected_order, subject_hash: declaration.subject_hash }, mutation_performed: true, mutation_outcome: "committed" },
 							mutation_performed: true,
 							mutation_outcome: "committed",
 							next_action: REVIEW_HOST_RELAY_DECLARATION_FAILED_ACTION,
 						};
 					}
 					return {
-						tool: "gentle_review_capture",
+						tool: "jero_review_capture",
 						status: "blocked",
 						outcome: "unachievable-lens-slot-declared",
 						reason: error.message,
@@ -6384,13 +6392,13 @@ async function executeReviewHostRelayCapture(
 					};
 				} catch (statusError) {
 					return {
-						tool: "gentle_review_capture",
+						tool: "jero_review_capture",
 						status: "blocked",
 						outcome: "unachievable-lens-declaration-reconciliation-failed",
 						reason: error.message,
 						failure: reviewHostRelayFailureReport(error),
 						declaration,
-						reconciliation_failure: nativeOperationFailure("gentle_review_capture", statusError),
+						reconciliation_failure: nativeOperationFailure("jero_review_capture", statusError),
 						mutation_performed: true,
 						mutation_outcome: "committed",
 						next_action: REVIEW_HOST_RELAY_DECLARATION_FAILED_ACTION,
@@ -6399,7 +6407,7 @@ async function executeReviewHostRelayCapture(
 			}
 		}
 		return {
-			tool: "gentle_review_capture",
+			tool: "jero_review_capture",
 			status: "blocked",
 			outcome: error.kind === REVIEW_HOST_RELAY_FAILURE.PI_TIMED_OUT ? "pi-host-relay-timeout" : "pi-host-relay-transport-failure",
 			failure: reviewHostRelayFailureReport(error),
@@ -6444,7 +6452,7 @@ async function executeProviderRoleVectorCapture(
 ): Promise<Record<string, unknown>> {
 	if (nativeReviewCli.captureProviderRole === undefined) {
 		return {
-			tool: "gentle_review_capture",
+			tool: "jero_review_capture",
 			status: "blocked",
 			outcome: "provider-role-capture-unsupported",
 			reason: "The provider issued a self-contained role capture vector, but this runtime has no native provider-role capture surface.",
@@ -6461,7 +6469,7 @@ async function executeProviderRoleVectorCapture(
 		});
 		if ("operation" in artifact) return mapAndClearLastEventClosure(artifact, binding, selections, cwd);
 		return {
-			tool: "gentle_review_capture",
+			tool: "jero_review_capture",
 			status: "captured",
 			outcome: "native-provider-role-captured",
 			lineage_id: artifact.lineageId,
@@ -6542,16 +6550,16 @@ function clearReviewTransportProbeForTesting(nativeReviewCli: NativeReviewCli | 
 }
 
 function hostTransportUnavailable(
-	operation: ReviewControllerOperation | "gentle_review_capture" | "gentle_review_capture_group",
+	operation: ReviewControllerOperation | "jero_review_capture" | "jero_review_capture_group",
 	transport: ReviewTransportRefusal,
 ): Record<string, unknown> {
 	// #535: a provider-printed raw `gentle-ai review ...` continuation is a dead
 	// end in this runtime — Pi is not in the provider's immutable review runtime
 	// list, so every CLI-only exit refuses with this same transport code. The
 	// refusal therefore names the continuation that runs in this surface (the
-	// gentle_review / gentle_review_capture wrapper tools) while the provider's
+	// jero_review / jero_review_capture wrapper tools) while the provider's
 	// own diagnostic stays intact in relay_transport as evidence.
-	const isCapture = operation === "gentle_review_capture" || operation === "gentle_review_capture_group";
+	const isCapture = operation === "jero_review_capture" || operation === "jero_review_capture_group";
 	return {
 		...(isCapture ? { tool: operation } : { operation }),
 		status: "blocked",
@@ -6561,11 +6569,11 @@ function hostTransportUnavailable(
 		mutation_performed: false,
 		mutation_outcome: "none",
 		wrapper_continuation: {
-			tool: "gentle_review",
+			tool: "jero_review",
 			operation: REVIEW_CONTROLLER_OPERATION.INSPECT,
 			...(isCapture ? { then: operation } : {}),
 		},
-		next_action: `Install a native gentle-ai provider that supports \`review status --agent pi\`, then re-enter negotiated STATUS with gentle_review {"operation":"inspect"}${!isCapture ? " and follow the transition it returns" : operation === "gentle_review_capture_group" ? " and resubmit gentle_review_capture_group with the complete exact ordered collectBindings that fresh STATUS returns" : " and resubmit gentle_review_capture with the exact one-slot collectBinding that fresh STATUS returns"}. A provider-printed raw CLI continuation does not run in this runtime, and Pi never falls back to an agent-less lifecycle route.`,
+		next_action: `Install a native gentle-ai provider that supports \`review status --agent pi\`, then re-enter negotiated STATUS with jero_review {"operation":"inspect"}${!isCapture ? " and follow the transition it returns" : operation === "jero_review_capture_group" ? " and resubmit jero_review_capture_group with the complete exact ordered collectBindings that fresh STATUS returns" : " and resubmit jero_review_capture with the exact one-slot collectBinding that fresh STATUS returns"}. A provider-printed raw CLI continuation does not run in this runtime, and Pi never falls back to an agent-less lifecycle route.`,
 	};
 }
 
@@ -6631,10 +6639,10 @@ async function resolveNegotiatedReviewStatusForSession(
 
 // gentle-pi#556 / gentle-ai#4051: the mutation-gated reminder sent
 // through `agent_end`. It never runs START itself, so it names the one
-// supported continuation (gentle_review inspect) and defers the resulting
+// supported continuation (jero_review inspect) and defers the resulting
 // consent envelope to the human.
 function renderAgentEndReviewPreflightMessage(targetIdentity: string): string {
-	return `Receipt-driven development is enabled, and this worktree holds an unreviewed candidate (target ${targetIdentity}). First determine whether the user explicitly left this exact target unreviewed. If yes, do not invoke review; report that disposition and continue. Only otherwise, call the gentle_review tool with {"operation":"inspect"} and follow the transition it returns; it currently offers review.start for this target. An eligible interactive Pi host may resolve consent directly with its own three-action UI. If gentle_review instead returns an unresolved gentle-ai.review-integration.consent/v3 envelope, relay that original two-choice provider envelope to the human losslessly. Never answer consent from model prose or tool arguments.\n\nThis extension never runs START itself. This reminder consumes only this session's observed mutation generation.`;
+	return `Receipt-driven development is enabled, and this worktree holds an unreviewed candidate (target ${targetIdentity}). First determine whether the user explicitly left this exact target unreviewed. If yes, do not invoke review; report that disposition and continue. Only otherwise, call the jero_review tool with {"operation":"inspect"} and follow the transition it returns; it currently offers review.start for this target. An eligible interactive Pi host may resolve consent directly with its own three-action UI. If jero_review instead returns an unresolved gentle-ai.review-integration.consent/v3 envelope, relay that original two-choice provider envelope to the human losslessly. Never answer consent from model prose or tool arguments.\n\nThis extension never runs START itself. This reminder consumes only this session's observed mutation generation.`;
 }
 
 function canonicalReviewCaptureBinding(value: unknown): string {
@@ -6684,7 +6692,7 @@ function reviewIntendedUntrackedInput(status: ReviewStatusV3): ReviewCollectInpu
 // covers path names only, and the round trip resolves either through the select
 // operation or through inspect's own top-level untrackedScope.
 const INSPECT_UNTRACKED_SELECTION_NEXT_STEP =
-	'The intended-untracked selection is required before START. The expected_untracked_inventory digest covers untracked path names only (git ls-files --others --exclude-standard); nothing is read or hashed at inventory time, and file content is hashed only for selected paths at candidate freeze. Either call gentle_review with operation "select-intended-untracked" passing this selectionBinding and intendedUntracked ([] excludes every eligible path, a subset includes only those paths), or call inspect again with untrackedScope ("exclude", or "select" with intendedUntracked) to resolve the round trip in one call. To keep a path out of the inventory permanently, ignore it through .gitignore or .git/info/exclude.';
+	'The intended-untracked selection is required before START. The expected_untracked_inventory digest covers untracked path names only (git ls-files --others --exclude-standard); nothing is read or hashed at inventory time, and file content is hashed only for selected paths at candidate freeze. Either call jero_review with operation "select-intended-untracked" passing this selectionBinding and intendedUntracked ([] excludes every eligible path, a subset includes only those paths), or call inspect again with untrackedScope ("exclude", or "select" with intendedUntracked) to resolve the round trip in one call. To keep a path out of the inventory permanently, ignore it through .gitignore or .git/info/exclude.';
 
 interface PublicReviewCaptureBinding { collectBinding: string; }
 function publicReviewCaptureBindings(status: ReviewStatusV3): readonly PublicReviewCaptureBinding[] {
@@ -6694,7 +6702,7 @@ function publicReviewCaptureBindings(status: ReviewStatusV3): readonly PublicRev
 
 function captureBindingRejected(reason: string, group = false): Record<string, unknown> {
 	return {
-		tool: group ? "gentle_review_capture_group" : "gentle_review_capture",
+		tool: group ? "jero_review_capture_group" : "jero_review_capture",
 		status: "blocked",
 		outcome: group ? "capture-group-rejected" : "capture-binding-rejected",
 		reason,
@@ -6831,7 +6839,7 @@ function reviewHostRelayGroupFailure(
 	submitted: number,
 ): Record<string, unknown> {
 	return {
-		tool: "gentle_review_capture_group",
+		tool: "jero_review_capture_group",
 		status: "blocked",
 		outcome: error.kind === REVIEW_HOST_RELAY_FAILURE.RELAY_UNAVAILABLE ? "pi-host-relay-unavailable" : error.kind === REVIEW_HOST_RELAY_FAILURE.PI_TIMED_OUT ? "pi-host-relay-timeout" : "pi-host-relay-transport-failure",
 		reason: error.message,
@@ -6853,7 +6861,7 @@ async function executeReviewCaptureOperation(
 	const parameters = parseReviewCaptureParameters(parametersValue);
 	if (nativeReviewCli === null || nativeReviewCli.targetStatus === undefined) {
 		return {
-			tool: "gentle_review_capture",
+			tool: "jero_review_capture",
 			status: "blocked",
 			outcome: "native-status-unsupported",
 			mutation_performed: false,
@@ -6875,10 +6883,10 @@ async function executeReviewCaptureOperation(
 			...readRetainedNativeUntrackedSelection(retainedUntrackedSelections, cwd, parameters.lineageId),
 			...(signal === undefined ? {} : { signal }),
 		}, retainedUntrackedSelections, cwd);
-		if (negotiated.transport !== undefined) return hostTransportUnavailable("gentle_review_capture", negotiated.transport);
+		if (negotiated.transport !== undefined) return hostTransportUnavailable("jero_review_capture", negotiated.transport);
 		status = negotiated.status!;
 	} catch (error) {
-		return nativeOperationFailure("gentle_review_capture", error);
+		return nativeOperationFailure("jero_review_capture", error);
 	}
 	const selected = selectExactReviewCapture(status, parameters.lineageId, canonicalBinding);
 	if (!isSelectedReviewCapture(selected)) return selected;
@@ -6896,7 +6904,7 @@ async function executeReviewCaptureOperation(
 		if (parameters.correctionLines !== undefined) return captureBindingRejected("correctionLines is valid only for a correction-plan capture");
 		if (parameters.reviewerRunAcknowledged !== true) {
 			return {
-				tool: "gentle_review_capture",
+				tool: "jero_review_capture",
 				status: "blocked",
 				outcome: "reviewer-model-run-forecast",
 				cost_forecast: {
@@ -6918,7 +6926,7 @@ async function executeReviewCaptureOperation(
 		if (submission === undefined || value?.slot !== "correction_lines") return captureBindingRejected("provider correction-plan capture omitted its exact correction-lines binding");
 		if (parameters.correctionLines === undefined) {
 			return {
-				tool: "gentle_review_capture",
+				tool: "jero_review_capture",
 				status: "blocked",
 				outcome: "correction-lines-required",
 				minimum: value.minimum ?? 1,
@@ -7006,7 +7014,7 @@ async function executeReviewCaptureGroupOperation(
 	let status: ReviewStatusV3;
 	try {
 		const negotiated = await freshStatus();
-		if (negotiated.transport !== undefined) return hostTransportUnavailable("gentle_review_capture_group", negotiated.transport);
+		if (negotiated.transport !== undefined) return hostTransportUnavailable("jero_review_capture_group", negotiated.transport);
 		status = negotiated.status!;
 	} catch (error) {
 		return { ...captureGroupRejected(error instanceof Error ? error.message : String(error)), outcome: "native-status-failed" };
@@ -7015,7 +7023,7 @@ async function executeReviewCaptureGroupOperation(
 	if (!("slots" in group && "binding" in group)) return group;
 	if (parameters.reviewerRunAcknowledged !== true) {
 		return {
-			tool: "gentle_review_capture_group",
+			tool: "jero_review_capture_group",
 			status: "blocked",
 			outcome: "reviewer-model-run-forecast",
 			cost_forecast: { transport: "pi_host_relay", model_runs: group.slots.length, lenses: group.slots.map((slot) => slot.lens).filter((lens): lens is string => lens !== undefined) },
@@ -7042,7 +7050,7 @@ async function executeReviewCaptureGroupOperation(
 		let current: SelectedReviewCapture | Record<string, unknown>;
 		try {
 			const negotiated = await freshStatus();
-			if (negotiated.transport !== undefined) return { ...hostTransportUnavailable("gentle_review_capture_group", negotiated.transport), ...reviewHostRelayGroupProgress(group.slots, prepared, index) };
+			if (negotiated.transport !== undefined) return { ...hostTransportUnavailable("jero_review_capture_group", negotiated.transport), ...reviewHostRelayGroupProgress(group.slots, prepared, index) };
 			if (!hasExactReviewCaptureSuffix(negotiated.status!, canonicalBindings.slice(index))) return { ...captureGroupAuthorityDrift(negotiated.status!), ...reviewHostRelayGroupProgress(group.slots, prepared, index) };
 			current = selectExactReviewCapture(negotiated.status!, parameters.lineageId, canonicalBindings[index]!);
 		} catch (error) {
@@ -7054,16 +7062,16 @@ async function executeReviewCaptureGroupOperation(
 			const closure = decodeRelayLastEventClosure(result.submission);
 			if (closure !== undefined) {
 				const closed = mapAndClearLastEventClosure(closure, current.binding, retainedUntrackedSelections, cwd);
-				return { ...closed, tool: "gentle_review_capture_group", ...reviewHostRelayGroupProgress(group.slots, prepared, index + 1) };
+				return { ...closed, tool: "jero_review_capture_group", ...reviewHostRelayGroupProgress(group.slots, prepared, index + 1) };
 			}
 		} catch (error) {
 			if (error instanceof ReviewHostRelayError && error.mutationOutcome !== "unknown") return reviewHostRelayGroupFailure(error, group.slots, prepared, index);
 			const reconciled = await reconcileUnknownReviewCaptureFailure(error, nativeReviewCli, cwd, current.binding, retainedUntrackedSelections, route, undefined, REVIEW_HOST_AGENT);
-			return { ...reconciled, tool: "gentle_review_capture_group", ...reviewHostRelayGroupProgress(group.slots, prepared, index, true), ...(error instanceof ReviewHostRelayError ? { failure: reviewHostRelayFailureReport(error), reason: error.message } : {}) };
+			return { ...reconciled, tool: "jero_review_capture_group", ...reviewHostRelayGroupProgress(group.slots, prepared, index, true), ...(error instanceof ReviewHostRelayError ? { failure: reviewHostRelayFailureReport(error), reason: error.message } : {}) };
 		}
 	}
 	const reconciled = await reconcileUnknownReviewCaptureFailure(undefined, nativeReviewCli, cwd, group.binding, retainedUntrackedSelections, route, canonicalBindings.slice(prepared.length), REVIEW_HOST_AGENT);
-	return { ...reconciled, tool: "gentle_review_capture_group", outcome: reconciled.outcome === "capture-group-authority-drift" ? reconciled.outcome : reconciled.status === "reconciled" ? "native-reviewer-group-status-reconciled" : "native-reviewer-group-status-reconciliation-failed", ...reviewHostRelayGroupProgress(group.slots, prepared, prepared.length) };
+	return { ...reconciled, tool: "jero_review_capture_group", outcome: reconciled.outcome === "capture-group-authority-drift" ? reconciled.outcome : reconciled.status === "reconciled" ? "native-reviewer-group-status-reconciled" : "native-reviewer-group-status-reconciliation-failed", ...reviewHostRelayGroupProgress(group.slots, prepared, prepared.length) };
 }
 
 type DispatchHydrationOutcome =
@@ -7121,10 +7129,10 @@ async function executeReviewControllerOperation(
 			operation: parameters.operation,
 			status: "blocked",
 			outcome: "legacy-operation-retired",
-			reason: "Legacy review bundle transport (export/import) was retired together with the pre-integration graph/compact stores; gentle-ai v2.1.11 exposes no native bundle equivalent.",
+			reason: "Legacy review bundle transport (export/import) was retired together with the pre-integration graph/compact stores; no bundle equivalent exists.",
 			mutation_performed: false,
 			mutation_outcome: "none",
-			next_action: "Use the native `gentle-ai review` CLI (start/finalize/validate/status/recover) against the repository review authority; receipts and canonical artifacts live in the Git common-directory store at .git/gentle-ai/reviews and travel with the repository through normal Git replication.",
+			next_action: "There is no bundle transport and no external CLI. Review state lives in the in-process authority store under .git/jero-review/ and travels with the repository through normal Git replication; use the jero_review operations (inspect/status/start/finalize/validate and the audited maintenance operations) to work with it.",
 		};
 	}
 	if (parameters.operation === REVIEW_CONTROLLER_OPERATION.ASSESS) {
@@ -8080,7 +8088,7 @@ export const __testing = {
 	resolveSddChangeStartup,
 	resolveSelectedNativeSddChangeStartup,
 	readSddChangeFlag,
-	createGentleAiExtension: createGentleAiExtensionForTesting,
+	createJeroAiExtension: createJeroAiExtensionForTesting,
 };
 
 function resolveControllerSddStatus(
@@ -8101,7 +8109,7 @@ function resolveStartupControllerSddStatus(
 	return resolveControllerSddStatus(cwd, changeName, includeInstructions, artifactStore);
 }
 
-export interface GentleAiRuntimeDependencies {
+export interface JeroRuntimeDependencies {
 	nativeReviewCli?: NativeReviewCli | null;
 	candidateViews?: CandidateViewRegistry | null;
 	// An injected registry gives tests and host integrations explicit ownership;
@@ -8122,12 +8130,12 @@ export interface GentleAiRuntimeDependencies {
 	childStandingReviewPermissionClient?: Pick<ChildStandingReviewPermissionClient, "requestAuthorization" | "close">;
 }
 
-export function createGentleAiExtension(dependencies: GentleAiRuntimeDependencies = {}): (pi: ExtensionAPI) => void {
-	return createGentleAiExtensionForTesting(dependencies);
+export function createJeroAiExtension(dependencies: JeroRuntimeDependencies = {}): (pi: ExtensionAPI) => void {
+	return createJeroAiExtensionForTesting(dependencies);
 }
 
-function createGentleAiExtensionForTesting(
-	dependencies: GentleAiRuntimeDependencies = {},
+function createJeroAiExtensionForTesting(
+	dependencies: JeroRuntimeDependencies = {},
 ): (pi: ExtensionAPI) => void {
 	// P4c/P4d: the default CLI is the fail-closed P1 stub with the SDD projection
 	// pair, the review read path, the RDD mode pair, the SDD attempt pair, and
@@ -8143,6 +8151,7 @@ function createGentleAiExtensionForTesting(
 	const reviewConsentNow = dependencies.now ?? (() => Date.now());
 	const reviewConsentScheduleTimer = dependencies.scheduleTimer ?? ((callback, delayMs) => setTimeout(callback, delayMs));
 	const pendingReviewConsentRegistry = dependencies.pendingReviewConsentRegistry ?? processPendingReviewConsentRegistry;
+	guardrailsProcessEnv = dependencies.processEnv ?? process.env;
 	return function gentleAi(pi: ExtensionAPI): void {
 		const flags = pi as unknown as { registerFlag?: (name: string, definition: { description: string; type: "string"; default?: string }) => void };
 		flags.registerFlag?.(SDD_CHANGE_FLAG, {
@@ -8202,21 +8211,21 @@ function createGentleAiExtensionForTesting(
 	});
 
 	pi.registerTool({
-		name: "gentle_review_scope",
+		name: "jero_review_scope",
 		renderShell: "self",
 		label: "Gentle Review Scope",
 		description: "Read one bounded, integrity-checked page of the controller-owned frozen changed scope. This read-only tool never inspects the ambient or candidate tree.",
 		parameters: REVIEW_SCOPE_PARAMETERS,
 		executionMode: "parallel",
 		renderCall(_args, theme, context) {
-			return renderGentleAiLifecycleCall(
+			return renderJeroLifecycleCall(
 				"review scope",
 				theme,
-				context as GentleAiRenderContext | undefined,
+				context as JeroRenderContext | undefined,
 			);
 		},
 		renderResult(result, options, theme, context) {
-			return renderGentleAiResult(result, options, theme, context as GentleAiRenderContext | undefined);
+			return renderJeroResult(result, options, theme, context as JeroRenderContext | undefined);
 		},
 		async execute(_toolCallId, parameters) {
 			const input = parameters as ReviewScopeParameters;
@@ -8245,7 +8254,7 @@ function createGentleAiExtensionForTesting(
 	};
 
 	pi.registerTool({
-		name: "gentle_review_capture_group",
+		name: "jero_review_capture_group",
 		renderShell: "self",
 		label: "Gentle Review Capture Group",
 		description: "Capture one complete provider-issued materialize reviewer group. It validates the exact ordered current collect set, forecasts its bounded model cost, runs reviewers concurrently, and admits outputs one at a time in provider order.",
@@ -8259,10 +8268,10 @@ function createGentleAiExtensionForTesting(
 		renderCall(args, theme, context) {
 			const bindings = (args as { collectBindings?: unknown }).collectBindings;
 			const lenses = Array.isArray(bindings) ? bindings.map(collectBindingLens) : [];
-			return renderGentleAiLifecycleCall(withLenses("review capture group", lenses), theme, context as GentleAiRenderContext | undefined);
+			return renderJeroLifecycleCall(withLenses("review capture group", lenses), theme, context as JeroRenderContext | undefined);
 		},
 		renderResult(result, options, theme, context) {
-			return renderGentleAiResult(result, options, theme, context as GentleAiRenderContext | undefined);
+			return renderJeroResult(result, options, theme, context as JeroRenderContext | undefined);
 		},
 		async execute(_toolCallId, parameters, signal, _onUpdate, ctx) {
 			if (signal?.aborted) throw new Error("Review capture group was cancelled");
@@ -8280,7 +8289,7 @@ function createGentleAiExtensionForTesting(
 	});
 
 	pi.registerTool({
-		name: "gentle_review_capture",
+		name: "jero_review_capture",
 		renderShell: "self",
 		label: "Gentle Review Capture",
 		description: "Capture exactly one provider-issued ordinary native review collect slot. This is not a controller operation: it validates one opaque collect binding against current target-scoped STATUS, executes at most one capture, and never follows a transition.",
@@ -8293,14 +8302,14 @@ function createGentleAiExtensionForTesting(
 		parameters: REVIEW_CAPTURE_PARAMETERS,
 		executionMode: "sequential",
 		renderCall(args, theme, context) {
-			return renderGentleAiLifecycleCall(
+			return renderJeroLifecycleCall(
 				withLenses("review capture", [collectBindingLens((args as { collectBinding?: unknown }).collectBinding)]),
 				theme,
-				context as GentleAiRenderContext | undefined,
+				context as JeroRenderContext | undefined,
 			);
 		},
 		renderResult(result, options, theme, context) {
-			return renderGentleAiResult(result, options, theme, context as GentleAiRenderContext | undefined);
+			return renderJeroResult(result, options, theme, context as JeroRenderContext | undefined);
 		},
 		async execute(_toolCallId, parameters, signal, _onUpdate, ctx) {
 			if (signal?.aborted) throw new Error("Review capture was cancelled");
@@ -8321,34 +8330,34 @@ function createGentleAiExtensionForTesting(
 	});
 
 	pi.registerTool({
-		name: "gentle_review",
+		name: "jero_review",
 		renderShell: "self",
-		label: "Gentle Review Controller",
+		label: "Jero Review Controller",
 		description:
-			"Inspect and recover review authority and start native ordinary review. Ordinary capture is available only through the separate gentle_review_capture tool. Review outcomes never authorize delivery: commit, push, pull-request, and release commands follow ordinary repository policy. RESET/RECOVER remain destructive and are executed by the audited native CLI.",
-		promptSnippet: "Inspect authority, then start native ordinary review; use gentle_review_capture for one current collect slot",
+			"Inspect and recover review authority and start native ordinary review. Ordinary capture is available only through the separate jero_review_capture tool. Review outcomes never authorize delivery: commit, push, pull-request, and release commands follow ordinary repository policy. RESET/RECOVER remain destructive and are executed by the audited in-process authority.",
+		promptSnippet: "Inspect authority, then start native ordinary review; use jero_review_capture for one current collect slot",
 		promptGuidelines: [
 			'Call {"operation":"inspect"} before START. New native ordinary START uses a JSON string such as "{\\"mode\\":\\"ordinary\\"}"; an explicit baseRef must be paired with committedOnly: true to request a committed range, while policyPath remains repository-local. policyHash is legacy compact-only. The controller derives lineage, Git/untracked scope, tier, lenses, authored lines, and budget; the frozen correction budget counts logical corrections, while correction-plan correctionLines count diff lines (one replaced source line is one deletion plus one addition).',
 			'An inspect blocked on the intended-untracked selection returns nextStep naming the exact continuation: call select-intended-untracked with the returned selectionBinding, or call inspect again with top-level untrackedScope ("exclude", or "select" with intendedUntracked) to resolve the round trip in one call; the retained selection is adopted by the next plain START.',
 			"Use RECONCILE_AUTHORITY only to quarantine one invalid native recovery successor. Supply exact predecessorLineage, expectedPredecessorRevision, successorLineage, expectedSuccessorRevision, actor, and reason values; Pi derives and displays the seven-line native authorization binding for fresh UI approval. The predecessor stays untouched, native returns the durable audit record, and Pi never falls back to RESET or RECOVER.",
 			"Use ABANDON only after an explicit user decision and with exact native inputs: lineage, expectedRevision, snapshotIdentity, capturedLensResults, findingsPresent, actor, and reason. A dual reconciliation may supply only anomalies `unchanged_target,malformed_recovery_authorization` in that exact order. The legacy quarantine and alias-repair routes are retired: a jero-pi store never carries legacy authority, so invalid recovery successors go through RECONCILE_AUTHORITY and a malformed lineage goes through reclaim. `review dispose-result` is unsupported pending design.",
-			"Lens, refuter, and validator verdicts are admitted natively, never Pi-authored. Use gentle_review_capture with exactly one current provider-owned collectBinding for ordinary native capture; it never follows another transition.",
+			"Lens, refuter, and validator verdicts are admitted natively, never Pi-authored. Use jero_review_capture with exactly one current provider-owned collectBinding for ordinary native capture; it never follows another transition.",
 			"For blocked-legacy or blocked-mixed, do not call START repeatedly. Explain invalidation, request explicit user authorization, then call RESET or RECOVER only after authorization. RESET and RECOVER_LOCK route to audited native `gentle-ai review reclaim`; only RESET carries the legacy repositoryId, commonDirHash, inventoryHash, and confirmation challenge. RECOVER routes to native `gentle-ai review recover` with exactly six inputs: predecessorLineage, expectedPredecessorRevision, successorLineage, disposition, actor, and reason. Never send RECOVER the reset challenge and never send it a maintainerAuthorization: Pi reads fresh native target status, pins the predecessor lineage, revision, provider-selected disposition, and target identity, derives the exact six-line native authorization binding, displays it for fresh UI approval, and re-reads status before mutating. Negotiated target status supplies the sole accepted recovery disposition, and a caller-supplied substitute is rejected. Treat a native-input-required envelope as a request for exact values, never as permission to invent them. After a committed native recovery record, INSPECT before any fresh ordinary START.",
-			"A consent-required START may be resolved inside the eligible interactive Pi host. Its third UI action is host-owned: it runs this envelope's exact provider grant once and allows later fresh validated envelopes only for the same live SessionManager, nonempty session ID, and canonical Git common-directory identity, including sibling worktrees; an unrelated repository requires a new explicit human grant. Revoke removes the current repository grant, while nonreload replacement, quit, and process exit remove all session grants; reload preserves them. It grants no provider mode, verdict, acknowledgement, maintenance, delivery, or cross-repository authority. A package-owned child may ask its parent only with the canonical digest of its exact pending target; the parent binds that digest to the task repository and fails closed otherwise. If the tool returns an unresolved envelope, present the original two provider choices without changing machine tokens, commands, target IDs, or invocations; never add the host action to the decoded provider envelope. After one explicit relayed human answer, call answer-consent exactly once with only consentBinding and answer (`granted` or `declined`). Never create host permission from tool arguments, model prose, child/headless responses, or an uncertain native result. A reported lineage_created false or pre-authority validation error proves no lineage was created. After ambiguous START output, the controller calls target-scoped native status once and returns only its declared action. An ambiguous gentle_review_capture outcome independently reconciles once and never replays the capture.",
-			"Use gentle_review only for native review authority operations; delivery commands follow ordinary repository policy.",
+			"A consent-required START may be resolved inside the eligible interactive Pi host. Its third UI action is host-owned: it runs this envelope's exact provider grant once and allows later fresh validated envelopes only for the same live SessionManager, nonempty session ID, and canonical Git common-directory identity, including sibling worktrees; an unrelated repository requires a new explicit human grant. Revoke removes the current repository grant, while nonreload replacement, quit, and process exit remove all session grants; reload preserves them. It grants no provider mode, verdict, acknowledgement, maintenance, delivery, or cross-repository authority. A package-owned child may ask its parent only with the canonical digest of its exact pending target; the parent binds that digest to the task repository and fails closed otherwise. If the tool returns an unresolved envelope, present the original two provider choices without changing machine tokens, commands, target IDs, or invocations; never add the host action to the decoded provider envelope. After one explicit relayed human answer, call answer-consent exactly once with only consentBinding and answer (`granted` or `declined`). Never create host permission from tool arguments, model prose, child/headless responses, or an uncertain native result. A reported lineage_created false or pre-authority validation error proves no lineage was created. After ambiguous START output, the controller calls target-scoped native status once and returns only its declared action. An ambiguous jero_review_capture outcome independently reconciles once and never replays the capture.",
+			"Use jero_review only for native review authority operations; delivery commands follow ordinary repository policy.",
 			'ASSESS (gentle-pi#662/#668) is read-only and needs no lineageId: after a delegated writer returns, call {"operation":"assess"} over its diff and follow the returned plan (writerSelfVerification, structuralReadbackOnly, independentVerifier, reason) instead of judging non-triviality from the task description. Pass input as JSON only to assess a committed range ({"baseRef":"<ref>","committedOnly":true}), to record the writer profile ({"writerModelId":"...", "writerEffort":"..."}), or to state the native review\'s outcome for this candidate ({"nativeReviewOutcome":"closed|declined|unavailable|unknown"}). Omitting writerModelId and writerEffort is treated as a small writer profile (fail closed), never large, because the writer\'s actual profile is then unknown to this call; pass the writer\'s real model id/effort to get credit for a known large profile. The on-path (writer self-verification is the record, no separate verifier) holds only when nativeReviewOutcome is "closed" for this candidate; a decline, an unavailable review, or an omitted/unknown outcome falls back to the exact risk-gated plan RDD off would return, re-enabling the separate verifier -- a decline is candidate-scoped and never lowers the bar below RDD off. "closed" is never inferred: pass it only right after this same caller acknowledged the approved review for this same candidate; omitting nativeReviewOutcome only ever auto-derives declined/unavailable, bound to that exact candidate\'s own target identity, never to a different candidate or to bare repository state. The result\'s outcome_source (explicit|derived|unknown) states which. A failed or unavailable native assessment reports risk "unassessable", verified exactly like "high". This never mutates review authority state.',
 		],
 		parameters: REVIEW_CONTROLLER_PARAMETERS,
 		executionMode: "sequential",
 		renderCall(args, theme, context) {
-			return renderGentleAiLifecycleCall(
+			return renderJeroLifecycleCall(
 				reviewToolOperationPath(args),
 				theme,
-				context as GentleAiRenderContext | undefined,
+				context as JeroRenderContext | undefined,
 			);
 		},
 		renderResult(result, options, theme, context) {
-			return renderGentleAiResult(result, options, theme, context as GentleAiRenderContext | undefined);
+			return renderJeroResult(result, options, theme, context as JeroRenderContext | undefined);
 		},
 		async execute(_toolCallId, parameters, signal, _onUpdate, ctx) {
 			if (signal?.aborted) throw new Error("Review controller operation was cancelled");
@@ -8650,7 +8659,7 @@ function createGentleAiExtensionForTesting(
 		const targetIdentity = status.targetIdentity;
 		pi.sendMessage(
 			{
-				customType: "gentle-pi.review-preflight",
+				customType: "jero.review-preflight",
 				content: renderAgentEndReviewPreflightMessage(targetIdentity),
 				display: true,
 			},
@@ -8934,10 +8943,10 @@ function createGentleAiExtensionForTesting(
 				// `--scope clone` (Design Decision #7), which only clears a
 				// clone-local override and cannot enable global RDD. The native call
 				// exits 0, reports operation "enable", and changes nothing. Say
-				// that, and name the global-scope command that resolves it.
+				// that, and name the global-record edit that resolves it.
 				const requested = subAction === NATIVE_REVIEW_MODE_OPERATION.ENABLE ? "on" : subAction === NATIVE_REVIEW_MODE_OPERATION.DISABLE ? "off" : result.status.effective;
 				if (result.status.effective !== requested) {
-					ctx.ui.notify(`${report}\nThat did not turn reviews back on: /jero:review-mode enable only clears a clone-local override, which cannot override a global off. Run \`gentle-ai review mode enable --scope=global\` to turn them back on.`, "warning");
+					ctx.ui.notify(`${report}\nThat did not turn reviews back on: /jero:review-mode enable only clears a clone-local override, which cannot override a global off. Write \{"schema":"jero.authority.review-mode/v1","value":"on"\} to ${join(gentleAiConfigHome(), "review-mode.json")} to turn them back on.`, "warning");
 					return;
 				}
 				ctx.ui.notify(report, "info");
@@ -8951,10 +8960,6 @@ function createGentleAiExtensionForTesting(
 		},
 	});
 
-	// gentle-pi#677: gentle-ai owns telemetry end to end (status, the opt-out
-	// switches, and rate limiting); this command only runs the corresponding
-	// `gentle-ai telemetry <op> --json` in the foreground and relays its
-	// output, so a Pi user never has to leave Pi to check or change it.
 	// Mirrors jero:review-mode: a user-owned switch, never an automated one.
 	// It matters more here than there, because this policy governs whether
 	// background subagents may be launched at all, so nothing in Pi may write
@@ -9009,5 +9014,5 @@ function createGentleAiExtensionForTesting(
 }
 
 export default function gentleAi(pi: ExtensionAPI): void {
-	return createGentleAiExtension()(pi);
+	return createJeroAiExtension()(pi);
 }

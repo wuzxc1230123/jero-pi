@@ -102,7 +102,7 @@ test("todoSummary and staleTurns describe progress and how long the list went un
 });
 
 test("replayTodo rebuilds the latest state from Gentle and rpiv tool results alike", () => {
-	const gentle = { type: "message", message: { role: "toolResult", toolName: "todo", isError: false, details: { gentleTodo: { tasks: [{ id: 4, title: "Ours", status: "pending" }], nextId: 5, updatedTurn: 7 } } } };
+	const gentle = { type: "message", message: { role: "toolResult", toolName: "todo", isError: false, details: { jeroTodo: { tasks: [{ id: 4, title: "Ours", status: "pending" }], nextId: 5, updatedTurn: 7 } } } };
 	const rpiv = { type: "message", message: { role: "toolResult", toolName: "todo", isError: false, details: { action: "update", params: {}, tasks: [{ id: 1, subject: "Theirs", status: "completed", activeForm: "done" }, { id: 2, subject: "Gone", status: "deleted" }, { id: 3, subject: "Now", status: "in_progress", activeForm: "doing it" }], nextId: 4 } } };
 	const other = { type: "message", message: { role: "toolResult", toolName: "bash", details: { tasks: [] } } };
 	assert.deepEqual(replayTodo([other, rpiv]).tasks, [

@@ -105,13 +105,13 @@ test("actual Pi SDK loader preserves permission only across reload and disposes 
 	const extensionSource = pathToFileURL(join(import.meta.dirname, "..", "extensions", "jero-ai.ts")).href;
 	const extensionPath = join(agentDir, "extensions", "runtime-permission.ts");
 	writeFileSync(extensionPath, `
-import { createGentleAiExtension } from ${JSON.stringify(extensionSource)};
+import { createJeroAiExtension } from ${JSON.stringify(extensionSource)};
 const lifecycle = globalThis[Symbol.for("gentle-pi.test.review-session-permission-lifecycle")];
 const instance = ++lifecycle.nextInstance;
 export default function (pi) {
   pi.on("session_start", (event, ctx) => lifecycle.events.push({ instance, type: "start", reason: event.reason, manager: ctx.sessionManager }));
   pi.on("session_shutdown", (event, ctx) => lifecycle.events.push({ instance, type: "shutdown", reason: event.reason, manager: ctx.sessionManager }));
-  createGentleAiExtension({ nativeReviewCli: null, candidateViews: null, processEnv: {} })(pi);
+  createJeroAiExtension({ nativeReviewCli: null, candidateViews: null, processEnv: {} })(pi);
 }
 `, "utf8");
 

@@ -14,7 +14,7 @@ import type {
 	ExtensionAPI,
 	ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
-import { __testing, createGentleAiExtension } from "../extensions/jero-ai.ts";
+import { __testing, createJeroAiExtension } from "../extensions/jero-ai.ts";
 
 // ---------------------------------------------------------------------------
 // Background subagents policy (issue #256).
@@ -504,7 +504,7 @@ interface CommandFixture {
 
 function registeredCommands(activeTools?: readonly string[]): Map<string, CommandFixture> {
 	const commands = new Map<string, CommandFixture>();
-	createGentleAiExtension({ nativeReviewCli: null })({
+	createJeroAiExtension({ nativeReviewCli: null })({
 		on() {},
 		registerTool() {},
 		registerCommand(name: string, definition: CommandFixture) {

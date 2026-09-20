@@ -286,9 +286,15 @@ export function openInExternalEditor(host: ExternalEditorHost, path: string, env
 	const command = env.VISUAL || env.EDITOR;
 	if (!command) return false;
 	const [editor, ...editorArgs] = command.split(" ");
+	const useShell = process.platform === "win32";
 	host.stop();
 	try {
-		spawn(editor, [...editorArgs, path], { cwd, stdio: "inherit", shell: process.platform === "win32" });
+		// With `shell: true` Node hands cmd.exe a raw space-joined command line,
+		// so any argument containing a space (a transcript under a spaced user
+		// directory, an editor flag path) splits into phantom arguments. Quote
+		// every argument for cmd; doubling is cmd's in-quote quote escape.
+		const argv = [...editorArgs, path].map((arg) => (useShell && /\s/.test(arg) ? `"${arg.replace(/"/g, '""')}"` : arg));
+		spawn(editor, argv, { cwd, stdio: "inherit", shell: useShell });
 	} finally {
 		host.start();
 		host.requestRender(true);
@@ -392,7 +398,7 @@ function showChanges(ctx: ExtensionContext, model: ChangesModel): void {
 }
 
 const USAGE_COMMAND_NAME = "jero:usage";
-const REVIEW_PREFLIGHT_TYPE = "gentle-pi.review-preflight";
+const REVIEW_PREFLIGHT_TYPE = "jero.review-preflight";
 const DEV_BINARY_WIDGET_KEY = "gentle-shell-dev-binary";
 const SHA_PREFIX_LENGTH = 16;
 
@@ -448,7 +454,7 @@ export async function fetchCodexUsage(token: string | undefined, fetchFn: typeof
 	if (!accountId) return undefined;
 	try {
 		const response = await fetchFn(CODEX_USAGE_URL, {
-			headers: { Authorization: `Bearer ${token}`, "chatgpt-account-id": accountId, originator: "pi", "User-Agent": "gentle-pi" },
+			headers: { Authorization: `Bearer ${token}`, "chatgpt-account-id": accountId, originator: "pi", "User-Agent": "jero-pi" },
 		});
 		if (!response.ok) return undefined;
 		return parseCodexUsage(await response.json(), now);

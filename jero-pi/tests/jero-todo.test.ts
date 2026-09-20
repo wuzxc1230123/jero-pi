@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import type { Component } from "@earendil-works/pi-tui";
-import gentleTodo, { todoCollapseKey, todoEnabled } from "../extensions/jero-todo.ts";
+import jeroTodo, { todoCollapseKey, todoEnabled } from "../extensions/jero-todo.ts";
 import { stripAnsi } from "../lib/terminal-theme.ts";
 
 // The Gentle Todo extension: the `todo` tool, the card above the editor,
@@ -77,19 +77,19 @@ test("todoEnabled and todoCollapseKey read their environment flags", () => {
 	assert.equal(todoCollapseKey({ JERO_PI_TODO_KEY: "alt+t" }), "alt+t");
 	assert.equal(todoCollapseKey({ JERO_PI_TODO_KEY: "off" }), undefined);
 	const off = fakePi();
-	gentleTodo(off.pi, { JERO_PI_TODO: "off" });
+	jeroTodo(off.pi, { JERO_PI_TODO: "off" });
 	assert.equal(off.tools.size, 0);
 });
 
 test("todo registration owns its transparent transcript shell", () => {
 	const { pi, tools } = fakePi();
-	gentleTodo(pi, {});
+	jeroTodo(pi, {});
 	assert.equal(tools.get("todo")?.renderShell, "self");
 });
 
 test("the todo tool writes the list, shows the card after the call, and carries the snapshot in details", async () => {
 	const { pi, tools, fire } = fakePi();
-	gentleTodo(pi, {});
+	jeroTodo(pi, {});
 	const { ctx, widget } = fakeContext();
 	await fire("session_start", ctx);
 	assert.equal(widget(), undefined, "no card without tasks");
@@ -97,7 +97,7 @@ test("the todo tool writes the list, shows the card after the call, and carries 
 	const tool = tools.get("todo")!;
 	const result = await tool.execute("c1", { action: "write", tasks: [{ title: "Write the parser", status: "in_progress", note: "parsing" }, { title: "Add tests" }] }, undefined, undefined, ctx);
 	assert.match(result.content[0].text, /2 tasks · 0 done · 1 in progress/);
-	assert.equal((result.details.gentleTodo as { tasks: unknown[] }).tasks.length, 2);
+	assert.equal((result.details.jeroTodo as { tasks: unknown[] }).tasks.length, 2);
 	await fire("tool_execution_end", ctx, { toolName: "todo" });
 	const lines = widget()!;
 	assert.match(lines[0], /^╭─ ❀ Todos ▾ Collapse · 0 of 2 ─+ ctrl\+shift\+t collapse ╮$/);
@@ -114,7 +114,7 @@ test("the todo tool writes the list, shows the card after the call, and carries 
 
 test("the Todo header is a fullscreen left-click control while non-click pointer events stay inert", async () => {
 	const { pi, tools, fire } = fakePi();
-	gentleTodo(pi, {});
+	jeroTodo(pi, {});
 	const { ctx, widgetComponent } = fakeContext();
 	await fire("session_start", ctx);
 	await tools.get("todo")!.execute("c1", { action: "write", tasks: [{ title: "A", status: "in_progress" }, { title: "B" }] }, undefined, undefined, ctx);
@@ -135,7 +135,7 @@ test("the Todo header is a fullscreen left-click control while non-click pointer
 
 test("the Todo header remains a static visible control without hover handling", async () => {
 	const { pi, tools, fire } = fakePi();
-	gentleTodo(pi, {});
+	jeroTodo(pi, {});
 	const { ctx, widgetComponent } = fakeContext();
 	await fire("session_start", ctx);
 	await tools.get("todo")!.execute("c1", { action: "write", tasks: [{ title: "A" }] }, undefined, undefined, ctx);
@@ -149,7 +149,7 @@ test("the Todo header remains a static visible control without hover handling", 
 
 test("every turn carries the open tasks in the system prompt and the card goes stale after two silent turns", async () => {
 	const { pi, tools, fire } = fakePi();
-	gentleTodo(pi, {});
+	jeroTodo(pi, {});
 	const { ctx, widget } = fakeContext();
 	await fire("session_start", ctx);
 	await fire("before_agent_start", ctx, { systemPrompt: "base" });
@@ -173,7 +173,7 @@ test("every turn carries the open tasks in the system prompt and the card goes s
 
 test("a finished list stays for its turn and clears at the next, and the collapse key folds the card", async () => {
 	const { pi, tools, shortcuts, fire } = fakePi();
-	gentleTodo(pi, {});
+	jeroTodo(pi, {});
 	const { ctx, widget } = fakeContext();
 	await fire("session_start", ctx);
 	await tools.get("todo")!.execute("c1", { action: "write", tasks: [{ title: "A", status: "in_progress" }, { title: "B" }] }, undefined, undefined, ctx);
@@ -195,7 +195,7 @@ test("a finished list stays for its turn and clears at the next, and the collaps
 
 test("session_start replays the list from the branch, rpiv-todo results included, and counts past turns", async () => {
 	const { pi, fire } = fakePi();
-	gentleTodo(pi, {});
+	jeroTodo(pi, {});
 	const branch = [
 		{ type: "message", message: { role: "user", content: "hi" } },
 		{ type: "message", message: { role: "toolResult", toolName: "todo", isError: false, details: { action: "create", params: {}, tasks: [{ id: 1, subject: "Old task", status: "in_progress", activeForm: "still going" }], nextId: 2 } } },
@@ -213,10 +213,10 @@ test("session_start replays the list from the branch, rpiv-todo results included
 
 test("session_start drops a list that was already finished, so a reload never shows stale done work", async () => {
 	const { pi, fire } = fakePi();
-	gentleTodo(pi, {});
+	jeroTodo(pi, {});
 	const finished = [
 		{ type: "message", message: { role: "user", content: "hi" } },
-		{ type: "message", message: { role: "toolResult", toolName: "todo", isError: false, details: { gentleTodo: { tasks: [{ id: 1, title: "Done A", status: "done" }, { id: 2, title: "Done B", status: "done" }], nextId: 3, updatedTurn: 1 } } } },
+		{ type: "message", message: { role: "toolResult", toolName: "todo", isError: false, details: { jeroTodo: { tasks: [{ id: 1, title: "Done A", status: "done" }, { id: 2, title: "Done B", status: "done" }], nextId: 3, updatedTurn: 1 } } } },
 	];
 	const { ctx, widget } = fakeContext(finished);
 	await fire("session_start", ctx);

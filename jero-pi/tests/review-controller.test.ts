@@ -9,7 +9,7 @@ import type {
 	ExtensionContext,
 	ToolCallEventResult,
 } from "@earendil-works/pi-coding-agent";
-import gentleAi, { __testing, createGentleAiExtension } from "../extensions/jero-ai.ts";
+import gentleAi, { __testing, createJeroAiExtension } from "../extensions/jero-ai.ts";
 import {
 	REVIEW_MODE,
 	REVIEW_TRANSITION,
@@ -89,8 +89,8 @@ function registerRuntime(): RuntimeRegistration {
 		},
 		registerCommand() {},
 	} as unknown as ExtensionAPI;
-	createGentleAiExtension({ nativeReviewCli: null })(pi);
-	const controller = tools.get("gentle_review");
+	createJeroAiExtension({ nativeReviewCli: null })(pi);
+	const controller = tools.get("jero_review");
 	const toolCall = handlers.get("tool_call");
 	assert.ok(controller, "the supported review controller tool must be registered");
 	assert.ok(toolCall, "the lifecycle gate hook must be registered");
@@ -363,7 +363,7 @@ test("general STATUS returns the typed native-status-unsupported boundary withou
 		mutation_performed: false,
 		inventory_complete: false,
 		next_action: "require-upstream-read-only-native-status-inventory",
-		remediation_command: "gentle-ai review status --cwd <repo> --contract gentle-ai.review-integration/v2 --agent pi --next-transition",
+		remediation_command: "reinstall the jero-pi package (pnpm install); review STATUS is served in-process and there is no external CLI to run",
 		evidence: {
 			native_contract: "gentle-ai/2.1.4",
 			general_status: "unsupported",
@@ -372,7 +372,7 @@ test("general STATUS returns the typed native-status-unsupported boundary withou
 	});
 });
 
-test("gentle-pi#185: general STATUS on a non-negotiated native CLI names the exact status command to run", async (t) => {
+test("gentle-pi#185: general STATUS on a non-negotiated native CLI names the exact recovery action", async (t) => {
 	// The legacy `correctionForecast` restoration guard this issue originally
 	// reported (extensions/jero-ai.ts, then around line 5329) was scoped to
 	// `targetStatus !== undefined` and skipped restoring a candidate view when
@@ -392,7 +392,7 @@ test("gentle-pi#185: general STATUS on a non-negotiated native CLI names the exa
 	assert.equal(result.outcome, "native-status-unsupported");
 	assert.equal(
 		result.remediation_command,
-		"gentle-ai review status --cwd <repo> --contract gentle-ai.review-integration/v2 --agent pi --next-transition",
+		"reinstall the jero-pi package (pnpm install); review STATUS is served in-process and there is no external CLI to run",
 	);
 });
 
@@ -432,7 +432,7 @@ test("failed START gives exact mode and serialization guidance and creates no li
 });
 
 
-test("shipped controller fails closed while static prompts defer RDD lifecycle ownership to Gentle AI", () => {
+test("shipped controller fails closed while static prompts defer RDD lifecycle ownership to Jero", () => {
 	const { controller } = registerRuntime();
 	const toolContract = [
 		controller.description,
@@ -443,10 +443,10 @@ test("shipped controller fails closed while static prompts defer RDD lifecycle o
 
 	assert.match(toolContract, /native-input-required.*never.*invent/is);
 	assert.match(toolContract, /output.*lost|response.*lost|ambiguous.*START/is);
-	assert.match(toolContract, /ambiguous START output.*target-scoped native status.*declared action.*ambiguous gentle_review_capture.*never replays/is);
+	assert.match(toolContract, /ambiguous START output.*target-scoped native status.*declared action.*ambiguous jero_review_capture.*never replays/is);
 	assert.doesNotMatch(toolContract, /START throws.*lineage does not exist/is);
 
-	const boundary = "This package injects the mirrored provider-bundle review execution contract into this session's system prompt at start; Gentle AI writes nothing into the Pi system prompt, and this package owns everything else here. Absent that mirrored contract, this package invents no lifecycle instructions.";
+	const boundary = "This package injects the mirrored provider-bundle review execution contract into this session's system prompt at start; Jero writes nothing into the Pi system prompt, and this package owns everything else here. Absent that mirrored contract, this package invents no lifecycle instructions.";
 	const core = readFileSync("assets/orchestrator.md", "utf8");
 	assert.match(core, new RegExp(boundary.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
 

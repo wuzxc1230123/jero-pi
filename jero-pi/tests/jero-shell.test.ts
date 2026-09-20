@@ -716,9 +716,9 @@ test("gentleShell registers /jero:usage and opens the subscriptions overlay", as
 test("gentleShell draws the review preflight message as a Gentle card", () => {
 	const { pi } = fakePi();
 	gentleShell(pi, {});
-	const renderer = renderers.get("gentle-pi.review-preflight");
+	const renderer = renderers.get("jero.review-preflight");
 	assert.ok(renderer, "renderer not registered");
-	const message = { customType: "gentle-pi.review-preflight", content: "Receipt-driven development is enabled.\n\nCall the gentle_review tool." };
+	const message = { customType: "jero.review-preflight", content: "Receipt-driven development is enabled.\n\nCall the jero_review tool." };
 	const sentinelTheme = { ...plainTheme, bg: (_role: string, text: string) => `\x1b[44m${text}\x1b[49m` };
 	for (const expanded of [true, false]) {
 		assert.doesNotMatch(renderer(message, { expanded }, sentinelTheme).render(80).join("\n"), /\x1b\[44m/);
@@ -726,7 +726,7 @@ test("gentleShell draws the review preflight message as a Gentle card", () => {
 	const expanded = renderer(message, { expanded: true }, plainTheme).render(80).map(stripAnsi);
 	assert.match(expanded[0], /^╭─ ✿ Jero · review preflight ─+ .*collapse ╮$/);
 	assert.match(expanded[1], /^│ Receipt-driven development is enabled\. +│$/);
-	assert.ok(expanded.some((line) => line.includes("gentle_review")));
+	assert.ok(expanded.some((line) => line.includes("jero_review")));
 	const collapsed = renderer({ ...message, content: [{ type: "text", text: message.content }] }, { expanded: false }, plainTheme).render(80).map(stripAnsi);
 	assert.equal(collapsed.length, 3);
 });

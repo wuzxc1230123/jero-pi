@@ -13,7 +13,7 @@ import type {
 	Theme,
 	ToolCallEventResult,
 } from "@earendil-works/pi-coding-agent";
-import { __testing, applyModelConfig, applyModelConfigAsync, createGentleAiExtension } from "../extensions/jero-ai.ts";
+import { __testing, applyModelConfig, applyModelConfigAsync, createJeroAiExtension } from "../extensions/jero-ai.ts";
 import { PROFILES_KIND, PROFILES_VERSION } from "../lib/agent-profiles.ts";
 import { NATIVE_REVIEW_ERROR_CODE, NativeReviewCliError, type NativeReviewCli } from "../lib/authority/client-contract.ts";
 import { CandidateViewError, type CandidateViewRegistry } from "../lib/review-candidate-view.ts";
@@ -51,7 +51,7 @@ function registeredGentleTools(): Map<string, any> {
 			tools.set(tool.name, tool);
 		},
 	} as unknown as ExtensionAPI;
-	createGentleAiExtension({ nativeReviewCli: null })(pi);
+	createJeroAiExtension({ nativeReviewCli: null })(pi);
 	return tools;
 }
 
@@ -207,12 +207,12 @@ test("authority unavailability fails closed without installer recovery or lifecy
 test("registered Gentle Review tools render reusable rose lifecycle call rows", () => {
 	const tools = registeredGentleTools();
 	const cases = [
-		["gentle_review", { operation: "status" }, "review status"],
-		["gentle_review", { operation: "future-operation", secret: "/private" }, "review"],
-		["gentle_review_scope", {}, "review scope"],
-		["gentle_review_capture_group", {}, "review capture group"],
+		["jero_review", { operation: "status" }, "review status"],
+		["jero_review", { operation: "future-operation", secret: "/private" }, "review"],
+		["jero_review_scope", {}, "review scope"],
+		["jero_review_capture_group", {}, "review capture group"],
 		[
-			"gentle_review_capture",
+			"jero_review_capture",
 			{
 				lineageId: "lineage-id",
 				collectBinding: "binding-id",
@@ -226,7 +226,7 @@ test("registered Gentle Review tools render reusable rose lifecycle call rows", 
 
 	assert.deepEqual(
 		[...new Set(cases.map(([name]) => name))].sort(),
-		[...tools.keys()].filter((name) => name.startsWith("gentle_")).sort(),
+		[...tools.keys()].filter((name) => name.startsWith("jero_review")).sort(),
 	);
 
 	for (const [name, args, operationPath] of cases) {
@@ -269,7 +269,7 @@ test("registered Gentle Review tools render reusable rose lifecycle call rows", 
 
 test("registered Gentle Review tools preserve result envelopes and redact collapsed result rendering", async () => {
 	const tools = registeredGentleTools();
-	const scope = tools.get("gentle_review_scope");
+	const scope = tools.get("jero_review_scope");
 	const manifest = { version: 1, scopeByMode: { "100644": ["src/file.ts"] }, gitlinks: {} };
 	const bytes = Buffer.from(JSON.stringify(manifest), "utf8");
 	const encoded = gzipSync(bytes, { mtime: 0 }).toString("base64url");
@@ -294,7 +294,7 @@ test("registered Gentle Review tools preserve result envelopes and redact collap
 
 	const resultText = "safe result\x1b[31m\nlineage=secret body=private";
 	const expandHint = keyHint("app.tools.expand", "to expand");
-	for (const name of ["gentle_review", "gentle_review_scope", "gentle_review_capture"]) {
+	for (const name of ["jero_review", "jero_review_scope", "jero_review_capture"]) {
 		const tool = tools.get(name);
 		assert.equal(typeof tool?.renderResult, "function", `${name} must define result rendering`);
 		for (const options of [
@@ -362,7 +362,7 @@ function routingConsumerFixture(t: test.TestContext, agents = ["worker"]) {
 		rmSync(root, { recursive: true, force: true });
 	});
 	const commands = new Map<string, Parameters<ExtensionAPI["registerCommand"]>[1]>();
-	createGentleAiExtension({ nativeReviewCli: null })({
+	createJeroAiExtension({ nativeReviewCli: null })({
 		on() {},
 		registerTool() {},
 		registerCommand(name, command) { commands.set(name, command); },
@@ -662,7 +662,7 @@ test("session startup reports invalid project routing without mutating the profi
 		registerCommand() {},
 		registerTool() {},
 	} as unknown as ExtensionAPI;
-	createGentleAiExtension({ nativeReviewCli: null })(pi);
+	createJeroAiExtension({ nativeReviewCli: null })(pi);
 	const sessionStart = handlers.get("session_start");
 	assert.equal(typeof sessionStart, "function");
 	const notifications: Array<{ message: string; severity: string }> = [];
@@ -839,10 +839,10 @@ test("ordinary native capture exposes a registered schema and STATUS binding cop
 			tools.set(tool.name, tool);
 		},
 	} as unknown as ExtensionAPI;
-	createGentleAiExtension({ nativeReviewCli: null })(pi);
+	createJeroAiExtension({ nativeReviewCli: null })(pi);
 
-	assert.ok(tools.has("gentle_review_capture"));
-	assert.deepEqual(tools.get("gentle_review_capture")?.parameters.required, ["lineageId", "collectBinding"]);
+	assert.ok(tools.has("jero_review_capture"));
+	assert.deepEqual(tools.get("jero_review_capture")?.parameters.required, ["lineageId", "collectBinding"]);
 
 	const sha = `sha256:${"a".repeat(64)}`;
 	const lineageId = "ordinary-capture";
@@ -1167,7 +1167,7 @@ test("delivery commands bypass RDD under every mode outcome while command safety
 			registerCommand() {},
 			registerTool() {},
 		} as unknown as ExtensionAPI;
-		createGentleAiExtension({ nativeReviewCli: mode.nativeReviewCli as never })(pi);
+		createJeroAiExtension({ nativeReviewCli: mode.nativeReviewCli as never })(pi);
 		const toolCall = handlers.get("tool_call");
 		assert.equal(typeof toolCall, "function", mode.label);
 		const ctx = {
@@ -1224,7 +1224,7 @@ test("guarded command confirmation emits a generic correlated permission lifecyc
 		registerCommand() {},
 		registerTool() {},
 	} as unknown as ExtensionAPI;
-	createGentleAiExtension({ nativeReviewCli: null })(pi);
+	createJeroAiExtension({ nativeReviewCli: null })(pi);
 	const toolCall = handlers.get("tool_call");
 	assert.equal(typeof toolCall, "function");
 	const cwd = mkdtempSync(join(tmpdir(), "gentle-pi-permission-request-"));
@@ -1359,7 +1359,7 @@ test("concurrent guarded confirmations coalesce the Herdr lifecycle per extensio
 			registerCommand() {},
 			registerTool() {},
 		} as unknown as ExtensionAPI;
-		createGentleAiExtension({ nativeReviewCli: null })(pi);
+		createJeroAiExtension({ nativeReviewCli: null })(pi);
 		return { handlers, emitted, confirmations };
 	};
 	const first = createHarness();
@@ -1437,7 +1437,7 @@ test("permission lifecycle is inactive for unguarded and headless commands", asy
 		registerCommand() {},
 		registerTool() {},
 	} as unknown as ExtensionAPI;
-	createGentleAiExtension({ nativeReviewCli: null })(pi);
+	createJeroAiExtension({ nativeReviewCli: null })(pi);
 	const toolCall = handlers.get("tool_call");
 	assert.equal(typeof toolCall, "function");
 	const cwd = mkdtempSync(join(tmpdir(), "gentle-pi-permission-headless-"));
@@ -1468,11 +1468,11 @@ test("permission lifecycle is inactive for unguarded and headless commands", asy
 test("registered Gentle Review capture tools name the lens they run", () => {
 	const tools = registeredGentleTools();
 	const binding = (lens: string) => JSON.stringify({ name: "reviewer_result", captureOperation: "review.capture-result", arguments: [], artifactSubject: { lens } });
-	const single = tools.get("gentle_review_capture")!.renderCall({ lineageId: "l", collectBinding: binding("review-risk") }, lifecycleTheme, lifecycleContext({ executionStarted: true }));
+	const single = tools.get("jero_review_capture")!.renderCall({ lineageId: "l", collectBinding: binding("review-risk") }, lifecycleTheme, lifecycleContext({ executionStarted: true }));
 	assert.equal(cardTitle(renderComponent(single)), "🌹︎ Jero · running · review capture · risk");
-	const bare = tools.get("gentle_review_capture")!.renderCall({ lineageId: "l", collectBinding: "{not json" }, lifecycleTheme, lifecycleContext({ executionStarted: true }));
+	const bare = tools.get("jero_review_capture")!.renderCall({ lineageId: "l", collectBinding: "{not json" }, lifecycleTheme, lifecycleContext({ executionStarted: true }));
 	assert.equal(cardTitle(renderComponent(bare)), "🌹︎ Jero · running · review capture");
-	const group = tools.get("gentle_review_capture_group")!.renderCall(
+	const group = tools.get("jero_review_capture_group")!.renderCall(
 		{ lineageId: "l", collectBindings: [binding("review-risk"), binding("review-resilience"), binding("review-readability"), binding("review-reliability")] },
 		lifecycleTheme,
 		lifecycleContext({ executionStarted: true }),
@@ -1496,7 +1496,7 @@ test("bash tool_call confirms a late guarded npm publish and denies on non-appro
 		registerCommand() {},
 		registerTool() {},
 	} as unknown as ExtensionAPI;
-	createGentleAiExtension({ nativeReviewCli: null })(pi);
+	createJeroAiExtension({ nativeReviewCli: null })(pi);
 	const toolCall = handlers.get("tool_call");
 	assert.equal(typeof toolCall, "function");
 
@@ -1549,7 +1549,7 @@ test("bash tool_call confirms every compound action and centers a long git -C pu
 		registerCommand() {},
 		registerTool() {},
 	} as unknown as ExtensionAPI;
-	createGentleAiExtension({ nativeReviewCli: null })(pi);
+	createJeroAiExtension({ nativeReviewCli: null })(pi);
 	const toolCall = handlers.get("tool_call");
 	assert.equal(typeof toolCall, "function");
 

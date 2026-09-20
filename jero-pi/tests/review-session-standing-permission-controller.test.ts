@@ -7,7 +7,7 @@ import { PassThrough } from "node:stream";
 import test from "node:test";
 import { Text, visibleWidth } from "@earendil-works/pi-tui";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { createGentleAiExtension } from "../extensions/jero-ai.ts";
+import { createJeroAiExtension } from "../extensions/jero-ai.ts";
 import { ChildStandingReviewPermissionClient, ParentStandingReviewPermissionBroker } from "../lib/review-session-standing-permission-ipc.ts";
 import { captureReviewSessionIdentity, grantReviewSessionPermission, hasReviewSessionPermission, revokeReviewSessionPermissionsForSession } from "../lib/review-session-standing-permission.ts";
 import { CandidateViewRegistry } from "../lib/review-candidate-view.ts";
@@ -284,13 +284,13 @@ function controllerHarness(cwd: string, processEnv: NodeJS.ProcessEnv = {}, opti
 			return { kind: "started", start: { lineageId: `lineage-${answers.length}`, state: action === "blocked-scope-action" ? "unreviewed" : "approved", riskLevel: "high", selectedLenses: [], changedFiles: 1, changedLines: 2, correctionBudget: 0, action, lensesRequired: false, riskReasons: [] } };
 		},
 	} as unknown as NativeReviewCli;
-	createGentleAiExtension({ nativeReviewCli: native, candidateViews: new CandidateViewRegistry(), processEnv, now: options.now, childStandingReviewPermissionClient: options.childStandingReviewPermissionClient })({
+	createJeroAiExtension({ nativeReviewCli: native, candidateViews: new CandidateViewRegistry(), processEnv, now: options.now, childStandingReviewPermissionClient: options.childStandingReviewPermissionClient })({
 		on(name: string, handler: RegisteredEvent) { events.set(name, handler); },
 		registerCommand(name: string, definition: RegisteredCommand) { commands.set(name, definition); },
 		registerTool(definition: RegisteredTool & { name: string }) { tools.set(definition.name, definition); },
 		events: { emit() {} },
 	} as unknown as ExtensionAPI);
-	const controller = tools.get("gentle_review");
+	const controller = tools.get("jero_review");
 	assert.ok(controller);
 	return { controller: controller!, answers, answerRequests, consent: permissionConsent, commands, events };
 }

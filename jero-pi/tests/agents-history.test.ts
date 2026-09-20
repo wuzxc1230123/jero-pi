@@ -52,7 +52,7 @@ test("task reconciliation elections bypass dead candidates and fail closed for a
 	assert.notEqual(bypassed.path, join(lockDir, deadName)); assert.ok(!readdirSync(lockDir).includes(deadName)); bypassed.release();
 	const malformed = join(lockDir, `malformed.reconcile.${token}`); writeFileSync(malformed, "not-json");
 	assert.throws(() => acquireTaskLock(lockDir, "malformed"), /busy|active|ambiguous|malformed/i);
-	const foreign = join(lockDir, `foreign.reconcile.${token}`); writeFileSync(foreign, JSON.stringify({ schema: "gentle-pi.task-reconciliation-lock/v1", taskId: "foreign", token, pid: process.pid, host: "foreign-host" }));
+	const foreign = join(lockDir, `foreign.reconcile.${token}`); writeFileSync(foreign, JSON.stringify({ schema: "jero.task-reconciliation-lock/v1", taskId: "foreign", token, pid: process.pid, host: "foreign-host" }));
 	assert.throws(() => acquireTaskLock(lockDir, "foreign"), /busy|active|ambiguous|foreign/i);
 });
 test("loadHistory skips broken files, sorts newest first, and pruneHistory keeps the newest N", async () => {

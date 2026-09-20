@@ -8,7 +8,7 @@ import { syncBuiltinESMExports } from "node:module";
 import { dirname, join, resolve, sep } from "node:path";
 import test from "node:test";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { __testing, createGentleAiExtension, PendingReviewConsentRegistry } from "../extensions/jero-ai.ts";
+import { __testing, createJeroAiExtension, PendingReviewConsentRegistry } from "../extensions/jero-ai.ts";
 import { CandidateViewRegistry } from "../lib/review-candidate-view.ts";
 import { NATIVE_REVIEW_ERROR_CODE, NativeReviewCliError, NativeReviewConsentRequiredError, type NativeReviewCli } from "../lib/authority/client-contract.ts";
 import { decodeReviewConsentV3, decodeReviewStatusV3, type ReviewCollectInputV3, type ReviewStatusV3 } from "../lib/authority/wire-contract.ts";
@@ -845,7 +845,7 @@ test("candidate lifecycle sweeps startup and cleans every shutdown including rel
 	const registry = new CandidateViewRegistry();
 	t.mock.method(registry, "sweepOrphans", (root: string) => { assert.equal(root, cwd); calls.push("sweep"); });
 	t.mock.method(registry, "cleanupAll", () => { calls.push("cleanup"); });
-	createGentleAiExtension({ nativeReviewCli: null, candidateViews: registry, processEnv: {} })({
+	createJeroAiExtension({ nativeReviewCli: null, candidateViews: registry, processEnv: {} })({
 		on(name: string, handler: (event: unknown, ctx: ExtensionContext) => unknown) {
 			hooks.set(name, [...(hooks.get(name) ?? []), handler]);
 		},
@@ -883,7 +883,7 @@ function reviewRuntime(nativeReviewCli: NativeReviewCli, candidateViews: Candida
 	const tools = new Map<string, RegisteredControllerTool>();
 	let toolCall: ((event: { toolName: string; input: unknown }, ctx: ExtensionContext) => Promise<unknown>) | undefined;
 	let sessionShutdown: ((event: unknown, ctx: ExtensionContext) => unknown) | undefined;
-	createGentleAiExtension({ nativeReviewCli, candidateViews })({
+	createJeroAiExtension({ nativeReviewCli, candidateViews })({
 		on(name: string, handler: (event: { toolName: string; input: unknown }, ctx: ExtensionContext) => Promise<unknown>) {
 			if (name === "tool_call") toolCall = handler;
 			if (name === "session_shutdown") sessionShutdown = handler as unknown as (event: unknown, ctx: ExtensionContext) => unknown;
@@ -891,8 +891,8 @@ function reviewRuntime(nativeReviewCli: NativeReviewCli, candidateViews: Candida
 		registerTool(definition: RegisteredControllerTool & { name: string }) { tools.set(definition.name, definition); },
 		registerCommand() {},
 	} as unknown as ExtensionAPI);
-	const controller = tools.get("gentle_review");
-	const capture = tools.get("gentle_review_capture");
+	const controller = tools.get("jero_review");
+	const capture = tools.get("jero_review_capture");
 	assert.ok(controller);
 	assert.ok(capture);
 	assert.ok(toolCall);
@@ -1770,13 +1770,13 @@ test("targeted-validator captures echo the distinct provider correction target i
 
 test("capture schema and guidance name diff-line units apart from the frozen logical correction budget", () => {
 	const tools = new Map<string, { description: string; promptGuidelines?: readonly string[]; parameters: unknown }>();
-	createGentleAiExtension({ nativeReviewCli: null })({
+	createJeroAiExtension({ nativeReviewCli: null })({
 		on() {},
 		registerTool(definition: { name: string; description: string; promptGuidelines?: readonly string[]; parameters: unknown }) { tools.set(definition.name, definition); },
 		registerCommand() {},
 	} as unknown as ExtensionAPI);
-	const capture = tools.get("gentle_review_capture");
-	const controller = tools.get("gentle_review");
+	const capture = tools.get("jero_review_capture");
+	const controller = tools.get("jero_review");
 	assert.ok(capture);
 	assert.ok(controller);
 	const schema = JSON.stringify(capture.parameters);

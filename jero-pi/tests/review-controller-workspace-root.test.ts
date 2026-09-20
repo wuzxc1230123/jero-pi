@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { __testing, createGentleAiExtension } from "../extensions/jero-ai.ts";
+import { __testing, createJeroAiExtension } from "../extensions/jero-ai.ts";
 import { NativeReviewIntegrationError, type NativeReviewCli } from "../lib/authority/client-contract.ts";
 import { CandidateViewRegistry } from "../lib/review-candidate-view.ts";
 import { decodeReviewFailureV2, type AuthorityRepairAssessmentV1, type ReviewStatusV3 } from "../lib/authority/wire-contract.ts";
@@ -36,15 +36,15 @@ function runtime(
 ): Runtime {
 	const tools = new Map<string, RegisteredTool>();
 	let toolCall: ToolCallHandler | undefined;
-	const dependencies = { nativeReviewCli, candidateViews } as unknown as Parameters<typeof createGentleAiExtension>[0];
-	createGentleAiExtension(dependencies)({
+	const dependencies = { nativeReviewCli, candidateViews } as unknown as Parameters<typeof createJeroAiExtension>[0];
+	createJeroAiExtension(dependencies)({
 		on(name: string, handler: ToolCallHandler) {
 			if (name === "tool_call") toolCall = handler;
 		},
 		registerTool(definition: RegisteredTool & { name: string }) { tools.set(definition.name, definition); },
 		registerCommand() {},
 	} as unknown as ExtensionAPI);
-	const controller = tools.get("gentle_review");
+	const controller = tools.get("jero_review");
 	assert.ok(controller);
 	assert.ok(toolCall);
 	return { controller, toolCall };

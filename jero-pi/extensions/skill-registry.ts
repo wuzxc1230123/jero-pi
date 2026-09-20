@@ -465,7 +465,7 @@ function shouldSkipDuplicateExtensionLoad(
 	// A source URL that cannot be converted to a native path (a POSIX file
 	// URL on Windows, say) is definitionally not the project-local copy: the
 	// project-local extension still wins when one exists.
-	if ((currentPath ?? projectLocalPath + " foreign") !== projectLocalPath && existsSync(projectLocalPath)) {
+	if ((currentPath ?? projectLocalPath + "\u0000foreign") !== projectLocalPath && existsSync(projectLocalPath)) {
 		return true;
 	}
 

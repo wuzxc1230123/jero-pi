@@ -8,7 +8,7 @@ import { AGENT_MODE, type AgentDefinition } from "../lib/agents-config.ts";
 import { AgentRunner, type TaskRequest } from "../lib/agents-runner.ts";
 import { TaskStore } from "../lib/agents-protocol.ts";
 import { decodeNativeSddStatusV2, NATIVE_REVIEW_ERROR_CODE, NativeReviewCliError } from "../lib/authority/client-contract.ts";
-import { createGentleAiExtension, __testing } from "../extensions/jero-ai.ts";
+import { createJeroAiExtension, __testing } from "../extensions/jero-ai.ts";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import type { NativeReviewCli, NativeSddStatusV2 } from "../lib/authority/client-contract.ts";
 import { ensureSddPreflight } from "../lib/sdd-preflight.ts";
@@ -342,7 +342,7 @@ test("before_agent_start resolves the unnamed packaged executor and renders nati
 	} as unknown as ExtensionAPI;
 	const ctx = { cwd: root, hasUI: false, sessionManager: { getSessionId: () => root } } as unknown as ExtensionContext;
 	await ensureSddPreflight(ctx, { pi, installAssets: () => ({ agents: 0, chains: 0, support: 0, skipped: 0 }) });
-	createGentleAiExtension({
+	createJeroAiExtension({
 		nativeReviewCli: { sddStatus: async (request: unknown) => { calls.push(request); return nativeReply; } } as unknown as NativeReviewCli,
 		processEnv: {},
 	})(pi);

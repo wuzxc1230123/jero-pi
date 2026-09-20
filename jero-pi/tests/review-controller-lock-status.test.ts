@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { createGentleAiExtension } from "../extensions/jero-ai.ts";
+import { createJeroAiExtension } from "../extensions/jero-ai.ts";
 import type { NativeReviewCli } from "../lib/authority/client-contract.ts";
 
 // The lock surface rides the negotiated target-status raw payload; the
@@ -35,13 +35,13 @@ interface RegisteredTool {
 
 function runtime(nativeReviewCli: NativeReviewCli): RegisteredTool {
 	const tools = new Map<string, RegisteredTool>();
-	const dependencies = { nativeReviewCli, candidateViews: null } as unknown as Parameters<typeof createGentleAiExtension>[0];
-	createGentleAiExtension(dependencies)({
+	const dependencies = { nativeReviewCli, candidateViews: null } as unknown as Parameters<typeof createJeroAiExtension>[0];
+	createJeroAiExtension(dependencies)({
 		on() {},
 		registerTool(definition: RegisteredTool & { name: string }) { tools.set(definition.name, definition); },
 		registerCommand() {},
 	} as unknown as ExtensionAPI);
-	const controller = tools.get("gentle_review");
+	const controller = tools.get("jero_review");
 	assert.ok(controller);
 	return controller;
 }

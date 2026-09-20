@@ -15,7 +15,7 @@ import test from "node:test";
 //   - `on`             -> the writer's own report is the verification of
 //                         record; `jero-verify` is on-demand, except
 //                         passive risk, which gets a structural readback.
-//   - `off`/`unknown`  -> gentle-pi#662: the parent calls `gentle_review` with
+//   - `off`/`unknown`  -> gentle-pi#662: the parent calls `jero_review` with
 //                         `{"operation":"assess"}` over the writer's diff and
 //                         follows the returned plan by native risk tier
 //                         (passive/medium/high/unassessable), instead of a
@@ -45,7 +45,7 @@ const worker = read("assets/agents/jero-worker.md");
 const ON_SENTENCE =
 	"When the line reads `on`, that writer report is the verification of record, and the native review is the independent check the writer cannot influence";
 const OFF_UNKNOWN_SENTENCE =
-	'When the line reads `off` or `unknown`, after the writer returns, call `gentle_review` with `{"operation":"assess"}` over the writer\'s diff and follow the returned plan instead of judging non-triviality from the task description: the operation resolves the native risk tier and states exactly who verifies next.';
+	'When the line reads `off` or `unknown`, after the writer returns, call `jero_review` with `{"operation":"assess"}` over the writer\'s diff and follow the returned plan instead of judging non-triviality from the task description: the operation resolves the native risk tier and states exactly who verifies next.';
 const TIER_TABLE_HEADER = "| Native risk tier | Verification when RDD is `off`/`unknown` |";
 const PASSIVE_TIER_ROW = "| passive | structural readback by the parent; no separate verifier, no tests |";
 const MEDIUM_TIER_ROW = "| medium | writer self-verification stands; a separate `jero-verify` run is added only when the writer profile is a small model (mini or low effort) |";
@@ -60,13 +60,13 @@ const SPOT_CHECK_SENTENCE =
 // a clone-local disable, or a refused START/STATUS all fall back to the exact
 // same risk-gated path as `off`.
 const ON_BRANCH_FALLBACK_SENTENCE =
-	'That `on` branch holds only while the native review actually reaches a terminal outcome for this candidate (gentle-pi#668): a human decline of the consent envelope for this candidate (candidate-scoped, never the RDD kill switch), a clone-local RDD disable discovered mid-flow, or a refused START/STATUS all fall back to the risk-gated path exactly as `off` -- call `gentle_review` with `{"operation":"assess"}` (pass `nativeReviewOutcome` when the parent already knows it; the tool derives it from what it itself observed for the candidate otherwise, failing closed to `unknown` when it cannot) and follow the returned plan.';
+	'That `on` branch holds only while the native review actually reaches a terminal outcome for this candidate (gentle-pi#668): a human decline of the consent envelope for this candidate (candidate-scoped, never the RDD kill switch), a clone-local RDD disable discovered mid-flow, or a refused START/STATUS all fall back to the risk-gated path exactly as `off` -- call `jero_review` with `{"operation":"assess"}` (pass `nativeReviewOutcome` when the parent already knows it; the tool derives it from what it itself observed for the candidate otherwise, failing closed to `unknown` when it cannot) and follow the returned plan.';
 
 test("trigger 5 (Verification rule) states the exact on-line routing: writer report is the verification of record", () => {
 	assert.ok(delegation.includes(ON_SENTENCE), "trigger 5 is missing the exact on-line sentence");
 });
 
-test("trigger 5 states the exact off/unknown-line routing: the parent calls gentle_review's assess operation and follows the returned plan", () => {
+test("trigger 5 states the exact off/unknown-line routing: the parent calls jero_review's assess operation and follows the returned plan", () => {
 	assert.ok(delegation.includes(OFF_UNKNOWN_SENTENCE), "trigger 5 is missing the exact off/unknown-line sentence");
 });
 
@@ -202,7 +202,7 @@ test("worker asset never claims completion while a required verification command
 test("worker keeps candidate review disposition and lifecycle parent-owned", () => {
 	for (const clause of [
 		"The primary parent owns candidate review disposition and lifecycle, including preflight and any explicit candidate-level opt-out.",
-		"Never search for, request, or invoke review tools, including `gentle_review`.",
+		"Never search for, request, or invoke review tools, including `jero_review`.",
 		"Missing review tools never block this worker's implementation or verification handoff.",
 	]) {
 		assert.ok(worker.includes(clause), `worker asset is missing: ${clause}`);

@@ -8,14 +8,14 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { createGentleAiExtension } from "../extensions/jero-ai.ts";
+import { createJeroAiExtension } from "../extensions/jero-ai.ts";
 import { NATIVE_REVIEW_ERROR_CODE, NativeReviewCliError, type NativeReviewCli } from "../lib/authority/client-contract.ts";
 import type { ReviewStatusV3 } from "../lib/authority/wire-contract.ts";
 
 // gentle-pi#556 / gentle-ai#4051: with RDD enabled, the agent finished an
 // implementation and reported completion without ever entering the review
 // preflight. These tests cover the read-only, idempotent `agent_end` nudge
-// that reminds the agent to call gentle_review before reporting completion,
+// that reminds the agent to call jero_review before reporting completion,
 // without ever starting a review or answering consent itself.
 //
 // gentle-pi#568/#777: startup negotiates STATUS, but only successful own
@@ -54,7 +54,7 @@ function harness(nativeReviewCli: NativeReviewCli | null, entries: CustomEntry[]
 			sent.push({ message, options });
 		},
 	} as unknown as ExtensionAPI;
-	createGentleAiExtension({ nativeReviewCli })(pi);
+	createJeroAiExtension({ nativeReviewCli })(pi);
 	return { handlers, sent, tools };
 }
 
@@ -215,7 +215,7 @@ for (const scenario of ["same", "changed", "sibling-root", "nested-root", "faile
 		} as unknown as NativeReviewCli;
 		const { handlers, sent, tools } = harness(native);
 		const session = ctx(lineageId, true, cwd);
-		const review = tools.get("gentle_review");
+		const review = tools.get("jero_review");
 		assert.ok(review);
 		await directWrite(handlers, session);
 		const result = await review.execute("post-ack", { operation: "acknowledge-approved", lineageId }, undefined, undefined, session);
@@ -235,7 +235,7 @@ for (const scenario of ["same", "changed", "sibling-root", "nested-root", "faile
 		const callsBeforeEnd = statusRequests.length;
 		assert.deepEqual(sent, [], "no earlier reminder can mask the post-burn regression");
 
-		if (scenario === "shutdown") await handlers.get("session_shutdown")!({}, session);
+		if (scenario === "shutdown") { await handlers.get("session_shutdown")!({}, session); await handlers.get("session_start")!({}, session); }
 		const endSession = scenario === "sibling-root" ? ctx(lineageId, true, siblingRoot)
 			: scenario === "nested-root" ? ctx(lineageId, true, join(cwd, "tests"))
 			: scenario === "other-session" ? ctx(`${lineageId}-new`, true, cwd) : session;
@@ -243,7 +243,7 @@ for (const scenario of ["same", "changed", "sibling-root", "nested-root", "faile
 		await handlers.get("agent_end")!(agentEndEvent, endSession);
 		const shouldRemind = changedTarget || unsuccessful || scenario === "new-write" || scenario === "concurrent-write";
 		assert.deepEqual(statusRequests.slice(callsBeforeEnd), shouldRemind ? [{ cwd: endSession.cwd, agent: "pi" }] : []);
-		const reminders = sent.filter(({ message }) => message.customType === "gentle-pi.review-preflight");
+		const reminders = sent.filter(({ message }) => message.customType === "jero.review-preflight");
 		assert.equal(reminders.length, shouldRemind ? 1 : 0,
 			shouldRemind ? "an unconsumed own mutation still requires preflight" : "an acknowledged or unowned target must not receive another preflight reminder");
 		if (changedTarget) assert.ok(String(reminders[0]?.message.content).includes(nextTarget));
@@ -285,10 +285,10 @@ test("agent_end nudges exactly once when RDD is on and STATUS offers review.star
 
 	assert.equal(sent.length, 1);
 	const [entry] = sent;
-	assert.equal(entry?.message.customType, "gentle-pi.review-preflight");
+	assert.equal(entry?.message.customType, "jero.review-preflight");
 	const content = String(entry?.message.content);
-	assert.match(content, /gentle_review/);
-	assert.match(content, /first determine whether the user explicitly left this exact target unreviewed\. if yes, do not invoke review; report that disposition and continue\. only otherwise, call the gentle_review tool with \{"operation":"inspect"\}/i);
+	assert.match(content, /jero_review/);
+	assert.match(content, /first determine whether the user explicitly left this exact target unreviewed\. if yes, do not invoke review; report that disposition and continue\. only otherwise, call the jero_review tool with \{"operation":"inspect"\}/i);
 	assert.doesNotMatch(content, /run the review preflight before reporting completion\. if the user explicitly left/i);
 	assert.ok(content.includes(targetIdentity), "message must name the target identity");
 	assert.equal(entry?.options.triggerTurn, true);
@@ -627,7 +627,7 @@ for (const ownsMutation of [false, true]) {
 			targetIdentity = targetB;
 			const callsBeforeEnd = statusRequests.length;
 			await agentEnd!(agentEndEvent, session);
-			const reminders = sent.filter(({ message }) => message.customType === "gentle-pi.review-preflight");
+			const reminders = sent.filter(({ message }) => message.customType === "jero.review-preflight");
 			assert.deepEqual({
 				statusRequests: statusRequests.slice(callsBeforeEnd),
 				reminderCount: reminders.length,

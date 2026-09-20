@@ -51,7 +51,7 @@ const DELEGATION_CHOICE1_ORDER = [
 // ---------------------------------------------------------------------------
 
 test("orchestrator-delegation.md carries the provider defect handoff section", () => {
-	assert.match(DELEGATION, /#### Gentle AI Provider Defect Handoff \(MANDATORY\)/);
+	assert.match(DELEGATION, /#### Jero Provider Defect Handoff \(MANDATORY\)/);
 });
 
 test("orchestrator-delegation.md references the prerelease consent/v3 contract", () => {
@@ -95,7 +95,7 @@ test("orchestrator-delegation.md states the admissibility-before-relay rule", ()
 });
 
 test("orchestrator-delegation.md excludes local consent lifecycle outcomes from provider-defect reporting", () => {
-	assert.match(DELEGATION, /`consent-binding-expired` and `consent-binding-already-consumed` are local lifecycle outcomes, not Gentle AI provider defects/i);
+	assert.match(DELEGATION, /`consent-binding-expired` and `consent-binding-already-consumed` are local lifecycle outcomes, not Jero provider defects/i);
 	assert.match(DELEGATION, /An unknown consent binding is reportable only when independent evidence proves a fresh, same-session, unconsumed binding was lost/i);
 	assert.match(DELEGATION, /Never infer that evidence from the old combined stale-binding message/i);
 });
@@ -103,7 +103,7 @@ test("orchestrator-delegation.md excludes local consent lifecycle outcomes from 
 test("orchestrator-delegation.md states the never-offer-to-repair rule", () => {
 	assert.match(
 		DELEGATION,
-		/never offer to switch to, inspect, modify, or directly repair the Gentle AI repository/i,
+		/never offer to switch to, inspect, modify, or directly repair the Jero repository/i,
 	);
 	assert.match(DELEGATION, /reject it as semantically inadmissible and issue this separate orchestrator-owned handoff envelope/i);
 });
@@ -172,7 +172,7 @@ test("orchestrator-delegation.md states the exact-captured-decline-invocation ru
 });
 
 test("orchestrator-delegation.md states handoff scope and mode preservation", () => {
-	assert.match(DELEGATION, /Do not invoke `gentle-ai review mode disable` at clone or global scope within this handoff/i);
+	assert.match(DELEGATION, /Do not invoke `\/jero:review-mode disable` at clone or global scope within this handoff/i);
 	assert.match(DELEGATION, /Do not turn RDD off or on within this handoff/i);
 	assert.match(DELEGATION, /The result carries no lineage or receipt; ordinary delivery is unmanaged by the candidate choice, and the next candidate asks again/i);
 });
@@ -237,16 +237,16 @@ test("sdd-orchestrator-workflow.md points provider defects to the complete deleg
 	assert.match(SDD_WORKFLOW, /## Provider Defect Handoff/);
 	assert.match(
 		SDD_WORKFLOW,
-		/The full contract lives in `assets\/orchestrator-delegation\.md` under `#### Gentle AI Provider Defect Handoff \(MANDATORY\)`/i,
+		/The full contract lives in `assets\/orchestrator-delegation\.md` under `#### Jero Provider Defect Handoff \(MANDATORY\)`/i,
 	);
-	assert.match(DELEGATION, /^#### Gentle AI Provider Defect Handoff \(MANDATORY\)$/m);
+	assert.match(DELEGATION, /^#### Jero Provider Defect Handoff \(MANDATORY\)$/m);
 	assert.doesNotMatch(SDD_WORKFLOW, /`report_and_continue`|`continue_without_reporting`|`stop_here`/);
 });
 
-test("the complete delegation handoff invokes `gentle-ai review mode disable` exactly once", () => {
+test("the complete delegation handoff invokes `/jero:review-mode disable` exactly once", () => {
 	const section = DELEGATION.match(
-		/#### Gentle AI Provider Defect Handoff[\s\S]*?(?=\n#### SDD Edit-Authority|$)/,
+		/#### Jero Provider Defect Handoff[\s\S]*?(?=\n#### SDD Edit-Authority|$)/,
 	)?.[0] ?? "";
 	assert.ok(section.length > 0, "orchestrator-delegation.md: provider defect handoff section not found");
-	assert.equal(countOccurrences(section, "gentle-ai review mode disable"), 1);
+	assert.equal(countOccurrences(section, "/jero:review-mode disable"), 1);
 });

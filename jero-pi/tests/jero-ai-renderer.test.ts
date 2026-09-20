@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createGentleAiExtension } from "../extensions/jero-ai.ts";
+import { createJeroAiExtension } from "../extensions/jero-ai.ts";
 import type { ExtensionAPI, ToolDefinition } from "@earendil-works/pi-coding-agent";
 import { Box, visibleWidth } from "@earendil-works/pi-tui";
-import { renderGentleAiResult, GentleAiCallCard } from "../lib/jero-ai-renderer.ts";
+import { renderJeroResult, GentleAiCallCard } from "../lib/jero-ai-renderer.ts";
 import { stripAnsi } from "../lib/terminal-theme.ts";
 
 // Rose cards: exactly one component closes the frame in every state. While
@@ -37,17 +37,17 @@ test("completed review cards fit Pi's default Box at terminal width 57", () => {
 		const lines = box.render(57).map(stripAnsi);
 		for (const line of lines) assert.equal(visibleWidth(line), 57, `${operationPath}: ${JSON.stringify(line)}`);
 		if (operationPath === "review inspect") {
-			assert.equal(lines[1], " ╭─ 🌹︎ Jero · completed · review inspect ─────────╮ ");
+			assert.equal(lines[1], " ╭─ 🌹︎ Jero · completed · review inspect ──────────────╮ ");
 		}
 	}
 });
 
 test("review registrations own their shell", () => {
 	const tools: ToolDefinition[] = [];
-	createGentleAiExtension({ nativeReviewCli: null } as never)({
+	createJeroAiExtension({ nativeReviewCli: null } as never)({
 		on() {}, registerCommand() {}, registerTool(tool: ToolDefinition) { tools.push(tool); },
 	} as unknown as ExtensionAPI);
-	const review = tools.filter((tool) => tool.name.startsWith("gentle_review"));
+	const review = tools.filter((tool) => tool.name.startsWith("jero_review"));
 	assert.equal(review.length, 4);
 	for (const tool of review) assert.equal(tool.renderShell, "self", tool.name);
 });
@@ -61,7 +61,7 @@ test("review call and result cards have no passive background fill", () => {
 	]) {
 		const call = new GentleAiCallCard();
 		call.update(options.isPartial ? "running" : "completed", "review capture", theme, "$ capture");
-		const lines = [...call.render(40), ...renderGentleAiResult({ content: [{ type: "text", text: "Result" }] }, options, theme).render(40)];
+		const lines = [...call.render(40), ...renderJeroResult({ content: [{ type: "text", text: "Result" }] }, options, theme).render(40)];
 		for (const [row, line] of lines.entries()) {
 			let bg = false, column = 0;
 			for (const token of line.match(/\x1b\[[\d;]*m|[^\x1b]/gu) ?? []) {
@@ -79,13 +79,13 @@ test("review call and result cards have no passive background fill", () => {
 });
 
 test("a partial result draws no bottom rule and a final one draws exactly one", () => {
-	const partial = renderGentleAiResult({ content: [{ type: "text", text: "half" }] }, { expanded: false, isPartial: true }, plainTheme).render(60).map(stripAnsi);
+	const partial = renderJeroResult({ content: [{ type: "text", text: "half" }] }, { expanded: false, isPartial: true }, plainTheme).render(60).map(stripAnsi);
 	assert.deepEqual(partial.map((line) => line.slice(0, 1)), ["│"], "only the count row, no closing rule");
-	const final = renderGentleAiResult({ content: [{ type: "text", text: "one\ntwo" }] }, { expanded: false }, plainTheme).render(60).map(stripAnsi);
+	const final = renderJeroResult({ content: [{ type: "text", text: "one\ntwo" }] }, { expanded: false }, plainTheme).render(60).map(stripAnsi);
 	assert.equal(final.length, 2);
 	assert.match(final[0], /^│ 2 lines +│$/);
 	assert.match(final[1], /^╰─+╯$/);
-	const empty = renderGentleAiResult({ content: [] }, { expanded: false }, plainTheme).render(60).map(stripAnsi);
+	const empty = renderJeroResult({ content: [] }, { expanded: false }, plainTheme).render(60).map(stripAnsi);
 	assert.deepEqual(empty.map((line) => line.slice(0, 1)), ["╰"]);
 });
 
@@ -93,11 +93,11 @@ test("promoting the shared state to finished invalidates after the render return
 	const state: Record<string, unknown> = {};
 	let invalidations = 0;
 	const context = { state, invalidate: () => (invalidations += 1) };
-	renderGentleAiResult({ content: [{ type: "text", text: "done" }] }, { expanded: false }, plainTheme, context as never);
+	renderJeroResult({ content: [{ type: "text", text: "done" }] }, { expanded: false }, plainTheme, context as never);
 	assert.equal(invalidations, 0, "no reentrant invalidate while rendering");
 	await new Promise((resolve) => queueMicrotask(() => resolve(undefined)));
 	assert.equal(invalidations, 1);
-	renderGentleAiResult({ content: [{ type: "text", text: "done" }] }, { expanded: false }, plainTheme, context as never);
+	renderJeroResult({ content: [{ type: "text", text: "done" }] }, { expanded: false }, plainTheme, context as never);
 	await new Promise((resolve) => queueMicrotask(() => resolve(undefined)));
 	assert.equal(invalidations, 1, "an unchanged state does not invalidate again");
 });

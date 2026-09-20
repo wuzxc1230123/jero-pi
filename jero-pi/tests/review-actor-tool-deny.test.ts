@@ -98,7 +98,7 @@ test("a tool absent from the allowlist resolves to denied under the deny-all rul
 		"read",
 		"grep",
 		"find",
-		"gentle_review_scope",
+		"jero_review_scope",
 		"edit",
 		"write",
 		"bash",
@@ -123,7 +123,7 @@ test("a tool absent from the allowlist resolves to denied under the deny-all rul
 	// the other half of the same rule, not an exception to it.
 	for (const lens of ["review-risk", "review-resilience", "review-readability", "review-reliability"]) {
 		const lensActive = resolveActiveTools(readToolEntries(join(ASSETS_AGENTS_DIR, `${lens}.md`)), registry);
-		assert.deepEqual(lensActive, ["read", "grep", "find", "gentle_review_scope"], `${lens} must expose only candidate readers and the bounded scope reader`);
+		assert.deepEqual(lensActive, ["read", "grep", "find", "jero_review_scope"], `${lens} must expose only candidate readers and the bounded scope reader`);
 		for (const omitted of ["bash", "edit", "write", "mem_save", "codegraph_explore", "mcp__slack__slack_send_message", "subagent_run"]) {
 			assert.ok(!lensActive.includes(omitted), `${lens} must deny ${omitted}`);
 		}

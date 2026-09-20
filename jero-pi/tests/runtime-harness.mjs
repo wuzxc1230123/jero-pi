@@ -23,31 +23,31 @@ const EXTENSIONS = [
 ];
 
 const EXPECTED_BANNER_COMMANDS = [
-	"gentle:banner",
-	"gentle:toggle-rose",
-	"gentle:toggle-text-logo",
-	"gentle:banner-color",
+	"jero:banner",
+	"jero:toggle-rose",
+	"jero:toggle-text-logo",
+	"jero:banner-color",
 ];
 
 const EXPECTED_COMMANDS = [
-	"gentle:install-delegation",
-	"gentle:install-review",
-	"gentle:install-sdd",
-	"gentle:sdd-preflight",
-	"gentle-sdd-status",
-	"gentle-sdd-continue",
-	"gentle:models",
-	"gentle:persona",
-	"gentle:status",
-	"gentle:doctor",
-	"gentle-sdd-init",
+	"jero:install-delegation",
+	"jero:install-review",
+	"jero:install-sdd",
+	"jero:sdd-preflight",
+	"jero-sdd-status",
+	"jero-sdd-continue",
+	"jero:models",
+	"jero:persona",
+	"jero:status",
+	"jero:doctor",
+	"jero-sdd-init",
 	"skill-registry:refresh",
 	...EXPECTED_BANNER_COMMANDS,
 ];
 
 const FORBIDDEN_COMPAT_COMMANDS = [
 	"gentle:install-assets",
-	// The SDD entry points carry the gentle- prefix so they read identically in
+	// The SDD entry points carry the jero- prefix so they read identically in
 	// Claude Code and Pi. The bare names are retired without an alias.
 	"sdd-init",
 	"sdd-continue",
@@ -68,6 +68,23 @@ const FORBIDDEN_COMPAT_COMMANDS = [
 	"gentle-ai:toggle-rose",
 	"gentle-ai:toggle-text-logo",
 	"gentle-ai:banner-color",
+	// The retired gentle-era entry points stay unregistered too: the identity
+	// pass was a one-time switch with no compat alias (design §2.2).
+	"gentle:install-delegation",
+	"gentle:install-review",
+	"gentle:install-sdd",
+	"gentle:sdd-preflight",
+	"gentle-sdd-status",
+	"gentle-sdd-continue",
+	"gentle:models",
+	"gentle:persona",
+	"gentle:status",
+	"gentle:doctor",
+	"gentle-sdd-init",
+	"gentle:banner",
+	"gentle:toggle-rose",
+	"gentle:toggle-text-logo",
+	"gentle:banner-color",
 ];
 
 function createPi() {
@@ -315,11 +332,11 @@ async function run() {
 		};
 		const lastEventPi = createPi();
 		createGentleAiExtension({ nativeReviewCli })(lastEventPi.pi);
-		const controller = lastEventPi.tools.get("gentle_review");
-		const capture = lastEventPi.tools.get("gentle_review_capture");
+		const controller = lastEventPi.tools.get("jero_review");
+		const capture = lastEventPi.tools.get("jero_review_capture");
 		assert.ok(controller, "runtime must register the public status controller");
 		assert.ok(capture, "runtime must register the one-slot capture tool");
-		assert.equal(lastEventPi.tools.get("gentle_review_capture_group")?.executionMode, "sequential", "runtime must register grouped capture with bounded foreground concurrency");
+		assert.equal(lastEventPi.tools.get("jero_review_capture_group")?.executionMode, "sequential", "runtime must register grouped capture with bounded foreground concurrency");
 		assert.equal(controller.parameters.properties.operation.enum.includes("finalize"), false);
 		assert.equal(controller.parameters.properties.operation.enum.includes("validate"), false);
 
@@ -363,13 +380,16 @@ async function run() {
 	assert.ok(hooks.has("input"), "missing input hook");
 	assert.ok(hooks.has("before_agent_start"), "missing before_agent_start hook");
 	assert.ok(hooks.has("tool_call"), "missing tool_call hook");
+	// Design §5.3 tool-registration conflict discipline: the pretty plugin
+	// owns bash/read/write/edit (and friends) rendering; jero-pi itself must
+	// not re-register any built-in tool name.
 	for (const toolName of ["read", "bash", "grep", "find", "ls", "edit", "write"]) {
-		assert.ok(tools.has(toolName), `missing quiet built-in tool renderer ${toolName}`);
+		assert.equal(tools.has(toolName), false, `jero-pi must not re-register the plugin-owned built-in tool ${toolName}`);
 	}
-	assert.ok(tools.has("gentle_review"), "missing registered bounded review controller tool");
-	assert.ok(tools.has("gentle_review_scope"), "missing registered bounded review scope tool");
+	assert.ok(tools.has("jero_review"), "missing registered bounded review controller tool");
+	assert.ok(tools.has("jero_review_scope"), "missing registered bounded review scope tool");
 	assert.deepEqual(
-		tools.get("gentle_review").parameters.properties.operation.enum.filter((operation) => operation.includes("supersession") || operation === "supersede" || operation === "reconcile-authority"),
+		tools.get("jero_review").parameters.properties.operation.enum.filter((operation) => operation.includes("supersession") || operation === "supersede" || operation === "reconcile-authority"),
 		["reconcile-authority"],
 		"runtime controller must expose only native authority reconciliation",
 	);
@@ -400,10 +420,17 @@ async function run() {
 
 	const promptCwd = await tempWorkspace();
 	try {
+		// The native SDD status engine resolves through the in-process
+		// authority, whose store lives under the git common dir: without a
+		// repository (with a root commit) every status call fails closed.
+		gitSync(promptCwd, "init", "-b", "main");
+		await writeFile(join(promptCwd, "tracked.txt"), "base\n");
+		gitSync(promptCwd, "add", "tracked.txt");
+		gitSync(promptCwd, "commit", "-m", "harness workspace root");
 		const promptHook = hooks.get("before_agent_start")[0];
 		const promptResult = await promptHook({ systemPrompt: "base" }, createCtx(promptCwd));
 		assert.match(promptResult.systemPrompt, /base/);
-		assert.match(promptResult.systemPrompt, /el Gentleman/);
+		assert.match(promptResult.systemPrompt, /el Jero/);
 		assert.match(promptResult.systemPrompt + delegationDetail, /do not pass the `model` parameter by default/);
 		assert.match(
 			promptResult.systemPrompt + delegationDetail,
@@ -449,9 +476,9 @@ async function run() {
 			false,
 			"normal agent startup must not run SDD preflight",
 		);
-		await mkdir(join(promptCwd, ".pi", "gentle-ai"), { recursive: true });
+		await mkdir(join(promptCwd, ".pi", "jero"), { recursive: true });
 		await writeFile(
-			join(promptCwd, ".pi", "gentle-ai", "persona.json"),
+			join(promptCwd, ".pi", "jero", "persona.json"),
 			'{"mode":"gentleman"}\n',
 		);
 		const localOverridePromptResult = await promptHook({ systemPrompt: "base" }, createCtx(promptCwd));
@@ -461,13 +488,13 @@ async function run() {
 		);
 		const personaCtx = createCtx(promptCwd, true);
 		personaCtx.ui.select = async () => "neutral";
-		await commands.get("gentle:persona").handler("", personaCtx);
+		await commands.get("jero:persona").handler("", personaCtx);
 		assert.equal(
 			await readFile(join(globalConfigHome, "persona.json"), "utf8"),
 			'{\n  "mode": "neutral"\n}\n',
 		);
 		assert.equal(
-			await readFile(join(promptCwd, ".pi", "gentle-ai", "persona.json"), "utf8"),
+			await readFile(join(promptCwd, ".pi", "jero", "persona.json"), "utf8"),
 			'{\n  "mode": "neutral"\n}\n',
 		);
 		assert.match(personaCtx.ui.notifications.at(-1).message, /Global config:/);
@@ -493,17 +520,17 @@ async function run() {
 		assert.match(applyPromptResult.systemPrompt, /"changeName": "status-demo"/);
 		assert.match(applyPromptResult.systemPrompt, /### apply instructions/);
 		const statusCtx = createCtx(promptCwd, true);
-		await commands.get("gentle-sdd-status").handler("status-demo --json", statusCtx);
+		await commands.get("jero-sdd-status").handler("status-demo --json", statusCtx);
 		assert.match(statusCtx.ui.notifications.at(-1).message, /"schemaName": "gentle-ai\.sdd-status"/);
 		const continueCtx = createCtx(promptCwd, true);
 		let markerConfirmations = 0;
 		continueCtx.ui.confirm = async (_title, message) => {
-			assert.ok(message.includes(join(promptCwd, "openspec/changes/status-demo/.gentle-ai-instance")));
+			assert.ok(message.includes(join(promptCwd, "openspec/changes/status-demo/.jero-instance")));
 			assert.match(message, /no source roots and no persistent authority/);
 			markerConfirmations += 1;
 			return true;
 		};
-		await commands.get("gentle-sdd-continue").handler("status-demo", continueCtx);
+		await commands.get("jero-sdd-continue").handler("status-demo", continueCtx);
 		assert.equal(markerConfirmations, 1);
 		assert.match(continueCtx.ui.notifications.at(-1).message, /Native SDD Status Engine/);
 		assert.match(continueCtx.ui.notifications.at(-1).message, /"nextRecommended": "apply"/);
@@ -516,9 +543,13 @@ async function run() {
 			'{"schema":"gentle-ai.recovery-required/v1","change_name":"status-demo"}',
 		);
 		const blockedContinueCtx = createCtx(promptCwd, true);
-		await commands.get("gentle-sdd-continue").handler("status-demo", blockedContinueCtx);
-		assert.doesNotMatch(blockedContinueCtx.ui.notifications.at(-1).message, /resolve-review:/);
-		assert.match(blockedContinueCtx.ui.notifications.at(-1).message, /"nextRecommended": "apply"/);
+		// Design §5.1.6: an upstream `.git` authority store is foreign data —
+		// the authority refuses to resolve it fail-closed instead of offering
+		// recovery routes or a graceful status.
+		await assert.rejects(
+			() => commands.get("jero-sdd-continue").handler("status-demo", blockedContinueCtx),
+			/foreign-authority-store/,
+		);
 	} finally {
 		await rm(promptCwd, { recursive: true, force: true });
 	}
@@ -625,7 +656,7 @@ async function run() {
 			);
 			assert.doesNotMatch(rpcChildPrompt.systemPrompt, /## SDD Session Preflight/);
 			assert.equal(
-				existsSync(join(rpcChildCwd, ".pi", "gentle-ai", "sdd-preflight.json")),
+				existsSync(join(rpcChildCwd, ".pi", "jero", "sdd-preflight.json")),
 				false,
 				"a delegated RPC child must not silently originate or persist defaults",
 			);
@@ -820,6 +851,10 @@ async function run() {
 		);
 		assert.equal(emittedEvents[0].data.requestId, emittedEvents[2].data.requestId);
 		emittedEvents.length = 0;
+		// D6 (design §5.3, rpiv row): the rpiv:ask-user:blocked listener is
+		// deleted together with the ask-user-choice replica — the questionnaire
+		// plugin owns its own blocking UX, and jero-pi neither relays those
+		// payloads nor observes them.
 		pi.events.emit("rpiv:ask-user:blocked", {
 			active: true,
 			question: "private runtime questionnaire",
@@ -827,17 +862,11 @@ async function run() {
 			path: "/private/runtime-path",
 			command: "private runtime command",
 		});
-		pi.events.emit("rpiv:ask-user:blocked", { active: true, duplicate: true });
-		pi.events.emit("rpiv:ask-user:blocked", { active: "true" });
-		pi.events.emit("rpiv:ask-user:other", { active: false });
 		pi.events.emit("rpiv:ask-user:blocked", { active: false });
-		const rpivHerdrEvents = emittedEvents.filter(({ channel }) => channel === "herdr:blocked");
-		assert.deepEqual(rpivHerdrEvents, [
-			{ channel: "herdr:blocked", data: { active: true, label: "Questionnaire awaiting input" } },
-			{ channel: "herdr:blocked", data: { active: false } },
-		]);
-		assert.doesNotMatch(JSON.stringify(rpivHerdrEvents), /private runtime/i);
-		emittedEvents.length = 0;
+		assert.deepEqual(
+			emittedEvents.filter(({ channel }) => channel === "herdr:blocked"),
+			[],
+		);
 		assert.equal(
 			dangerousReviewCtx.ui.notifications.length,
 			0,
@@ -924,18 +953,18 @@ async function run() {
 	const bannerCwd = await tempWorkspace();
 	try {
 		const ctx = createCtx(bannerCwd, true);
-		await commands.get("gentle:toggle-rose").handler("", ctx);
+		await commands.get("jero:toggle-rose").handler("", ctx);
 		let bannerConfig = JSON.parse(await readFile(join(globalConfigHome, "banner.json"), "utf8"));
 		assert.equal(bannerConfig.showRose, false);
 		assert.equal(bannerConfig.showTextLogo, true);
 		assert.equal(bannerConfig.color, "pink");
-		await commands.get("gentle:toggle-text-logo").handler("", ctx);
+		await commands.get("jero:toggle-text-logo").handler("", ctx);
 		bannerConfig = JSON.parse(await readFile(join(globalConfigHome, "banner.json"), "utf8"));
 		assert.equal(bannerConfig.showTextLogo, false);
-		await commands.get("gentle:banner-color").handler("cyan", ctx);
+		await commands.get("jero:banner-color").handler("cyan", ctx);
 		bannerConfig = JSON.parse(await readFile(join(globalConfigHome, "banner.json"), "utf8"));
 		assert.equal(bannerConfig.color, "cyan");
-		await commands.get("gentle:banner").handler("", ctx);
+		await commands.get("jero:banner").handler("", ctx);
 		bannerConfig = JSON.parse(await readFile(join(globalConfigHome, "banner.json"), "utf8"));
 		assert.equal(bannerConfig.showRose, true);
 	} finally {
@@ -969,7 +998,7 @@ async function run() {
 			cancelCtx.ui.selections.push({ label, options });
 			return undefined;
 		};
-		await commands.get("gentle:banner-color").handler("", cancelCtx);
+		await commands.get("jero:banner-color").handler("", cancelCtx);
 		let afterCancel = await readFile(bannerConfigPath, "utf8");
 		assert.equal(afterCancel, seededJson, "banner-color cancel must not rewrite banner.json");
 		assert.equal(cancelCtx.ui.selections.length, 1, "banner-color cancel must open the picker once");
@@ -979,7 +1008,7 @@ async function run() {
 		//     cancelling it is a no-op.
 		cancelCtx.ui.notifications.length = 0;
 		cancelCtx.ui.selections.length = 0;
-		await commands.get("gentle:banner-color").handler("purple", cancelCtx);
+		await commands.get("jero:banner-color").handler("purple", cancelCtx);
 		afterCancel = await readFile(bannerConfigPath, "utf8");
 		assert.equal(afterCancel, seededJson, "banner-color invalid+cancel must not rewrite banner.json");
 		assert.equal(cancelCtx.ui.selections.length, 1, "invalid banner-color arg must still open the picker");
@@ -998,7 +1027,7 @@ async function run() {
 			// Second call: nested color picker -> cancel (undefined).
 			return selectCall === 1 ? options[options.length - 1] : undefined;
 		};
-		await commands.get("gentle:banner").handler("", cancelCtx);
+		await commands.get("jero:banner").handler("", cancelCtx);
 		afterCancel = await readFile(bannerConfigPath, "utf8");
 		assert.equal(afterCancel, seededJson, "banner Color-row cancel must not rewrite banner.json");
 		assert.equal(cancelCtx.ui.selections.length, 2, "banner Color-row flow must open outer then nested picker");
@@ -1034,7 +1063,7 @@ async function run() {
 		assert.equal(existsSync(join(globalAgentHome, "agents", "sdd-apply.md")), false);
 		assert.equal(existsSync(join(globalAgentHome, "chains", "sdd-full.chain.md")), false);
 		assert.equal(existsSync(join(globalAgentHome, "gentle-ai", "support")), false);
-		for (const diagnostic of ["gentle:status", "gentle:doctor"]) {
+		for (const diagnostic of ["jero:status", "jero:doctor"]) {
 			const ctx = createCtx(noUiCwd, true);
 			await commands.get(diagnostic).handler("", ctx);
 			assert.match(ctx.ui.notifications.at(-1).message, /Global SDD assets: on demand/);
@@ -1062,11 +1091,11 @@ async function run() {
 		);
 		assert.match(installedRiskSource, /exactly once against the supplied `initial_review_tree`/);
 		assert.match(installedRiskSource, /cannot authorize transitions, fixes, receipts, gates, or delivery/);
-		await commands.get("gentle:sdd-preflight").handler("", createCtx(noUiCwd, false, "startup-sdd-install"));
+		await commands.get("jero:sdd-preflight").handler("", createCtx(noUiCwd, false, "startup-sdd-install"));
 		assert.equal(existsSync(join(globalAgentHome, "agents", "sdd-apply.md")), true);
 		assert.equal(existsSync(join(globalAgentHome, "chains", "sdd-full.chain.md")), true);
-		assert.equal(existsSync(join(globalAgentHome, "gentle-ai", "support", "sdd-status-contract.md")), true);
-		const managedAssetsManifestPath = join(globalAgentHome, "gentle-ai", "managed-assets.json");
+		assert.equal(existsSync(join(globalAgentHome, "jero", "support", "sdd-status-contract.md")), true);
+		const managedAssetsManifestPath = join(globalAgentHome, "jero", "managed-assets.json");
 		const managedAssetsManifest = JSON.parse(
 			await readFile(managedAssetsManifestPath, "utf8"),
 		);
@@ -1099,7 +1128,7 @@ async function run() {
 		await writeFile(userRefuterOverride, "user refuter override must stay\n");
 		await writeFile(join(globalAgentHome, "chains", "sdd-full.chain.md"), previousManagedChain);
 		managedAssetsManifest.assets["chains/sdd-full.chain.md"] = sha256(previousManagedChain);
-		await writeFile(join(globalAgentHome, "gentle-ai", "support", "sdd-status-contract.md"), previousManagedSupport);
+		await writeFile(join(globalAgentHome, "jero", "support", "sdd-status-contract.md"), previousManagedSupport);
 		managedAssetsManifest.assets["jero/support/sdd-status-contract.md"] = sha256(previousManagedSupport);
 		await writeFile(
 			managedAssetsManifestPath,
@@ -1122,10 +1151,10 @@ async function run() {
 		}
 		assert.equal(existsSync(retiredManagedValidatorPath), false, "review retirement still runs at startup");
 		const driftCtx = createCtx(noUiCwd, true);
-		await commands.get("gentle:status").handler("", driftCtx);
+		await commands.get("jero:status").handler("", driftCtx);
 		assert.match(driftCtx.ui.notifications.at(-1).message, /Global SDD assets stale: 3 file\(s\).*install-sdd --force/);
 		assert.doesNotMatch(driftCtx.ui.notifications.at(-1).message, /install-(delegation|review) --force/);
-		await commands.get("gentle:sdd-preflight").handler("", createCtx(noUiCwd, false, "startup-sdd-refresh"));
+		await commands.get("jero:sdd-preflight").handler("", createCtx(noUiCwd, false, "startup-sdd-refresh"));
 		assert.notEqual(
 			await readFile(join(globalAgentHome, "agents", "sdd-apply.md"), "utf8"),
 			"stale global apply\n",
@@ -1142,7 +1171,7 @@ async function run() {
 			"SDD preflight must refresh stale global SDD chains",
 		);
 		assert.notEqual(
-			await readFile(join(globalAgentHome, "gentle-ai", "support", "sdd-status-contract.md"), "utf8"),
+			await readFile(join(globalAgentHome, "jero", "support", "sdd-status-contract.md"), "utf8"),
 			"stale global status contract\n",
 			"SDD preflight must refresh stale global SDD support files",
 		);
@@ -1256,7 +1285,7 @@ async function run() {
 		assert.equal(existsSync(join(globalAgentHome, "agents", "sdd-apply.md")), true);
 		assert.equal(existsSync(join(globalAgentHome, "agents", "sdd-status.md")), true);
 		assert.equal(existsSync(join(globalAgentHome, "agents", "sdd-sync.md")), true);
-		assert.equal(existsSync(join(globalAgentHome, "gentle-ai", "support", "sdd-status-contract.md")), true);
+		assert.equal(existsSync(join(globalAgentHome, "jero", "support", "sdd-status-contract.md")), true);
 		assert.equal(existsSync(join(globalAgentHome, "chains", "sdd-full.chain.md")), true);
 		assert.equal(ctx.ui.selections.length, 1, "first interactive SDD trigger confirms session suggestions");
 		assert.match(ctx.ui.notifications.at(-1).message, /Preference source: explicit session choice/);
@@ -1288,7 +1317,7 @@ async function run() {
 		assert.equal(existsSync(join(globalAgentHome, "agents", "sdd-apply.md")), true);
 		assert.equal(existsSync(join(globalAgentHome, "agents", "sdd-status.md")), true);
 		assert.equal(existsSync(join(globalAgentHome, "agents", "sdd-sync.md")), true);
-		assert.equal(existsSync(join(globalAgentHome, "gentle-ai", "support", "sdd-status-contract.md")), true);
+		assert.equal(existsSync(join(globalAgentHome, "jero", "support", "sdd-status-contract.md")), true);
 		assert.equal(existsSync(join(globalAgentHome, "chains", "sdd-full.chain.md")), true);
 		const globalSddApply = await readFile(
 			join(globalAgentHome, "agents", "sdd-apply.md"),
@@ -1307,7 +1336,7 @@ async function run() {
 		}
 		assert.equal(ctx.ui.selections.length, 1, "automatic SDD routing reuses session confirmation");
 		assert.match(ctx.ui.notifications.at(-1).message, /Preference source: explicit session choice/);
-		await commands.get("gentle:status").handler("", ctx);
+		await commands.get("jero:status").handler("", ctx);
 		assert.match(ctx.ui.notifications.at(-1).message, /Global SDD assets stale: 0 file\(s\)/);
 		assert.doesNotMatch(ctx.ui.notifications.at(-1).message, /install-sdd --force/);
 
@@ -1332,7 +1361,7 @@ async function run() {
 		await rm(globalModelsPath, { force: true });
 	}
 
-	for (const [index, text] of ["/sdd", "/sdd plan", "/sdd:plan", "/sdd-plan this change", "/gentle-sdd-continue", "/gentle-sdd-status fix-rose --json", "/gentle-sdd-init"].entries()) {
+	for (const [index, text] of ["/sdd", "/sdd plan", "/sdd:plan", "/sdd-plan this change", "/jero-sdd-continue", "/jero-sdd-status fix-rose --json", "/jero-sdd-init"].entries()) {
 		const slashSddCwd = await tempWorkspace();
 		try {
 			const ctx = createCtx(slashSddCwd, true, `slash-sdd-session-${index}`);
@@ -1350,7 +1379,7 @@ async function run() {
 
 	const commandPreflightCwd = await tempWorkspace();
 	try {
-		const command = commands.get("gentle:sdd-preflight");
+		const command = commands.get("jero:sdd-preflight");
 		const interactive = createCtx(commandPreflightCwd, true, "explicit-command-regression");
 		await command.handler("", interactive);
 		const first = interactive.ui.selections.length;
@@ -1366,7 +1395,7 @@ async function run() {
 		const edited = interactive.ui.selections.length;
 		await command.handler("", interactive);
 		assert.equal(interactive.ui.selections.length, edited, "edited choices also reuse without prompting");
-		const saved = JSON.parse(await readFile(join(commandPreflightCwd, ".pi", "gentle-ai", "sdd-preflight.json"), "utf8"));
+		const saved = JSON.parse(await readFile(join(commandPreflightCwd, ".pi", "jero", "sdd-preflight.json"), "utf8"));
 		assert.equal(saved.executionMode, "interactive");
 		assert.equal(saved.reviewBudgetLines, 650);
 		const rpc = createCtx(commandPreflightCwd, true, "explicit-command-rpc-regression");
@@ -1391,13 +1420,13 @@ async function run() {
 	const commandSddCwd = await tempWorkspace();
 	try {
 		const ctx = createCtx(commandSddCwd, true, "command-session");
-		await commands.get("gentle:sdd-preflight").handler("--edit", ctx);
+		await commands.get("jero:sdd-preflight").handler("--edit", ctx);
 		assert.equal(existsSync(join(commandSddCwd, ".pi", "agents", "sdd-apply.md")), false);
 		assert.equal(existsSync(join(globalAgentHome, "agents", "sdd-apply.md")), true);
 		assert.equal(ctx.ui.selections.length, 2, "explicit preflight prompts intentional choice fields");
 		assert.equal(ctx.ui.selections.some(({ label }) => label === "SDD artifact store"), false, "one-option artifact store must be elided");
 		assert.match(ctx.ui.notifications.at(-1).message, /Preference source: explicit session choice/);
-		await commands.get("gentle:sdd-preflight").handler("--edit", ctx);
+		await commands.get("jero:sdd-preflight").handler("--edit", ctx);
 		assert.equal(ctx.ui.selections.length, 4, "--edit remains an intentional re-prompt");
 	} finally {
 		await rm(commandSddCwd, { recursive: true, force: true });
@@ -1421,7 +1450,7 @@ async function run() {
 		assert.match(promptResult.systemPrompt, /SDD Session Preflight/);
 		assert.doesNotMatch(
 			promptResult.systemPrompt,
-			/el Gentleman Identity and Harness/,
+			/el Jero Identity and Harness/,
 			"SDD executor startup must not receive the parent orchestrator prompt",
 		);
 		assert.doesNotMatch(
@@ -1441,7 +1470,7 @@ async function run() {
 		assert.equal(ctx.ui.selections.length, 1, "SDD-agent startup reuses confirmed session preferences");
 		assert.doesNotMatch(
 			reusedPromptResult.systemPrompt,
-			/el Gentleman Identity and Harness/,
+			/el Jero Identity and Harness/,
 			"named SDD executor startup must not receive the parent orchestrator prompt",
 		);
 	} finally {
@@ -1458,7 +1487,7 @@ async function run() {
 		assert.match(result.systemPrompt, /STOP: Do not initialize/);
 		assert.doesNotMatch(result.systemPrompt, /## SDD Session Preflight/);
 		assert.equal(existsSync(join(unresolvedSddCwd, "openspec", "config.yaml")), false);
-		assert.equal(existsSync(join(unresolvedSddCwd, ".pi", "gentle-ai", "sdd-preflight.json")), false);
+		assert.equal(existsSync(join(unresolvedSddCwd, ".pi", "jero", "sdd-preflight.json")), false);
 	} finally {
 		await rm(unresolvedSddCwd, { recursive: true, force: true });
 	}
@@ -1487,7 +1516,7 @@ async function run() {
 	try {
 		await writeFile(globalModelsPath, "{ invalid json");
 		const ctx = createCtx(invalidPreflightCwd, true, "invalid-preflight-session");
-		await commands.get("gentle:sdd-preflight").handler("", ctx);
+		await commands.get("jero:sdd-preflight").handler("", ctx);
 		assert.equal(ctx.ui.notifications.at(-1).level, "warning");
 		assert.match(ctx.ui.notifications.at(-1).message, /Model routing skipped:/);
 		assert.match(ctx.ui.notifications.at(-1).message, /invalid JSON or not an object/);
@@ -1500,7 +1529,7 @@ async function run() {
 	try {
 		pi.setActiveTools(["read", "bash", "edit", "write", "mem_save"]);
 		const ctx = createCtx(engramSddCwd, true, "engram-session");
-		await commands.get("gentle:sdd-preflight").handler("--edit", ctx);
+		await commands.get("jero:sdd-preflight").handler("--edit", ctx);
 		assert.deepEqual(ctx.ui.selections[1].options, ["openspec", "engram", "hybrid"]);
 	} finally {
 		pi.setActiveTools(["read", "bash", "edit", "write"]);
@@ -1517,8 +1546,8 @@ async function run() {
 			if (label === "SDD artifact store") return "engram";
 			return options[0];
 		};
-		await commands.get("gentle:sdd-preflight").handler("--edit", ctx);
-		await commands.get("gentle-sdd-init").handler("", ctx);
+		await commands.get("jero:sdd-preflight").handler("--edit", ctx);
+		await commands.get("jero-sdd-init").handler("", ctx);
 		assert.equal(
 			existsSync(join(engramSddInitCwd, "openspec")),
 			false,
@@ -1555,8 +1584,8 @@ async function run() {
 			if (label === "SDD artifact store") return "hybrid";
 			return options[0];
 		};
-		await commands.get("gentle:sdd-preflight").handler("--edit", ctx);
-		await commands.get("gentle-sdd-init").handler("", ctx);
+		await commands.get("jero:sdd-preflight").handler("--edit", ctx);
+		await commands.get("jero-sdd-init").handler("", ctx);
 		assert.equal(
 			existsSync(join(bothSddInitCwd, "openspec", "specs")),
 			true,
@@ -1587,7 +1616,7 @@ async function run() {
 	try {
 		pi.setActiveTools(["read", "bash", "edit", "write", "engram_mem_save"]);
 		const ctx = createCtx(directEngramToolCwd, true, "direct-engram-session");
-		await commands.get("gentle:sdd-preflight").handler("", ctx);
+		await commands.get("jero:sdd-preflight").handler("", ctx);
 		assert.equal(ctx.ui.selections.some(({ label }) => label === "SDD artifact store"), false, "unrecognized Engram capability must elide the artifact selector");
 	} finally {
 		pi.setActiveTools(["read", "bash", "edit", "write"]);
@@ -1609,7 +1638,7 @@ async function run() {
 			await writeFile(join(process.env.JERO_PI_CONFIG_HOME, "models.json"),
 				JSON.stringify({ [representatives[owner].replace(/\.md$/, "")]: "test/installer-must-not-apply" }));
 			const ctx = createCtx(fixture, true);
-			const command = commands.get(`gentle:install-${owner}`);
+			const command = commands.get(`jero:install-${owner}`);
 			assert.ok(command, `missing owner installer: ${owner}`);
 			await command.handler("", ctx);
 			for (const [candidate, name] of Object.entries(representatives)) {
@@ -1621,7 +1650,7 @@ async function run() {
 			const selectedPath = join(agentHome, "agents", representatives[owner]);
 			const packaged = await readFile(selectedPath, "utf8");
 			assert.doesNotMatch(packaged, /test\/installer-must-not-apply/);
-			const manifestPath = join(agentHome, "gentle-ai", "managed-assets.json");
+			const manifestPath = join(agentHome, "jero", "managed-assets.json");
 			const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
 			for (const [candidate, name] of Object.entries(representatives)) {
 				const stale = `stale managed ${candidate}\n`;
@@ -1646,7 +1675,7 @@ async function run() {
 			assert.equal(await readFile(selectedPath, "utf8"), userEdit);
 			assert.equal(existsSync(join(agentHome, "subagents.json")), false,
 				"owner installers must not apply model routing");
-			await commands.get("gentle:status").handler("", ctx);
+			await commands.get("jero:status").handler("", ctx);
 			const label = owner === "sdd" ? "SDD" : owner;
 			assert.ok(ctx.ui.notifications.at(-1).message.includes(`Global ${label} user overrides: 1 file(s)`));
 		} finally {
@@ -1660,8 +1689,8 @@ async function run() {
 	try {
 		process.env.JERO_PI_AGENT_HOME = join(repairFixture, "agent-home");
 		const ctx = createCtx(repairFixture, true);
-		await commands.get("gentle:install-sdd").handler("", ctx);
-		for (const diagnostic of ["gentle:status", "gentle:doctor"]) {
+		await commands.get("jero:install-sdd").handler("", ctx);
+		for (const diagnostic of ["jero:status", "jero:doctor"]) {
 			await commands.get(diagnostic).handler("", ctx);
 			const message = ctx.ui.notifications.at(-1).message;
 			assert.match(message, /\/jero:install-delegation --force/,
@@ -1670,11 +1699,11 @@ async function run() {
 				`${diagnostic} must provide a repair for missing review assets`);
 			assert.doesNotMatch(message, /install-sdd --force/);
 		}
-		const manifest = JSON.parse(await readFile(join(process.env.JERO_PI_AGENT_HOME, "gentle-ai", "managed-assets.json"), "utf8"));
+		const manifest = JSON.parse(await readFile(join(process.env.JERO_PI_AGENT_HOME, "jero", "managed-assets.json"), "utf8"));
 		for (const key of Object.keys(manifest.assets)) {
 			await rm(join(process.env.JERO_PI_AGENT_HOME, key));
 		}
-		for (const diagnostic of ["gentle:status", "gentle:doctor"]) {
+		for (const diagnostic of ["jero:status", "jero:doctor"]) {
 			await commands.get(diagnostic).handler("", ctx);
 			assert.match(ctx.ui.notifications.at(-1).message, /Global SDD assets stale: [1-9]\d* file\(s\).*install-sdd --force/);
 			assert.doesNotMatch(ctx.ui.notifications.at(-1).message, /on demand/,
@@ -1685,7 +1714,7 @@ async function run() {
 		await rm(repairFixture, { recursive: true, force: true });
 	}
 
-	for (const trigger of ["gentle:sdd-preflight", "gentle-sdd-init"]) {
+	for (const trigger of ["jero:sdd-preflight", "jero-sdd-init"]) {
 		const fixture = await tempWorkspace();
 		const agentHome = join(fixture, "agent-home");
 		try {
@@ -1696,7 +1725,7 @@ async function run() {
 				`${trigger} must not install delegation assets`);
 			assert.equal(existsSync(join(agentHome, "agents", "review-risk.md")), false,
 				`${trigger} must not install review assets`);
-			const manifestPath = join(agentHome, "gentle-ai", "managed-assets.json");
+			const manifestPath = join(agentHome, "jero", "managed-assets.json");
 			const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
 			const managedKeys = [
 				"agents/sdd-apply.md",
@@ -1740,12 +1769,12 @@ async function run() {
 	const installCwd = await tempWorkspace();
 	try {
 		const ctx = createCtx(installCwd, true);
-		await commands.get("gentle:install-sdd").handler("", ctx);
-		assert.match(ctx.ui.notifications.at(-1).message, /Global Gentle AI SDD assets installed/);
+		await commands.get("jero:install-sdd").handler("", ctx);
+		assert.match(ctx.ui.notifications.at(-1).message, /Global Jero SDD assets installed/);
 		assert.equal(existsSync(join(installCwd, ".pi", "agents", "sdd-apply.md")), false);
 		assert.equal(existsSync(join(globalAgentHome, "agents", "sdd-apply.md")), true);
 		assert.equal(existsSync(join(globalAgentHome, "agents", "sdd-status.md")), true);
-		assert.equal(existsSync(join(globalAgentHome, "gentle-ai", "support", "sdd-status-contract.md")), true);
+		assert.equal(existsSync(join(globalAgentHome, "jero", "support", "sdd-status-contract.md")), true);
 	} finally {
 		await rm(installCwd, { recursive: true, force: true });
 	}
@@ -1789,21 +1818,21 @@ async function run() {
 			"---\nname: sdd-apply\n---\nskills are not agent definitions\n",
 		);
 		await mkdir(join(staleAssetsCwd, ".pi", "chains"), { recursive: true });
-		await mkdir(join(staleAssetsCwd, ".pi", "gentle-ai", "support"), { recursive: true });
+		await mkdir(join(staleAssetsCwd, ".pi", "jero", "support"), { recursive: true });
 		await writeFile(join(staleAssetsCwd, ".pi", "chains", "sdd-full.chain.md"), "stale chain\n");
-		await writeFile(join(staleAssetsCwd, ".pi", "gentle-ai", "support", "sdd-status-contract.md"), "stale status contract\n");
+		await writeFile(join(staleAssetsCwd, ".pi", "jero", "support", "sdd-status-contract.md"), "stale status contract\n");
 		const ctx = createCtx(staleAssetsCwd, true);
-		await commands.get("gentle:status").handler("", ctx);
+		await commands.get("jero:status").handler("", ctx);
 		assert.match(ctx.ui.notifications.at(-1).message, /Active SDD agent overrides: 6 file\(s\)/);
 		assert.match(ctx.ui.notifications.at(-1).message, /active non-builtin SDD agents shadow package assets/);
-		await commands.get("gentle:doctor").handler("", ctx);
-		assert.match(ctx.ui.notifications.at(-1).message, /el Gentleman doctor/);
+		await commands.get("jero:doctor").handler("", ctx);
+		assert.match(ctx.ui.notifications.at(-1).message, /el Jero doctor/);
 		assert.match(ctx.ui.notifications.at(-1).message, /Sensitive-path guard active/);
 		pi.setActiveTools([{ name: "engram.mem_save" }]);
-		await commands.get("gentle:doctor").handler("", ctx);
+		await commands.get("jero:doctor").handler("", ctx);
 		assert.match(ctx.ui.notifications.at(-1).message, /Engram memory tools active/);
 		pi.setActiveTools([{ name: "engram_mem_save" }]);
-		await commands.get("gentle:doctor").handler("", ctx);
+		await commands.get("jero:doctor").handler("", ctx);
 		assert.match(ctx.ui.notifications.at(-1).message, /Engram memory tools not active in this session/);
 		pi.setActiveTools(["read", "bash", "edit", "write"]);
 	} finally {
@@ -1819,13 +1848,13 @@ async function run() {
 	const sddCwd = await tempWorkspace();
 	try {
 		const ctx = createCtx(sddCwd, true);
-		await commands.get("gentle-sdd-init").handler("", ctx);
+		await commands.get("jero-sdd-init").handler("", ctx);
 		assert.equal(existsSync(join(sddCwd, ".pi", "agents", "sdd-apply.md")), false);
 		assert.equal(existsSync(join(sddCwd, ".pi", "chains", "sdd-full.chain.md")), false);
 		assert.equal(existsSync(join(globalAgentHome, "agents", "sdd-apply.md")), true);
 		assert.equal(existsSync(join(globalAgentHome, "agents", "sdd-status.md")), true);
 		assert.equal(existsSync(join(globalAgentHome, "agents", "sdd-sync.md")), true);
-		assert.equal(existsSync(join(globalAgentHome, "gentle-ai", "support", "sdd-status-contract.md")), true);
+		assert.equal(existsSync(join(globalAgentHome, "jero", "support", "sdd-status-contract.md")), true);
 		assert.equal(existsSync(join(globalAgentHome, "chains", "sdd-full.chain.md")), true);
 		assert.equal(ctx.ui.selections.length, 1, "sdd-init confirms session preflight before project initialization");
 		assert.match(ctx.ui.notifications[1].message, /SDD preflight complete/);
@@ -1839,7 +1868,7 @@ async function run() {
 		assert.equal(nextSession.ui.selections.length, 1, "saved preferences still require confirmation in a new session");
 		assert.equal(await readFile(join(sddCwd, "openspec", "config.yaml"), "utf8"), initializedConfig, "new session confirmation must not reset project initialization");
 
-		await commands.get("gentle:sdd-preflight").handler("--edit", ctx);
+		await commands.get("jero:sdd-preflight").handler("--edit", ctx);
 		assert.equal(ctx.ui.selections.length, 3, "--edit permits changes after confirmed sdd-init");
 	} finally {
 		await rm(sddCwd, { recursive: true, force: true });
@@ -1854,7 +1883,7 @@ async function run() {
 		);
 		await writeFile(globalModelsPath, "{ invalid json");
 		const ctx = createCtx(invalidSddInitCwd, true, "invalid-sdd-init-session");
-		await commands.get("gentle-sdd-init").handler("", ctx);
+		await commands.get("jero-sdd-init").handler("", ctx);
 		assert.equal(ctx.ui.notifications[1].level, "warning");
 		assert.match(ctx.ui.notifications[1].message, /Model routing skipped:/);
 		assert.match(ctx.ui.notifications[1].message, /models\.json/);
@@ -1872,13 +1901,13 @@ async function run() {
 	const legacyModelsCwd = await tempWorkspace();
 	try {
 		await mkdir(join(legacyModelsCwd, ".pi", "agents"), { recursive: true });
-		await mkdir(join(legacyModelsCwd, ".pi", "gentle-ai"), { recursive: true });
+		await mkdir(join(legacyModelsCwd, ".pi", "jero"), { recursive: true });
 		await writeFile(
 			join(legacyModelsCwd, ".pi", "agents", "sdd-apply.md"),
 			`---\nname: sdd-apply\ndescription: Apply phase\n---\n\nbody\n`,
 		);
 		await writeFile(
-			join(legacyModelsCwd, ".pi", "gentle-ai", "models.json"),
+			join(legacyModelsCwd, ".pi", "jero", "models.json"),
 			JSON.stringify({ "sdd-apply": "legacy/provider-model" }, null, 2),
 		);
 		const legacyCtx = createCtx(legacyModelsCwd, true);
@@ -1914,7 +1943,7 @@ async function run() {
 			modelPanelOpened = true;
 			return Promise.resolve({ type: "save", config: {} });
 		};
-		await commands.get("gentle:models").handler("", legacyCtx);
+		await commands.get("jero:models").handler("", legacyCtx);
 		assert.equal(modelPanelOpened, false);
 		assert.equal(await readFile(globalModelsPath, "utf8"), "{ invalid json");
 		assert.equal(legacyCtx.ui.notifications.at(-1).level, "warning");
@@ -2282,7 +2311,7 @@ async function run() {
 			);
 			return Promise.resolve({ type: "cancel" });
 		};
-		await commands.get("gentle:models").handler("", ctx);
+		await commands.get("jero:models").handler("", ctx);
 
 		await hooks.get("session_start")[0]({ reason: "startup" }, ctx);
 		const legacyAppliedAgent = await readFile(
@@ -2303,7 +2332,7 @@ async function run() {
 					"global-special": { model: "openai/gpt-5-mini", thinking: "low" },
 				},
 			});
-		await commands.get("gentle:models").handler("", ctx);
+		await commands.get("jero:models").handler("", ctx);
 		assert.doesNotMatch(
 			ctx.ui.notifications.at(-1).message,
 			/[\u001b\u0007]/,
@@ -2392,7 +2421,7 @@ async function run() {
 				}
 				panel.handleInput("\u0013"); // ctrl+s saves the draft reopened after custom model input
 			});
-		await commands.get("gentle:models").handler("", ctx);
+		await commands.get("jero:models").handler("", ctx);
 
 		const customSavedConfig = JSON.parse(
 			await readFile(globalModelsPath, "utf8"),
@@ -2414,7 +2443,7 @@ async function run() {
 				}
 				panel.handleInput("\u001b");
 			});
-		await commands.get("gentle:models").handler("", ctx);
+		await commands.get("jero:models").handler("", ctx);
 		assert.match(
 			ctx.ui.notifications.at(-1).message,
 			/Custom model id must be a single-line/,
@@ -2432,9 +2461,9 @@ async function run() {
 			exportPanelCalls += 1;
 			return Promise.resolve(exportPanelCalls === 1 ? { type: "export", config: {} } : { type: "cancel" });
 		};
-		await commands.get("gentle:models").handler("", ctx);
+		await commands.get("jero:models").handler("", ctx);
 		const exported = JSON.parse(await readFile(join(globalConfigHome, "models.export.json"), "utf8"));
-		assert.equal(exported.kind, "gentle-pi.agent_model_routing");
+		assert.equal(exported.kind, "jero.agent_model_routing");
 		assert.equal(exported.version, 1);
 		assert.deepEqual(exported.agents["sdd-apply"], {
 			model: "custom/provider-model",
@@ -2444,7 +2473,7 @@ async function run() {
 		await writeFile(
 			join(globalConfigHome, "models.export.json"),
 			JSON.stringify({
-				kind: "gentle-pi.agent_model_routing",
+				kind: "jero.agent_model_routing",
 				version: 1,
 				agents: { "sdd-apply": { model: "restore/provider", thinking: "high" } },
 			}, null, 2),
@@ -2455,7 +2484,7 @@ async function run() {
 			restorePanelCalls += 1;
 			return Promise.resolve(restorePanelCalls === 1 ? { type: "restore", config: {} } : { type: "cancel" });
 		};
-		await commands.get("gentle:models").handler("", ctx);
+		await commands.get("jero:models").handler("", ctx);
 		const restoredConfig = JSON.parse(await readFile(globalModelsPath, "utf8"));
 		assert.deepEqual(restoredConfig["sdd-apply"], {
 			model: "restore/provider",
@@ -2472,7 +2501,7 @@ async function run() {
 				type: "save",
 				config: { "sdd-apply": { model: "openai/gpt-5", thinking: "max" } },
 			});
-		await commands.get("gentle:models").handler("", ctx);
+		await commands.get("jero:models").handler("", ctx);
 		const maxSavedConfig = JSON.parse(await readFile(globalModelsPath, "utf8"));
 		assert.equal(maxSavedConfig["sdd-apply"].thinking, "max");
 		const maxSubagents = JSON.parse(
@@ -2499,7 +2528,7 @@ async function run() {
 					return;
 				}
 			});
-		await commands.get("gentle:models").handler("", ctx);
+		await commands.get("jero:models").handler("", ctx);
 		const pickerMaxConfig = JSON.parse(await readFile(globalModelsPath, "utf8"));
 		assert.equal(pickerMaxConfig["sdd-apply"].thinking, "max");
 	} finally {
