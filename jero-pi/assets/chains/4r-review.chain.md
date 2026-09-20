@@ -3,7 +3,7 @@ name: 4r-review
 description: One-shot lens-only 4R discovery against a supplied initial review tree; the controller owns all authority.
 ---
 
-> Manual/compat-lane only: the provider host-relay capture path never loads this chain; it exists solely for explicit manual 4R invocation.
+> 仅限手动/兼容通道：提供方宿主中继捕获路径绝不加载此链；其存在仅为显式的手动 4R 调用。
 
 ## review-risk
 
@@ -11,7 +11,7 @@ output: review-risk-report.md
 outputMode: file-only
 progress: true
 
-Run R1 Risk exactly once against the supplied `initial_review_tree`. Return candidate rows for security, privilege boundaries, data exposure, dependencies, and merge-blocking vulnerabilities. If clean, return an empty candidate list.
+对所提供的 `initial_review_tree` 恰好运行一次 R1 Risk。返回安全、权限边界、数据暴露、依赖和阻塞合并漏洞的候选行。若干净，返回空候选清单。
 
 ## review-resilience
 
@@ -19,7 +19,7 @@ output: review-resilience-report.md
 outputMode: file-only
 progress: true
 
-Run R4 Resilience exactly once against the supplied `initial_review_tree`. Return candidate rows for fallbacks, retry/backoff, graceful degradation, observability, load, rollback, and SLO risks. If clean, return an empty candidate list.
+对所提供的 `initial_review_tree` 恰好运行一次 R4 Resilience。返回回退、重试/退避、优雅降级、可观测性、负载、回滚和 SLO 风险的候选行。若干净，返回空候选清单。
 
 ## review-readability
 
@@ -27,7 +27,7 @@ output: review-readability-report.md
 outputMode: file-only
 progress: true
 
-Run R2 Readability exactly once against the supplied `initial_review_tree`. Return candidate rows for naming, complexity, intention, maintainability, review size, and context clarity. If clean, return an empty candidate list.
+对所提供的 `initial_review_tree` 恰好运行一次 R2 Readability。返回命名、复杂度、意图、可维护性、评审规模和上下文清晰度的候选行。若干净，返回空候选清单。
 
 ## review-reliability
 
@@ -35,4 +35,4 @@ output: review-reliability-report.md
 outputMode: file-only
 progress: true
 
-Run R3 Reliability exactly once against the supplied `initial_review_tree`. Return candidate rows for behavior-first test coverage, edge cases, determinism, contracts, and regressions. If clean, return an empty candidate list.
+对所提供的 `initial_review_tree` 恰好运行一次 R3 Reliability。返回行为优先的测试覆盖、边界情形、确定性、契约和回归的候选行。若干净，返回空候选清单。

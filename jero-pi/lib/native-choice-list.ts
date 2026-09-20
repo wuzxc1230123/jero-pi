@@ -62,7 +62,7 @@ export class NativeChoiceList<T extends NativeChoiceItem> extends Container {
 		this.refreshRows();
 	}
 
-	/** Refresh rendered rows after callers update the existing item records. */
+	/** 调用方更新现有条目记录后刷新已渲染的行。 */
 	refreshItems(): void {
 		this.refreshRows();
 	}

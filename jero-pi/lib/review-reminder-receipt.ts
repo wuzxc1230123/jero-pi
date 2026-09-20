@@ -1,7 +1,7 @@
 import { isAbsolute } from "node:path";
 
-// Reminder bookkeeping only: these entries neither define review scope nor grant
-// authority. Both extensions append to the parent's active Pi session branch.
+// 仅作提醒簿记：这些条目既不定义评审范围也不授予权威。两个扩展都
+// 向父级的活动 Pi 会话分支追加。
 export const REVIEW_REMINDER_RECEIPT = "gentle-pi.review-reminder-receipt/v1";
 export interface ReceiptSession {
 	getSessionId(): string;
@@ -51,8 +51,8 @@ export function pendingReviewMutation(session: ReceiptSession, root: string, cap
 		if (receipt.kind === "mutation") {
 			if (!mutations.includes(receipt.id)) mutations.push(receipt.id);
 		} else {
-			// Only consume the captured prefix, not writes arriving while native
-			// STATUS/ACK was awaited. Unknown or off-branch watermarks do nothing.
+			// 只消费已捕获的前缀，不消费等待原生 STATUS/ACK 期间到达的写入。
+			// 未知或不在本分支上的水位标记不做任何事。
 			consumed = Math.max(consumed, mutations.indexOf(receipt.through));
 		}
 	}

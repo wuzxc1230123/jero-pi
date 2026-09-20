@@ -33,15 +33,15 @@ test("class-specific grants remain exact when both classes are explicitly select
  assert.deepEqual(resolveResearchCapabilities(inventory(["web_search"]))["open-web"].tools, ["web_search"]);
  assert.deepEqual(researchAgent(agent, inventory(names), both).agent.tools, agent.tools);
  const instructions = readFileSync(new URL("../assets/agents/sdd-research.md", import.meta.url), "utf8");
- assert.match(instructions, /Persist grants per source class exactly as observed/);
- assert.match(instructions, /never copy the child tool union into each class/);
+ assert.match(instructions, /按实际观察逐个来源类别持久化授权/);
+ assert.match(instructions, /绝不把子代理工具并集复制进每个类别/);
  assert.match(instructions, /research_selection/);
  assert.match(instructions, /sourceInfo\.path/);
  assert.match(instructions, /--extension/);
  assert.match(instructions, /research_artifact/);
  assert.match(instructions, /mem_read/);
- assert.match(instructions, /full bounded write/);
- assert.match(instructions, /identical store.*worktree/);
+ assert.match(instructions, /一次完整的有界写入/);
+ assert.match(instructions, /以相同的存储\/路径\/主题\/工作树边界/);
 });
 test("open-web requires all four canonical tools, each active and unrestricted", () => {
  const required = ["web_search", "source_check", "fetch_content", "get_search_content"];
@@ -262,6 +262,6 @@ test("R4 corrupted or broadened durable research scope is not a restart grant", 
 
 test("research actor explains crash readback without store substitution or replay", () => {
  const text = readFileSync("assets/agents/sdd-research.md", "utf8");
- assert.match(text, /physical session history/); assert.match(text, /crash.*desired identity/);
- assert.match(text, /checkpoint.*not.*readback/i);
+ assert.match(text, /既有物理会话历史/); assert.match(text, /崩溃.*期望身份/);
+ assert.match(text, /检查点不是后端回读/);
 });

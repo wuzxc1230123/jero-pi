@@ -5,16 +5,15 @@ import { classifyReviewRisk, countAuthoredChangedLines, type ReviewDiffStat } fr
 import { REVIEW_ASSESSMENT_SCHEMA, REVIEW_ASSESSMENT_RISK, type ReviewAssessmentV1, type ReviewAssessmentCandidateKind } from "../review-risk-assessment.ts";
 import { reviewGitEnvironment } from "../review-repository.ts";
 
-// `authority.risk.assess` (spec §I.7): the read-only risk assessment over a
-// live diff, reusing the ported review-risk.ts classification (tier table,
-// authored-line counting, golden exclusion) and the ported review-risk-
-// assessment.ts decode/tier tables. Upstream computes this in Go; a failed
-// or unrecognizable assessment ALWAYS fails closed to high (review-risk-
-// assessment.ts :13-16 discipline), never to a lower tier.
+// `authority.risk.assess`（spec §I.7）：对活动 diff 的只读风险评估，
+// 复用移植的 review-risk.ts 分类（层级表、authored 行计数、金样排除）
+// 与移植的 review-risk-assessment.ts 解码/层级表。上游在 Go 中计算
+// 它；失败或无法识别的评估“始终”保守失败到 high（review-risk-
+// assessment.ts :13-16 纪律），绝不降到更低层级。
 
 export interface JeroRiskAssessRequestV1 {
 	readonly cwd: string;
-	/** Requires `committedOnly` acknowledgement exactly like START (spec §B.1 pairing). */
+	/** 与 START 一样要求 `committedOnly` 确认（spec §B.1 配对）。 */
 	readonly baseRef?: string;
 	readonly committedOnly?: boolean;
 }
@@ -49,7 +48,7 @@ function unassessable(detail: string, candidateKind: ReviewAssessmentCandidateKi
 	});
 }
 
-/** Tier mapping: classifier low→passive, medium→medium, high→high; any failure → high (fail-closed). */
+/** 层级映射：分类器 low→passive、medium→medium、high→high；任何失败 → high（保守失败）。 */
 export function assessJeroReviewRiskFromStatsV1(stats: readonly ReviewDiffStat[], candidate: { kind: ReviewAssessmentCandidateKind; baseRef?: string }): ReviewAssessmentV1 {
 	try {
 		const classification = classifyReviewRisk(stats);
@@ -80,10 +79,10 @@ export function assessJeroReviewRiskFromStatsV1(stats: readonly ReviewDiffStat[]
 }
 
 /**
- * Read-only `assess` (design §5.1.1 `authority.risk.assess(diff)`). Every
- * failure — bad pairing, Git failure, unclassifiable diff — produces the
- * `gentle-ai.review-assessment/v1` shape with risk `high` (tolerated schema
- * string until the P5 rename, spec §H).
+ * 只读的 `assess`（设计 §5.1.1 的 `authority.risk.assess(diff)`）。每种
+ * 失败——配对错误、Git 失败、无法分类的 diff——都产生风险为 `high` 的
+ * `gentle-ai.review-assessment/v1` 形态（P5 改名前容忍该 schema
+ * 字符串，spec §H）。
  */
 export function assessJeroReviewRiskV1(request: JeroRiskAssessRequestV1): ReviewAssessmentV1 {
 	const candidateKind: ReviewAssessmentCandidateKind = request.baseRef !== undefined && request.committedOnly === true ? "base-diff" : "current-changes";
@@ -95,8 +94,8 @@ export function assessJeroReviewRiskV1(request: JeroRiskAssessRequestV1): Review
 			? parseNumstat(runGit(request.cwd, ["diff", "--numstat", "--no-renames", `${request.baseRef}^{tree}`, "HEAD^{tree}"]))
 			: parseNumstat(runGit(request.cwd, ["diff", "--numstat", "--no-renames", "HEAD", "--"]));
 		if (request.committedOnly !== true) {
-			// Workspace assessment must also account for untracked files, which
-			// `diff HEAD --` misses; count each as an addition-only stat.
+			// 工作区评估还必须计入未跟踪文件，`diff HEAD --` 会漏掉它们；
+			// 每个按只新增的统计行计入。
 			const untracked = runGit(request.cwd, ["ls-files", "--others", "--exclude-standard", "-z"]).split("\0").filter(Boolean);
 			for (const path of untracked) {
 				try {

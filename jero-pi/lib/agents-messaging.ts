@@ -105,8 +105,8 @@ function parseReply(value: unknown): ReplyFrame | undefined {
 	return undefined;
 }
 
-// Child-side admissions make acceptance explicit, but do not imply the parent
-// model read the message or that any later delivery is guaranteed.
+// 子侧的受理确认使接受变为显式，但并不意味着父模型已读到消息，
+// 也不保证后续的投递。
 export class ChildMessenger {
 	private readonly pending = new Map<string, Pending<void>>();
 	private readonly queries = new Map<string, Pending<string>>();

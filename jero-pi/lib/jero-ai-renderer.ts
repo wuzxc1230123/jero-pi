@@ -3,9 +3,9 @@ import { wrapTextWithAnsi } from "@earendil-works/pi-tui";
 import { CARD_TONE, cardBottom, cardInnerWidth, cardLine, cardTop, type Card, type CardTheme, type CardTone } from "./shell-card.ts";
 import { sanitizeTerminalText } from "./terminal-theme.ts";
 
-// Jero tool cards: every call into the gentle-ai binary and every
-// jero_review tool draws the same card as the other Gentle notices. The
-// call component owns the top rule; the result component closes the frame.
+// Jero 工具卡片：每次调用 gentle-ai 二进制和每个 jero_review 工具
+// 都绘制与其他 Gentle 通知相同的卡片。调用组件拥有顶框线；
+// 结果组件负责闭合框架。
 
 export interface GentleAiRenderTheme extends CardTheme {
 	bg?(color: string, text: string): string;
@@ -14,8 +14,8 @@ export interface GentleAiRenderTheme extends CardTheme {
 export interface GentleAiRenderState {
 	lifecycleComponent?: boolean;
 	genericLocked?: boolean;
-	/** Set by the result renderer once a final result exists, so a replayed
-	 * call (which pi never marks as started) still shows its outcome. */
+	/** 一旦存在最终结果即由结果渲染器设置，使被重放的调用
+	 * （pi 从不将其标记为已启动）仍能显示其结局。 */
 	finished?: boolean;
 	failed?: boolean;
 }
@@ -48,7 +48,7 @@ const STATUS_TONE: Record<LifecycleStatus, CardTone> = {
 };
 
 const CARD_TITLE = "Jero";
-// The binary keeps its rose; Gentle Shell notices keep the flower.
+// 二进制保留玫瑰；Gentle Shell 通知保留花朵。
 const CARD_GLYPH = "\u{1F339}\uFE0E";
 const DETAIL_ROLE = "dim";
 const HIDDEN_ROLE = "dim";
@@ -61,12 +61,10 @@ export function getGentleAiRenderState(state: unknown): GentleAiRenderState | un
 	return (rowState.gentleAiRender = {} as GentleAiRenderState);
 }
 
-// The call row: the top rule, with the expand key at its right end once the
-// tool finished, and the command when expanded. pi renders the result
-// component right below it, and that one closes the frame.
-// The call card owns the top rule. While the execution is still running it
-// also closes the frame, because no result row exists yet; once a final
-// result is in, the result card closes it instead.
+// 调用行：顶框线，工具结束后在其右端显示展开键，展开时显示命令。
+// pi 将结果组件渲染在它正下方，由结果组件闭合框架。
+// 调用卡片拥有顶框线。执行仍在运行时它还负责闭合框架，因为尚无
+// 结果行；一旦最终结果就绪，改由结果卡片闭合。
 export class GentleAiCallCard {
 	private card: Card = { title: CARD_TITLE, body: [], tone: CARD_TONE.WARNING };
 	private theme: GentleAiRenderTheme = passthroughTheme;
@@ -92,10 +90,9 @@ export class GentleAiCallCard {
 	invalidate(): void {}
 }
 
-// The result rows: the body when expanded, a count-only line when collapsed
-// (the call card carries the expand key and the text stays hidden), and
-// always the bottom rule that closes the frame. The rail follows the outcome:
-// amber while partial, green when done, red on error.
+// 结果行：展开时显示正文，折叠时只显示行数（调用卡片持有展开键，
+// 文本保持隐藏），并始终包含闭合框架的底框线。侧轨随结局变化：
+// 部分结果为琥珀色，完成为绿色，出错为红色。
 export class GentleAiResultCard {
 	private readonly text: string;
 	private readonly expanded: boolean;
@@ -124,7 +121,7 @@ export class GentleAiResultCard {
 				lines.push(cardLine(this.theme.fg(HIDDEN_ROLE, `${count} ${count === 1 ? "line" : "lines"}`), this.tone, this.theme, width));
 			}
 		}
-		// A partial result sits under a running call card, which still closes the frame.
+		// 部分结果位于仍在运行的调用卡片之下，框架仍由调用卡片闭合。
 		if (!this.partial) lines.push(cardBottom(this.tone, this.theme, width));
 		return lines;
 	}
@@ -152,9 +149,8 @@ export function renderJeroResult(
 		const changed = state.finished !== true || state.failed !== (options.isError === true);
 		state.finished = true;
 		state.failed = options.isError === true;
-		// pi's invalidate re-runs the tool display synchronously; called from
-		// inside this render it would nest a second call+result pair into the
-		// same container. Deferring it keeps one frame per execution.
+		// pi 的 invalidate 会同步重跑工具显示；从本渲染内部调用会把第二对
+		// 调用+结果嵌套进同一容器。推迟执行可保证每次执行只有一帧。
 		if (changed) queueMicrotask(() => context?.invalidate?.());
 	}
 	return new GentleAiResultCard(text, options.expanded === true, tone, theme, options.isPartial === true);
@@ -166,8 +162,8 @@ export function renderJeroLifecycleCall(
 	context?: JeroRenderContext,
 	detail?: string,
 ): GentleAiCallCard {
-	// A finished execution is completed even when pi replays it without
-	// argsComplete (session reload); preparing only applies before it starts.
+	// 已结束的执行即使在 pi 未带 argsComplete 重放它时（会话重载）也视为
+	// 已完成；准备中只适用于启动之前。
 	const state = getGentleAiRenderState(context?.state);
 	const finished = (context?.executionStarted === true && context.isPartial !== true) || state?.finished === true;
 	const failed = context?.isError === true || state?.failed === true;

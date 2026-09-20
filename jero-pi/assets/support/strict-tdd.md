@@ -1,141 +1,141 @@
-# Strict TDD Module — Apply Phase
+# 严格 TDD 模块 —— Apply 阶段
 
-> **This module is loaded ONLY when Strict TDD Mode is enabled AND a test runner is available.**
-> If you are reading this, the orchestrator already verified both conditions. Follow every instruction.
+> **本模块仅在启用严格 TDD 模式（Strict TDD Mode）且存在可用测试运行器时才会加载。**
+> 你读到本模块时，编排器（父会话）已验证过这两个条件。请遵循每一条指令。
 
-## TDD Philosophy
+## TDD 哲学
 
-TDD is not testing. TDD is **software design driven by tests**. You write a test that describes what the code SHOULD do, then write the minimum code to make it real. The tests design the API, the contracts, the behavior. Code is a side effect of tests.
+TDD 不是测试。TDD 是**由测试驱动的软件设计**。你编写一个描述代码应当做什么的测试，然后编写让其实現所需的最少代码。测试设计出 API、契约与行为。代码是测试的副产品。
 
-### The Three Laws
+### 三定律
 
-1. **Do NOT write production code** until you have a failing test
-2. **Do NOT write more test** than is necessary to fail
-3. **Do NOT write more code** than is necessary to pass the test
+1. 在拥有一个失败的测试之前，**绝不编写生产代码**
+2. **绝不编写超出使其失败所必需的测试**
+3. **绝不编写超出使测试通过所必需的代码**
 
-## TDD Implementation Cycle
+## TDD 实现循环
 
-For EVERY task assigned to you, follow this cycle strictly:
-
-```
-FOR EACH TASK:
-├── 0. SAFETY NET (only if modifying existing files)
-│   ├── Run existing tests for files being modified
-│   ├── Capture baseline: "{N} tests passing"
-│   ├── If any FAIL → STOP, report as "pre-existing failure"
-│   │   (do NOT fix pre-existing failures — report to orchestrator)
-│   └── This baseline proves you did not break what already worked
-│
-├── 1. UNDERSTAND
-│   ├── Read the task description
-│   ├── Read relevant spec scenarios (these ARE your acceptance criteria)
-│   ├── Read the design decisions (these CONSTRAIN your approach)
-│   ├── Read existing code and test patterns (match the style)
-│   └── Determine test layer (see "Choosing Test Layer" below)
-│
-├── 2. RED — Write a failing test FIRST
-│   ├── Write test(s) that describe the expected behavior from the spec
-│   ├── Prefer pure functions where possible (no side effects = easy to test)
-│   ├── The test MUST reference production code that does NOT exist yet
-│   │   (this guarantees failure — no need to execute to confirm)
-│   ├── If the production code/function already exists:
-│   │   └── Write a test for the NEW behavior that is NOT yet implemented
-│   └── GATE: Do NOT proceed to GREEN until the test is written
-│
-├── 3. GREEN — Write the MINIMUM code to pass
-│   ├── Implement ONLY what the failing test needs
-│   ├── Fake It is VALID here (hardcoded return values are OK)
-│   ├── EXECUTE tests → must PASS
-│   │   ├── ✅ Passed → proceed to TRIANGULATE or REFACTOR
-│   │   └── ❌ Failed → fix the implementation, NOT the test
-│   └── GATE: Do NOT proceed until GREEN is confirmed by execution
-│
-├── 4. TRIANGULATE (MANDATORY for most tasks)
-│   ├── DEFAULT: triangulation is REQUIRED. You need a compelling reason to skip it.
-│   ├── Add a second test case with DIFFERENT inputs/expected outputs
-│   ├── EXECUTE tests → if Fake It breaks (hardcoded no longer works):
-│   │   └── Generalize to real logic (this is the whole point)
-│   ├── Repeat until ALL spec scenarios for this task are covered
-│   ├── Each triangulation pass: write test → run → fix implementation
-│   ├── MINIMUM: at least 2 test cases per behavior (happy path + one edge case)
-│   │   ├── One test with data that produces a NON-EMPTY/NON-TRIVIAL result
-│   │   └── One test with data that exercises a DIFFERENT code path
-│   ├── WATCH OUT for GREEN that passes trivially:
-│   │   ├── If your test passes because the component/element isn't rendered → NOT a real GREEN
-│   │   ├── If your test passes because a loop iterates 0 times → NOT a real GREEN
-│   │   ├── If your test passes because the setup doesn't trigger the code path → NOT a real GREEN
-│   │   └── A real GREEN means: production code RAN and produced the expected output
-│   ├── Skip triangulation ONLY when ALL of these are true:
-│   │   ├── The task is purely structural (config file, constant definition, type export)
-│   │   ├── There is literally ONE possible output (no branching, no logic)
-│   │   └── You explicitly note "Triangulation skipped: {reason}" in the evidence table
-│   └── GATE: All spec scenarios for this task must have tests before REFACTOR
-│
-├── 5. REFACTOR — Improve without changing behavior
-│   ├── Extract constants (eliminate magic numbers)
-│   ├── Extract functions (reduce cyclomatic complexity)
-│   ├── Improve naming, remove duplication
-│   ├── Push toward pure functions where feasible
-│   ├── Apply Boy Scout Rule: leave code cleaner than you found it
-│   ├── EXECUTE tests after EACH refactoring step → must STILL PASS
-│   │   ├── ✅ Still passing → refactoring is safe, continue
-│   │   └── ❌ Failed → REVERT that refactoring step, try smaller
-│   └── GATE: Tests green after EVERY refactoring change
-│
-├── 6. Mark task complete [x]
-└── 7. Note any deviations or issues discovered
-```
-
-## Choosing Test Layer
-
-Based on the testing capabilities cached in Engram (`sdd/{project}/testing-capabilities`), choose the appropriate test layer for each task:
+对你被指派的每一个任务，都严格遵循此循环：
 
 ```
-Determine test layer by WHAT the task does:
-├── Pure logic, utility function, calculation, data transformation
-│   └── Unit test (always available if test runner exists)
+对每个任务：
+├── 0. SAFETY NET（安全网，仅在修改既有文件时）
+│   ├── 对被修改的文件运行既有测试
+│   ├── 捕获基线："{N} tests passing"
+│   ├── 若有任何 FAIL → 停止，报告为 "pre-existing failure"
+│   │   （绝不修复既有失败——报告给编排器（父会话））
+│   └── 该基线证明你没有破坏原本正常的东西
 │
-├── Component rendering, user interaction, state changes
-│   ├── IF integration tools available → Integration test
-│   └── IF NOT → Unit test with mocks (degrade gracefully)
+├── 1. UNDERSTAND（理解）
+│   ├── 阅读任务描述
+│   ├── 阅读相关规格场景（它们就是你的验收标准）
+│   ├── 阅读设计决策（它们约束你的方案）
+│   ├── 阅读既有代码与测试模式（匹配其风格）
+│   └── 确定测试层级（见下文“选择测试层级”）
 │
-├── Multi-component flow, API interaction, context/provider behavior
-│   ├── IF integration tools available → Integration test
-│   └── IF NOT → Unit test with mocks
+├── 2. RED —— 先写一个失败的测试
+│   ├── 编写描述规格中预期行为的测试
+│   ├── 尽可能优先纯函数（无副作用 = 易于测试）
+│   ├── 测试必须引用尚不存在的生产代码
+│   │   （这保证了失败——无需执行来确认）
+│   ├── 若生产代码/函数已存在：
+│   │   └── 为尚未实现的新行为编写测试
+│   └── GATE：测试尚未写好之前，绝不进入 GREEN
 │
-├── Critical business flow, full user journey, cross-page navigation
-│   ├── IF E2E tools available → E2E test
-│   ├── IF NOT but integration available → Integration test
-│   └── IF neither → Unit test (degrade gracefully)
+├── 3. GREEN —— 编写通过测试所需的最少代码
+│   ├── 只实现失败测试所需要的部分
+│   ├── Fake It 在此处是合法的（硬编码返回值可以接受）
+│   ├── 执行测试 → 必须通过
+│   │   ├── ✅ 通过 → 进入 TRIANGULATE 或 REFACTOR
+│   │   └── ❌ 失败 → 修复实现，而不是测试
+│   └── GATE：在执行确认 GREEN 之前绝不继续
 │
-└── Default: Unit test (always the fallback)
+├── 4. TRIANGULATE（对多数任务是强制的）
+│   ├── 默认：三角化是必需的。跳过它需要一个令人信服的理由。
+│   ├── 增加第二个使用不同输入/期望输出的测试用例
+│   ├── 执行测试 → 若 Fake It 失效（硬编码不再可行）：
+│   │   └── 泛化为真实逻辑（这正是全部意义所在）
+│   ├── 重复，直到本任务的全部规格场景都被覆盖
+│   ├── 每一轮三角化：编写测试 → 运行 → 修复实现
+│   ├── 最少：每个行为至少 2 个测试用例（正常路径 + 一个边界用例）
+│   │   ├── 一个使用会产生非空/非平凡结果的数据的测试
+│   │   └── 一个使用会行使不同代码路径的数据的测试
+│   ├── 警惕轻易通过的 GREEN：
+│   │   ├── 若测试因组件/元素未渲染而通过 → 不是真正的 GREEN
+│   │   ├── 若测试因循环迭代 0 次而通过 → 不是真正的 GREEN
+│   │   ├── 若测试因 setup 未触发该代码路径而通过 → 不是真正的 GREEN
+│   │   └── 真正的 GREEN 意味着：生产代码运行了并产出期望输出
+│   ├── 仅当以下全部为真时才可跳过三角化：
+│   │   ├── 任务是纯结构性的（配置文件、常量定义、类型导出）
+│   │   ├── 字面上只有一种可能的输出（无分支、无逻辑）
+│   │   └── 你在证据表中明确注明 "Triangulation skipped: {reason}"
+│   └── GATE：REFACTOR 之前，本任务的全部规格场景都必须已有测试
+│
+├── 5. REFACTOR —— 在不改变行为的前提下改进
+│   ├── 提取常量（消除魔法数字）
+│   ├── 提取函数（降低圈复杂度）
+│   ├── 改进命名、消除重复
+│   ├── 在可行之处推向纯函数
+│   ├── 践行 Boy Scout Rule（童子军规则）：让代码比你接手时更干净
+│   ├── 每一步重构后都执行测试 → 必须仍然通过
+│   │   ├── ✅ 仍通过 → 重构是安全的，继续
+│   │   └── ❌ 失败 → 回退该步重构，尝试更小的步子
+│   └── GATE：每一次重构变更后测试都必须保持绿色
+│
+├── 6. 将任务标记为完成 [x]
+└── 7. 记录发现的任何偏差或问题
 ```
 
-**Key rule**: Use the HIGHEST available layer that fits the task. But NEVER skip a task because a layer is unavailable — degrade to the next available layer.
+## 选择测试层级
 
-## Test Execution
-
-Detect the test runner from the cached testing capabilities:
+基于 Engram 中缓存 的测试能力，为每个任务选择合适的测试层级：
 
 ```
-Read test command from:
-├── Cached capabilities → test_runner.command (fastest — already detected)
-├── openspec/config.yaml → rules.apply.test_command (override)
-└── Fallback: detect from package.json/pyproject.toml/go.mod
+按任务做什么来确定测试层级：
+├── 纯逻辑、工具函数、计算、数据变换
+│   └── 单元测试（Unit）（只要存在测试运行器就总是可用）
+│
+├── 组件渲染、用户交互、状态变更
+│   ├── 若有集成工具 → 集成测试（Integration）
+│   └── 若没有 → 带模拟（mock）的单元测试（优雅降级）
+│
+├── 多组件流程、API 交互、context/provider 行为
+│   ├── 若有集成工具 → 集成测试（Integration）
+│   └── 若没有 → 带模拟的单元测试
+│
+├── 关键业务流程、完整用户旅程、跨页导航
+│   ├── 若有 E2E 工具 → E2E 测试
+│   ├── 若没有但有集成工具 → 集成测试（Integration）
+│   └── 若两者都没有 → 单元测试（Unit）（优雅降级）
+│
+└── 默认：单元测试（Unit）（永远是兜底）
+```
 
-When executing tests during TDD:
-├── Run ONLY the relevant test file, not the entire suite
-│   ├── JS/TS: {runner} {test-file-path} (e.g., pnpm vitest run src/utils/tax.test.ts)
+**关键规则**：使用适合该任务的最高可用层级。但绝不因某层级不可用而跳过任务——降级到下一个可用层级。
+
+## 测试执行
+
+从缓存的测试能力中检测测试运行器：
+
+```
+从以下位置读取测试命令：
+├── 缓存的能力 → test_runner.command（最快——已经检测过）
+├── openspec/config.yaml → rules.apply.test_command（覆盖）
+└── 兜底：从 package.json/pyproject.toml/go.mod 检测
+
+在 TDD 期间执行测试时：
+├── 只运行相关的测试文件，而不是整个套件
+│   ├── JS/TS: {runner} {test-file-path}（例如 pnpm vitest run src/utils/tax.test.ts）
 │   ├── Python: pytest {test-file-path}
 │   ├── Go: go test ./{package}/... -run {TestName}
-│   └── Adapt to the runner's CLI
-├── This keeps the cycle FAST
-└── Full suite runs happen in sdd-verify, not here
+│   └── 按运行器的 CLI 适配
+├── 这让循环保持快速
+└── 全套件运行发生在 sdd-verify，而不是这里
 ```
 
-## Pure Function Preference
+## 纯函数偏好
 
-When writing production code in GREEN/TRIANGULATE steps, prefer pure functions:
+在 GREEN/TRIANGULATE 步骤编写生产代码时，优先纯函数：
 
 ```
 ✅ PREFER (pure — easy to test):
@@ -151,33 +151,33 @@ function calculateDiscount(item: Item) {
 }
 ```
 
-**Why**: Pure functions are deterministic (same input → same output), have no side effects, and are trivially testable. TDD naturally pushes you toward pure functions — embrace it.
+**原因**：纯函数是确定性的（相同输入 → 相同输出）、没有副作用、且极易测试。TDD 自然会把你推向纯函数——拥抱它。
 
-## Approval Testing (for refactoring existing code)
+## 认可测试（Approval Testing，用于重构既有代码）
 
-When a task involves REFACTORING existing code (not writing new code):
+当任务涉及重构既有代码（而非编写新代码）时：
 
 ```
-BEFORE touching production code:
-├── 1. Identify existing behavior to preserve
-├── 2. Write "approval tests" that capture current behavior:
-│   ├── Call the function with known inputs
-│   ├── Assert the CURRENT outputs (even if ugly or wrong)
-│   └── These tests document what the code does NOW
-├── 3. Run approval tests → must PASS (they describe current reality)
-├── 4. NOW refactor the production code
-├── 5. Run approval tests again → must STILL PASS
-│   ├── ✅ Passing → refactoring preserved behavior
-│   └── ❌ Failing → refactoring broke something, revert
-└── 6. If the spec says behavior should CHANGE:
-    ├── Update the approval test to reflect NEW expected behavior
-    ├── Run → test FAILS (RED — new behavior not implemented yet)
-    └── Implement new behavior → GREEN
+在触碰生产代码之前：
+├── 1. 识别需要保留的既有行为
+├── 2. 编写捕获当前行为的认可测试：
+│   ├── 用已知输入调用函数
+│   ├── 断言当前输出（即使丑陋或错误）
+│   └── 这些测试记录了代码现在的行为
+├── 3. 运行认可测试 → 必须通过（它们描述当前现实）
+├── 4. 现在才重构生产代码
+├── 5. 再次运行认可测试 → 必须仍然通过
+│   ├── ✅ 通过 → 重构保留了行为
+│   └── ❌ 失败 → 重构破坏了某些东西，回退
+└── 6. 若规格说行为应当改变：
+    ├── 更新认可测试以反映新的期望行为
+    ├── 运行 → 测试失败（RED——新行为尚未实现）
+    └── 实现新行为 → GREEN
 ```
 
-## Return Summary Extension
+## 返回摘要扩展
 
-When Strict TDD Mode is active, your return summary MUST include this section:
+当严格 TDD 模式（Strict TDD Mode）启用时，你的返回摘要必须包含以下小节：
 
 ```markdown
 ### TDD Cycle Evidence
@@ -195,18 +195,18 @@ When Strict TDD Mode is active, your return summary MUST include this section:
 - **Pure functions created**: {N}
 ```
 
-**Column definitions**:
-- **Safety Net**: Pre-existing tests run before modifying files. "N/A (new)" for new files.
-- **RED**: Test written first, referencing code that doesn't exist yet. Always "✅ Written".
-- **GREEN**: Tests executed and passing after minimal implementation. Must show execution result.
-- **TRIANGULATE**: Additional test cases added to force real logic. "➖ Single" if spec has only one scenario.
-- **REFACTOR**: Code improved with tests still passing. "➖ None needed" if code was already clean.
+**列定义**：
+- **Safety Net**：修改文件前运行的既有测试。新文件为 "N/A (new)"。
+- **RED**：先写测试，引用尚不存在的代码。始终为 "✅ Written"。
+- **GREEN**：最小实现后执行并通过测试。必须展示执行结果。
+- **TRIANGULATE**：为逼出真实逻辑而增加的额外测试用例。规格只有一个场景时为 "➖ Single"。
+- **REFACTOR**：测试仍通过的前提下改进了代码。代码本已干净时为 "➖ None needed"。
 
-## Assertion Quality Rules (MANDATORY)
+## 断言质量规则（强制）
 
-**Every assertion must verify REAL behavior.** A test that passes without exercising production logic is worse than no test — it gives false confidence.
+**每条断言都必须验证真实行为。**一个未行使生产逻辑就通过的测试比没有测试更糟——它给出虚假信心。
 
-### Banned Assertion Patterns (NEVER write these)
+### 禁用的断言模式（绝不编写）
 
 ```
 # TRIVIAL ASSERTIONS — test proves nothing
@@ -245,12 +245,12 @@ for (const item of items) { ... }                # ✅ Now the loop actually run
 # FIX: add a test where the component IS rendered and verify the behavior.
 ```
 
-### What Makes a REAL Assertion
+### 什么构成真实断言
 
-Every test assertion must satisfy ALL of these:
-1. **Calls production code** — the test invokes a function, method, or component from the implementation
-2. **Asserts a specific output** — compares against a concrete expected value derived from the spec
-3. **Would FAIL if the production code were wrong** — if you change the implementation logic, THIS test breaks
+每条测试断言都必须满足以下全部条件：
+1. **调用生产代码**——测试调用实现中的函数、方法或组件
+2. **断言具体输出**——与从规格推导出的具体期望值比较
+3. **生产代码有错时会失败**——若你更改实现逻辑，这个测试就会破裂
 
 ```
 # ✅ REAL assertions — production code determines the result
@@ -261,18 +261,18 @@ assert response.status_code == 403                 # Real HTTP response from the
 expect(result).toHaveLength(3)                     # AND you set up exactly 3 items
 ```
 
-### Empty Collection Rule
+### 空集合规则
 
-`expect(result).toEqual([])` or `assert len(result) == 0` is ONLY valid when:
-1. You set up a specific precondition that SHOULD produce an empty result (e.g., no matching records)
-2. The production code actually ran and filtered/processed data to arrive at empty
-3. A companion test with different setup produces a NON-EMPTY result (triangulation)
+`expect(result).toEqual([])` 或 `assert len(result) == 0` 仅在以下情况有效：
+1. 你设置了应当产生空结果的具体前置条件（例如没有匹配记录）
+2. 生产代码确实运行并过滤/处理数据后得到空结果
+3. 一个使用不同 setup 的伴随测试产生非空结果（三角化）
 
-If you cannot explain WHY the result is empty based on setup → the assertion is trivial.
+若你无法基于 setup 解释结果为何为空 → 该断言是平凡的。
 
-### Smoke Test Rule
+### 冒烟测试规则
 
-A test that only renders a component without asserting any output is NOT a valid test:
+仅渲染组件而不断言任何输出的测试不是有效测试：
 
 ```
 # ❌ SMOKE TEST ONLY — proves nothing about behavior
@@ -285,23 +285,23 @@ expect(screen.getByText("Expected Title")).toBeInTheDocument();  # Verifies outp
 expect(screen.getByRole("button")).toHaveTextContent("Submit");  # Verifies real content
 ```
 
-"Renders without crash" is a smoke test. It is NOT a unit test, NOT an integration test, and it does NOT count toward TDD coverage. If you need a smoke test, it must be accompanied by real behavioral assertions.
+"Renders without crash"（渲染不崩溃）是冒烟测试。它不是单元测试，不是集成测试，也不计入 TDD 覆盖。若你需要冒烟测试，它必须伴随真实的行为断言。
 
-### Mock Hygiene Rules
+### Mock 卫生规则
 
-**If you need more mocks than assertions, you are testing at the WRONG level.**
+**若你需要的 mock 比断言还多，你就在错误的层级上测试。**
 
 ```
-Mock/assertion ratio guide:
-├── ≤ 3 mocks for a test file → ✅ Healthy — focused test
-├── 4–6 mocks → ⚠️ Consider extracting logic to a pure function
-├── 7+ mocks → ❌ STOP — you are testing at the wrong layer
-│   ├── Extract the logic under test to a PURE FUNCTION and test it without mocks
-│   ├── OR move the test to integration/E2E layer where real dependencies exist
-│   └── NEVER write 10+ mocks to verify a one-line transformation
+Mock/断言比例指引：
+├── 一个测试文件 ≤ 3 个 mock → ✅ 健康——聚焦的测试
+├── 4–6 个 mock → ⚠️ 考虑把逻辑提取为纯函数
+├── 7+ 个 mock → ❌ 停止——你在错误的层级上测试
+│   ├── 把被测逻辑提取为纯函数，并不用 mock 测试它
+│   ├── 或把测试移到存在真实依赖的集成/E2E 层级
+│   └── 绝不写 10+ 个 mock 来验证一个单行变换
 ```
 
-**Extract-Before-Mock Rule**: If the behavior you want to test is a data transformation, mapping, filtering, or conditional logic (e.g., `MUTED → FAIL` status conversion), EXTRACT it to a pure function FIRST, then test the pure function directly. No mocks needed.
+**先提取后 Mock 规则（Extract-Before-Mock）**：若你想测试的行为是数据变换、映射、过滤或条件逻辑（例如 `MUTED → FAIL` 状态转换），先把它提取为纯函数，再直接测试该纯函数。不需要 mock。
 
 ```
 # ❌ BAD: 15 mocks to test a one-line status conversion
@@ -323,9 +323,9 @@ expect(resolveDisplayStatus("MUTED", true)).toBe("FAIL");
 expect(resolveDisplayStatus("PASS", false)).toBe("PASS");
 ```
 
-### Implementation Detail Coupling Rule
+### 实现细节耦合规则
 
-Tests must assert **behavior visible to the user**, not internal implementation details:
+测试必须断言**用户可见的行为**，而不是内部实现细节：
 
 ```
 # ❌ COUPLED TO IMPLEMENTATION — breaks on any style refactor
@@ -344,21 +344,21 @@ expect(screen.getByRole("alert")).toHaveTextContent("Risk:");
 expect(screen.getByRole("button")).toBeDisabled();
 ```
 
-**CSS class assertions are NEVER valid test assertions.** If you need to verify visual styling:
-1. Test the **semantic outcome** (e.g., element has `role="alert"`, text is visible, button is disabled)
-2. OR use a visual regression tool / E2E screenshot comparison
-3. NEVER assert specific Tailwind/CSS class names — they are implementation details
+**CSS 类断言绝不是有效的测试断言。**若你需要验证视觉样式：
+1. 测试**语义结果**（例如元素具有 `role="alert"`、文本可见、按钮被禁用）
+2. 或使用视觉回归工具 / E2E 截图对比
+3. 绝不断言具体的 Tailwind/CSS 类名——它们是实现细节
 
-## Rules (Strict TDD specific)
+## 规则（严格 TDD 专属）
 
-- NEVER write production code before writing its test — this is the ONE rule that cannot be broken
-- NEVER skip the GREEN execution gate — you MUST run tests and confirm they pass
-- NEVER skip triangulation when the spec defines multiple scenarios — hardcoded Fake It must be forced out
-- NEVER write trivial assertions (see Banned Assertion Patterns above) — they are WORSE than no test
-- ALWAYS verify that every assertion CALLS production code and asserts a SPECIFIC expected value
-- ALWAYS run the Safety Net before modifying existing files — protect what already works
-- ALWAYS report the TDD Cycle Evidence table — the verify phase will check it
-- If a test runner execution fails for infrastructure reasons (not test failures), report as "Blocked" and continue to next task
-- Prefer pure functions — but don't force it where it doesn't fit (e.g., React components with state)
-- For refactoring tasks, ALWAYS write approval tests before touching code
-- Run ONLY the relevant test file during the cycle, not the full suite
+- 绝不在编写测试之前编写生产代码——这是唯一不可打破的规则
+- 绝不跳过 GREEN 执行门——你必须运行测试并确认它们通过
+- 当规格定义了多个场景时绝不跳过三角化——硬编码的 Fake It 必须被逼出
+- 绝不编写平凡断言（见上文“禁用的断言模式”）——它们比没有测试更糟
+- 始终验证每条断言都调用生产代码并断言一个具体的期望值
+- 修改既有文件前始终运行安全网（Safety Net）——保护已经正常的东西
+- 始终报告 TDD Cycle Evidence 表——验证阶段会检查它
+- 若测试运行器因基础设施原因执行失败（而非测试失败），报告为 "Blocked" 并继续下一个任务
+- 优先纯函数——但在不合适之处不要强求（例如带状态的 React 组件）
+- 对重构任务，在触碰代码之前始终编写认可测试
+- 循环期间只运行相关的测试文件，而不是全套件

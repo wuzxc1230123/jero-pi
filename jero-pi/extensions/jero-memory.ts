@@ -10,12 +10,11 @@ import {
 	searchMemory,
 } from "../lib/memory.ts";
 
-// jero memory: the built-in persistent memory tools (mem_save / mem_read /
-// mem_list / mem_search) backed by lib/memory.ts. The parent orchestrator
-// owns retrieval and passes selected context into subagent prompts; agents
-// save significant discoveries, decisions, and SDD phase artifacts before
-// returning. Tool names keep the `mem_*` shape so delegation contracts and
-// the doctor's memory-tool detection keep working.
+// jero 记忆：内建的持久记忆工具（mem_save / mem_read /
+// mem_list / mem_search），由 lib/memory.ts 支撑。父级编排器
+// 负责检索并把选中的上下文传入子代理提示词；代理在
+// 返回前保存重要发现、决策与 SDD 阶段产物。工具名保持
+// `mem_*` 形态，使委托契约与 doctor 的记忆工具检测继续可用。
 
 const SAVE_PARAMETERS = {
 	type: "object",

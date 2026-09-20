@@ -6,19 +6,18 @@ import { jeroDomainHash } from "./canonical.ts";
 import type { JeroAuthorityContextV1 } from "./review.ts";
 import { jeroLineageDirectory } from "./store-root.ts";
 
-// `authority.sdd` review binding (spec _tools/p2-m4-sdd-analysis.md §B): the
-// sdd-review-binding artifact the Go binary carved when binding an approved
-// review to an SDD change. jero-pi persists it as a lineage sidecar
-// (`lineages/<id>/sdd-binding.json`, M3 sidecar pattern) with the same hash
-// chain discipline: `revision` covers the canonical form minus the carve set
-// {revision, receipt_hash}; `authority_revision` binds to the ledger head at
-// bind time. Verification-on-load mirrors the M3 judgment-ledger fix (MA1):
-// EVERY read recomputes the carve hash and cross-checks lineage, change, and
-// the current authority revision — tampered or stale bindings refuse typed and
-// are QUARANTINED (renamed aside), never deleted: the audit trail survives.
+// `authority.sdd` 评审绑定（规范 _tools/p2-m4-sdd-analysis.md §B）：Go
+// 二进制在把已批准评审绑定到 SDD 变更时雕刻的 sdd-review-binding 产物。
+// jero-pi 把它持久化为血脉边车（`lineages/<id>/sdd-binding.json`，M3
+// 边车模式），沿用相同的哈希链纪律：`revision` 覆盖去掉雕刻集
+// {revision, receipt_hash} 后的权威形态；`authority_revision` 在绑定时刻
+// 绑定到台账头。读取时校验镜像 M3 的 judgment 台账修复（MA1）：“每次”
+// 读取都重新计算雕刻哈希并交叉校验血脉、变更与当前权威修订号——被
+// 篡改或过期的绑定以类型化方式拒绝，并被“隔离”（改名挪开），绝不删除：
+// 审计轨迹得以幸存。
 //
-// Field shape follows the local fixture tests/fixtures/native-review-cli/
-// v2.1.3/bind-sdd.json — `change` and `lineage` are plain strings there.
+// 字段形态遵循本地 fixture tests/fixtures/native-review-cli/v2.1.3/
+// bind-sdd.json——其中 `change` 与 `lineage` 是普通字符串。
 
 export const JERO_SDD_BINDING_SCHEMA = "gentle-ai.sdd-review-binding/v1";
 
@@ -84,7 +83,7 @@ function strictDecodeV1(value: unknown): JeroSddBindingV1 {
 	return value as JeroSddBindingV1;
 }
 
-/** Binds an approved lineage to an SDD change; idempotent for identical content. */
+/** 把已批准血脉绑定到 SDD 变更；内容相同时幂等。 */
 export function writeJeroSddBindingV1(context: JeroAuthorityContextV1, input: Omit<JeroSddBindingV1, "schema" | "revision">): JeroSddBindingV1 {
 	if (input.gate_context.lineage_id !== input.lineage) throw new Error("gate_context.lineage_id must match the binding lineage");
 	const binding: JeroSddBindingV1 = {
@@ -101,11 +100,9 @@ export function writeJeroSddBindingV1(context: JeroAuthorityContextV1, input: Om
 }
 
 /**
- * Verifies and returns the binding for a lineage. Fail-closed on tamper
- * (carve-hash mismatch, cross-check failure) and staleness
- * (authority_revision behind the lineage record's current revision), moving
- * the offending file to a quarantine name — evidence is retained, never
- * deleted.
+ * 校验并返回某血脉的绑定。篡改（雕刻哈希不匹配、交叉校验失败）与
+ * 过期（authority_revision 落后于血脉记录的当前修订号）都保守失败，
+ * 并把肇事文件挪到隔离名下——证据保留，绝不删除。
  */
 export function readJeroSddBindingV1(context: JeroAuthorityContextV1, lineageId: string): JeroSddBindingReadV1 {
 	const path = bindingPathV1(context.store.store_root, lineageId);

@@ -1,5 +1,5 @@
-// Shared Agents overlay geometry. Rendering and pointer routing use one bounded
-// measurement so terminal resizes cannot retain stale cells.
+// 共享的 Agents 覆盖层几何。渲染与指针路由使用同一份有界测量，
+// 终端尺寸变化后不会残留过期单元格。
 
 export const AGENTS_FALLBACK_WIDTH = 12;
 export const AGENTS_SPLIT_LIST_MIN_WIDTH = 22;

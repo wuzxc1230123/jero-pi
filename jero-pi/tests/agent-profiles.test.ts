@@ -520,7 +520,7 @@ test("deleteProfile removes the last profile and leaves a valid empty store", ()
 
 test("profile names accept slug punctuation but reject unicode letters", () => {
 	assert.equal(isValidProfileName("a.b-c_d"), true);
-	assert.equal(isValidProfileName("café"), false);
+	assert.equal(isValidProfileName("咖啡"), false);
 	assert.equal(isValidProfileName("1up"), true);
 });
 

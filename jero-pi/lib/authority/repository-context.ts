@@ -5,16 +5,15 @@ import type { JeroAuthorityContextV1 } from "./review.ts";
 import type { JeroLineageStateFileV1 } from "./lineage-store.ts";
 import type { JeroAuthorityOperation, JeroReceiptEnvelopeV1 } from "./protocol.ts";
 
-// `repository_context` — the rctx1_ handle block (spec §C).
+// `repository_context`——rctx1_ 句柄块（spec §C）。
 //
-// Upstream hashed an opaque server-side context; its ground truth is only
-// that the handle is 1:1 with `(revision, target_identity)` per lineage
-// moment and is echoed verbatim in every START/STATUS/collect/execute
-// binding. jero keeps the handle derivation (it already satisfies the 1:1
-// property) and derives the paired `event_id`/`outcome` from live authority
-// state: the journal, the authority lock, and the receipt file. Nothing here
-// persists an event ledger — every outcome is recomputed from the same
-// durable facts the reconciler would use (spec §C M3 upgrade note).
+// 上游哈希的是不透明的服务端上下文；其事实依据只是：句柄在每个血脉
+// 时刻与 `(revision, target_identity)` 一一对应，并在每个
+// START/STATUS/collect/execute 绑定中逐字回显。jero 保留了句柄派生
+// （它已满足 1:1 性质），并从活动权威状态——日志、权威锁、回执文件
+// ——派生成对的 `event_id`/`outcome`。这里不持久化任何事件台账——每个
+// 结局都从对账器会使用的相同持久事实重新计算（spec §C 的 M3 升级
+// 说明）。
 
 export const JERO_REPOSITORY_CONTEXT_CAPABILITY = "review.opaque_repository_context";
 
@@ -23,11 +22,11 @@ export type JeroRepositoryContextOutcome = (typeof JERO_REPOSITORY_CONTEXT_OUTCO
 
 export interface JeroRepositoryContextV1 {
 	readonly capability: typeof JERO_REPOSITORY_CONTEXT_CAPABILITY;
-	/** `rctx1_<64-hex>` — 1:1 with (revision, target_identity). */
+	/** `rctx1_<64 位十六进制>`——与 (revision, target_identity) 一一对应。 */
 	readonly handle: string;
 	readonly revision: string;
 	readonly target_identity: string;
-	/** Paired with `outcome` — always both or neither (fixture discipline). */
+	/** 与 `outcome` 成对——要么都在，要么都不在（fixture 纪律）。 */
 	readonly event_id?: string;
 	readonly outcome?: JeroRepositoryContextOutcome;
 }
@@ -35,14 +34,14 @@ export interface JeroRepositoryContextV1 {
 const REVISION_PATTERN = /^sha256:[0-9a-f]{64}$/;
 const IDENTITY_PATTERN = /^sha256:[0-9a-f]{64}$/;
 
-/** Handle derivation: `rctx1_ + jeroDomainHash("repository-context", {target_identity, revision})` (M2 formula, kept). */
+/** 句柄派生：`rctx1_ + jeroDomainHash("repository-context", {target_identity, revision})`（M2 公式，保留）。 */
 export function jeroRepositoryContextHandleV1(targetIdentity: string, revision: string): string {
 	if (!IDENTITY_PATTERN.test(targetIdentity)) throw new TypeError("repository context target identity must be a canonical sha256 identity");
 	if (!REVISION_PATTERN.test(revision)) throw new TypeError("repository context revision must be a canonical sha256 revision");
 	return `rctx1_${jeroDomainHash("repository-context", { target_identity: targetIdentity, revision })}`;
 }
 
-/** Event identity for one authority operation on one lineage moment. */
+/** 某个血脉时刻上某个权威操作的事件身份。 */
 export function jeroRepositoryContextEventIdV1(lineageId: string, revision: string, operation: JeroAuthorityOperation | "status" | "capture"): string {
 	if (typeof lineageId !== "string" || lineageId.length === 0) throw new TypeError("repository context event requires a lineage id");
 	if (!REVISION_PATTERN.test(revision)) throw new TypeError("repository context revision must be a canonical sha256 revision");
@@ -62,12 +61,11 @@ function receiptPresentV1(context: JeroAuthorityContextV1, lineageId: string): b
 }
 
 /**
- * Derives the outcome for one operation against the live authority state
- * (spec §C): `pending` while any journal entry is pending (the crash window,
- * reconcilable via prepareOperation/completeOperation); `blocked_conflict`
- * when the authority lock is owned/ambiguous; `durability_limited` when the
- * lineage is terminal but its receipt file is not yet present; `applied`
- * once the operation's journal entry completed.
+ * 对照活动权威状态推导某个操作的结局（spec §C）：任一日志条目 pending
+ * 时为 `pending`（崩溃窗口，可经 prepareOperation/completeOperation 对账）；
+ * 权威锁为 owned/ambiguous 时为 `blocked_conflict`；血脉已终局但回执
+ * 文件尚未出现时为 `durability_limited`；该操作的日志条目完成后为
+ * `applied`。
  */
 export function jeroRepositoryContextOutcomeV1(context: JeroAuthorityContextV1, record: JeroLineageStateFileV1, operation: JeroAuthorityOperation): JeroRepositoryContextOutcome {
 	if (record.request_journal.some((entry) => entry.status === "pending")) return "pending";
@@ -79,10 +77,9 @@ export function jeroRepositoryContextOutcomeV1(context: JeroAuthorityContextV1, 
 }
 
 /**
- * Mints the full repository-context block for one operation. `event_id` and
- * `outcome` are always emitted as a pair (fixtures never carry one without
- * the other); read-only surfaces that have no operation of their own (STATUS
- * current_target) pass `"status"` and derive against the lineage moment.
+ * 为某个操作铸造完整的仓库上下文块。`event_id` 与 `outcome` 总是成对
+ * 发出（fixture 绝不单独携带其一）；没有自己操作的只读表面
+ * （STATUS current_target）传入 `"status"` 并对照血脉时刻派生。
  */
 export function mintJeroRepositoryContextV1(context: JeroAuthorityContextV1, record: JeroLineageStateFileV1, operation: JeroAuthorityOperation | "status" | "capture"): JeroRepositoryContextV1 {
 	const targetIdentity = record.state.snapshot.identity;
@@ -98,7 +95,7 @@ export function mintJeroRepositoryContextV1(context: JeroAuthorityContextV1, rec
 	};
 }
 
-/** Strict decode for the block as it rides typed surfaces (unknown keys fail closed). */
+/** 对搭载在类型化表面上的该块做严格解码（未知键保守失败）。 */
 export function decodeJeroRepositoryContextV1(value: unknown, label = "repository_context"): JeroRepositoryContextV1 {
 	if (typeof value !== "object" || value === null || Array.isArray(value)) throw new TypeError(`${label}: expected object`);
 	const parsed = value as Record<string, unknown>;

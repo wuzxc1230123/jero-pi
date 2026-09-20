@@ -17,19 +17,19 @@ interface RegistryHost {
 }
 interface Registration { sessionId: string; root: string; evidence: string }
 
-// Pass this as a complete child environment, not an overlay on inherited env.
+// 将其作为完整的子环境传入，而不是叠加在继承的环境变量之上。
 export function worktreeGitEnvironment(env: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
 	return Object.fromEntries(Object.entries(env).filter(([key]) => !key.toUpperCase().startsWith("GIT_")));
 }
 
-// Match Pi's ordinary path spelling; Git, not the argument, establishes identity.
+// 匹配 Pi 的普通路径拼写；由 Git 而非参数来确立身份。
 export function resolveSessionWorktreeWithGit(path: string, cwd: string, run: typeof execFileSync = execFileSync): WorktreeIdentity | undefined {
 	try {
 		let spelling = path.replace(/^@/, "").replace(/[\u00a0\u2000-\u200a\u202f\u205f\u3000]/g, " ");
 		if (spelling === "~" || spelling.startsWith("~/")) spelling = homedir() + spelling.slice(1);
 		const canonical = realpathSync(resolve(cwd, spelling));
 		const directory = statSync(canonical).isDirectory() ? canonical : dirname(canonical);
-		// Ambient Git routing must not redirect a path into another repository.
+		// 环境性的 Git 路由不得把路径重定向进另一个仓库。
 		const env = worktreeGitEnvironment();
 		const git = (arg: string) => String(run("git", ["--no-optional-locks", "-C", directory, "rev-parse", "--path-format=absolute", arg], { encoding: "utf8", timeout: 5000, stdio: ["ignore", "pipe", "pipe"], shell: false, windowsHide: true, env })).replace(/\r?\n$/, "");
 		return { root: realpathSync(git("--show-toplevel")), commonDir: realpathSync(git("--git-common-dir")) };
@@ -46,8 +46,8 @@ export function toolWorktreePath(name: string, input: Record<string, unknown>): 
 	return input.path === undefined && ["grep", "find", "ls"].includes(name) ? "." : undefined;
 }
 
-// No global store: both extensions append through their bound Pi API. Reading
-// all entries also catches a launch that happened while the shell was absent.
+// 没有全局存储：两个扩展都通过各自绑定的 Pi API 追加。读取全部条目
+// 也能捕捉到 shell 缺席期间发生的启动。
 export class SessionWorktreeRegistry {
 	readonly sessionId: string;
 	private readonly host: RegistryHost;
@@ -97,8 +97,8 @@ export class SessionWorktreeRegistry {
 		const root = this.validate(path);
 		this.restore();
 		if (this.recorded.has(root)) return root;
-		// appendEntry is synchronous, so concurrent tool completions dedupe before
-		// yielding. Mark locally only after a successful durable append.
+		// appendEntry 是同步的，因此并发的工具完成会在让出之前完成去重。
+		// 只有在成功的持久追加之后才做本地标记。
 		this.host.appendEntry(SESSION_WORKTREE_ENTRY, { sessionId: this.sessionId, root, evidence } satisfies Registration);
 		this.recorded.add(root);
 		this.host.events.emit(SESSION_WORKTREE_CHANGED, { sessionId: this.sessionId });
@@ -111,7 +111,7 @@ export class SessionWorktreeRegistry {
 		const roots = new Set<string>();
 		for (const recorded of this.recorded) {
 			try { roots.add(this.validate(recorded)); }
-			catch { /* Missing/prunable roots remain durable but cannot be scanned. */ }
+			catch { /* 缺失/可清理的根目录仍然持久存在，但无法被扫描。 */ }
 		}
 		return [...roots];
 	}

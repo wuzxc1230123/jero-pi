@@ -1,25 +1,25 @@
-# SDD Status and Action Context Contract
+# SDD 状态与动作上下文契约
 
-Shared OpenSpec-style contract for Gentle Pi SDD phases. Use this before acting on a change so orchestration and executors do not guess state, paths, or edit scope.
+供 Gentle Pi 的 SDD 各阶段共享的 OpenSpec 风格契约。在对变更采取行动之前先使用本契约，使编排（父会话）与各执行器无需猜测状态、路径或编辑范围。
 
-## Purpose
+## 目的
 
-Any phase that selects, continues, applies, verifies, syncs, or archives an SDD change MUST first produce or consume structured status. The status is the handoff between the parent orchestrator and phase executor.
+任何对 SDD 变更进行选择、继续、应用、验证、同步或归档的阶段，都必须先产出或消费结构化状态。该状态是父编排器（父会话）与阶段执行器之间的交接物。
 
-## Change Selection
+## 变更选择
 
-- If a change name is provided, use that exact change after confirming it exists in the selected artifact store.
-- If no change name is provided, infer only when the active change is unambiguous from session state or there is exactly one active change.
-- If multiple active changes match or the active change is unclear, ask the user to choose. Do not guess.
-- If no active changes exist, report that no SDD change is active and suggest starting one.
+- 若已提供变更名，在确认其存在于所选产物存储中之后，使用该确切变更。
+- 若未提供变更名，仅当从会话状态看活跃变更无歧义、或恰好只有一个活跃变更时才可推断。
+- 若多个活跃变更匹配或活跃变更不明确，请让用户选择。绝不猜测。
+- 若不存在活跃变更，报告当前没有活跃的 SDD 变更，并建议发起一个。
 
-## Native Engine
+## 原生引擎
 
-- The in-process authority's `gentle-ai.sdd-status/v2` projection (rendered by `/jero-sdd-status`) is the sole status authority for every store. It is read-only: inspect its native projection unchanged and never launch a phase, prepare consent, or grant roots while reading it.
-- If native status is unavailable, malformed, or does not select the requested change/workspace, stop and report that failure. Do not construct a local status, infer readiness from artifacts, substitute continuation, or bypass it through Engram.
-- `nextRecommended`, `dependencies`, `blockedReasons`, `actionContext`, and optional `phaseInstructions` are producer facts. Route only by their typed values, never by prose or a local lifecycle graph. A genuine blocker's human-readable explanation belongs in `blockedReasons`; a non-blocking diagnostic belongs in `notes`; neither belongs in `nextRecommended`.
-- Runtime-attempt authority is separate from status: managed remediation launches are acquire/settle-wrapped by the package runtime in-process (`proceed`, `blocked`, or `complete` routing); apply/verify single-flight is enforced through this same authoritative projection.
-- Only explicitly authorized `/jero-sdd-continue` may resolve continuation; it routes by the same projection and grants no source roots.
+- 进程内权威的 `gentle-ai.sdd-status/v2` 投影（由 `/jero-sdd-status` 渲染）是所有存储的唯一状态权威。它是只读的：原样检查其原生投影，读取期间绝不发起阶段、准备同意或授予根权限。
+- 若原生状态不可用、格式错误，或未选中请求的变更/工作区，停止并报告该失败。绝不构造本地状态、从产物推断就绪度、顶替继续流程，或经由 Engram 绕过它。
+- `nextRecommended`、`dependencies`、`blockedReasons`、`actionContext` 与可选的 `phaseInstructions` 是生产者事实。仅依据其类型化值路由，绝不依据自然语言描述或本地生命周期图路由。真实阻塞项的人类可读解释属于 `blockedReasons`；非阻塞诊断属于 `notes`；两者都不属于 `nextRecommended`。
+- 运行时尝试权威独立于状态：托管修复启动由包运行时在进程内以 acquire/settle 方式包裹（按 `proceed`、`blocked` 或 `complete` 路由）；apply/verify 的单飞（single-flight）经由同一权威投影强制执行。
+- 仅显式授权的 `/jero-sdd-continue` 可以解决继续流程；它按同一投影路由，且不授予任何源码根权限。
 
 ## Bounded Planning Routing
 
@@ -38,43 +38,43 @@ These planning routes remain runnable when missing planning artifacts leave `dep
 
 Before any planning launch, stop for ambiguous change selection, unresolved session preflight, or unsafe action context. Carry `actionContext` and prove planned writes are within the authoritative workspace or allowed edit roots; workspace-planning without allowed edit roots remains read-only. Planning does not bypass the init guard, pre-proposal gate, or phase approval requirements.
 
-## Bounded Execution Routing
+## 有界执行路由
 
-| Native `nextRecommended` | Pi executor |
+| 原生 `nextRecommended` | Pi 执行器 |
 | --- | --- |
 | `apply` | `sdd-apply` |
 | `verify` | `sdd-verify` |
 | `remediate` | `sdd-remediate` |
 | `archive` | `sdd-archive` |
 
-Execute only a native selected action whose dependency and `actionContext` permit it. Unknown, malformed, blocked, or unsupported actions stop before work; no local route, prefixed token, or prose can replace them. `notes` is separate from `blockedReasons` and never gates: report a non-empty `notes` value as informational and proceed when the dependency and `blockedReasons` gates allow. Manual `sdd-sync` remains its intentional local resolver and is never an automatic native-status dispatch.
+仅执行依赖与 `actionContext` 均已允许的原生选中动作。未知、格式错误、阻塞或不支持的动作在工作开始前停止；任何本地路由、带前缀 token 或自然语言描述都不能替代它们。`notes` 独立于 `blockedReasons` 且绝不充当门控：将非空 `notes` 值作为信息性内容报告，并在依赖与 `blockedReasons` 门控允许时继续。Manual `sdd-sync` remains its intentional local resolver，且绝不由原生状态自动派发。
 
-## Status Schema
+## 状态 Schema
 
-Consume the native v2 projection (`schemaName: gentle-ai.sdd-status`, `schemaVersion: 2`) losslessly. Its producer-defined selection, artifact locators, task progress, seven dependencies, `actionContext`, `blockedReasons`, optional execution instructions, remediation state, and `nextRecommended` are status facts, not a Pi schema to recreate.
+无损地消费原生 v2 投影（`schemaName: gentle-ai.sdd-status`，`schemaVersion: 2`）。其生产者定义的变更选择、产物定位符、任务进度、七项依赖、`actionContext`、`blockedReasons`、可选的执行说明、修复状态与 `nextRecommended` 都是状态事实，而不是需要 Pi 重建的 schema。
 
-## Action Context Guard
+## 动作上下文守卫
 
-The orchestrator MUST carry `actionContext` into any phase launch.
+编排器（父会话）必须将 `actionContext` 携带进任何阶段启动。
 
-- If `mode: workspace-planning` and `allowedEditRoots` is empty, stop before editing, verifying implementation ownership, syncing specs, or archiving. Treat linked repos and folders as read-only planning context.
-- If `allowedEditRoots` is present, only edit or move files within those roots.
-- If a phase cannot prove a file is inside the authoritative workspace or allowed edit roots, stop and ask for clarification.
+- 若 `mode: workspace-planning` 且 `allowedEditRoots` 为空，则在编辑、验证实现归属、同步规格或归档之前停止。将链接的仓库与目录视为只读的规划上下文。
+- 若存在 `allowedEditRoots`，仅在这些根之内编辑或移动文件。
+- 若某阶段无法证明文件位于权威工作区或允许编辑根之内，停止并请求澄清。
 
-## Native Runtime Attempt Authority
+## 原生运行时尝试权威
 
-The compact SDD runtime attempt authority is separate from artifact dispatch and status. It is artifact-store agnostic: the same acquire/settle discipline applies to `openspec`, `engram`, `both`, and `none` stores. Its payload MUST NOT be embedded in the SDD v1 status schema above; status reports artifact state only, never attempt tokens or attempt counters. No OpenSpec or Engram attempt ledger may be created or mirrored by Pi.
+紧凑的 SDD 运行时尝试权威独立于产物派发与状态。它与产物存储无关：同一套 acquire/settle 纪律适用于 `openspec`、`engram`、`both` 与 `none` 存储。其载荷绝不能嵌入上面的 SDD v1 状态 schema；状态只报告产物状态，绝不报告尝试 token 或尝试计数器。Pi 不得创建或镜像任何 OpenSpec 或 Engram 尝试台账。
 
-Managed remediation launches are acquire/settle-wrapped automatically by the package runtime (in-process, no CLI): the authority returns exactly one routing state from `proceed|blocked|complete` — launch only on `proceed`, stop on `blocked` or `complete` — and the runtime settles after the run. `sdd-apply` and `sdd-verify` are not attempt-wrapped; the orchestrator enforces their single-flight through the authoritative status projection: never two runtime-bearing actors for one change, never a launch that status does not admit. `reset` is never automatic and requires an explicit maintainer scope decision.
+托管修复启动由包运行时自动以 acquire/settle 方式包裹（进程内，无 CLI）：权威从 `proceed|blocked|complete` 中返回恰好一个路由状态——仅在 `proceed` 时启动，在 `blocked` 或 `complete` 时停止——运行结束后由运行时结算。`sdd-apply` 与 `sdd-verify` 不做尝试包裹；编排器（父会话）通过权威状态投影强制其单飞：一个变更绝不同时存在两个承载运行时的 actor，绝不发起状态不接纳的启动。`reset` 绝不自动执行，需要维护者显式的范围决策。
 
-For the exact compact acquire/settle shapes and the full field semantics, see the `Native Runtime Attempt Authority` section of the lazy-loaded `SDD Orchestrator Workflow` contract. Do not look up `assets/...` paths at runtime; those are package source paths before installation.
+关于精确的紧凑 acquire/settle 形态与完整字段语义，见懒加载的 `SDD Orchestrator Workflow` 契约中的 `Native Runtime Attempt Authority` 小节。不要在运行时查找 `assets/...` 路径；那些是安装前的包源码路径。
 
-## Status Output
+## 状态输出
 
-Every command or agent that acts on a change MUST show or consume status before doing phase work:
+任何作用于变更的命令或代理，在进行阶段工作之前都必须展示或消费状态：
 
-- active change selection and how it was resolved;
-- artifact statuses and paths/topics used as context;
-- task progress and unchecked task list when tasks exist;
-- next recommended action;
-- any `actionContext` or edit-root warnings.
+- 活跃变更的选择及其解析方式；
+- 作为上下文使用的产物状态与路径/主题；
+- 存在任务时的任务进度与未勾选任务列表；
+- 下一个推荐动作；
+- 任何 `actionContext` 或编辑根警告。

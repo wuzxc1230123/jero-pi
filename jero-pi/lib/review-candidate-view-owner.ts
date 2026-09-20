@@ -127,7 +127,7 @@ export function validatePrivateWindowsDacl(dacl: string, user: string, protected
 
 export function validatePrivateWindowsOwner(owner: string | undefined, user: string): void {
 	const normalizedOwner = owner?.toUpperCase();
-	// Owners implicitly control a DACL, so accept only principals that the exact DACL already grants full control.
+	// 所有者隐式控制 DACL，因此只接受该精确 DACL 已授予完全控制的主体。
 	if (normalizedOwner === undefined) throw new WindowsOwnerValidationError("missing");
 	if (!isWindowsSid(user) || !isWindowsSid(normalizedOwner)) throw new WindowsOwnerValidationError(isWindowsSid(normalizedOwner) ? "sid" : "other");
 	if (normalizedOwner === user.toUpperCase()) return;
@@ -192,11 +192,11 @@ function enforcePrivateWindowsDacl(path: string, identity: WindowsAclIdentity = 
 	validatePrivateWindowsOwner(windowsOwnerSid(path, "directory"), identity.user);
 	const { user, localAdministrator } = identity;
 	const sddl = `D:P(A;OICI;FA;;;${user})(A;OICI;FA;;;${WINDOWS_SYSTEM})(A;OICI;FA;;;${WINDOWS_ADMINISTRATORS})`;
-	// Enforcement must construct the EXACT three-ACE protected DACL (no
-	// unrelated explicit grants survive); icacls /grant:r cannot remove other
-	// trustees' explicit ACEs, so this one-shot write stays on the precise
-	// SetAccessControl path. It runs once per parent preparation — the hot
-	// assert path reads DACLs through fast native icacls instead.
+	// 强制执行必须构造精确的三 ACE 受保护 DACL（任何无关的显式授权
+	// 都不得幸存）；icacls /grant:r 无法移除其他受托人的显式 ACE，
+	// 因此这次一次性写入保持在精确的 SetAccessControl 路径上。
+	// 它只在每次父目录准备时运行一次——高频断言路径改用快速的原生
+	// icacls 读取 DACL。
 	const script = "$ErrorActionPreference='Stop';$acl=New-Object System.Security.AccessControl.DirectorySecurity;$acl.SetSecurityDescriptorSddlForm($env:JERO_PI_CANDIDATE_ACL_SDDL,[System.Security.AccessControl.AccessControlSections]::Access);[System.IO.Directory]::SetAccessControl($env:JERO_PI_CANDIDATE_ACL_PATH,$acl)";
 	const systemRoot = dirname(dirname(windowsSystemExecutable("whoami.exe")));
 	execFileSync(windowsSystemExecutable("WindowsPowerShell\\v1.0\\powershell.exe"), ["-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand", Buffer.from(script, "utf16le").toString("base64")], { encoding: "utf8", timeout: 5000, maxBuffer: 16384, stdio: ["ignore", "pipe", "pipe"], windowsHide: true, env: { ...process.env, SystemRoot: systemRoot, JERO_PI_CANDIDATE_ACL_PATH: path, JERO_PI_CANDIDATE_ACL_SDDL: sddl } });
@@ -217,16 +217,16 @@ function privateWindowsCandidateOwnerBoundary(commonDir: string, enforce = false
 		return;
 	}
 	const identity = windowsAclIdentity();
-	// One batched PowerShell invocation resolves every boundary owner SID
-	// (memoized per path); the per-path cold-start round-trips this replaced
-	// were the dominant cost of every candidate-view creation on Windows.
+	// 一次批量 PowerShell 调用解析所有边界所有者 SID（按路径记忆化）；
+	// 此前被它取代的逐路径冷启动往返是 Windows 上每次候选视图创建的
+	// 主要开销。
 	if (!boundary.every((path) => windowsOwnerSidMemo.has("directory:" + path))) {
 		const owners = windowsOwnerSidsBatch(boundary);
 		boundary.forEach((path, index) => {
 			const sid = (owners[index] ?? "").trim().toUpperCase();
 			if (sid === "ERROR" || !isWindowsSid(sid)) {
-				// Fall back to the single-path reader so the typed validation
-				// error fires on the exact failing path (and seeds the memo).
+				// 回退到单路径读取器，让类型化校验错误精确落在
+				// 失败的那个路径上（并填充记忆缓存）。
 				windowsOwnerSid(path, "directory");
 				return;
 			}
@@ -241,9 +241,9 @@ function privateWindowsCandidateOwnerBoundary(commonDir: string, enforce = false
 	for (const path of boundary) assertPrivateWindowsDacl(path, "directory", true, identity);
 }
 
-// A hostname or a repository-local nonce cannot prove that a PID is local.
-// Bind to the kernel boot and, on Linux, its PID namespace. Unsupported or
-// unavailable provenance disables reclamation (including across reboots).
+// 主机名或仓库局部 nonce 无法证明 PID 是本地的。
+// 绑定内核启动标识，在 Linux 上还绑定其 PID 命名空间。不支持或
+// 不可用的来源会禁用回收（包括跨重启回收）。
 function localHost(): string | null {
 	try {
 		if (process.platform === "darwin") {
@@ -255,7 +255,7 @@ function localHost(): string | null {
 			const namespace = readlinkSync("/proc/self/ns/pid");
 			if (BOOT_UUID.test(boot) && /^pid:\[\d+\]$/.test(namespace)) return `linux:${boot}:${namespace}`;
 		}
-	} catch { /* No remote/PID-only fallback. */ }
+	} catch { /* 没有仅凭远端/PID 的回退。 */ }
 	return null;
 }
 
@@ -314,8 +314,8 @@ function regular(path: string, privateMode = false, platform: NodeJS.Platform = 
 }
 
 function syncDirectory(path: string): void {
-	// Windows does not permit fsync on directory handles; the marker file itself
-	// remains fsynced before this platform-specific no-op.
+	// Windows 不允许对目录句柄 fsync；在此之前标记文件本身仍会被 fsync，
+	// 此处是平台相关的空操作。
 	if (process.platform === "win32") return;
 	const fd = openSync(path, "r");
 	try { fsyncSync(fd); } finally { closeSync(fd); }
@@ -326,7 +326,7 @@ function removeExactPrivateFile(path: string, identity: string, platform: NodeJS
 		if (regular(path, true, platform) !== identity) return;
 		unlinkSync(path);
 		syncDirectory(dirname(path));
-	} catch { /* An unproven or replaced file survives. */ }
+	} catch { /* 未经证明或已被替换的文件得以幸存。 */ }
 }
 
 function seedCreatorOwnerSid(path: string, kind: WindowsObjectKind): void {
@@ -359,7 +359,7 @@ export function createCandidateOwner(commonDir: string, root: string, platform: 
 	const uuid = basename(root);
 	if (!UUID.test(uuid) || root !== join(parent, uuid) || lstatSync(root, { throwIfNoEntry: false })) throw new Error("Unsafe candidate owner root");
 	const owner: CandidateViewOwner = { version: 1, uuid, token: randomUUID(), pid: process.pid, host: localHost(), root, commonDir };
-	// Any write/fsync failure aborts creation BEFORE Git can register the view.
+	// 任何写入/fsync 失败都会在 Git 注册该视图之前中止创建。
 	const marker = markerPath(root);
 	let markerIdentity: string | undefined;
 	try {
@@ -426,7 +426,7 @@ export function removeCandidateOwner(owner: CandidateViewOwner, git: Git, makeWr
 	checkOwner();
 	const lock = `${root}.reaper-lock`;
 	const token = randomUUID();
-	exclusiveFile(lock, token); // EEXIST is final; unknown/stale locks are never stolen.
+	exclusiveFile(lock, token); // EEXIST 即终局；未知/过期锁绝不窃取。
 	const lockIdentity = regular(lock, true, platform);
 	const checkLock = (): void => {
 		if (regular(lock, true, platform) !== lockIdentity || readFileSync(lock, "utf8") !== token) throw new Error("Candidate reaper lock changed");
@@ -438,14 +438,14 @@ export function removeCandidateOwner(owner: CandidateViewOwner, git: Git, makeWr
 		checkOwner();
 		checkLock();
 		makeWritable(root);
-		// Git and chmod are race boundaries: repeat path, owner, lock, and exact
-		// registration proofs immediately before asking Git to remove this root.
+		// Git 与 chmod 是竞态边界：在请求 Git 移除该根目录之前，
+		// 立即重复路径、所有者、锁与精确注册证明。
 		if (registration(root, commonDir, git, platform) !== registered ||
 			JSON.stringify([directory(parent, true, platform), directory(root), regular(markerPath(root), true, platform)]) !== JSON.stringify(identity)) throw new Error("Candidate cleanup identity changed");
 		checkOwner();
 		checkLock();
 		git(["worktree", "remove", "--force", root]);
-		// Git failure or incomplete removal must never trigger recursive rm.
+		// Git 失败或不完整的移除绝不触发递归 rm。
 		if (lstatSync(root, { throwIfNoEntry: false }) || git(["worktree", "list", "--porcelain", "-z"]).split("\0\0").some((row) => {
 			const worktree = row.split("\0")[0];
 			return worktree !== undefined && worktree.startsWith("worktree ") && samePath(worktree.slice(9), root, platform);
@@ -455,7 +455,7 @@ export function removeCandidateOwner(owner: CandidateViewOwner, git: Git, makeWr
 		unlinkSync(markerPath(root));
 		syncDirectory(parent);
 	} finally {
-		// Only release this exact lock, even when the deletion itself failed.
+		// 即使删除本身失败，也只释放这一个精确匹配的锁。
 		try { assertCandidateOwnerParent(commonDir, platform); checkLock(); unlinkSync(lock); syncDirectory(parent); } catch {}
 	}
 }
@@ -468,7 +468,7 @@ export function sweepCandidateOwners(commonDir: string, git: Git, makeWritable: 
 			try {
 				const owner = readOwner(commonDir, join(parent, name.slice(0, -11)), platform);
 				if (dead(owner)) removeCandidateOwner(owner, git, makeWritable, true, platform);
-			} catch { /* Unknown, legacy, unsafe, unregistered, and contended entries survive. */ }
+			} catch { /* 未知、遗留、不安全、未注册及有争用的条目得以幸存。 */ }
 		}
-	} catch { /* Startup/materialization sweeps are best-effort; never create a store. */ }
+	} catch { /* 启动/物化清扫尽力而为；绝不创建存储。 */ }
 }

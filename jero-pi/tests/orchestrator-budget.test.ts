@@ -154,7 +154,7 @@ test(`getOrchestratorPrompt keeps a controlled long (>= ${MIN_CONTROLLED_LONG_AS
 		"the absolute assets root must be declared exactly once",
 	);
 	assert.ok(
-		rendered.includes(`Package assets root: \`${controlledLongAssetsDir}\`. Lazy asset paths below are relative to this root.`),
+		rendered.includes(`包资产根目录：\`${controlledLongAssetsDir}\`。下方懒加载资产路径均相对该根目录。`),
 		"the parent prompt must declare how to resolve relative lazy asset paths",
 	);
 	for (const name of LAZY_REFERENCE_FILE_NAMES) {
@@ -281,18 +281,13 @@ function isNormativeLine(line: string): boolean {
 }
 
 const fixtureLines = readFileSync(FIXTURE_PATH, "utf8").split("\n");
-// Fixture lines 187 and 191 predate the root-relative lazy-asset contract and
-// canonical-authority resolution. Keep their coverage by asserting the
-// intentionally updated production wording instead of weakening the range.
-const CURRENT_SDD_WORKFLOW_PATH = "`sdd-orchestrator-workflow.md`";
-const CURRENT_HARD_PREFLIGHT_INVARIANT = "Hard preflight invariant: `openspec/config.yaml`, existing SDD changes, installed `.pi`/global SDD assets, or a todo named \"preflight\" are not session preflight. Do not mark SDD preflight complete, start `sdd-init`, launch SDD subagents/chains, or move to explore/proposal/spec/design/tasks until this session has an injected `## SDD Session Preflight` block or a canonical-authority resolution. Defaults and capability constraints may resolve fields without confirmation prompts; preserve unresolved-choice and safety gates.";
-// Fixture lines 273/274 predate the skill-name identity pass: the registry
-// skills are `jero-branch-pr`/`jero-chained-pr` now, so the pinned rows are
-// asserted in their current wording.
-const CURRENT_SKILL_TABLE_ROWS = new Map<number, string>([
-	[273, "| Create/open/prepare PR     | `jero-branch-pr`                  |"],
-	[274, "| Split/stack/large PR       | `jero-chained-pr`                 |"],
-]);
+// i18n pass: the live model-facing assets (core/delegation/memory/skills) are
+// Simplified Chinese now, so the frozen English pre-diet fixture no longer has
+// byte-identical counterparts to assert against. Every non-obsolete
+// disposition is superseded wholesale by the Chinese translation; only the
+// "obsolete" absence guards below stay active, since no retired English line
+// may resurface in the Chinese assets either. Current-asset coverage lives in
+// the focused Chinese assertions at the bottom of this file.
 const SUPERSEDED_LIFECYCLE_REVIEW_LINES = new Set([
 	70,
 	// 74/77: the loose mode-choice background lines were replaced by the
@@ -327,41 +322,21 @@ const SUPERSEDED_LIFECYCLE_REVIEW_LINES = new Set([
 ]);
 
 for (const range of DISPOSITION_MAP) {
-	if (range.target === "replaced") continue;
+	// i18n pass: see the note above SUPERSEDED_LIFECYCLE_REVIEW_LINES — only
+	// the "obsolete" absence guards remain meaningful against the Chinese
+	// assets; every verbatim-survival disposition is superseded.
+	if (range.target !== "obsolete") continue;
 	test(
-		`disposition-mapped union: ${range.label} (fixture:${range.lines[0]}-${range.lines[1]}) -> ${range.target}`,
+		`disposition-mapped absence: ${range.label} (fixture:${range.lines[0]}-${range.lines[1]}) stays retired`,
 		() => {
-			const targetContent =
-				range.target === "obsolete"
-					? Object.values(TARGET_FILE).map(readRealAsset).join("\n")
-					: readRealAsset(TARGET_FILE[range.target]);
+			const targetContent = Object.values(TARGET_FILE).map(readRealAsset).join("\n");
 			for (let ln = range.lines[0]; ln <= range.lines[1]; ln++) {
 				const raw = fixtureLines[ln - 1];
 				if (raw === undefined || !isNormativeLine(raw)) continue;
 				const trimmed = raw.trim();
-				const expected =
-					ln === 187
-						? CURRENT_SDD_WORKFLOW_PATH
-						: ln === 191
-							? CURRENT_HARD_PREFLIGHT_INVARIANT
-							: CURRENT_SKILL_TABLE_ROWS.get(ln) ?? trimmed;
-				if (SUPERSEDED_LIFECYCLE_REVIEW_LINES.has(ln)) {
-					assert.ok(
-						!targetContent.includes(trimmed),
-						`superseded lifecycle-review line retained: fixture:${ln} "${trimmed}"`,
-					);
-					continue;
-				}
-				if (range.target === "obsolete") {
-					assert.ok(
-						!targetContent.includes(trimmed),
-						`obsolete line retained: fixture:${ln} "${trimmed}" remains in a live model-facing asset (section: ${range.label})`,
-					);
-					continue;
-				}
 				assert.ok(
-					targetContent.includes(expected),
-					`normative line lost: fixture:${ln} "${expected}" not found verbatim in ${TARGET_FILE[range.target]} (disposition: ${range.target}, section: ${range.label})`,
+					!targetContent.includes(trimmed),
+					`obsolete line retained: fixture:${ln} "${trimmed}" remains in a live model-facing asset (section: ${range.label})`,
 				);
 			}
 		},
@@ -375,17 +350,19 @@ for (const range of DISPOSITION_MAP) {
 
 test("core-alone: load-bearing direct-delegation tokens remain without lazy union", () => {
 	const core = readRealAsset("orchestrator.md");
-	assert.match(core, /4-file rule/);
-	assert.match(core, /Multi-file write rule/);
-	assert.match(core, /Incident rule/);
-	assert.match(core, /Verification rule/);
-	assert.match(core, /Long-session rule/);
+	// i18n pass: the core is Simplified Chinese; the rule names assert their
+	// Chinese wording.
+	assert.match(core, /4 文件规则/);
+	assert.match(core, /多文件写入规则/);
+	assert.match(core, /事故规则/);
+	assert.match(core, /验证规则/);
+	assert.match(core, /长会话规则/);
 });
 
 test("core-alone: dynamic Gentle AI ownership replaces package lifecycle instructions", () => {
 	const core = readRealAsset("orchestrator.md");
-	assert.match(core, /injects the mirrored provider-bundle review execution contract into this session's system prompt at start/);
-	assert.match(core, /Absent that mirrored contract, this package invents no lifecycle instructions/);
+	assert.match(core, /把镜像的提供方捆绑评审执行契约注入本会话系统提示/);
+	assert.match(core, /缺少该镜像契约时，本包不发明生命周期指令/);
 	assert.doesNotMatch(core, /start -> finalize -> validate/i);
 	assert.doesNotMatch(core, /receipt validation/i);
 });
@@ -473,15 +450,15 @@ test("every compressed lazy-file pointer in the core still names the material it
 	const namedPointers: ReadonlyArray<{ file: string; mustName: readonly string[] }> = [
 		{
 			file: "orchestrator-delegation.md",
-			mustName: ["Per-action table", "Work Routing Ladder", "Canonical Workflows", "blocking-prompt relays"],
+			mustName: ["逐动作表", "工作路由阶梯", "权威工作流", "阻塞提示中继"],
 		},
 		{
 			file: "orchestrator-memory.md",
-			mustName: ["Phase table", "artifact keys"],
+			mustName: ["阶段表", "产物键"],
 		},
 		{
 			file: "orchestrator-skills.md",
-			mustName: ["Discovery order", "intent hints"],
+			mustName: ["发现顺序", "意图提示"],
 		},
 	];
 	for (const { file, mustName } of namedPointers) {
@@ -489,11 +466,12 @@ test("every compressed lazy-file pointer in the core still names the material it
 		// including the backtick-quoted filename. `orchestrator-delegation.md`
 		// is referenced more than once in the core (a language-boundary pointer
 		// earlier, this compressed per-action pointer later) -- take the LAST
-		// occurrence, which is the one under test here.
+		// occurrence, which is the one under test here. Sentence boundaries may
+		// be ASCII periods or Chinese full stops (i18n pass).
 		const fileToken = `\`${file}\``;
 		const fileIndex = core.lastIndexOf(fileToken);
 		assert.ok(fileIndex >= 0, `core is missing a pointer to ${file}`);
-		const sentenceStart = core.lastIndexOf(".", fileIndex);
+		const sentenceStart = Math.max(core.lastIndexOf(".", fileIndex), core.lastIndexOf("。", fileIndex));
 		const pointerSentence = core.slice(sentenceStart + 1, fileIndex + fileToken.length);
 		for (const name of mustName) {
 			assert.ok(
@@ -503,9 +481,10 @@ test("every compressed lazy-file pointer in the core still names the material it
 		}
 	}
 	// The SDD workflow pointer was never compressed to a bare filename; its
-	// surrounding paragraphs already name the material at length.
+	// surrounding paragraphs already name the material at length (Chinese
+	// wording after the i18n pass).
 	assert.match(
 		core,
-		/SDD phases, native dispatcher rules, status contract, preflight\/init guards, artifact-store policy, execution mode, Strict TDD forwarding, phase result contract, and review workload guard/,
+		/SDD 阶段、原生派发器规则、状态契约、预检\/init 守卫、产物存储策略、执行模式、Strict TDD 转发、阶段结果契约与评审负载守卫/,
 	);
 });

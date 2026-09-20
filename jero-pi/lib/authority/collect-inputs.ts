@@ -10,17 +10,15 @@ import { expectedJeroTargetedValidationRequestHashV1 } from "./validate.ts";
 import { reviewGitEnvironment } from "../review-repository.ts";
 import { deriveChangedPathManifest, digestChangedPathManifest } from "../review-candidate-view.ts";
 
-// STATUS collect inputs + execute bindings (spec §A/§B/§I.2): the exact
-// `--name=value` token discipline, host-only tokens, submission descriptors
-// (the v5 SINGULAR `value` form, discrepancy #1), artifact subjects,
-// repository-context embedding, and the provider-targeted-validation request
-// document. Pure with respect to the lineage record: builders take the
-// loaded record and emit typed wire shapes; the only Git executed here is
-// the read-only correction-path derivation over the lineage's frozen
-// snapshot object store.
+// STATUS collect 输入与 execute 绑定（spec §A/§B/§I.2）：确切的
+// `--name=value` 令牌纪律、仅宿主令牌、提交描述符（v5 的单数 `value`
+// 形态，差异 #1）、产物主题、仓库上下文内嵌，以及提供方定向验证请求
+// 文档。对血脉记录保持纯函数：构建器接受已加载的记录并发出类型化
+// 线上形态；此处执行的唯一 Git 是对血脉冻结快照对象存储的只读修正
+// 路径派生。
 
 // ---------------------------------------------------------------------------
-// Wire shapes
+// 线上形态
 // ---------------------------------------------------------------------------
 
 export interface JeroTransitionArgumentV1 {
@@ -29,7 +27,7 @@ export interface JeroTransitionArgumentV1 {
 	readonly token: string;
 }
 
-/** The v5 SINGULAR submission `value` row (discrepancy #1: legacy `values[]` rows never carry schema/minimum/maximum). */
+/** v5 的单数提交 `value` 行（差异 #1：遗留 `values[]` 行从不携带 schema/minimum/maximum）。 */
 export interface JeroCaptureSubmissionValueV1 {
 	readonly slot: string;
 	readonly domain: string;
@@ -78,7 +76,7 @@ export interface JeroExecuteTransitionPayloadV1 {
 	readonly artifacts?: readonly JeroResultArtifactSummaryV1[];
 }
 
-/** The result-artifact summary an execute binding lists (fixture: status-v5-repository-context execute.artifacts). */
+/** execute 绑定列出的结果产物摘要（fixture：status-v5-repository-context 的 execute.artifacts）。 */
 export interface JeroResultArtifactSummaryV1 {
 	readonly schema: string;
 	readonly capability: string;
@@ -91,9 +89,9 @@ export interface JeroResultArtifactSummaryV1 {
 	readonly admission_decision: "completed";
 }
 
-// jero schema strings for the four capture inputs. The conformance boundary
-// maps these to the fixture vocabulary (discrepancy #2 discipline: canonical
-// jero names internally, upstream names only in fixture-isomorphism tests).
+// 四个捕获输入的 jero schema 字符串。合规边界把它们映射到 fixture
+// 词汇（差异 #2 纪律：内部用权威 jero 名称，上游名称只出现在
+// fixture 同构测试中）。
 export const JERO_CAPTURE_INPUT_SCHEMAS = {
 	REVIEWER: "jero.authority.capture.reviewer/v1",
 	CORRECTION_PLAN: "jero.authority.correction-plan/v1",
@@ -101,7 +99,7 @@ export const JERO_CAPTURE_INPUT_SCHEMAS = {
 	VALIDATOR: "jero.authority.capture.validator/v1",
 } as const;
 
-/** Fixture-vocabulary mapping for conformance tests (never used in production paths). */
+/** 供合规测试使用的 fixture 词汇映射（绝不用于生产路径）。 */
 export const JERO_CAPTURE_INPUT_SCHEMA_CONFORMANCE_MAP: Readonly<Record<string, string>> = {
 	[JERO_CAPTURE_INPUT_SCHEMAS.REVIEWER]: "https://gentle-ai.dev/schema/review/reviewer/v1",
 	[JERO_CAPTURE_INPUT_SCHEMAS.CORRECTION_PLAN]: "gentle-ai.review-correction-plan/v1",
@@ -110,7 +108,7 @@ export const JERO_CAPTURE_INPUT_SCHEMA_CONFORMANCE_MAP: Readonly<Record<string, 
 };
 
 // ---------------------------------------------------------------------------
-// Argument/token discipline (spec §A.1/§B)
+// 参数/令牌纪律（spec §A.1/§B）
 // ---------------------------------------------------------------------------
 
 function argument(name: string, value: string): JeroTransitionArgumentV1 {
@@ -128,9 +126,9 @@ function bindingArguments(record: JeroLineageStateFileV1, repositoryContext: Jer
 }
 
 /**
- * §B submission math: the submission's argument tokens are the collect
- * input's binding tokens MINUS the host-only `--agent`/`--materialize`
- * tokens PLUS one value token at `substitution_location`.
+ * §B 提交算术：提交的参数令牌等于 collect 输入的绑定令牌，减去仅宿主
+ * 的 `--agent`/`--materialize` 令牌，再加上位于 `substitution_location`
+ * 的一个值令牌。
  */
 export function jeroSubmissionArgumentTokensV1(collectArguments: readonly { readonly name: string; readonly value: string; readonly token?: string }[], valueToken: string): { argument_tokens: readonly string[]; substitution_location: number } {
 	const binding = collectArguments
@@ -140,13 +138,13 @@ export function jeroSubmissionArgumentTokensV1(collectArguments: readonly { read
 }
 
 // ---------------------------------------------------------------------------
-// Artifact subjects (STATUS-side derivation; START mints its own at creation)
+// 产物主题（STATUS 侧派生；START 在创建时自行铸造）
 // ---------------------------------------------------------------------------
 
 function recordManifestSha256V1(storeRoot: string, state: JeroReviewTransactionStateV1): string {
 	if (state.changed_path_manifest_sha256 !== undefined) return state.changed_path_manifest_sha256;
-	// Pre-M3 records predate the persisted field: re-derive read-only from the
-	// frozen snapshot object store (the identity match guarantees the trees).
+	// 早于 M3 的记录没有该持久化字段：从冻结快照对象存储只读重新派生
+	// （身份匹配保证了树的一致）。
 	const record = readJeroSnapshotRecordV1(storeRoot, state.snapshot.identity);
 	const executor = (file: string, args: readonly string[], options: { cwd: string; env: NodeJS.ProcessEnv }) =>
 		execFileSync(file, args, { ...options, encoding: "buffer" }) as Buffer;
@@ -154,7 +152,7 @@ function recordManifestSha256V1(storeRoot: string, state: JeroReviewTransactionS
 	return digestChangedPathManifest(manifest);
 }
 
-/** STATUS-side artifact subject for one selected lens (fixture: authority_revision == the live authority revision). */
+/** 某个已选评审视角的 STATUS 侧产物主题（fixture：authority_revision == 活动权威修订号）。 */
 export function jeroArtifactSubjectForRecordV1(storeRoot: string, record: JeroLineageStateFileV1, lens: JeroLensName, selectedOrder: number): JeroArtifactSubjectV1 {
 	const state = record.state;
 	const manifestSha256 = recordManifestSha256V1(storeRoot, state);
@@ -180,7 +178,7 @@ export function jeroArtifactSubjectForRecordV1(storeRoot: string, record: JeroLi
 }
 
 // ---------------------------------------------------------------------------
-// A.1 review.capture-result — one collect input per missing lens
+// A.1 review.capture-result——每个缺失评审视角一个 collect 输入
 // ---------------------------------------------------------------------------
 
 export function buildJeroReviewerResultCollectInputsV1(storeRoot: string, record: JeroLineageStateFileV1, repositoryContext: JeroRepositoryContextV1): JeroCollectInputV1[] {
@@ -223,7 +221,7 @@ export function buildJeroReviewerResultCollectInputsV1(storeRoot: string, record
 }
 
 // ---------------------------------------------------------------------------
-// A.2 review.capture-correction-plan — the request document + numeric slot
+// A.2 review.capture-correction-plan——请求文档 + 数值槽位
 // ---------------------------------------------------------------------------
 
 export interface JeroCorrectionPlanFindingRowV1 {
@@ -249,7 +247,7 @@ export interface JeroCorrectionPlanRequestV1 {
 	readonly findings: readonly JeroCorrectionPlanFindingRowV1[];
 }
 
-/** The frozen-findings request document the fixing actor receives (spec §A.2). */
+/** 修正执行者收到的冻结发现请求文档（spec §A.2）。 */
 export function buildJeroCorrectionPlanRequestV1(record: JeroLineageStateFileV1): JeroCorrectionPlanRequestV1 {
 	const state = record.state;
 	const byId = new Map(state.findings.map((finding) => [finding.id, finding]));
@@ -316,7 +314,7 @@ export function buildJeroCorrectionPlanCollectInputV1(record: JeroLineageStateFi
 }
 
 // ---------------------------------------------------------------------------
-// A.3 review.capture-refuter — self-contained provider role vector
+// A.3 review.capture-refuter——自包含的提供方角色向量
 // ---------------------------------------------------------------------------
 
 export function buildJeroRefuterCollectInputV1(record: JeroLineageStateFileV1, repositoryContext: JeroRepositoryContextV1): JeroCollectInputV1 {
@@ -334,7 +332,7 @@ export function buildJeroRefuterCollectInputV1(record: JeroLineageStateFileV1, r
 }
 
 // ---------------------------------------------------------------------------
-// A.4 review.capture-validation — the provider-targeted-validator vector
+// A.4 review.capture-validation——提供方定向 validator 向量
 // ---------------------------------------------------------------------------
 
 export interface JeroTargetedValidationFindingV1 {
@@ -373,7 +371,7 @@ export interface JeroTargetedValidationRequestV1 {
 	readonly correction_paths_digest: string;
 }
 
-/** Read-only correction-path derivation over the lineage's frozen snapshot object store. */
+/** 对血脉冻结快照对象存储的只读修正路径派生。 */
 function jeroCorrectionPathsV1(storeRoot: string, state: JeroReviewTransactionStateV1): string[] {
 	const record = readJeroSnapshotRecordV1(storeRoot, state.snapshot.identity);
 	const environment: NodeJS.ProcessEnv = {
@@ -389,9 +387,9 @@ function jeroCorrectionPathsV1(storeRoot: string, state: JeroReviewTransactionSt
 }
 
 /**
- * The full targeted-validation request (spec §A.4): fix findings carry
- * evidenceClass/causalDisposition only; the request hash is the M2 domain
- * hash over the frozen correction scope (validate.ts).
+ * 完整的定向验证请求（spec §A.4）：修正发现只携带
+ * evidenceClass/causalDisposition；请求哈希是对冻结修正范围的 M2 域
+ * 哈希（validate.ts）。
  */
 export function buildJeroTargetedValidationRequestV1(storeRoot: string, record: JeroLineageStateFileV1): JeroTargetedValidationRequestV1 {
 	const state = record.state;
@@ -458,7 +456,7 @@ export function buildJeroValidationCollectInputV1(storeRoot: string, record: Jer
 }
 
 // ---------------------------------------------------------------------------
-// Execute bindings (fixture: status-v5-repository-context — review.finalize)
+// execute 绑定（fixture：status-v5-repository-context——review.finalize）
 // ---------------------------------------------------------------------------
 
 export function buildJeroFinalizeExecuteTransitionV1(record: JeroLineageStateFileV1, repositoryContext: JeroRepositoryContextV1, artifacts: readonly JeroResultArtifactSummaryV1[]): JeroExecuteTransitionPayloadV1 {
@@ -487,15 +485,14 @@ export function buildJeroFinalizeExecuteTransitionV1(record: JeroLineageStateFil
 }
 
 /**
- * The approved-state burn vector (extension contract
- * assertReviewApprovedAcknowledgementExecuteV1): exactly five provider-issued
- * arguments (cwd, lineage, target, expected-revision, token), the single
- * approved precondition, and the binding the burn must equal. The token is
- * authority-issued and deterministic in the lineage and revision — the
- * extension re-parses these same tokens into reviewAcknowledgeV1, so a
- * drifted burn fails closed as a binding mismatch. The command keeps the
- * wire gentle-ai prefix: the wire vocabulary is byte-pinned by the relocated
- * golden vectors (design 5.1.7) and intentionally survives the identity pass.
+ * approved 状态的焚毁向量（扩展契约
+ * assertReviewApprovedAcknowledgementExecuteV1）：恰好五个提供方签发的
+ * 参数（cwd、lineage、target、expected-revision、token）、唯一的
+ * approved 前置条件，以及焚毁必须相等的绑定。令牌由权威签发，且在
+ * 血脉与修订号上是确定性的——扩展把这些同样的令牌重新解析进
+ * reviewAcknowledgeV1，因此漂移的焚毁以绑定不匹配保守失败。命令保留
+ * 线上的 gentle-ai 前缀：线上词汇被迁移后的金样向量字节钉住
+ * （设计 5.1.7），并刻意在身份改造中幸存。
  */
 export function buildJeroAcknowledgeExecuteTransitionV1(record: JeroLineageStateFileV1, repositoryContext: JeroRepositoryContextV1, cwd: string): JeroExecuteTransitionPayloadV1 {
 	const arguments_ = [

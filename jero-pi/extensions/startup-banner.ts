@@ -419,7 +419,7 @@ function buildPenLogoLine(
     }
 
     let order = rawOrder;
-    // v1: ajuste SOLO para la primera letra (G), con más curvatura caligráfica.
+    // v1：只针对首字母（G）做调整，加强书法感的弧度。
     if (letterIdx === 0) {
       const s = LETTER_SPANS[0];
       const w = Math.max(1, s.end - s.start + 1);
@@ -482,8 +482,8 @@ function pickIntroMode(rows: number, cols: number): IntroMode {
 }
 
 function currentIntroMode(): IntroMode {
-  // process.stdout.rows/columns reflejan el tamaño real del TTY del proceso;
-  // el TUI no expone alto en render(width) y por eso lo leemos directo acá.
+  // process.stdout.rows/columns 反映的是本进程 TTY 的真实尺寸；
+  // TUI 的 render(width) 不暴露高度，所以这里直接读取。
   const rows = process.stdout.rows ?? 0;
   const cols = process.stdout.columns ?? 0;
   return pickIntroMode(rows, cols);
@@ -519,7 +519,7 @@ async function countPackageExtensions(packages: unknown[]): Promise<number> {
       const extensions = pkg?.pi?.extensions;
       if (Array.isArray(extensions)) count += extensions.length;
     } catch {
-      // Packages installed from non-npm sources may not live in PI_NPM_DIR.
+      // 从非 npm 来源安装的包可能不在 PI_NPM_DIR 中。
     }
   }
   return count;
@@ -617,7 +617,7 @@ export default function (pi: ExtensionAPI) {
     disposeHeader();
     if (!ctx.hasUI) return;
 
-    // Si se está ejecutando un comando de CLI como "pi update" o "pi install", no mostramos la intro animada.
+    // 若正在执行 CLI 命令（如 "pi update" 或 "pi install"），则不播放动画开场。
     const isCLICommand =
       process.argv.length > 2 &&
       !process.argv.every((arg) => arg.startsWith("-") || arg.endsWith(".ts"));
@@ -625,8 +625,8 @@ export default function (pi: ExtensionAPI) {
 
     if (currentIntroMode() === "skip") return;
 
-    // Pi has already started its renderer. Let setHeader schedule the paint;
-    // clearing stdout here would leave its previous-frame cache out of sync.
+    // Pi 已经启动了它的渲染器。让 setHeader 去安排绘制；
+    // 在这里清空 stdout 会使其上一帧缓存失去同步。
     const bannerConfig = await readBannerConfig();
     const palette = BANNER_PALETTES[bannerConfig.color];
     const roseBase = padLines(normalizeAscii(ROSE_LARGE_RAW));
@@ -730,7 +730,7 @@ export default function (pi: ExtensionAPI) {
           try { tui.requestRender(); } catch { cleanup(); }
         }, 25);
 
-        // Grace period: pi-tui emite resizes transitorios mientras compone su layout inicial.
+        // 宽限期：pi-tui 在组合初始布局时会发出瞬时的 resize 事件。
         const bootStart = Date.now();
         const resizeHandler = () => {
           if (Date.now() - bootStart < RESIZE_GRACE_PERIOD_MS) return;
@@ -740,7 +740,7 @@ export default function (pi: ExtensionAPI) {
             const next = currentIntroMode();
             if (next === state.mode) return;
             state.mode = next;
-            // Pi owns removal in skip mode; keep listening for later expansion.
+            // skip 模式下由 Pi 负责移除；继续监听以便后续窗口放大。
             try {
               tui.requestRender();
             } catch {

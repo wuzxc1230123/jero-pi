@@ -19,8 +19,8 @@ export interface ReviewLockOwnerV1 {
 }
 
 /**
- * The runtime must provide a primitive whose no-replace result is authoritative.
- * Node's ordinary rename API is deliberately not adapted: it may replace a target.
+ * 运行时必须提供一个其“不替换”结果具有权威性的原语。
+ * Node 的普通 rename API 刻意不被改造使用：它可能替换目标。
  */
 export interface ReviewLockPlatformAdapterV1 {
 	name: string;
@@ -47,23 +47,18 @@ const UNQUALIFIED_PLATFORM: ReviewLockPlatformAdapterV1 = {
 };
 
 /**
- * The qualified default production platform: a pure-Node, no-dependency
- * atomic no-replace move.
+ * 达标的默认生产平台：纯 Node、零依赖的原子不替换移动。
  *
- * The lock's moved paths (`this.path`, quarantine/released destinations) are
- * directories, and directories cannot be hard-linked on POSIX. `fs.mkdirSync`
- * is itself already an atomic no-replace primitive for any path — it throws
- * EEXIST whether the destination is occupied by a file or a directory, empty
- * or not — so it exclusively reserves the destination name; the subsequent
- * rename then safely folds the source directory's content into that
- * exclusively-owned, still-empty destination (renaming a directory onto
- * one's own just-created empty directory is an ordinary, safe POSIX
- * replace). For a plain file source, the classic `linkSync`
- * (EEXIST-on-no-replace) + `unlinkSync` sequence is used instead.
+ * 锁的被移动路径（`this.path`、隔离/释放目标）是目录，而 POSIX 上
+ * 目录无法硬链接。`fs.mkdirSync` 本身对任意路径已是原子的不替换
+ * 原语——无论目标被文件还是目录占用、是否为空，它都抛 EEXIST——
+ * 因此它独占地保留目标名；随后的 rename 再安全地把源目录的内容
+ * 并入那个独占持有、仍为空的目标（把目录重命名到自己刚创建的
+ * 空目录之上是普通且安全的 POSIX 替换）。对于普通文件源，则改用
+ * 经典的 `linkSync`（不替换时 EEXIST）+ `unlinkSync` 序列。
  *
- * If the underlying primitive is unsupported on this platform or
- * filesystem, this fails closed with a descriptive `ReviewLockError` rather
- * than silently replacing the destination.
+ * 若底层原语在本平台或文件系统上不受支持，这里会携带描述性的
+ * `ReviewLockError` 保守失败，而不是静默替换目标。
  */
 export function qualifiedNodeFsLockPlatformV1(): ReviewLockPlatformAdapterV1 {
 	return {
@@ -78,9 +73,8 @@ export function qualifiedNodeFsLockPlatformV1(): ReviewLockPlatformAdapterV1 {
 				throw new ReviewLockError(`Review lock atomic no-replace move source is unavailable: ${error instanceof Error ? error.message : String(error)}`);
 			}
 			if (!isDirectory) {
-				// NTFS supports hard links too: CreateHardLinkW fails when the
-				// destination already exists, so the same EEXIST no-replace
-				// guarantee holds on every supported platform.
+				// NTFS 同样支持硬链接：目标已存在时 CreateHardLinkW 会失败，
+				// 因此相同的 EEXIST 不替换保证在每个受支持平台上都成立。
 				try {
 					linkSync(source, destination);
 					unlinkSync(source);
@@ -90,8 +84,8 @@ export function qualifiedNodeFsLockPlatformV1(): ReviewLockPlatformAdapterV1 {
 				return;
 			}
 			if (process.platform === "win32") {
-				// Directories cannot be hard-linked; a Windows rename onto an
-				// existing destination directory fails, preserving no-replace.
+				// 目录无法硬链接；Windows 上重命名到已存在的目标目录会
+				// 失败，从而保持不替换语义。
 				try {
 					renameSync(source, destination);
 				} catch (error) {
@@ -144,10 +138,10 @@ export class ReviewMutationLockV1 {
 		writeFileSync(intentPath, canonicalJsonV1(owner), { mode: 0o600, flag: "wx" }); this.fsyncFile(intentPath); this.fsyncDirectory(intentRoot);
 		mkdirSync(join(this.path, ".."), { recursive: true, mode: 0o700 });
 		try { mkdirSync(this.path, { mode: 0o700 }); } catch (error) {
-			// Contention: someone else's live lock; we changed nothing, so our
-			// intent record is garbage, not evidence — take it with us instead
-			// of accumulating one JSON per failed acquire.
-			try { unlinkSync(intentPath); this.fsyncDirectory(intentRoot); } catch { /* a leftover intent is inert */ }
+			// 争用：他人持有活动锁；我们没有改动任何东西，因此我们的意图
+			// 记录是垃圾而非证据——把它带走，而不是每次失败的获取都
+			// 累积一个 JSON。
+			try { unlinkSync(intentPath); this.fsyncDirectory(intentRoot); } catch { /* 残留的意图文件是无害的 */ }
 			throw new ReviewLockError(`Review authority lock is active or ambiguous: ${error instanceof Error ? error.message : String(error)}`);
 		}
 		try {
@@ -158,9 +152,8 @@ export class ReviewMutationLockV1 {
 			unlinkSync(intentPath);
 			this.fsyncDirectory(intentRoot);
 		} catch (error) {
-			// The incomplete directory is deliberately retained: stealing it is
-			// ambiguous. The intent file is retained alongside it on purpose —
-			// it names the owner whose failed attempt produced the ambiguity.
+			// 不完整的目录被刻意保留：窃取它是歧义的。意图文件也特意
+			// 随之保留——它点名了那次失败尝试造成歧义的所有者。
 			throw new ReviewLockError(`Review authority lock owner is ambiguous: ${error instanceof Error ? error.message : String(error)}`);
 		}
 		return Object.freeze(owner);

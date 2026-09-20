@@ -1,54 +1,54 @@
 ---
 name: jero-rdd-defect-workflow
-description: "Trigger: RDD, receipt-driven development, review authority, receipt/lineage, correction/recovery, delivery gate/kill switch, bounded review defects. Guide work."
+description: "触发词：RDD、receipt-driven development、评审权威、回执/谱系、纠正/恢复、交付门控/熔断、有界评审缺陷。指导工作。"
 license: Apache-2.0
 metadata:
   author: gentleman-programming
   version: "1.0"
 ---
 
-## Activation Contract
+## 激活契约
 
-Load when the frontmatter trigger terms apply to a defect workflow.
+当 frontmatter 触发词适用于某个缺陷工作流时，加载本技能。
 
-This skill guides public collaboration. It does not grant issue approval, label, review, exception, or merge authority.
+本技能指导公开协作。它不授予 issue 批准、标签、评审、例外或合并权威。
 
-## Hard Rules
+## 硬性规则
 
-- Review and Judgment Day evidence is review-only. Pi never mints delivery authority: ordinary commit, push, PR, and release always follow repository policy, regardless of RDD mode.
-- Require an approved issue (`status:approved`) and clean current `main` reproduction before implementation. Audit existing PRs for supersession or conflict; stop or narrow stale claims.
-- Group by causal authority invariant. Use one issue and one PR or explicit chain per independent invariant and rollback boundary. Split independent causes; never merge a superseded or conflicting authority line.
-- Inventory every operator flow claimed by the issue or PR, including entry, mode, environment, expectation, and negative controls. Require one truthful black-box bench journey per CLI or lifecycle flow, or actual runtime E2E proof when the core bench cannot represent it. Synthetic proxy coverage never proves another runtime.
-- Use fovea-first impact mapping (the `fovea_focus`/`fovea_sketch`/`fovea_dwell` tools), a dedicated worktree, and behavior-first tests. Run source-mutating normalization before candidate freeze.
-- Forecast authored changes before edits. The hard limit is 400 additions plus deletions; above it, STOP for a chain or explicit maintainer-approved exception.
-- When RDD is enabled, bind review receipts, lineage, correction, and recovery evidence to the exact candidate. Keep bounded review defects in one correction transaction; never treat that evidence as delivery authority.
-- Require independent read-only candidate validation before publication. Validation cannot edit source or authority; findings require a new candidate.
-- Keep communication humane and evidence-based. Repository labels and workflow metadata are maintainer-owned, never evidence of contributor blame.
+- 评审与 Judgment Day 证据仅用于评审。Pi 绝不铸造交付权威：普通提交、推送、PR 与发布始终遵循仓库策略，与 RDD 模式无关。
+- 实现之前，要求已批准的 issue（`status:approved`）与干净的当前 `main` 复现。审计既有 PR 是否被取代或冲突；停止或收窄过时主张。
+- 按因果权威不变量分组。每个独立不变量与回滚边界使用一个 issue 和一个 PR 或显式链。拆分独立原因；绝不合并被取代或冲突的权威线。
+- 清点 issue 或 PR 声称的每个操作者流程，包括入口、模式、环境、期望与阴性对照。每个 CLI 或生命周期流程要求一次如实的黑盒台架旅程；当核心台架无法代表它时，用真实运行时 E2E 证明。合成代理覆盖绝不能证明另一个运行时。
+- 使用 fovea 优先的影响映射（`fovea_focus`/`fovea_sketch`/`fovea_dwell` 工具）、专属工作树与行为优先测试。候选冻结之前，运行改动源的规范化。
+- 编辑前预测署名改动量。硬上限为新增加删除共 400 行；超过即 STOP，改为链式或明确的维护者批准例外。
+- RDD 启用时，把评审回执、谱系、纠正与恢复证据绑定到确切候选。有界评审缺陷保留在一个纠正事务内；绝不把该证据当作交付权威。
+- 发布前要求独立的只读候选验证。验证不得编辑源码或权威；发现新问题需要新候选。
+- 沟通保持人性化、基于证据。仓库标签与工作流元数据归维护者所有，绝不是归咎贡献者的证据。
 
-## Decision Gates
+## 决策门
 
-| Condition | Action |
+| 条件 | 动作 |
 | --- | --- |
-| Any RDD mode | Review evidence remains review-only; ordinary commit, push, PR, and release follow repository policy with no Pi delivery authority. |
-| Issue gate or reproduction fails | Wait, stop, or narrow with evidence. |
-| Invariant or rollback is independent | Separate issue and authoritative PR line. |
-| Core bench fits / does not fit | Bench journey / actual runtime E2E; never proxy. |
-| Forecast exceeds 400 lines | Chain or approved exception before edits. |
+| 任意 RDD 模式 | 评审证据仍仅用于评审；普通提交、推送、PR 与发布遵循仓库策略，无 Pi 交付权威。 |
+| issue 门控或复现失败 | 带证据地等待、停止或收窄。 |
+| 不变量或回滚相互独立 | 分离 issue 与权威 PR 线。 |
+| 核心台架适合/不适合 | 台架旅程/真实运行时 E2E；绝不用代理。 |
+| 预测超过 400 行 | 编辑前链式或批准例外。 |
 
-## Execution Steps
+## 执行步骤
 
-1. Check mode, approval, PR conflicts, and current-main reproduction.
-2. Name invariant and rollback; isolate the worktree; Fovea-map code, tests, evidence, docs, distribution, and registration.
-3. Inventory flows and controls; add failing tests and the smallest correction.
-4. Normalize, enforce budget, run tests, and record each flow's exact candidate, command, scenario, and result.
-5. Freeze, validate read-only, and give the verdict, evidence, and one humane next action.
+1. 检查模式、批准、PR 冲突与当前 main 复现。
+2. 命名不变量与回滚；隔离工作树；用 Fovea 映射代码、测试、证据、文档、分发与注册。
+3. 清点流程与对照；添加失败测试与最小纠正。
+4. 规范化、执行预算、运行测试，并记录每个流程的确切候选、命令、场景与结果。
+5. 冻结、只读验证，然后给出裁定、证据与一个人性化的下一步。
 
-## Output Contract
+## 输出契约
 
-Return `rdd_mode`, `issue_pr`, `causal_invariant`, `operator_flows`, `journey_runtime_evidence`, `changed_line_budget`, `tests`, `rollback`, and `unresolved_authority_decisions`.
+返回 `rdd_mode`、`issue_pr`、`causal_invariant`、`operator_flows`、`journey_runtime_evidence`、`changed_line_budget`、`tests`、`rollback` 与 `unresolved_authority_decisions`。
 
-Identify approved and superseded/conflicting authority lines; every flow, negative control, and candidate-bound proof; additions plus deletions and chain/exception; test results; independent rollback; and unresolved maintainer decisions.
+识别已批准与被取代/冲突的权威线；每个流程、阴性对照与绑定候选的证明；新增加删除行数与链/例外；测试结果；独立回滚；以及未决的维护者决策。
 
-## References
+## 参考
 
-No supporting files. Current repository policy remains authoritative.
+无支撑文件。当前仓库策略保持权威。

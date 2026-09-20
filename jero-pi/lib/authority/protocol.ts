@@ -1,13 +1,12 @@
 import { JERO_RECEIPT_BODY_SCHEMA, JERO_REVIEW_TRANSACTION_SCHEMA, JERO_VERIFY_RESULT_SCHEMA } from "./canonical.ts";
 
-// Strict decoders for the internal `jero.authority/v1` record family
-// (design §5.1.1/§5.1.7). Every decoder enforces an EXACT key set, closed
-// enums, and typed fields; unknown keys, missing keys, and out-of-enum
-// values fail closed with the offending key named in the error. The decode
-// discipline mirrors the private helpers in native-review-cli.ts
-// (exactObject/requiredString/enumString), lifted here so lib/authority owns
-// its own kit — nothing in this module reads the environment, accepts
-// free-text commands, or imports extensions/.
+// 内部 `jero.authority/v1` 记录家族的严格解码器（设计 §5.1.1/§5.1.7）。
+// 每个解码器都强制“精确”的键集、封闭枚举和类型化字段；未知键、缺失
+// 键和超出枚举的值都以保守失败收场，并在错误中点名肇事键。解码纪律
+// 镜像 native-review-cli.ts 的私有辅助函数
+// （exactObject/requiredString/enumString），提升到这里使 lib/authority
+// 拥有自己的工具集——本模块不读取环境、不接受自由文本命令、不导入
+// extensions/。
 
 export class JeroAuthorityProtocolError extends Error {
 	constructor(message: string) {
@@ -17,7 +16,7 @@ export class JeroAuthorityProtocolError extends Error {
 }
 
 // ---------------------------------------------------------------------------
-// Strict decode helper kit (private)
+// 严格解码辅助工具集（私有）
 // ---------------------------------------------------------------------------
 
 function object(value: unknown, label: string): Record<string, unknown> {
@@ -94,9 +93,9 @@ function recordOf<T>(value: unknown, label: string, decode: (entry: unknown, ent
 }
 
 // ---------------------------------------------------------------------------
-// Lineage state record (`jero.authority.review-transaction/v1`)
-// Field model mirrors the upstream compact transaction record decoder in
-// native-review-cli.ts (decodeReviewTransaction) under the jero schema.
+// 血脉状态记录（`jero.authority.review-transaction/v1`）
+// 字段模型镜像 native-review-cli.ts 中上游的紧凑事务记录解码器
+// （decodeReviewTransaction），置于 jero schema 之下。
 // ---------------------------------------------------------------------------
 
 export const JERO_REVIEW_MODES = ["ordinary_4r", "ordinary_bounded", "judgment_day"] as const;
@@ -209,12 +208,11 @@ export interface JeroLensResultV1 {
 	result_hash: string;
 }
 
-// Recorded correction evidence for the evidence-first correction lifecycle
-// (spec §E): the capture outcome is recorded BEFORE targeted validation is
-// offered, a `verification_failed` capture reopens the correction without
-// charging anything, and every recapture must land under a distinct immutable
-// evidence identity (assertDistinctCorrectionEvidence). Persisting the last
-// recorded evidence is what makes those rules enforceable across processes.
+// 证据先行修正生命周期的已记录修正证据（spec §E）：捕获结局在提供
+// 定向验证“之前”记录，`verification_failed` 的捕获免费重开修正，且每次
+// 重新捕获必须落在互不相同的不可变证据身份之下
+// （assertDistinctCorrectionEvidence）。持久化最后记录的证据正是这些
+// 规则能够跨进程执行的原因。
 export const JERO_CORRECTION_EVIDENCE_OUTCOMES = ["passed", "verification_failed", "procedural_tooling_failed"] as const;
 export type JeroCorrectionEvidenceOutcome = (typeof JERO_CORRECTION_EVIDENCE_OUTCOMES)[number];
 
@@ -267,11 +265,10 @@ export interface JeroReviewTransactionStateV1 {
 	actual_correction_lines?: number;
 	correction_evidence?: JeroCorrectionEvidenceRecordV1;
 	/**
-	 * M3 (spec §G, discrepancy #4): the frozen changed-path manifest digest.
-	 * Persisted at START so the STATUS frozen block ALWAYS comes from the
-	 * record — never from a live manifest re-derivation that drifts when the
-	 * workspace moves under a correction. Optional: pre-M3 records re-derive
-	 * read-only from their frozen snapshot.
+	 * M3（spec §G，差异 #4）：冻结的变更路径清单摘要。在 START 时持久化，
+	 * 使 STATUS 冻结块“始终”来自记录——绝不来自在修正期间工作区移动时
+	 * 会漂移的活动清单重派生。可选：早于 M3 的记录从其冻结快照只读
+	 * 重派生。
 	 */
 	changed_path_manifest_sha256?: string;
 }
@@ -459,31 +456,27 @@ export function decodeJeroReviewTransactionStateV1(value: unknown): JeroReviewTr
 }
 
 // ---------------------------------------------------------------------------
-// Request journal entry (embedded in the persisted lineage record)
-// Semantics mirror review-transaction.ts RequestJournalEntryV1: exact
-// (idempotency_key, request_hash) replay returns the stored
-// canonical_result; key reuse with a different request fails closed; a
-// pending entry blocks new mutating operations.
+// 请求日志条目（内嵌于持久化的血脉记录）
+// 语义镜像 review-transaction.ts 的 RequestJournalEntryV1：精确的
+// (idempotency_key, request_hash) 重放返回存储的 canonical_result；
+// 键被不同请求复用则保守失败；pending 条目阻塞新的变更操作。
 // ---------------------------------------------------------------------------
 
-// "acknowledge" is the M2 addition (spec §I.9): the approved-authority burn
-// is journaled exactly-once under this operation; the persisted 13-state enum
-// has no "burned" member, so the burn is authority-level (a completed journal
-// entry), never a state-level transition.
-// "apply-fix" is the M2 review-driven addition (findings F14): the bounded-edit
-// application journals its own apply-time events — most importantly the
-// correction-budget-exceeded escalation, which previously rode "authorize-fix"
-// and mislabeled an apply-time outcome as a plan-admission one.
-// The three "sdd-*" members are the M4 additions (spec _tools/p2-m4-sdd-analysis.md
-// §A.5): the runtime-attempt authority is journal-auditable by contract
-// (sdd-status-contract.md:68 — acquire before every runtime-bearing launch,
-// settle after; the ledger entries are the R1/R3 proof artifacts). Plain
-// sdd-status stays out of the journal: it is a pure projection.
-// "abandon" and "reconcile-authority" are the M5 maintenance additions (spec
-// _tools/p2-m5-maintenance-analysis.md): destructive maintenance transitions
-// are journaled exactly-once on the lineage they terminate; reclaim/recover
-// are store-level (their audit lives in the store maintenance log, not the
-// lineage journal).
+// “acknowledge”是 M2 的新增（spec §I.9）：已批准权威的焚毁以恰好一次
+// 记入该操作的日志；持久化的 13 态枚举没有 “burned” 成员，因此焚毁是
+// 权威层级（一条已完成的日志条目），绝不是状态层级的转移。
+// “apply-fix”是 M2 由评审驱动的新增（发现 F14）：有界编辑的应用为
+// 自己的应用期事件记日志——最重要的是修正预算超出的升级，它过去搭载
+// 在 “authorize-fix” 上，把应用期结局误标为计划受理结局。
+// 三个 “sdd-*” 成员是 M4 的新增（规范 _tools/p2-m4-sdd-analysis.md
+// §A.5）：运行时尝试权威按契约可经日志审计
+// （sdd-status-contract.md:68——每次承载运行时的启动前 acquire、
+// 之后 settle；台账条目即 R1/R3 的证明产物）。普通的 sdd-status 不进
+// 日志：它是纯投影。
+// “abandon”与 “reconcile-authority”是 M5 的维护新增（规范
+// _tools/p2-m5-maintenance-analysis.md）：破坏性维护转移在被其终结的
+// 血脉上恰好一次记入日志；reclaim/recover 是存储层级的（它们的审计
+// 位于存储维护日志，而非血脉日志）。
 export const JERO_AUTHORITY_OPERATIONS = ["start", "freeze-ledger", "resolve-evidence", "authorize-fix", "apply-fix", "validate-fix", "verify", "gate", "acknowledge", "sdd-attempt-acquire", "sdd-attempt-settle", "sdd-continue", "abandon", "reconcile-authority"] as const;
 export type JeroAuthorityOperation = (typeof JERO_AUTHORITY_OPERATIONS)[number];
 
@@ -513,9 +506,9 @@ export function decodeJeroRequestJournalEntryV1(value: unknown, label = "request
 }
 
 // ---------------------------------------------------------------------------
-// Receipt body + envelope (`jero.authority.receipt-body/v1`)
-// The receipt freezes the terminal authority summary of a lineage; its hash
-// is the jero-authority receipt domain hash (see receipts.ts).
+// 回执正文 + 封套（`jero.authority.receipt-body/v1`）
+// 回执冻结血脉的终局权威摘要；其哈希是 jero-authority 的回执域哈希
+// （见 receipts.ts）。
 // ---------------------------------------------------------------------------
 
 export interface JeroReceiptBodyV1 {
@@ -567,9 +560,9 @@ export function decodeJeroReceiptBodyV1(value: unknown, label = JERO_RECEIPT_BOD
 }
 
 // ---------------------------------------------------------------------------
-// Verification envelope (`jero.verify-result/v1`, design §5.1.8)
-// The typed record for SDD verify-report envelopes; markdown/YAML extraction
-// stays with the SDD milestone, this decoder owns the strict field contract.
+// 验证封套（`jero.verify-result/v1`，设计 §5.1.8）
+// SDD verify-report 封套的类型化记录；markdown/YAML 提取仍归 SDD 里程碑，
+// 本解码器只拥有严格字段契约。
 // ---------------------------------------------------------------------------
 
 export interface JeroVerifyResultV1 {
@@ -620,9 +613,9 @@ export function decodeJeroVerifyResultV1(value: unknown): JeroVerifyResultV1 {
 }
 
 // ---------------------------------------------------------------------------
-// Review-mode record (`jero.authority.review-mode/v1`, spec §I.8)
-// The persisted RDD switch. M2 owns the clone-scoped record under the jero
-// authority store; the global value is read-only from the jero config home.
+// 评审模式记录（`jero.authority.review-mode/v1`，spec §I.8）
+// 持久化的 RDD 开关。M2 拥有 jero 权威存储下的克隆作用域记录；
+// 全局值从 jero 配置主目录只读。
 // ---------------------------------------------------------------------------
 
 export const JERO_REVIEW_MODE_RECORD_SCHEMA = "jero.authority.review-mode/v1";
@@ -645,11 +638,10 @@ export function decodeJeroReviewModeRecordV1(value: unknown, label = JERO_REVIEW
 }
 
 // ---------------------------------------------------------------------------
-// SDD attempt ledger (`jero.authority.sdd-attempt-ledger/v1`, spec §A.2/A.3/D)
-// The runtime-attempt authority's persisted state: one ledger per
-// (workspaceRoot, changeName) under the store, at most one live attempt,
-// token stored as sha256 (never plaintext), untracked scope retained
-// verbatim on terminal settlements (R4).
+// SDD 尝试台账（`jero.authority.sdd-attempt-ledger/v1`，spec §A.2/A.3/D）
+// 运行时尝试权威的持久化状态：存储下每个 (workspaceRoot, changeName)
+// 一本台账，至多一个活动尝试，令牌以 sha256 存储（绝不存明文），
+// 终局结算时逐字保留未跟踪范围（R4）。
 // ---------------------------------------------------------------------------
 
 export const JERO_SDD_ATTEMPT_LEDGER_SCHEMA = "jero.authority.sdd-attempt-ledger/v1";
@@ -663,16 +655,16 @@ export type JeroSddAttemptState = (typeof JERO_SDD_ATTEMPT_STATES)[number];
 export interface JeroSddAttemptRecordV1 {
 	request_id: string;
 	acquired_at_revision: string;
-	/** sha256 hex of the minted token — the plaintext token never persists. */
+	/** 已铸造令牌的 sha256 十六进制——明文令牌绝不持久化。 */
 	token_hash: string;
 	work_unit: string;
 	evidence_goal: string;
 	max_attempts: number;
 	max_changed_lines: number;
-	/** The acquire's expectedRevision ("" accepted a no-prior-state ledger). */
+/** acquire 的 expectedRevision（“” 表示接受无先前状态的台账）。 */
 	expected_revision: string;
 	remediates_evidence_revision?: string;
-	/** Untracked-selection trio frozen at acquire, replayed verbatim on settle. */
+	/** acquire 时冻结的未跟踪选择三元组，settle 时逐字重放。 */
 	untracked_scope: "exclude" | "select";
 	expected_untracked_inventory?: string;
 	intended_untracked: readonly string[];
@@ -685,7 +677,7 @@ export interface JeroSddAttemptRecordV1 {
 		harness_disposition: "reused" | "invalidated";
 		cleanup_evidence: string;
 		process_evidence: string;
-		/** R4: exact paths retained verbatim, never reconciled or truncated. */
+		/** R4：精确路径逐字保留，绝不调和或截断。 */
 		settled_untracked: readonly string[];
 	};
 }
@@ -694,7 +686,7 @@ export interface JeroSddAttemptLedgerV1 {
 	schema: typeof JERO_SDD_ATTEMPT_LEDGER_SCHEMA;
 	workspace_root: string;
 	change_name: string;
-	/** Attempt history, append-only; index length-1 is live only when unsettled. */
+	/** 尝试历史，只追加；只有未结算时最后一个条目才是活动的。 */
 	attempts: readonly JeroSddAttemptRecordV1[];
 }
 
@@ -714,15 +706,15 @@ export function decodeJeroSddAttemptLedgerV1(value: unknown, label = JERO_SDD_AT
 			const settlement = exactObject(attempt.settlement, ["request_id", "outcome", "diagnosis", "harness_disposition", "cleanup_evidence", "process_evidence", "settled_untracked"], ["evidence_revision", "remediation_evidence"], `${label}.attempts[${index}].settlement`);
 			const outcome = requiredEnum(settlement.outcome, JERO_SDD_ATTEMPT_OUTCOMES, `${label}.attempts[${index}].settlement.outcome`);
 			const evidenceRevision = settlement.evidence_revision === undefined ? undefined : requiredSha256Identity(settlement.evidence_revision, `${label}.attempts[${index}].settlement.evidence_revision`);
-			// The upstream evidence pairing (native-review-cli.ts:2173-2174), enforced
-			// on read as well as on write: interrupted carries no evidence, failed
-			// requires evidence_revision, passed requires one of the two evidence fields.
+			// 上游的证据配对（native-review-cli.ts:2173-2174），读取与写入
+			// 双向强制：interrupted 不携带证据，failed 需要
+			// evidence_revision，passed 需要两个证据字段之一。
 			if (outcome === "interrupted" && (evidenceRevision !== undefined || settlement.remediation_evidence !== undefined)) throw new JeroAuthorityProtocolError(`${label}: interrupted settlement carries evidence`);
 			if (outcome !== "interrupted" && evidenceRevision === undefined && !(outcome === "passed" && settlement.remediation_evidence !== undefined)) throw new JeroAuthorityProtocolError(`${label}: ${outcome} settlement lacks evidence`);
 		}
 		return attempt as unknown as JeroSddAttemptRecordV1;
 	});
-	// At most one live (unsettled) attempt — the ledger is the single-live contract.
+	// 至多一个活动（未结算）尝试——台账就是单活动契约。
 	if (attempts.filter((attempt) => attempt.settlement === undefined).length > 1) throw new JeroAuthorityProtocolError(`${label}: more than one live attempt`);
 	return {
 		schema: JERO_SDD_ATTEMPT_LEDGER_SCHEMA,

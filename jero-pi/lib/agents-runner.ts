@@ -8,10 +8,10 @@ import { CHILD_QUERY_MAX_INFLIGHT, CHILD_QUERY_TIMEOUT_MS, parseChildFrame, vali
 import { ParentStandingReviewPermissionBroker } from "./review-session-standing-permission-ipc.ts";
 import { isFinished, normalizeRpcEvent, TASK_EVENT, TASK_STATUS, taskLabel, type AskRequest, type ChildResponseObservation, type TaskRecord, type RemediationTaskState, type TaskStore } from "./agents-protocol.ts";
 
-// Gentle Agents runner. Every subagent is its own `pi --mode rpc` process:
-// the host never runs subagent work on the TUI thread. It writes JSON
-// commands, reads JSON lines, applies deltas to the store, answers dialogs,
-// and enforces an inactivity watchdog per task.
+// Gentle Agents 运行器。每个子代理都是独立的 `pi --mode rpc` 进程：
+// 宿主绝不在 TUI 线程上运行子代理工作。它写入 JSON
+// 命令、读取 JSON 行、把增量应用到存储、应答对话框，
+// 并对每个任务实施不活动看门狗。
 
 export interface ChildLike {
 	pid: number | undefined;
@@ -73,10 +73,10 @@ export interface TaskQuery {
 
 export const MAX_CHILD_RESPONSE_OBSERVATIONS = 128;
 
-/** Local producer snapshot only; never native workflow success or export authority.
- * Scope excludes tools, compaction, hidden provider retries and history replay.
- * Each message_end is retained separately; RPC supplies no stable dedupe key.
- * Unsettled shutdown may lose in-flight responses even when droppedResponses is 0.
+/** 仅为本地生产者快照；绝不是原生工作流的成功判定或导出权威。
+ * 范围不含工具、压缩、隐藏的提供方重试与历史重放。
+ * 每个 message_end 单独保留；RPC 不提供稳定的去重键。
+ * 未落定的关闭可能丢失在途响应，即使 droppedResponses 为 0。
  */
 export interface ChildObservationSnapshot {
 	readonly coverage: "final_assistant_messages_only";
@@ -92,15 +92,15 @@ interface ChildObservationBuffer {
 
 export interface RunnerHooks {
 	askUser(taskId: string, request: AskRequest, raw: Record<string, unknown>): Promise<AskAnswer>;
-	/** Optional immutable snapshot, delivered once at existing finalization.
-	 * Undefined when collection was disabled or no child handle was created.
-	 * Parent must check task.status AND agentSettled; observations are not success.
+	/** 可选的不可变快照，在既有的收尾处一次性交付。
+	 * 采集被禁用或未创建子句柄时为 undefined。
+	 * 父级必须同时检查 task.status 与 agentSettled；观测不等于成功。
 	 */
 	onFinish?(task: TaskRecord, observations?: ChildObservationSnapshot): void;
-	// Accepts a child notification only while the originating parent session is active.
+	// 仅在发起方父会话活跃时接受子进程通知。
 	onNotification?(task: TaskRecord, message: string): boolean | void;
 	onQuery?(task: TaskRecord, requestId: string, message: string): boolean | void;
-	// Parent-only observation of a paired successful filesystem tool, not prose.
+	// 父级对配对成功的文件系统工具的观测，而非散文叙述。
 	onSuccessfulMutation?(task: TaskRecord, tool: { toolName: "write" | "edit"; toolCallId: string; path: string; evidence?: SessionChangeEvidence }): void | Promise<void>;
 }
 
@@ -140,7 +140,7 @@ export function parseRemediationPlan(value: unknown, cwd: string): RemediationPl
 export const plannedCommands = (plan: RemediationPlan) => [...plan.commands, ...(plan.runtimeHarness.command ? [plan.runtimeHarness.command] : []), plan.rollback.command];
 const evidenceDigest = (value: string) => `sha256:${createHash("sha256").update(value).digest("hex")}`;
 
-// Only paired stock-shell observations may fill this remediation-only plan.
+// 只有配对的原生 shell 观测才能填充这份仅限修复的计划。
 export function observeRemediationTool(state: RemediationObservations, raw: Record<string, unknown>): void {
 	if (raw.toolName !== "bash" || typeof raw.toolCallId !== "string") return;
 	const id = raw.toolCallId;
@@ -209,31 +209,31 @@ export interface TaskRequest {
 	sessionDir: string;
 	resumeSessionPath: string | undefined;
 	env: NodeJS.ProcessEnv;
-	// A launch-local SDD identity. It is never prompt text or shared state.
+	// 一次启动局部有效的 SDD 身份。它绝不是提示词文本或共享状态。
 	sddChange?: SddChangeSelection;
-	// Untrusted narrowing intent; paths come only from matching host provenance.
+	// 不受信任的收窄意图；路径只来自匹配的宿主出处。
 	researchSelection?: unknown;
 	researchArtifact?: ResearchArtifactIntent;
 	extensionPaths?: string[];
-	// Captures the originating session; invoked only after successful OS spawn.
+	// 捕获发起会话；仅在 OS 成功生成进程后调用。
 	onLaunch?: () => void;
-	/** Default off. Parent owns policy before opting into bounded local buffering,
-	 * and must recheck policy/catalog privacy before recording or forwarding.
-	 * This flag does not authorize telemetry export or perform policy subprocesses.
+	/** 默认关闭。父级在加入有界本地缓冲之前掌握策略，
+	 * 并必须在记录或转发之前复查策略/目录隐私。
+	 * 该标志不授权遥测导出，也不执行策略子进程。
 	 */
 	collectResponseObservations?: boolean;
-	/** Optional parallel preparation after dequeue; never delays OS spawn.
-	 * Unready at the first observation checkpoint permanently drops collection. */
+	/** 出队后可选的并行准备；绝不延迟 OS 生成进程。
+	 * 在第一个观测检查点仍未就绪则永久放弃采集。 */
 	prepareResponseObservations?: () => Promise<boolean>;
-	/** Optional synchronous parent-local grant check; never perform I/O here.
-	 * Parent checks environment, known revocation and a monotonic expiry against
-	 * its fresh native policy grant. False/throw permanently discards this task's
-	 * buffer. Checked once ready, on RPC values, and finish; this is not a watcher.
-	 * Omission preserves the explicit opt-in producer API, not policy authority.
+	/** 可选的同步父级本地授权检查；绝不要在这里做 I/O。
+	 * 父级对照其新鲜的原生策略授权检查环境、已知撤销
+	 * 与单调过期。返回 false 或抛出则永久丢弃该任务的
+	 * 缓冲。在就绪时、RPC 值上与收尾时各检查一次；这不是观察器。
+	 * 省略该字段保留显式加入的生产者 API，而非策略权威。
 	 */
 	canCollectResponseObservations?: () => boolean;
-	// This closure stays only in the parent process. Its presence creates an
-	// inherited fd, never an environment boolean or model-visible permission.
+	// 该闭包只留在父进程中。它的存在创建一个继承的
+	// fd，绝不是环境布尔值或模型可见的权限。
 	authorizeParentStandingReviewPermission?: (repositoryIdentity: string) => boolean;
 }
 
@@ -277,9 +277,9 @@ interface LiveTask {
 	acknowledgedIpcIds: Set<string>;
 	acknowledgedIpcOrder: string[];
 	mutationStarts: Map<string, { toolName: "write" | "edit"; toolCallId: string; path: string }>;
-	// Bounded ring buffer of the child's raw stderr output, capped to the last
-	// STDERR_TAIL_MAX characters. Only surfaced on the stall and pre-settle exit
-	// terminal paths, never on completed, cancelled, or other failure reasons.
+	// 子进程原始 stderr 输出的有界环形缓冲，只保留最后
+	// STDERR_TAIL_MAX 个字符。仅在停滞与收尾前退出的终态
+	// 路径上呈现，绝不在完成、取消或其他失败原因上呈现。
 	stderrTail: string;
 }
 
@@ -333,10 +333,10 @@ export function childArguments(request: TaskRequest): string[] {
 	return args;
 }
 
-// The child is the same pi that is running us: node plus its cli entry.
-// JERO_PI_AGENTS_PI overrides it with a command line. Quoted segments
-// ("..." / '...') keep spaces intact, so a Windows pi under "C:\Program
-// Files\..." stays one argument; quotes are not shell-processed beyond that.
+// 子进程就是正在运行我们的那个 pi：node 加它的 cli 入口。
+// JERO_PI_AGENTS_PI 用一条命令行覆盖它。带引号的片段
+// （"..." / '...'）保持空格完整，因此位于 "C:\Program
+// Files\..." 下的 Windows pi 仍是一个参数；引号除此之外不做 shell 处理。
 function splitCommandLine(line: string): string[] {
 	const parts: string[] = [];
 	let current = "";
@@ -373,8 +373,8 @@ export function piCommand(proc: ProcessLike = process): PiCommand {
 	return { command: "pi", args: [] };
 }
 
-// RPC framing is strict JSONL: LF only, optional CR. Lines that do not parse
-// are dropped (pi's own parse errors arrive as responses anyway).
+// RPC 帧是严格的 JSONL：仅 LF，可选 CR。无法解析的行
+// 被丢弃（pi 自身的解析错误反正会以响应形式到达）。
 export class JsonLines {
 	private buffer = "";
 	private readonly onValue: (value: unknown) => void;
@@ -393,7 +393,7 @@ export class JsonLines {
 			try {
 				this.onValue(JSON.parse(line));
 			} catch {
-				// not JSON: ignore
+				// 非 JSON：忽略
 			}
 		}
 	}
@@ -471,8 +471,8 @@ export class AgentRunner {
 		const task = preparedRemediation ?? this.createTask(request);
 		if (request.sddRemediation) task.sddRemediation = structuredClone(request.sddRemediation);
 		if (request.finalizeRemediation) this.remediationFinalizers.set(task.id, request.finalizeRemediation);
-		// A caller can retain and mutate its request after dispatch. Preserve only
-		// the identity selected at construction for this child launch.
+		// 调用方可以在派发之后保留并修改其请求。只保留
+		// 构造时为这次子进程启动选定的身份。
 		const launchRequest = {
 			...request,
 			sddChange: request.sddChange && { ...request.sddChange },
@@ -533,8 +533,8 @@ export class AgentRunner {
 		return true;
 	}
 
-	/** Parent-known revocation clears buffered metadata immediately, including
-	 * during an idle provider call. No task/store/status mutation. */
+	/** 父级已知的撤销会立即清空缓冲的元数据，包括
+	 * 提供方调用空闲期间。不做任务/存储/状态变更。 */
 	discardResponseObservations(id: string): void {
 		const live = this.live.get(id);
 		if (live) { live.observations = undefined; live.observationGuard = undefined; }
@@ -561,8 +561,8 @@ export class AgentRunner {
 		}
 	}
 
-	// A child that cannot start (missing pi, bad cwd) fails only its task:
-	// spawn exceptions and process errors settle without uncaught host errors.
+	// 无法启动的子进程（缺 pi、错误的 cwd）只使其自身任务失败：
+	// 生成异常与进程错误都落定处理，不会产生未捕获的宿主错误。
 	private launch(id: string, request: TaskRequest): void {
 		const detached = this.processControl.platform !== "win32";
 		const hasParentPermissionChannel = request.authorizeParentStandingReviewPermission !== undefined;
@@ -658,15 +658,15 @@ export class AgentRunner {
 		});
 	}
 
-	// A late get_state/prompt reply must never overwrite a stage that a child
-	// event (or the other reply) has already advanced lastStep past.
+	// 迟到的 get_state/prompt 应答绝不能覆盖子进程
+	// 事件（或另一条应答）已把 lastStep 推进过的阶段。
 	private canAdvanceLastStep(id: string, from: readonly string[]): boolean {
 		const current = this.store.get(id)?.lastStep;
 		return current !== undefined && from.includes(current);
 	}
 
-	// Cleaned for display only: raw bytes stay in live.stderrTail so later
-	// appends keep working from the unstripped ring buffer.
+	// 仅为展示而清洗：原始字节保留在 live.stderrTail 中，使后续
+	// 追加继续基于未清洗的环形缓冲工作。
 	private stderrSuffix(live: LiveTask): string {
 		const cleaned = stripVTControlCharacters(live.stderrTail).replace(/\s+/g, " ").trim();
 		return cleaned ? `; stderr: ${cleaned}` : "";
@@ -749,7 +749,7 @@ export class AgentRunner {
 	private sendQueryError(live: LiveTask, id: string, error: string): void {
 		const safeError = QUERY_REJECTION_ERRORS.has(error) ? error : "parent rejected query";
 		try { live.child.send?.({ id, kind: "reply", error: safeError }, () => {}); }
-		catch { /* Child-owned IPC callback reports transport failure. */ }
+		catch { /* 子进程所有的 IPC 回调会报告传输失败。 */ }
 	}
 
 	private acknowledge(live: LiveTask, id: string, accepted: boolean, error?: string): void {
@@ -758,7 +758,7 @@ export class AgentRunner {
 		live.acknowledgedIpcOrder.push(id);
 		if (live.acknowledgedIpcOrder.length > 64) live.acknowledgedIpcIds.delete(live.acknowledgedIpcOrder.shift()!);
 		try { live.child.send({ id, kind: "ack", accepted, ...(error ? { error } : {}) }, () => {}); }
-		catch { /* Child-owned IPC callback reports transport failure. */ }
+		catch { /* 子进程所有的 IPC 回调会报告传输失败。 */ }
 	}
 
 	private sendReply(live: LiveTask, id: string, frame: Record<string, unknown>): Promise<boolean> {
@@ -787,26 +787,26 @@ export class AgentRunner {
 		live.replies.clear();
 		live.child.channel?.unref?.();
 		try { live.child.disconnect?.(); }
-		catch { /* Channel may already be disconnected. */ }
+		catch { /* 通道可能已断开。 */ }
 	}
 
 	private write(live: LiveTask, payload: Record<string, unknown>): void {
 		try {
 			live.child.stdin.write(`${JSON.stringify(payload)}\n`);
 		} catch {
-			// the child is gone; the exit handler settles the task
+			// 子进程已消失；退出处理器会落定该任务
 		}
 	}
 
 	private checkObservationGrant(live: LiveTask): void {
 		if (live.observationPreparation) {
 			if (!live.observationPreparation()) live.observations = undefined;
-			live.observationPreparation = undefined; // One chance; late readiness cannot attach.
+			live.observationPreparation = undefined; // 只有一次机会；迟到的就绪无法附加。
 		}
 		if (!live.observations || !live.observationGuard) return;
 		try {
 			if (live.observationGuard() === true) return;
-		} catch { /* Policy bookkeeping must not interrupt child execution. */ }
+		} catch { /* 策略记账不得打断子进程执行。 */ }
 		live.observations = undefined;
 		live.observationGuard = undefined;
 	}
@@ -835,7 +835,7 @@ export class AgentRunner {
 					if (buffer.responses.length < MAX_CHILD_RESPONSE_OBSERVATIONS) buffer.responses.push(event.observation);
 					else buffer.droppedResponses = Math.min(Number.MAX_SAFE_INTEGER, buffer.droppedResponses + 1);
 				}
-				continue; // Separate from store persistence, UI totals and notifications.
+				continue; // 与存储持久化、UI 汇总及通知相互独立。
 			}
 			this.store.apply(id, event, this.deps.now());
 			if (event.type === TASK_EVENT.TOOL_START && event.callId) {
@@ -854,7 +854,7 @@ export class AgentRunner {
 						const observed = isSessionChangeEvidence(evidence) && evidence.id === mutation.toolCallId ? { ...mutation, evidence: structuredClone(evidence) } : mutation;
 						void Promise.resolve(this.hooks.onSuccessfulMutation?.(task, observed)).catch(() => {});
 					}
-					catch { /* Bookkeeping failure must not rewrite a successful tool or stop the child. */ }
+					catch { /* 记账失败不得改写已成功的工具或停止子进程。 */ }
 				}
 			}
 			if (event.type === TASK_EVENT.ASK) void this.answer(id, request, live, event.request, raw);
@@ -868,8 +868,8 @@ export class AgentRunner {
 		}
 	}
 
-	// Task-mode subagents may ask the human through the host; background ones
-	// get their dialog cancelled so they never block on nobody.
+	// 任务模式的子代理可以经由宿主向人类提问；后台模式的
+	// 对话框被取消，因此绝不会对着无人应答而阻塞。
 	private async answer(id: string, request: TaskRequest, live: LiveTask, ask: AskRequest, raw: Record<string, unknown>): Promise<void> {
 		let answer: AskAnswer = { cancelled: true };
 		if (request.mode === "task") {
@@ -885,21 +885,21 @@ export class AgentRunner {
 		if (current?.status === TASK_STATUS.WAITING) this.store.update(id, { status: TASK_STATUS.RUNNING, lastStep: answer.cancelled ? "question dismissed" : "answered" });
 	}
 
-	// POSIX children start detached, so their PID is the owned process-group ID.
-	// Windows uses ChildProcess.kill only: Node has no equivalent tree guarantee.
+	// POSIX 子进程以 detached 启动，因此其 PID 即所属进程组 ID。
+	// Windows 只用 ChildProcess.kill：Node 没有等价的进程树保证。
 	private signal(live: LiveTask, signal: NodeJS.Signals): void {
 		if (live.processGroup !== undefined) {
 			try {
 				this.processControl.kill(-live.processGroup, signal);
 				return;
 			} catch {
-				// The owned group is already gone; the child handle may still observe exit.
+				// 所属进程组已消失；子句柄可能仍会观察到退出。
 			}
 		}
 		try {
 			live.child.kill(signal);
 		} catch {
-			// already gone
+			// 已消失
 		}
 	}
 
@@ -921,10 +921,10 @@ export class AgentRunner {
 		}, TERMINATION_GRACE_MS);
 	}
 
-	// A false result is ambiguous, so the probe reports which one it is: an ESRCH
-	// result proves the group is gone, while an absent process group means the
-	// question cannot be asked at all. Only the first justifies treating the exit as
-	// complete without an observed exit event.
+	// false 的结果是歧义的，因此探测会报告具体是哪种：ESRCH
+	// 结果证明进程组已消失，而没有进程组则意味着
+	// 这个问题根本无从问起。只有前者才能在没有观察到退出事件的情况下
+	// 把退出视为完成。
 	private probeGroup(live: LiveTask): "present" | "gone" | "unavailable" {
 		if (live.processGroup === undefined) return "unavailable";
 		try {
@@ -953,10 +953,10 @@ export class AgentRunner {
 			return;
 		}
 		if (group === "gone") {
-			// No process remains in the group, so the exit is complete whether or not
-			// the child's own exit event was ever observed. Completing here also frees
-			// the concurrency slot; finishing without it would leave the task recorded
-			// while its slot stayed occupied and queued work never pumped.
+			// 进程组内已无进程，因此无论是否观察到子进程自身的
+			// 退出事件，退出都已完成。在这里完成还能释放
+			// 并发槽位；不释放就会让任务已记录而槽位仍被占用，
+			// 排队的工作永远得不到泵送。
 			this.completeExit(id, live);
 			return;
 		}
@@ -964,9 +964,9 @@ export class AgentRunner {
 			this.completeExit(id, live);
 			return;
 		}
-		// With no process group to probe, an observed exit is the only confirmation
-		// available. Wait for it within the deadline, then quarantine instead of
-		// completing on an assumption, and never return without either.
+		// 没有可探测的进程组时，观察到的退出是唯一可用的
+		// 确认。在期限内等待它，逾期则改为隔离而不是
+		// 凭假设完成，且绝不在二者皆无时返回。
 		if (this.deps.now() >= (live.cleanupDeadlineAt ?? 0)) {
 			live.cancelGrace();
 			live.quarantined = true;
@@ -979,8 +979,8 @@ export class AgentRunner {
 	private childError(id: string, error: Error): void {
 		const live = this.live.get(id);
 		if (!live) return;
-		// Node leaves pid undefined when spawn failed; a live PID must still exit
-		// before its slot is released, even if its handle later emits an error.
+		// 生成失败时 Node 会把 pid 留为 undefined；存活的 PID 仍必须退出
+		// 后才释放槽位，即使其句柄随后发出错误。
 		if (live.child.pid !== undefined) {
 			this.requestStop(id, TASK_STATUS.FAILED, `pi process error: ${error.message}`);
 			return;
@@ -1010,7 +1010,7 @@ export class AgentRunner {
 		live.cancelStall();
 		live.cancelGrace();
 		this.live.delete(id);
-		// Quarantine already notified completion, but its retained slot is now free.
+		// 隔离已通知完成，但其保留的槽位现在空闲了。
 		if (live.quarantined) {
 			queueMicrotask(() => this.pump());
 			return;
@@ -1048,7 +1048,7 @@ export class AgentRunner {
 				responses: Object.freeze(buffer.responses.slice()), droppedResponses: buffer.droppedResponses,
 			}) : undefined;
 			if (live) {
-				live.observations = undefined; // Also release quarantined buffers.
+				live.observations = undefined; // 同时释放被隔离的缓冲。
 				live.observationGuard = undefined;
 			}
 			this.hooks.onFinish?.(finished, snapshot);
@@ -1062,9 +1062,9 @@ export class AgentRunner {
 	}
 }
 
-// Human-readable suffix for an abort signal's reason, so a cancelled tool call is
-// distinguishable in the record and the notification rather than reported only as
-// "aborted". Returns an empty string when there is no usable reason.
+// 为中止信号的原因生成人类可读的后缀，使被取消的工具调用
+// 在记录与通知中可区分，而不是只报告为 "aborted"。
+// 没有可用的原因时返回空字符串。
 export function abortReasonText(reason: unknown): string {
 	if (reason === undefined) return "";
 	const message =

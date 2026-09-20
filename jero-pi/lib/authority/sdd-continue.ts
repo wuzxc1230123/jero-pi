@@ -1,20 +1,18 @@
 import type { JeroAuthorityContextV1 } from "./review.ts";
 import { jeroSddStatusV1, type JeroSddStatusV2 } from "./sdd-status.ts";
 
-// `authority.sdd.continue` (spec _tools/p2-m4-sdd-analysis.md §A.4): the
-// mutating sibling of sdd-status — an exact selected change is REQUIRED
-// (upstream sddContinue throws a TypeError without one; here it is a typed
-// refusal). In-process, the transition is the projection itself: the caller
-// states which change instance continues, and the returned status reflects
-// the post-selection state. Legality derives from the same projection; an
-// unknown change or a terminal/archived state refuses as an unsupported
-// transition (the binary's UNSUPPORTED_TRANSITION_OPERATION analogue).
+// `authority.sdd.continue`（规范 _tools/p2-m4-sdd-analysis.md §A.4）：
+// sdd-status 的变更兄弟——必须提供精确选定的变更（上游 sddContinue
+// 缺少它时抛 TypeError；这里是类型化拒绝）。在进程内，转移就是投影
+// 本身：调用方声明哪个变更实例继续，返回的状态反映选择后的状态。
+// 合法性派生自同一投影；未知变更或终局/已归档状态以不支持的转移
+// 拒绝（二进制 UNSUPPORTED_TRANSITION_OPERATION 的对应物）。
 //
-// NOT ported from the upstream contract doc: the change-instance marker
-// preparation (ensureChangeInstanceMarker / PrepareChangeInstanceConsent,
-// sdd-status-contract.md:22) — that mechanism exists only in upstream head,
-// not in the pinned v2.7.0 code this rebuild tracks (code+fixtures win). The
-// seam is named here so a future port lands it in one place.
+// 未从上游契约文档移植：变更实例标记的准备
+// （ensureChangeInstanceMarker / PrepareChangeInstanceConsent，
+// sdd-status-contract.md:22）——该机制只存在于上游 head，不在本次重建
+// 跟踪的固定 v2.7.0 代码中（代码+fixture 优先）。在此点名该接缝，
+// 使未来的移植能在一处落地。
 
 export type JeroSddContinueRefusalCode = "invalid-request" | "unsupported-transition" | "projection-violation";
 
@@ -22,7 +20,7 @@ export type JeroSddContinueResultV1 =
 	| { readonly kind: "ok"; readonly status: JeroSddStatusV2; readonly isNonAuthoritative: boolean }
 	| { readonly kind: "refused"; readonly code: JeroSddContinueRefusalCode; readonly detail: string };
 
-/** `sdd.continue` — requires an exact canonical changeName; never ambiguous. */
+/** `sdd.continue`——必须提供精确的权威 changeName；绝不模糊。 */
 export function jeroSddContinueV1(context: JeroAuthorityContextV1, request: { changeName: string; workspaceRoot: string }): JeroSddContinueResultV1 {
 	if (request.changeName.trim() !== request.changeName || request.changeName.includes("\0") || request.changeName.length === 0) {
 		return { kind: "refused", code: "invalid-request", detail: "SDD continuation requires an exact canonical selected change" };

@@ -46,9 +46,9 @@ export interface OpaquePiReviewerTransportDetails {
 	readonly stderr?: Buffer;
 	readonly timedOut?: boolean;
 	readonly cancelled?: boolean;
-	/** Wall time for a launched Pi process; absent when no process was launched. */
+	/** 已启动 Pi 进程的墙钟时间；未启动进程时省略。 */
 	readonly elapsedMs?: number;
-	/** The bound applied to a launched Pi process; absent when no process was launched. */
+	/** 应用于已启动 Pi 进程的超时上限；未启动进程时省略。 */
 	readonly timeoutMs?: number;
 }
 
@@ -97,12 +97,11 @@ interface PiHostProcess {
 }
 
 /**
- * The exact spawn shape for the fresh Pi process. A bare `pi` on Windows
- * resolves to pi.cmd, pi.ps1, or a POSIX shim, none of which Node can spawn
- * with shell:false (EINVAL or ENOENT). This adapter already runs inside Pi, so
- * on win32 the host's own JavaScript entry is spawned through the host's
- * process.execPath instead; a shell is never enabled. Every other platform,
- * and every explicit launcher, keeps the exact shape it always had.
+ * 全新 Pi 进程的确切 spawn 形态。Windows 上裸 `pi` 会解析成 pi.cmd、
+ * pi.ps1 或 POSIX 垫片，Node 都无法以 shell:false 启动它们（EINVAL 或
+ * ENOENT）。本适配器本身已运行在 Pi 内，因此在 win32 上改为通过宿主自身
+ * 的 process.execPath 启动宿主自己的 JavaScript 入口；shell 永不启用。
+ * 其他平台以及所有显式启动器都保持原有的确切形态。
  */
 export function resolvePiLaunch(
 	piExecutable: string | undefined,
@@ -110,9 +109,9 @@ export function resolvePiLaunch(
 	host: PiHostProcess = { execPath: process.execPath, entry: process.argv[1] },
 ): PiLaunch {
 	if (piExecutable !== undefined) {
-		// A shebang Node script cannot be spawned extensionless on Windows
-		// (CreateProcess only resolves *.exe); route it through the current
-		// Node executable so POSIX-style shims keep working everywhere.
+		// 带 shebang 的 Node 脚本在 Windows 上无法以无扩展名方式启动
+		// （CreateProcess 只解析 *.exe）；让它经由当前 Node 可执行文件
+		// 运行，POSIX 风格的垫片才能在所有平台继续工作。
 		if (process.platform === "win32" && !/.(exe|cmd|bat)$/i.test(piExecutable)) {
 			try {
 				const fd = openSync(piExecutable, "r");
@@ -121,8 +120,8 @@ export function resolvePiLaunch(
 					const bytes = readSync(fd, header, 0, 64, 0);
 					if (bytes > 2 && header[0] === 0x23 && header[1] === 0x21) return { file: process.execPath, arguments: [piExecutable, ...OPAQUE_PI_REVIEWER_ARGV] };
 				} finally { closeSync(fd); }
-			} catch { /* not readable: fall through to the direct spawn, which
-				will surface its own typed launch failure */ }
+			} catch { /* 不可读：向下穿透到直接 spawn，
+				后者会自行给出类型化的启动失败 */ }
 		}
 		return { file: piExecutable, arguments: [...OPAQUE_PI_REVIEWER_ARGV] };
 	}
@@ -205,7 +204,7 @@ function runPiProcess(prompt: Buffer, scratchDirectory: string, options: OpaqueP
 	});
 }
 
-/** Runs raw prompt bytes through one fixed, isolated Pi process. */
+/** 将原始提示词字节送入一个固定且隔离的 Pi 进程运行。 */
 export async function runOpaquePiReviewer(prompt: Buffer, options: OpaquePiReviewerOptions = {}): Promise<OpaquePiReviewerResult> {
 	if (options.signal?.aborted) {
 		throw new OpaquePiReviewerTransportError(

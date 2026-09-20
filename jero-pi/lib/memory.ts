@@ -3,11 +3,10 @@ import { homedir } from "node:os";
 import { dirname, join, normalize, sep } from "node:path";
 import { randomUUID } from "node:crypto";
 
-// jero memory: the file-backed persistent memory store that replaces the
-// optional gentle-engram companion. One topic key is one markdown file under
-// a memory root; an index.json beside the entries speeds listing and search.
-// The store is deliberately boring: plain files, atomic temp+rename writes,
-// no databases, no native modules, no network.
+// jero 记忆：文件承载的持久记忆存储，替代可选的 gentle-engram 伴生件。
+// 一个主题键对应记忆根目录下的一个 markdown 文件；条目旁的 index.json
+// 加速列出与搜索。该存储刻意保持朴素：纯文件、临时文件+重命名的原子
+// 写入，没有数据库，没有原生模块，没有网络。
 
 export const MEMORY_INDEX_KIND = "jero.memory-index/v1";
 export const MEMORY_ENTRY_GLOB = "*.md";
@@ -46,13 +45,13 @@ export function isValidMemoryTag(tag: string): boolean {
 	return tag.length > 0 && tag.length <= MAX_TAG_LENGTH && /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(tag);
 }
 
-/** The global memory config home: `JERO_PI_CONFIG_HOME` overrides `~/.pi/jero`. */
+/** 全局记忆配置主目录：`JERO_PI_CONFIG_HOME` 覆盖 `~/.pi/jero`。 */
 export function memoryConfigHome(env: NodeJS.ProcessEnv = process.env): string {
 	const override = env.JERO_PI_CONFIG_HOME?.trim();
 	return override && override !== "" ? override : join(homedir(), ".pi", "jero");
 }
 
-/** Project memory wins when `<cwd>/.jero/memory` exists; otherwise the global root. */
+/** `<cwd>/.jero/memory` 存在时项目记忆优先；否则使用全局根目录。 */
 export function resolveMemoryRoot(cwd: string, env: NodeJS.ProcessEnv = process.env): string {
 	const projectRoot = join(cwd, ".jero", "memory");
 	if (existsSync(projectRoot)) return projectRoot;
@@ -132,7 +131,7 @@ function readIndex(root: string): Map<string, MemoryIndexEntry> {
 			map.set(topic, { topic, saved_at: record.saved_at, tags: record.tags.filter((tag): tag is string => typeof tag === "string"), summary: record.summary });
 		}
 	} catch {
-		// A corrupt or unreadable index is rebuilt on the next save or listing.
+		// 损坏或不可读的索引会在下次保存或列出时重建。
 	}
 	return map;
 }
@@ -143,13 +142,11 @@ function writeIndex(root: string, map: Map<string, MemoryIndexEntry>): void {
 	atomicWrite(join(root, "index.json"), `${JSON.stringify({ kind: MEMORY_INDEX_KIND, version: 1, entries }, null, "\t")}\n`);
 }
 
-// The index is a read-modify-write file shared by every process that owns a
-// mem_* tool (the parent orchestrator plus one `pi --mode rpc` child per
-// delegated task). Two concurrent saves must not lose each other's rows, so
-// mutations serialize on a mkdir-based lock directory: atomic on every
-// platform, no native modules. A lock older than the stale window is a
-// crashed holder's leftover and is taken over; waiting past the same window
-// gives up loudly instead of blocking the event loop forever.
+// 索引是被所有持有 mem_* 工具的进程共享的读改写文件（父编排器加上
+// 每个委托任务各一个 `pi --mode rpc` 子进程）。两次并发保存不得丢失
+// 对方的行，因此变更通过基于 mkdir 的锁目录串行化：在所有平台上都
+// 原子，且无需原生模块。超过过期窗口的锁是崩溃持有者的残留，可被
+// 接管；等待超过同一窗口则高声放弃，而不是永远阻塞事件循环。
 const INDEX_LOCK_DIR = ".index-lock";
 const INDEX_LOCK_STALE_MS = 5_000;
 
@@ -182,7 +179,7 @@ function withIndexLock<T>(root: string, action: () => T): T {
 	}
 }
 
-/** Rebuilds index.json from the entries directory; used when the index is missing or stale. */
+/** 从条目目录重建 index.json；在索引缺失或过期时使用。 */
 export function rebuildMemoryIndex(root: string): number {
 	const map = new Map<string, MemoryIndexEntry>();
 	for (const { topic, raw } of collectEntryFiles(root)) {
@@ -213,9 +210,9 @@ export function saveMemory(root: string, topic: string, content: string, meta: P
 	})}${content.endsWith("\n") ? content : `${content}\n`}`;
 	atomicWrite(path, rendered);
 	withIndexLock(root, () => {
-		// Index the bytes actually on disk under the lock: a concurrent saver of
-		// the same topic may have replaced ours between the write and the lock,
-		// and the index must describe the surviving file, not our own copy.
+		// 在锁内按磁盘上实际存在的字节建立索引：同一主题的并发保存者可能
+		// 在写入与加锁之间替换了我们的内容，索引必须描述幸存的文件，
+		// 而不是我们自己的副本。
 		const map = readIndex(root);
 		const onDisk = parseEntry(readFileSync(path, "utf8"));
 		map.set(topic, { topic, saved_at: onDisk.meta.saved_at, tags: onDisk.meta.tags, summary: summarize(onDisk.body) });
@@ -247,9 +244,8 @@ export function listMemory(root: string, options: MemoryListOptions = {}): Memor
 	const limit = options.limit ?? 50;
 	let entries = readIndex(root);
 	if (existsSync(join(root, "entries")) && indexIsStale(root, entries)) {
-		// The index disagrees with the entries directory (missing after a lost
-		// concurrent update, or carrying rows for deleted files): rebuild from
-		// the files, which are always the source of truth.
+		// 索引与条目目录不一致（并发更新丢失后缺失，或带有已删除文件的
+		// 行）：从文件重建，文件永远是事实源。
 		rebuildMemoryIndex(root);
 		entries = readIndex(root);
 	}
@@ -268,7 +264,7 @@ export interface MemorySearchOptions {
 	limit?: number;
 }
 
-/** Case-insensitive AND search over entry bodies; returns the first matching line per topic. */
+/** 对条目正文做大小写不敏感的 AND 搜索；每个主题返回首个匹配行。 */
 export function searchMemory(root: string, query: string, options: MemorySearchOptions = {}): MemorySearchHit[] {
 	const limit = options.limit ?? 20;
 	const terms = query.trim().toLowerCase().split(/\s+/).filter((term) => term !== "");
@@ -285,7 +281,7 @@ export function searchMemory(root: string, query: string, options: MemorySearchO
 	return hits.sort((a, b) => b.score - a.score || a.topic.localeCompare(b.topic)).slice(0, limit).map(({ topic, line }) => ({ topic, line }));
 }
 
-/** Cheap staleness probe: the topics on disk must match the index keys exactly. */
+/** 廉价的过期探测：磁盘上的主题必须与索引键完全一致。 */
 function indexIsStale(root: string, entries: Map<string, MemoryIndexEntry>): boolean {
 	const entriesDir = join(root, "entries");
 	const onDisk = new Set<string>();
@@ -309,7 +305,7 @@ function indexIsStale(root: string, entries: Map<string, MemoryIndexEntry>): boo
 	return false;
 }
 
-/** Walks entries/ recursively so hierarchical topics (a/b/c) are found at any depth. */
+/** 递归遍历 entries/，使分层主题（a/b/c）在任意深度都能被发现。 */
 function collectEntryFiles(root: string): { topic: string; raw: string }[] {
 	const entriesDir = join(root, "entries");
 	if (!existsSync(entriesDir)) return [];
@@ -326,7 +322,7 @@ function collectEntryFiles(root: string): { topic: string; raw: string }[] {
 			try {
 				collected.push({ topic, raw: readFileSync(join(directory, entry.name), "utf8") });
 			} catch {
-				// An unreadable entry is skipped, never fatal to the search.
+				// 不可读的条目被跳过，绝不令搜索致命失败。
 			}
 		}
 	};
@@ -344,7 +340,7 @@ function occurrences(haystack: string, needle: string): number {
 	return count;
 }
 
-/** Removes one topic; returns false when it did not exist. Index is kept in sync. */
+/** 删除一个主题；不存在时返回 false。索引保持同步。 */
 export function deleteMemory(root: string, topic: string): boolean {
 	if (!isValidMemoryTopic(topic)) return false;
 	const path = memoryEntryPath(root, topic);
@@ -358,7 +354,7 @@ export function deleteMemory(root: string, topic: string): boolean {
 	return true;
 }
 
-/** A hierarchical delete must not leave dangling empty directories behind. */
+/** 分层删除不得留下悬空的空目录。 */
 function pruneEmptyAncestorDirs(directory: string, stop: string): void {
 	let current = directory;
 	while (current.startsWith(`${stop}${sep}`) || current.startsWith(`${stop}/`)) {
@@ -372,7 +368,7 @@ function pruneEmptyAncestorDirs(directory: string, stop: string): void {
 	}
 }
 
-/** Normalizes a topic so SDD artifact keys stay stable, e.g. `sdd/<change>/proposal`. */
+/** 规范化主题，使 SDD 产物键保持稳定，例如 `sdd/<change>/proposal`。 */
 export function normalizeMemoryTopic(topic: string): string {
 	return normalize(topic).split(sep).join("/").replace(/\/+$/, "");
 }

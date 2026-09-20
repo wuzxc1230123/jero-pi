@@ -2,15 +2,15 @@ import { readFileSync } from "node:fs";
 
 const runtimeSchema = JSON.parse(readFileSync(new URL("../schemas/runtime-aggregate-v1.schema.json", import.meta.url), "utf8"));
 
-// Pure local accounting, not a telemetry transport or Pi event adapter.
-// Callers supply finalized assistant responses and authoritative classifications.
-// Never infer executor, usage availability, or measured timings from SDK defaults.
+// 纯本地记账，不是遥测传输或 Pi 事件适配器。
+// 调用方提供已定稿的助手响应与权威分类。
+// 绝不从 SDK 默认值推断执行者、用量可用性或实测时长。
 const EXECUTORS = ["orchestrator", "worker", "reviewer", "unknown"] as const;
-// Stable families, not model IDs/versions: new models need no catalog update.
-// Callers map known native metadata to families; private aliases stay custom.
+// 稳定的家族，而非模型 ID/版本：新模型无需更新目录。
+// 调用方把已知的原生元数据映射到家族；私有别名保持 custom。
 const FAMILIES = ["claude", "gpt", "o-series", "gemini", "llama", "qwen", "deepseek", "kimi", "custom", "unknown"] as const;
-// Pi 0.85.1 docs/models.md, Thinking Level Map. These are selected Pi levels,
-// not inferred provider effort or a claim that each model supports every level.
+// Pi 0.85.1 docs/models.md 的 Thinking Level Map。这些是选定的 Pi 层级，
+// 不是推断的提供方 effort，也不声称每个模型都支持每个层级。
 export const EFFORTS = ["off", "minimal", "low", "medium", "high", "xhigh", "max", "not_selected", "unsupported", "unavailable"] as const;
 const ERRORS = ["none", "aborted", "rate_limit", "authentication", "network", "provider", "unknown"] as const;
 const TOKEN_FIELDS = ["input", "output", "cacheRead", "cacheWrite", "reasoning", "totalTokens"] as const;
@@ -25,9 +25,8 @@ function agentClasses(): readonly AgentClass[] {
 	return Object.freeze([...values]) as readonly AgentClass[];
 }
 
-// The mirrored transport contract is the runtime source of truth. Keeping this
-// data-driven lets packaged agent updates follow the closed enum without a
-// second name registry drifting in TypeScript.
+// 镜像的传输契约是运行时的事实源。保持数据驱动，让打包代理的更新
+// 跟随封闭枚举，而不需要第二份在 TypeScript 里漂移的名称注册表。
 export const AGENT_CLASSES = agentClasses();
 export function parseAgentClass(value: unknown): AgentClass | undefined {
 	return typeof value === "string" && (AGENT_CLASSES as readonly string[]).includes(value) ? value as AgentClass : undefined;
@@ -43,10 +42,9 @@ export const ORCHESTRATOR_AGENT_CLASS = requiredAgentClass("orchestrator");
 interface ModelFieldRule { pattern: RegExp; maxLength: number }
 
 function modelFieldRule(field: "provider" | "id"): ModelFieldRule {
-	// The length cap lives on $defs.model.properties.<field>; the shape pattern
-	// lives only on the first (public-pattern) branch of $defs.model.anyOf, next
-	// to the unknown/custom/opencode sentinel branches. Both are mirrored,
-	// byte-for-byte, from the Jero transport schema.
+	// 长度上限位于 $defs.model.properties.<field>；形状模式只位于
+	// $defs.model.anyOf 的第一个（公开模式）分支上，紧邻 unknown/custom/
+	// opencode 哨兵分支。两者都逐字节镜像自 Jero 传输 schema。
 	const property: unknown = runtimeSchema?.$defs?.model?.properties?.[field];
 	if (!object(property) || typeof property.maxLength !== "number") {
 		throw new Error(`Invalid runtime telemetry model ${field} schema`);
@@ -60,17 +58,16 @@ function modelFieldRule(field: "provider" | "id"): ModelFieldRule {
 	return { pattern: new RegExp(patternProperty.pattern), maxLength: property.maxLength };
 }
 
-// Schema-driven, not a hardcoded TypeScript regex: the mirrored transport
-// contract owns the open family-pattern rules for provider/id shape. A
-// companion Jero change keeps the Go side on the same patterns.
+// 由 schema 驱动，而非硬编码的 TypeScript 正则：镜像的传输契约持有
+// provider/id 形状的开放家族模式规则。配套的 Jero 变更让 Go 侧保持
+// 相同的模式。
 const MODEL_PROVIDER_RULE = modelFieldRule("provider");
 const MODEL_ID_RULE = modelFieldRule("id");
 
-/** Provider-only normalization, independent of any specific model id: trims,
- * lowercases, and keeps the slug only when it matches the schema provider
- * pattern within its maxLength. Non-string/empty input is "unknown"; a
- * non-conforming non-empty string is "custom". Shared by the standalone
- * provider dimension and by normalizeRuntimeModel's own provider handling.
+/** 只做提供方归一化，独立于任何具体模型 id：修剪、转小写，且只有当
+ * slug 在 maxLength 内匹配 schema 提供方模式时才保留。非字符串/空
+ * 输入为 "unknown"；不合规的非空字符串为 "custom"。由独立的提供方
+ * 维度与 normalizeRuntimeModel 自身的提供方处理共享。
  */
 export function normalizeRuntimeProvider(value: unknown): string {
 	if (typeof value !== "string") return "unknown";
@@ -80,19 +77,18 @@ export function normalizeRuntimeProvider(value: unknown): string {
 	return lower.length <= MODEL_PROVIDER_RULE.maxLength && MODEL_PROVIDER_RULE.pattern.test(lower) ? lower : "custom";
 }
 
-/** Generic, schema-driven family-pattern normalizer for a (provider, id)
- * selection or response pair (gentle-pi#968 / gentle-ai#4536). Open-weight
- * models on arbitrary providers are reported by name; private aliases and
- * fine-tunes stay custom. Rules, identical to the mirrored Go/schema side:
- *  - a non-string or empty provider or id fails closed to unknown/unknown;
- *  - id: trim, keep the LAST "/"-separated segment, lowercase; public only
- *    when it matches the schema id pattern within its maxLength, otherwise
- *    "custom";
- *  - provider: trim, lowercase; kept when it matches the schema provider
- *    pattern, otherwise "custom";
- *  - when the id is not public the provider becomes "custom" too, except
- *    "opencode", which stays opencode/custom;
- *  - the literal unknown/unknown and custom/custom pairs pass through.
+/** 面向 (provider, id) 选择或响应对的通用 schema 驱动家族模式归一器
+ * （gentle-pi#968 / gentle-ai#4536）。任意提供方上的开放权重模型按
+ * 名称上报；私有别名与微调保持 custom。规则与镜像的 Go/schema 侧
+ * 完全一致：
+ *  - 非字符串或空的 provider/id 保守失败为 unknown/unknown；
+ *  - id：修剪、保留最后一个 “/” 分隔段、转小写；只有在其 maxLength
+ *    内匹配 schema id 模式时才算公开，否则为 "custom"；
+ *  - provider：修剪、转小写；匹配 schema 提供方模式时保留，否则为
+ *    "custom"；
+ *  - id 不公开时 provider 也变为 "custom"，唯一例外是 "opencode"，
+ *    它保持 opencode/custom；
+ *  - 字面的 unknown/unknown 与 custom/custom 组合直接透传。
  */
 export function normalizeRuntimeModel(provider: unknown, id: unknown): { provider: string; id: string } {
 	if (typeof provider !== "string" || typeof id !== "string") return { provider: "unknown", id: "unknown" };
@@ -111,19 +107,18 @@ export function normalizeRuntimeModel(provider: unknown, id: unknown): { provide
 	return { provider: providerResult, id: id_ };
 }
 
-/** Thin wrapper over normalizeRuntimeModel for callers that only track the
- * id dimension (the provider is used only to decide the closed unknown/empty
- * fast path; a valid non-empty provider string never changes the id result).
+/** normalizeRuntimeModel 的薄封装，供只跟踪 id 维度的调用方使用
+ * （provider 只用于决定封闭的 unknown/空快速路径；合法的非空 provider
+ * 字符串绝不会改变 id 结果）。
  */
 export function classifyRuntimeModelId(provider: unknown, modelId: unknown): string {
 	return normalizeRuntimeModel(provider, modelId).id;
 }
 
-/** True only for an id already in its normalized public form: it matches the
- * schema id pattern within its maxLength (which, by construction, also
- * excludes the "unknown"/"custom" sentinels, since neither matches any
- * recognized family prefix). Used to pick the strongest available evidence
- * tier among already-classified id dimensions (response/selected/observed).
+/** 仅当 id 已处于归一化的公开形态时为 true：它在 maxLength 内匹配
+ * schema id 模式（按构造这也排除了 "unknown"/"custom" 哨兵，因为两者
+ * 都不匹配任何已识别的家族前缀）。用于在已分类的 id 维度
+ * （response/selected/observed）中挑选最强的可用证据层级。
  */
 export function isPublicRuntimeModelId(value: unknown): value is string {
 	return typeof value === "string" && value.length > 0 && value.length <= MODEL_ID_RULE.maxLength && MODEL_ID_RULE.pattern.test(value);
@@ -134,20 +129,20 @@ export type TokenMeasurement = Missing | { state: "reported"; value: number };
 export type DurationMeasurement = Missing | { state: "measured"; value: number };
 export interface FinalResponse {
 	kind: "final_assistant_response";
-	/** Local dedupe only: 1..128 UTF-16 code units; never exported. */
+	/** 仅用于本地去重：1..128 个 UTF-16 码元；绝不导出。 */
 	responseId: string;
-	/** Caller-observed selected SDK model ID, never dispatched/response identity.
-	 * Normalized through normalizeRuntimeModel at record time; only an id
-	 * matching the schema family pattern survives as a public name.
+	/** 调用方观察到的所选 SDK 模型 ID，绝非派发/响应身份。
+	 * 记录时经 normalizeRuntimeModel 归一化；只有匹配 schema 家族
+	 * 模式的 id 才以公开名称幸存。
 	 */
 	selectedModelId?: string;
-	/** Selection namespace, independent from observed response provider.
-	 * Omission preserves legacy same-provider callers; adapters must pass it explicitly.
+	/** 选择命名空间，独立于观察到的响应提供方。
+	 * 省略以保持旧版同提供方调用方的兼容；适配器必须显式传入。
 	 */
 	selectedProvider?: string;
 	agentClass?: AgentClass;
-	/** SDK-observed model id from response metadata, never endpoint proof.
-	 * Normalized like selectedModelId; only a schema family match survives.
+	/** 从响应元数据观察到的 SDK 模型 id，绝非端点证明。
+	 * 与 selectedModelId 同样归一化；只有 schema 家族匹配才幸存。
 	 */
 	observedModelId?: string;
 	responseModelId?: string;
@@ -157,12 +152,12 @@ export interface FinalResponse {
 	modelFamily: typeof FAMILIES[number];
 	effort: typeof EFFORTS[number];
 	error: typeof ERRORS[number];
-	/** Separate native counters; do not add cached tokens into input here. */
+	/** 独立的原生计数器；不要把缓存 token 加进这里的 input。 */
 	tokens: Record<"input" | "output" | "cacheRead" | "cacheWrite", TokenMeasurement>
 		& Partial<Record<"reasoning" | "totalTokens", TokenMeasurement>>;
-	/** Request start to response headers; not first token or full response. */
+	/** 从请求开始到响应头；不是首 token，也不是完整响应。 */
 	responseHeadersMs: DurationMeasurement;
-	/** Same request start to completed response; only explicitly measured values. */
+	/** 同一请求开始到响应完成；只接受显式测得的值。 */
 	fullResponseMs: DurationMeasurement;
 }
 
@@ -204,7 +199,7 @@ function measurement(value: unknown, present: "reported" | "measured"): boolean 
 	if (value.state === "unavailable" || value.state === "unsupported") return !("value" in value);
 	if (value.state !== present || typeof value.value !== "number") return false;
 	const n = value.value;
-	// Hard ceilings keep every sum finite/exact for integer counters, even at capacity.
+	// 硬上限保证即使到达容量，整数计数器的每个和仍是有限且精确的。
 	return Number.isFinite(n) && n >= 0 && (present === "reported"
 		? Number.isSafeInteger(n) && n <= 1_000_000_000
 		: n <= 86_400_000);
@@ -237,14 +232,12 @@ function addDuration(totals: DurationTotals, value: DurationMeasurement): void {
 }
 
 /**
- * At most 1024 accepted responses/IDs, 64 dimension buckets, and 128 code units
- * per ID. No eviction: once capacity is reached, new records are rejected
- * atomically (including existing buckets); accepted IDs remain deduplicated.
- * Invalid/rejected IDs are not reserved. A new instance starts a new accounting
- * window with NO cross-instance/lifetime dedupe guarantee. No reset/flush API:
- * window ownership and delivery remain future work. Runtime consumption stays
- * separate from deterministic SDD/RDD counts; no closure attribution or bridge.
- * Snapshots contain only closed dimensions and bounded numeric aggregates.
+ * 最多接受 1024 个响应/ID、64 个维度桶，每个 ID 最多 128 个码元。
+ * 不做淘汰：一旦到达容量，新记录（含已存在的桶）被原子性拒绝；
+ * 已接受的 ID 保持去重。无效/被拒绝的 ID 不被保留。新实例开启新的
+ * 记账窗口，不保证跨实例/生命周期去重。没有重置/清空 API：窗口
+ * 归属与交付仍是后续工作。运行时消耗与确定性的 SDD/RDD 计数保持
+ * 分离；不做闭包归因或桥接。快照只包含封闭维度与有界的数值聚合。
  */
 export class RuntimeMetrics {
 	#ids = new Set<string>();

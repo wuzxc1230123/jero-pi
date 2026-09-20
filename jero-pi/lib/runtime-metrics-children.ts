@@ -4,24 +4,23 @@ import type { ChildObservationSnapshot } from "./agents-runner.ts";
 import { FINISHED_STATUSES, type TaskStatus } from "./agents-protocol.ts";
 import { classifyRuntimeModelId, EFFORTS, normalizeRuntimeProvider, parseAgentClass, RuntimeMetrics, UNKNOWN_AGENT_CLASS, validRuntimeResponse, type AgentClass, type FinalResponse, type RuntimeMetricBucket } from "./runtime-metrics.ts";
 export const CHILD_METRICS_EVENT = "gentle:runtime-metrics:child/v1";
-// Local revocation notification invalidates active observations. Contains only
-// the local session join, never policy output.
+// 本地撤销通知使活动观察失效。只包含本地会话联接，绝不包含策略
+// 输出。
 export const CHILD_METRICS_REVOKED = "gentle:runtime-metrics:revoked/v1";
 const missing = { state: "unavailable" } as const;
 const tokenFields = ["input", "output", "cacheRead", "cacheWrite", "reasoning", "totalTokens"] as const;
-/** Recognize only names from this package's fixed assets and the transport's
- * closed agent_class enum. Customized packaged agents retain their schema name;
- * user-defined names never enter telemetry. Exact fingerprints preserve the
- * worker/explore/verify compatibility mapping whose packaged names are prefixed.
- * Model/thinking routing is excluded from fingerprints because installation
- * rewrites it. No installed files are read; this class is not execution/review authority.
- * Only the fixed package catalog is cached; runtime instructions are not retained.
+/** 只识别本包固定资产中的名称与传输层封闭的 agent_class 枚举。
+ * 被定制过的打包代理保留其 schema 名称；用户自定义名称绝不进入
+ * 遥测。精确指纹保留了 worker/explore/verify 的兼容映射，它们的打包
+ * 名称带前缀。指纹不含模型/思考路由，因为安装过程会改写它。
+ * 不读取任何已安装文件；该类不是执行/评审权威。
+ * 只缓存固定的包目录；不保留运行时指令。
  */
 let definitions: Array<{ name: string; fingerprint: string; fingerprintClass?: AgentClass }> | undefined;
 const packagedAgentClassAliases = new Map([["sdd-proposal", "sdd-propose"]] as const);
 function fingerprintAgentClassName(name: string): string {
-	// The enum names are un-prefixed; packaged agents carry the jero- prefix
-	// (gentle-ai- kept for any historical installed copies still classifying).
+	// 枚举名称不带前缀；打包代理带 jero- 前缀
+	// （保留 gentle-ai- 以兼容仍在分类的任何历史安装副本）。
 	const compatibilityName = name.startsWith("jero-") ? name.slice("jero-".length)
 		: name.startsWith("gentle-ai-") ? name.slice("gentle-ai-".length) : name;
 	return packagedAgentClassAliases.get(compatibilityName) ?? compatibilityName;
@@ -68,7 +67,7 @@ export function launchSelection(agent: AgentDefinition, model: ModelRef | undefi
 	return { agentClass: classifyBuiltinAgent(agent), selectedProvider: provider(model?.provider),
 		selectedModelId: modelId(model?.provider, model?.id), selectedEffort: effort(thinking) };
 }
-/** LOCAL event only: these two bounded join IDs must never enter output/export. */
+/** 仅限本地事件：这两个有界联接 ID 绝不进入输出/导出。 */
 export interface ChildMetricsEvent {
 	schema: typeof CHILD_METRICS_EVENT;
 	parentSessionId: string;
@@ -117,8 +116,8 @@ function validEvent(value: unknown): value is ChildMetricsEvent {
 			&& (row.responseModelId === undefined || modelId(row.provider, row.responseModelId) === row.responseModelId)
 			&& row.fullResponseMs.state === "unavailable" && row.responseHeadersMs.state === "unavailable");
 }
-/** Copy only validated local fields at the completion callback.
- * Do not clone arbitrary event properties or retain a caller-mutable bus object.
+/** 在完成回调处只复制已校验的本地字段。
+ * 不克隆任意事件属性，也不保留调用方可变的总线对象。
  */
 export function snapshotChildEvent(value: unknown): ChildMetricsEvent | undefined {
 	if (!validEvent(value)) return undefined;
@@ -136,10 +135,9 @@ export function snapshotChildEvent(value: unknown): ChildMetricsEvent | undefine
 			})) as FinalResponse["tokens"], responseHeadersMs: missing, fullResponseMs: missing })) };
 }
 
-/** Export-facing shape: no IDs, paths, task labels, or raw agent/model names.
- * Rankings are descending counts, NOT quality/success comparisons. Native
- * transport is deliberately absent. Response buckets retain selected launch
- * identity and effort separately from effective response evidence.
+/** 面向导出的形态：无 ID、路径、任务标签或原始代理/模型名称。
+ * 排名是降序计数，不是质量/成功对比。刻意不包含原生传输。
+ * 响应桶将选定的启动身份与 effort 同生效响应证据分开保留。
  */
 export interface ChildCompositionSnapshot {
 	launches: ChildLaunchBucket[];
@@ -190,7 +188,7 @@ export class ChildComposition {
 		this.#launches.clear();
 		this.#count = this.#settled = this.#dropped = 0;
 		this.#statuses = { completed: 0, failed: 0, cancelled: 0, timed_out: 0 };
-		// Bounded tombstones survive revocation; denied tasks cannot replay.
+		// 有界的墓碑在撤销后仍然保留；被拒绝的任务无法重放。
 	}
 	snapshot(): ChildCompositionSnapshot {
 		return structuredClone({ launches: [...this.#launches.values()].sort((a, b) => b.launches - a.launches),

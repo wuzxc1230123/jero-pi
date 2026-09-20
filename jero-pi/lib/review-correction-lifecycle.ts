@@ -1,18 +1,15 @@
-// Evidence-first correction lifecycle, protocol v1.5.
+// 证据先行的修正生命周期，协议 v1.5。
 //
-// An ordinary review permits exactly one bounded correction transaction. Since
-// v1.5 the provider collects candidate-bound verification evidence BEFORE it
-// offers `targeted_validation`, and the outcome it records decides which of
-// three terminal branches follows. Those branches differ in what they consume:
-// only `procedural_tooling_failed` ends the lifecycle, only `passed` unlocks
-// validation, and `verification_failed` must cost nothing at all.
+// 普通评审恰好允许一个有界的修正事务。自 v1.5 起，提供方在提供
+// `targeted_validation` 之前先收集绑定候选的验证证据，其记录的结局
+// 决定随后三个终局分支中的哪一个。这些分支的区别在于各自的消耗：
+// 只有 `procedural_tooling_failed` 终结生命周期，只有 `passed` 解锁
+// 验证，而 `verification_failed` 必须分文不耗。
 //
-// This module is deliberately pure — no subprocess, no filesystem, no clock.
-// The provider owns the evidence directory and the budget ledger; what Pi owns
-// is the decision, and a decision made from data can be tested without a live
-// binary. The rejected alternative was inlining these branches beside the
-// existing validation conditionals, where the single-correction invariant would
-// have been enforced by control flow instead of by data.
+// 本模块刻意保持纯函数——无子进程、无文件系统、无时钟。证据目录
+// 与预算台账归提供方所有；Pi 拥有的是决策，而基于数据做出的决策
+// 无需活动二进制即可测试。被否决的替代方案是把这些分支内联到既有
+// 验证条件旁边，那样单一修正不变量将由控制流而非数据来约束。
 
 export const CORRECTION_OUTCOMES = Object.freeze(["passed", "verification_failed", "procedural_tooling_failed"] as const);
 export type CorrectionOutcome = (typeof CORRECTION_OUTCOMES)[number];
@@ -58,8 +55,8 @@ export interface RunTargetedValidationStep extends CorrectionStepBase {
 	readonly kind: "run-targeted-validation";
 	readonly transactionOpen: false;
 	readonly unlocksTargetedValidation: true;
-	// The provider issues the request. Pi re-queries STATUS for it instead of
-	// fabricating one, so the step names the operation it expects to collect.
+	// 请求由提供方发出。Pi 为其重新查询 STATUS 而不是凭空捏造，
+	// 因此该步骤点名它期望收集的操作。
 	readonly expectCaptureOperation: "external.run_targeted_validation";
 	readonly evidenceIdentity: string;
 }
@@ -72,9 +69,8 @@ export interface RecaptureRequiredStep extends CorrectionStepBase {
 	readonly budgetConsumed: 0;
 	readonly changedLinesCharged: number;
 	readonly autoRetry: false;
-	// Carries the identity this capture supersedes. A new capture is mandatory:
-	// there is deliberately no field that would let a caller resubmit the same
-	// candidate bytes under the prior identity.
+	// 携带本次捕获所取代的身份。新捕获是强制性的：刻意不提供任何
+	// 能让调用方以旧身份重新提交相同候选字节的字段。
 	readonly supersedes: string;
 	readonly requiresNewCapture: true;
 	readonly guidance: string;
@@ -121,8 +117,8 @@ export function resolveCorrectionStep(status: CorrectionStatus, evidence: Correc
 			unlocksTargetedValidation: false,
 			attemptConsumed: false,
 			budgetConsumed: 0,
-			// Reported, never recomputed: a failed verification must not move the
-			// accounting the provider already holds in either direction.
+			// 只上报、绝不重算：失败的验证不得朝任何方向挪动
+			// 提供方已持有的账目。
 			changedLinesCharged: status.changedLinesCharged,
 			autoRetry: false,
 			supersedes: evidence.evidenceIdentity,
@@ -148,9 +144,9 @@ export function resolveCorrectionStep(status: CorrectionStatus, evidence: Correc
 export interface DistinctEvidenceCheck {
 	readonly prior: CorrectionEvidence;
 	readonly next: CorrectionEvidence;
-	// Whether the earlier record is still resolvable, and what its bytes hash to
-	// NOW. Both are observations the caller supplies; this function judges them
-	// rather than performing IO, which keeps the invariant unit-testable.
+	// 早先记录是否仍可解析，以及其字节“现在”哈希成什么。
+	// 两者都是调用方提供的观察结果；本函数只做判断而不做 IO，
+	// 从而保持该不变量可做单元测试。
 	readonly priorStillResolvable: boolean;
 	readonly priorRecordDigestNow: string;
 }

@@ -2,14 +2,13 @@ import { chmodSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { assertManagedStorePathV1, resolveRepositoryAuthorityV1 } from "./review-repository.ts";
 
-// Pi-owned, clone-local (Git-common-dir) latch recording that the one-time
-// "run the review now?" question has already been put to the user for this
-// clone. Design Decision #2 (organic-rdd-parity): scope, direction, and
-// asymmetry mirror gentle-ai's own RDDConsentAsked/RecordRDDConsentAsked
-// exactly (per clone, accept-only, never committed, never inherited) —
-// but this is Pi's OWN latch, at Pi's OWN path, never gentle-ai's private
-// rdd-mode/asked.json. Writing another product's private authority store
-// would be a boundary violation.
+// Pi 持有、克隆局部（Git common dir）的闩锁，记录“现在就运行评审？”
+// 这个一次性问题已向该克隆的用户提出过。设计决策 #2
+// （organic-rdd-parity）：作用域、方向与非对称性精确镜像 gentle-ai 自己
+// 的 RDDConsentAsked/RecordRDDConsentAsked（按克隆、仅接受、永不提交、
+// 永不继承）——但这是 Pi 自己的闩锁，在 Pi 自己的路径上，绝不是
+// gentle-ai 私有的 rdd-mode/asked.json。写入其他产品的私有权威存储
+// 将是边界违规。
 export const REVIEW_CONSENT_LATCH_SCHEMA = "gentle-pi.review-consent-asked/v1";
 const REVIEW_CONSENT_LATCH_PAYLOAD = `{"schema":"${REVIEW_CONSENT_LATCH_SCHEMA}"}\n`;
 
@@ -19,12 +18,10 @@ function reviewConsentLatchPath(cwd: string): string {
 }
 
 /**
- * Reads whether the one-time consent question has already been asked for
- * this clone. Returns false when no latch has ever been recorded. Throws
- * when the repository/Git-common-dir authority cannot be resolved at all
- * (unresolvable, non-Git, or shallow repository) — callers must treat that
- * as "no latch write, review proceeds" per the Threat Matrix rather than
- * silently reporting a latch.
+ * 读取该克隆是否已问过一次性同意问题。从未记录过闩锁时返回 false。
+ * 当仓库/Git common dir 权威完全无法解析（不可解析、非 Git 或浅仓库）
+ * 时抛错——调用方必须按威胁矩阵将其视为“不写闩锁，评审继续”，
+ * 而不是静默报告存在闩锁。
  */
 export function readReviewConsentLatch(cwd: string): boolean {
 	const path = reviewConsentLatchPath(cwd);
@@ -39,9 +36,8 @@ export function readReviewConsentLatch(cwd: string): boolean {
 }
 
 /**
- * Records the one-time consent question as asked for this clone. One-way:
- * called only on accept, never on decline. Idempotent — recording twice
- * writes the same exact canonical bytes.
+ * 为该克隆记录一次性同意问题已被提出。单向：只在接受时调用，
+ * 拒绝时绝不调用。幂等——记录两次写入的是完全相同的权威字节。
  */
 export function recordReviewConsentLatch(cwd: string): void {
 	const path = reviewConsentLatchPath(cwd);

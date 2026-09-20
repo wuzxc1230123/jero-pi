@@ -126,15 +126,12 @@ export class ReviewGraphObjectStoreV1 {
 		try {
 			quorum = this.readQuorum();
 		} catch (error) {
-			// Genesis (generation-0) forward recovery: if the store has no
-			// prior generation at all — evidenced by there being exactly one
-			// installed root-set object in the entire store, ever — and that
-			// sole object hash-verifies as an unambiguous genesis candidate
-			// for this repository/authority, reconstruct all three CURRENT
-			// slots from it. Any ambiguity (zero or multiple installed
-			// objects, or the sole object failing to hash-verify or not
-			// being a genesis candidate) stays fail-closed with the
-			// original quorum error.
+			// 创世（generation-0）前向恢复：若存储完全没有更早的世代——
+			// 证据是整个存储至今恰好安装过一个根集对象——且该唯一对象
+			// 通过哈希校验、是该仓库/权威无歧义的创世候选，则据此重建
+			// 全部三个 CURRENT 槽位。任何歧义（安装对象为零或多个，
+			// 或唯一对象哈希校验失败、不是创世候选）都保持保守失败，
+			// 沿用原始的法定人数错误。
 			const candidate = this.discoverSoleGenesisRootSet();
 			if (!candidate) throw error;
 			this.writePointer(0, candidate, 0);

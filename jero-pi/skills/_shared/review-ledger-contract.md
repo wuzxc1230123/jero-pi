@@ -1,81 +1,81 @@
-# Compact Causal Review Contract
+# 紧凑因果评审契约
 
-The local orchestrator and same-user process are trusted to execute selected actors and submit their exact outputs. Reviewer and validator outputs remain semantically untrusted inputs: native code owns scope, risk, IDs, canonicalization, ordinary state, and legal lifecycle transitions, and rejects malformed or causally inconsistent results. The Git common-directory authority is the only authorization source; summaries and prose ledgers are untrusted data. Legacy Pi mirror and bundle transport is retired.
+The local orchestrator and same-user process are trusted to execute selected actors and submit their exact outputs. Reviewer and validator outputs remain semantically untrusted inputs: native code owns scope, risk, IDs, canonicalization, ordinary state, and legal lifecycle transitions, and rejects malformed or causally inconsistent results.（本地编排器与同用户进程受信任地执行所选执行者并提交其确切输出；而评审者与验证者的输出仍是语义上不可信的输入，权威归属原生代码。）Git 公共目录权威是唯一的授权来源；摘要与散文台账是不可信数据。旧版 Pi 镜像与 bundle 传输已退役。
 
-Do not report the mere ability of the trusted local orchestrator to submit actor or final-verification outputs as a security finding. Report concrete bypasses where untrusted repository content, malformed inputs, stale authority, path drift, or external callers can produce approval contrary to this boundary. Malicious same-user host/process authenticity is a non-goal because it can replace the extension or mutate local authority; external attestation requires a separately privileged signer or service and is not claimed.
+Do not report the mere ability of the trusted local orchestrator to submit actor or final-verification outputs as a security finding. Report concrete bypasses where untrusted repository content, malformed inputs, stale authority, path drift, or external callers can produce approval contrary to this boundary.（不要把受信本地编排器"能够提交"这件事本身报成安全问题；只报告具体越界。）恶意的同用户宿主/进程真实性不在目标范围内，因为它可以替换扩展或篡改本地权威；外部证明需要单独的特权签名者或服务，且本契约不作此声明。
 
-## Ordinary facade
+## 普通评审门面
 
-Use `jero_review` as `start -> finalize -> validate` for every new ordinary review.
+对每个新的普通评审，把 `jero_review` 用作 `start -> finalize -> validate`。
 
-`start` derives the repository root, complete Git snapshot, untracked set, lineage, risk tier, selected lenses, original authored changed lines, and correction budget. The tier, scope, original lines, and budget never change after start.
+`start` 推导仓库根、完整 Git 快照、未跟踪集合、谱系、风险层级、所选评审视角、原始署名改动行数与纠正预算。层级、范围、原始行数与预算在 start 之后绝不改变。
 
-Risk routing is deterministic:
+风险路由是确定性的：
 
-| Tier | Route |
+| 层级 | 路由 |
 |---|---|
-| `low` | Zero lenses; only proven docs/comments/format/typo-string work with no executable or configuration change |
-| `medium` | One dominant lens for ordinary changes |
-| `high` | Canonical 4R for auth, update, security, payments, data exposure/loss, permissions, shell/process, or more than 400 authored lines |
+| `low` | 零评审视角；仅限被证明的文档/注释/格式/错别字字符串工作，无可执行或配置变更 |
+| `medium` | 普通变更使用一个主导评审视角 |
+| `high` | 权威 4R：用于 auth、update、security、payments、数据暴露/丢失、权限、shell/进程，或超过 400 行署名改动 |
 
-Generated files matching `testdata/golden/**` remain in snapshot identity but do not count as authored risk lines. Ordinary tests, fixtures, and snapshots are never broadly excluded. The correction budget is frozen as `min(200, ceil(original_changed_lines / 2))`.
+匹配 `testdata/golden/**` 的生成文件保留在快照身份中，但不计入署名风险行。普通测试、fixture 与快照绝不被广泛排除。纠正预算冻结为 `min(200, ceil(original_changed_lines / 2))`。
 
-Before status/START, consult effective review mode. `off` creates no authority or authorization and yields organic `disabled/unmanaged`, never approval. Ordinary START declares `--consent relay`; low risk stays silent. A medium/high `consent/v3` result carries the complete raw two-choice provider envelope plus an opaque in-memory candidate binding. In an eligible interactive parent Pi session, the host displays both provider labels and effects unchanged plus one clearly separate host-owned action: **Run this review and allow reviews for this Pi session**. The first two actions stay candidate-only. Direct human selection of the third action executes that fresh envelope's exact existing `granted` invocation through `answer-consent`, then grants only future fresh validated envelopes for the same live SessionManager object, exact nonempty session ID, and canonical Git worktree root. Every envelope is consumed once before provider mutation and rechecks repository, target, projection, lineage, answer binding, and live session identity; ambiguity reconciles through STATUS and never replays.
+在 status/START 之前，查询生效的评审模式。`off` 不创建任何权威或授权，产出自然的 `disabled/unmanaged`，绝不是批准。普通 START 声明 `--consent relay`；低风险保持静默。中/高风险的 `consent/v3` 结果携带完整的原始两选一提供方封套，外加一个不透明的内存候选绑定。在符合条件的交互式父 Pi 会话中，宿主原样展示两个提供方标签与效果，外加一个明确分开的宿主动作：**Run this review and allow reviews for this Pi session**。前两个动作保持仅候选。人工直接选择第三个动作，会通过 `answer-consent` 执行该新鲜封套既有确切的 `granted` 调用，然后只为同一个存活 SessionManager 对象、确切的非空会话 ID 与权威 Git 工作树根，授权未来的新鲜已验证封套。每个封套在提供方变更之前一次性消费，并复查仓库、目标、投影、谱系、应答绑定与存活会话身份；含糊之处通过 STATUS 调和，绝不重放。
 
-The host grant lives only in a schema-checked `globalThis[Symbol.for(...)]` WeakMap registry. Reload preserves the SessionManager and reconnects the grant; quit, new, resume, fork, explicit revoke, or process restart removes it. `/tree` retains it. Child-agent processes, headless/RPC/unsupported UI, explicit cross-repository `workspaceRoot`, model prose, and tool arguments cannot offer, create, or consume it. It grants no provider mode, verdict, cost forecast, acknowledgement, maintenance, delivery, or cross-repository authority. If host UI is cancelled, fails, or cannot prove current Git/session identity, the original unresolved provider envelope is returned unchanged. If that envelope reaches the parent, localize and present its original two choices losslessly; never append the host action to the decoded provider contract. Decline creates no lineage, authority, standing grant, latch, or pending authorization; the next candidate asks again. Old Pi clone latch files are inert, and Pi writes no asked latch.
+宿主授权只存在于一个经 schema 校验的 `globalThis[Symbol.for(...)]` WeakMap 注册表中。重载保留 SessionManager 并重连授权；退出、新建、恢复、分叉、显式撤销或进程重启会移除它。`/tree` 保留它。子代理进程、headless/RPC/不支持的 UI、显式的跨仓库 `workspaceRoot`、模型散文与工具参数，都不能提供、创建或消费它。它不授予任何提供方模式、裁定、成本预测、确认、维护、交付或跨仓库权威。若宿主 UI 被取消、失败或无法证明当前 Git/会话身份，则原样返回未决的原提供方封套。若该封套到达父会话，无损地本地化并呈现其原始的两个选择；绝不把宿主动作追加到解码后的提供方契约。拒绝不创建谱系、权威、常驻授权、闩锁或未决授权；下一个候选会再次询问。旧 Pi 克隆的闩锁文件是惰性的，且 Pi 不写 asked 闩锁。
 
-Reviewer, refuter, and validator verdicts are admitted natively, never Pi-authored. `finalize` follows the provider's negotiated `next_transition` and supplies only the negotiated collection answers: a lens `review.capture-result` collect input rendered with `--agent=pi --materialize=true` is satisfied by the gentle-pi host relay, which prints the exact Go-materialized opaque prompt, launches a fresh locked-down print-mode `pi` subprocess in an empty scratch directory with every discovery surface disabled, and submits the untouched raw output bytes through the provider-owned submission form. The adversarial roles do not go through that relay: `review.capture-refuter` and `review.capture-validation` collect inputs render as self-contained authority-advancing vectors (binding tokens plus `--agent=pi --execute=true`, no submission descriptor); executing the exact rendered invocation makes Go materialize the role prompt, spawn its own locked-down `pi` process, and admit the raw verdict. Native Go owns validation, canonicalization, missing lens/finding ID assignment, persistence, and hashing, and performs only the legal transition from the current compact state. The five states are `reviewing`, `correction_required`, `validating`, `approved`, and `escalated`.
+评审者、反驳者与验证者的裁定由原生接纳，绝不是 Pi 署名。`finalize` 遵循提供方协商的 `next_transition`，只提供协商好的收集答案：以 `--agent=pi --materialize=true` 渲染的 lens `review.capture-result` 收集输入由 gentle-pi 宿主中继满足——它打印 Go 物化的确切不透明提示词，在一个空草稿目录中启动一个全新的 lockdown print 模式 `pi` 子进程（关闭所有发现面），并通过提供方拥有的提交表单（provider-owned submission form）提交未经改动的原始输出字节。对抗角色不经过该中继：`review.capture-refuter` 与 `review.capture-validation` 收集输入渲染为自包含的权威推进向量（self-contained authority-advancing vectors：绑定令牌加 `--agent=pi --execute=true`，无提交描述符）；执行渲染出的确切调用会让 Go 物化角色提示词、派生自己的 lockdown `pi` 进程并接纳原始裁定。原生 Go 拥有验证、权威化、缺失 lens/发现 ID 分配、持久化与哈希，且只执行从当前紧凑状态出发的合法迁移。The five states are `reviewing`, `correction_required`, `validating`, `approved`, and `escalated`.
 
-### Concurrent Reviewer Group (MANDATORY)
+### 并发评审者组（强制）
 
-When one fresh `collect.inputs` set contains multiple distinct independent `review.capture-result` reviewer slots, call `jero_review_capture_group` once with the complete ordered provider bindings and its forecast acknowledgement. Before any materialization it validates the whole current group, its common binding fields, unique slot identities, and every provider submission descriptor; then it starts all reviewers before waiting. For canonical 4R, preserve `review-risk`, `review-resilience`, `review-readability`, `review-reliability` order.
+当一个新鲜 `collect.inputs` 集合包含多个不同的独立 `review.capture-result` 评审者槽位时，调用一次 `jero_review_capture_group`，带上完整的有序提供方绑定及其预测确认。在任何物化之前，它验证整个当前分组、其共同绑定字段、唯一槽位身份与每个提供方提交描述符；然后先启动全部评审者，再开始等待。对权威 4R，保持 `review-risk`、`review-resilience`、`review-readability`、`review-reliability` 顺序。
 
-Each grouped launch runs only its own provider-issued `review.capture-result` binding, and admission remains in provider order. A typed terminal or nonterminal closure returns directly; a later stop after earlier admission reports bounded partial progress and never claims no mutation. If every submission returns without closure, reconcile fresh bound STATUS and return its declared action rather than inferring group success. On `correction_required`, continue only through exact bound STATUS and the provider-issued `review.capture-correction-plan` binding.
+每个分组启动只运行自己的提供方签发的 `review.capture-result` 绑定，接纳仍按提供方顺序。类型化的终局或非终局闭包直接返回；较早接纳之后发生较晚停止时，报告有界的部分进度，绝不声称无变更。若每次提交都未闭包返回，则调和新鲜绑定的 STATUS 并返回其声明的动作，而不是推断分组成功。在 `correction_required` 时，只通过确切绑定的 STATUS 与提供方签发的 `review.capture-correction-plan` 绑定继续。
 
-`validate` is informational and runs with zero actors. It never mutates compact authority or controls delivery.
+`validate` 是信息性的，零执行者运行。它绝不更改紧凑权威，也不控制交付。
 
-## Causal findings
+## 因果发现
 
-Every finding supplies `evidence_class`, `causal_disposition`, and concrete proof. Concrete proof is one of `changed-hunk`, `candidate-created-path`, `differential-test`, or `before-after`.
+Every finding supplies `evidence_class`, `causal_disposition`, and concrete proof. Concrete proof is one of `changed-hunk`, `candidate-created-path`, `differential-test`, or `before-after`.（每个发现必须给出证据类别、因果定性与具体证明；具体证明取四种之一。）
 
-| Field | Values |
+| 字段 | 取值 |
 |---|---|
 | `severity` | `BLOCKER` \| `CRITICAL` \| `WARNING` \| `SUGGESTION` |
 | `evidence_class` | `deterministic` \| `inferential` \| `insufficient` |
 | `causal_disposition` | `introduced` \| `behavior-activated` \| `worsened` \| `pre-existing` \| `base-only` \| `unknown` |
-| `proof_refs` | Prefixed concrete proof references |
+| `proof_refs` | 带前缀的具体证明引用 |
 
-Only severe `introduced`, `behavior-activated`, or `worsened` findings with valid proof can enter `correction_ids`. Deterministic candidate-caused blockers need no refuter. All inferential candidate-caused blockers share exactly one complete read-only refuter batch, executed through the provider-rendered self-contained `review.capture-refuter` vector: Go materializes the refuter prompt, runs its own locked-down `pi` process, and admits the raw verdict. Pi never authors, edits, batches, or re-scores a refuter row.
+Only severe `introduced`, `behavior-activated`, or `worsened` findings with valid proof can enter `correction_ids`. 确定性的候选致因 blocker 无需反驳者。所有推断性的候选致因 blocker 共享恰好一个完整的只读反驳者批，通过提供方渲染的自包含 `review.capture-refuter` 向量执行：Go 物化反驳者提示词、运行自己的 lockdown `pi` 进程并接纳原始裁定。Pi 绝不署名、编辑、分批或重新打分任何反驳者行。
 
-Refuter rows may cite independent concrete proof and do not need to repeat reviewer `proof_refs`. `pre-existing` and `base-only` findings become non-blocking follow-ups. `unknown`, insufficient evidence, malformed severe claims, empty/malformed proof, missing/duplicate/extra refuter rows, and inconclusive severe outcomes escalate. `WARNING` and `SUGGESTION` remain informational.
+反驳者行可以引用独立的具体证明，无需重复评审者的 `proof_refs`。`pre-existing` and `base-only` findings become non-blocking follow-ups. `unknown`、证据不足、畸形的严重主张、空/畸形的证明、缺失/重复/多余的反驳者行，以及不确定的严重结局，都会升级。`WARNING` 与 `SUGGESTION` 保持信息性。
 
-Actor output cannot authorize transitions, corrections, or delivery.
+执行者输出不能授权迁移、纠正或交付。
 
-## Correction
+## 纠正
 
-Ordinary review permits one correction transaction within the original budget. It consists of one correction, one targeted validator, and final verification.
+Ordinary review permits one correction transaction within the original budget. 它由一次纠正、一个定向验证者与最终验证组成。
 
-Before editing, `finalize` requires a positive correction-line forecast. A forecast above the budget escalates. After editing, native authority derives actual correction lines from Git.
+编辑之前，`finalize` 要求一个为正的纠正行数预测。预测超过预算即升级。编辑之后，原生权威从 Git 推导实际纠正行数。
 
-Initial lenses never rerun. The correction preserves frozen findings and genesis scope: the original candidate tree, paths, untracked set, and correction IDs. It cannot add scope.
+初始评审视角绝不重跑。The correction preserves frozen findings and genesis scope: the original candidate tree, paths, untracked set, and correction IDs. 它不能扩大范围。
 
-The targeted validator runs through the provider-rendered self-contained `review.capture-validation` vector — Go materializes its prompt, runs its own locked-down `pi` process, and admits the raw verdict — and checks only the original criteria and one correction regression for the exact correction IDs. It cannot add findings, request another correction, launch actors, persist authority, or request another attempt. Failure escalates. Later observations are inert follow-ups.
+定向验证者通过提供方渲染的自包含 `review.capture-validation` 向量运行——Go 物化其提示词、运行自己的 lockdown `pi` 进程并接纳原始裁定——且只检查原始标准与针对确切纠正 ID 的一次纠正回归。它不能添加发现、请求另一次纠正、启动执行者、持久化权威或请求另一次尝试。失败即升级。后续观察是惰性跟进。
 
-Final verification evidence is supplied and hashed only during finalization. Failure escalates and never reopens review.
+最终验证证据只在最终化期间提供并哈希。失败即升级，且绝不重开评审。
 
-## Authority and compatibility
+## 权威与兼容
 
-The negotiated native provider owns compact-v2 storage and its private paths. Pi consumes only typed START, FINALIZE, target status, validation, recovery, reconciliation, and SDD-binding results. Content-derived revisions, compare-and-swap replacement, exact retry idempotency, stale/semantic retry rejection, semantic validation, terminal immutability, atomic publication, and receipt readback remain provider guarantees.
+协商出的原生提供方拥有 compact-v2 存储及其私有路径。Pi 只消费类型化的 START、FINALIZE、目标 status、validation、recovery、reconciliation 与 SDD 绑定结果。Content-derived revisions, compare-and-swap replacement, exact retry idempotency, stale/semantic retry rejection, semantic validation, terminal immutability, atomic publication, and receipt readback remain provider guarantees.（内容推导修订、比较交换替换、精确重试幂等、过期/语义重试拒绝、语义校验、终局不可变、原子发布与回执回读，仍是提供方保证。）
 
-Existing graph-v1 ordinary lineages remain readable for compatibility but reject new mutation. Legacy graph bundle export/import is retired. Judgment Day remains mutable on graph-v1. Pre-graph numbered authority remains destructive-reset-only, while native target status owns mixed-authority ambiguity and the required maintainer action.
+Existing graph-v1 ordinary lineages remain readable for compatibility but reject new mutation. Legacy graph bundle export/import is retired. Judgment Day remains mutable on graph-v1. 前图的编号权威仍仅支持破坏性重置，而原生目标 status 拥有混合权威的含糊性判定与必需的维护者动作。
 
-Permanent Pi-owned consumer infrastructure is limited to canonical identity primitives, repository/common-directory binding, and immutable candidate views. These modules are not authority mirrors.
+Pi 永久拥有的消费方基础设施仅限于权威身份原语、仓库/公共目录绑定与不可变候选视图。这些模块不是权威镜像。
 
-## Delivery boundary
+## 交付边界
 
-Commit, push, pull-request creation, and release creation are not RDD gates. Review outcomes and receipt state are informational and never authorize, consume, rewrite, or block a Bash delivery command; ordinary repository policy owns delivery. Pi does not inspect RDD mode or native authority for those commands.
+Commit, push, pull-request creation, and release creation are not RDD gates. Review outcomes and receipt state are informational and never authorize, consume, rewrite, or block a Bash delivery command; ordinary repository policy owns delivery. Pi does not inspect RDD mode or native authority for those commands. Review transactions, validation, and SDD never perform delivery commands themselves.
 
-Dangerous-command confirmation/safety and destructive-review-maintenance consent remain independent. Review transactions, validation, and SDD never perform delivery commands themselves.
+危险命令确认/安全与破坏性评审维护的同意保持独立。
 
 ## Judgment Day
 
@@ -87,7 +87,7 @@ Judgment Day alone may iterate discovery and scoped re-judgment, for at most two
 
 Findings surviving round two escalate; no third-round transition exists.
 
-A standalone `jd-fix-agent` dispatch requires no graph-v1 or native review lineage and is accepted only with this exact Markdown shape. The correction batch contains only one round (`1 of 2` or `2 of 2`) and one lowercase SHA-256. The exact frozen finding rows are one JSON object per line, use only the canonical row fields, and exactly match the authorized IDs.
+A standalone `jd-fix-agent` dispatch requires no graph-v1 or native review lineage and is accepted only with this exact Markdown shape. 校正批只含一轮（`1 of 2` 或 `2 of 2`）与一个小写 SHA-256。精确冻结发现行为每行一个 JSON 对象，只使用权威行字段，且与授权 ID 完全一致。
 
 ```markdown
 ## Judgment Day activation
@@ -103,4 +103,4 @@ Frozen ledger SHA-256: `aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 path/to/authorized-file.ts
 ```
 
-Judgment Day stays mutable on graph-v1. Its reducer, replay, object-store, lock, snapshot, and graph receipt-validation dependencies remain live even though ordinary authority is native.
+Judgment Day 在 graph-v1 上保持可变。即便普通权威已经原生化，它的 reducer、replay、对象存储、锁、快照与图回执校验依赖仍然存活。

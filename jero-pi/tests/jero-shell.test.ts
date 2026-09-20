@@ -350,7 +350,7 @@ test("gentleShell frames the editor with the petal prompt and a hint while empty
 	assert.doesNotMatch(editor.render(60).join("\n"), /\x1b\[44m/, "prompt must not paint passive backgrounds");
 	assert.match(lines[1], /^│.*type, or \/ for commands +│$/);
 	assert.match(lines[lines.length - 1], /^╰─+╯$/);
-	editor.setText("hola");
+	editor.setText("你好");
 	assert.doesNotMatch(editor.render(60).map(stripAnsi)[1], /type, or/);
 	editor.dispose();
 });

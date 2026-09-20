@@ -23,18 +23,18 @@ import { reviewFinalizeV1 } from "./authority/finalize.ts";
 import { abandonJeroLineageV1, reclaimJeroAuthorityV1, recoverJeroLineageV1, reconcileJeroAuthorityV1, type JeroMaintenanceResultV1 } from "./authority/maintenance.ts";
 import { buildJeroLastEventClosureV1 } from "./authority/closures.ts";
 
-// P4d: the in-process authority adapter over the NativeReviewCli surface.
-// Served here: the SDD projection pair (P4c), the review STATUS read path
-// (targetStatus), the RDD mode pair, the read-only risk assessment, the SDD
-// attempt pair, the START pair (P4d-e: direct starts plus the consent
-// ceremony, envelope minted wire-side, answer re-freezes the bound
-// candidate), and since P4d-g the correction-plan capture, the acknowledge
-// burn, and the maintenance quartet. Still on the fail-closed P1 stub: the
-// provider role vectors (refuter/validation relay execution - see
-// _tools/p4-f-g-capture-maintenance-analysis.md Q-B) and the unachievable-
-// lens declaration (Q-C: no authority-side write op) - every served method
-// is typed-union in, wire record out, with authority refusals surfacing as
-// errors carrying the typed code.
+// P4d：NativeReviewCli 表面之上的进程内权威适配器。
+// 此处已服务：SDD 投影对（P4c）、评审 STATUS 读取路径
+// (targetStatus)、RDD 模式对、只读风险评估、SDD
+// 尝试对、START 对（P4d-e：直接启动加同意
+// 仪式，封套在 wire 侧铸造，应答重新冻结绑定的
+// 候选），以及自 P4d-g 起的修正计划捕获、acknowledge
+// 销毁与维护四联操作。仍在保守失败的 P1 桩上：提供方
+// 角色向量（refuter/validation 中继执行 - 见
+// _tools/p4-f-g-capture-maintenance-analysis.md Q-B）与不可达
+// 评审视角声明（Q-C：权威侧无写操作）—— 每个已服务方法
+// 都是类型化联合进、wire 记录出，权威拒绝以
+// 携带类型化代码的错误浮出。
 
 function projectV2(status: JeroSddStatusV2): NativeSddStatusV2 {
 	return status as unknown as NativeSddStatusV2;
@@ -46,9 +46,9 @@ function contextOrThrow(cwd: string): JeroAuthorityContextV1 {
 	return resolution.context;
 }
 
-// The authority never reads the environment (boundary §9.1); this adapter is
-// the seam where the host's JERO_PI_CONFIG_HOME override enters, so RDD mode
-// reads see the same global record as every other jero-pi config consumer.
+// 权威从不读取环境（边界 §9.1）；这个适配器是
+// 宿主的 JERO_PI_CONFIG_HOME 覆盖进入的接缝，因此 RDD 模式
+// 读取看到的全局记录与所有其他 jero-pi 配置消费者一致。
 function globalReviewModePathFromEnv(env: NodeJS.ProcessEnv = process.env): string {
 	const override = env.JERO_PI_CONFIG_HOME?.trim();
 	const home = override && override !== "" ? override : join(homedir(), ".pi", "jero");
@@ -81,9 +81,9 @@ function isStartAuthorityArmV1(result: JeroReviewStartResultV1): result is JeroS
 	return result.kind === "created" || result.kind === "resumed" || result.kind === "replayed" || result.kind === "closed";
 }
 
-// Mirrors the old client's fail-fast request discipline (native-review-cli
-// parity): pairing and shape errors are TypeErrors thrown before the
-// authority is touched, so no half-validated request ever freezes state.
+// 镜像旧客户端的快速失败请求纪律（native-review-cli
+// 对等）：配对与形状错误是在触碰权威之前抛出的 TypeError，
+// 因此绝不会有半验证的请求冻结状态。
 function assertStartRequestV1(request: NativeStartRequest): void {
 	if (request.baseRef !== undefined && !isCanonicalProcessString(request.baseRef)) throw new TypeError("Native START baseRef must be a non-empty, trimmed, NUL-free string");
 	if (request.baseRef !== undefined && request.committedOnly !== true) throw new TypeError("Native START baseRef requires explicit committedOnly acknowledgement");
@@ -95,9 +95,9 @@ function assertStartRequestV1(request: NativeStartRequest): void {
 function projectStartOutcomeV1(result: JeroReviewStartResultV1, request: Pick<NativeStartRequest, "cwd" | "baseRef" | "untrackedScope" | "expectedUntrackedInventory" | "intendedUntracked">): NativeStartResult {
 	if (result.kind === "refused") throw new Error(refusalDetail("review start", result.code, result.detail));
 	if (result.kind === "consent_required") {
-		// The wire envelope is the only surface the controller's pending
-		// registry, digest binding, and answer path can consume; minting it
-		// wire-side keeps the authority free of UI copy (9.1 boundary).
+		// wire 封套是控制器的待定注册表、摘要绑定与应答路径
+		// 唯一能消费的表面；在 wire 侧铸造它
+		// 让权威保持无 UI 文案（9.1 边界）。
 		throw new NativeReviewConsentRequiredError(projectJeroConsentEnvelopeV1(result, request));
 	}
 	if (result.kind === "declined") throw new Error("authority-unavailable: review start returned a declined answer on a consent-less request");
@@ -128,16 +128,16 @@ function projectStartOutcomeV1(result: JeroReviewStartResultV1, request: Pick<Na
 		lensesRequired: result.lenses_required,
 		riskReasons: result.risk_reasons.map((reason) => ({ ...reason })),
 		...(evidence.length === 0 ? {} : { riskEvidence: [...evidence] }),
-		// Old-client parity: only the empty-candidate recovery hint is
-		// reconstructed; a committed-only start reporting zero changes is a
-		// real answer, not a recovery pointer.
+		// 旧客户端对等：只重建空候选恢复提示；
+		// committed-only 启动报告零变更是真实答案，
+		// 不是恢复指引。
 		...(result.changed_files === 0 && request.baseRef === undefined ? { hint: REVIEW_EMPTY_CANDIDATE_HINT } : {}),
 	};
 }
 
-// Re-parses the untracked selection the minted invocation embedded, so the
-// consent answer re-freezes the exact candidate the question was asked for
-// (flag form matches nativeUntrackedSelectionArguments: --flag=value).
+// 重新解析铸造的调用所内嵌的未跟踪选择，使同意
+// 应答重新冻结提问时所针对的确切候选
+// （标志形式与 nativeUntrackedSelectionArguments 一致：--flag=value）。
 function consentUntrackedSelectionV1(arguments_: readonly string[]): { untrackedScope?: "exclude" | "select"; expectedUntrackedInventory?: string; intendedUntracked?: readonly string[] } {
 	let untrackedScope: "exclude" | "select" | undefined;
 	let expectedUntrackedInventory: string | undefined;
@@ -151,9 +151,9 @@ function consentUntrackedSelectionV1(arguments_: readonly string[]): { untracked
 	return { untrackedScope, expectedUntrackedInventory, intendedUntracked };
 }
 
-// P4d-g shared parsers: the provider-issued --name=value binding tokens the
-// burn vector and the correction-plan submission carry. Each flag must appear
-// exactly once; a forged or replayed envelope drifts and fails closed.
+// P4d-g 共享解析器：销毁向量与修正计划 submission 所携带的
+// 提供方签发的 --name=value 绑定令牌。每个标志必须恰好
+// 出现一次；伪造或重放的封套会漂移并保守失败。
 function exactFlagValueV1(tokens: readonly string[], flag: string): string | undefined {
 	const values: string[] = [];
 	for (let index = 0; index < tokens.length; index += 1) {
@@ -187,7 +187,7 @@ function maintenanceOutcomeV1(result: JeroMaintenanceResultV1, kind: string): Na
 	return { record: result.auditRecord };
 }
 
-/** The P4d-served slice of the NativeReviewCli surface. */
+/** NativeReviewCli 表面的 P4d 已服务切片。 */
 export function createJeroAuthorityReviewCli(dependencies: { providerRoleReviewer?: Parameters<typeof prepareReviewHostRelaySlot>[1] } = {}): Pick<NativeReviewCli, "sddStatus" | "sddContinue" | "targetStatus" | "reviewMode" | "assess" | "sddAttemptAcquire" | "sddAttemptSettle" | "start" | "answerConsent" | "captureCorrectionPlan" | "captureProviderRole" | "abandon" | "reclaim" | "recover" | "reconcileAuthority"> & { acknowledgeApproved?(request: NativeReviewAcknowledgeApprovedRequest): Promise<NativeReviewAcknowledgeApprovedOutcome> } {
 	return {
 		...createJeroAuthoritySddCli(),
@@ -199,8 +199,8 @@ export function createJeroAuthorityReviewCli(dependencies: { providerRoleReviewe
 				...(request.projection === undefined ? {} : { projection: request.projection }),
 			});
 			if (result.kind === "refused") throw new Error(refusalDetail("review status", result.code, result.detail));
-			// The wire projection descriptor needs the live derivation the
-			// authority computed internally; re-derive with identical options.
+			// wire 投影描述符需要权威在内部计算的
+			// 实时推导；以相同选项重新推导。
 			const derivation = deriveJeroReviewSnapshotV1({
 				cwd: request.cwd,
 				mode: "ordinary",
@@ -238,10 +238,10 @@ export function createJeroAuthorityReviewCli(dependencies: { providerRoleReviewe
 			return projectStartOutcomeV1(result, request);
 		},
 		async answerConsent(request: NativeReviewConsentAnswerRequest): Promise<NativeReviewConsentAnswerResult> {
-			// The one-shot binding discipline (agent, contract, cwd, target,
-			// projection, answer, at most one lineage) is enforced by the same
-			// parser the old client used; the invocation is the minted vector,
-			// so any drift here is a forged envelope.
+			// 一次性绑定纪律（agent、contract、cwd、target、
+			// projection、answer、至多一个 lineage）由旧客户端
+			// 使用的同一解析器强制执行；该调用是铸造的向量，
+			// 因此这里的任何漂移都是伪造封套。
 			const invocation = consentInvocationArguments(request);
 			const result = reviewStartV1(contextOrThrow(request.cwd), {
 				cwd: request.cwd,
@@ -269,9 +269,9 @@ export function createJeroAuthorityReviewCli(dependencies: { providerRoleReviewe
 				if (invocation.lineageId !== undefined && result.lineage_id !== invocation.lineageId) throw new Error(refusalDetail("consent answer", "identity-mismatch", "the started lineage does not match the consent binding"));
 				return { kind: "started", start: projectStartOutcomeV1(result, { cwd: request.cwd }) };
 			}
-			// A granted answer that re-enters the gate (mode flipped, store
-			// state changed underneath) is a binding violation, not a fresh
-			// question: the envelope was already consumed once.
+			// 重新进入闸门的已同意应答（模式翻转、存储
+			// 状态在下层变化）是绑定违例，不是新的
+			// 提问：封套已被消费过一次。
 			throw new Error(refusalDetail("consent answer", result.kind === "refused" ? result.code : result.kind, result.kind === "refused" ? result.detail : "a granted consent answer must start the frozen candidate"));
 		},
 		async captureCorrectionPlan(request: NativeReviewCorrectionPlanCaptureRequest): Promise<ReviewLastEventClosureV1> {
@@ -287,11 +287,10 @@ export function createJeroAuthorityReviewCli(dependencies: { providerRoleReviewe
 			const result = reviewFinalizeV1(context, { cwd: request.cwd, lineageId: lineage, correction_line_forecast: request.correctionLines });
 			if (result.kind === "refused") throw new Error(refusalDetail("correction plan", result.code, result.detail));
 			if (result.kind !== "fix_authorized") throw new Error(`authority-unavailable: correction plan capture expected fix_authorized (got ${result.kind})`);
-			// The bounded edit rides the same capture: the actual correction
-			// lines are DERIVED from the live worktree against the frozen review
-			// tree (never caller-declared; finalize re-verifies over the isolated
-			// store), so the plan answer lands with the workspace already settled
-			// and STATUS can offer the targeted validator vector next.
+			// 有界编辑搭乘同一捕获：实际修正行是从存活工作树对照冻结评审
+			// 树推导的（绝不由调用方声明；finalize 会在隔离存储上
+			// 重新验证），因此计划应答落地时工作区已落定，
+			// STATUS 随后可以提供针对性的 validator 向量。
 			const fixOutcome = deriveJeroFixApplicationV1(context, lineage, request.cwd);
 			if (fixOutcome.kind !== "ok") throw new Error(refusalDetail("correction plan", fixOutcome.code === "derivation-failed" ? "authority-unavailable" : fixOutcome.code, fixOutcome.detail));
 			const applied = reviewFinalizeV1(context, { cwd: request.cwd, lineageId: lineage, fix_application: fixOutcome.fix });
@@ -360,10 +359,10 @@ export function createJeroAuthorityReviewCli(dependencies: { providerRoleReviewe
 			if (lineage === undefined) throw new TypeError("authority-unavailable: the role vector binding must carry --lineage");
 			const context = contextOrThrow(request.cwd);
 			if (role === "validator") {
-				// The bounded edit lands before the validator runs: the fix facts are
-				// derived from the live worktree against the frozen review tree (never
-				// caller-declared) and finalized; an already-validating lineage (a
-				// replay or a recapture round) skips straight to the render.
+				// 有界编辑在 validator 运行之前落地：修复事实从
+				// 存活工作树对照冻结评审树推导（绝不由
+				// 调用方声明）并完成定稿；已处于校验中的 lineage
+				// （重放或再捕获轮次）直接跳到渲染。
 				const pre = context.lineages.load(lineage);
 				if (pre.kind === "ok" && pre.record.state.state === "fixing") {
 					const derived = deriveJeroFixApplicationV1(context, lineage, request.cwd);

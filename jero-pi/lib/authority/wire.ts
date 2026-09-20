@@ -3,15 +3,13 @@ import type { JeroReviewStatusResultV1 } from "./status.ts";
 import type { JeroReviewStartResultV1 } from "./start.ts";
 import type { JeroSnapshotDerivationV1 } from "./snapshots.ts";
 
-// P4d: the jero→wire projection layer. The extension's review controller
-// machinery (negotiatedStatusForHostTransport, mapNativeTargetStatus, the
-// collect-binding renderers, the relay request builders) consumes the
-// camelCase ReviewStatusV3 wire record; the authority emits its own typed
-// jero-cased unions. This module is the ONE translation point — every field
-// the controller reads is projected here, nothing is inferred elsewhere.
-// Wire schema strings stay gentle-ai.* until the P5 identity pass (port
-// discipline); the authority's own values (jero-authority/v1 version marker)
-// pass through verbatim as non-routing metadata.
+// P4d：jero→线上投影层。扩展的评审控制器机制
+// （negotiatedStatusForHostTransport、mapNativeTargetStatus、collect 绑定
+// 渲染器、中继请求构建器）消费 camelCase 的 ReviewStatusV3 线上记录；
+// 权威发出自己的类型化 jero 命名联合。本模块是“唯一”的翻译点——
+// 控制器读取的每个字段都在这里投影，别处不做推断。线上 schema 字符串
+// 在 P5 身份改造前保持 gentle-ai.*（移植纪律）；权威自己的值
+// （jero-authority/v1 版本标记）作为非路由元数据逐字透传。
 
 const WIRE_CONTRACT = "gentle-ai.review-integration/v2" as const;
 const PROJECTION_SCHEMA = "gentle-ai.review-candidate-projection/v1" as const;
@@ -71,9 +69,9 @@ function projectCollectInputsV1(inputs: readonly {
 }
 
 /**
- * Projects the authority's status union plus the live snapshot derivation
- * into the ReviewStatusV3 wire record the controller consumes. Refused
- * statuses are NOT projected — the adapter maps them to thrown errors.
+ * 把权威的状态联合加活动快照派生投影为控制器消费的 ReviewStatusV3
+ * 线上记录。被拒绝的状态“不”被投影——适配器把它们映射为抛出的
+ * 错误。
  */
 export function projectJeroStatusToWireV1(status: Extract<JeroReviewStatusResultV1, { kind: "status" }>, derivation: JeroSnapshotDerivationV1): ReviewStatusV3 {
 	const next = status.next_transition;
@@ -134,20 +132,19 @@ export function projectJeroStatusToWireV1(status: Extract<JeroReviewStatusResult
 	return wire as unknown as ReviewStatusV3;
 }
 
-// P4d-e: the START consent gate's wire envelope. The authority emits the
-// typed `consent_required` union arm; the controller machinery (the pending
-// registry, reviewConsentDigest, the two-option UI, answerConsent's binding
-// re-parse) consumes the gentle-ai.review-integration.consent/v3 record.
-// Fixture parity: tests/fixtures/review-integration/v2/fixtures/consent.fixture.json
-// grounds every copy string; the invocations embed the untracked selection so
-// the answer path re-freezes the exact candidate the question was minted for
-// (flag form matches nativeUntrackedSelectionArguments: --flag=value).
-// P4d-g: the execute payload projection. The authority builders emit the
-// jero-cased binding (lineage_id/revision/target_identity/repository_context);
-// the wire contract (ReviewNextTransitionExecuteV3.binding) is camelCase with
-// a REQUIRED targetIdentity — the P4d read path previously passed the jero
-// binding through verbatim, leaving every execute consumer reading undefined
-// binding fields. Everything else on the payload is already wire-shaped.
+// P4d-e：START 同意门的线上封套。权威发出类型化的 `consent_required`
+// 联合分支；控制器机制（pending 注册表、reviewConsentDigest、双选项
+// UI、answerConsent 的绑定重新解析）消费
+// gentle-ai.review-integration.consent/v3 记录。Fixture 对齐：
+// tests/fixtures/review-integration/v2/fixtures/consent.fixture.json 为
+// 每个文案字符串提供依据；调用内嵌未跟踪选择，使应答路径重新冻结的
+// 正是问题签发时的确切候选（标志形式与
+// nativeUntrackedSelectionArguments 一致：--flag=value）。
+// P4d-g：execute 载荷投影。权威构建器发出 jero 命名的绑定
+// （lineage_id/revision/target_identity/repository_context）；线上契约
+// （ReviewNextTransitionExecuteV3.binding）是 camelCase 且 targetIdentity
+// “必填”——P4d 读取路径此前逐字透传 jero 绑定，导致每个 execute 消费者
+// 读到的绑定字段是 undefined。载荷上其余内容已是线上形态。
 function projectJeroExecuteToWireV1(execute: { readonly operation: string; readonly command?: string; readonly arguments: readonly { readonly name: string; readonly value: string; readonly token: string }[]; readonly preconditions: readonly { readonly name: string; readonly value: string }[]; readonly binding: { readonly lineage_id: string; readonly revision: string; readonly target_identity: string; readonly repository_context?: string }; readonly artifacts?: readonly unknown[] }): Record<string, unknown> {
 	return {
 		operation: execute.operation,
@@ -159,10 +156,10 @@ function projectJeroExecuteToWireV1(execute: { readonly operation: string; reado
 	};
 }
 
-// P4d-g: the last-event closure projection. The authority's closure builder
-// emits the jero-cased record; the controller consumes the wire closure
-// through decodeReviewLastEventClosureV1 (schema gentle-ai.review-last-event-
-// closure/v1, camelCase top level, snake_case nested rows verbatim).
+// P4d-g：last-event 闭包投影。权威的闭包构建器发出 jero 命名的记录；
+// 控制器经 decodeReviewLastEventClosureV1 消费线上闭包（schema 为
+// gentle-ai.review-last-event-closure/v1，顶层 camelCase，嵌套行 snake_case
+// 逐字保留）。
 export function projectJeroClosureToWireV1(closure: {
 	readonly schema: string; readonly operation: string; readonly lineage_id: string; readonly state: string; readonly store_revision: string;
 	readonly action?: string; readonly target_identity?: string; readonly request_hash?: string; readonly correction_lines?: number;

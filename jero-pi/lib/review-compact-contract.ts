@@ -1,15 +1,12 @@
-// The reduced Pi FINALIZE input contract (gentle-pi#311 P5).
+// 精简后的 Pi FINALIZE 输入契约（gentle-pi#311 P5）。
 //
-// Pi no longer authors or transports reviewer, refuter, or validator
-// verdicts: lens results are admitted natively through the pi host relay,
-// the adversarial roles execute through Go-owned pi processes via
-// provider-rendered self-contained vectors, and the terminal FINALIZE runs
-// the provider's own negotiated transition (captured-results discovery).
-// What remains here are the negotiated collection ANSWERS the pinned
-// provider still consumes from the host: the pre-edit correction forecast,
-// the targeted validation document requested by the exact
-// `external.run_targeted_validation` collection input, and the final
-// verification evidence with its explicit outcome.
+// Pi 不再编写或传输 reviewer、refuter 或 validator 的裁决：评审视角
+// 结果经 pi 宿主中继原生受理，对抗角色经提供方渲染的自包含向量在
+// Go 持有的 pi 进程中执行，终局 FINALIZE 运行提供方自行协商的转移
+// （捕获结果的发现）。这里剩下的只有固定提供方仍从宿主消费的协商
+// 收集 ANSWER：编辑前的修正行数预报、由确切的
+// `external.run_targeted_validation` 收集输入请求的定向验证文档，
+// 以及带显式结局的最终验证证据。
 
 import { CORRECTION_OUTCOMES, type CorrectionOutcome } from "./review-correction-lifecycle.ts";
 
@@ -28,9 +25,8 @@ export class CompactReviewContractError extends Error {
 	}
 }
 
-// Relocated from the deleted lib/review-compact.ts (gentle-pi#311 P5): the
-// only compact shapes with surviving production consumers are the targeted
-// validation document and its component rows.
+// 自已删除的 lib/review-compact.ts 迁移而来（gentle-pi#311 P5）：
+// 仍有生产消费者的精简形态只有定向验证文档及其组成部分行。
 export interface CompactValidationCheckInput {
 	passed: boolean;
 	evidence: string[];
@@ -61,11 +57,10 @@ export interface CompactFinalizeContractInput {
 	final_verification_passed?: boolean;
 	final_verification_outcome?: CorrectionOutcome;
 	/**
-	 * Explicit acknowledgement that this FINALIZE may spend real model tokens:
-	 * a provider host-relay slot runs one locked-down `pi` reviewer subprocess
-	 * per outstanding lens. Absent, FINALIZE forecasts the run and spends
-	 * nothing. Same shape as the existing `committedOnly` acknowledgement — the
-	 * caller states the consequence it accepts.
+	 * 显式确认本次 FINALIZE 可能消耗真实模型 token：提供方宿主中继槽位
+	 * 为每个未决评审视角运行一个锁定的 `pi` 评审子进程。缺省时，
+	 * FINALIZE 只预报运行且不消耗任何资源。与既有 `committedOnly`
+	 * 确认同形——调用方声明自己接受的后果。
 	 */
 	reviewer_run_acknowledged?: boolean;
 }
@@ -148,9 +143,8 @@ function parseCompactFinalizeInputValue(value: unknown): CompactFinalizeContract
 	}
 	let final_evidence: string | undefined;
 	if (input.final_evidence !== undefined) {
-		// Final evidence is preserved BYTE-FOR-BYTE: it is staged into the native
-		// --evidence file untouched, so the canonical trimmed-string rule does
-		// not apply — only zero-length evidence is refused.
+		// 最终证据逐字节原样保留：它不经改动地暂存到原生 --evidence
+		// 文件，因此权威的修剪字符串规则不适用——只拒绝零长度证据。
 		if (typeof input.final_evidence !== "string" || input.final_evidence.length === 0) fail("review/finalize.final_evidence", "empty", "must contain at least one byte");
 		final_evidence = input.final_evidence;
 	}

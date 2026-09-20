@@ -176,8 +176,8 @@ function runGit(
 }
 
 function repositoryRoot(cwd: string): string {
-	// `--show-toplevel` prints forward slashes on Windows; native spelling
-	// keeps the recorded repository root comparable with path.join inputs.
+	// `--show-toplevel` 在 Windows 上打印正斜杠；原生拼写让记录下来的
+	// 仓库根目录可与 path.join 的输入相互比较。
 	return realpathSync.native(runGit(cwd, ["rev-parse", "--show-toplevel"]));
 }
 

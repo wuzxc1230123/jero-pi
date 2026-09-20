@@ -13,25 +13,23 @@ import {
 import { isJeroLineageId } from "./store-root.ts";
 import type { JeroAuthorityLocksV1 } from "./locks.ts";
 
-// Lineage state persistence for the jero authority store:
-// `lineages/<lineage-id>/review-state.json`.
+// jero 权威存储的血脉状态持久化：
+// `lineages/<lineage-id>/review-state.json`。
 //
-// The persisted record is a `jero.authority.lineage-state/v1` envelope
-// carrying the lineage state record plus the embedded request journal and a
-// content-derived revision (`sha256:` + jeroDomainHash("revision", record
-// minus revision)). Every save is an optimistic-concurrency transition: the
-// caller must present the revision it observed, and any mismatch fails
-// closed as a stale revision. Writes are atomic (O_EXCL 0o600 temp file,
-// rename, temp unlinked in `finally`) mirroring the orchestrator-presence
-// atomicWrite pattern; mutating APIs run under the authority mutation lock
-// when one is provided (see locks.ts). Saves are replace-atomic, NOT
-// fsync-durable: a crash may lose the newest revision (surfacing as a stale
-// revision or corrupted-record refusal), never a torn one.
+// 持久化记录是一个 `jero.authority.lineage-state/v1` 封套，携带血脉
+// 状态记录、内嵌的请求日志以及内容派生的修订号（`sha256:` +
+// jeroDomainHash("revision", 去掉 revision 的记录)）。每次保存都是一次
+// 乐观并发转移：调用方必须出示它观察到的修订号，任何不匹配都以过期
+// 修订号保守失败。写入是原子的（O_EXCL 0o600 临时文件、重命名、
+// `finally` 中删除临时文件），镜像 orchestrator-presence 的 atomicWrite
+// 模式；提供权威变更锁时，变更类 API 都在其内运行（见 locks.ts）。
+// 保存是替换原子而非 fsync 持久：崩溃可能丢失最新修订号（表现为过期
+// 修订号或记录损坏拒绝），绝不会出现撕裂的记录。
 //
-// Journal semantics mirror review-transaction.ts: exact
-// (idempotency_key, request_hash) replay returns the stored
-// canonical_result; key reuse with a different request fails closed; a
-// pending entry blocks every new mutating operation and is crash-completable.
+// 日志语义镜像 review-transaction.ts：精确的
+// (idempotency_key, request_hash) 重放返回存储的 canonical_result；
+// 键被不同请求复用则保守失败；pending 条目阻塞所有新的变更操作，
+// 且可从崩溃中补完成。
 
 export class JeroLineageStoreError extends Error {
 	constructor(message: string) {
@@ -64,7 +62,7 @@ export type JeroLineageLoadResultV1 =
 	| { readonly kind: "corrupted"; readonly detail: string };
 
 export interface JeroLineageStoreOptionsV1 {
-	/** Authority mutation lock; every mutating API runs inside it when provided. */
+	/** 权威变更锁；提供时每个变更类 API 都在其内运行。 */
 	lock?: JeroAuthorityLocksV1;
 }
 
@@ -72,7 +70,7 @@ function cloneCanonical<T>(value: T): T {
 	return JSON.parse(canonicalJsonV1(value)) as T;
 }
 
-/** Content-derived revision of a lineage draft: `sha256:<jeroDomainHash("revision", draft)>`. */
+/** 血脉草稿的内容派生修订号：`sha256:<jeroDomainHash("revision", draft)>`。 */
 export function computeJeroLineageRevisionV1(draft: JeroLineageDraftV1): string {
 	return `sha256:${jeroDomainHash("revision", { state: draft.state, request_journal: draft.request_journal })}`;
 }
@@ -104,7 +102,7 @@ function validateDraft(lineageId: string, draft: JeroLineageDraftV1): void {
 }
 
 export interface JeroLineageSaveOptionsV1 {
-	/** Revision the caller observed; `null` only when creating the lineage. */
+	/** 调用方观察到的修订号；仅在创建血脉时为 `null`。 */
 	expectedRevision: string | null;
 }
 
@@ -118,7 +116,7 @@ export interface JeroJournaledOperationOptionsV1<TResult> {
 	idempotencyKey: string;
 	requestHash: string;
 	authorization?: unknown;
-	/** Produces the next lineage draft and the operation result from the current record. */
+	/** 从当前记录生成下一个血脉草稿与操作结果。 */
 	apply: (record: JeroLineageStateFileV1) => { draft: JeroLineageDraftV1; result: TResult };
 }
 
@@ -151,10 +149,9 @@ export class JeroLineageStoreV1 {
 	}
 
 	/**
-	 * Loads the persisted lineage record. A missing record is `"missing"`;
-	 * anything undecodable — non-canonical JSON, strict-decode failure,
-	 * revision-hash mismatch, lineage identity mismatch — is `"corrupted"`
-	 * and every mutating API refuses to touch it (fail-closed).
+	 * 加载持久化的血脉记录。记录缺失为 `"missing"`；任何无法解码的内容
+	 * ——非权威 JSON、严格解码失败、修订号哈希不匹配、血脉身份不匹配
+	 * ——都是 `"corrupted"`，且每个变更类 API 都拒绝触碰它（保守失败）。
 	 */
 	load(lineageId: string): JeroLineageLoadResultV1 {
 		assertLineageId(lineageId);
@@ -184,10 +181,9 @@ export class JeroLineageStoreV1 {
 	}
 
 	/**
-	 * Atomically persists a lineage draft at its observed revision. The
-	 * revision is recomputed from the draft content, so every save advances
-	 * it (the journal is append-only); a mismatched expectedRevision fails
-	 * closed as a stale revision.
+	 * 以观察到的修订号原子持久化血脉草稿。修订号从草稿内容重新计算，
+	 * 因此每次保存都会推进它（日志只追加）；不匹配的 expectedRevision
+	 * 以过期修订号保守失败。
 	 */
 	save(lineageId: string, draft: JeroLineageDraftV1, options: JeroLineageSaveOptionsV1): JeroLineageSaveResultV1 {
 		return this.withAuthorityLock(() => this.saveUnlocked(lineageId, draft, options));
@@ -265,11 +261,10 @@ export class JeroLineageStoreV1 {
 	}
 
 	/**
-	 * Runs a journaled operation to completion under the authority lock:
-	 * exact (idempotency_key, request_hash) replay returns the stored
-	 * canonical_result without re-applying; key reuse with a different
-	 * request, any pending entry, a missing lineage, or a corrupted record
-	 * fails closed.
+	 * 在权威锁内把一个记日志操作运行到完成：精确的
+	 * (idempotency_key, request_hash) 重放不经重新应用即返回存储的
+	 * canonical_result；键被不同请求复用、任何 pending 条目、血脉缺失
+	 * 或记录损坏都以保守失败收场。
 	 */
 	runOperation<TResult>(options: JeroJournaledOperationOptionsV1<TResult>): { result: TResult; revision: string } {
 		assertIdempotencyKey(options.idempotencyKey);
@@ -302,9 +297,8 @@ export class JeroLineageStoreV1 {
 	}
 
 	/**
-	 * Durably records a PENDING journal entry before the operation's effect
-	 * exists (crash window). Reusing the key while pending fails closed;
-	 * completion goes through `completeOperation`.
+	 * 在操作效果存在之前（崩溃窗口）持久记录一个 PENDING 日志条目。
+	 * pending 期间复用该键保守失败；完成经由 `completeOperation`。
 	 */
 	prepareOperation(options: Omit<JeroJournaledOperationOptionsV1<unknown>, "apply">): { revision: string } {
 		assertIdempotencyKey(options.idempotencyKey);
@@ -329,7 +323,7 @@ export class JeroLineageStoreV1 {
 		});
 	}
 
-	/** Completes a prepared (pending) operation; exact completion replay is stable. */
+	/** 完成一个已准备（pending）的操作；精确的完成重放是稳定的。 */
 	completeOperation<TResult>(options: JeroJournaledOperationOptionsV1<TResult>): { result: TResult; revision: string } {
 		assertIdempotencyKey(options.idempotencyKey);
 		assertRequestHash(options.requestHash);
@@ -356,10 +350,10 @@ export class JeroLineageStoreV1 {
 	}
 
 	/**
-	 * Journals only ever grow: the apply() draft must canonically extend the
-	 * loaded journal (exact prefix, same length). For completion the entry at
-	 * `mutatedIndex` is the one allowed in-place pending→completed transition.
-	 * Mirrors the upstream append-only guard in review-transaction.ts.
+	 * 日志只增不减：apply() 草稿必须在权威意义上扩展已加载的日志
+	 * （精确前缀、相同长度）。完成操作时，位于 `mutatedIndex` 的条目是
+	 * 唯一允许的就地 pending→completed 转移。镜像
+	 * review-transaction.ts 中上游的只追加守卫。
 	 */
 	private assertJournalExtends(lineageId: string, previous: readonly JeroRequestJournalEntryV1[], applied: readonly JeroRequestJournalEntryV1[], mutatedIndex = -1): void {
 		if (applied.length !== previous.length) throw new JeroLineageStoreError(`apply() must preserve journal length for ${lineageId} (got ${applied.length}, expected ${previous.length})`);
@@ -371,7 +365,7 @@ export class JeroLineageStoreV1 {
 		}
 	}
 
-	/** Lists lineage ids persisted under the store (sorted, validated). */
+/** 列出存储下持久化的血脉 id（已排序、已校验）。 */
 	list(): string[] {
 		let entries: string[];
 		try {

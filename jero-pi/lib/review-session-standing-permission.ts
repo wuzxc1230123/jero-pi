@@ -36,8 +36,8 @@ export interface ReviewSessionIdentity {
 	readonly sessionManager: ReviewSessionManager;
 	readonly sessionId: string;
 	readonly worktreeRoot: string;
-	// A SHA-256 digest of the canonical Git common directory. It is stable for
-	// sibling worktrees of one clone without serializing a filesystem path.
+	// 权威 Git common 目录的 SHA-256 摘要。对同一克隆的兄弟工作树稳定，
+	// 且无需序列化文件系统路径。
 	readonly repositoryIdentity: string;
 }
 
@@ -107,7 +107,7 @@ export async function resolveCanonicalGitWorktreeRoot(
 	}
 }
 
-/** Resolves a non-secret, clone-stable identity from Git's canonical common dir. */
+/** 从 Git 的权威 common 目录解析非机密、克隆稳定的身份。 */
 export async function resolveCanonicalGitRepositoryIdentity(
 	cwd: string,
 	run: GitAsyncRunner = execFileAsync as unknown as GitAsyncRunner,
@@ -127,7 +127,7 @@ export async function resolveCanonicalGitRepositoryIdentity(
 	}
 }
 
-/** The parent AgentRunner binds a child task to this same digest at spawn time. */
+/** 父方 AgentRunner 在派发时将子任务绑定到同一摘要。 */
 export function resolveCanonicalGitRepositoryIdentitySync(
 	cwd: string,
 	run: GitSyncRunner = execFileSync as unknown as GitSyncRunner,
@@ -144,9 +144,9 @@ export function resolveCanonicalGitRepositoryIdentitySync(
 function hasInteractiveTui(context: ReviewSessionContext): boolean {
 	if (context.mode !== undefined) return context.mode === "tui";
 	try {
-		// Pi 0.85 exposes ctx.mode in the documented SDK surface, while its
-		// compatibility runner omits that property. In the latter, the real TUI
-		// has themes and RPC's deliberately unsupported TUI surface returns none.
+		// Pi 0.85 在文档化的 SDK 表面暴露 ctx.mode，而其兼容运行器省略了
+		// 该属性。对后者，真实 TUI 有主题，RPC 刻意不支持的 TUI 表面则
+		// 返回空。
 		return (context.ui?.getAllThemes?.().length ?? 0) > 0;
 	} catch {
 		return false;
@@ -208,8 +208,8 @@ export function grantReviewSessionPermission(identity: ReviewSessionIdentity, ex
 	return true;
 }
 
-// A grant belongs to one live session and one Git clone. It follows sibling
-// worktrees through their common directory, never an unrelated repository.
+// 授权属于一个活动会话和一个 Git 克隆。它通过 common 目录跟随兄弟
+// 工作树，绝不跟随无关仓库。
 export function hasReviewSessionPermission(identity: ReviewSessionIdentity): boolean {
 	return registry()?.permissions.get(identity.sessionManager)?.get(identity.sessionId)?.has(identity.repositoryIdentity) === true;
 }

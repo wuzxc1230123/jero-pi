@@ -1,29 +1,29 @@
 ---
 name: release
-description: "Release jero-pi through GitHub and npm. Trigger: release, publish, npm publish, GitHub release, version bump."
+description: "通过 GitHub 与 npm 发布 jero-pi。触发词：release、publish、npm publish、GitHub release、版本号提升。"
 license: Apache-2.0
 metadata:
   author: jero-pi
   version: "1.2"
 ---
 
-## When to Use
+## 何时使用
 
-Use this skill when preparing, publishing, or verifying a `jero-pi` release.
+在准备、发布或验证 `jero-pi` 版本时，使用本技能。
 
-## Hard Rules
+## 硬性规则
 
-- Do not publish `jero-pi` to npm from a local machine.
-- npm publishing MUST go through the GitHub Actions workflow `.github/workflows/publish.yml` so provenance, environment protection, and registry credentials are controlled by GitHub.
-- Dispatch the trusted workflow definition from protected default `main`, never from a release tag. Its only caller input is the exact annotated version tag.
-- Use a clean worktree for release commits. Do not package unrelated local files or scratch artifacts.
-- Review outcomes are informational. Release delivery follows ordinary repository policy and must not be blocked, authorized, or rewritten by RDD.
-- Never infer the release tag target from local `HEAD`; use the freshly fetched `origin/main` commit and the repository's normal release safeguards.
-- Never skip package verification. The publish workflow runs verification again, but local validation should still pass before tagging.
+- 不要从本地机器把 `jero-pi` 发布到 npm。
+- npm 发布必须走 GitHub Actions 工作流 `.github/workflows/publish.yml`，让溯源、环境保护与注册表凭据都由 GitHub 掌控。
+- 从受保护的默认 `main` 派发受信任的工作流定义，绝不从发布标签派发。它唯一的调用方输入是精确的附注版本标签。
+- 发布提交使用干净的工作树。不要打包无关的本地文件或草稿产物。
+- 评审结果是信息性的。版本交付遵循普通仓库策略，不得被 RDD 阻塞、授权或改写。
+- 绝不从本地 `HEAD` 推断发布标签目标；使用新拉取的 `origin/main` 提交与仓库正常的发布保险。
+- 绝不跳过包验证。发布工作流会再次运行验证，但打标签前本地验证仍应通过。
 
-## Release Procedure
+## 发布流程
 
-1. **Inspect state**
+1. **检查状态**
 
    ```bash
    git status --short
@@ -31,13 +31,13 @@ Use this skill when preparing, publishing, or verifying a `jero-pi` release.
    git log --oneline --decorate --max-count=5 origin/main
    ```
 
-2. **Prepare the release commit**
+2. **准备发布提交**
 
-   - Apply only intended changes.
-   - Bump `package.json` to the next semver version.
-   - Keep lockfile changes out unless dependency resolution actually changed.
+   - 只应用有意的变更。
+   - 把 `package.json` 提升到下一个 semver 版本。
+   - 除非依赖解析确实发生变化，否则不要夹带 lockfile 变更。
 
-3. **Verify locally**
+3. **本地验证**
 
    ```bash
    pnpm test
@@ -45,9 +45,9 @@ Use this skill when preparing, publishing, or verifying a `jero-pi` release.
    npm pack --dry-run
    ```
 
-   `npm pack --dry-run` verifies package contents and lifecycle scripts without entering a publish path.
+   `npm pack --dry-run` 在不进入发布路径的情况下验证包内容与生命周期脚本。
 
-4. **Commit and push**
+4. **提交并推送**
 
    ```bash
    git add <intended-files>
@@ -56,7 +56,7 @@ Use this skill when preparing, publishing, or verifying a `jero-pi` release.
    git fetch origin main --tags
    ```
 
-5. **Create and verify the exact version tag**
+5. **创建并验证精确的版本标签**
 
    ```bash
    version="$(node -p "require('./package.json').version")"
@@ -83,9 +83,9 @@ Use this skill when preparing, publishing, or verifying a `jero-pi` release.
      --notes "<release notes>"
    ```
 
-   Do not retag or overwrite an existing version. The tag target comes from the freshly fetched immutable `origin/main` commit, not an ambient local branch.
+   不要重打或覆盖既有版本。标签目标来自新拉取的不可变 `origin/main` 提交，而非当前所在的本地分支。
 
-6. **Publish npm through GitHub Actions**
+6. **通过 GitHub Actions 发布 npm**
 
    ```bash
    version="$(node -p "require('./package.json').version")"
@@ -96,42 +96,42 @@ Use this skill when preparing, publishing, or verifying a `jero-pi` release.
      -f tag="${tag}"
    ```
 
-   The workflow definition always comes from protected default `main`. It accepts only one exact `vSemVer` tag, fetches the remote annotated tag and current remote `main`, and requires the peeled tag commit, dispatch/main workflow commit, checkout, and `package.json` version to match. It re-queries remote tag and `main` immediately before npm publication, derives the dist-tag internally, and uses trusted OIDC with provenance.
+   工作流定义始终来自受保护的默认 `main`。它只接受一个精确的 `vSemVer` 标签，拉取远端附注标签与当前远端 `main`，并要求剥离后的标签提交、派发/main 工作流提交、checkout 与 `package.json` 版本全部一致。它在 npm 发布前立即重新查询远端标签与 `main`，在内部推导 dist-tag，并使用 trusted OIDC with provenance（可信 OIDC 与溯源）。
 
-   Watch the run and fail the release if it fails:
+   观察运行过程，失败则宣告发布失败：
 
    ```bash
    gh run list --repo jero-pi/jero-pi --workflow publish.yml --limit 3
    gh run watch <run-id> --repo jero-pi/jero-pi --exit-status
    ```
 
-7. **Verify npm**
+7. **验证 npm**
 
    ```bash
    npm view jero-pi@<version> version --registry=https://registry.npmjs.org/
    npm dist-tag ls jero-pi --registry=https://registry.npmjs.org/
    ```
 
-## Failure Handling
+## 失败处理
 
-- A publication failure is handled through ordinary repository policy. It does not reopen or alter a review lineage.
-- Never attempt or retry `npm publish` locally. Re-dispatch from trusted `main` only when the same tag still targets the current remote `main` and the failure was publication-only.
-- If remote `main` advances, do not move or recreate the existing tag. Prepare a new release commit/version and create a new annotated version tag.
-- If the workflow fails, inspect logs with:
+- 发布失败按普通仓库策略处理。它不重开也不更改评审谱系。
+- 绝不在本地尝试或重试 `npm publish`。仅当同一标签仍指向当前远端 `main`、且失败仅限于发布本身时，才从受信任的 `main` 重新派发。
+- 若远端 `main` 前进，不要移动或重建既有标签。准备新的发布提交/版本并创建新的附注版本标签。
+- 若工作流失败，用以下命令查看日志：
 
   ```bash
   gh run view <run-id> --repo jero-pi/jero-pi --log
   ```
 
-- If npm verification is briefly stale after a successful workflow, check the exact version first (`npm view jero-pi@<version> version`) before assuming publish failed.
+- 若工作流成功后 npm 验证短暂滞后，先检查确切版本（`npm view jero-pi@<version> version`），再假定发布失败。
 
-## Output Contract
+## 输出契约
 
-Report:
+报告：
 
-- Commit SHA pushed to `main`.
-- Exact version tag and its peeled commit SHA.
-- GitHub release URL.
-- Publish workflow run URL and conclusion.
-- npm exact version and the workflow-derived dist-tag (`latest`, `beta`, or `next`).
-- Any remaining follow-up or warnings.
+- 推送到 `main` 的提交 SHA。
+- 精确版本标签及其剥离后的提交 SHA。
+- GitHub release URL。
+- 发布工作流运行 URL 与结论。
+- npm 精确版本与工作流推导的 dist-tag（`latest`、`beta` 或 `next`）。
+- 任何剩余的后续事项或警告。

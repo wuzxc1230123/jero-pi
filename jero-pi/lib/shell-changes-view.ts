@@ -3,9 +3,9 @@ import { sanitizeTerminalText } from "./terminal-theme.ts";
 import { basename } from "node:path";
 import { CHANGE_STATUS, changesSummary, type ChangedFile, type ChangesModel, type WorktreeChanges } from "./shell-changes.ts";
 
-// Gentle Shell changes overlay: a framed two-pane view with the working
-// tree's changed files on the left and the selected file's diff on the right.
-// Git access is injected so the component renders without a repository.
+// Gentle Shell 变更覆盖层：带框架的双栏视图，左栏是工作树的已变更
+// 文件，右栏是所选文件的 diff。Git 访问被注入，使组件无需仓库即可
+// 渲染。
 
 export interface ChangesViewTheme {
 	fg(color: string, text: string): string;
@@ -87,7 +87,7 @@ function fit(text: string, width: number): string {
 	return clipped + " ".repeat(Math.max(0, width - visibleWidth(clipped)));
 }
 
-// Both standalone files and the worktree accordion use the original frame.
+// 独立文件视图和工作树折叠面板都使用原始框架。
 function renderPanes(width: number, rows: number, theme: ChangesViewTheme, title: string, leftLine: (row: number) => string, rightLines: string[], keys: string): string[] {
 	const inner = Math.max(8, width - 2);
 	const listWidth = Math.min(LIST_MAX_WIDTH, Math.floor(inner * LIST_RATIO));
@@ -149,7 +149,7 @@ function rowKey(row: WorktreeRow): string {
 	return JSON.stringify([row.tree.root, row.file?.path ?? null]);
 }
 
-// The accordion owns navigation; standalone file views still own lazy previews.
+// 折叠面板拥有导航；独立文件视图仍拥有惰性预览。
 export class WorktreeChangesView {
 	private trees: WorktreeChanges[];
 	private readonly deps: WorktreeChangesViewDeps;
@@ -341,8 +341,8 @@ export class ChangesView {
 		this.loadSelected();
 	}
 
-	// Replace the model while open: keep the selection by path and drop cached
-	// diffs for files whose counts moved so they reload.
+	// 打开状态下替换模型：按路径保持选择，并对计数发生变化的文件丢弃
+	// 缓存的 diff 以便重新加载。
 	update(model: ChangesModel): void {
 		this.leftPressActive = false;
 		if (this.disposed) return;
@@ -377,8 +377,8 @@ export class ChangesView {
 			this.deps.onClose();
 			return;
 		}
-		// ctrl+j arrives as a bare line feed, which pi also reads as enter, so
-		// the scroll keys are checked before the open key; a real Enter is CR.
+		// ctrl+j 以裸换行符到达，pi 也会把它当作 enter，因此滚动键先于
+		// 打开键检查；真正的 Enter 是 CR。
 		if (data === "j" || matchesKey(data, Key.down)) this.select(this.selected + 1);
 		else if (data === "k" || matchesKey(data, Key.up)) this.select(this.selected - 1);
 		else if (matchesKey(data, Key.pageDown) || matchesKey(data, Key.ctrl("j"))) this.scrollBy(this.bodyRows());

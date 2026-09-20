@@ -13,19 +13,18 @@ import { reviewFinalizeV1 } from "./finalize.ts";
 import { reviewValidateV1 } from "./validate.ts";
 import { buildJeroLastEventClosureV1, jeroAdvisoryFindingsFromStateV1, JERO_CAPTURE_CLOSURE_OPERATIONS } from "./closures.ts";
 
-// P4b (design §5.1.4, M3 spec §I.7): the production composition glue that
-// injects the in-process authority into the Pi host relay —
+// P4b（设计 §5.1.4、M3 规范 §I.7）：把进程内权威注入 Pi 宿主中继的
+// 生产组合胶水——
 //
-//   STATUS(collect) → renderBinding → relay prepare (locked pi child)
-//                  → relay submit (in-process admission)
+//   STATUS(collect) → renderBinding → 中继 prepare（锁定的 pi 子进程）
+//                  → 中继 submit（进程内受理）
 //
-// `renderJeroCaptureSlotForRelayV1` parses the provider-issued binding tokens
-// back into a typed capture slot and renders the prompt bytes (no spawn);
-// `admitJeroCaptureResultForRelayV1` reads the staged 0o600 result file and
-// admits the reviewer envelope through the authority (artifact + CAS +
-// freeze-ledger discipline from M3). Authority typed refusals surface with
-// the relay's documented `[invalid_request]` marker (Mi7 contract) so the
-// relay classifies them as proven non-mutations.
+// `renderJeroCaptureSlotForRelayV1` 把提供方签发的绑定令牌解析回类型化
+// 捕获槽并渲染提示词字节（不派发进程）；`admitJeroCaptureResultForRelayV1`
+// 读取以 0o600 暂存的结果文件，并让评审封套通过权威受理（M3 的产物 +
+// CAS + 冻结台账纪律）。权威的类型化拒绝以中继文档化的
+// `[invalid_request]` 标记呈现（Mi7 契约），使中继将其归类为已证明的
+// 非变更。
 
 const BINDING_TOKEN = /^--([a-z-]+)=(.*)$/;
 const LENS_NAMES: readonly string[] = ["review-risk", "review-resilience", "review-readability", "review-reliability"];
@@ -72,11 +71,10 @@ function contextForRelayV1(cwd: string | undefined): JeroAuthorityContextV1 {
 }
 
 /**
- * The render seam (Mi7 contract applies to refusals): parses the binding
- * tokens, re-derives the slot from the lineage RECORD (never from the
- * tokens), and refuses with `[invalid_request]` when the request's binding
- * has drifted from what the authority would offer — stale revisions, foreign
- * lenses, and mismatched subject hashes never reach a reviewer process.
+ * 渲染接缝（Mi7 契约适用于拒绝）：解析绑定令牌，从血脉记录（绝不从
+ * 令牌）重新推导槽位，并在请求绑定已偏离权威可提供的内容时以
+ * `[invalid_request]` 拒绝——过期的修订号、外来评审视角和不匹配的
+ * 主题摘要绝不进入评审进程。
  */
 export async function renderJeroCaptureSlotForRelayV1(request: { readonly captureArgumentTokens: readonly string[]; readonly targetCwd?: string }): Promise<{ promptBytes: Buffer }> {
 	const tokens = parseCaptureTokensV1(request.captureArgumentTokens);
@@ -91,10 +89,9 @@ export async function renderJeroCaptureSlotForRelayV1(request: { readonly captur
 		throw new Error(`[invalid_request] capture rendering refused: ${rendered.code}${rendered.detail === undefined ? "" : ` (${rendered.detail})`}`);
 	}
 	if (rendered.promptBytes === undefined || rendered.promptBytes.length === 0) throw new Error("[invalid_request] capture rendering produced no reviewer bytes");
-	// Binding drift check: the rendered header is derived from the record; the
-	// request tokens must agree with it (stale expected-revision is the common
-	// drift). The lens/order equality is structural; the revision check below
-	// uses the rendered slot's expected contract.
+	// 绑定漂移检查：渲染头部派生自记录；请求令牌必须与之相符
+	// （过期的 expected-revision 是最常见的漂移）。评审视角/序号相等是
+	// 结构性的；下面的修订号检查使用渲染槽位的预期契约。
 	const record = context.lineages.load(tokens.lineage);
 	if (record.kind === "ok" && tokens.expectedRevision !== undefined && record.record.revision !== tokens.expectedRevision) {
 		throw new Error(`[invalid_request] capture binding revision ${tokens.expectedRevision} drifted from the authority revision ${record.record.revision}`);
@@ -103,20 +100,16 @@ export async function renderJeroCaptureSlotForRelayV1(request: { readonly captur
 }
 
 /**
- * The admit seam: reads the staged result file verbatim, strict-decodes the
- * reviewer envelope, and admits through the authority (sha256 recompute,
- * subject/order rebinding, artifact + CAS persistence). Returns the admitted
- * artifact's canonical JSON — the relay's opaque submission string.
+ * 受理接缝：逐字读取暂存的结果文件，严格解码评审封套，并经权威
+ * 受理（sha256 重算、主题/序号重绑、产物 + CAS 持久化）。返回已受理
+ * 产物的权威 JSON——即中继的不透明提交字符串。
  */
-// Q-A (see _tools/p4-f-g-capture-maintenance-analysis.md): the artifact-set
-// completion composition. Admitting the LAST offered lens artifact is the
-// old binary's atomic capture-result submission boundary — the freeze and
-// the evidence classification rode inside it. The classification rows
-// derive deterministically from the admitted envelope rows (evidence_class
-// is the class enum; proof_refs join into the concrete proof), so the
-// composition needs no model output beyond what the reviewers already
-// swore. It stops after classify: correction-plan, refuter, and final
-// verification remain driven by their own vectors.
+// Q-A（见 _tools/p4-f-g-capture-maintenance-analysis.md）：产物集完成
+// 组合。受理最后一个提供的评审视角产物就是旧二进制的原子捕获结果
+// 提交边界——冻结与证据分类都搭载其中。分类行从已受理的封套行
+// 确定性派生（evidence_class 即类别枚举；proof_refs 连接成具体证据），
+// 因此该组合不需要评审员已宣誓内容之外的任何模型输出。它在 classify
+// 之后停止：修正计划、refuter 与最终验证仍由各自的向量驱动。
 function composeCapturedResultsFinalizeV1(context: import("./review.ts").JeroAuthorityContextV1, cwd: string | undefined, lineageId: string): Record<string, unknown> | undefined {
 	const loaded = context.lineages.load(lineageId);
 	if (loaded.kind !== "ok") return { kind: "refused", code: "lineage-unreadable", detail: loaded.kind };
@@ -126,9 +119,9 @@ function composeCapturedResultsFinalizeV1(context: import("./review.ts").JeroAut
 	const lensResults: JeroLensResultSubmissionV1[] = [];
 	const classifications: JeroFindingClassificationSubmissionV1[] = [];
 	for (const artifact of completion.artifacts.toSorted((a, b) => a.selected_order - b.selected_order)) {
-		// The admission always stages the verbatim bytes in the reviewer
-		// results directory; the manifest's locator (path vs reference) only
-		// records how the authority cites it, so read the canonical staging file.
+		// 受理总是把逐字字节暂存在评审员结果目录中；清单的定位符
+		// （path 还是 reference）只记录权威引用它的方式，因此读取权威的
+		// 暂存文件。
 		const staged = join(jeroReviewerResultsDirectoryV1(context.store.store_root, lineageId), `${String(artifact.selected_order).padStart(2, "0")}-${artifact.lens}.json`);
 		let source: Buffer;
 		try {
@@ -154,9 +147,9 @@ function composeCapturedResultsFinalizeV1(context: import("./review.ts").JeroAut
 	const resolved = reviewFinalizeV1(context, { cwd: cwd ?? "", lineageId, classifications });
 	if (resolved.kind === "refused") return { kind: "refused", code: resolved.code, detail: resolved.detail };
 	if (resolved.kind === "evidence_resolved" && resolved.fix_finding_ids.length === 0) {
-		// Q-A2: the clean path runs straight through final verification — the
-		// final evidence is the reviewers' sworn scope evidence (hashed at
-		// FINALIZE, never at START), exactly the boundary the old binary owned.
+		// Q-A2：干净路径径直通过最终验证——最终证据就是评审员宣誓过的
+		// 范围证据（在 FINALIZE 时哈希，从不在 START 时），正是旧二进制
+		// 拥有的边界。
 		const finalEvidence = lensResults.flatMap((row) => [...row.evidence]).join("\n")
 		const terminal = reviewFinalizeV1(context, { cwd: cwd ?? "", lineageId, final_evidence: finalEvidence, final_verification_passed: true });
 		if (terminal.kind === "refused") return { kind: "refused", code: terminal.code, detail: terminal.detail };
@@ -167,9 +160,9 @@ function composeCapturedResultsFinalizeV1(context: import("./review.ts").JeroAut
 	return { kind: "composed", state: resolved.state, fix_finding_ids: resolved.kind === "evidence_resolved" ? [...resolved.fix_finding_ids] : undefined };
 }
 
-// The terminal closure rides the submission verbatim: the extension decodes a
-// gentle-ai.review-last-event-closure/v1 body (snake keys) from the relay
-// result, so the jero closure swaps only its schema string.
+// 终局闭包随提交逐字搭载：扩展从中继结果解码
+// gentle-ai.review-last-event-closure/v1 正文（snake 键），因此 jero 闭包
+// 只需换掉 schema 字符串。
 function closureSubmissionV1(context: import("./review.ts").JeroAuthorityContextV1, cwd: string | undefined, lineageId: string, state: "approved" | "escalated"): Record<string, unknown> | undefined {
 	const loaded = context.lineages.load(lineageId);
 	if (loaded.kind !== "ok") return { kind: "refused", code: "lineage-unreadable", detail: loaded.kind };
@@ -180,9 +173,9 @@ function closureSubmissionV1(context: import("./review.ts").JeroAuthorityContext
 		cwd,
 		...(state === "approved" ? { advisoryFindings: jeroAdvisoryFindingsFromStateV1(loaded.record.state) } : {}),
 	});
-	// Wire vocabulary discrepancy #2: the fixture vocabulary names two
-	// closure operations with a slash (review/capture-result, review/
-	// capture-validation) and two with a dot; the jero builder is uniform.
+	// 线上词汇差异 #2：fixture 词汇用斜杠命名两个闭包操作
+	// （review/capture-result、review/capture-validation），另两个用点；
+	// jero 构建器是统一的。
 	const wireOperation = closure.operation === "review.capture-result" ? "review/capture-result" : closure.operation === "review.capture-validation" ? "review/capture-validation" : closure.operation;
 	return { kind: "closure", closure_json: JSON.stringify({ ...closure, schema: "gentle-ai.review-last-event-closure/v1", operation: wireOperation }) };
 }
@@ -191,8 +184,8 @@ export async function admitJeroCaptureResultForRelayV1(request: { readonly captu
 	if (operationToken !== "capture-result") {
 		throw new Error(`[invalid_request] the in-process admission supports capture-result, not ${JSON.stringify(operationToken)}`);
 	}
-	// The submit tokens carry the substituted result file at the {{value}} slot;
-	// the binding tokens (minus the value) still parse for lineage/lens/order.
+	// 提交令牌在 {{value}} 槽位携带被替换的结果文件；绑定令牌
+	// （去掉该值）仍可解析出 lineage/lens/order。
 	const bindingTokens = [...request.captureArgumentTokens, ...submitTokens.filter((token) => !token.includes("result.raw"))];
 	const tokens = parseCaptureTokensV1(bindingTokens);
 	if (tokens.lineage === undefined || tokens.lens === undefined || tokens.order === undefined || tokens.subjectHash === undefined) {
@@ -213,27 +206,25 @@ export async function admitJeroCaptureResultForRelayV1(request: { readonly captu
 		if (admitted.kind === "refused") {
 			throw new Error(`[invalid_request] capture admission refused: ${admitted.code}${admitted.detail === undefined ? "" : ` (${admitted.detail})`}`);
 		}
-		// The admitted manifest rides the completion composition when this
-		// admission completed the artifact set — the extension consumes the
-		// artifact manifest either way, and the composition outcome is honest
-		// diagnostics (a refusal never unwrites the admitted artifact).
+		// 当本次受理补全产物集时，已受理的清单搭载完成组合——扩展无论
+		// 如何都会消费产物清单，组合结果只是诚实的诊断信息（拒绝绝不
+		// 撤销已受理的产物）。
 		const composition = admitted.replayed ? undefined : composeCapturedResultsFinalizeV1(context, request.targetCwd, tokens.lineage);
 		if (composition !== undefined && composition.kind === "closure") return String(composition.closure_json);
 		return JSON.stringify({ ...admitted.artifact, ...(composition === undefined ? {} : { finalize_composition: composition }) });
 	} catch (error) {
 		if (error instanceof Error && error.message.includes("[invalid_request]")) throw error;
-		// Admission discipline failures (sha mismatch, rebinding drift, state
-		// guards) are proven non-mutations: the slot was not consumed.
+		// 受理纪律失败（sha 不匹配、重绑漂移、状态守卫）是已证明的非变更：
+		// 槽位未被消费。
 		throw new Error(`[invalid_request] capture admission failed: ${error instanceof Error ? error.message : String(error)}`);
 	}
 }
 
 // ---------------------------------------------------------------------------
-// Q-B: the provider role vectors (refuter / targeted validator). The relay
-// composition mirrors the reviewer seam pair: render re-derives the slot from
-// the lineage record (never from the tokens); admit executes the role's
-// authority transition chain and answers with the last-event closure when the
-// capture ends the review, or an artifact manifest otherwise.
+// Q-B：提供方角色向量（refuter / 定向 validator）。中继组合镜像评审员
+// 接缝对：render 从血脉记录（绝非从令牌）重新推导槽位；admit 执行该
+// 角色的权威转移链，并在捕获终结评审时以 last-event 闭包作答，否则
+// 返回产物清单。
 // ---------------------------------------------------------------------------
 
 export type JeroProviderRoleV1 = "refuter" | "validator";
@@ -290,8 +281,8 @@ function admitRefuterResolutionV1(context: import("./review.ts").JeroAuthorityCo
 	const resolutions = decodeJeroRefuterResolutionsV1({ resolutions: body.resolutions }).resolutions;
 	const loaded = context.lineages.load(lineageId);
 	if (loaded.kind !== "ok") throw new Error(`[invalid_request] the refuter admission could not reload lineage (${loaded.kind})`);
-	// The batch replays the identical classifications it was minted under
-	// (the persisted state rows), exactly like the old wrapper second call.
+	// 批次重放它签发时所依据的完全相同的分类（持久化的状态行），
+	// 与旧封装的第二次调用完全一致。
 	const replayedClassifications = Object.values(loaded.record.state.classifications).map((row) => ({ finding_id: row.finding_id, class: row.class, proof: row.proof, ...(row.causal_disposition === undefined ? {} : { causal_disposition: row.causal_disposition }) }));
 	const resolved = reviewFinalizeV1(context, { cwd: cwd ?? "", lineageId, classifications: replayedClassifications, refuter_batch: { request_hash: pendingRefuterRequestHashV1(loaded.record.state.pending_refuter_ids), resolutions: resolutions.map((row) => ({ finding_id: row.finding_id, outcome: row.outcome, proof: row.proof })) } });
 	if (resolved.kind === "refused") throw new Error(`[invalid_request] refuter admission refused: ${resolved.code}${resolved.detail === undefined ? "" : ` (${resolved.detail})`}`);
@@ -306,9 +297,9 @@ function admitRefuterResolutionV1(context: import("./review.ts").JeroAuthorityCo
 }
 
 function admitValidatorAnswerV1(context: import("./review.ts").JeroAuthorityContextV1, cwd: string | undefined, lineageId: string, raw: Buffer): string {
-	// The answer shape is the rendered contract's JSON: request_hash,
-	// correction_ids, original_criteria{passed,evidence}, correction_regression
-	// {passed,evidence}, fix_caused_findings, follow_ups.
+	// 答案形态即渲染契约的 JSON：request_hash、correction_ids、
+	// original_criteria{passed,evidence}、correction_regression
+	// {passed,evidence}、fix_caused_findings、follow_ups。
 	const answer = JSON.parse(raw.toString("utf8")) as { request_hash?: unknown; correction_ids?: unknown; original_criteria?: { passed?: unknown; evidence?: unknown }; correction_regression?: { passed?: unknown; evidence?: unknown } };
 	if (typeof answer.request_hash !== "string" || !Array.isArray(answer.correction_ids) || typeof answer.original_criteria?.passed !== "boolean" || !Array.isArray(answer.original_criteria.evidence) || typeof answer.correction_regression?.passed !== "boolean" || !Array.isArray(answer.correction_regression.evidence)) {
 		throw new Error("[invalid_request] the validator answer does not carry the rendered contract shape");
@@ -332,7 +323,7 @@ function admitValidatorAnswerV1(context: import("./review.ts").JeroAuthorityCont
 	});
 	if (validated.kind === "refused") throw new Error(`[invalid_request] validation admission refused: ${validated.code}${validated.detail === undefined ? "" : ` (${validated.detail})`}`);
 	if (validated.kind === "recapture_required") return JSON.stringify({ kind: "recapture_required", supersedes: validated.supersedes, guidance: validated.guidance });
-	// validated: the targeted validation passed - final verification closes it.
+	// validated：定向验证已通过——最终验证将其闭合。
 	const terminal = reviewFinalizeV1(context, { cwd: cwd ?? "", lineageId, final_evidence: [...(answer.original_criteria.evidence as string[]), ...(answer.correction_regression.evidence as string[])].join("\n"), final_verification_passed: true });
 	if (terminal.kind === "terminal") return wireClosureSubmissionV1(context, cwd, lineageId, "review.capture-validation", terminal.state);
 	throw new Error(`[invalid_request] the validated review did not close (${terminal.kind})`);

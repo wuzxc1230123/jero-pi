@@ -5,11 +5,10 @@ import { projectJeroReviewStateV1 } from "./transitions.ts";
 import type { JeroRepositoryContextV1 } from "./repository-context.ts";
 import type { JeroTransitionArgumentV1 } from "./collect-inputs.ts";
 
-// Last-event closure (spec §E): a capture operation that is the lineage's
-// LAST event closes the authority natively and prints a closure instead of
-// an artifact. Canonical-internal operation naming is the uniform
-// `review.capture-*` dot form; the conformance boundary maps to the
-// fixture's NONUNIFORM names (discrepancy #2 — 2 slash, 2 dot).
+// Last-event 闭包（spec §E）：作为血脉最后一个事件的捕获操作会原生
+// 地闭合权威并打印闭包而非产物。权威内部的操作命名统一为
+// `review.capture-*` 点形式；合规边界则映射到 fixture 的不统一命名
+// （差异 #2——2 个斜杠、2 个点）。
 
 export const JERO_LAST_EVENT_CLOSURE_SCHEMA = "jero.authority.last-event-closure/v1";
 
@@ -21,7 +20,7 @@ export const JERO_CAPTURE_CLOSURE_OPERATIONS = {
 } as const;
 export type JeroCaptureClosureOperation = (typeof JERO_CAPTURE_CLOSURE_OPERATIONS)[keyof typeof JERO_CAPTURE_CLOSURE_OPERATIONS];
 
-/** Discrepancy #2: fixture-vocabulary operation names (2 slash, 2 dot — decoder :2417-2422). */
+/** 差异 #2：fixture 词汇的操作名（2 个斜杠、2 个点——解码器 :2417-2422）。 */
 export const JERO_CAPTURE_CLOSURE_OPERATION_CONFORMANCE_MAP: Readonly<Record<JeroCaptureClosureOperation, string>> = {
 	[JERO_CAPTURE_CLOSURE_OPERATIONS.CAPTURE_RESULT]: "review/capture-result",
 	[JERO_CAPTURE_CLOSURE_OPERATIONS.CAPTURE_CORRECTION_PLAN]: "review.capture-correction-plan",
@@ -127,13 +126,13 @@ function statusContinuationV1(record: JeroLineageStateFileV1, cwd: string, repos
 }
 
 /**
- * Builds a capture closure per the §E per-operation rules:
- * correction-plan MUST carry target_identity/request_hash/correction_lines
- * (1..200) and MUST NOT carry action/advisory/continuation/reviewer_results,
- * with state correction_required; result/refuter closures in
- * correction_required REQUIRE a status_continuation, every other combination
- * forbids it; action/advisory_findings/reviewer_results/acknowledgement are
- * approved-only.
+ * 按 §E 的逐操作规则构建捕获闭包：correction-plan 必须携带
+ * target_identity/request_hash/correction_lines（1..200）且不得携带
+ * action/advisory/continuation/reviewer_results，状态为
+ * correction_required；处于 correction_required 的 result/refuter 闭包
+ * 必须携带 status_continuation，其余所有组合都禁止它；
+ * action/advisory_findings/reviewer_results/acknowledgement 仅限
+ * approved。
  */
 export function buildJeroLastEventClosureV1(input: {
 	readonly operation: JeroCaptureClosureOperation;
@@ -185,10 +184,9 @@ export function buildJeroLastEventClosureV1(input: {
 }
 
 /**
- * Assembles advisory findings from the resolved record (spec §E): a refuted
- * severe finding rides with disposition `refuted`; follow-up observations
- * map to `follow_up`; informational outcomes map to `informational`.
- * Approved-only — the caller enforces the state gate.
+ * 从已裁决的记录组装咨询性发现（spec §E）：被驳回的严重发现以
+ * `refuted` 处置搭载；随访观察映射为 `follow_up`；信息性结局映射为
+ * `informational`。仅限 approved——状态门由调用方执行。
  */
 export function jeroAdvisoryFindingsFromStateV1(state: JeroReviewTransactionStateV1): JeroAdvisoryFindingsV1 | undefined {
 	const findings: JeroAdvisoryFindingV1[] = [];
@@ -215,10 +213,9 @@ export function jeroAdvisoryFindingsFromStateV1(state: JeroReviewTransactionStat
 		}
 	}
 	for (const followUp of state.follow_ups) {
-		// NIT (review): a stable derived id, not a prose-prefix truncation —
-		// `jeroDomainHash("follow-up", observation)` is deterministic per
-		// observation and cannot collide with finding ids or drift when the
-		// observation text carries no ":" separator.
+		// NIT（评审）：使用稳定的派生 id 而非散文前缀截断——
+		// `jeroDomainHash("follow-up", observation)` 对每个观察是确定性的，
+		// 不会与发现 id 冲突，也不会在观察文本不含 “:” 分隔符时漂移。
 		findings.push({ id: `fup1_${jeroDomainHash("follow-up", followUp.observation)}`, severity: "SUGGESTION", disposition: "follow_up" });
 	}
 	if (findings.length === 0) return undefined;
@@ -226,10 +223,10 @@ export function jeroAdvisoryFindingsFromStateV1(state: JeroReviewTransactionStat
 }
 
 /**
- * Defensive acknowledgement decode (spec §E): an undecodable acknowledgement
- * degrades to the `acknowledgementUndecodable` flag, never a throw. The
- * jero acknowledgement shape is `jero.authority.review-acknowledged/v1`
- * with the exact `review/acknowledge-approved` operation.
+ * 防御性确认解码（spec §E）：无法解码的确认退化为
+ * `acknowledgementUndecodable` 标志，绝不抛错。jero 确认形态是
+ * `jero.authority.review-acknowledged/v1`，且恰好是
+ * `review/acknowledge-approved` 操作。
  */
 export function decodeJeroClosureAcknowledgementV1(value: unknown): { ok: true; acknowledgement: Record<string, unknown> } | { ok: false } {
 	if (typeof value !== "object" || value === null || Array.isArray(value)) return { ok: false };
@@ -244,10 +241,9 @@ export function decodeJeroClosureAcknowledgementV1(value: unknown): { ok: true; 
 }
 
 /**
- * Strict closure decode mirroring the §E decoder rules (conformance surface
- * + defensive acknowledgement): correction-plan field discipline,
- * continuation required/forbidden pairs, approved-only optional members,
- * continuation binding cross-checks against the enclosing closure.
+ * 镜像 §E 解码器规则的严格闭包解码（合规表面 + 防御性确认）：
+ * correction-plan 字段纪律、continuation 的必需/禁止配对、仅限
+ * approved 的可选成员、continuation 绑定与外层闭包的交叉校验。
  */
 export function decodeJeroLastEventClosureV1(value: unknown, label = "last_event_closure"): JeroLastEventClosureV1 {
 	if (typeof value !== "object" || value === null || Array.isArray(value)) throw new TypeError(`${label}: expected object`);
@@ -322,10 +318,9 @@ export function decodeJeroLastEventClosureV1(value: unknown, label = "last_event
 }
 
 /**
- * JP twin of assertReviewLastEventClosureBinding (§E): validates the closure
- * against the caller's held STATUS binding. Only non-approved wire states
- * appear in closures; `correction_required` is the persisted correction
- * phase projection (transitions.ts).
+ * assertReviewLastEventClosureBinding 的 JP 孪生（§E）：对照调用方持有
+ * 的 STATUS 绑定校验闭包。闭包中只出现非 approved 的线上状态；
+ * `correction_required` 是持久化的修正阶段投影（transitions.ts）。
  */
 export function assertJeroLastEventClosureBindingV1(closure: JeroLastEventClosureV1, binding: { lineageId: string; targetIdentity?: string; requestHash?: string }): void {
 	if (closure.lineage_id !== binding.lineageId) throw new TypeError("last-event closure lineage does not match its provider binding");

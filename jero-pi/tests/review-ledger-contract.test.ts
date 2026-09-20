@@ -68,13 +68,13 @@ function assertNativeJsonHasNoMetadata(path: string, value: unknown): void {
 }
 
 const JUDGMENT_DAY_DISCOVERY_PATTERNS = [
-	/Judgment Day starts with exactly two blind judges and zero refuters\./,
-	/Judgment Day alone may iterate discovery and scoped re-judgment, for at most two rounds\./,
-	/Findings surviving round two escalate; no third-round transition exists\./,
+	/(?:Judgment Day starts with exactly two blind judges and zero refuters\.|Judgment Day 从恰好两名盲裁判和零名反驳者开始。)/,
+	/(?:Judgment Day alone may iterate discovery and scoped re-judgment, for at most two rounds\.|只有 Judgment Day 可以迭代发现和范围化复审，最多两轮。)/,
+	/(?:Findings surviving round two escalate; no third-round transition exists\.|存活到第二轮之后的发现会升级；不存在第三轮转移。)/,
 ] as const;
 
 const JUDGMENT_DAY_STANDALONE_SEMANTICS =
-	"Judgment Day is independent: it neither enables nor replaces ordinary review; a separately requested ordinary review remains independent.";
+	/Judgment Day (?:is independent: it neither enables nor replaces ordinary review; a separately requested ordinary review remains independent|(?:是)?独立(?:的|运行)?：它既不启用也不(?:取|替)代普通评审；单独请求的普通评审(?:同样)?保持独立)/;
 
 const OBSOLETE_JUDGMENT_DAY_REPLACEMENT =
 	/Judgment Day starts only when explicitly requested and replaces ordinary review for that lineage\./;
@@ -90,15 +90,15 @@ const JUDGMENT_DAY_SEMANTIC_SURFACES = [
 ] as const;
 
 const JUDGMENT_DAY_REJUDGMENT_PATTERNS = [
-	/Initial discovery and scoped re-judgment are separate modes\./,
-	/On controller-requested scoped re-judgment, receive only requested frozen IDs, their exact hash-bound rows, and the fix diff\./,
-	/Resolve only supplied IDs and fix-line regressions; do not add findings/,
-	/Return one `verified \| corroborated \| regression` resolution per requested ID\./,
+	/(?:Initial discovery and scoped re-judgment are separate modes\.|初始发现和范围化复审是两种独立的模式。)/,
+	/(?:On controller-requested scoped re-judgment, receive only requested frozen IDs, their exact hash-bound rows, and the fix diff\.|在控制器请求的范围化复审中，只接收被请求的冻结 ID、它们精确哈希绑定的行以及修复 diff。)/,
+	/(?:Resolve only supplied IDs and fix-line regressions; do not add findings|只解决所提供的 ID 和修复行回归；不添加发现)/,
+	/(?:Return one `verified \| corroborated \| regression` resolution per requested ID\.|对每个被请求的 ID 返回一个 `verified \| corroborated \| regression` 裁决。)/,
 ] as const;
 
 const FIX_PATTERNS = [
-	/Fix only the exact controller-authorized severe IDs in the one supplied batch\./,
-	/Do not add findings, alter frozen claims, authorize transitions, deliver, publish, or start another actor\./,
+	/(?:Fix only the exact controller-authorized severe IDs in the one supplied batch\.|只修复这一个所提供批次中被控制器精确授权的严重 ID。)/,
+	/(?:Do not add findings, alter frozen claims, authorize transitions, deliver, publish, or start another actor\.|不添加发现、不更改冻结声明、不授权转移、不交付、不发布、不启动另一个执行器。)/,
 ] as const;
 
 test("canonical contract defines compact risk, causal admission, correction, CAS, compatibility, and the delivery boundary", () => {
@@ -235,8 +235,8 @@ test("ordinary lens prompts contain the literal compact-v2 native result envelop
 			"proof_refs",
 		]);
 		assertNativeJsonHasNoMetadata(path, envelope);
-		assert.match(read(path), /Do not put `summary`, `skill_resolution`, prose, or orchestration metadata inside or beside the native JSON result/);
-		assert.match(read(path), /If clean, use an empty `findings` array and a non-empty `evidence` array/);
+		assert.match(read(path), /不要把 `summary`、`skill_resolution`、散文或编排元数据放进原生 JSON 结果之内或旁边/);
+		assert.match(read(path), /若干净，使用空的 `findings` 数组和包含具体范围内评审证据的非空 `evidence` 数组/);
 		assert.doesNotMatch(read(path), /Use empty `findings` and `evidence` arrays when clean/);
 	}
 });
@@ -270,10 +270,10 @@ test("historical lifecycle change specs preserve their completed one-attempt des
 
 test("risk lens distinguishes trusted orchestration from concrete boundary bypasses", () => {
 	const content = read("assets/agents/review-risk.md");
-	assert.match(content, /local orchestrator and same-user process are trusted/i);
-	assert.match(content, /reviewer and validator outputs remain semantically untrusted/i);
-	assert.match(content, /do not report.*trusted local orchestrator.*security finding/i);
-	assert.match(content, /untrusted repository content.*malformed inputs.*stale authority.*path drift.*external callers/i);
+	assert.match(content, /本地编排器和同用户进程受信任/i);
+	assert.match(content, /评审者和验证者的输出在语义上仍不可信/i);
+	assert.match(content, /不要把受信任的本地编排器能够提交执行器或最终验证输出这一能力本身报告为安全发现/i);
+	assert.match(content, /不可信的仓库内容、格式错误的输入、陈旧的权威、路径漂移或外部调用者/i);
 });
 
 test("the Pi-owned adversarial role agents are retired: roles execute through Go-owned pi processes", () => {
@@ -318,7 +318,7 @@ test("Judgment Day judge prompts contain distinct graph-v1 discovery and re-judg
 		const resolutions = rejudgment.resolutions as Array<Record<string, unknown>>;
 		assert.deepEqual(Object.keys(resolutions[0]!), ["id", "outcome"]);
 		for (const block of blocks) assertNativeJsonHasNoMetadata(path, block);
-		assert.match(read(path), /Do not put `summary`, `skill_resolution`, prose, or orchestration metadata inside or beside (?:either )?(?:the )?native JSON result/);
+		assert.match(read(path), /(?:Do not put `summary`, `skill_resolution`, prose, or orchestration metadata inside or beside (?:either )?(?:the )?native JSON result|不要把 `summary`、`skill_resolution`、散文或编排元数据放进任一原生 JSON 结果之内或旁边)/);
 	}
 	const judgePrompt = fencedBlock(JD_PROMPTS, "## Judge Prompt");
 	assert.match(judgePrompt, /```json\n\{\n  "rows":/);
@@ -329,7 +329,7 @@ test("Judgment Day judge prompts contain distinct graph-v1 discovery and re-judg
 test("Judgment Day canonical and packaged surfaces preserve the independent lifecycle", () => {
 	for (const path of JUDGMENT_DAY_SEMANTIC_SURFACES) {
 		const content = read(path);
-		assert.ok(content.includes(JUDGMENT_DAY_STANDALONE_SEMANTICS), `${path} must use the current standalone Judgment Day sentence`);
+		assert.match(content, JUDGMENT_DAY_STANDALONE_SEMANTICS, `${path} must use the current standalone Judgment Day sentence`);
 		assert.doesNotMatch(content, OBSOLETE_JUDGMENT_DAY_REPLACEMENT, `${path} must reject the obsolete replacement semantics`);
 	}
 });
@@ -365,16 +365,16 @@ test("Judgment Day fix routing has one canonical shape and never falls back to g
 		[SDD_WORKFLOW, read(SDD_WORKFLOW)],
 	] as const) {
 		assert.ok(content.includes(canonicalShape), `${path} must carry the canonical Judgment Day fix shape`);
-		assert.match(content, /requires no graph-v1 or native review lineage/i);
+		assert.match(content, /(?:requires no graph-v1 or native review lineage|(?:不要求|不需要) graph-v1 或原生评审 ?(?:谱系|lineage))/i);
 	}
 	const routing = `${read("assets/orchestrator-delegation.md")}\n${read(SDD_WORKFLOW)}`;
-	assert.match(routing, /Judgment Day phase roles are never generic fallbacks\./);
-	assert.match(routing, /If the generic writer chain is unavailable, use the documented native generic fallback or stop\./);
-	assert.match(read(SDD_WORKFLOW), /\| default\s+\| balanced\s+\| SDD phase fallback; never a Judgment Day role\s+\|/);
+	assert.match(routing, /Judgment Day 阶段角色绝不是通用回退。/);
+	assert.match(routing, /若通用写者链不可用，使用文档记载的原生通用回退或停止。/);
+	assert.match(read(SDD_WORKFLOW), /\| default\s+\| balanced\s+\| SDD 阶段回退；绝不是 Judgment Day 角色\s+\|/);
 });
 
 test("orchestrator, injected skill, and technical reference defer RDD lifecycle ownership to Jero", () => {
-	const boundary = "This package injects the mirrored provider-bundle review execution contract into this session's system prompt at start; Jero writes nothing into the Pi system prompt, and this package owns everything else here. Absent that mirrored contract, this package invents no lifecycle instructions.";
+	const boundary = "本包启动时把镜像的提供方捆绑评审执行契约注入本会话系统提示；Jero 不向 Pi 系统提示写入任何内容，本包拥有此处其余一切。缺少该镜像契约时，本包不发明生命周期指令。";
 	const orchestrator = union(ORCHESTRATOR);
 	assert.ok(orchestrator.includes(boundary), "orchestrator must carry the sole static ownership boundary");
 
@@ -412,7 +412,7 @@ test("managed contracts retain no fresh lifecycle review directive", () => {
 		"run a fresh-context review lens unless",
 		"Run a fresh review before pushing a code release",
 	]) assert.ok(!managed.includes(obsolete), `managed contracts retain ${obsolete}`);
-	assert.match(read(SDD_WORKFLOW), /SDD phase validation does not start ordinary review or Judgment Day/);
+	assert.match(read(SDD_WORKFLOW), /SDD 阶段验证不启动普通评审，也不启动 Judgment Day/);
 });
 
 test("static 4R chain runs each selected lens once and owns no orchestration", () => {
@@ -420,7 +420,7 @@ test("static 4R chain runs each selected lens once and owns no orchestration", (
 	for (const lens of ["review-risk", "review-resilience", "review-readability", "review-reliability"]) {
 		assert.equal(content.split(`## ${lens}`).length - 1, 1, `${CHAIN} must run ${lens} once`);
 	}
-	assert.equal(content.split("supplied `initial_review_tree`").length - 1, 4);
+	assert.equal(content.split("所提供的 `initial_review_tree`").length - 1, 4);
 	for (const forbidden of ["review-refuter", "review-validator", "fix/re-review", "Ledger persistence", "final verification"]) {
 		assert.ok(!content.includes(forbidden), `${CHAIN} contains ${forbidden}`);
 	}

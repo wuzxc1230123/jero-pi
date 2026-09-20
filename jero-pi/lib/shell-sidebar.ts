@@ -1,7 +1,7 @@
 import type { Component, TUI } from "@earendil-works/pi-tui";
 
-// Store on the terminal, not a module singleton: extension loaders may isolate
-// modules, while Pi keeps this terminal across regular/fullscreen transitions.
+// 存储挂在终端上而非模块单例：扩展加载器可能隔离模块，而 Pi 在普通/
+// 全屏切换之间保留同一终端。
 const STATE = Symbol.for("gentle-pi.experimental-sidebar.state");
 export interface SidebarState {
 	active: boolean;
@@ -9,13 +9,13 @@ export interface SidebarState {
 	parts: Map<string, SidebarRail>;
 }
 
-/** A rail slot in the fullscreen sidebar. */
+/** 全屏侧栏中的一个侧轨槽位。 */
 export interface SidebarRail extends Component {
 	/**
-	 * Cheap digest of the live state this rail paints. The fullscreen layout memo
-	 * re-renders a part only when its digest changes, so a rail that reads session
-	 * data (model, thinking level, context, cost, extension statuses) must declare
-	 * one; explicit invalidateSidebar() stays for discrete state changes.
+	 * 该侧栏所绘活动状态的廉价摘要。全屏布局的记忆化只在摘要变化时
+	 * 重渲染部件，因此读取会话数据（模型、思考层级、上下文、成本、
+	 * 扩展状态）的侧栏必须声明摘要；离散的状态变化仍用显式的
+	 * invalidateSidebar()。
 	 */
 	digest?(): string;
 }
@@ -24,9 +24,9 @@ export function sidebarState(tui: TUI): SidebarState {
 	return terminal[STATE] ??= { active: false, parts: new Map() };
 }
 
-/** Keep the original bottom component mounted, suppressing only its paint. */
+/** 保持原有底部组件挂载，只抑制其绘制。 */
 export function sidebarPart<T extends Component & { dispose?(): void }>(tui: TUI, key: string, bottom: T, rail: SidebarRail = bottom): T {
-	// Minimal extension hosts cannot share terminal-owned layout state.
+	// 最小化扩展宿主无法共享终端持有的布局状态。
 	if (!tui.terminal) return bottom;
 	const state = sidebarState(tui);
 	state.parts.set(key, rail);

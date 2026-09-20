@@ -38,24 +38,24 @@ function readTools(path: string): string[] {
 
 function assertGenericRoleBody(fileName: string, source: string): void {
 	assert.match(source, /generic non-SDD work/);
-	assert.match(source, /Do not (?:fix findings, delegate to child agents|delegate to child agents, commit)/);
-	assert.match(source, /Do not (?:edit, write|edit, write, or fix findings)/);
-	assert.match(source, /compressed (?:handoff|evidence handoff)/);
-	assert.match(source, /supporting (?:paths|evidence)/);
-	assert.match(source, /Do not use SDD phase protocols or review lenses\./);
+	assert.match(source, /不(?:修复发现、不委托子代理|委托子代理、不提交)/);
+	assert.match(source, /不编辑、不写入/);
+	assert.match(source, /压缩的(?:交接|证据交接)/);
+	assert.match(source, /支持性(?:路径|证据)/);
+	assert.match(source, /不使用 SDD 阶段协议或评审视角。/);
 
 	if (fileName === "jero-explore.md") {
-		assert.match(source, /sole permitted mutation/);
-		assert.match(source, /all tracked files, source files, and other project content remain read-only/);
-		assert.match(source, /If the fovea tools are unavailable or fail/);
-		assert.match(source, /Do not use that fallback before they are unavailable or fail/);
+		assert.match(source, /唯一被允许的变更/);
+		assert.match(source, /所有已跟踪文件、源码文件和其他项目内容保持只读/);
+		assert.match(source, /若 fovea 工具不可用或失败/);
+		assert.match(source, /在它们不可用或失败之前不得使用该回退/);
 	}
 
 	if (fileName === "jero-verify.md") {
-		assert.match(source, /execute only exact test, build, or lint commands explicitly authorized by the parent/);
-		assert.match(source, /only outputs the parent explicitly identified as expected/);
-		assert.match(source, /unexpected mutation as a blocker/);
-		assert.match(source, /report it, but do not clean it up or fix it/);
+		assert.match(source, /只执行父会话显式授权的确切测试、构建或 lint 命令/);
+		assert.match(source, /已授权命令只能产生父会话显式指明为预期的输出/);
+		assert.match(source, /把每一个意外的变更视为阻塞项/);
+		assert.match(source, /报告它，但不清理或修复它/);
 	}
 }
 
@@ -106,8 +106,8 @@ test("artifact-producing SDD agents can persist OpenSpec files while status rema
 test("research instructions require executed evidence rather than blanket denial", () => {
 	const source = readFileSync(join(assetsAgentsDir, "sdd-research.md"), "utf8");
 	assert.doesNotMatch(source, /documentation=\[\]; open-web=\[\]/);
-	assert.match(source, /Actually call approved tools/);
-	assert.match(source, /claim maps to source IDs/);
+	assert.match(source, /实际调用已批准的工具/);
+	assert.match(source, /每条声明映射到来源 ID/);
 	assert.match(source, /proposal_ready: false/);
 	assert.ok(!readTools(join(assetsAgentsDir, "sdd-research.md")).includes("bash"));
 });
@@ -156,15 +156,15 @@ test("sdd-verify phase text carries the verify-result envelope and validate-befo
 	for (const field of envelopeFields) {
 		assert.ok(agentSource.includes(field), `sdd-verify.md envelope must carry \`${field}\``);
 	}
-	assert.match(agentSource, /first non-empty content/);
+	assert.match(agentSource, /首个非空内容/);
 	assert.match(
 		agentSource,
-		/the in-process authority strict-decodes this envelope wherever an attempt settles with one/,
+		/进程内权威在每次结算附带该封套时对其进行严格解码/,
 	);
 
 	const chainSource = readFileSync(join(repoRoot, "assets", "chains", "sdd-verify.chain.md"), "utf8");
 	assert.match(chainSource, /gentle-ai\.verify-result\/v1/);
-	assert.match(chainSource, /byte-check the envelope/);
+	assert.match(chainSource, /对封套做字节检查/);
 });
 
 test("the retired Pi adversarial role agents are not packaged", () => {

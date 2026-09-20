@@ -1,19 +1,17 @@
-// gentle-pi#662: pure decoding, tier mapping, and verification-plan logic for
-// the native read-only `gentle-ai review assess` command (gentle-ai#4295).
-// Kept independent of the native review CLI wrapper (`lib/native-review-cli.ts`)
-// so the decoder and the verificationPlan table can be unit-tested without a
-// child process, and so the parent tool and the delegation asset agree on one
-// deterministic mapping.
+// gentle-pi#662：原生只读命令 `gentle-ai review assess`（gentle-ai#4295）
+// 的纯解码、层级映射与验证计划逻辑。与原生评审 CLI 封装
+// （`lib/native-review-cli.ts`）保持独立，使解码器与 verificationPlan
+// 表无需子进程即可做单元测试，并让父工具与委托资产在同一个确定性
+// 映射上达成一致。
 //
-// Native reference (gentle-ai#4295, landing in parallel with this change):
+// 原生参考（gentle-ai#4295，与本变更并行落地）：
 // `gentle-ai review assess --cwd <repo> [--base-ref <ref> --committed-only] --json`
-// prints `{"schema":"gentle-ai.review-assessment/v1","risk":"passive|medium|high",
+// 打印 `{"schema":"gentle-ai.review-assessment/v1","risk":"passive|medium|high",
 // "reasons":[{"code":"…","path":"…","detail":"…"}],"changed_paths":1,
-// "changed_lines":1,"candidate":{"kind":"current-changes|base-diff","base_ref":"…"}}`.
-// A non-zero exit or a failure envelope means the candidate could not be
-// assessed; hosts treat that as `high`. Older binaries without the verb (or
-// any other decode/process failure) fail closed the same way -- see
-// `verificationTierForUnassessable` below.
+// "changed_lines":1,"candidate":{"kind":"current-changes|base-diff","base_ref":"…"}}`。
+// 非零退出码或失败封套表示候选无法评估；宿主将其视为 `high`。
+// 不带该动词的旧二进制（或任何其他解码/进程失败）以相同方式保守
+// 失败——见下方 `verificationTierForUnassessable`。
 
 export const REVIEW_ASSESSMENT_SCHEMA = "gentle-ai.review-assessment/v1" as const;
 
@@ -76,11 +74,10 @@ function decodeCandidate(value: unknown): ReviewAssessmentCandidate {
 }
 
 /**
- * Decodes and validates one `gentle-ai.review-assessment/v1` envelope. Rejects
- * any other schema, an unrecognized risk value, or a malformed shape -- the
- * native review CLI wrapper turns a thrown error here into the same
- * schema-incompatible failure it already produces for every other decoded
- * native response.
+ * 解码并校验一个 `gentle-ai.review-assessment/v1` 封套。拒绝任何其他
+ * schema、无法识别的风险值或畸形结构——原生评审 CLI 封装会把这里抛出
+ * 的错误转换成它对其他所有已解码原生响应同样产生的“schema 不兼容”
+ * 失败。
  */
 export function decodeReviewAssessmentV1(value: unknown): ReviewAssessmentV1 {
 	if (!isRecord(value)) throw new TypeError("review assessment must be an object");
@@ -103,7 +100,7 @@ export function decodeReviewAssessmentV1(value: unknown): ReviewAssessmentV1 {
 }
 
 // ---------------------------------------------------------------------------
-// Verification-plan tiering (gentle-pi#662).
+// 验证计划分层（gentle-pi#662）。
 // ---------------------------------------------------------------------------
 
 export const VERIFICATION_TIER = {
@@ -127,14 +124,12 @@ export const WRITER_PROFILE = {
 } as const;
 export type WriterProfile = (typeof WRITER_PROFILE)[keyof typeof WRITER_PROFILE];
 
-// gentle-pi#668: whether the native review actually reached a terminal
-// outcome for the current candidate. The `on` branch of `verificationPlan`
-// (the writer self-verifies, the native review is the independent check, no
-// separate verifier) holds only for `CLOSED` -- a human decline for this
-// candidate, a clone-local RDD disable, a refused START/STATUS, or any other
-// non-terminal outcome falls back to the exact same risk-gated path as `off`.
-// `UNKNOWN` is the fail-closed default for an omitted outcome: never treated
-// as `CLOSED`.
+// gentle-pi#668：原生评审是否真的为当前候选达到了终局结局。
+// `verificationPlan` 的 `on` 分支（写者自验、原生评审即独立检查、
+// 无独立验证者）只在 `CLOSED` 时成立——人类对该候选的拒绝、克隆局部
+// 的 RDD 关闭、被拒绝的 START/STATUS，或任何其他非终局结局都回退到
+// 与 `off` 完全相同的风险门控路径。`UNKNOWN` 是省略结局时的保守失败
+// 默认值：绝不当作 `CLOSED`。
 export const NATIVE_REVIEW_OUTCOME = {
 	CLOSED: "closed",
 	DECLINED: "declined",
@@ -148,9 +143,9 @@ export interface VerificationPlanInput {
 	readonly risk: VerificationTier;
 	readonly writerProfile: WriterProfile;
 	/**
-	 * Native review outcome for the current candidate. Only consulted when
-	 * `rddLine` is `"on"`; `"off"`/`"unknown"` lines ignore it entirely.
-	 * Omitted resolves to `NATIVE_REVIEW_OUTCOME.UNKNOWN` (gentle-pi#668).
+	 * 当前候选的原生评审结局。只在 `rddLine` 为 `"on"` 时被参考；
+	 * `"off"`/`"unknown"` 线路完全忽略它。省略时解析为
+	 * `NATIVE_REVIEW_OUTCOME.UNKNOWN`（gentle-pi#668）。
 	 */
 	readonly nativeReviewOutcome?: NativeReviewOutcome;
 }
@@ -163,11 +158,10 @@ export interface VerificationPlan {
 }
 
 /**
- * Builds the risk-gated verification plan shared by the `off`/`unknown` RDD
- * lines and by an `on` line whose native review did not close for this
- * candidate (gentle-pi#668). `gatePrefix` supplies the sentence fragment
- * naming which branch fired, up to and including the word "and"; the
- * tier-specific clause is appended after it.
+ * 构建由 `off`/`unknown` RDD 线路以及原生评审未对该候选闭合的 `on`
+ * 线路共享的风险门控验证计划（gentle-pi#668）。`gatePrefix` 提供点名
+ * 触发了哪个分支的句子片段（到并包含 “and” 一词）；层级专属的
+ * 分句追加在其后。
  */
 function riskGatedPlan(gatePrefix: string, risk: VerificationTier, writerProfile: WriterProfile): VerificationPlan {
 	if (risk === VERIFICATION_TIER.PASSIVE) {
@@ -191,7 +185,7 @@ function riskGatedPlan(gatePrefix: string, risk: VerificationTier, writerProfile
 		});
 	}
 
-	// high or unassessable.
+	// high 或 unassessable。
 	return Object.freeze({
 		writerSelfVerification: true,
 		structuralReadbackOnly: false,
@@ -202,10 +196,9 @@ function riskGatedPlan(gatePrefix: string, risk: VerificationTier, writerProfile
 	});
 }
 
-// Names why an `on` line falls back to the risk-gated path, for every
-// non-closed native review outcome (gentle-pi#668). `UNKNOWN` covers both an
-// omitted outcome and a caller-supplied one this decoder does not
-// recognize -- both fail closed the same way.
+// 为每个未闭合的原生评审结局点名 `on` 线路回退到风险门控路径的原因
+// （gentle-pi#668）。`UNKNOWN` 同时涵盖省略的结局和调用方提供但本
+// 解码器不认识的结局——两者以相同方式保守失败。
 function nonClosedOutcomeClause(outcome: NativeReviewOutcome): string {
 	switch (outcome) {
 		case NATIVE_REVIEW_OUTCOME.DECLINED:
@@ -218,32 +211,27 @@ function nonClosedOutcomeClause(outcome: NativeReviewOutcome): string {
 }
 
 /**
- * Computes who verifies a delegated writer's change, exactly as
- * gentle-pi#662/#668 specify:
+ * 计算由谁来验证被委托写者的变更，与 gentle-pi#662/#668 的规定完全
+ * 一致：
  *
- * - `rdd: "on"` AND the native review reached `NATIVE_REVIEW_OUTCOME.CLOSED`
- *   for this candidate: the writer self-verifies and no independent verifier
- *   runs, because the closed native review is the check -- except `passive`,
- *   which gets a structural readback by the parent instead.
- * - `rdd: "on"` with any other outcome (`declined`, `unavailable`, or the
- *   fail-closed `unknown` default for an omitted/unrecognized outcome): the
- *   `on` branch never held for this candidate, so the risk-gated path below
- *   applies exactly as `off` -- declining a review is candidate-scoped and
- *   never lowers the bar below the RDD-off path.
- * - `rdd: "off"` or `"unknown"` (both gate identically, so an unknown RDD line
- *   never lowers a tier relative to `off`; `nativeReviewOutcome` is ignored
- *   entirely on these lines):
- *   - `passive`: structural readback by the parent only; no verifier, no
- *     tests.
- *   - `medium`: the writer self-verifies; a separate independent verifier
- *     runs only when `writerProfile` is `"small"` -- the small-model bias
- *     raises the tier by one for verification purposes (medium -> high). An
- *     unknown or omitted writer profile resolves to `"small"` before it
- *     reaches this function (see `resolveWriterProfile`), so an unrecognized
- *     profile never lowers a tier below what a known small model would get.
- *   - `high` or `unassessable` (a failed or unrecognized native assessment is
- *     always treated as high): the writer self-verifies and an independent
- *     verifier always runs.
+ * - `rdd: "on"` 且原生评审对该候选达到 `NATIVE_REVIEW_OUTCOME.CLOSED`：
+ *   写者自验且不运行独立验证者，因为已闭合的原生评审就是那次检查——
+ *   唯 `passive` 例外，它改为由父级做结构回读。
+ * - `rdd: "on"` 且任何其他结局（`declined`、`unavailable`，或省略/
+ *   无法识别结局时保守失败的 `unknown` 默认）：`on` 分支对该候选从未
+ *   成立，因此下面的风险门控路径与 `off` 完全同样适用——拒绝评审是
+ *   候选作用域的，绝不把门槛降到 RDD-off 路径之下。
+ * - `rdd: "off"` 或 `"unknown"`（两者门控完全相同，因此未知的 RDD
+ *   线路绝不会相对 `off` 降低层级；这些线路上完全忽略
+ *   `nativeReviewOutcome`）：
+ *   - `passive`：仅父级做结构回读；无验证者，无测试。
+ *   - `medium`：写者自验；只有当 `writerProfile` 为 `"small"` 时才运行
+ *     独立验证者——小模型偏差在验证用途上把层级抬高一档
+ *     （medium -> high）。未知或省略的写者档案在到达本函数之前就解析
+ *     为 `"small"`（见 `resolveWriterProfile`），因此无法识别的档案
+ *     绝不会把层级降到低于已知小模型所应得的水平。
+ *   - `high` 或 `unassessable`（失败或无法识别的原生评估一律按 high
+ *     处理）：写者自验，且总是运行独立验证者。
  */
 export function verificationPlan(input: VerificationPlanInput): VerificationPlan {
 	const { rddLine, risk, writerProfile } = input;
@@ -266,9 +254,8 @@ export function verificationPlan(input: VerificationPlanInput): VerificationPlan
 				reason: "receipt-driven development is on and the native review closed for this candidate: the writer's self-verification is the record and the closed native review was the independent check the writer cannot influence, so no separate verifier is required.",
 			});
 		}
-		// The on branch holds only while the native review reaches a terminal
-		// outcome for this candidate. Anything else -- declined, unavailable, or
-		// unknown -- falls back to the exact same risk-gated path as off.
+		// on 分支只在原生评审对该候选达到终局结局时成立。其余任何情况——
+		// 拒绝、不可用或未知——都回退到与 off 完全相同的风险门控路径。
 		return riskGatedPlan(
 			`receipt-driven development is on, but ${nonClosedOutcomeClause(outcome)}, so the risk-gated path applies exactly as receipt-driven development off, and`,
 			risk,
@@ -276,63 +263,62 @@ export function verificationPlan(input: VerificationPlanInput): VerificationPlan
 		);
 	}
 
-	// rddLine is "off" or "unknown" here -- both gate on the native risk
-	// assessment identically, so an unknown RDD line never lowers a tier, and
-	// neither line ever consults nativeReviewOutcome.
+	// 此处 rddLine 为 "off" 或 "unknown"——两者对原生风险评估的门控完全
+	// 相同，因此未知的 RDD 线路绝不降低层级，且两条线路都绝不参考
+	// nativeReviewOutcome。
 	return riskGatedPlan(`receipt-driven development is ${rddLine} and`, risk, writerProfile);
 }
 
 // ---------------------------------------------------------------------------
-// Small-writer-profile predicate (gentle-pi#662).
+// 小写者档案判定（gentle-pi#662）。
 // ---------------------------------------------------------------------------
 
 /**
- * The minimal shape of `lib/agents-config.ts`'s `ResolvedProfile` this
- * predicate needs: the resolved model reference and its resolved effort
- * (`ResolvedProfile.thinking`, one of `ThinkingLevel`).
+ * 本判定所需的 `lib/agents-config.ts` 中 `ResolvedProfile` 的最小形态：
+ * 已解析的模型引用及其已解析的 effort
+ * （`ResolvedProfile.thinking`，`ThinkingLevel` 之一）。
  */
 export interface WriterModelProfileLike {
 	readonly model?: { readonly id: string } | undefined;
 	readonly thinking?: string | undefined;
 }
 
-// Matches `mini` only as a whole token of the model id -- delimited by the
-// string start/end or one of `-_./:` or whitespace -- never a bare substring.
-// `gpt-5.4-mini`, `o4-mini`, `openai/gpt-5.4-mini`, `claude-mini`, and
-// `mini-high` all match; `gemini`, `gemini-2.5-pro`, and `gemini-2.5-flash`
-// do not, because their `mini` is preceded by `ge`, not a delimiter.
+// 只有当 `mini` 作为模型 id 的完整词元时才匹配——由字符串开头/结尾、
+// `-_./:` 之一或空白字符分隔——绝不匹配裸子串。`gpt-5.4-mini`、
+// `o4-mini`、`openai/gpt-5.4-mini`、`claude-mini` 和 `mini-high` 都匹配；
+// `gemini`、`gemini-2.5-pro` 和 `gemini-2.5-flash` 不匹配，因为它们的
+// `mini` 前面是 `ge`，不是分隔符。
 const SMALL_MODEL_ID_TOKEN = /(?:^|[-_./:\s])mini(?:$|[-_./:\s])/i;
 
 /**
- * A writer profile counts as a "small model" for the medium-risk bias when:
- * - its resolved effort is `low`, or
- * - its resolved model id carries `mini` as a whole token (see
- *   `SMALL_MODEL_ID_TOKEN`), or
- * - it carries NO signal at all -- no profile object, or a profile with
- *   neither a model id nor a resolved effort. An unknown or omitted writer
- *   profile fails closed to small rather than defaulting to large, so a
- *   caller that cannot resolve the writer's profile never gets a weaker
- *   verification plan than a known small model would (gentle-pi#662).
+ * 写者档案在满足以下条件时按中风险偏差计为“小模型”：
+ * - 已解析 effort 为 `low`，或
+ * - 已解析模型 id 携带作为完整词元的 `mini`（见
+ *   `SMALL_MODEL_ID_TOKEN`），或
+ * - 完全没有任何信号——没有档案对象，或档案既无模型 id 也无已解析
+ *   effort。未知或省略的写者档案保守失败到 small 而不是默认为
+ *   large，因此无法解析写者档案的调用方绝不会得到比已知小模型更弱
+ *   的验证计划（gentle-pi#662）。
  *
- * A profile that carries a model id or an effort, just not a matching one
- * (for example `{model: {id: "claude-sonnet-5"}, thinking: "high"}`), is
- * "known large" and returns `false` -- fail-closed applies only to a truly
- * unknown/omitted profile, not to an explicitly resolved large one.
+ * 携带模型 id 或 effort、只是不匹配的档案（例如
+ * `{model: {id: "claude-sonnet-5"}, thinking: "high"}`）属于“已知 large”
+ * 并返回 `false`——保守失败只适用于真正未知/省略的档案，不适用于
+ * 显式解析出的大模型。
  */
 export function isSmallWriterProfile(profile: WriterModelProfileLike | undefined): boolean {
 	if (profile === undefined) return true;
 	if (profile.thinking === "low") return true;
 	const modelId = profile.model?.id;
 	if (typeof modelId === "string") return SMALL_MODEL_ID_TOKEN.test(modelId);
-	// No model id was resolved. Fail closed to small only when effort is also
-	// unknown -- there is no signal at all to call this a known large model.
+	// 未解析出模型 id。只有当 effort 也未知时才保守失败到 small——
+	// 完全没有信号可以把它称为已知大模型。
 	return profile.thinking === undefined;
 }
 
 /**
- * Maps a resolved writer profile to the `writerProfile` input `verificationPlan`
- * expects. An unknown or omitted profile never lowers a tier: it resolves to
- * `"small"`, exactly like `isSmallWriterProfile` (gentle-pi#662).
+ * 将已解析的写者档案映射为 `verificationPlan` 期望的 `writerProfile`
+ * 输入。未知或省略的档案绝不降低层级：它解析为 `"small"`，与
+ * `isSmallWriterProfile` 完全一致（gentle-pi#662）。
  */
 export function resolveWriterProfile(profile: WriterModelProfileLike | undefined): WriterProfile {
 	return isSmallWriterProfile(profile) ? WRITER_PROFILE.SMALL : WRITER_PROFILE.LARGE;

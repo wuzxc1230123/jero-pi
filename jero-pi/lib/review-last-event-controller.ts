@@ -8,9 +8,8 @@ export interface ReviewLastEventCaptureSelector {
 }
 
 /**
- * Reconcile exactly one ambiguous native capture outcome. Successful captures
- * return their native artifact or closure directly; this helper is never a
- * post-success lifecycle step and never replays a capture.
+ * 只对恰好一个歧义的原生捕获结局做对账。成功的捕获直接返回其原生
+ * 产物或闭包；本辅助函数绝不是成功后的生命周期步骤，也绝不重放捕获。
  */
 export async function reconcileUnknownReviewLastEventCapture(
 	nativeReviewCli: NativeReviewCli,

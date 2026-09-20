@@ -6,9 +6,8 @@ import { CARD_TONE, cardInnerWidth, renderCard } from "./shell-card.ts";
 
 export { gaugeTone, renderGauge, type GaugeTone };
 
-// Gentle Shell status bar: one line of segments that replaces pi's built-in
-// three-line footer. Everything here is pure so the bar can be rendered and
-// verified without a live TUI.
+// Gentle Shell 状态栏：一行分段，替代 pi 内建的三行页脚。这里的一切
+// 都是纯函数，无需活动 TUI 即可渲染和验证。
 
 export interface ShellBarModel {
 	profile?: string;
@@ -31,8 +30,8 @@ export interface ShellBarTheme {
 	bold(text: string): string;
 }
 
-// Theme roles the bar paints with. Keys are pi theme colors; the Gentle themes
-// map them to the rose palette (accent = rose, syntaxFunction = powder blue).
+// 状态栏绘制所用的主题角色。键是 pi 主题颜色；Gentle 主题将它们映射
+// 到玫瑰调色板（accent = 玫瑰，syntaxFunction = 粉蓝）。
 const ROLE = {
 	BRAND: "accent",
 	SEPARATOR: "dim",
@@ -72,8 +71,8 @@ export function formatCost(total: number, subscription: boolean): string {
 	return subscription ? `$${amount} sub` : `$${amount}`;
 }
 
-// Extensions may paint their status themselves (pi-mcp-adapter does); the bar
-// owns the palette, so their escapes go and the text takes the status role.
+// 扩展可能自行绘制其状态（pi-mcp-adapter 就这么做）；调色板归状态栏
+// 所有，因此它们的转义序列被剥离，文本改用 status 角色。
 function sanitizeStatus(text: string): string {
 	return sanitizeTerminalText(text.replace(/[\r\n\t]/g, " ")).replace(/ +/g, " ").trim();
 }
@@ -94,17 +93,16 @@ function buildSegments(model: ShellBarModel, theme: ShellBarTheme): string[] {
 	return [theme.fg(ROLE.BRAND, SHELL_BAR_BRAND), location, modelSegment, context, cost, ...(usage ? [usage] : []), ...statuses];
 }
 
-// When the line overflows, the location gives way first: the path shrinks to
-// its last segment and a long branch is clipped, so the trailing statuses
-// (MCP servers, extension notices) survive on ordinary terminal widths.
+// 行溢出时先让位位置信息：路径收缩到最后一段，长分支名被裁剪，
+// 使尾部的状态（MCP 服务器、扩展通知）在普通终端宽度下仍能幸存。
 export function compactModel(model: ShellBarModel): ShellBarModel {
 	const cwd = model.cwd.split(/[\\/]/).filter((part) => part.length > 0).pop() ?? model.cwd;
 	const branch = model.branch && visibleWidth(model.branch) > COMPACT_BRANCH_WIDTH ? clipText(model.branch, COMPACT_BRANCH_WIDTH) : model.branch;
 	return { ...model, cwd, branch };
 }
 
-// Plain clip: pi's truncateToWidth wraps the result in resets, which would end
-// up inside a painted segment.
+// 普通裁剪：pi 的 truncateToWidth 会用重置序列包裹结果，那会落进
+// 已着色的分段内部。
 function clipText(text: string, max: number): string {
 	let clipped = "";
 	for (const char of text) {
@@ -118,8 +116,8 @@ function joinSegments(segments: string[], theme: ShellBarTheme): string {
 	return segments.join(` ${theme.fg(ROLE.SEPARATOR, SHELL_BAR_SEPARATOR)} `);
 }
 
-// Sidebar groups use structured fields, never positional compact-bar segments
-// or inferred meanings from opaque extension status strings.
+// 侧栏分组使用结构化字段，绝不使用按位置排列的紧凑栏分段，
+// 也绝不从含义不明的扩展状态字符串推断语义。
 export function renderShellSidebarBar(model: ShellBarModel, theme: ShellBarTheme, width: number): string[] {
 	const value = (text: string) => theme.fg(ROLE.VALUE, theme.bold(text));
 	const label = (text: string) => theme.fg(ROLE.LABEL, text);
@@ -155,8 +153,8 @@ export function renderShellSidebarBar(model: ShellBarModel, theme: ShellBarTheme
 		},
 		...(model.statuses.length ? [{ title: "Integrations", lines: model.statuses.map((status) => theme.fg(ROLE.STATUS, sanitizeStatus(status))) }] : []),
 	];
-	// Pre-wrap values before indenting so Unicode/ANSI continuation lines keep
-	// the same inset without consuming the card's right border.
+	// 先换行再缩进，使 Unicode/ANSI 的续行保持相同的缩进，
+	// 且不吞掉卡片的右边框。
 	const innerWidth = cardInnerWidth(width);
 	const inset = Math.min(1, innerWidth - 1);
 	const body = groups.flatMap((group, index) => [

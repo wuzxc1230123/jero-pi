@@ -36,14 +36,14 @@ function assertChoice1Order(haystack: string, anchors: readonly string[], surfac
 const countOccurrences = (haystack: string, needle: string): number => haystack.split(needle).length - 1;
 
 const DELEGATION_CHOICE1_ORDER = [
-	"complete a definitive lookup across open and closed issues for an equivalent defect",
-	"derive its evidence channel only from its build string",
-	"If the equivalent has no verifiable relevant published fix, add exactly one occurrence comment",
-	"A fix published only to the other evidence channel is not a relevant published fix",
-	"If the installed build predates that release, recommend installing the published fix",
-	"perform no further GitHub mutation and no blind retry",
-	"Confirmed creation requires the GitHub create operation to confirm a newly-created issue identity",
-	"execute the shared candidate-scoped continuation below",
+	"完成跨开放与已关闭 issue 的决定性查证，寻找等价缺陷",
+	"仅从其构建串推导其证据通道",
+	"若等价项无可验证的相关已发布修复，仅在那个确切的权威/等价 issue 上添加恰好一条只含观察证据的出现次数评论",
+	"仅发布到另一证据通道的修复不是本次出现的相关已发布修复",
+	"若已安装构建早于该 release，建议安装已发布修复",
+	"不再进行任何 GitHub 变更，也不盲目重试",
+	"确认的创建要求 GitHub 创建操作确认新创建 issue 的身份",
+	"执行下方共享的候选范围延续",
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -55,7 +55,7 @@ test("orchestrator-delegation.md carries the provider defect handoff section", (
 });
 
 test("orchestrator-delegation.md references the prerelease consent/v3 contract", () => {
-	assert.match(DELEGATION, /prerelease/i);
+	assert.match(DELEGATION, /预发布/i);
 	assert.match(DELEGATION, /gentle-ai\.review-integration\.consent\/v3/);
 });
 
@@ -66,8 +66,8 @@ test("orchestrator-delegation.md lists all three semantic choice tokens", () => 
 			`orchestrator-delegation.md missing semantic choice token: ${token}`,
 		);
 	}
-	assert.match(DELEGATION, /\*\*Continue without reporting\*\*: Perform no GitHub search, write, comment, or label, and no report-side privacy scan is required/);
-	assert.match(DELEGATION, /\*\*Stop here\*\*: Perform no GitHub operation and no decline invocation; preserve all consumer state and STOP/);
+	assert.match(DELEGATION, /\*\*不报告而继续\*\*：不执行任何 GitHub 检索、写入、评论或打标签，且无需报告侧隐私扫描/);
+	assert.match(DELEGATION, /\*\*就此停止\*\*：不执行任何 GitHub 操作，也不执行拒绝调用；保留全部消费者状态并停止/);
 });
 
 test("orchestrator-delegation.md orders the three choices: report_and_continue, continue_without_reporting, stop_here", () => {
@@ -90,105 +90,105 @@ test("orchestrator-delegation.md preserves the rc.8 choice-1 sub-bullet ordering
 });
 
 test("orchestrator-delegation.md states the admissibility-before-relay rule", () => {
-	assert.match(DELEGATION, /Before losslessly relaying any blocking choice envelope, classify its semantic admissibility/i);
-	assert.match(DELEGATION, /The test is what produced the failure, not what the work was doing when it happened/i);
+	assert.match(DELEGATION, /在无损中继任何阻塞选择封套之前，先判定其语义可受理性/i);
+	assert.match(DELEGATION, /判据是产生了失败的是什么，而非失败发生时工作在做什么/i);
 });
 
 test("orchestrator-delegation.md excludes local consent lifecycle outcomes from provider-defect reporting", () => {
-	assert.match(DELEGATION, /`consent-binding-expired` and `consent-binding-already-consumed` are local lifecycle outcomes, not Jero provider defects/i);
-	assert.match(DELEGATION, /An unknown consent binding is reportable only when independent evidence proves a fresh, same-session, unconsumed binding was lost/i);
-	assert.match(DELEGATION, /Never infer that evidence from the old combined stale-binding message/i);
+	assert.match(DELEGATION, /`consent-binding-expired` 与 `consent-binding-already-consumed` 是本地生命周期结果，不是 Jero 提供方缺陷/i);
+	assert.match(DELEGATION, /仅当独立证据证明一个新鲜的、同会话、未消费的绑定丢失时，未知同意绑定才可报告/i);
+	assert.match(DELEGATION, /绝不从旧的合并式过期绑定消息推断该证据/i);
 });
 
 test("orchestrator-delegation.md states the never-offer-to-repair rule", () => {
 	assert.match(
 		DELEGATION,
-		/never offer to switch to, inspect, modify, or directly repair the Jero repository/i,
+		/绝不在该工作流中提出切换到、检查、修改或直接修复 Jero 仓库/i,
 	);
-	assert.match(DELEGATION, /reject it as semantically inadmissible and issue this separate orchestrator-owned handoff envelope/i);
+	assert.match(DELEGATION, /将其判定为语义不可受理并拒绝，然后发出这个独立的编排器所有移交封套/i);
 });
 
 test("orchestrator-delegation.md states the consent requirement", () => {
-	assert.match(DELEGATION, /Ask the user first, in the active orchestrator conversation language/i);
-	assert.match(DELEGATION, /for explicit consent to report the apparent defect/i);
-	assert.match(DELEGATION, /one single-select blocking envelope with exactly three semantic choices in this order/i);
+	assert.match(DELEGATION, /先以当前编排器会话语言询问用户/i);
+	assert.match(DELEGATION, /征求报告该疑似缺陷的显式同意/i);
+	assert.match(DELEGATION, /呈现一个单选阻塞封套，恰好三个语义选项，按此顺序/i);
 });
 
 test("orchestrator-delegation.md states the privacy scrub requirement and ordering", () => {
-	assert.match(DELEGATION, /Immediately before the first GitHub operation, perform a final privacy scan/i);
-	assert.match(DELEGATION, /This scan precedes the definitive lookup, report creation, and occurrence comment/i);
-	assert.match(DELEGATION, /raw argv, absolute paths, private project names, usernames, hostnames, credentials, diffs, source contents, and environment values/i);
+	assert.match(DELEGATION, /恰在第一次 GitHub 操作之前执行最终隐私扫描/i);
+	assert.match(DELEGATION, /该扫描先于决定性查证、报告创建与出现次数评论/i);
+	assert.match(DELEGATION, /排除原始 argv、绝对路径、私有项目名、用户名、主机名、凭据、diff、源码内容与环境值/i);
 });
 
 test("orchestrator-delegation.md states the definitive lookup gate", () => {
-	assert.match(DELEGATION, /complete a definitive lookup across open and closed issues for an equivalent defect or canonical tracker/i);
-	assert.match(DELEGATION, /completed open\+closed lookup with a classifiable result; incomplete, error, or unknown is not definitive/i);
-	assert.match(DELEGATION, /Only a definitive lookup may branch to GitHub mutation/i);
+	assert.match(DELEGATION, /完成跨开放与已关闭 issue 的决定性查证，寻找等价缺陷或权威追踪 issue/i);
+	assert.match(DELEGATION, /决定性查证是已完成开放\+关闭检索且结果可分类；不完整、出错或未知都不算决定性/i);
+	assert.match(DELEGATION, /仅决定性查证才可分支到 GitHub 变更/i);
 });
 
 test("orchestrator-delegation.md states evidence-channel routing from installed build string", () => {
-	assert.match(DELEGATION, /derive its evidence channel only from its build string/i);
-	assert.match(DELEGATION, /recognized prerelease tags are `-rc\.` and `-main\.`; every other build is stable/i);
-	assert.match(DELEGATION, /That release is a relevant published fix only when it is in the installed build's evidence channel/i);
-	assert.match(DELEGATION, /A main-only commit, local\/source build, unmerged PR, or unsupported assertion is not published-fix evidence/i);
+	assert.match(DELEGATION, /仅从其构建串推导其证据通道/i);
+	assert.match(DELEGATION, /契约认可的预发布标签是 `-rc\.` 与 `-main\.`；其他一切构建都是稳定版/i);
+	assert.match(DELEGATION, /仅当该 release 位于已安装构建的证据通道内时，它才是相关的已发布修复/i);
+	assert.match(DELEGATION, /仅 main 的提交、本地\/源码构建、未合并 PR 或无支撑的断言都不是已发布修复证据/i);
 });
 
 test("orchestrator-delegation.md states other-channel occurrence routing", () => {
-	assert.match(DELEGATION, /A fix published only to the other evidence channel is not a relevant published fix for this occurrence: add exactly one occurrence comment/i);
-	assert.match(DELEGATION, /note where the fix is published/i);
-	assert.match(DELEGATION, /Do not recommend switching channels; channel choice is the user's/i);
+	assert.match(DELEGATION, /仅发布到另一证据通道的修复不是本次出现的相关已发布修复：仅在那个确切的权威\/等价 issue 上添加恰好一条只含观察证据的出现次数评论/i);
+	assert.match(DELEGATION, /并注明修复发布于何处/i);
+	assert.match(DELEGATION, /不建议切换通道；通道选择权在用户/i);
 });
 
 test("orchestrator-delegation.md states outdated-build and regression routing", () => {
-	assert.match(DELEGATION, /If the installed build predates that release, recommend installing the published fix and reproducing; do not create or comment for that occurrence yet/i);
-	assert.match(DELEGATION, /treat it as a possible regression: reproduction on a build proven to contain that fix/i);
-	assert.match(DELEGATION, /comment on a suitable canonical tracker, or create a linked regression issue when that tracker is unsuitable/i);
-	assert.match(DELEGATION, /Never reopen automatically/i);
+	assert.match(DELEGATION, /若已安装构建早于该 release，建议安装已发布修复并复现；暂不为该次出现创建或评论/i);
+	assert.match(DELEGATION, /按疑似回归处理：在经证明包含该修复的构建上复现/i);
+	assert.match(DELEGATION, /在合适的权威追踪 issue 上评论，或当该追踪 issue 不合适时创建关联的回归 issue/i);
+	assert.match(DELEGATION, /绝不自动 reopen/i);
 });
 
 test("orchestrator-delegation.md states confirmed-creation identity requirement", () => {
-	assert.match(DELEGATION, /Confirmed creation requires the GitHub create operation to confirm a newly-created issue identity\/URL/i);
-	assert.match(DELEGATION, /Never infer creation from output text alone/i);
+	assert.match(DELEGATION, /确认的创建要求 GitHub 创建操作确认新创建 issue 的身份\/URL/i);
+	assert.match(DELEGATION, /绝不仅凭输出文本推断创建成功/i);
 });
 
 test("orchestrator-delegation.md states the uncertainty continuation (decline invocation runs, not withheld)", () => {
-	assert.match(DELEGATION, /perform no further GitHub mutation and no blind retry/i);
+	assert.match(DELEGATION, /不再进行任何 GitHub 变更，也不盲目重试/i);
 	assert.match(
 		DELEGATION,
-		/execute the exact captured provider-owned decline invocation exactly once, validate it, re-enter native negotiated STATUS, and resume the already-held consumer continuation/i,
+		/恰好一次执行精确捕获的提供方所有拒绝调用，校验它，重入原生协商 STATUS，并恢复已持有的消费者延续/i,
 	);
-	assert.match(DELEGATION, /do not search, comment, update, or retry creation until the exact created issue identity is resolved, then use the uncertainty continuation below/i);
+	assert.match(DELEGATION, /在确切的已创建 issue 身份得到解决之前，不要检索、评论、更新或重试创建，然后使用下方的不确定性延续/i);
 });
 
 test("orchestrator-delegation.md states the exact-captured-decline-invocation rule", () => {
-	assert.match(DELEGATION, /Both continue choices execute that exact captured decline invocation exactly once/i);
-	assert.match(DELEGATION, /`choices\[answer="declined"\]\.invocation` from the `gentle-ai\.review-integration\.consent\/v3` envelope/i);
+	assert.match(DELEGATION, /两个继续选项都恰好一次执行那个精确捕获的拒绝调用/i);
+	assert.match(DELEGATION, /`gentle-ai\.review-integration\.consent\/v3` 封套中精确捕获的提供方所有 `choices\[answer="declined"\]\.invocation`/i);
 	assert.match(
 		DELEGATION,
-		/Never synthesize the decline command, target, token, or consumer continuation from prose/i,
+		/绝不由散文合成拒绝命令、目标、令牌或消费者延续/i,
 	);
-	assert.match(DELEGATION, /fail closed with all consumer state preserved and do not run a substitute command/i);
-	assert.match(DELEGATION, /validate `action: "declined"`, `consent: "declined_this_candidate"`, and the exact target identity match/i);
+	assert.match(DELEGATION, /保守失败：保留全部消费者状态，且不运行任何替代命令/i);
+	assert.match(DELEGATION, /校验 `action: "declined"`、`consent: "declined_this_candidate"` 与精确目标身份匹配/i);
 });
 
 test("orchestrator-delegation.md states handoff scope and mode preservation", () => {
-	assert.match(DELEGATION, /Do not invoke `\/jero:review-mode disable` at clone or global scope within this handoff/i);
-	assert.match(DELEGATION, /Do not turn RDD off or on within this handoff/i);
-	assert.match(DELEGATION, /The result carries no lineage or receipt; ordinary delivery is unmanaged by the candidate choice, and the next candidate asks again/i);
+	assert.match(DELEGATION, /在本移交内，不得在 clone 或 global 范围调用 `\/jero:review-mode disable`/i);
+	assert.match(DELEGATION, /在本移交内，不得开启或关闭 RDD/i);
+	assert.match(DELEGATION, /该结果不携带 lineage 或回执；普通交付不受候选选择管理，下一个候选会再次询问/i);
 });
 
 test("orchestrator-delegation.md states observed-evidence reporting", () => {
-	assert.match(DELEGATION, /Report observed evidence, not an unconfirmed root cause/i);
-	assert.match(DELEGATION, /sanitized version\/build, OS\/architecture\/client/i);
-	assert.match(DELEGATION, /bounded attempts and outcomes, failure envelopes, mutation outcome/i);
-	assert.match(DELEGATION, /expected and actual behavior, a minimal reproduction/i);
-	assert.match(DELEGATION, /safe opaque reason\/revision identifiers, and preserved-state evidence/i);
+	assert.match(DELEGATION, /报告观察到的证据，而非未经确证的根本原因/i);
+	assert.match(DELEGATION, /脱敏后的版本\/构建、OS\/架构\/客户端/i);
+	assert.match(DELEGATION, /有界的尝试与结果、失败封套、变更结果/i);
+	assert.match(DELEGATION, /预期与实际行为、最小复现/i);
+	assert.match(DELEGATION, /安全的不透明原因\/修订标识符，以及保留状态证据/i);
 });
 
 test("orchestrator-delegation.md states the resume route (published fix or maintainer-authorized recovery)", () => {
-	assert.match(DELEGATION, /Resume after an installed published fix or an explicit maintainer-authorized, documented native recovery or reset/i);
-	assert.match(DELEGATION, /A published prerelease or release candidate the user installed satisfies this/i);
-	assert.match(DELEGATION, /Never resume against unpublished code: a source checkout, a local build, or an unmerged pull request/i);
+	assert.match(DELEGATION, /仅在已安装的已发布修复，或运行时契约支持的、维护者显式授权且有文档记载的原生恢复或重置之后才恢复/i);
+	assert.match(DELEGATION, /用户安装的已发布预发布版或 release candidate 满足此条件/i);
+	assert.match(DELEGATION, /绝不对未发布代码恢复：源码 checkout、本地构建或未合并 PR/i);
 });
 
 // ---------------------------------------------------------------------------
@@ -237,7 +237,7 @@ test("sdd-orchestrator-workflow.md points provider defects to the complete deleg
 	assert.match(SDD_WORKFLOW, /## Provider Defect Handoff/);
 	assert.match(
 		SDD_WORKFLOW,
-		/The full contract lives in `assets\/orchestrator-delegation\.md` under `#### Jero Provider Defect Handoff \(MANDATORY\)`/i,
+		/完整契约位于 `assets\/orchestrator-delegation\.md` 的 `#### Jero Provider Defect Handoff \(MANDATORY\)`/i,
 	);
 	assert.match(DELEGATION, /^#### Jero Provider Defect Handoff \(MANDATORY\)$/m);
 	assert.doesNotMatch(SDD_WORKFLOW, /`report_and_continue`|`continue_without_reporting`|`stop_here`/);

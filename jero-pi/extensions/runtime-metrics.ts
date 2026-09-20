@@ -2,17 +2,17 @@ import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-a
 import { EFFORTS, ORCHESTRATOR_AGENT_CLASS, RuntimeMetrics, UNKNOWN_AGENT_CLASS, type FinalResponse, type RuntimeMetricBucket, type TokenMeasurement } from "../lib/runtime-metrics.ts";
 import { CHILD_METRICS_EVENT, CHILD_METRICS_REVOKED, snapshotChildEvent } from "../lib/runtime-metrics-children.ts";
 
-/** Test-only seam: the active session's local accounting snapshot, if any. */
+/** 仅测试用的接缝：活动会话的本地记账快照（若有）。 */
 export let liveSessionMetrics: () => { id: string; snapshot: readonly RuntimeMetricBucket[] } | undefined = () => undefined;
 
-/** Local-only runtime metrics host (jero-pi design §5.4).
- * The native delivery path — one deferred send attempt, print-mode shutdown
- * join, DO_NOT_TRACK/CI policy gates — was deleted together with the
- * gentle-ai binary: jero-pi keeps no outbound telemetry. What remains is
- * in-process accounting: assistant usage rows and CHILD_METRICS_EVENT
- * aggregation into a per-session RuntimeMetrics snapshot, held in memory
- * only. Views that want per-task usage read the child-event stream directly
- * (Agents view).
+/** 仅本地的运行时指标宿主（jero-pi 设计 §5.4）。
+ * 原生投递路径——一次延迟发送尝试、打印模式停机
+ * 汇合、DO_NOT_TRACK/CI 策略门控——已随 gentle-ai
+ * 二进制一同删除：jero-pi 不保留任何外发遥测。剩下的
+ * 是进程内记账：助手用量行与 CHILD_METRICS_EVENT
+ * 聚合到每会话的 RuntimeMetrics 快照，仅保存在内存
+ * 中。需要按任务用量的视图直接读取子事件流
+ * （Agents 视图）。
  */
 export default function runtimeMetrics(pi: ExtensionAPI, env = process.env, now: () => number = () => performance.now()): void {
 	if (env.JERO_PI_AGENTS_CHILD === "1") return;
@@ -22,7 +22,7 @@ export default function runtimeMetrics(pi: ExtensionAPI, env = process.env, now:
 	let requestSeen = false;
 	let ambiguous = false;
 	let live: { id: string; ctx: ExtensionContext; started: number; metrics: RuntimeMetrics; seen: WeakSet<object>; children: Set<string>; recorded: number } | undefined;
-	// Test-only seam: the local snapshot is otherwise private state.
+	// 仅测试用的接缝：本地快照本是私有状态。
 	liveSessionMetrics = () => (live ? { id: live.id, snapshot: live.metrics.snapshot() } : undefined);
 	const missing = { state: "unavailable" } as const;
 	function invalidate() { selection = undefined; ambiguous = true; }
@@ -33,10 +33,10 @@ export default function runtimeMetrics(pi: ExtensionAPI, env = process.env, now:
 	}
 	function record(owner: NonNullable<typeof live>, responses: FinalResponse[]): void {
 		if (!responses.length) return;
-		// Ephemeral event-local accounting only; source IDs never enter these
-		// rows. The session-lifetime recorder owns the whole dedupe id space:
-		// every row gets a fresh id regardless of any source responseId
-		// (upstream regenerated the space per delivery batch, which is gone).
+		// 仅限事件本地的临时记账；来源 ID 绝不进入这些
+		// 数据行。会话生命期的记录器拥有整个去重 id 空间：
+		// 每一行都拿到全新 id，与任何来源 responseId 无关
+		// （上游曾按投递批次重新生成该空间，现已移除）。
 		for (const row of responses) {
 			owner.metrics.record({ ...row, responseId: String(owner.recorded++) });
 		}
@@ -47,9 +47,9 @@ export default function runtimeMetrics(pi: ExtensionAPI, env = process.env, now:
 			const event = snapshotChildEvent(value);
 			if (!owner || !event || event.parentSessionId !== owner.id
 				|| event.launchedAt < owner.started || owner.children.has(event.taskId)) return;
-			owner.children.add(event.taskId); // Busy/failed completions stay consumed.
+			owner.children.add(event.taskId); // 忙碌/失败的完成通知保持已消费状态。
 			record(owner, event.responses);
-		} catch { /* No metrics error enters the shared event bus. */ }
+		} catch { /* 任何指标错误都不进入共享事件总线。 */ }
 	});
 	const offRevoke = pi.events.on(CHILD_METRICS_REVOKED, id => {
 		if (live?.id === id) dispose();
@@ -71,7 +71,7 @@ export default function runtimeMetrics(pi: ExtensionAPI, env = process.env, now:
 		requestSeen = true;
 		if (!active || ambiguous) return;
 		let effort: FinalResponse["effort"] = "unavailable";
-		try { const value = pi.getThinkingLevel(); if (EFFORTS.includes(value)) effort = value; } catch { /* No evidence. */ }
+		try { const value = pi.getThinkingLevel(); if (EFFORTS.includes(value)) effort = value; } catch { /* 无证据。 */ }
 		selection = { selectedProvider: typeof ctx.model?.provider === "string" && ctx.model.provider.length <= 128 ? ctx.model.provider : undefined,
 			selectedModelId: typeof ctx.model?.id === "string" && ctx.model.id.length <= 128 ? ctx.model.id : undefined, effort };
 	});
@@ -101,6 +101,6 @@ export default function runtimeMetrics(pi: ExtensionAPI, env = process.env, now:
 					cacheWrite: token(message.usage?.cacheWrite), reasoning: token(message.usage?.reasoning), totalTokens: token(message.usage?.totalTokens) },
 				responseHeadersMs: missing, fullResponseMs: missing }]);
 			invalidate();
-		} catch { /* Provider hooks never expose metrics failures. */ }
+		} catch { /* 提供方钩子绝不暴露指标失败。 */ }
 	});
 }

@@ -1,7 +1,7 @@
 import { sanitizeTerminalText } from "./terminal-theme.ts";
 
-// Gentle Agents transcript: a child's session JSONL rendered as markdown a
-// human can read in an editor. Thinking is left out; tool output keeps a tail.
+// Gentle Agents 转录：将子进程的会话 JSONL 渲染为人可在编辑器中阅读的
+// markdown。思考内容被省略；工具输出保留尾部。
 
 export interface TranscriptOptions {
 	title: string;

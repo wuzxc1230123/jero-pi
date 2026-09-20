@@ -1,14 +1,13 @@
 import type { JeroLensName, JeroReviewMode, JeroReviewStateName } from "./protocol.ts";
 import type { JeroCollectTransitionPayloadV1, JeroExecuteTransitionPayloadV1 } from "./collect-inputs.ts";
 
-// Pure review-authority transition table (spec §A.2), the persisted→wire
-// state projection (spec §A.1), and status action/reason-code derivation
-// (spec §C.3). No IO, no environment reads, no store access — every function
-// here is a total function over typed inputs so the illegal-transition
-// battery can pin each fail-closed case without fixtures.
+// 纯粹的评审权威转移表（spec §A.2）、持久化→线上状态投影（spec §A.1），
+// 以及状态动作/原因码派生（spec §C.3）。无 IO、无环境读取、无存储访问
+// ——这里的每个函数都是对类型化输入的全函数，使非法转移测试组无需
+// fixture 即可钉住每个保守失败用例。
 
 // ---------------------------------------------------------------------------
-// §A.1 Persisted (13) → wire (15) state projection
+// §A.1 持久化（13 态）→ 线上（15 态）状态投影
 // ---------------------------------------------------------------------------
 
 export const JERO_WIRE_REVIEW_STATES = [
@@ -24,12 +23,12 @@ const PERSISTED_TO_WIRE: Readonly<Record<JeroReviewStateName, JeroWireReviewStat
 	judges_confirmed: "judges_confirmed",
 	findings_frozen: "findings_frozen",
 	evidence_classified: "evidence_classified",
-	// The persisted record has no wire `correction_required`; the open
-	// correction phase (fix_required|fixing) projects onto it (spec §A.1).
+	// 持久化记录没有线上的 `correction_required`；开放的修正阶段
+	// （fix_required|fixing）投影到它上面（spec §A.1）。
 	fix_required: "correction_required",
 	fixing: "correction_required",
-	// fix_validating | ready_final_verification | final_verifying project onto
-	// the wire `validating` aggregate (spec §A.1).
+	// fix_validating | ready_final_verification | final_verifying 投影到
+	// 线上的 `validating` 聚合（spec §A.1）。
 	fix_validating: "validating",
 	ready_final_verification: "validating",
 	final_verifying: "validating",
@@ -38,7 +37,7 @@ const PERSISTED_TO_WIRE: Readonly<Record<JeroReviewStateName, JeroWireReviewStat
 	invalidated: "invalidated",
 };
 
-/** Persisted 13-state → wire 15-state projection (spec §A.1 mapping, locked by tests). */
+/** 持久化 13 态 → 线上 15 态投影（spec §A.1 映射，由测试锁定）。 */
 export function projectJeroReviewStateV1(state: JeroReviewStateName): JeroWireReviewState {
 	return PERSISTED_TO_WIRE[state];
 }
@@ -51,7 +50,7 @@ export function isJeroTerminalReviewStateV1(state: JeroReviewStateName): state i
 }
 
 // ---------------------------------------------------------------------------
-// §A.2 Transition table
+// §A.2 转移表
 // ---------------------------------------------------------------------------
 
 export const JERO_REVIEW_EVENT_KINDS = [
@@ -69,11 +68,11 @@ export interface JeroTransitionCheckV1 {
 	readonly reason?: string;
 }
 
-/** Guards that do not depend on record content beyond state/mode/counters. */
+/** 除状态/模式/计数器外不依赖记录内容的守卫。 */
 interface JeroTransitionGuardsV1 {
-	/** Ordinary: at most one correction transaction (fix_rounds ≤ 1). */
+	/** 普通：至多一个修正事务（fix_rounds ≤ 1）。 */
 	readonly fixRounds: number;
-	/** JD: at most two fix batches. */
+	/** JD：至多两个修正批次。 */
 	readonly fixBatches: number;
 }
 
@@ -84,10 +83,9 @@ export function isJeroOrdinaryModeV1(mode: JeroReviewMode): boolean {
 }
 
 /**
- * The definitive transition table over persisted states (spec §A.2). Every
- * entry not listed here is illegal; every mutation from a terminal state is
- * illegal regardless of mode; cross-mode events (a Judgment Day event on an
- * ordinary lineage and vice versa) are illegal while preserving counters.
+ * 持久化状态之上的权威转移表（spec §A.2）。未在此列出的每个条目都
+ * 非法；从终局状态出发的每个变更无论模式如何都非法；跨模式事件
+ * （普通血脉上的 Judgment Day 事件及反之）非法且保留计数器。
  */
 export function checkJeroReviewTransitionV1(
 	state: JeroReviewStateName,
@@ -97,9 +95,9 @@ export function checkJeroReviewTransitionV1(
 ): JeroTransitionCheckV1 {
 	const base = { from: state, event };
 	if (isJeroTerminalReviewStateV1(state) && event !== "escalate" && event !== "invalidate" && event !== "acknowledge") {
-		// ILLEGAL #1: terminal mutation fails closed. `escalate` from escalated
-		// and `invalidate` stay legal only as maintenance-surface no-ops that M5 owns;
-		// `acknowledge` is the one approved-only burn (row 10, authority-level).
+		// 非法 #1：终局变更保守失败。来自 escalated 的 `escalate` 与
+		// `invalidate` 仅作为 M5 拥有的维护表面空操作保持合法；
+		// `acknowledge` 是唯一的仅限 approved 的焚毁（行 10，权威层级）。
 		return { ...base, legal: false, reason: `terminal-state-${state}-is-immutable` };
 	}
 	if (event === "invalidate") {
@@ -114,17 +112,17 @@ export function checkJeroReviewTransitionV1(
 	}
 	const ordinary = isJeroOrdinaryModeV1(mode);
 	if (ordinary && (event === "confirm-judges" || event === "freeze-judgment-ledger")) {
-		// ILLEGAL #9: JD op on ordinary lineage.
+		// 非法 #9：普通血脉上的 JD 操作。
 		return { ...base, legal: false, reason: "cross-mode-operation-refused" };
 	}
 	if (!ordinary && (event === "freeze-ledger")) {
-		// The ordinary lens admission is not a JD event (JD freezes through its
-		// own judges_confirmed state).
+		// 普通评审视角受理不是 JD 事件（JD 经它自己的 judges_confirmed
+		// 状态冻结）。
 		return { ...base, legal: false, reason: "cross-mode-operation-refused" };
 	}
 	switch (event) {
 		case "freeze-ledger":
-			// ILLEGAL #2: lenses run exactly once, only from `reviewing`.
+			// 非法 #2：评审视角恰好运行一次，只能从 `reviewing` 出发。
 			return state === "reviewing"
 				? { ...base, legal: true, next: "findings_frozen" }
 				: { ...base, legal: false, reason: "lens-admission-requires-reviewing" };
@@ -137,19 +135,19 @@ export function checkJeroReviewTransitionV1(
 				? { ...base, legal: true, next: "findings_frozen" }
 				: { ...base, legal: false, reason: "judgment-freeze-requires-judges-confirmed" };
 		case "resolve-evidence":
-			// ILLEGAL #3: evidence resolution requires a frozen ledger.
+			// 非法 #3：证据裁决需要已冻结的台账。
 			return state === "findings_frozen"
 				? { ...base, legal: true, next: "evidence_classified" }
 				: { ...base, legal: false, reason: "resolve-evidence-requires-frozen-ledger" };
 		case "authorize-fix": {
-			// authorize-fix requires fix_required in EVERY mode. (The vestigial
-			// `judges_confirmed` disjunct is gone: a JD lineage never authorizes a
-			// fix from judges_confirmed — that state exits only via
-			// freeze-judgment-ledger, and the JD fix loop runs from fix_required.)
+			// authorize-fix 在“每种”模式下都要求 fix_required。（残留的
+			// `judges_confirmed` 析取分支已删除：JD 血脉绝不从
+			// judges_confirmed 授权修正——该状态只经
+			// freeze-judgment-ledger 离开，JD 修正循环从 fix_required 运行。）
 			if (state !== "fix_required") {
 				return { ...base, legal: false, reason: "authorize-fix-requires-fix-required" };
 			}
-			// ILLEGAL #4: a second correction transaction fails closed.
+			// 非法 #4：第二个修正事务保守失败。
 			if (ordinary && guards.fixRounds >= 1) return { ...base, legal: false, reason: "second-correction-refused" };
 			if (!ordinary && guards.fixBatches >= 2) return { ...base, legal: false, reason: "judgment-day-fix-budget-exhausted" };
 			return { ...base, legal: true, next: "fixing" };
@@ -163,8 +161,8 @@ export function checkJeroReviewTransitionV1(
 				? { ...base, legal: true, next: "ready_final_verification" }
 				: { ...base, legal: false, reason: "validate-fix-requires-fix-validating" };
 		case "reopen-fix":
-			// §A.2 row 7c: verification_failed reopens the correction (not a new
-			// transaction); nothing is charged.
+			// §A.2 行 7c：verification_failed 重开修正（不是新事务）；
+			// 不计费。
 			return state === "fix_validating"
 				? { ...base, legal: true, next: "fixing" }
 				: { ...base, legal: false, reason: "reopen-fix-requires-fix-validating" };
@@ -177,7 +175,7 @@ export function checkJeroReviewTransitionV1(
 				? { ...base, legal: true, next: "final_verifying" }
 				: { ...base, legal: false, reason: "finalize-outcome-requires-final-verifying" };
 		case "acknowledge":
-			// ILLEGAL #8: acknowledge on non-approved fails closed.
+			// 非法 #8：非 approved 上的 acknowledge 保守失败。
 			return state === "approved"
 				? { ...base, legal: true, next: "approved" }
 				: { ...base, legal: false, reason: "acknowledge-requires-approved" };
@@ -186,7 +184,7 @@ export function checkJeroReviewTransitionV1(
 	}
 }
 
-/** Mutable authority operations every terminal state refuses. The acknowledge burn is NOT in this list: it is authority-level (row 10), legal only from `approved`. */
+/** 每个终局状态都拒绝的变更类权威操作。acknowledge 焚毁不在该列表中：它是权威层级（行 10），仅从 `approved` 合法。 */
 export const JERO_TERMINAL_MUTATION_EVENTS: readonly JeroReviewEventKind[] = [
 	"freeze-ledger", "confirm-judges", "freeze-judgment-ledger", "resolve-evidence",
 	"authorize-fix", "apply-fix", "validate-fix", "reopen-fix",
@@ -194,12 +192,12 @@ export const JERO_TERMINAL_MUTATION_EVENTS: readonly JeroReviewEventKind[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// §C.3 Status action vocabulary and derivation
+// §C.3 状态动作词汇与派生
 // ---------------------------------------------------------------------------
 
-// The wire schema union (status-v2.schema.json action enum), NOT the narrower
-// upstream TS decoder set — spec discrepancy #2 resolves to the schema union:
-// real captures carry `action:"finalize"` and M2 owns that operation.
+// 线上 schema 联合（status-v2.schema.json 的 action 枚举），不是更窄的
+// 上游 TS 解码器集合——规范差异 #2 裁定为采用 schema 联合：真实捕获
+// 携带 `action:"finalize"`，而 M2 拥有该操作。
 export const JERO_STATUS_ACTIONS = [
 	"start", "finalize", "validate", "recover", "retry_final_verification",
 	"maintainer_action", "select_lineage", "repair_authority", "reconcile_finalize", "stop",
@@ -219,9 +217,9 @@ export interface JeroNextTransitionV1 {
 	readonly kind: "execute" | "collect" | "stop";
 	readonly reason_code: string;
 	readonly operation?: string;
-	/** M3 (spec §I.2): the collect payload — capture inputs built by collect-inputs.ts. */
+	/** M3（spec §I.2）：collect 载荷——由 collect-inputs.ts 构建的捕获输入。 */
 	readonly collect?: JeroCollectTransitionPayloadV1;
-	/** M3 (spec §I.2): the execute payload — typed operation bindings with preconditions and admitted artifacts. */
+	/** M3（spec §I.2）：execute 载荷——带前置条件与已受理产物的类型化操作绑定。 */
 	readonly execute?: JeroExecuteTransitionPayloadV1;
 }
 
@@ -236,9 +234,9 @@ export interface JeroStatusDerivationInputV1 {
 }
 
 /**
- * Derives the status action (schema-union vocabulary) and the authority's
- * routing `next_transition` from the persisted record (spec §C.3). Internal
- * routing derives from next_transition; the action is the summary vocabulary.
+ * 从持久化记录派生状态动作（schema 联合词汇）与权威的路由
+ * `next_transition`（spec §C.3）。内部路由派生自 next_transition；
+ * 动作是摘要词汇。
  */
 export function deriveJeroStatusActionV1(input: JeroStatusDerivationInputV1): { action: JeroStatusAction; next: JeroNextTransitionV1 } {
 	if (input.consumed) {
@@ -270,11 +268,10 @@ export function deriveJeroStatusActionV1(input: JeroStatusDerivationInputV1): { 
 		case "fixing":
 			return { action: "finalize", next: { kind: "collect", reason_code: "correction_plan_required", operation: "review.finalize" } };
 		case "fix_validating":
-			// §A.4 (Mi5 review ruling): the provider-targeted-validator vector is
-			// a self-contained COLLECT input — STATUS offers it with kind "collect"
-			// carrying the validator's request document, and review.validate is
-			// executed via the capture→admit→validate path (the extension consumes
-			// kind === "collect"), never executed directly from STATUS.
+			// §A.4（Mi5 评审裁决）：提供方定向 validator 向量是自包含的
+			// COLLECT 输入——STATUS 以 kind “collect” 提供它并携带 validator
+			// 的请求文档，review.validate 经 capture→admit→validate 路径执行
+			// （扩展消费 kind === “collect”），绝不从 STATUS 直接执行。
 			return { action: "validate", next: { kind: "collect", reason_code: "targeted_validation_ready", operation: "review.validate" } };
 		case "ready_final_verification":
 			return { action: "finalize", next: { kind: "collect", reason_code: "final_evidence_required", operation: "review.finalize" } };

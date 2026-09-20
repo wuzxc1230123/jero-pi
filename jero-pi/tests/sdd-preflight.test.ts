@@ -509,16 +509,16 @@ test("only a structurally valid parent-rendered preflight block can reach an SDD
 
 test("affirmative natural-language SDD requests trigger preflight without matching a finite phrase list", () => {
 	for (const text of [
-		"quiero hacer un proyecto con SDD",
+		"我想用 SDD 做一个项目",
 		"I want to build this with SDD",
-		"por favor usemos SDD para este cambio",
+		"请这次改动用 SDD 来做",
 	]) {
 		assert.equal(isSddPreflightTrigger(text), true, text);
 	}
 	for (const text of [
 		"Should we use SDD?",
-		"no quiero usar SDD por ahora",
-		"no necesito usar SDD",
+		"暂时不想用 SDD",
+		"不需要用 SDD",
 		"I don't want to use SDD",
 		"I use SDD sometimes",
 	]) {

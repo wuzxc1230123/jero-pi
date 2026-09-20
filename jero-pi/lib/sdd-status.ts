@@ -7,9 +7,9 @@ import {
 	type DomainCollision,
 } from "./openspec-guardrails.ts";
 
-// Canonical names match gentle-ai, which owns this contract. The dual-store
-// mode was called "both" here; "hybrid" is the provider's name for the same
-// thing, and normalizeSddArtifactStore keeps already-persisted "both" loading.
+// 权威命名与 gentle-ai 一致，该契约归 gentle-ai 所有。双存储
+// 模式在此处曾名为 "both"；"hybrid" 是提供方对同一事物的命名，
+// normalizeSddArtifactStore 保证已持久化的 "both" 仍可加载。
 export type SddArtifactStore = "openspec" | "engram" | "hybrid" | "none";
 export type ArtifactState = "missing" | "done" | "partial";
 export type DependencyState = "blocked" | "ready" | "all_done" | "not_applicable";
@@ -96,11 +96,11 @@ export interface SddStatus {
 	artifactPaths: SddArtifactPaths;
 	contextFiles: SddArtifactPaths;
 	artifacts: Record<keyof SddArtifactPaths, ArtifactState>;
-	/** Implementation-owned progress; malformed markers remain unresolved here. */
+	/** 实现侧拥有的进度；格式错误的标记在此保持未解决。 */
 	taskProgress: SddTaskProgress;
-	/** Visible parent/orchestrator lifecycle actions, excluded from apply completion. */
+	/** 父级/编排器可见的生命周期动作，不计入 apply 完成度。 */
 	deferredParentActions: SddTaskProgress;
-	/** Stable diagnostics for malformed ownership markers. */
+	/** 针对格式错误的所有权标记的稳定诊断。 */
 	taskArtifactErrors: string[];
 	applyState: ApplyState;
 	dependencies: Record<SddPhase, DependencyState>;
@@ -109,20 +109,19 @@ export interface SddStatus {
 	collisions: SddDomainCollisionReport[];
 	legacyFlatSpec?: { path: string; hasDomainSpecs: boolean };
 	/**
-	 * Positive terminal projection: the change was archived. `path` is the
-	 * repo-relative archive folder (openspec/changes/archive/YYYY-MM-DD-<change>).
-	 * When set, `nextRecommended` is "archived" and no further phase is recommended.
+	 * 正向终态投影：该变更已归档。`path` 是仓库相对路径的
+	 * 归档目录 (openspec/changes/archive/YYYY-MM-DD-<change>)。
+	 * 设置后 `nextRecommended` 为 "archived"，且不再推荐任何后续阶段。
 	 */
 	archived?: { path: string };
 	nextRecommended: SddNextRecommended;
 	instructions?: SddPhaseInstructions;
 	blockedReasons: string[];
 	/**
-	 * True when the native status engine is not authoritative for the selected
-	 * artifact store (engram, none, or both without an openspec/ directory).
-	 * When true, `dependencies`, `applyState`, and `blockedReasons` must not be
-	 * treated as real blockers — resolve readiness from Engram instead.
-	 * Defaults to false on all authoritative (openspec / both-with-disk) paths.
+	 * 当原生状态引擎对所选产物存储（engram、none，或没有 openspec/ 目录的
+	 * both）不具备权威性时为 true。为 true 时，`dependencies`、`applyState`
+	 * 与 `blockedReasons` 不得被视为真实阻塞 —— 应改为从 Engram 解析就绪状态。
+	 * 在所有权威路径（openspec / 带磁盘的 both）上默认为 false。
 	 */
 	isNonAuthoritative: boolean;
 }
@@ -265,7 +264,7 @@ function reportIsClearlyPassing(path: string | undefined): boolean {
 	return hasPassSignal && !hasBlocker;
 }
 
-// Planning routes repair the first incomplete prerequisite; diagnostics remain separate.
+// 规划路由修复第一个未完成的前置条件；诊断保持独立。
 function planningRecommendation(artifacts: SddStatus["artifacts"], taskTotal: number): SddNextRecommended {
 	if (artifacts.proposal !== "done") return "sdd-propose";
 	if (artifacts.specs !== "done") return "sdd-spec";
@@ -322,10 +321,10 @@ function emptyStatus(cwd: string, changeName: string | null, blockedReasons: str
 }
 
 /**
- * Find the newest archive entry for a change. Archive folders are named
- * `YYYY-MM-DD-<change>`; only an exact `-<change>` suffix after a full date
- * prefix matches (change "foo-bar" never matches "2026-01-01-foo-bar-baz").
- * safeDirectories sorts lexicographically, so the last match is the newest date.
+ * 查找某个变更的最新归档条目。归档目录命名为
+ * `YYYY-MM-DD-<change>`；只有完整日期前缀之后紧跟精确 `-<change>` 后缀才匹配
+ * （变更 "foo-bar" 永远不会匹配 "2026-01-01-foo-bar-baz"）。
+ * safeDirectories 按字典序排序，因此最后一个匹配项即为最新日期。
  */
 function findArchivedChangeEntry(root: string, changeName: string): string | undefined {
 	return safeDirectories(join(root, "openspec", "changes", "archive"))
@@ -336,7 +335,7 @@ function findArchivedChangeEntry(root: string, changeName: string): string | und
 		.at(-1);
 }
 
-/** Positive terminal projection for a change whose folder moved to the archive. */
+/** 针对目录已移入归档的变更的正向终态投影。 */
 function archivedStatus(cwd: string, changeName: string, archiveEntry: string, artifactStore: SddArtifactStore): SddStatus {
 	const status = emptyStatus(cwd, changeName, [], artifactStore);
 	status.applyState = "all_done";
@@ -407,8 +406,8 @@ export function renderPhaseInstructions(status: SddStatus): SddPhaseInstructions
 }
 
 /**
- * Build the single canonical non-authoritative SddStatus.
- * All non-authoritative return sites must call this instead of constructing by hand.
+ * 构建非权威 SddStatus 的唯一权威构造函数。
+ * 所有非权威返回点必须调用此函数，而不是手工构造。
  */
 function nonAuthoritativeStatus(cwd: string, changeName: string | null, store: SddArtifactStore, includeInstructions?: boolean): SddStatus {
 	const root = resolve(cwd);
@@ -459,19 +458,19 @@ function nonAuthoritativeStatus(cwd: string, changeName: string | null, store: S
 }
 
 export function resolveSddStatus(options: ResolveSddStatusOptions): SddStatus {
-	// Safety net: when the store is unknown (undefined) and there is no openspec/ directory
-	// on disk, don't emit the openspec "no changes / blocked" status — it would be a false
-	// block for an engram or none session that hasn't been identified yet. Treat it as
-	// non-authoritative instead. A genuine openspec session will have the directory.
+	// 安全网：当存储未知（undefined）且磁盘上没有 openspec/ 目录时，
+	// 不要输出 openspec 的 "no changes / blocked" 状态 —— 那对尚未被识别的
+	// engram 或 none 会话会是误报阻塞。改为
+	// 按非权威处理。真正的 openspec 会话必然有该目录。
 	const hasOpenSpecDir = existsSync(join(resolve(options.cwd), "openspec"));
 	const store: SddArtifactStore =
 		options.artifactStore ?? (hasOpenSpecDir ? "openspec" : "none");
 
-	// Single decision point: non-authoritative when the disk engine cannot resolve authoritatively.
-	// Cases:
-	//   - store engram or none: always non-authoritative (no disk backing)
-	//   - store both, no openspec/ dir: non-authoritative (no disk to scan)
-	// The both-with-openspec cases are handled below after listing active changes.
+	// 单一决策点：磁盘引擎无法权威解析时即为非权威。
+	// 情形：
+	//   - store 为 engram 或 none：始终非权威（无磁盘后备）
+	//   - store 为 both 且无 openspec/ 目录：非权威（无磁盘可扫描）
+	// both 且有 openspec 的情形在下方列出活跃变更后再处理。
 	if (store === "engram" || store === "none" || (store === "hybrid" && !hasOpenSpecDir)) {
 		const changeName = options.changeName?.trim() || null;
 		return nonAuthoritativeStatus(options.cwd, changeName, store, options.includeInstructions);
@@ -487,16 +486,16 @@ export function resolveSddStatus(options: ResolveSddStatusOptions): SddStatus {
 		if (activeChanges.length === 1) {
 			changeName = activeChanges[0];
 		} else if (activeChanges.length === 0) {
-			// store both + openspec/ present + zero active changes + no changeName:
-			// The change may live only in Engram — non-authoritative, not a false block.
-			// Pure openspec with zero changes is a real block (run sdd-new).
+			// store 为 both + openspec/ 存在 + 零个活跃变更 + 无 changeName：
+			// 该变更可能只存在于 Engram —— 非权威，而非误报阻塞。
+			// 纯 openspec 且零个变更是真实阻塞（运行 sdd-new）。
 			if (store === "hybrid") {
 				return nonAuthoritativeStatus(options.cwd, null, store, options.includeInstructions);
 			}
 			return emptyStatus(root, null, ["No active SDD changes found."], store);
 		} else {
-			// Multiple active changes and no changeName: legit selection prompt (changes DO exist
-			// on disk). Keep the existing authoritative ambiguous-selection behavior for both stores.
+			// 多个活跃变更且无 changeName：合法的选择提示（变更确实存在于
+			// 磁盘）。对两种存储都保持既有的权威歧义选择行为。
 			return emptyStatus(root, null, [
 				`Change selection is ambiguous: ${activeChanges.join(", ")}.`,
 			], store);
@@ -504,14 +503,14 @@ export function resolveSddStatus(options: ResolveSddStatusOptions): SddStatus {
 	}
 
 	if (!activeChanges.includes(changeName)) {
-		// store both + openspec/ present + named change NOT found on disk:
-		// The change may live only in Engram — non-authoritative.
-		// Pure openspec still blocks (legit "run sdd-new").
+		// store 为 both + openspec/ 存在 + 指名变更未在磁盘上找到：
+		// 该变更可能只存在于 Engram —— 非权威。
+		// 纯 openspec 仍然阻塞（合法的 "run sdd-new"）。
 		if (store === "hybrid") {
 			return nonAuthoritativeStatus(options.cwd, changeName, store, options.includeInstructions);
 		}
-		// Issue #535: an absent active folder may mean the change was archived.
-		// Project explicit completion instead of a false "run sdd-new" block.
+		// Issue #535：活跃目录缺失可能意味着该变更已归档。
+		// 投影出明确的完成状态，而不是误报 "run sdd-new" 阻塞。
 		const archiveEntry = findArchivedChangeEntry(root, changeName);
 		if (archiveEntry) {
 			return archivedStatus(root, changeName, archiveEntry, store);
@@ -708,7 +707,7 @@ export function renderSddDispatcherMarkdown(status: SddStatus): string {
 		: status.blockedReasons.length > 0
 			? ["### Blocked", ...status.blockedReasons.map((reason) => `- ${reason}`)].join("\n")
 			: "### Ready\nThe next phase may be delegated with the attached status JSON and phase instructions.";
-	// For non-authoritative status, skip the unsafe SddPhase cast on nextRecommended
+	// 对非权威状态，跳过对 nextRecommended 的不安全 SddPhase 类型断言
 	const instructionsSection = isNonAuthoritative
 		? []
 		: (status.instructions?.[status.nextRecommended.replace(/^sdd-/, "") as SddPhase] ?? []).map(
@@ -782,7 +781,7 @@ export function parseSddStatusCommandArgs(args: string): { changeName?: string; 
 }
 
 export function sddStatusSeverity(status: SddStatus): "info" | "warning" {
-	// Non-authoritative status has no real blockers — always info
+	// 非权威状态没有真实阻塞 —— 始终为 info
 	if (isNonAuthoritativeStatus(status)) return "info";
 	return status.blockedReasons.length > 0 || Object.values(status.dependencies).includes("blocked")
 		? "warning"

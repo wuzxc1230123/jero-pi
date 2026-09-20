@@ -1,42 +1,38 @@
-// Gentle Agents completion delivery queue (issue #867).
+// Gentle Agents 完成投递队列（issue #867）。
 //
-// A background subagent completion used to be handed straight to the host as a
-// `deliverAs: "followUp"` message, but the host only flushes that queue when
-// the parent agent stops calling tools entirely. In a long orchestrator run
-// the notification could therefore land tens of minutes after the parent
-// already pulled the same result through subagent_result. This module owns the
-// pending completions instead: the extension enqueues at settle time, decides
-// freshness at flush time, and drops whatever the parent already consumed. It
-// is dependency-free and clock-agnostic: every timestamp is passed in, so the
-// behavior is unit-testable against a fake clock.
+// 后台子代理的完成结果过去会以 `deliverAs: "followUp"` 消息直接交给宿主，
+// 但宿主只在父代理完全停止调用工具时才清空该队列。在长时间的编排器运行中，
+// 通知可能在父代理早已通过 subagent_result 拉取同一结果之后数十分钟才
+// 到达。本模块改为自行持有待处理的完成项：扩展在任务落定时入队，在清空时
+// 判定新鲜度，并丢弃父代理已消费的内容。它无依赖且与时钟无关：所有时间戳
+// 都由外部传入，因此行为可以针对假时钟做单元测试。
 
 /**
- * A completion older than this at flush time is stale: the parent had many
- * turns to pull the result with subagent_result, so replaying it into the
- * model context would re-enter state the conversation may already have used.
- * Ninety seconds comfortably covers one slow orchestrator turn (model latency
- * plus a few tool calls) while staying orders of magnitude below the 50-58
- * minute followUp delays measured in issue #867.
+ * 清空时早于该时长的完成项即为过期：父代理已有多个回合可以用
+ * subagent_result 拉取结果，重放进模型上下文会重新进入会话可能早已
+ * 使用过的状态。九十秒足以从容覆盖一个缓慢的编排器回合（模型延迟加
+ * 上若干次工具调用），同时仍比 issue #867 中实测的 50-58 分钟 followUp
+ * 延迟低几个数量级。
  */
 export const STALE_COMPLETION_MS = 90_000;
 
 export interface DeliverableCompletion<T> {
-	/** The settled task exactly as enqueued. */
+	/** 入队时的已落定任务原样保留。 */
 	task: T;
-	/** Clock value passed to enqueue when the task settled. */
+	/** 任务落定时传给 enqueue 的时钟值。 */
 	settledAt: number;
-	/** True once now - settledAt has reached STALE_COMPLETION_MS. */
+	/** 当 now - settledAt 达到 STALE_COMPLETION_MS 后为 true。 */
 	stale: boolean;
 }
 
 export interface CompletionQueue<T extends { id: string }> {
-	/** Record a settled completion. At most one record per task id; a duplicate enqueue for a delivered, pending, or consumed id is a no-op. */
+	/** 记录一个已落定的完成项。每个任务 id 至多一条记录；对已投递、待处理或已消费 id 的重复入队是空操作。 */
 	enqueue(task: T, settledAt: number): void;
-	/** Mark a task's result as already consumed by the parent. Idempotent; unknown ids are remembered so a later completion is suppressed. */
+	/** 将任务结果标记为已被父代理消费。幂等；未知 id 也会被记住，以抑制后续的完成项。 */
 	consume(taskId: string): void;
-	/** Remove and return the still-pending completions in settle order, each with its staleness decision at `now`. Consumed entries are dropped and never returned. */
+	/** 按落定顺序移除并返回仍待处理的完成项，每项附带其在 `now` 时刻的过期判定。已消费条目被丢弃且永不返回。 */
 	takeDeliverable(now: number): Array<DeliverableCompletion<T>>;
-	/** Discard everything: pending completions and consumed/delivered bookkeeping. Used on session start and shutdown so nothing replays after a resume. */
+	/** 丢弃一切：待处理的完成项以及已消费/已投递的簿记。用于会话启动和关闭，确保恢复后不会重放任何内容。 */
 	dropAll(): void;
 }
 

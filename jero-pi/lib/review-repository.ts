@@ -108,19 +108,15 @@ export function assertManagedStorePathV1(commonDirectory: string, path: string):
 	return resolved;
 }
 
-// Pinned root-set identity (resolves RESL-001): the repository/authority
-// identity is derived from a root-commit set that is computed once, the
-// first time this repository's review store is resolved, and then
-// persisted beside the store as `IDENTITY`. Every later resolution reuses
-// that pinned set for `repository_id`/`authority_id` instead of
-// recomputing identity from git's live root-commit set, so an unrelated
-// orphan branch or subtree merge added afterward cannot change identity
-// and orphan the store. The live root-commit set is still recomputed on
-// every call, but only to validate that the pinned set remains a SUBSET
-// of it — an orphan branch adds roots (subset holds, store keeps
-// working); a store transplanted into an unrelated repository or a
-// history rewrite that removes a pinned root commit breaks the subset
-// and fails closed with the same authority-mismatch semantics as before.
+// 钉住的根集身份（解决 RESL-001）：仓库/权威身份派生自一个只计算一次
+// 的根提交集合——第一次解析该仓库的评审存储时计算，随后作为
+// `IDENTITY` 持久化在存储旁边。此后的每次解析都复用该钉住集合来
+// 生成 `repository_id`/`authority_id`，而不是从 git 的实时根提交集合
+// 重新计算身份，因此事后加入的无关孤立分支或子树合并无法改变身份、
+// 使存储成为孤儿。实时根提交集合在每次调用时仍会重新计算，但只是
+// 为了校验钉住集合仍是它的子集——孤立分支增加根（子集仍成立，
+// 存储继续可用）；存储被移植到无关仓库、或移除了某个钉住根提交的
+// 历史重写会破坏子集关系，并以与从前相同的权威不匹配语义保守失败。
 export const IDENTITY_FILENAME = "IDENTITY";
 
 function pinnedIdentityPathV1(storeRoot: string): string {
@@ -140,18 +136,14 @@ function isValidRepositoryIdentityBodyV1(value: unknown): value is ReviewReposit
 	);
 }
 
-// RESL2-002 remediation: a first-time IDENTITY write is racy under
-// `O_CREAT|O_EXCL` (`{ flag: "wx" }`) because the file becomes visible to
-// other readers the moment it is created, before its content is written.
-// The install below closes that window structurally: content is written to
-// a process-unique temporary file, fsynced, and only then linked into the
-// final IDENTITY path — so the final path either does not exist yet or
-// already holds fully-written bytes, never a partial write. A bounded
-// retry additionally covers any read that still observes a transiently
-// incomplete file at that path (e.g. one produced by an out-of-process
-// writer that predates this install pattern), without masking genuine
-// corruption: retries apply only to a parse failure, never to a
-// well-formed-but-invalid body.
+// RESL2-002 修复：首次写入 IDENTITY 在 `O_CREAT|O_EXCL`（`{ flag: "wx" }`）
+// 下存在竞态，因为文件在创建那一刻就对其余读者可见，而内容尚未写入。
+// 下面的安装方式从结构上关闭了该窗口：内容先写入进程唯一的临时文件，
+// fsync，然后才硬链接到最终的 IDENTITY 路径——因此最终路径要么尚不
+// 存在，要么已持有完整写入的字节，绝不出现部分写入。有界重试额外
+// 覆盖仍可能在该路径上观察到瞬时不完整文件的读取（例如由早于本
+// 安装模式的进程外写入者产生），同时不掩盖真正的损坏：重试只适用于
+// 解析失败，绝不适用于格式完好但内容无效的正文。
 let identityReadRetryHookForTesting: (() => void) | undefined;
 export function setReviewRepositoryIdentityRetryHookForTesting(hook: (() => void) | undefined): void {
 	identityReadRetryHookForTesting = hook;
@@ -189,9 +181,8 @@ function readPinnedRepositoryIdentityV1(storeRoot: string): ReviewRepositoryIden
 	throw new ReviewRepositoryError("Pinned repository identity is malformed");
 }
 
-// Pins the repository IDENTITY on first authority resolution and re-pins a
-// fresh IDENTITY during explicit broken-identity recovery. Not intended for
-// ordinary use outside those flows.
+// 在首次权威解析时钉住仓库 IDENTITY，并在显式的损坏身份恢复期间
+// 重新钉住新的 IDENTITY。除这些流程外不供普通使用。
 export function writePinnedRepositoryIdentityV1(storeRoot: string, identity: ReviewRepositoryIdentityBodyV1): ReviewRepositoryIdentityBodyV1 {
 	mkdirSync(storeRoot, { recursive: true, mode: 0o700 });
 	const path = pinnedIdentityPathV1(storeRoot);
@@ -301,18 +292,15 @@ export interface RepositoryAuthorityRecoveryV1 extends RepositoryAuthorityV1 {
 	readonly identity_broken: boolean;
 }
 
-// RESL2-001 / RELY2-001 remediation: a pinned root commit removed by an
-// ordinary history rewrite (e.g. `git branch -D` on an orphan root) makes
-// the SUBSET check in `resolveRepositoryAuthorityV1` fail permanently.
-// That is correct, fail-closed behavior for ordinary access — but recovery
-// inspection could never even start if it called that same fail-closed
-// resolver as its first line. This lenient variant runs the identical live
-// probe but never throws on a broken subset: when the pin no longer holds,
-// it reports `identity_broken: true` and computes a fresh, NOT-YET-PERSISTED
-// identity from the CURRENT live root-commit set instead, so explicit
-// recovery inspection can detect the break and surface it. This function
-// must never be used by ordinary read/mutation paths — only by the explicit
-// recovery-inspection path (legacy authority detection).
+// RESL2-001 / RELY2-001 修复：普通的历史重写（例如对孤立根执行
+// `git branch -D`）移除了某个钉住的根提交后，`resolveRepositoryAuthorityV1`
+// 中的子集校验会永久失败。这对普通访问而言是正确的保守失败行为——
+// 但恢复检查若把同一个保守失败的解析器放在第一行，就根本无法开始。
+// 这个宽松变体运行完全相同的实时探测，但在子集破坏时绝不抛错：
+// 当钉住不再成立时，它报告 `identity_broken: true`，并改为从“当前的”
+// 实时根提交集合计算一个尚未持久化的新身份，让显式恢复检查能够
+// 发现并呈现这一破坏。普通读取/变更路径绝不使用本函数——只有
+// 显式恢复检查路径（遗留权威探测）使用。
 export function resolveRepositoryAuthorityForRecoveryV1(cwd: string): RepositoryAuthorityRecoveryV1 {
 	const probe = probeLiveRepositoryV1(cwd);
 	const pinned = readPinnedRepositoryIdentityV1(probe.storeRoot);

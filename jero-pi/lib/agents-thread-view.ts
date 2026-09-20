@@ -35,7 +35,7 @@ function toolStatus(item: ToolItem): "Running" | "Error" | "Complete" {
 	return item.running ? "Running" : "Complete";
 }
 
-/** Render already-sanitized, bounded protocol items without inferring content roles. */
+/** 渲染已完成净化、有界的协议条目，不推断内容角色。 */
 export function renderThreadItem(item: ThreadItem, theme: AgentsThreadTheme, width: number): string[] {
 	if (width <= 0) return [];
 	switch (item.kind) {

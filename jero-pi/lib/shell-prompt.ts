@@ -1,9 +1,9 @@
 import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import { stripAnsi } from "./terminal-theme.ts";
 
-// Gentle Shell prompt frame. pi's editor renders a top rule, padded content
-// lines, and a bottom rule; this module wraps those lines in a rounded frame
-// with a petal that shows what the agent is doing. Everything here is pure.
+// Gentle Shell 提示符框架。pi 的编辑器渲染顶框线、带填充的内容行和
+// 底框线；本模块把这些行包进圆角框架，并附一枚显示代理正在做什么的
+// 花瓣。这里的一切都是纯函数。
 
 export const PROMPT_STATE = {
 	IDLE: "idle",
@@ -23,8 +23,8 @@ const PETAL_TONE = {
 
 export type PetalTone = (typeof PETAL_TONE)[keyof typeof PETAL_TONE];
 
-// The Gentle themes map these to the rose ramp: active pink, rose, soft
-// rose, deep pink. The spin walks the ramp one shade per frame.
+// Gentle 主题把它们映射到玫瑰色阶：亮粉、玫瑰、浅玫瑰、深粉。
+// 旋转时每帧在色阶上走一个色度。
 const PETAL_TONE_FRAMES = [PETAL_TONE.BRIGHT, PETAL_TONE.ROSE, PETAL_TONE.SOFT, PETAL_TONE.DEEP] as const;
 
 export interface PromptFrameOptions {
@@ -35,8 +35,8 @@ export interface PromptFrameOptions {
 	bold?: (text: string) => string;
 }
 
-// A terminal cell cannot grow, so the petal earns presence with weight and
-// the brightest rose in the theme. Working spins through four flowers.
+// 终端单元格无法变大，因此花瓣用粗细和主题中最亮的玫瑰色换取存在感。
+// 工作状态在四朵花之间旋转。
 export const PROMPT_PETAL = "✿";
 const PETAL_FRAMES = ["✿", "❀", "❁", "✾"] as const;
 export const PROMPT_HINT = "type, or / for commands";

@@ -2,28 +2,24 @@ import { isAbsolute, join } from "node:path";
 import { resolveSddStatus, type SddArtifactStore, type SddStatus } from "../sdd-status.ts";
 import type { JeroAuthorityContextV1 } from "./review.ts";
 
-// `authority.sdd.status` (spec _tools/p2-m4-sdd-analysis.md §A.1): the pure
-// projection the Go binary served as `sdd-status`. jero-pi computes it from
-// the SAME openspec tree the ported TS resolver already reads —
-// lib/sdd-status.ts resolveSddStatus owns artifact/dependency discovery — and
-// projects the resolver's v1 record into the v2 wire shape the extension
-// consumed (camelCase, schema "gentle-ai.sdd-status" v2; the string is a
-// ported contract, renamed at the P5 identity pass). No journal writes: status
-// reports artifact state only and never attempt tokens or counters
-// (sdd-status-contract.md:66).
+// `authority.sdd.status`（规范 _tools/p2-m4-sdd-analysis.md §A.1）：Go
+// 二进制以 `sdd-status` 提供的纯投影。jero-pi 从移植的 TS 解析器已在
+// 读取的“同一个”openspec 树计算它——lib/sdd-status.ts 的
+// resolveSddStatus 拥有产物/依赖发现——并把解析器的 v1 记录投影为扩展
+// 曾消费的 v2 线上形态（camelCase，schema “gentle-ai.sdd-status” v2；
+// 该字符串是移植的契约，在 P5 身份改造时改名）。不写日志：状态只报告
+// 产物状态，绝不报告尝试令牌或计数（sdd-status-contract.md:66）。
 //
-// Projection self-checks: the upstream decoder discipline
-// (native-review-cli.ts decodeNativeSddStatusV2 :1467-1498) is applied to the
-// PROJECTED record before returning — planning-home containment, exactly
-// seven dependency keys, legacy `instructions` never emitted, remediation
-// invariants — so resolver drift surfaces as a typed refusal, not a bad wire
-// record.
+// 投影自检：上游解码器纪律（native-review-cli.ts 的
+// decodeNativeSddStatusV2 :1467-1498）在返回“之前”应用于投影记录——
+// planning-home 包含性、恰好七个依赖键、绝不发出遗留的 `instructions`、
+// 修正不变量——因此解析器漂移以类型化拒绝呈现，而不是坏的线上记录。
 
 const SEVEN_DEPENDENCIES = ["proposal", "specs", "design", "tasks", "apply", "verify", "archive"] as const;
 type SevenDependency = (typeof SEVEN_DEPENDENCIES)[number];
 export type JeroSddDependencyStateV1 = "blocked" | "ready" | "all_done";
 
-/** Upstream's 12-value vocabulary plus the jero-only recommendations the TS resolver can emit ("sync", "fix-task-ownership-marker", "resolve-via-engram", "blocked"). */
+/** 上游的 12 值词汇，外加 TS 解析器可能发出的 jero 专属推荐（“sync”、“fix-task-ownership-marker”、“resolve-via-engram”、“blocked”）。 */
 export type JeroSddNextRecommendedV1 =
 	| "apply" | "verify" | "remediate" | "archive" | "archived" | "resolve-blockers" | "sdd-new" | "select-change" | "propose" | "spec" | "design" | "tasks"
 	| "sync" | "fix-task-ownership-marker" | "resolve-via-engram" | "blocked";
@@ -81,9 +77,9 @@ function selfCheckV2(record: JeroSddStatusV2, workspaceRoot: string): void {
 }
 
 /**
- * `sdd.status` — read-only projection. `changeName` is optional exactly like
- * the upstream request; the resolver's ambiguous-selection and empty-store
- * behaviors surface as their own nextRecommended values, never as refusals.
+ * `sdd.status`——只读投影。`changeName` 与上游请求一样是可选的；解析器
+ * 的选择歧义与空存储行为以各自的 nextRecommended 值呈现，绝不作为
+ * 拒绝。
  */
 export function jeroSddStatusV1(_context: JeroAuthorityContextV1, request: { changeName?: string; workspaceRoot: string }): JeroSddStatusResultV1 {
 	if (request.changeName !== undefined && (request.changeName.trim() !== request.changeName || request.changeName.includes("\0"))) {

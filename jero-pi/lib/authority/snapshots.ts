@@ -8,23 +8,22 @@ import { buildDiffEvidence, REVIEW_EVENT, REVIEW_ROUTE, type DiffEvidence, type 
 import { classifyReviewRisk, isGeneratedGoldenPath, type ReviewDiffStat, type ReviewRiskClassification, type ReviewRiskTier } from "../review-risk.ts";
 import { jeroDomainHash } from "./canonical.ts";
 
-// Snapshot-root redirect seam over lib/review-snapshot.ts (spec §I.10, the
-// M1-deferred E.6 item).
+// 叠在 lib/review-snapshot.ts 之上的快照根重定向接缝（spec §I.10，
+// M1 顺延的 E.6 项）。
 //
-// The ported `captureReviewSnapshot` cannot be used for jero stores: its
-// private `snapshotsRoot` hard-codes `gentle-ai/reviews/snapshots` under the
-// Git directory, and `resolveJeroAuthorityStoreV1` treats ANY hit under
-// `gentle-ai/reviews/*` as a foreign authority store — so a single upstream
-// capture would permanently poison the repository for jero (fail-closed, no
-// migration). Rather than editing the byte-identical port, this module is the
-// call boundary: it re-uses the port's exported, root-independent machinery
-// (`classifyReviewRisk`, `buildDiffEvidence`, `discoverReviewUntrackedPaths`,
-// `deriveChangedPathManifest`, `digestChangedPathManifest`) and re-implements
-// only the ~80 lines of capture orchestration so that every byte lands under
-// `<store>/jero-review/snapshots/` (temp 0o700 staging + rename, isolated
-// object store, metadata record — the same shape and discipline as upstream).
-// The snapshot identity is jero-domain hashed (`jero.authority.snapshot`), so
-// jero target identities can never collide with upstream Go-domain ones.
+// 移植的 `captureReviewSnapshot` 不能用于 jero 存储：其私有的
+// `snapshotsRoot` 把 `gentle-ai/reviews/snapshots` 硬编码在 Git 目录下，
+// 而 `resolveJeroAuthorityStoreV1` 把 `gentle-ai/reviews/*` 之下的任何
+// 命中都当作外来权威存储——因此一次上游捕获就会永久毒化该仓库对
+// jero 的可用性（保守失败，无迁移）。与其编辑字节完全相同的移植，本
+// 模块就是调用边界：它复用移植版导出的、与根无关的机制
+// （`classifyReviewRisk`、`buildDiffEvidence`、
+// `discoverReviewUntrackedPaths`、`deriveChangedPathManifest`、
+// `digestChangedPathManifest`），只重新实现约 80 行捕获编排，使每个
+// 字节都落在 `<store>/jero-review/snapshots/` 之下（0o700 临时暂存 +
+// 重命名、隔离对象存储、元数据记录——与上游相同的形态和纪律）。
+// 快照身份经 jero 域哈希（`jero.authority.snapshot`），因此 jero 的
+// 目标身份绝不与上游 Go 域的冲突。
 
 export class JeroSnapshotError extends Error {
 	constructor(message: string) {
@@ -73,23 +72,23 @@ export interface JeroReviewSnapshotRecordV1 {
 
 export interface JeroSnapshotDerivationV1 {
 	readonly record: Omit<JeroReviewSnapshotRecordV1, "object_store">;
-	/** `sha256:` identity — jero domain hash over the identity body (spec §B.3). */
+	/** `sha256:` 身份——对身份正文的 jero 域哈希（spec §B.3）。 */
 	readonly target_identity: string;
-	/** Bare hex of the identity hash; the persisted snapshot directory name. */
+	/** 身份哈希的裸十六进制；持久化快照的目录名。 */
 	readonly snapshot_id: string;
 	readonly risk: ReviewRiskClassification;
-	/** The freeze numstat view (per-path additions/deletions/binary/mode-only). */
+	/** 冻结的 numstat 视图（每路径的新增/删除/二进制/仅模式）。 */
 	readonly numstat: readonly ReviewDiffStat[];
 	readonly changed_path_manifest: readonly ChangedPathEntry[];
 	readonly changed_path_manifest_sha256: string;
-	/** Isolated object directory while the derivation is live (workspace captures). */
+	/** 派生存续期间的隔离对象目录（工作区捕获）。 */
 	readonly object_directory?: string;
 	readonly alternate_object_directory: string;
 }
 
 const OBJECT_ID = /^[0-9a-f]{40,64}$/;
 
-/** Stable per-mode policy hash: the frozen review policy the identity binds. */
+/** 按模式稳定的策略哈希：身份所绑定的冻结评审策略。 */
 export function jeroReviewPolicyHashV1(mode: JeroSnapshotModeName): string {
 	return jeroDomainHash("policy", { owner: "jero-pi", mode, version: 1 });
 }
@@ -103,8 +102,8 @@ function runGit(cwd: string, args: readonly string[], environment: NodeJS.Proces
 }
 
 function repositoryRoot(cwd: string): string {
-	// `--show-toplevel` prints forward slashes on Windows; native spelling
-	// keeps the recorded repository root comparable with path.join inputs.
+	// `--show-toplevel` 在 Windows 上打印正斜杠；原生拼写让记录下来的
+	// 仓库根目录可与 path.join 的输入相互比较。
 	return realpathSync.native(runGit(cwd, ["rev-parse", "--show-toplevel"]));
 }
 
@@ -158,12 +157,12 @@ function canonicalPaths(value: string): string[] {
 	return [...new Set(paths)].toSorted();
 }
 
-/** Digest over untracked path NAMES only — nothing is read or hashed at inventory time (spec §B.2). */
+/** 只对未跟踪路径“名称”做摘要——清点时不读取也不哈希任何内容（spec §B.2）。 */
 export function jeroUntrackedInventoryDigestV1(names: readonly string[]): string {
 	return `sha256:${jeroDomainHash("untracked-inventory", [...names].toSorted())}`;
 }
 
-/** Digest over the snapshot's canonical changed-path list. */
+/** 对快照的权威变更路径列表做摘要。 */
 export function jeroPathsDigestV1(paths: readonly string[]): string {
 	return `sha256:${jeroDomainHash("paths", [...paths].toSorted())}`;
 }
@@ -172,10 +171,9 @@ export interface JeroSnapshotDeriveOptionsV1 {
 	readonly cwd: string;
 	readonly mode: JeroSnapshotModeName;
 	/**
-	 * `complete` reviews the live workspace (incl. untracked); a base diff
-	 * reviews the committed range baseRef..HEAD; `staged` (M3, §G) freezes
-	 * the candidate from the Git INDEX — what is about to be committed — via
-	 * a temporary GIT_INDEX_FILE copy, never touching the real index.
+	 * `complete` 评审活动工作区（含未跟踪）；base diff 评审已提交范围
+	 * baseRef..HEAD；`staged`（M3，§G）从 Git INDEX——即将提交的内容
+	 * ——冻结候选，经临时 GIT_INDEX_FILE 副本完成，绝不触碰真实索引。
 	 */
 	readonly candidate: { kind: "workspace" } | { kind: "base-diff"; baseRef: string } | { kind: "staged" };
 	readonly policyHash: string;
@@ -204,11 +202,10 @@ function identityBody(record: Omit<JeroReviewSnapshotRecordV1, "object_store">):
 }
 
 /**
- * Derives the full snapshot facts without persisting anything: trees, risk
- * classification, diff evidence, route/lens plan, genesis paths, untracked
- * inventory, changed-path manifest, and the jero-domain target identity.
- * Workspace captures stage the candidate tree through a temp index + isolated
- * object directory that the caller may keep (capture) or discard (status).
+ * 不持久化任何内容地派生完整快照事实：树、风险分类、diff 证据、
+ * 路由/评审视角计划、genesis 路径、未跟踪清单、变更路径清单，以及
+ * jero 域目标身份。工作区捕获通过临时索引 + 隔离对象目录暂存候选树，
+ * 调用方可保留（捕获）或丢弃（状态）。
  */
 export function deriveJeroReviewSnapshotV1(options: JeroSnapshotDeriveOptionsV1 & { readonly keepIsolatedStore?: string }): JeroSnapshotDerivationV1 {
 	if (options.mode !== "ordinary" && options.mode !== "judgment-day") throw new JeroSnapshotError("Unsupported review mode");
@@ -227,10 +224,9 @@ export function deriveJeroReviewSnapshotV1(options: JeroSnapshotDeriveOptionsV1 
 			completeSnapshotTree = resolveTree(root, runGit(root, ["rev-parse", "--verify", "HEAD^{tree}"]));
 			intendedUntracked = [];
 		} else if (options.candidate.kind === "staged") {
-				// M3 (spec G): freeze the candidate from the Git INDEX. The real
-				// index is COPIED into a temporary GIT_INDEX_FILE and every write
-				// (the tree object) lands in the isolated object directory, so the
-				// caller's real index is never opened for writing.
+				// M3（spec G）：从 Git INDEX 冻结候选。真实索引被“复制”到
+				// 临时 GIT_INDEX_FILE，且每次写入（树对象）都落在隔离对象
+				// 目录中，因此调用方的真实索引绝不被打开写入。
 				stagingDirectory = options.keepIsolatedStore ?? mkdtempSync(join(tmpdir(), "jero-snapshot-"));
 				mkdirSync(stagingDirectory, { recursive: true, mode: 0o700 });
 				chmodSync(stagingDirectory, 0o700);
@@ -275,7 +271,7 @@ export function deriveJeroReviewSnapshotV1(options: JeroSnapshotDeriveOptionsV1 
 			changedLines: risk.original_changed_lines,
 		});
 		const genesisPaths = canonicalPaths(runGit(root, ["diff", "--no-renames", "--name-only", "-z", baseTree, initialReviewTree], diffEnvironment));
-		// Judgment Day captures non-trivial scope WITHOUT ordinary lens classification (spec §G).
+		// Judgment Day 捕获非平凡范围，“不”做普通评审视角分类（spec §G）。
 		const plan = options.mode === "ordinary"
 			? {
 				route: risk.tier === "low" ? REVIEW_ROUTE.TRIVIAL : risk.tier === "high" ? REVIEW_ROUTE.FULL_4R : REVIEW_ROUTE.STANDARD,
@@ -331,25 +327,24 @@ export interface JeroSnapshotCaptureOptionsV1 extends JeroSnapshotDeriveOptionsV
 }
 
 /**
- * Derives and durably installs a review snapshot under
- * `<storeRoot>/snapshots/<snapshot-id>/`: isolated git object store 0o700
- * (survives `git gc`), metadata record, atomic staging→final rename. An
- * existing identical snapshot is reused; a conflicting one fails closed.
+ * 派生并持久安装评审快照到
+ * `<storeRoot>/snapshots/<snapshot-id>/`：0o700 的隔离 git 对象存储
+ * （能在 `git gc` 中幸存）、元数据记录、原子的暂存→最终重命名。已
+ * 存在的相同快照被复用；冲突的快照保守失败。
  */
 export function captureJeroReviewSnapshotV1(options: JeroSnapshotCaptureOptionsV1): JeroSnapshotDerivationV1 & { readonly record: JeroReviewSnapshotRecordV1 } {
 	const root = jeroSnapshotsRootV1(options.storeRoot);
 	mkdirSync(root, { recursive: true, mode: 0o700 });
 	chmodSync(root, 0o700);
-	// Stage the isolated object store directly in its final resting directory:
-	// the snapshot id is only known after the trees exist, so capture first
-	// into a dot-prefixed staging directory under the snapshots root, then
-	// rename it to `<id>` (the same discipline as upstream captureReviewSnapshot).
+	// 把隔离对象存储直接暂存到它最终的归宿目录：快照 id 只有在树存在
+	// 之后才可知，因此先捕获进快照根下带点前缀的暂存目录，再重命名为
+	// `<id>`（与上游 captureReviewSnapshot 相同的纪律）。
 	const staging = mkdtempSync(join(root, ".capture-"));
 	chmodSync(staging, 0o700);
 	try {
 		const derivation = deriveJeroReviewSnapshotV1({ ...options, keepIsolatedStore: staging });
-		// Move the isolated objects from `<staging>/objects` layout: derivation
-		// wrote index+objects into the staging directory itself.
+		// 隔离对象从 `<staging>/objects` 布局移入：派生把 index+objects
+		// 写进了暂存目录本身。
 		const finalDirectory = join(root, derivation.snapshot_id);
 		const record: JeroReviewSnapshotRecordV1 = {
 			...derivation.record,
@@ -380,7 +375,7 @@ export function captureJeroReviewSnapshotV1(options: JeroSnapshotCaptureOptionsV
 	}
 }
 
-/** Removes a lineage-terminal snapshot's isolated object store (jero-rooted twin of cleanupReviewSnapshot). */
+/** 移除血脉终局快照的隔离对象存储（cleanupReviewSnapshot 的 jero 根孪生）。 */
 export function cleanupJeroReviewSnapshotV1(storeRoot: string, snapshotDirectory: string): void {
 	const expectedRoot = resolve(jeroSnapshotsRootV1(storeRoot));
 	const directory = resolve(snapshotDirectory);
@@ -390,7 +385,7 @@ export function cleanupJeroReviewSnapshotV1(storeRoot: string, snapshotDirectory
 	rmSync(directory, { recursive: true, force: true });
 }
 
-/** Reads the persisted snapshot record for a frozen target identity; the record re-verifies against its own identity hash. */
+/** 读取冻结目标身份的持久化快照记录；记录会对照其自身身份哈希重新校验。 */
 export function readJeroSnapshotRecordV1(storeRoot: string, targetIdentity: string): JeroReviewSnapshotRecordV1 {
 	if (!/^sha256:[0-9a-f]{64}$/.test(targetIdentity)) throw new JeroSnapshotError("Target identity is not a canonical sha256 identity");
 	const directory = join(jeroSnapshotsRootV1(storeRoot), targetIdentity.slice("sha256:".length));
@@ -407,19 +402,18 @@ export function readJeroSnapshotRecordV1(storeRoot: string, targetIdentity: stri
 }
 
 export interface JeroCorrectionDerivationV1 {
-	/** Actual correction lines summed over genesis paths (additions + deletions). */
+	/** 按 genesis 路径求和的实际修正行数（新增 + 删除）。 */
 	readonly lines: number;
-	/** Diff paths outside the frozen genesis scope the declared candidate tree carries. */
+	/** 声明的候选树携带的、落在冻结 genesis 范围之外的 diff 路径。 */
 	readonly touchedNonGenesisPaths: readonly string[];
 }
 
 /**
- * Re-derives the actual correction a declared candidate tree carries, against
- * the lineage's isolated snapshot object store (findings F5, §9.2 actor output
- * is untrusted): both trees must resolve (`git cat-file -t` = tree) and the
- * line count comes from `git diff --numstat` over the genesis paths — never
- * from caller-declared numbers. Any non-resolution, unreadable snapshot, or
- * uncountable (binary) genesis row throws JeroSnapshotError.
+ * 对照血脉的隔离快照对象存储，重新派生声明的候选树所携带的实际修正
+ * （发现 F5，§9.2 参与者输出不可信）：两棵树都必须可解析
+ * （`git cat-file -t` = tree），行数来自对 genesis 路径的
+ * `git diff --numstat`——绝不来自调用方声明的数字。任何无法解析、快照
+ * 不可读、或（二进制的）genesis 行不可计数都抛出 JeroSnapshotError。
  */
 export function deriveJeroCorrectionLinesV1(options: {
 	readonly storeRoot: string;
@@ -430,8 +424,8 @@ export function deriveJeroCorrectionLinesV1(options: {
 }): JeroCorrectionDerivationV1 {
 	const record = readJeroSnapshotRecordV1(options.storeRoot, options.targetIdentity);
 	const root = record.repository_root;
-	// Same GIT_* discipline as the manifestExecutor above: the snapshot's
-	// isolated object directory rides as an alternate of the repository store.
+	// 与上面 manifestExecutor 相同的 GIT_* 纪律：快照的隔离对象目录作为
+	// 仓库存储的备用目录搭载。
 	const diffEnvironment: NodeJS.ProcessEnv = {
 		GIT_ALTERNATE_OBJECT_DIRECTORIES: `${record.object_store.object_directory}${delimiter}${record.object_store.alternate_object_directory}`,
 	};

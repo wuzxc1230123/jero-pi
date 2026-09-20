@@ -1,29 +1,30 @@
-// The thin Pi host relay (gentle-pi#311 P4; provider contract gentle-ai#3249).
+// 精简的 Pi 宿主中继（gentle-pi#311 P4；提供方契约 gentle-ai#3249）。
 //
-// gentle-ai owns prompt materialization, role and schema selection, byte
-// budgets, parsing, admission, immutable capture, retry, correction
-// accounting, and receipt state. This host boundary is
-// intentionally narrow:
+// gentle-ai 拥有提示词物化、角色与 schema 选择、字节
+// 预算、解析、准入、不可变捕获、重试、修正
+// 记账以及回执状态。这条宿主边界刻意保持
+// 狭窄：
 //
-//   1. Run the exact provider-issued capture binding with `--agent pi
-//      --materialize` and take stdout as opaque prompt BYTES, verbatim.
-//   2. Pass those prompt bytes to the pure opaque Pi adapter, which owns its
-//      locked-down print-mode subprocess and fresh empty scratch directory;
-//      take its stdout as raw final bytes. Model/provider/profile selection
-//      stays user-owned: no --model, no --provider, environment untouched.
-//   3. Submit those bytes untouched through the provider-owned `submission`
-//      form carried by the collect input: execute its exact operation and
-//      argument tokens with only the tempfile path substituted into the
-//      declared {{value}} slot (BOM-less: the buffer is written
-//      byte-for-byte). The host never synthesizes or filters the completing
-//      form; a materialize slot without a provider submission is a typed
-//      contract mismatch, never a rebuilt invocation.
+//   1. 以 `--agent pi
+//      --materialize` 原样运行提供方签发的捕获绑定，将 stdout 按不透明
+//      的提示词字节（BYTES）逐字接收。
+//   2. 将这些提示词字节传给纯粹的不透明 Pi 适配器，该适配器拥有自己的
+//      锁定的打印模式子进程与全新空草稿目录；
+//      将其 stdout 作为原始最终字节接收。模型/提供方/档案的选择
+//      始终归用户所有：不加 --model，不加 --provider，环境原样不动。
+//   3. 通过 collect 输入所携带的提供方所有的 `submission`
+//      表单原封不动地提交这些字节：执行其精确的 operation 与
+//      argument 令牌，仅把临时文件路径替换进已声明的
+//      {{value}} 槽位（无 BOM：缓冲区逐字节
+//      写入）。宿主从不合成或过滤完成
+//      表单；没有提供方 submission 的物化槽位属于类型化
+//      契约失配，绝不是重建的调用。
 //
-// On any failure the relay returns a TYPED transport error and submits
-// nothing further. After a transport failure the caller re-queries negotiated
-// STATUS and relaunches only if the exact same bound slot is reoffered —
-// never from transcript inference. The relay never parses or rebuilds
-// binding, evidence, prompt, schema, budgets, or admission.
+// 任何失败时中继都会返回类型化（TYPED）传输错误，并且不再
+// 提交任何内容。传输失败后，调用方重新查询协商出的
+// STATUS，且仅在完全相同的绑定槽位被重新提供时才重新发起 ——
+// 绝不依据会话记录推断。中继从不解析或重建
+// 绑定、证据、提示词、schema、预算或准入。
 
 import { spawn } from "node:child_process";
 import { chmod, mkdtemp, rm, writeFile } from "node:fs/promises";
@@ -37,8 +38,8 @@ import {
 } from "./opaque-pi-reviewer-adapter.ts";
 import { REVIEW_PROVIDER_ROLE_CAPTURE_OPERATION, REVIEW_PROVIDER_ROLE_CAPTURE_OPERATIONS, type ReviewCaptureSubmissionV1, type ReviewCollectInputV3 } from "./authority/wire-contract.ts";
 
-// Compatibility export for existing relay consumers. The pure adapter owns the
-// fixed Pi process boundary and its locked-down argv.
+// 为既有中继消费者保留的兼容导出。纯适配器拥有固定的
+// Pi 进程边界及其锁定的 argv。
 export { OPAQUE_PI_REVIEWER_ARGV as REVIEW_HOST_RELAY_PI_ARGV } from "./opaque-pi-reviewer-adapter.ts";
 
 export const REVIEW_HOST_RELAY_UNAVAILABLE_MESSAGE =
@@ -51,10 +52,10 @@ export const REVIEW_HOST_RELAY_FAILURE = {
 	EMPTY_PROMPT: "empty-prompt",
 	PI_LAUNCH_FAILED: "pi-launch-failed",
 	PI_FAILED: "pi-failed",
-	// gentle-pi#367: a reviewer killed by the relay bound is not a crash. It
-	// is the one failure class that a byte-identical relaunch cannot survive,
-	// so it carries its own kind, its own elapsed/limit evidence, and its own
-	// continuation instead of hiding inside `pi-failed`.
+	// gentle-pi#367：被中继上限杀死的评审器不是崩溃。它是
+	// 字节级相同的重新发起也无法存活的唯一失败类别，
+	// 因此它拥有自己的 kind、自己的 elapsed/limit 证据，以及自己的
+	// 后续处理，而不是藏在 `pi-failed` 之内。
 	PI_TIMED_OUT: "pi-timed-out",
 	PI_EMPTY_OUTPUT: "pi-empty-output",
 	SUBMISSION_REFUSED: "submission-refused",
@@ -74,18 +75,18 @@ export class ReviewHostRelayError extends Error {
 	readonly exitCode: number | null;
 	readonly stderr: string;
 	readonly timedOut: boolean;
-	// Wall time the killed or failed child actually consumed, and the bound it
-	// was measured against. Both are null only when no child process ran.
-	// Without them a transport failure cannot be told apart from a crash, which
-	// is what forced the gentle-pi#367 reporter to measure the relay by hand.
+	// 被杀死或失败的子进程实际消耗的墙钟时间，以及度量它所依据的
+	// 上限。只有当没有子进程运行过时二者才为 null。
+	// 没有它们就无法把传输失败与崩溃区分开，这正是
+	// 迫使 gentle-pi#367 报告者手工测量中继的原因。
 	readonly elapsedMs: number | null;
 	readonly timeoutMs: number | null;
-	// "none" until the submission invocation launches; a launched submission
-	// whose outcome could not be read is "unknown" and the caller reconciles
-	// through negotiated STATUS, never through a blind retry. A launched
-	// submission that gentle-ai refused with its typed admission refusal is
-	// "none" again: the provider states that the lens slot was not consumed
-	// (gentle-pi#522 / #524).
+	// 在 submission 调用发起之前为 "none"；已发起但结局
+	// 无法读取的 submission 为 "unknown"，调用方通过
+	// 协商出的 STATUS 对账，绝不盲目重试。已发起却被
+	// gentle-ai 以其类型化准入拒绝的 submission 重新回到
+	// "none"：提供方声明该评审视角槽位未被消费
+	// （gentle-pi#522 / #524）。
 	readonly mutationOutcome: "none" | "unknown";
 	constructor(kind: ReviewHostRelayFailureKind, stage: ReviewHostRelayStage, message: string, details?: { exitCode?: number | null; stderr?: string; timedOut?: boolean; elapsedMs?: number; timeoutMs?: number; mutationOutcome?: "none" | "unknown" }) {
 		super(message);
@@ -101,22 +102,22 @@ export class ReviewHostRelayError extends Error {
 	}
 }
 
-// gentle-pi#522 / #524: gentle-ai refuses a reviewer submission before any
-// admission with exit 1 and its typed operator line, `<reason> [invalid_request]`.
-// That code is the provider's preflight class: the request was refused as
-// sent and the lens slot was not consumed. The relay recognises only that
-// typed shape; it never parses the reason, and it never retries.
+// gentle-pi#522 / #524：gentle-ai 在任何准入之前以退出码 1 及其类型化
+// 操作符行 `<reason> [invalid_request]` 拒绝评审器 submission。
+// 该代码属于提供方的预检类别：请求按原样被拒绝，
+// 且评审视角槽位未被消费。中继只识别这一
+// 类型化形态；它从不解析原因，也从不重试。
 const ADMISSION_REFUSAL = /\[invalid_request\]/;
 
 export function isReviewHostRelayAdmissionRefusal(capture: { exitCode: number | null; timedOut: boolean }, stderr: string): boolean {
 	return capture.exitCode === 1 && !capture.timedOut && ADMISSION_REFUSAL.test(stderr);
 }
 
-// Refusal classification for the binary-transport materialize invocation.
-// The installed gentle-ai is the only authority on whether the materialize
-// form exists; Pi never version-sniffs. jero-pi M3 (design §8): the
-// gentle-pi.review-relay/v1 handshake env and its refusal class are DELETED
-// — there is no cross-process contract left to declare.
+// 二进制传输 materialize 调用的拒绝分类。
+// 已安装的 gentle-ai 是 materialize 表单是否存在的唯一权威；
+// Pi 从不做版本嗅探。jero-pi M3（设计 §8）：
+// gentle-pi.review-relay/v1 握手环境变量及其拒绝类别已被删除
+// —— 不再遗留任何需要声明的跨进程契约。
 const UNKNOWN_FLAG_REFUSAL = /flag provided but not defined: -{1,2}(?:materialize|agent)\b/;
 
 export function classifyReviewHostRelayRefusal(stderr: string): "unknown-flag" | "other" {
@@ -125,13 +126,13 @@ export function classifyReviewHostRelayRefusal(stderr: string): "unknown-flag" |
 }
 
 // ---------------------------------------------------------------------------
-// gentle-pi#638: only a relay-bound reviewer timeout is deterministic for the
-// exact selected slot: relaunching the same materialized request reaches the
-// same wall. Generic admission refusals, including malformed reviewer JSON and
-// binding_mismatch [invalid_request], describe repairable submitted bytes; a
-// fresh reviewer can change them. They keep the existing exact-reoffer path.
-// A future provider-issued, typed slot-deterministic refusal may be added here
-// only when its schema proves that this exact bound slot cannot be repaired.
+// gentle-pi#638：只有中继上限导致的评审器超时对所选的确切槽位才是
+// 决定性的：重新发起同一个物化请求只会撞上同一堵
+// 墙。一般性准入拒绝，包括格式错误的评审器 JSON 与
+// binding_mismatch [invalid_request]，描述的是可修复的已提交字节；换一个
+// 全新的评审器即可改变它们。它们保持现有的精确重新提供路径。
+// 未来的提供方签发、类型化的槽位决定性拒绝，只有在其 schema 证明这个
+// 确切绑定槽位无法修复时，才可添加到这里。
 // ---------------------------------------------------------------------------
 
 export const REVIEW_HOST_RELAY_UNACHIEVABLE_REASON = {
@@ -144,7 +145,7 @@ export function reviewHostRelayUnachievableReason(error: ReviewHostRelayError): 
 		: undefined;
 }
 
-// Optional bounded evidence for the declaration's --detail. Only the killed reviewer carries measurements worth recording; an admission refusal's text already rides failure.stderr, and unmeasured failures never get a fabricated detail.
+// 声明中 --detail 的可选有界证据。只有被杀死的评审器才携带值得记录的测量数据；准入拒绝的文本已随 failure.stderr 携带，未测量的失败绝不伪造 detail。
 export function reviewHostRelayUnachievableDetail(error: ReviewHostRelayError): string | undefined {
 	if (error.kind === REVIEW_HOST_RELAY_FAILURE.PI_TIMED_OUT && error.elapsedMs !== null && error.timeoutMs !== null) {
 		return `killed after ${error.elapsedMs}ms against a ${error.timeoutMs}ms relay bound`;
@@ -153,19 +154,19 @@ export function reviewHostRelayUnachievableDetail(error: ReviewHostRelayError): 
 }
 
 // ---------------------------------------------------------------------------
-// Slot detection — the provider decides. A collect input routes through the
-// host relay ONLY when the provider itself issued the `--materialize` token
-// (with the pi runtime identity) on a `review.capture-result` collection
-// input. Nothing is ever inferred from state prose, risk, or transcript.
+// 槽位检测 —— 由提供方决定。只有当提供方自己在
+// `review.capture-result` 收集输入上签发了 `--materialize` 令牌
+// （连同 pi 运行时身份）时，该 collect 输入才经由
+// 宿主中继路由。绝不从状态散文、风险或会话记录推断任何东西。
 // ---------------------------------------------------------------------------
 
 export interface ReviewHostRelaySlot {
-	/** Every provider-issued argument token, verbatim, in provider order. */
+	/** 每一个提供方签发的参数令牌，逐字、按提供方顺序。 */
 	readonly captureArgumentTokens: readonly string[];
 	/**
-	 * The provider-owned completing form, verbatim. Absent only when the
-	 * provider violated its own contract; the relay then fails closed with a
-	 * typed submission-contract-mismatch error instead of synthesizing one.
+	 * 提供方所有的完成表单，逐字保留。仅当提供方
+	 * 违反自身契约时缺失；此时中继保守失败并抛出
+	 * 类型化的 submission-contract-mismatch 错误，而不是凭空合成一个。
 	 */
 	readonly submission?: ReviewCaptureSubmissionV1;
 	readonly lens?: string;
@@ -199,22 +200,22 @@ export function reviewHostRelaySlots(inputs: readonly ReviewCollectInputV3[]): r
 }
 
 // ---------------------------------------------------------------------------
-// Provider role vectors (gentle-pi#311 P4-roles) — the two Go-owned non-lens
-// adversarial role capture operations. Unlike the lens materialize slots
-// above, these vectors are SELF-CONTAINED: the provider renders binding
-// tokens plus `--agent=pi --execute=true`, and executing the exact rendered
-// invocation makes Go materialize the role prompt, spawn its own locked-down
-// pi subprocess, and admit the raw verdict into the compact slot. The host
-// never materializes, launches pi, or submits anything for these slots — it
-// runs one CLI invocation verbatim and re-queries negotiated STATUS.
+// 提供方角色向量（gentle-pi#311 P4-roles）—— 两个由 Go 拥有的非评审视角
+// 对抗性角色捕获操作。与上面的评审视角物化槽位不同，
+// 这些向量是自包含（SELF-CONTAINED）的：提供方渲染出绑定
+// 令牌外加 `--agent=pi --execute=true`，执行这个精确渲染的
+// 调用会让 Go 物化角色提示词、生成自己锁定的
+// pi 子进程，并把原始裁决准入到紧凑槽位。宿主
+// 从不为这些槽位做物化、启动 pi 或提交任何东西 —— 它
+// 逐字运行一次 CLI 调用并重新查询协商出的 STATUS。
 // ---------------------------------------------------------------------------
 
 export interface ReviewProviderRoleVectorSlot {
-	/** The provider-named capture operation, e.g. `review.capture-refuter`. */
+	/** 提供方命名的捕获操作，例如 `review.capture-refuter`。 */
 	readonly captureOperation: (typeof REVIEW_PROVIDER_ROLE_CAPTURE_OPERATION)[keyof typeof REVIEW_PROVIDER_ROLE_CAPTURE_OPERATION];
-	/** Every provider-issued argument token, verbatim, in provider order. */
+	/** 每一个提供方签发的参数令牌，逐字、按提供方顺序。 */
 	readonly argumentTokens: readonly string[];
-	/** The provider-declared input name, e.g. `provider_refuter`. */
+	/** 提供方声明的输入名，例如 `provider_refuter`。 */
 	readonly name: string;
 }
 
@@ -232,10 +233,10 @@ export function reviewProviderRoleVectorSlots(inputs: readonly ReviewCollectInpu
 	}));
 }
 
-// Resolves the provider-owned submission form into an executable binding.
-// Fails closed with a typed contract-mismatch error whenever the completing
-// form is absent or cannot bind exactly one artifact value; the relay never
-// repairs, filters, or synthesizes it.
+// 将提供方所有的 submission 表单解析为可执行的绑定。
+// 每当完成表单缺失或无法绑定恰好一个产物值时，都以类型化的
+// contract-mismatch 错误保守失败；中继从不
+// 修复、过滤或合成它。
 export interface ReviewHostRelaySubmissionBinding {
 	readonly operationToken: string;
 	readonly argumentTokens: readonly string[];
@@ -264,26 +265,27 @@ export function resolveReviewHostRelaySubmission(submission: ReviewCaptureSubmis
 }
 
 // ---------------------------------------------------------------------------
-// Relay execution
+// 中继执行
 // ---------------------------------------------------------------------------
 
 export interface ReviewHostRelayRequest {
 	readonly captureArgumentTokens: readonly string[];
-	/** Canonical target worktree for coordinator-only native materialize/submit calls. */
+	/** 供协调器专用的原生 materialize/submit 调用所用的权威目标工作树。 */
 	readonly targetCwd?: string;
-	/** The provider-owned completing form; absent means contract mismatch. */
+	/** 提供方所有的完成表单；缺失即契约失配。 */
 	readonly submission?: ReviewCaptureSubmissionV1;
-	/** Absolute path; defaults to the verified package-local binary. */
+	/** 绝对路径；默认为已验证的包内二进制。 */
 	readonly gentleAiExecutable?: string;
-	/** User-owned pi launcher; defaults to `pi` on PATH. */
+	/** 用户所有的 pi 启动器；默认为 PATH 上的 `pi`。 */
 	readonly piExecutable?: string;
 	readonly environment?: NodeJS.ProcessEnv;
 	readonly gentleAiTimeoutMs?: number;
 	/**
-	 * Overrides the reviewer bound entirely. Production leaves it unset and the
-	 * relay derives the bound from the materialized prompt bytes and
-	 * {@link REVIEW_HOST_RELAY_PI_TIMEOUT_ENV}; this seam exists so tests can
-	 * exercise the timeout leg without a wall-clock wait.
+	 * 完全覆盖评审器上限。生产环境保持未设置，由中继从
+	 * 物化的提示词字节和
+	 * {@link REVIEW_HOST_RELAY_PI_TIMEOUT_ENV} 推导上限；这个接缝的存在
+	 * 是为了让测试无需真实等待墙钟时间即可
+	 * 覆盖超时分支。
 	 */
 	readonly piTimeoutMs?: number;
 	readonly signal?: AbortSignal;
@@ -292,13 +294,13 @@ export interface ReviewHostRelayRequest {
 export interface ReviewHostRelayResult {
 	readonly promptByteLength: number;
 	readonly resultByteLength: number;
-	/** Raw submission stdout (the provider's admitted-manifest JSON), opaque. */
+	/** 原始 submission stdout（提供方已准入的 manifest JSON），不透明。 */
 	readonly submission: string;
 }
 
-/** Opaque materialize-and-review result, not yet submitted to the provider. */
+/** 不透明的物化并评审结果，尚未提交给提供方。 */
 export interface ReviewHostRelayPreparedResult {
-	/** Copy-safe request snapshot captured before materialization starts. */
+	/** 在物化开始前捕获的拷贝安全请求快照。 */
 	readonly request: ReviewHostRelayRequest;
 	readonly promptByteLength: number;
 	readonly resultByteLength: number;
@@ -310,42 +312,42 @@ export type ReviewHostRelayRunner = (request: ReviewHostRelayRequest) => Promise
 export type ReviewHostRelayPreparationRunner = (request: ReviewHostRelayRequest) => Promise<ReviewHostRelayPreparedResult>;
 export type ReviewHostRelaySubmissionRunner = (prepared: ReviewHostRelayPreparedResult) => Promise<ReviewHostRelayResult>;
 
-// jero-pi M3 seams (spec §I.7): `renderSlot` replaces the binary materialize
-// stage with in-process authority.capture rendering (prompt bytes only — the
-// seam never spawns), and `admitResult` replaces the binary submit stage
-// with in-process capture admission reading the staged result file. Both
-// default to fail-closed exactly as the P1 stubs did. The extension (P4)
-// composes: STATUS(collect) → renderBinding → relay prepare (pi child) →
-// relay submit (in-process admit).
+// jero-pi M3 接缝（spec §I.7）：`renderSlot` 用进程内 authority.capture 渲染
+// 替换二进制 materialize 阶段（仅提示词字节 —— 该
+// 接缝从不生成进程），`admitResult` 用读取暂存结果文件的进程内
+// 捕获准入替换二进制 submit 阶段。二者
+// 默认都与 P1 桩一样保守失败。扩展（P4）
+// 组合为：STATUS(collect) → renderBinding → relay prepare（pi 子进程）→
+// relay submit（进程内准入）。
 export type ReviewHostRelayRenderSlot = (request: ReviewHostRelayRequest) => Promise<{ promptBytes: Buffer }>;
 export type ReviewHostRelayAdmitResult = (request: ReviewHostRelayRequest, operationToken: string, argumentTokens: readonly string[], resultFile: string) => Promise<string>;
 
 const DEFAULT_GENTLE_AI_TIMEOUT_MS = 120_000;
 
 // ---------------------------------------------------------------------------
-// The reviewer subprocess bound (gentle-pi#367).
+// 评审器子进程上限（gentle-pi#367）。
 //
-// The previous bound was a single hardcoded 600_000 ms reachable only through
-// the test-injectable runner. A field-measured lens legitimately needed 478s
-// against a ~1.58 MB materialized prompt: it survived by hand and was killed
-// under the relay, and the sanctioned continuation then re-spent every lens to
-// reach the same wall. One fixed number cannot serve a prompt class that
-// varies by orders of magnitude, so the bound is derived instead:
+// 旧上限是单个硬编码的 600_000 ms，只能通过
+// 可测试注入的 runner 触达。一次实地测量的评审视角面对约 1.58 MB 的
+// 物化提示词合理地需要 478 秒：它手工运行得以存活，却在
+// 中继下被杀死，获准的后续处理随后又把每个评审视角重新花了一遍，
+// 撞上同一堵墙。一个固定数字无法服务跨
+// 数量级变化的提示词类别，因此改为推导上限：
 //
-//   floor + ceil(promptBytes / MiB * perMebibyte), clamped to the ceiling
+//   floor + ceil(promptBytes / MiB * perMebibyte)，并钳制到上限值
 //
-// The floor covers model latency that does not depend on prompt size; the
-// linear term covers the part that does. At the measured 1.58 MB the derived
-// bound is ~37 minutes, roughly a 4.7x margin over the 478s the reviewer
-// actually needed — deliberately generous, because the reviewer model and
-// provider are user-owned and the relay cannot know their throughput.
+// floor 覆盖不依赖提示词大小的模型延迟；线性项
+// 覆盖依赖大小的那一部分。在实测的 1.58 MB 下，推导出的
+// 上限约 37 分钟，相对评审器实际需要的 478 秒约有 4.7 倍余量
+// —— 刻意宽松，因为评审器模型与
+// 提供方归用户所有，中继无法知晓其吞吐量。
 //
-// JERO_PI_REVIEW_RELAY_PI_TIMEOUT_MS replaces the derived bound entirely for
-// callers who know their own configuration. It follows the repository's
-// established numeric-override shape (JERO_PI_CANDIDATE_GIT_TIMEOUT_MS,
-// JERO_PI_REVIEW_MAX_BUFFER_BYTES): a positive decimal, silently ignored
-// when malformed, and clamped to the same hard ceiling so no configuration can
-// turn a foreground FINALIZE into an unbounded child process.
+// JERO_PI_REVIEW_RELAY_PI_TIMEOUT_MS 为知晓自身配置的调用方
+// 完全替换推导上限。它遵循仓库既有的
+// 数值覆盖形态（JERO_PI_CANDIDATE_GIT_TIMEOUT_MS、
+// JERO_PI_REVIEW_MAX_BUFFER_BYTES）：正十进制数，格式
+// 非法时静默忽略，并钳制到同一个硬上限，因此任何配置都
+// 无法把前台 FINALIZE 变成无界子进程。
 // ---------------------------------------------------------------------------
 
 export const REVIEW_HOST_RELAY_PI_TIMEOUT_ENV = "JERO_PI_REVIEW_RELAY_PI_TIMEOUT_MS";
@@ -365,9 +367,9 @@ export function resolveReviewHostRelayPiTimeoutMs(promptByteLength: number, envi
 	return Math.min(scaled, REVIEW_HOST_RELAY_PI_TIMEOUT_MAX_MS);
 }
 
-// The reviewer ran out of time; it did not crash. The message states both
-// measurements and names the two things that can change the outcome, because
-// the one thing that cannot is relaunching the identical slot.
+// 评审器是时间耗尽，不是崩溃。该消息陈述两项
+// 测量值，并点名能改变结局的两件事，因为
+// 唯一无法改变结局的就是原样重新发起同一个槽位。
 export function reviewHostRelayPiTimeoutMessage(elapsedMs: number, timeoutMs: number, promptByteLength: number): string {
 	return `pi reviewer subprocess exceeded the relay bound: killed after ${elapsedMs}ms against a ${timeoutMs}ms limit for a ${promptByteLength}-byte materialized prompt. `
 		+ `Relaunching the same slot unchanged reaches the same wall. Raise ${REVIEW_HOST_RELAY_PI_TIMEOUT_ENV} above the reviewer's real wall time (ceiling ${REVIEW_HOST_RELAY_PI_TIMEOUT_MAX_MS}ms) or reduce the candidate scope so the materialized prompt is smaller.`;
@@ -478,14 +480,14 @@ function assertTokens(name: string, tokens: readonly string[]): void {
 
 function snapshotReviewHostRelayRequest(request: ReviewHostRelayRequest): ReviewHostRelayRequest {
 	assertTokens("capture", request.captureArgumentTokens);
-	// The completing form is validated before any process launches: a materialize
-	// slot without a provider-owned submission is a typed contract mismatch,
-	// never a synthesized invocation.
+	// 完成表单在任何进程启动前即被校验：没有提供方
+	// submission 的物化槽位是类型化契约失配，
+	// 绝不会变成合成的调用。
 	resolveReviewHostRelaySubmission(request.submission);
-	// jero-pi P1: no packaged binary exists. An explicit executable may still be
-	// supplied (tests), but without one the relay fails closed at the
-	// materialize/submit stages; P2 replaces those stages with in-process
-	// authority.capture rendering.
+	// jero-pi P1：不存在打包的二进制。仍可显式提供可执行文件
+	// （测试用），但没有它时中继在
+	// materialize/submit 阶段保守失败；P2 用进程内
+	// authority.capture 渲染替换这些阶段。
 	const gentleAiExecutable = request.gentleAiExecutable;
 	if (gentleAiExecutable !== undefined && !isAbsolute(gentleAiExecutable)) throw new TypeError("Pi host relay requires an absolute gentle-ai executable path");
 	const environment = Object.freeze({ ...(request.environment ?? process.env) }) as NodeJS.ProcessEnv;
@@ -506,24 +508,24 @@ function snapshotReviewHostRelayRequest(request: ReviewHostRelayRequest): Review
 }
 
 /**
- * Materializes one provider-bound reviewer prompt and runs its opaque Pi
- * subprocess. It does not submit anything, so independent reviewer work can
- * finish before the caller performs provider-ordered admission.
+ * 物化一个提供方绑定的评审器提示词并运行其不透明的 Pi
+ * 子进程。它不提交任何东西，因此各评审器的工作可以
+ * 在调用方执行提供方排序的准入之前完成。
  */
 export async function prepareReviewHostRelaySlot(
 	request: ReviewHostRelayRequest,
 	reviewer: typeof runOpaquePiReviewer = runOpaquePiReviewer,
 	render?: ReviewHostRelayRenderSlot,
 ): Promise<ReviewHostRelayPreparedResult> {
-	// Copy mutable transport configuration before the first async boundary. The
-	// supplied AbortSignal intentionally stays live across materialize, reviewer,
-	// and submit, preserving the established cancellation behavior.
+	// 在第一个异步边界之前拷贝可变的传输配置。所提供的
+	// AbortSignal 有意跨 materialize、reviewer
+	// 与 submit 保持活跃，保留既有的取消行为。
 	const preparedRequest = snapshotReviewHostRelayRequest(request);
 
-	// jero-pi M3: the render seam is the production path —
-	// authority.capture.renderBinding bytes, no spawn. Without a seam (and
-	// without the fixture-only executable) the relay fails closed exactly as
-	// the P1 stub did: nothing is materialized, nothing is submitted.
+	// jero-pi M3：渲染接缝是生产路径 ——
+	// authority.capture.renderBinding 字节，不生成进程。没有接缝（且
+	// 没有仅供 fixture 使用的可执行文件）时，中继精确地像
+	// P1 桩那样保守失败：什么也不物化，什么也不提交。
 	if (render !== undefined) {
 		let promptBytes: Buffer;
 		try {
@@ -542,8 +544,8 @@ export async function prepareReviewHostRelaySlot(
 		throw new ReviewHostRelayError(REVIEW_HOST_RELAY_FAILURE.RELAY_UNAVAILABLE, "materialize", "authority-unavailable: no in-process renderSlot seam was injected and no binary transport exists (jero-pi M3)");
 	}
 
-	// The provider materializes the opaque prompt and detects whether this relay
-	// surface is available. No version sniffing or prompt reconstruction occurs.
+	// 提供方物化不透明提示词并检测此中继
+	// 表面是否可用。不做版本嗅探，也不做提示词重建。
 	let materialized: ProcessCapture;
 	try {
 		materialized = await collectGentleAiProcess(preparedRequest.gentleAiExecutable!, ["review", "capture-result", ...preparedRequest.captureArgumentTokens], {
@@ -582,10 +584,10 @@ export async function prepareReviewHostRelaySlot(
 	});
 }
 
-// The reviewer stage shared by the render seam and the binary transport: the
-// bound is derived from the prompt bytes that were actually materialized, the
-// pure adapter owns the fresh isolated Pi process, and the prepared result
-// keeps its bytes in the private WeakMap.
+// 渲染接缝与二进制传输共享的评审器阶段：上限
+// 从实际物化的提示词字节推导，纯
+// 适配器拥有全新隔离的 Pi 进程，准备好的结果
+// 把自己的字节保存在私有 WeakMap 中。
 async function runPreparedReviewerV1(
 	preparedRequest: ReviewHostRelayRequest,
 	promptBytes: Buffer,
@@ -595,13 +597,13 @@ async function runPreparedReviewerV1(
 	if (promptBytes.length === 0) {
 		throw options.emptyPromptError ?? new ReviewHostRelayError(REVIEW_HOST_RELAY_FAILURE.EMPTY_PROMPT, "materialize", "capture rendering produced no bytes");
 	}
-	// The reviewer bound is derived from the prompt the provider actually
-	// materialized. The explicit request timeout is a test seam that wins over
-	// both the user-owned environment override and the scale-derived bound.
+	// 评审器上限从提供方实际物化的提示词
+	// 推导。显式的请求超时是测试接缝，优先级高于
+	// 用户所有的环境覆盖和按规模推导的上限。
 	const piTimeoutMs = preparedRequest.piTimeoutMs ?? resolveReviewHostRelayPiTimeoutMs(promptBytes.length, preparedRequest.environment);
 
-	// The pure adapter owns the fresh isolated Pi process. Its input and output
-	// are opaque bytes; this coordinator only maps transport failures.
+	// 纯适配器拥有全新隔离的 Pi 进程。其输入和输出
+	// 都是不透明字节；这个协调器只映射传输失败。
 	let piResult: OpaquePiReviewerResult;
 	try {
 		piResult = await reviewer(promptBytes, {
@@ -623,9 +625,9 @@ async function runPreparedReviewerV1(
 }
 
 /**
- * Starts every reviewer before awaiting any result. If one or more reviewers
- * fail, it rejects only after every started transport has settled and reports
- * the earliest failed request in provider order.
+ * 在等待任何结果之前先启动每个评审器。如果一个或多个评审器
+ * 失败，它只在每个已启动的传输都落定后才拒绝，并按
+ * 提供方顺序报告最早失败的请求。
  */
 export async function runReviewHostRelayReviewerGroup(
 	requests: readonly ReviewHostRelayRequest[],
@@ -641,8 +643,8 @@ export async function runReviewHostRelayReviewerGroup(
 }
 
 /**
- * Submits one already-reviewed opaque result through the exact provider-owned
- * completing form. Only the provider-declared artifact slot is substituted.
+ * 通过精确的提供方所有完成表单提交一个已评审的不透明
+ * 结果。只替换提供方声明的产物槽位。
  */
 export async function submitReviewHostRelayPreparedResult(prepared: ReviewHostRelayPreparedResult, admit?: ReviewHostRelayAdmitResult): Promise<ReviewHostRelayResult> {
 	const resultBytes = preparedResultBytes.get(prepared);
@@ -650,10 +652,10 @@ export async function submitReviewHostRelayPreparedResult(prepared: ReviewHostRe
 	const { request } = prepared;
 	assertTokens("capture", request.captureArgumentTokens);
 	const submissionBinding = resolveReviewHostRelaySubmission(request.submission);
-	// jero-pi M3: the admit seam is the production path — in-process capture
-	// admission over the same 0o600 staged result file. Without a seam (and
-	// without the fixture-only executable) the relay fails closed exactly as
-	// the P1 stub did.
+	// jero-pi M3：准入接缝是生产路径 —— 在同一个 0o600 暂存结果
+	// 文件上做进程内捕获准入。没有接缝（且
+	// 没有仅供 fixture 使用的可执行文件）时，中继精确地像
+	// P1 桩那样保守失败。
 	const useInProcessAdmission = admit !== undefined;
 	if (!useInProcessAdmission && request.gentleAiExecutable === undefined) {
 		throw new ReviewHostRelayError(REVIEW_HOST_RELAY_FAILURE.RELAY_UNAVAILABLE, "submit", "authority-unavailable: no in-process admitResult seam was injected and no binary transport exists (jero-pi M3)");
@@ -676,18 +678,18 @@ export async function submitReviewHostRelayPreparedResult(prepared: ReviewHostRe
 				admitted = await admit!(request, submissionBinding.operationToken, submitTokens, resultFile);
 			} catch (error) {
 				if (error instanceof ReviewHostRelayError) throw error;
-				// Mi7 (review): the [invalid_request] heuristic below is the P4
-				// admit-wrapper CONTRACT, mirroring the binary discipline above
-				// (gentle-pi#522/#524: exit 1 + `<reason> [invalid_request]` is the
-				// provider's typed preflight refusal and proves the lens slot was
-				// not consumed). The P4 wrapper that adapts authority refusals onto
-				// this seam MUST surface the authority's typed refusal union as an
-				// Error whose message carries the `[invalid_request]` marker, so the
-				// relay classifies it as a proven non-mutation (mutationOutcome
-				// "none"); every other failure keeps "unknown" pending a fresh
-				// negotiated STATUS. The structured typed-refusal channel (typed
-				// error fields instead of the message marker) is deliberately left
-				// to P4 — this seam only documents the contract it must satisfy.
+				// Mi7（评审）：下面的 [invalid_request] 启发式是 P4
+				// admit-wrapper 契约，镜像上面的二进制纪律
+				// （gentle-pi#522/#524：退出码 1 + `<reason> [invalid_request]` 是
+				// 提供方的类型化预检拒绝，证明评审视角槽位未被
+				// 消费）。把权威拒绝适配到
+				// 该接缝上的 P4 包装器必须把权威的类型化拒绝联合以
+				// message 携带 `[invalid_request]` 标记的 Error 暴露出来，这样
+				// 中继才能将其归类为已证明的非变更（mutationOutcome
+				// "none"）；其余所有失败保持 "unknown"，等待一次新的
+				// 协商 STATUS。结构化的类型化拒绝通道（用类型化
+				// 错误字段取代消息标记）被刻意留给
+				// P4 —— 这个接缝只记录它必须满足的契约。
 				const message = error instanceof Error ? error.message : String(error);
 				throw new ReviewHostRelayError(
 					REVIEW_HOST_RELAY_FAILURE.SUBMISSION_REFUSED,
@@ -719,8 +721,8 @@ export async function submitReviewHostRelayPreparedResult(prepared: ReviewHostRe
 		if (submission.exitCode !== 0 || submission.timedOut || submission.stdout.length === 0) {
 			const stderr = submission.stderr.toString("utf8");
 			const details = { exitCode: submission.exitCode, stderr, timedOut: submission.timedOut, elapsedMs: submission.elapsedMs, timeoutMs: request.gentleAiTimeoutMs! };
-			// A typed admission refusal proves the provider consumed no slot.
-			// Every other launched submission stays unknown pending fresh STATUS.
+			// 类型化准入拒绝证明提供方没有消费任何槽位。
+			// 其余已发起的 submission 保持 unknown，等待新的 STATUS。
 			if (isReviewHostRelayAdmissionRefusal(submission, stderr)) {
 				throw new ReviewHostRelayError(REVIEW_HOST_RELAY_FAILURE.SUBMISSION_REFUSED, "submit", stderr.trim(), {
 					...details,
@@ -755,8 +757,8 @@ export async function submitReviewHostRelayPreparedResult(prepared: ReviewHostRe
 }
 
 /**
- * Compatibility one-binding path: materialize → opaque Pi adapter → submit.
- * It preserves the established API and its typed failure behavior exactly.
+ * 兼容的单绑定路径：materialize → 不透明 Pi 适配器 → submit。
+ * 它精确保留既有 API 及其类型化失败行为。
  */
 export async function runReviewHostRelaySlot(request: ReviewHostRelayRequest): Promise<ReviewHostRelayResult> {
 	return await submitReviewHostRelayPreparedResult(await prepareReviewHostRelaySlot(request));

@@ -7,12 +7,11 @@ import { jeroDomainHash } from "./canonical.ts";
 import { decodeJeroReviewModeRecordV1, type JeroReviewModeValue } from "./protocol.ts";
 import { JeroAuthorityStoreError, resolveJeroAuthorityStoreV1 } from "./store-root.ts";
 
-// Review-mode (RDD) get/set (spec §I.8): clone-scoped mutations only — every
-// set writes `<jero-store>/review-mode.json`; the global value under the jero
-// config home is read-only for M2 (user-explicit `/jero:review-mode` wiring
-// lands with extensions integration). The typed result mirrors the upstream
-// `NativeReviewModeResult` field-for-field (operation/scope/status) so the
-// extensions seam can render it unchanged.
+// 评审模式（RDD）的读写（spec §I.8）：只做克隆作用域的变更——每次设置
+// 写入 `<jero-store>/review-mode.json`；jero 配置主目录下的全局值在 M2
+// 是只读的（用户显式的 `/jero:review-mode` 接线随扩展集成落地）。
+// 类型化结果逐字段镜像上游的 `NativeReviewModeResult`
+// （operation/scope/status），使扩展接缝可以原样渲染它。
 
 export type JeroReviewModeSource = "default" | "global" | "clone_local";
 export type JeroReviewModeReach = "machine" | "this_build";
@@ -38,7 +37,7 @@ export type JeroReviewModeOutcomeV1 =
 
 export const JERO_REVIEW_MODE_FILENAME = "review-mode.json";
 
-/** The default global record location; callers apply their env override before the context exists. */
+/** 默认的全局记录位置；调用方在上下文存在之前应用其环境覆盖。 */
 export function defaultGlobalReviewModePathV1(): string {
 	return join(homedir(), ".pi", "jero", JERO_REVIEW_MODE_FILENAME);
 }
@@ -66,11 +65,11 @@ function modeRevision(value: JeroReviewModeValue): string {
 }
 
 function composeStatus(global: "" | JeroReviewModeValue, cloneLocal: "" | JeroReviewModeValue): JeroReviewModeStatusV1 {
-	// The most specific explicit value wins: a set clone-local value (on OR
-	// off) overrides the global one; with neither set the mode defaults ON —
-	// upstream provenance native-review-cli.ts:269-271 ("Reviews are on by
-	// default; this was never explicitly chosen"). Defaulting off would make
-	// the §B.5 consent ceremony unreachable for default-source clones.
+	// 最具体的显式值获胜：已设置的克隆局部值（无论 on 还是 off）覆盖
+	// 全局值；两者都未设置时模式默认开启——上游出处
+	// native-review-cli.ts:269-271（“Reviews are on by default; this was
+	// never explicitly chosen”）。默认关闭会使 default 来源克隆的 §B.5
+	// 同意仪式不可达。
 	const source: JeroReviewModeSource = cloneLocal !== "" ? "clone_local" : global !== "" ? "global" : "default";
 	const effective: "on" | "off" = source === "clone_local" ? (cloneLocal === "on" ? "on" : "off") : source === "global" ? (global === "on" ? "on" : "off") : "on";
 	return {
@@ -79,13 +78,13 @@ function composeStatus(global: "" | JeroReviewModeValue, cloneLocal: "" | JeroRe
 		effective,
 		source,
 		...(cloneLocal !== "" ? { revision: modeRevision(cloneLocal) } : {}),
-		// `reach` reports how far the winning explicit value extends: a global
-		// value reaches the whole machine, a clone-local value this clone.
+		// `reach` 报告获胜的显式值延伸多远：全局值覆盖整台机器，
+		// 克隆局部值只覆盖本克隆。
 		...(source === "global" ? { reach: "machine" as const } : source === "clone_local" ? { reach: "this_build" as const } : {}),
 	};
 }
 
-/** Read-only mode status; never writes, never throws raw. */
+/** 只读模式状态；绝不写入，绝不抛出原始错误。 */
 export function getJeroReviewModeV1(cwd: string, options: { globalModePath?: string } = {}): JeroReviewModeOutcomeV1 {
 	const store = resolveJeroAuthorityStoreV1(cwd);
 	if (store.kind !== "ok") return { kind: "refused", code: store.kind, detail: "detail" in store ? store.detail : store.hits.join(", ") };
@@ -96,7 +95,7 @@ export function getJeroReviewModeV1(cwd: string, options: { globalModePath?: str
 	return { kind: "ok", result: { operation: "status", scope: "both", status: composeStatus(global.value, clone.value) } };
 }
 
-/** Effective mode for START's consent gate (read-only convenience). */
+/** START 同意门用的生效模式（只读便捷封装）。 */
 export function effectiveJeroReviewModeV1(storeRoot: string, options: { globalModePath?: string } = {}): { effective: "on" | "off"; corrupted?: string } {
 	const global = readModeRecord(options.globalModePath ?? globalModePath(), "global review mode");
 	if (global.corrupted !== undefined) return { effective: "on", corrupted: global.corrupted };
@@ -106,7 +105,7 @@ export function effectiveJeroReviewModeV1(storeRoot: string, options: { globalMo
 	return { effective: status.effective };
 }
 
-/** Clone-scoped set: the ONLY mutation M2 offers; typed result mirrors NativeReviewModeResult. */
+/** 克隆作用域的设置：M2 提供的唯一变更；类型化结果镜像 NativeReviewModeResult。 */
 export function setJeroReviewModeV1(cwd: string, value: JeroReviewModeValue, options: { globalModePath?: string } = {}): JeroReviewModeOutcomeV1 {
 	if (value !== "on" && value !== "off") return { kind: "refused", code: "mode-value-invalid", detail: `unsupported mode value ${JSON.stringify(value)}` };
 	const store = resolveJeroAuthorityStoreV1(cwd);
@@ -114,14 +113,14 @@ export function setJeroReviewModeV1(cwd: string, value: JeroReviewModeValue, opt
 	const global = readModeRecord(options.globalModePath ?? globalModePath(), "global review mode");
 	if (global.corrupted !== undefined) return { kind: "refused", code: "mode-record-corrupted", detail: global.corrupted };
 	const record = { schema: "jero.authority.review-mode/v1" as const, value };
-	// decode-before-write keeps the strict-decode discipline at the boundary.
+	// 先解码再写入，在边界处保持严格解码纪律。
 	decodeJeroReviewModeRecordV1(record);
 	const path = cloneModePath(store.store_root);
 	try {
 		mkdirSync(store.store_root, { recursive: true, mode: 0o700 });
-		// Atomic temp+rename: a crash mid-write can never leave a torn or empty
-		// mode record behind (a torn record would read as corrupted and fail
-		// closed to mode-on, but the intent was an explicit disable).
+		// 原子的临时文件+重命名：写入中途崩溃绝不会留下撕裂或空的
+		// 模式记录（撕裂的记录会被读成损坏并保守失败到模式开启，
+		// 但用户意图是显式关闭）。
 		const staging = join(dirname(path), `.${basename(path)}.${randomUUID()}.tmp`);
 		try {
 			writeFileSync(staging, `${canonicalJsonV1(record)}\n`, { mode: 0o600 });

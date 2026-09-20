@@ -320,7 +320,7 @@ function localAgentOverrideCount(cwd: string, owner: PackageAssetOwner): number 
 }
 
 // ---------------------------------------------------------------------------
-// Background subagents policy — project > global > env > default off
+// 后台子代理策略 —— 项目 > 全局 > 环境变量 > 默认关闭
 // ---------------------------------------------------------------------------
 
 type BackgroundSubagentsPolicy = "on" | "off";
@@ -331,7 +331,7 @@ interface BackgroundSubagentsRendering {
 	capability: BackgroundSubagentsCapability;
 }
 
-/** Which of the four sources decided the effective policy. */
+/** 四个来源中哪一个决定了生效策略。 */
 type BackgroundSubagentsSource =
 	| "project_file"
 	| "global_file"
@@ -341,20 +341,20 @@ type BackgroundSubagentsSource =
 interface BackgroundSubagentsResolution {
 	policy: BackgroundSubagentsPolicy;
 	source: BackgroundSubagentsSource;
-	/** The deciding file was present but failed the strict decode. */
+	/** 决定策略的文件存在，但未通过严格解码。 */
 	malformed: boolean;
 	projectFile: string;
 	globalFile: string;
 	projectFileExists: boolean;
 	globalFileExists: boolean;
-	/** The raw env value, reported even when it is unrecognized and inert. */
+	/** 原始环境变量值，即使无法识别且不生效也会上报。 */
 	envValue: string | undefined;
 }
 
 interface LoadBackgroundSubagentsOptions {
-	/** Override the config home directory (used in tests to avoid touching ~/.pi). */
+	/** 覆盖配置主目录（测试中用于避免触碰 ~/.pi）。 */
 	gentlePiConfigHome?: string;
-	/** Override the environment lookup (used in tests). */
+	/** 覆盖环境变量查找（测试用）。 */
 	env?: Record<string, string | undefined>;
 }
 
@@ -367,9 +367,9 @@ const DEFAULT_BACKGROUND_SUBAGENTS_RENDERING: BackgroundSubagentsRendering = {
 };
 
 /**
- * Strict decode of {"schema":"jero.background-subagents/v1","policy":"on"|"off"}.
- * Any malformed shape (bad JSON, wrong schema, unknown keys, invalid policy)
- * returns undefined so the caller fails closed to "off".
+ * 对 {"schema":"jero.background-subagents/v1","policy":"on"|"off"} 的严格解码。
+ * 任何畸形形态（JSON 损坏、schema 不符、未知键、非法 policy）
+ * 都返回 undefined，让调用方保守失败为 "off"。
  */
 function parseBackgroundSubagentsPolicyFile(
 	raw: string,
@@ -388,23 +388,21 @@ function parseBackgroundSubagentsPolicyFile(
 }
 
 /**
- * Resolve the background-subagents policy AND the source that decided it.
+ * 解析后台子代理策略，以及决定该策略的来源。
  *
- * Resolution order (first hit wins, mirroring loadRuntimeGuardrailsConfig):
- *   1. Project file `${cwd}/.pi/jero/background-subagents.json`
- *   2. Global file `${configHome}/background-subagents.json`
- *      (configHome honors JERO_PI_CONFIG_HOME, default ~/.pi/jero)
- *   3. Env var JERO_PI_BACKGROUND_SUBAGENTS ("on" | "off")
- *   4. Default "off"
+ * 解析顺序（先命中者优先，与 loadRuntimeGuardrailsConfig 一致）：
+ *   1. 项目文件 `${cwd}/.pi/jero/background-subagents.json`
+ *   2. 全局文件 `${configHome}/background-subagents.json`
+ *      （configHome 遵循 JERO_PI_CONFIG_HOME，默认 ~/.pi/jero）
+ *   3. 环境变量 JERO_PI_BACKGROUND_SUBAGENTS（"on" | "off"）
+ *   4. 默认 "off"
  *
- * A present-but-malformed file fails closed to "off" instead of falling
- * through to a lower-priority source, and it stays attributed to that file:
- * "off decided by a broken project file" and "off by default" are different
- * situations, and only the first one is a mistake to fix.
+ * 存在但畸形的文件会保守失败为 "off"，而不是继续落到较低优先级的来源，
+ * 并且仍然归属于该文件：“由一个损坏的项目文件决定为 off”与“默认 off”
+ * 是两种不同情况，只有前者才是需要修复的错误。
  *
- * Four sources with first-hit-wins is exactly the shape that makes an edit
- * look like it did nothing, so the deciding source is part of the result
- * rather than something a caller has to re-derive.
+ * 四个来源且先命中优先，正是那种会让一次编辑看起来毫无效果的结构，
+ * 因此决定来源被纳入返回结果，而不是让调用方自行重新推导。
  */
 function resolveBackgroundSubagentsPolicy(
 	cwd: string,
@@ -430,8 +428,8 @@ function resolveBackgroundSubagentsPolicy(
 			try {
 				decoded = parseBackgroundSubagentsPolicyFile(readFileSync(path, "utf8"));
 			} catch {
-				// Unreadable is indistinguishable from unusable at this layer, and
-				// both must fail closed on the file that claimed the decision.
+				// 在这一层，无法读取与无法使用不可区分，
+				// 两者都必须在声称拥有决定权的文件上保守失败。
 				decoded = undefined;
 			}
 			return decoded === undefined
@@ -457,8 +455,8 @@ function resolveBackgroundSubagentsPolicy(
 }
 
 /**
- * The effective policy alone, for callers that do not report a source.
- * It delegates so the loader and the resolver can never disagree.
+ * 仅返回生效策略，供不上报来源的调用方使用。
+ * 通过委托实现，加载器与解析器永远不会各执一词。
  */
 function loadBackgroundSubagentsPolicy(
 	cwd: string,
@@ -467,7 +465,7 @@ function loadBackgroundSubagentsPolicy(
 	return resolveBackgroundSubagentsPolicy(cwd, options).policy;
 }
 
-/** Write the global policy file, creating the config home when needed. */
+/** 写入全局策略文件，必要时创建配置主目录。 */
 function writeGlobalBackgroundSubagentsPolicy(
 	policy: BackgroundSubagentsPolicy,
 	configHome: string = gentleAiConfigHome(),
@@ -497,11 +495,10 @@ function describeBackgroundSubagentsSource(
 }
 
 /**
- * Report the effective policy, the source that decided it, and the resolved
- * capability, plus whatever the user needs to know about the sources that did
- * NOT decide. `wrote` names a policy this invocation just wrote to the global
- * file; a write that a higher-priority file outranks must never be reported as
- * if it had taken effect.
+ * 上报生效策略、决定它的来源、已解析的能力，以及用户需要了解的
+ * 关于“未”起决定作用的来源的信息。`wrote` 表示本次调用刚写入全局
+ * 文件的策略；被更高优先级文件压过的写入，绝不能被报告成
+ * 已经生效。
  */
 function renderBackgroundSubagentsReport(
 	resolution: BackgroundSubagentsResolution,
@@ -564,7 +561,7 @@ const ALLOWED_EDIT_SURFACES_HEADING = /^## Allowed edit surfaces[ \t]*$/gim;
 const MARKDOWN_HEADING_LINE = /^ {0,3}#{1,6} /;
 const MARKDOWN_LIST_MARKER = /^(?:[-*+]|\d+[.)]) +/;
 const WRITER_EDIT_SURFACE_REJECTION =
-	"Writer tasks must include the exact Markdown heading `## Allowed edit surfaces` with narrow repository-relative paths or narrow globs, one per line. Every non-empty line belongs to the section until the next canonical Markdown heading and must be a valid surface entry. Paths containing whitespace require whole-entry backticks; begin explanatory prose under the next Markdown heading. The parent must derive or map that canonical block from the delegated task and relaunch the writer; do not accept aliases, and do not ask the human to author paths or globs.";
+	"写者任务必须包含精确的 Markdown 标题 `## Allowed edit surfaces`，其中列出狭窄的仓库相对路径或狭窄的 glob，每行一条。直到下一个规范 Markdown 标题之前的每个非空行都属于该小节，且必须是有效的编辑面条目。包含空白字符的路径需要整条反引号包裹；解释性文字请放在下一个 Markdown 标题之下。父会话必须从被委托的任务推导或映射出该规范块并重新启动写者；不接受别名，也不要让人类来编写路径或 glob。";
 
 function isTaskScopedRepositoryRelativePath(value: string, isWholeEntryBackticked: boolean): boolean {
 	const normalized = value.replace(/\\/g, "/");
@@ -598,7 +595,7 @@ type AllowedEditSurfaceEntry = {
 	isValidMarkdownSyntax: boolean;
 };
 
-/** Reads one entry and records whether backticks delimit the whole path. */
+/** 读取一个条目，并记录反引号是否包裹了整条路径。 */
 function readSurfaceEntry(line: string): AllowedEditSurfaceEntry {
 	const withoutListMarker = line.replace(MARKDOWN_LIST_MARKER, "");
 	const backticked = withoutListMarker.match(/^`([^`]+)`$/);
@@ -612,8 +609,8 @@ function readSurfaceEntry(line: string): AllowedEditSurfaceEntry {
 }
 
 /**
- * Reads every non-empty line until the next Markdown heading as an edit surface.
- * A prose line cannot terminate this section: it must fail validation instead.
+ * 把直到下一个 Markdown 标题之前的每个非空行都读取为一个编辑面。
+ * 普通散文行不能终止该小节：它必须以校验失败收场。
  */
 function readAllowedEditSurfaceEntries(following: string): AllowedEditSurfaceEntry[] {
 	const lines = following.split(/\r?\n/);
@@ -830,7 +827,7 @@ function hasCanonicalJudgmentDayFixActivation(...values: unknown[]): boolean {
 }
 
 const JUDGMENT_DAY_FIX_DISPATCH_REJECTION =
-	"Judgment Day fix dispatch requires exactly one `agent: \"jd-fix-agent\"`, one exact `## Judgment Day activation` section containing only `User explicitly requested Judgment Day.`, one non-empty unique canonical `## Exact authorized severe IDs` section, one exact `## Judgment Day correction batch` section with `Round: 1 of 2.` or `Round: 2 of 2.` and the matching canonical lowercase SHA-256 of one exact `## Exact frozen finding rows` section whose BLOCKER/CRITICAL open Judgment Day rows equal the authorized IDs in the same order, and the existing exact `## Allowed edit surfaces` guard. The parent must provide the canonical bounded dispatch; do not infer activation, authorization, or frozen findings.";
+	"Judgment Day 修复派发要求：恰好一个 `agent: \"jd-fix-agent\"`；一个精确的 `## Judgment Day activation` 小节，其中仅含 `User explicitly requested Judgment Day.`；一个非空、无重复的规范 `## Exact authorized severe IDs` 小节；一个精确的 `## Judgment Day correction batch` 小节，带 `Round: 1 of 2.` 或 `Round: 2 of 2.` 以及相匹配的规范小写 SHA-256，对应一个精确的 `## Exact frozen finding rows` 小节，其处于 open 状态的 BLOCKER/CRITICAL Judgment Day 行与授权 ID 逐一对应且顺序一致；以及既有的精确 `## Allowed edit surfaces` 守卫。父会话必须提供规范的有界派发；不要自行推断激活、授权或冻结发现。";
 
 function rejectInvalidJudgmentDayFixDispatch(input: unknown): { block: true; reason: string } | undefined {
 	if (!isRecord(input) || !hasJudgmentDayFixAgentReference(input)) return undefined;
@@ -846,14 +843,14 @@ function rejectInvalidJudgmentDayFixDispatch(input: unknown): { block: true; rea
 }
 
 /**
- * Roots where an installed subagents package may live. These are the same
- * roots builtinAgentDirs() walks, minus its `/agents` suffix.
+ * 已安装子代理包可能所在的根目录。这些根目录与 builtinAgentDirs()
+ * 遍历的相同，仅去掉了其 `/agents` 后缀。
  *
- * builtinAgentDirs() looks for markdown agent definitions, which the package
- * legitimately may not ship. Capability is a different question, so it must
- * not reuse that path: pi-subagents-j0k3r v1.5.2 ships index.ts, src/, skills/
- * and scripts/ and no agents/ directory at all, so an agents-dir probe reports
- * "absent" on every real install and leaves the background policy inert.
+ * builtinAgentDirs() 查找的是 markdown 代理定义，而该包完全可能
+ * 合法地不附带。能力探测是另一个问题，因此不能复用那条路径：
+ * pi-subagents-j0k3r v1.5.2 携带 index.ts、src/、skills/
+ * 和 scripts/，根本没有 agents/ 目录，所以按 agents 目录探测会在
+ * 每个真实安装上都报告 "absent"，让后台策略形同虚设。
  */
 function subagentsPackageRoots(cwd: string): string[] {
 	return SUBAGENTS_PACKAGE_NAMES.flatMap((packageName) => [
@@ -863,7 +860,7 @@ function subagentsPackageRoots(cwd: string): string[] {
 	]);
 }
 
-/** A package root counts as installed only when it carries its own manifest. */
+/** 一个包根目录只有在携带自身 manifest 时才算已安装。 */
 function hasInstalledSubagentsPackage(cwd: string): boolean {
 	return subagentsPackageRoots(cwd).some((root) =>
 		existsSync(join(root, "package.json")),
@@ -877,11 +874,11 @@ function hasSubagentRunTool(activeTools: readonly string[]): boolean {
 }
 
 /**
- * Read the live pi tool registry, or undefined when it carries no signal.
+ * 读取实时的 pi 工具注册表，当它不携带任何信号时返回 undefined。
  *
- * An absent handle, a non-array result, a throwing registry, and an empty list
- * are all "no signal" rather than "no subagents": reporting absent from an
- * uninformative registry would reproduce the very defect this probe fixes.
+ * 句柄缺失、结果不是数组、注册表抛错、列表为空，都属于“没有信号”
+ * 而不是“没有子代理”：从一个不提供信息的注册表得出 absent 的结论，
+ * 会复现本探测所要修复的缺陷本身。
  */
 function readActiveToolNames(pi: unknown): readonly string[] | undefined {
 	try {
@@ -906,12 +903,11 @@ function readActiveToolNames(pi: unknown): readonly string[] | undefined {
 }
 
 /**
- * `subagent_run` availability probe.
+ * `subagent_run` 可用性探测。
  *
- * The live tool registry answers the question directly and wins whenever it
- * carries any signal. Without it -- prompt rendering outside a session, or a
- * runtime with no getActiveTools -- capability falls back to the presence of
- * an installed subagents package.
+ * 实时工具注册表直接回答这个问题，只要携带任何信号就以其为准。
+ * 没有它时——会话之外的提示词渲染，或没有 getActiveTools 的
+ * 运行时——能力回退为是否安装了子代理包。
  */
 function resolveBackgroundSubagentsCapability(
 	cwd: string,
@@ -934,13 +930,12 @@ function renderBackgroundSubagentsStatusLine(
 }
 
 /**
- * A `status` object is only trusted when `effective` is exactly `on`/`off`
- * and `source` is one of the exported `NATIVE_REVIEW_MODE_SOURCE` values.
- * `resolveRddModeStatus` only ever produces a value shaped like this, but
- * `renderRddStatusLine` validates at the render boundary anyway -- a
- * malformed or partial object (a bad decode upstream, a future field
- * change, a hand-built test fixture) must fail closed to the "unknown"
- * line, never render an unrecognized value verbatim.
+ * 只有当 `effective` 恰为 `on`/`off` 且 `source` 是导出的
+ * `NATIVE_REVIEW_MODE_SOURCE` 值之一时，`status` 对象才可信。
+ * `resolveRddModeStatus` 只会产生这种形态的值，但
+ * `renderRddStatusLine` 仍在渲染边界做校验——畸形或不完整的对象
+ * （上游解码出错、未来的字段变更、手工构造的测试 fixture）必须
+ * 保守失败为 "unknown" 行，绝不原样渲染一个无法识别的值。
  */
 function isValidRddModeStatus(
 	status: NativeReviewModeStatus | undefined,
@@ -952,13 +947,12 @@ function isValidRddModeStatus(
 }
 
 /**
- * Renders the receipt-driven-development status line rendered next to
- * `Background subagent policy` (gentle-pi#661). Renders the fail-closed
- * "unknown" line whenever `status` is not a validated on/off status with a
- * recognized source -- `undefined` (the native reader could not answer:
- * binary absent, timed out, aborted, or a native CLI failure) or any
- * malformed/partial object. This is a pure render, never a native call, so
- * it never throws.
+ * 渲染回执驱动开发（RDD）状态行，显示在
+ * `Background subagent policy` 旁边（gentle-pi#661）。只要 `status`
+ * 不是经过校验的 on/off 状态且来源可识别——`undefined`（原生读取器
+ * 无法应答：二进制缺失、超时、中止，或原生 CLI 失败）或任何
+ * 畸形/不完整的对象——就渲染保守失败的 "unknown" 行。这是纯渲染，
+ * 从不发起原生调用，因此永不抛错。
  */
 function renderRddStatusLine(
 	status: NativeReviewModeStatus | undefined,
@@ -968,34 +962,32 @@ function renderRddStatusLine(
 		: "Receipt-driven development: unknown (native status unavailable)";
 }
 
-// The primary-session prompt awaits this on every non-SDD, non-named agent
-// start, so an unbounded native read would stall session start behind a
-// hung `gentle-ai` child (gentle-pi#661 native-review escalation). The
-// production call site (before_agent_start) passes
-// `AbortSignal.timeout(RDD_STATUS_TIMEOUT_MS)`; resolveRddModeStatus also
-// races the call against that same signal itself (not just the CLI's own
-// signal handling) so an abort is honored even against a stub/mock
-// reviewMode that ignores its `signal` argument, as tests do.
+// 主会话提示词在每次非 SDD、非具名代理启动时都要等待它完成，
+// 因此一次无界的原生读取会让会话启动卡在一个挂起的
+// `gentle-ai` 子进程后面（gentle-pi#661 原生评审升级）。
+// 生产调用点（before_agent_start）传入
+// `AbortSignal.timeout(RDD_STATUS_TIMEOUT_MS)`；resolveRddModeStatus
+// 自身也让调用与同一个信号竞速（而不只依赖 CLI 自己的信号处理），
+// 这样即使面对一个忽略 `signal` 参数的 stub/mock
+// reviewMode（测试正是如此），中止也能被尊重。
 const RDD_STATUS_TIMEOUT_MS = 3000;
-// Repeated session/agent-start builds within this window reuse the last
-// resolved status instead of respawning the native binary. Deliberately
-// memoizes a failed/undefined resolution too (a sustained outage should not
-// retry every agent start), trading a slower recovery signal for far fewer
-// spawns; the one-shot notify below still surfaces a sustained outage.
+// 该窗口内重复的会话/代理启动构建会复用上次解析的状态，
+// 而不是重新拉起原生二进制。也故意记忆失败/undefined 的解析结果
+// （持续故障不应在每次代理启动时重试），用较慢的恢复信号换来
+// 少得多的进程拉起；下方的一次性 notify 仍会让持续故障可见。
 const RDD_STATUS_MEMO_TTL_MS = 30_000;
 const rddStatusMemo = new Map<string, { readonly status: NativeReviewModeStatus | undefined; readonly expiresAt: number }>();
 
-/** @internal test seam: clears the per-cwd RDD status memo. */
+/** @internal 测试接缝：清空按 cwd 记忆的 RDD 状态缓存。 */
 function clearRddStatusMemoForTesting(): void {
 	rddStatusMemo.clear();
 }
 
-// gentle-pi#668 (corrected): last-known outcome for ONE candidate, keyed by
-// repository realpath AND targetIdentity -- never repository alone, or one
-// candidate's outcome would leak into every other candidate's `assess` call.
-// Only declined/unavailable are ever written (from ANSWER_CONSENT); `closed`
-// is never written/derived -- pass it explicitly. A missing entry reads back
-// `undefined`, treated as `unknown` (fail closed, exactly like `off`).
+// gentle-pi#668（修正版）：单个候选的最近已知结果，按仓库 realpath
+// 加 targetIdentity 作为键——绝不仅按仓库，否则一个候选的结果会泄漏进
+// 其他每个候选的 `assess` 调用。只会写入 declined/unavailable
+// （来自 ANSWER_CONSENT）；`closed` 永不写入/派生——需显式传入。
+// 缺失的条目读回 `undefined`，按 `unknown` 处理（保守失败，同 `off`）。
 const nativeReviewOutcomeByCandidate = new Map<string, "declined" | "unavailable">();
 
 function nativeReviewOutcomeMemoKey(cwd: string, targetIdentity: string): string {
@@ -1010,18 +1002,18 @@ function recordNativeReviewOutcome(cwd: string, targetIdentity: string, outcome:
 	nativeReviewOutcomeByCandidate.set(nativeReviewOutcomeMemoKey(cwd, targetIdentity), outcome);
 }
 
-/** Returns the recorded outcome for exactly this candidate, or `undefined` when none is recorded. */
+/** 返回恰好针对该候选记录的结果；没有记录时返回 `undefined`。 */
 function readNativeReviewOutcome(cwd: string, targetIdentity: string): "declined" | "unavailable" | undefined {
 	return nativeReviewOutcomeByCandidate.get(nativeReviewOutcomeMemoKey(cwd, targetIdentity));
 }
 
-/** @internal test seam: clears the per-candidate native review outcome memo. */
+/** @internal 测试接缝：清空按候选记忆的原生评审结果缓存。 */
 function clearNativeReviewOutcomeMemoForTesting(): void {
 	nativeReviewOutcomeByCandidate.clear();
 }
 
-// Best-effort current-candidate target identity for `assess` (gentle-pi#668):
-// reuses `targetStatus`, a native call this tool already makes elsewhere.
+// 为 `assess` 尽力获取当前候选的 target identity（gentle-pi#668）：
+// 复用 `targetStatus`，一个本工具已在别处发起的原生调用。
 async function readCurrentTargetIdentityBestEffort(
 	nativeReviewCli: Pick<NativeReviewCli, "targetStatus"> | null | undefined,
 	cwd: string,
@@ -1061,12 +1053,12 @@ async function readRddModeStatusOnce(
 	}
 }
 
-// gentle-pi#662: read-only combined native risk assessment plus the computed
-// verification plan (`lib/review-risk-assessment.ts`), for the `jero_review`
-// tool's `assess` operation. Never throws: an unavailable/failed native
-// assess call (older binary without the verb, timeout, malformed response)
-// resolves to the `unassessable` tier, which `verificationPlan` treats the
-// same as `high` -- the fail-closed rule from gentle-pi#662.
+// gentle-pi#662：只读的组合式原生风险评估加上计算出的验证计划
+// （`lib/review-risk-assessment.ts`），供 `jero_review` 工具的
+// `assess` 操作使用。永不抛错：不可用/失败的原生 assess 调用
+// （缺少该动词的旧版二进制、超时、畸形响应）解析为
+// `unassessable` 档位，`verificationPlan` 对其与 `high` 一视同仁
+// ——即 gentle-pi#662 的保守失败规则。
 interface ReviewAssessmentPlanDetails {
 	schema: "jero.review-assessment-plan/v1";
 	risk: VerificationTier;
@@ -1076,8 +1068,8 @@ interface ReviewAssessmentPlanDetails {
 	candidate: { kind: string; baseRef: string | undefined } | null;
 	rddLine: RddLine;
 	nativeReviewOutcome: NativeReviewOutcome;
-	// gentle-pi#668: where nativeReviewOutcome came from -- explicit (caller
-	// passed it), derived (matched this exact candidate), or unknown.
+	// gentle-pi#668：nativeReviewOutcome 的来源——explicit（调用方
+	// 显式传入）、derived（匹配到该候选本身）或 unknown。
 	outcome_source: "explicit" | "derived" | "unknown";
 	writerProfile: "small" | "large";
 	plan: {
@@ -1122,9 +1114,9 @@ async function resolveReviewAssessmentPlan(
 	}
 
 	const risk: VerificationTier = assessment?.risk ?? VERIFICATION_TIER.UNASSESSABLE;
-	// gentle-pi#668: explicit always wins; otherwise derive only for THIS
-	// candidate's own target identity, never repository-only. `closed` is
-	// never derived.
+	// gentle-pi#668：显式传入永远优先；否则只针对本候选自己的
+	// target identity 派生，绝不只按仓库。`closed`
+	// 永不被派生。
 	const targetIdentity = input.nativeReviewOutcome === undefined ? await readCurrentTargetIdentityBestEffort(nativeReviewCli, cwd, signal) : undefined;
 	const derived = targetIdentity === undefined ? undefined : readNativeReviewOutcome(cwd, targetIdentity);
 	const nativeReviewOutcome: NativeReviewOutcome = input.nativeReviewOutcome ?? derived ?? NATIVE_REVIEW_OUTCOME.UNKNOWN;
@@ -1148,15 +1140,15 @@ async function resolveReviewAssessmentPlan(
 let rddStatusUnavailableWarned = false;
 
 /**
- * Best-effort native RDD mode status read for prompt rendering, memoized per
- * cwd for `RDD_STATUS_MEMO_TTL_MS`. Reuses the `reviewMode` STATUS reader
- * (`gentle-ai review mode status --json`, decoded to
- * `NativeReviewModeStatus`) that the `/jero:review-mode` command also
- * calls. Never throws and never hangs past `signal`'s deadline when one is
- * given: an absent binary, a timed-out/aborted process, or a native CLI
- * failure all resolve to `undefined`. `ctx` is optional and used only for a
- * one-shot (per process) UI notice when the read is swallowed, so a
- * sustained native outage is observable beyond the rendered "unknown" line.
+ * 为提示词渲染尽力读取原生 RDD 模式状态，按 cwd 记忆
+ * `RDD_STATUS_MEMO_TTL_MS` 时长。复用 `reviewMode` STATUS 读取器
+ * （`gentle-ai review mode status --json`，解码为
+ * `NativeReviewModeStatus`），`/jero:review-mode` 命令调用的也是
+ * 它。永不抛错，且在给定 `signal` 时绝不拖过其截止时间：
+ * 二进制缺失、进程超时/中止、原生 CLI 失败都解析为
+ * `undefined`。`ctx` 是可选的，仅在读取被吞掉时用于一次性
+ * （每进程一次）的 UI 提示，让持续的原生故障在渲染的 "unknown"
+ * 行之外也能被观察到。
  */
 async function resolveRddModeStatus(
 	nativeReviewCli: Pick<NativeReviewCli, "reviewMode"> | null | undefined,
@@ -1174,7 +1166,7 @@ async function resolveRddModeStatus(
 		rddStatusUnavailableWarned = true;
 		if (ctx?.hasUI) {
 			ctx.ui.notify(
-				"Jero: receipt-driven-development status is unavailable (native review CLI absent, timed out, or failed). The parent prompt renders \"unknown\" until this recovers; this notice will not repeat this session.",
+				"Jero：回执驱动开发（receipt-driven-development）状态不可用（原生评审 CLI 缺失、超时或失败）。在恢复之前，父提示词将渲染 \"unknown\"；本提示本会话不会重复。",
 				"warning",
 			);
 		}
@@ -1182,7 +1174,7 @@ async function resolveRddModeStatus(
 	return status;
 }
 
-/** Resolves and renders the RDD status line for a production call site in one call. */
+/** 一次调用即完成解析并渲染 RDD 状态行，供生产调用点使用。 */
 async function resolveRddStatusLine(
 	nativeReviewCli: Pick<NativeReviewCli, "reviewMode"> | null | undefined,
 	cwd: string,
@@ -1193,14 +1185,13 @@ async function resolveRddStatusLine(
 	return renderRddStatusLine(await resolveRddModeStatus(nativeReviewCli, cwd, signal, now, ctx));
 }
 
-// Rendered prompts are memoized per background policy/capability/RDD-status
-// key for the process lifetime; the assets bytes themselves are read once
-// per key. `rddStatusLine` defaults to the "unknown" fallback line (the
-// longest of the three renderable forms), not "", so the default no-argument
-// render IS the worst case the canonical 8 KiB budget in
-// tests/orchestrator-budget.test.ts measures; assets/orchestrator.md is
-// sized with that worst case already included. Production still resolves
-// and passes the real line (on/off/unknown) via resolveRddStatusLine.
+// 渲染出的提示词按后台策略/能力/RDD 状态键在进程生命周期内记忆；
+// assets 字节本身每个键只读一次。`rddStatusLine` 默认取 "unknown"
+// 兜底行（三种可渲染形态中最长的那个）而不是 ""，因此无参数的默认
+// 渲染本身就是 tests/orchestrator-budget.test.ts 所度量的规范 8 KiB
+// 预算的最坏情况；assets/orchestrator.md 的体量已把该最坏情况
+// 计算在内。生产路径仍通过 resolveRddStatusLine 解析并传入
+// 真实的行（on/off/unknown）。
 const orchestratorPromptCache = new Map<string, string>();
 function getOrchestratorPrompt(
 	cwd: string = process.cwd(),
@@ -1235,15 +1226,13 @@ function renderOrchestratorPrompt(
 		.trim();
 }
 
-// gentle-pi#560 / gentle-ai#4056, #4057: Jero stopped writing a
-// runtime-specific review execution contract into Pi's generated
-// APPEND_SYSTEM composition on 2026-08-01. This package now injects the
-// mirrored provider contract bundle's own `orchestration/pi.md` text
-// instead, read once from the package-local mirror
-// (contracts/review-provider-contract-mirror/) and cached as the fully
-// rendered fragment for the process lifetime. It is deliberately NOT folded
-// into getOrchestratorPrompt/orchestratorPromptCache: that core prompt is
-// pinned at an 8192-byte budget (tests/orchestrator-budget.test.ts).
+// gentle-pi#560 / gentle-ai#4056, #4057：2026-08-01 起，Jero 不再向
+// Pi 生成的 APPEND_SYSTEM 组合写入运行时专属的评审执行契约。本包改为
+// 注入镜像 provider 契约 bundle 自带的 `orchestration/pi.md` 文本，
+// 从包内镜像（contracts/review-provider-contract-mirror/）读取一次，
+// 并以完整渲染的片段形式在进程生命周期内缓存。它被刻意地不并入
+// getOrchestratorPrompt/orchestratorPromptCache：那个核心提示词
+// 被钉死在 8192 字节预算上（tests/orchestrator-budget.test.ts）。
 const PROVIDER_CONTRACT_MIRROR_ROOT = join(PACKAGE_ROOT, "contracts", "review-provider-contract-mirror");
 const PROVIDER_CONTRACT_LOCK_FILE = "provider-contract.lock.json";
 const PI_ORCHESTRATION_RUNTIME = "pi";
@@ -1251,7 +1240,7 @@ const PI_ORCHESTRATION_RUNTIME = "pi";
 let reviewContractPromptFragmentCache: string | null | undefined;
 let reviewContractPromptMissingWarned = false;
 
-// Verifies the mirrored orchestration/pi.md bytes against the lock's digest before injection (gentle-ai R1/R3).
+// 注入前先按 lock 文件中的摘要校验镜像的 orchestration/pi.md 字节（gentle-ai R1/R3）。
 function readMirroredReviewContractFragment(mirrorRoot: string = PROVIDER_CONTRACT_MIRROR_ROOT): string | null {
 	try {
 		const lockPath = join(mirrorRoot, PROVIDER_CONTRACT_LOCK_FILE);
@@ -1285,7 +1274,7 @@ function loadReviewContractPromptFragment(
 		reviewContractPromptMissingWarned = true;
 		if (ctx.hasUI) {
 			ctx.ui.notify(
-				"Jero review execution contract is unavailable: the mirrored provider bundle is missing, unreadable, or fails digest verification. Review preflight instructions will not be injected this session.",
+				"Jero 评审执行契约不可用：镜像的 provider bundle 缺失、无法读取或未通过摘要校验。本会话不会注入评审预检指令。",
 				"warning",
 			);
 		}
@@ -1307,23 +1296,23 @@ type PersonaMode = "gentleman" | "neutral";
 const PERSONA_OPTIONS = ["gentleman", "neutral"] as const;
 
 const GENTLEMAN_PERSONA_PROMPT = `Persona:
-- Be direct, technical, and concise.
-- Always respond in the same language the user writes in.
-- When the user writes Spanish, answer in natural Rioplatense Spanish with voseo.
-- Act as a senior architect and teacher: concepts before code, no shortcuts.
-- Treat AI as a tool directed by the human; never present yourself as a default chatbot.
-- Push back when the user asks for code without enough context or understanding.
-- Correct errors directly, explain why, and show the better path.`;
+- 直接、技术性、简洁。
+- 始终用用户写作所用的语言回答。
+- 用户使用中文时，用自然、地道的简体中文回答。
+- 以资深架构师和教师的姿态行事：先讲概念再写代码，不走捷径。
+- 把 AI 当作由人指挥的工具；绝不把自己呈现为默认聊天机器人。
+- 当用户在没有足够上下文或理解的情况下索要代码时，予以推回。
+- 直接纠正错误，解释原因，并展示更好的路径。`;
 
 const NEUTRAL_PERSONA_PROMPT = `Persona:
-- Be direct, technical, concise, warm, and professional.
-- Always respond in the same language the user writes in.
-- Do not use slang or regional expressions.
-- When the user writes Spanish, use neutral/professional Spanish. Do NOT use voseo (vos tenés, vos querés, hacé, andá, etc.) or any regional conjugations.
-- Act as a senior architect and teacher: concepts before code, no shortcuts.
-- Treat AI as a tool directed by the human; never present yourself as a default chatbot.
-- Push back when the user asks for code without enough context or understanding.
-- Correct errors directly, explain why, and show the better path.`;
+- 直接、技术性、简洁、温和且专业。
+- 始终用用户写作所用的语言回答。
+- 不使用俚语或地域性表达。
+- 用户使用中文时，用中性、专业的简体中文。不使用网络俚语（yyds、绝绝子）、梗或方言表达（老铁、咋、俺）。
+- 以资深架构师和教师的姿态行事：先讲概念再写代码，不走捷径。
+- 把 AI 当作由人指挥的工具；绝不把自己呈现为默认聊天机器人。
+- 当用户在没有足够上下文或理解的情况下索要代码时，予以推回。
+- 直接纠正错误，解释原因，并展示更好的路径。`;
 
 function buildGentlePrompt(
 	persona: PersonaMode,
@@ -1335,49 +1324,49 @@ function buildGentlePrompt(
 		persona === "neutral" ? NEUTRAL_PERSONA_PROMPT : GENTLEMAN_PERSONA_PROMPT;
 	const languageBoundary =
 		persona === "neutral"
-			? "Language: neutral/professional Spanish when the user writes Spanish. Do NOT use voseo or Rioplatense regional expressions."
-			: "Language: natural Rioplatense Spanish with voseo when the user writes Spanish.";
-	return `## el Jero Identity and Harness
+			? "语言：用户使用中文时，用中性、专业的简体中文；不使用网络俚语、梗或方言表达。"
+			: "语言：用户使用中文时，用自然、地道的简体中文回答。";
+	return `## el Jero 身份与框架
 
 Current persona mode: ${persona}
 
-You are el Jero: a Pi-specific coding-agent harness for controlled development work.
+你是 el Jero：一个面向受控开发工作的 Pi 专用编码代理框架。
 
-Identity contract:
-- When the user asks who or what you are, answer as el Jero, not as a generic assistant, and never introduce yourself as only "your assistant" or "the default assistant". Convey this meaning, translated into the user's language: "I am el Jero: a Pi-specific coding-agent harness for controlled development, with a senior architect persona. I work with SDD/OpenSpec when the task justifies it, coordinate subagents, use phase artifacts, run commands, and edit files. I am not a generic chatbot."
-- Follow the currently selected persona mode.
-- Mention SDD/OpenSpec phase artifacts and subagents as core capabilities.
-- Mention memory only when memory packages or callable memory tools are actually active; never invent persistent memory.
-- Do not claim portability outside the Pi runtime.
+身份契约：
+- 当用户问你是谁或是什么时，以 el Jero 的身份回答，而不是泛用助手，且绝不仅仅以“您的助手”或“默认助手”自我介绍。传达以下含义，并翻译成用户的语言：“我是 el Jero：一个面向受控开发的 Pi 专用编码代理框架，具备资深架构师人格。我在任务需要时使用 SDD/OpenSpec，协调子代理，使用阶段产物，运行命令并编辑文件。我不是通用聊天机器人。”
+- 遵循当前选择的人格模式。
+- 将 SDD/OpenSpec 阶段产物和子代理作为核心能力提及。
+- 仅在记忆包或可调用的记忆工具确实处于活动状态时才提及记忆；绝不虚构持久记忆。
+- 不宣称在 Pi 运行时之外可移植。
 
 ${personaPrompt}
 
 ${languageBoundary}
 
-Harness principles:
-- el Jero is not prompt engineering. It is runtime discipline around powerful agents.
-- Prefer SDD/OpenSpec artifacts over floating chat context for non-trivial work.
-- Clarify scope, constraints, acceptance criteria, and non-goals before implementation.
-- Use subagents when available for exploration, planning, implementation, and review, while keeping one parent session responsible for orchestration.
-- Keep writes single-threaded unless the user explicitly approves parallel write isolation.
-- If tests exist, use strict TDD evidence: RED, GREEN, TRIANGULATE, REFACTOR.
-- Protect the human reviewer: avoid oversized changes, surface review workload risk, and ask before turning one task into a large multi-area change.
-- Never claim persistent memory is available because of this package. Memory is provided by separate packages or MCP tools when installed and callable.
+框架原则：
+- el Jero 不是提示词工程，而是围绕强大代理的运行时纪律。
+- 非平凡工作优先使用 SDD/OpenSpec 产物，而非漂浮的聊天上下文。
+- 实现之前先澄清范围、约束、验收标准与非目标。
+- 在可用时使用子代理进行探索、规划、实现和评审，同时保持单一父会话负责编排。
+- 除非用户明确批准并行写隔离，否则保持写操作单线程。
+- 若存在测试，使用严格的 TDD 证据：RED、GREEN、TRIANGULATE、REFACTOR。
+- 保护人类评审者：避免过大的变更，揭示评审工作量风险，在把一个任务变成大型多区域变更之前先询问。
+- 绝不因本包而宣称持久记忆可用。记忆由独立的包或 MCP 工具在安装且可调用时提供。
 
 ${getOrchestratorPrompt(cwd, activeTools, rddStatusLine)}`;
 }
 
-// Matches `git [global-flags] push` — tolerates flags like -C /repo or --work-tree=/tmp
-// between `git` and the subcommand. Short flags may be followed by a separate value token.
+// 匹配 `git [全局标志] push` —— 容忍 `git` 与子命令之间的
+// -C /repo 或 --work-tree=/tmp 等标志。短标志后面可以跟一个独立的取值 token。
 const GIT_GLOBAL_FLAGS_SRC = String.raw`(?:\s+--?\S+(?:\s+[^-\s]\S*)?)* `;
 const GIT_PUSH_RE = new RegExp(String.raw`\bgit${GIT_GLOBAL_FLAGS_SRC}(push)\b`);
 
 const DENIED_BASH_PATTERNS: RegExp[] = [
-	// Block rm -rf targeting /, ~ or ~/subdir, $HOME or $HOME/subdir, .. or .
+	// 阻止针对 /、~ 或 ~/子目录、$HOME 或 $HOME/子目录、.. 或 . 的 rm -rf
 	/\brm\s+-rf\s+(?:\/(?:\s|$)|~(?:\/|\s|$)|[$]HOME(?:\/|\s|$)|\.\.?(?:\s|$))/,
 	/\bgit\s+reset\s+--hard\b/,
 	/\bgit\s+clean\b(?=[^\n]*(?:-[^\n]*f|--force))(?=[^\n]*(?:-[^\n]*d|--directories))/,
-	// Force-push deny: tolerates git global flags (e.g. -C /repo) before the subcommand
+	// 强制推送拒绝：容忍子命令前的 git 全局标志（如 -C /repo）
 	new RegExp(String.raw`\bgit${GIT_GLOBAL_FLAGS_SRC}push\b(?=[^\n]*\s--force(?:-with-lease)?\b)`),
 	new RegExp(String.raw`\bgit${GIT_GLOBAL_FLAGS_SRC}push\b(?=[^\n]*\s-[^\s-]*f)`),
 	/\bchmod\s+-R\s+777\b/,
@@ -1385,7 +1374,7 @@ const DENIED_BASH_PATTERNS: RegExp[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Autonomous guard — runtime guardrails config
+// 自主守卫 —— 运行时护栏配置
 // ---------------------------------------------------------------------------
 
 const GUARD_ACTION = {
@@ -1428,9 +1417,9 @@ interface RuntimeGuardrailsConfig {
 }
 
 interface LoadGuardrailsOptions {
-	/** Override the config home directory (used in tests to avoid touching ~/.pi). */
+	/** 覆盖配置主目录（测试中用于避免触碰 ~/.pi）。 */
 	gentlePiConfigHome?: string;
-	/** Override the environment for the autonomous-mode check (injected processEnv seam). */
+	/** 覆盖自主模式检查所用的环境（注入的 processEnv 接缝）。 */
 	env?: NodeJS.ProcessEnv;
 }
 
@@ -1464,14 +1453,14 @@ const SAFE_GUARDRAILS_CONFIG: RuntimeGuardrailsConfig = {
 };
 
 /**
- * Classify a shell command under the runtime guard policy.
+ * 按运行时守卫策略对一条 shell 命令分类。
  *
- * Ordering (non-negotiable):
- *   1. Hard-deny patterns → "block" (always, cannot be overridden by config)
- *   2. If autonomousMode is false → mirror the legacy CONFIRM_BASH_PATTERNS result
- *   3. If autonomousMode is true → use configured GuardAction for the matched key
- *      (applying AUTONOMOUS_DEFAULT_ACTIONS for any key not set in guardedCommands)
- *   4. No match → "not-guarded"
+ * 顺序（不可协商）：
+ *   1. 硬拒绝模式 → "block"（永远生效，不能被配置覆盖）
+ *   2. 若 autonomousMode 为 false → 镜像旧版 CONFIRM_BASH_PATTERNS 的结果
+ *   3. 若 autonomousMode 为 true → 对命中的键使用配置的 GuardAction
+ *      （对 guardedCommands 中未设置的键应用 AUTONOMOUS_DEFAULT_ACTIONS）
+ *   4. 无命中 → "not-guarded"
  */
 function collectGuardedMatches(
 	command: string,
@@ -1503,7 +1492,7 @@ function evaluateGuardedCommand(
 ): GuardEvaluation {
 	const matches = collectGuardedMatches(command, config);
 
-	// Hard denies override every configured action across the complete command.
+	// 硬拒绝覆盖整条命令上的任何已配置动作。
 	for (const pattern of DENIED_BASH_PATTERNS) {
 		const denied = pattern.exec(command);
 		if (!denied) continue;
@@ -1518,7 +1507,7 @@ function evaluateGuardedCommand(
 		};
 	}
 
-	// Configured block, then confirmation, then allow win across all matches.
+	// 在所有命中中，先取配置的 block，其次 confirm，最后 allow。
 	const selected = matches.find((match) => match.action === "block")
 		?? matches.find((match) => match.action === "confirm")
 		?? matches.find((match) => match.action === "allow");
@@ -1539,7 +1528,7 @@ function guardedCommandPreview(command: string, triggerIndex: number): string {
 	return `${prefix}${truncateToWidth(command.slice(start).replace(/\s+/g, " ").trim(), 180 - prefix.length, "…")}`;
 }
 
-/** Confirmation headline for all guarded actions; generic when no key matched. */
+/** 所有受守卫动作的确认标题；没有键命中时使用通用文案。 */
 function guardedCommandTitle(
 	key?: GuardedCommandKey,
 	matches: readonly GuardMatch[] = [],
@@ -1582,19 +1571,19 @@ function parseGuardrailsConfigFile(
 }
 
 /**
- * Load the runtime guardrails config.
+ * 加载运行时护栏配置。
  *
- * Resolution order (project overrides global):
- *   1. Check JERO_PI_AUTONOMOUS_MODE env var — if "1", forces autonomousMode=true
- *      and uses default guarded command actions.
- *   2. Read global config from ${gentlePiConfigHome}/runtime-guardrails.json
- *   3. Read project config from ${cwd}/.pi/jero/runtime-guardrails.json
- *      (project values are merged on top of global)
- *   4. Any parse/read error anywhere → fail safe (return SAFE_GUARDRAILS_CONFIG)
+ * 解析顺序（项目覆盖全局）：
+ *   1. 检查 JERO_PI_AUTONOMOUS_MODE 环境变量 —— 若为 "1"，强制 autonomousMode=true
+ *      并使用默认的受守卫命令动作。
+ *   2. 从 ${gentlePiConfigHome}/runtime-guardrails.json 读取全局配置
+ *   3. 从 ${cwd}/.pi/jero/runtime-guardrails.json 读取项目配置
+ *      （项目值合并覆盖在全局之上）
+ *   4. 任何位置的解析/读取错误 → 保守回退（返回 SAFE_GUARDRAILS_CONFIG）
  */
-// The host-injected processEnv (test seam): set at extension creation so the
-// guardrails env check honors the same environment the rest of the runtime
-// reads, instead of reaching for the real process.env behind the seam.
+// 宿主注入的 processEnv（测试接缝）：在扩展创建时设置，让护栏的
+// 环境变量检查与运行时其余部分读取同一份环境，
+// 而不是绕过接缝去取真实的 process.env。
 let guardrailsProcessEnv: NodeJS.ProcessEnv = process.env;
 
 function loadRuntimeGuardrailsConfig(
@@ -1602,7 +1591,7 @@ function loadRuntimeGuardrailsConfig(
 	options: LoadGuardrailsOptions = {},
 ): RuntimeGuardrailsConfig {
 	try {
-		// Env var override: forces autonomous mode with default actions
+		// 环境变量覆盖：以默认动作强制进入自主模式
 		if ((options.env ?? guardrailsProcessEnv).JERO_PI_AUTONOMOUS_MODE === "1") {
 			return { autonomousMode: true, guardedCommands: {} };
 		}
@@ -1626,7 +1615,7 @@ function loadRuntimeGuardrailsConfig(
 				readFileSync(projectConfigPath, "utf8"),
 			);
 			if (!projectParsed) return SAFE_GUARDRAILS_CONFIG;
-			// Project values fully override global values
+			// 项目值完全覆盖全局值
 			merged = {
 				autonomousMode: projectParsed.autonomousMode,
 				guardedCommands: {
@@ -1830,14 +1819,13 @@ async function resolveSelectedNativeSddChangeStartup(
 	if (selection.phase === "remediate") {
 		if (status.nextRecommended !== "remediate" || status.remediationState?.failedEvidenceRevision !== selection.failedEvidenceRevision) throw new Error("Stale remediation selection");
 	} else if (status.nextRecommended !== selection.phase || status.dependencies[selection.phase] !== "ready" || (status.blockedReasons.length > 0 && selection.phase !== "verify")) {
-		// Native's contract gates terminal, archive, and apply work on a
-		// non-empty `blockedReasons`, and it deliberately keeps the `verify`
-		// route runnable, because the blocker can name the evidence refresh
-		// that is its own remedy ("failed verification evidence is incomplete;
-		// rerun SDD verification", gentle-ai#3538). Vetoing that route made the
-		// native-recommended phase unreachable (gentle-pi#972). The other
-		// phases still fail closed, and every blocker stays in the injected
-		// status for reporting.
+		// 原生契约要求 `blockedReasons` 非空时阻止 terminal、archive 和
+		// apply 工作，但刻意保持 `verify` 路线可运行，因为阻塞原因可以
+		// 指明证据刷新这一自身解药（“失败的验证证据不完整；
+		// 重新运行 SDD 验证”，gentle-ai#3538）。否决该路线会让
+		// 原生推荐的阶段不可达（gentle-pi#972）。其他阶段仍然
+		// 保守失败，且每个阻塞原因都保留在注入的
+		// status 中供上报。
 		throw new Error(`SDD selection native status blocks phase ${selection.phase}; it cannot execute.`);
 	}
 	return { selection, status };
@@ -1903,11 +1891,11 @@ function evaluateSensitivePathTool(
 	};
 }
 
-// D6 (design §5.3, rpiv row): the `rpiv:ask-user:blocked` listener and the
-// choice/questionnaire blocker labels are deleted — with
-// @juicesharp/rpiv-ask-user-question as a hard dependency, the plugin owns
-// its own blocking UX. What remains here is the guarded-command confirmation
-// lifecycle (the review consent UI, an independent component by design).
+// D6（design §5.3，rpiv 行）：`rpiv:ask-user:blocked` 监听器与
+// choice/questionnaire 阻塞标签已删除——由于
+// @juicesharp/rpiv-ask-user-question 是硬依赖，插件自管其
+// 阻塞 UX。这里剩下的是受守卫命令的确认
+// 生命周期（评审同意 UI，设计上是独立组件）。
 const HERDR_BLOCKER_LABEL = {
 	GUARDED_CONFIRMATION: "Guarded command confirmation",
 } as const;
@@ -1963,7 +1951,7 @@ async function confirmCommand(
 
 	if (classification === "not-guarded") return undefined;
 
-	// classification is "allow" or "confirm" from this point on
+	// 从这里开始，classification 只可能是 "allow" 或 "confirm"
 	if (classification === "allow") return undefined;
 
 	// classification === "confirm"
@@ -2184,9 +2172,9 @@ function updateFrontmatterRouting(
 }
 
 /**
- * The routing an agent file currently carries, read the same way
- * `updateFrontmatterRouting` writes it: top-level `model:` and `thinking:`
- * frontmatter lines. Anything else is "no routing", not an error.
+ * 代理文件当前携带的路由，读取方式与 `updateFrontmatterRouting`
+ * 的写入方式一致：顶层的 `model:` 与 `thinking:`
+ * frontmatter 行。其余情况一律视为“无路由”，而非错误。
  */
 function readFrontmatterRouting(content: string): AgentRoutingEntry | undefined {
 	if (!content.startsWith("---\n")) return undefined;
@@ -2229,9 +2217,9 @@ async function readSubagentModelProfilesAsync(path: string): Promise<Record<stri
 }
 
 /**
- * The routing an agent is materialized with — what subagent launches actually
- * resolve — regardless of what `models.json` records: the runtime reads
- * `subagents.json` model profiles first and the agent frontmatter otherwise.
+ * 代理被物化时使用的路由——即子代理启动实际解析到的路由——
+ * 与 `models.json` 记录了什么无关：运行时优先读取
+ * `subagents.json` 的 model profiles，否则读取代理 frontmatter。
  */
 function readMaterializedRoutingEntry(
 	cwd: string,
@@ -2276,10 +2264,9 @@ async function readMaterializedRoutingEntryAsync(
 }
 
 /**
- * The routing in effect: `models.json` where it speaks, and the materialized
- * stores the runtime resolves from for every discoverable agent it is silent
- * about. A sparse `models.json` therefore never hides routing that is still
- * live (#1012). Reading never writes.
+ * 生效中的路由：`models.json` 有话可说的部分照其所言，对它保持沉默的
+ * 每个可发现代理，则取运行时实际解析的物化存储。因此稀疏的
+ * `models.json` 绝不会掩盖仍在生效的路由（#1012）。读取永不写入。
  */
 function readEffectiveModelConfig(cwd: string): AgentModelConfig {
 	const effective = cloneModelConfig(readModelConfig(cwd));
@@ -2304,11 +2291,11 @@ async function readEffectiveModelConfigAsync(cwd: string): Promise<AgentModelCon
 }
 
 /**
- * A profile is a complete routing snapshot: applying it must leave every
- * discoverable agent it omits on inherit, not on whatever was materialized
- * before. Padding the omitted agents with clear entries makes
- * `applyModelConfig` remove their model profiles and frontmatter routing, the
- * same way `/jero:models` clears an agent set to inherit.
+ * profile 是一份完整的路由快照：应用它之后，所有它未提及的可发现代理
+ * 都必须回到 inherit，而不是停留在之前物化的状态。用清空条目补齐
+ * 被省略的代理，可以让 `applyModelConfig` 移除它们的 model profiles
+ * 和 frontmatter 路由，方式与 `/jero:models` 清空一个被设为
+ * inherit 的代理相同。
  */
 async function withOmittedAgentsClearedAsync(
 	cwd: string,
@@ -2422,7 +2409,7 @@ async function listAgentsFromDirAsync(
 interface DiscoverableNonBuiltinAgentRoot {
 	dir: string;
 	source: AgentSource;
-	/** The package installer owns this directory, so packageAssetAudit reports it. */
+	/** 该目录归包安装器所有，因此 packageAssetAudit 会报告它。 */
 	packageManaged: boolean;
 }
 
@@ -2446,10 +2433,10 @@ function discoverableNonBuiltinAgentRoots(cwd: string): DiscoverableNonBuiltinAg
 		}
 		const existing = unique.get(canonical);
 		if (existing) {
-			// Reinsert so a later alias keeps true later-root precedence even when
-			// another physical root appears between the duplicate entries. A merged
-			// package-managed root must keep its installer-owned path: ownership
-			// updates validate that lexical path against the managed manifest root.
+			// 重新插入，使靠后的别名保持真正的后根优先，即使
+			// 另一个物理根出现在重复条目之间。合并后的
+			// 包管理根必须保留其安装器所有的路径：所有权
+			// 更新要按该词法路径对照受管理 manifest 根校验。
 			const managedRoot = existing.packageManaged ? existing : root.packageManaged ? root : undefined;
 			unique.delete(canonical);
 			unique.set(canonical, {
@@ -2567,8 +2554,8 @@ function updateSubagentModelProfileAtPath(
 		? { ...config.model_profiles }
 		: {};
 	const profile = modelProfileForRoutingEntry(entry);
-	// A write that would leave the profile as it is (including removing a
-	// profile that was never there) is not an update and touches no file.
+	// 一次写入若会让 profile 保持原样（包括删除一个本就不存在的
+	// profile），就不算更新，且不触碰任何文件。
 	if (JSON.stringify(modelProfiles[name]) === JSON.stringify(profile)) return false;
 	if (profile) {
 		if (options.preserveExisting && isRecord(modelProfiles[name])) return false;
@@ -2600,8 +2587,8 @@ async function updateSubagentModelProfileAtPathAsync(
 		? { ...config.model_profiles }
 		: {};
 	const profile = modelProfileForRoutingEntry(entry);
-	// A write that would leave the profile as it is (including removing a
-	// profile that was never there) is not an update and touches no file.
+	// 一次写入若会让 profile 保持原样（包括删除一个本就不存在的
+	// profile），就不算更新，且不触碰任何文件。
 	if (JSON.stringify(modelProfiles[name]) === JSON.stringify(profile)) return false;
 	if (profile) {
 		if (options.preserveExisting && isRecord(modelProfiles[name])) return false;
@@ -2634,9 +2621,9 @@ function projectSettingsPath(cwd: string): string {
 }
 
 /**
- * Pi's own global settings file, which is where the orchestrator model lives.
- * Profiles own the three `default*` keys there; nothing else in this extension
- * reads or writes that file.
+ * Pi 自己的全局 settings 文件，编排器模型所在之处。
+ * profiles 拥有其中的三个 `default*` 键；本扩展中没有任何
+ * 其他代码读写该文件。
  */
 function orchestratorSettingsPath(): string {
 	return join(gentlePiAgentHome(), "settings.json");
@@ -2782,8 +2769,8 @@ export function applyModelConfig(
 	}
 	for (const [name, entry] of Object.entries(config)) {
 		if (isProviderReviewRole(name)) continue;
-		// The orchestrator is routing, not an agent: its model lives in Pi's global
-		// settings.json and must never reach subagents.json.
+		// 编排器属于路由而非代理：它的模型存放在 Pi 的全局
+		// settings.json 中，绝不能进入 subagents.json。
 		if (isProfileOrchestratorKey(name)) continue;
 		if (!seenAgents.has(name) && isClearRoutingEntry(entry)) {
 			if (updateSubagentModelProfile(cwd, "user", name, entry)) updated += 1;
@@ -3404,7 +3391,7 @@ async function handleModelsCommand(ctx: ExtensionContext): Promise<void> {
 	);
 	if (savedConfig.status === "invalid") {
 		ctx.ui.notify(
-			`el Jero cannot open model config because ${savedConfig.path} is invalid JSON or not an object. Fix or remove the file, then run /jero:models again.`,
+			`el Jero 无法打开模型配置：${savedConfig.path} 不是合法的 JSON 或不是对象。请修复或删除该文件，然后重新运行 /jero:models。`,
 			"warning",
 		);
 		return;
@@ -3416,9 +3403,9 @@ async function handleModelsCommand(ctx: ExtensionContext): Promise<void> {
 		if (result.type === "export") {
 			try {
 				const count = await exportSavedModelConfig(ctx);
-				ctx.ui.notify(`el Jero exported ${count} saved model routing entr${count === 1 ? "y" : "ies"} to ${modelExportPath(ctx.cwd)}.`, "info");
+				ctx.ui.notify(`el Jero 已将 ${count} 条已保存的模型路由条目导出到 ${modelExportPath(ctx.cwd)}。`, "info");
 			} catch (error) {
-				ctx.ui.notify(`Model routing export failed: ${error instanceof Error ? error.message : String(error)}`, "warning");
+				ctx.ui.notify(`模型路由导出失败：${error instanceof Error ? error.message : String(error)}`, "warning");
 			}
 			result = await showSddModelPanel(ctx, config);
 			continue;
@@ -3426,7 +3413,7 @@ async function handleModelsCommand(ctx: ExtensionContext): Promise<void> {
 		if (result.type === "restore") {
 			const restored = await readModelExport(ctx);
 			if (!restored) {
-				ctx.ui.notify(`Model routing restore failed: ${modelExportPath(ctx.cwd)} is missing or invalid.`, "warning");
+				ctx.ui.notify(`模型路由恢复失败：${modelExportPath(ctx.cwd)} 缺失或无效。`, "warning");
 				result = await showSddModelPanel(ctx, config);
 				continue;
 			}
@@ -3435,7 +3422,7 @@ async function handleModelsCommand(ctx: ExtensionContext): Promise<void> {
 				try {
 					await writeModelConfigAsync(ctx.cwd, restored);
 				} catch (error) {
-					ctx.ui.notify(`Model routing restore failed before writing config: ${error instanceof Error ? error.message : String(error)}`, "warning");
+					ctx.ui.notify(`模型路由恢复失败（尚未写入配置）：${error instanceof Error ? error.message : String(error)}`, "warning");
 					result = await showSddModelPanel(ctx, config);
 					continue;
 				}
@@ -3443,16 +3430,16 @@ async function handleModelsCommand(ctx: ExtensionContext): Promise<void> {
 				try {
 					const applyResult = await applyModelConfigAsync(ctx.cwd, restored);
 					ctx.ui.notify([
-						"el Jero restored global model config.",
-						`Import: ${modelExportPath(ctx.cwd)}`,
-						`Global config: ${modelConfigPath(ctx.cwd)}`,
-						`Agents updated: ${applyResult.updated}`,
+						"el Jero 已恢复全局模型配置。",
+						`导入文件：${modelExportPath(ctx.cwd)}`,
+						`全局配置：${modelConfigPath(ctx.cwd)}`,
+						`已更新代理数：${applyResult.updated}`,
 					].join("\n"), "info");
 				} catch (error) {
 					ctx.ui.notify([
-						"el Jero restored global model config, but applying it to agents failed.",
-						`Global config: ${modelConfigPath(ctx.cwd)}`,
-						`Apply error: ${error instanceof Error ? error.message : String(error)}`,
+						"el Jero 已恢复全局模型配置，但将其应用到代理时失败。",
+						`全局配置：${modelConfigPath(ctx.cwd)}`,
+						`应用错误：${error instanceof Error ? error.message : String(error)}`,
 					].join("\n"), "warning");
 				}
 			}
@@ -3473,7 +3460,7 @@ async function handleModelsCommand(ctx: ExtensionContext): Promise<void> {
 			const model = normalizeModelId(trimmed);
 			if (!model) {
 				ctx.ui.notify(
-					"Custom model id must be a single-line provider/model identifier using letters, numbers, '.', '-', '_', '~', ':', '@', '/', '+', '%' only.",
+					"自定义模型 id 必须是单行的 provider/model 标识符，只能使用字母、数字以及 '.'、'-'、'_'、'~'、':'、'@'、'/'、'+'、'%' 这些字符。",
 					"warning",
 				);
 				result = await showSddModelPanel(ctx, config);
@@ -3505,9 +3492,9 @@ async function handleModelsCommand(ctx: ExtensionContext): Promise<void> {
 	const applyResult = await applyModelConfigAsync(ctx.cwd, result.config);
 	ctx.ui.notify(
 		[
-			"el Jero global model config saved.",
-			`Global config: ${modelConfigPath(ctx.cwd)}`,
-			`Agents updated: ${applyResult.updated}`,
+			"el Jero 全局模型配置已保存。",
+			`全局配置：${modelConfigPath(ctx.cwd)}`,
+			`已更新代理数：${applyResult.updated}`,
 			...describeModelConfig(ctx.cwd, result.config),
 		].join("\n"),
 		"info",
@@ -3539,15 +3526,15 @@ function profilesErrorMessage(error: unknown): string {
 	return error instanceof Error ? error.message : String(error);
 }
 
-/** Keep a detail-pane scroll offset inside the bounds of its own content. */
+/** 将详情面板的滚动偏移限制在其自身内容的边界之内。 */
 function clampDetailScroll(offset: number, lineCount: number, bodyRows: number): number {
 	return Math.max(0, Math.min(offset, Math.max(0, lineCount - bodyRows)));
 }
 
-// Left profile list, right detail panes. Rendering and pointer routing share
-// one measured layout; the list rows keep native keyboard, hover, press,
-// click, and wheel handling through NativeChoiceList. The frame takes the full
-// overlay, so its height follows the terminal rows the same way AgentsView does.
+// 左侧 profile 列表，右侧详情面板。渲染与指针路由共享
+// 同一份测量布局；列表行通过 NativeChoiceList 保留原生键盘、悬停、
+// 按下、点击与滚轮处理。外框占满整个
+// overlay，因此其高度与 AgentsView 一样跟随终端行数。
 class ProfilesPanel implements OverlayComponent {
 	private completed = false;
 	private pointerLayout: ProfilesPanelPointerLayout | undefined;
@@ -3625,9 +3612,9 @@ class ProfilesPanel implements OverlayComponent {
 			this.scrollDetail(-this.pageRows());
 			return;
 		}
-		// Agents-view line scroll: j/k move the routing one line at a time. The
-		// arrow keys stay with the profile list, exactly as the letters below stay
-		// profile actions.
+		// Agents 式逐行滚动：j/k 每次移动一行路由详情。
+		// 方向键仍归属 profile 列表，正如下方的字母键
+		// 仍归属 profile 操作。
 		if (data === "j") {
 			this.scrollDetail(1);
 			return;
@@ -3687,8 +3674,8 @@ class ProfilesPanel implements OverlayComponent {
 		const safeWidth = Math.max(1, width);
 		const listWidth = measureAgentsViewLayout(safeWidth, PROFILES_PANEL_MIN_BODY_ROWS + 3).listWidth;
 		const listLines = this.list.render(listWidth);
-		// The frame fills the overlay, and the overlay fills the terminal, so the
-		// body height comes from the terminal rows rather than from the content.
+		// 外框填满 overlay，而 overlay 填满终端，因此
+		// 主体高度取决于终端行数而非内容本身。
 		const rows = Math.max(PROFILES_PANEL_MIN_BODY_ROWS + 3, Math.floor(this.rows()));
 		const layout = measureAgentsViewLayout(safeWidth, rows);
 		if (layout.mode === "fallback" || layout.width === 0) {
@@ -3724,8 +3711,8 @@ class ProfilesPanel implements OverlayComponent {
 	}
 
 	private refreshListItems(): void {
-		// Keep the list instance (and its pointer observer) alive while refreshing the
-		// mutable item records that NativeChoiceList already holds by reference.
+		// 在刷新 NativeChoiceList 已按引用持有的可变 item 记录时，
+		// 保持列表实例（及其指针观察者）存活。
 		for (const item of buildProfileListItems(this.file)) {
 			const current = this.listItems.find((candidate) => candidate.id === item.id);
 			if (current) Object.assign(current, item);
@@ -3793,8 +3780,8 @@ class ProfilesPanel implements OverlayComponent {
 		const config = this.file.profiles[name];
 		const profileRows = profileRoutingRows(config);
 		const currentRows = profileRoutingRows(this.currentConfig);
-		// One shared measurement across both tables, so the same agent sits in the
-		// same column whether it comes from the profile or from models.json.
+		// 两张表共享同一次列宽测量，这样同一个代理无论来自
+		// profile 还是 models.json，都落在同一列。
 		const widths = routingColumnWidths(profileRows, currentRows);
 		return [
 			this.renderLine(name === this.file.active ? `${name} (active)` : name, width, "title"),
@@ -3867,8 +3854,8 @@ async function showProfilesPanel(
 	selectedName: string | undefined,
 	saveSnapshot: ProfilesSnapshotHandler,
 ): Promise<ProfilesPanelResult> {
-	// Read once, for the panel lifetime. The orchestrator shown as "now" is the
-	// state the panel opened on, not a value that changes mid-panel.
+	// 面板生命周期内只读取一次。显示为 "now" 的编排器是
+	// 面板打开时的状态，而不是面板中途会变化的值。
 	const orchestratorSettings = readOrchestratorSettings(orchestratorSettingsPath());
 	return ctx.ui.custom<ProfilesPanelResult>(
 		(tui, theme, keybindings, done) => {
@@ -3905,24 +3892,24 @@ async function showProfilesPanel(
 }
 
 function reportProfilesDrops(ctx: ExtensionContext, path: string, drops: ProfilesParseDrops): void {
-	// Dropped names are by definition the ones that failed validation, so they are
-	// untrusted input reaching the terminal and must be sanitized like any other
-	// externally supplied text.
+	// 被丢弃的名字按定义就是校验失败的那些，因此它们是
+	// 到达终端的不可信输入，必须像任何其他
+	// 外部提供的文本一样做清洗。
 	const parts: string[] = [];
 	if (drops.droppedProfiles.length > 0) {
-		parts.push(`profiles: ${drops.droppedProfiles.map((name) => sanitizeTerminalText(name)).join(", ")}`);
+		parts.push(`profile：${drops.droppedProfiles.map((name) => sanitizeTerminalText(name)).join(", ")}`);
 	}
 	if (drops.droppedAgents.length > 0) {
 		parts.push(
-			`routing entries: ${drops.droppedAgents.map(({ profile, agent }) => `${sanitizeTerminalText(profile)}/${sanitizeTerminalText(agent)}`).join(", ")}`,
+			`路由条目：${drops.droppedAgents.map(({ profile, agent }) => `${sanitizeTerminalText(profile)}/${sanitizeTerminalText(agent)}`).join(", ")}`,
 		);
 	}
 	if (drops.droppedActive !== undefined) {
-		parts.push(`active marker: ${sanitizeTerminalText(drops.droppedActive)}`);
+		parts.push(`active 标记：${sanitizeTerminalText(drops.droppedActive)}`);
 	}
 	if (parts.length > 0) {
 		ctx.ui.notify(
-			`el Jero dropped invalid entries while loading ${sanitizeTerminalText(path)} — ${parts.join("; ")}.`,
+			`el Jero 在加载 ${sanitizeTerminalText(path)} 时丢弃了无效条目 —— ${parts.join("；")}。`,
 			"warning",
 		);
 	}
@@ -3950,19 +3937,19 @@ async function runProfilesPanelAction(
 			if (!hasOwnProfile(file.profiles, result.name)) return file;
 			const normalized = normalizeModelConfig(file.profiles[result.name]) ?? {};
 			const orchestratorEntry = readProfileOrchestrator(normalized);
-			// Applying spans three files — the store, models.json, and Pi's global
-			// settings.json — and there is no cross-file rename, so order the writes to
-			// keep the store truthful and compensate on failure: claim the profile in
-			// the store first, then materialise routing, then the orchestrator. A claim
-			// that fails leaves routing untouched; anything that fails after the claim
-			// restores the previous claim and, when the previously active profile is
-			// known, the routing that profile implies.
+			// 应用横跨三个文件——存储、models.json 与 Pi 的全局
+			// settings.json——且不存在跨文件改名，所以按让存储
+			// 保持真实、失败时补偿的顺序写入：先在存储中认领
+			// profile，再物化路由，最后是编排器。认领失败
+			// 则路由原封不动；认领之后的任何失败都会恢复
+			// 之前的认领，且在已知先前活跃 profile 时，
+			// 恢复该 profile 所隐含的路由。
 			const claimed = setActiveProfile(file, result.name);
 			try {
 				writeProfilesFileSync(path, claimed);
 			} catch (error) {
 				ctx.ui.notify(
-					`el Jero could not update ${sanitizeTerminalText(path)}: ${profilesErrorMessage(error)}`,
+					`el Jero 无法更新 ${sanitizeTerminalText(path)}：${profilesErrorMessage(error)}`,
 					"warning",
 				);
 				return file;
@@ -3971,19 +3958,19 @@ async function runProfilesPanelAction(
 				file.active !== undefined && hasOwnProfile(file.profiles, file.active)
 					? normalizeModelConfig(file.profiles[file.active]) ?? {}
 					: undefined;
-			// Set only when the orchestrator write succeeded, so the revert knows it has
-			// something to undo. A rollback closure (not a previous-bytes value) is used
-			// because "the file did not exist before" is a real state that must restore
-			// by removing the file, and `undefined` bytes cannot carry that distinction.
+			// 仅在编排器写入成功后设置，让回退逻辑知道有东西
+			// 需要撤销。使用回滚闭包（而非先前的字节值）是因为
+			// “该文件此前不存在”是一种真实状态，必须通过删除
+			// 文件来恢复，而 `undefined` 字节无法承载这一区别。
 			let orchestratorRollback: (() => void) | undefined;
 			const revertClaim = async (routingWritten: boolean): Promise<AgentProfilesFile> => {
-				let restored = previousActiveConfig === undefined ? "" : "routing";
+				let restored = previousActiveConfig === undefined ? "" : "路由";
 				if (routingWritten && previousActiveConfig !== undefined) {
 					try {
 						await writeModelConfigAsync(ctx.cwd, previousActiveConfig);
-						// Materialize the previous profile again with the same
-						// replacement semantics, so the failed profile's routes do not
-						// linger in subagents.json or the agent frontmatter.
+						// 以相同的替换语义再次物化先前的
+						// profile，让失败 profile 的路由不会
+						// 残留在 subagents.json 或代理 frontmatter 中。
 						await applyModelConfigAsync(
 							ctx.cwd,
 							await withOmittedAgentsClearedAsync(ctx.cwd, previousActiveConfig),
@@ -3995,23 +3982,23 @@ async function runProfilesPanelAction(
 				if (orchestratorRollback) {
 					try {
 						orchestratorRollback();
-						restored = restored === "" ? "settings" : `${restored} and settings`;
+						restored = restored === "" ? "settings" : `${restored}与 settings`;
 					} catch {
 						restored = restored === "" ? "" : restored;
 					}
 				}
 				try {
 					writeProfilesFileSync(path, file);
-					restored = restored === "" ? "active marker" : `${restored} and active marker`;
+					restored = restored === "" ? "active 标记" : `${restored}与 active 标记`;
 				} catch {
-					restored = restored === "" ? "nothing" : restored;
+					restored = restored === "" ? "无" : restored;
 				}
 				const unresolved =
 					routingWritten && previousActiveConfig === undefined
-						? ` ${sanitizeTerminalText(modelConfigPath(ctx.cwd))} still holds this profile's routing because no previously active profile was recorded to restore.`
+						? ` ${sanitizeTerminalText(modelConfigPath(ctx.cwd))} 仍保留该 profile 的路由，因为没有记录先前活跃的 profile 可供恢复。`
 						: "";
 				ctx.ui.notify(
-					`el Jero could not apply profile "${result.name}". Restored: ${restored}.${unresolved}`,
+					`el Jero 无法应用 profile "${result.name}"。已恢复：${restored}。${unresolved}`,
 					"warning",
 				);
 				return file;
@@ -4020,14 +4007,14 @@ async function runProfilesPanelAction(
 				await writeModelConfigAsync(ctx.cwd, normalized);
 			} catch (error) {
 				ctx.ui.notify(
-					`el Jero could not write ${sanitizeTerminalText(modelConfigPath(ctx.cwd))}: ${profilesErrorMessage(error)}`,
+					`el Jero 无法写入 ${sanitizeTerminalText(modelConfigPath(ctx.cwd))}：${profilesErrorMessage(error)}`,
 					"warning",
 				);
 				return revertClaim(false);
 			}
-			// models.json holds the profile as written; the padding with clear
-			// entries only drives materialization, so agents the profile omits
-			// return to inherit instead of keeping a previously materialized route.
+			// models.json 保存 profile 原样写入的内容；用清空条目
+			// 补齐只是为了驱动物化，这样 profile 未提及的代理
+			// 回到 inherit，而不是保留先前物化的路由。
 			let applyResult: { updated: number; skipped: number };
 			try {
 				applyResult = await applyModelConfigAsync(
@@ -4036,7 +4023,7 @@ async function runProfilesPanelAction(
 				);
 			} catch (error) {
 				ctx.ui.notify(
-					`el Jero could not materialize profile "${result.name}": ${profilesErrorMessage(error)}`,
+					`el Jero 无法物化 profile "${result.name}"：${profilesErrorMessage(error)}`,
 					"warning",
 				);
 				return revertClaim(true);
@@ -4047,7 +4034,7 @@ async function runProfilesPanelAction(
 				const written = applyOrchestratorSettings(settingsPath, orchestratorEntry);
 				if (written.status === "invalid") {
 					ctx.ui.notify(
-						`el Jero could not set the orchestrator from profile "${result.name}": ${sanitizeTerminalText(written.reason)}. ${sanitizeTerminalText(settingsPath)} was left unchanged.`,
+						`el Jero 无法根据 profile "${result.name}" 设置编排器：${sanitizeTerminalText(written.reason)}。${sanitizeTerminalText(settingsPath)} 保持不变。`,
 						"warning",
 					);
 					return revertClaim(true);
@@ -4055,13 +4042,13 @@ async function runProfilesPanelAction(
 				if (written.status === "written") {
 					const previous = written.previous;
 					orchestratorRollback = () => restoreOrchestratorSettings(settingsPath, previous);
-					orchestratorNote = `\nOrchestrator set to ${formatOrchestratorSelection(orchestratorEntry)} in ${sanitizeTerminalText(settingsPath)}.`;
+					orchestratorNote = `\n已在 ${sanitizeTerminalText(settingsPath)} 中将编排器设为 ${formatOrchestratorSelection(orchestratorEntry)}。`;
 				}
 			}
 			ctx.ui.notify(
 				[
-					`el Jero applied profile "${result.name}" — ${applyResult.updated} agent${applyResult.updated === 1 ? "" : "s"} updated.`,
-					"New routing takes effect on the next subagent launch.",
+					`el Jero 已应用 profile "${result.name}" —— 更新了 ${applyResult.updated} 个代理。`,
+					"新路由将在下一次子代理启动时生效。",
 				].join("\n") + orchestratorNote,
 				"info",
 			);
@@ -4075,15 +4062,15 @@ async function runProfilesPanelAction(
 				writeProfilesFileSync(path, next);
 				return next;
 			} catch (error) {
-				ctx.ui.notify(`Profile not created: ${profilesErrorMessage(error)}`, "warning");
+				ctx.ui.notify(`未能创建 profile：${profilesErrorMessage(error)}`, "warning");
 				return file;
 			}
 		}
 		case "update": {
-			// A profile is a complete snapshot, so capturing the current routing also
-			// captures the orchestrator the routing is running under. A settings file
-			// that cannot be read leaves the snapshot without an orchestrator entry
-			// rather than inventing one.
+			// profile 是完整快照，因此捕获当前路由的同时也
+			// 捕获了路由运行所处的编排器。无法读取的 settings 文件
+			// 会让快照不含编排器条目，
+			// 而不是凭空编造一个。
 			const snapshot = profileSnapshotFrom(
 				await readEffectiveModelConfigAsync(ctx.cwd),
 				readOrchestratorSettings(orchestratorSettingsPath()),
@@ -4092,12 +4079,12 @@ async function runProfilesPanelAction(
 				const next = updateProfile(file, result.name, snapshot);
 				writeProfilesFileSync(path, next);
 				ctx.ui.notify(
-					`el Jero updated profile "${result.name}" from the current routing in ${modelConfigPath(ctx.cwd)}.`,
+					`el Jero 已根据 ${modelConfigPath(ctx.cwd)} 中的当前路由更新 profile "${result.name}"。`,
 					"info",
 				);
 				return next;
 			} catch (error) {
-				ctx.ui.notify(`Profile not updated: ${profilesErrorMessage(error)}`, "warning");
+				ctx.ui.notify(`未能更新 profile：${profilesErrorMessage(error)}`, "warning");
 				return file;
 			}
 		}
@@ -4109,7 +4096,7 @@ async function runProfilesPanelAction(
 				writeProfilesFileSync(path, next);
 				return next;
 			} catch (error) {
-				ctx.ui.notify(`Profile not duplicated: ${profilesErrorMessage(error)}`, "warning");
+				ctx.ui.notify(`未能复制 profile：${profilesErrorMessage(error)}`, "warning");
 				return file;
 			}
 		}
@@ -4121,7 +4108,7 @@ async function runProfilesPanelAction(
 				writeProfilesFileSync(path, next);
 				return next;
 			} catch (error) {
-				ctx.ui.notify(`Profile not renamed: ${profilesErrorMessage(error)}`, "warning");
+				ctx.ui.notify(`未能重命名 profile：${profilesErrorMessage(error)}`, "warning");
 				return file;
 			}
 		}
@@ -4136,7 +4123,7 @@ async function runProfilesPanelAction(
 				writeProfilesFileSync(path, next);
 				return next;
 			} catch (error) {
-				ctx.ui.notify(`Profile not deleted: ${profilesErrorMessage(error)}`, "warning");
+				ctx.ui.notify(`未能删除 profile：${profilesErrorMessage(error)}`, "warning");
 				return file;
 			}
 		}
@@ -4147,9 +4134,9 @@ async function runProfilesPanelAction(
 				const text = serializeProfileExport(result.name, file.profiles[result.name]);
 				await mkdir(dirname(exportPath), { recursive: true });
 				await writeFile(exportPath, text);
-				ctx.ui.notify(`el Jero exported profile "${result.name}" to ${exportPath}.`, "info");
+				ctx.ui.notify(`el Jero 已将 profile "${result.name}" 导出到 ${exportPath}。`, "info");
 			} catch (error) {
-				ctx.ui.notify(`Profile export failed: ${profilesErrorMessage(error)}`, "warning");
+				ctx.ui.notify(`profile 导出失败：${profilesErrorMessage(error)}`, "warning");
 			}
 			return file;
 		}
@@ -4159,20 +4146,20 @@ async function runProfilesPanelAction(
 			try {
 				text = await readFile(importPath, "utf8");
 			} catch {
-				ctx.ui.notify(`Profile import failed: ${importPath} is missing or unreadable.`, "warning");
+				ctx.ui.notify(`profile 导入失败：${importPath} 缺失或无法读取。`, "warning");
 				return file;
 			}
 			const parsed = parseProfileExportTextWithDrops(text);
 			if (!parsed) {
 				ctx.ui.notify(
-					`Profile import failed: ${importPath} is not a valid agent-model profile export.`,
+					`profile 导入失败：${importPath} 不是合法的代理模型 profile 导出文件。`,
 					"warning",
 				);
 				return file;
 			}
 			if (parsed.droppedAgents.length > 0) {
 				ctx.ui.notify(
-					`el Jero dropped invalid routing entries while importing profile "${parsed.name}": ${parsed.droppedAgents.join(", ")}.`,
+					`el Jero 在导入 profile "${parsed.name}" 时丢弃了无效路由条目：${parsed.droppedAgents.join(", ")}。`,
 					"warning",
 				);
 			}
@@ -4190,12 +4177,12 @@ async function runProfilesPanelAction(
 				writeProfilesFileSync(path, next);
 				const entries = Object.keys(parsed.config).length;
 				ctx.ui.notify(
-					`el Jero imported profile "${parsed.name}" (${entries} routing ${entries === 1 ? "entry" : "entries"}) from ${importPath}.`,
+					`el Jero 已从 ${importPath} 导入 profile "${parsed.name}"（${entries} 条路由）。`,
 					"info",
 				);
 				return next;
 			} catch (error) {
-				ctx.ui.notify(`Profile import failed: ${profilesErrorMessage(error)}`, "warning");
+				ctx.ui.notify(`profile 导入失败：${profilesErrorMessage(error)}`, "warning");
 				return file;
 			}
 		}
@@ -4207,7 +4194,7 @@ async function handleProfilesCommand(ctx: ExtensionContext): Promise<void> {
 	const read = readProfilesFileResult(path);
 	if (read.status === "invalid") {
 		ctx.ui.notify(
-			`el Jero cannot open agent profiles because ${path} is invalid JSON or not a profiles file. Fix or remove the file, then run /jero:profiles again.`,
+			`el Jero 无法打开代理 profiles：${path} 不是合法的 JSON 或不是 profiles 文件。请修复或删除该文件，然后重新运行 /jero:profiles。`,
 			"warning",
 		);
 		return;
@@ -4219,12 +4206,12 @@ async function handleProfilesCommand(ctx: ExtensionContext): Promise<void> {
 			writeProfilesFileSync(path, file);
 		} catch (error) {
 			ctx.ui.notify(
-				`el Jero could not create ${path}: ${profilesErrorMessage(error)}`,
+				`el Jero 无法创建 ${path}：${profilesErrorMessage(error)}`,
 				"warning",
 			);
 			return;
 		}
-		ctx.ui.notify(`el Jero seeded the "current" profile in ${path} from the routing currently in effect.`, "info");
+		ctx.ui.notify(`el Jero 已根据当前生效的路由在 ${path} 中播种 "current" profile。`, "info");
 	} else {
 		file = read.file;
 		reportProfilesDrops(ctx, path, read.drops);
@@ -4273,19 +4260,19 @@ async function handlePersonaCommand(ctx: ExtensionContext): Promise<void> {
 	const writtenPaths = writePersonaMode(ctx.cwd, selected);
 	ctx.ui.notify(
 		[
-			`el Jero persona set to: ${selected}`,
-			`Global config: ${personaConfigPath(ctx.cwd)}`,
+			`el Jero 人格模式已设为：${selected}`,
+			`全局配置：${personaConfigPath(ctx.cwd)}`,
 			...(writtenPaths.length > 1
-				? [`Project override updated: ${projectPersonaConfigPath(ctx.cwd)}`]
+				? [`项目覆盖已更新：${projectPersonaConfigPath(ctx.cwd)}`]
 				: []),
-			"Run /reload or start a new Pi session for already-injected prompts to refresh.",
+			"运行 /reload 或开启新的 Pi 会话，让已注入的提示词刷新。",
 		].join("\n"),
 		"info",
 	);
 }
 
 // ---------------------------------------------------------------------------
-// Review gate helpers — pure, exported via __testing for unit tests
+// 评审门辅助函数 —— 纯函数，经 __testing 导出供单元测试使用
 // ---------------------------------------------------------------------------
 
 const REVIEW_CONTROLLER_OPERATION = {
@@ -4304,8 +4291,8 @@ const REVIEW_CONTROLLER_OPERATION = {
 	ABANDON: "abandon",
 	RECONCILE_AUTHORITY: "reconcile-authority",
 	REPAIR: "repair",
-	// gentle-pi#662: read-only native risk assessment (gentle-ai#4295). Never
-	// mutates review authority state and never requires a lineageId.
+	// gentle-pi#662：只读原生风险评估（gentle-ai#4295）。从不
+	// 变更评审权威状态，也从不要求 lineageId。
 	ASSESS: "assess",
 } as const;
 
@@ -4442,21 +4429,21 @@ interface ReviewScopeParameters {
 	cursor?: number;
 }
 
-// gentle-pi#662: read-only native risk assessment, gating the separate
-// verifier on native risk instead of a task-description judgment when the
-// rendered `Receipt-driven development:` line is `off` or `unknown`. Exposed
-// as `jero_review` operation `assess` (not a dedicated tool), taking its
-// optional fields through the controller's existing generic `input` JSON
-// string, exactly like START's `{"mode":...,"baseRef":...}`.
+// gentle-pi#662：只读原生风险评估，在渲染的
+// `Receipt-driven development:` 行为 `off` 或 `unknown` 时，用原生风险
+// 而非任务描述判断来给独立验证者设门。以 `jero_review` 的
+// `assess` 操作暴露（不是独立工具），其可选字段经由控制器既有的
+// 通用 `input` JSON 字符串传入，与 START 的
+// `{"mode":...,"baseRef":...}` 完全一致。
 interface ReviewAssessInput {
 	baseRef?: string;
 	committedOnly?: boolean;
 	writerModelId?: string;
 	writerEffort?: string;
-	// gentle-pi#668: the caller's own known outcome for this candidate.
-	// Omitted tries to auto-derive declined/unavailable for this EXACT
-	// candidate's own target identity (never a different one); `closed` is
-	// never auto-derived -- pass it explicitly.
+	// gentle-pi#668：调用方自己掌握的该候选结果。
+	// 省略时会尝试为本候选本身的 target identity 自动派生
+	// declined/unavailable（绝不是别的候选）；`closed`
+	// 永不自动派生——需显式传入。
 	nativeReviewOutcome?: NativeReviewOutcome;
 }
 
@@ -4532,9 +4519,9 @@ function parseReviewControllerParameters(value: unknown): ReviewControllerParame
 		if (unexpected !== undefined || typeof value.selectionBinding !== "string" || !Array.isArray(value.intendedUntracked) || (value.workspaceRoot !== undefined && typeof value.workspaceRoot !== "string")) throw new Error("Review intended-untracked selection accepts exactly selectionBinding and intendedUntracked, with optional workspaceRoot");
 		return { operation: value.operation, selectionBinding: value.selectionBinding, intendedUntracked: value.intendedUntracked, ...(typeof value.workspaceRoot === "string" ? { workspaceRoot: value.workspaceRoot } : {}) };
 	}
-	// gentle-pi#706: top-level untrackedScope/intendedUntracked resolve the
-	// intended-untracked stop through inspect alone. intendedUntracked is not a
-	// standalone selector: inspect accepts it only for an explicit select scope.
+	// gentle-pi#706：顶层 untrackedScope/intendedUntracked 仅凭
+	// inspect 就能解决 intended-untracked 停止点。intendedUntracked 不是
+	// 独立选择器：只有显式 select 范围时 inspect 才接受它。
 	const hasIntendedUntracked = "intendedUntracked" in value;
 	if (hasIntendedUntracked && value.operation !== REVIEW_CONTROLLER_OPERATION.INSPECT) {
 		throw new Error(
@@ -4674,15 +4661,15 @@ async function authorizeDestructiveReviewOperation(
 	ctx: ExtensionContext,
 ): Promise<void> {
 	const parameters = parseReviewControllerParameters(parametersValue);
-	// RESET alone carries the legacy repository-wide challenge. Native compact-v2
-	// RECOVER has its own six-field contract and its own derived
-	// `gentle-ai.review-recovery-authorization/v1` binding, neither of which the
-	// legacy `repositoryId`/`commonDirHash`/`inventoryHash`/`confirmation` quartet
-	// can express. Native INSPECT never publishes that quartet either, so
-	// demanding it here made the only supported recovery flow unreachable
-	// (issue #212).
-	// RECOVER authorizes itself in `executeReviewControllerOperation` because
-	// its binding can only be derived from a fresh native target-status read.
+	// 只有 RESET 携带旧式的全仓库挑战。原生 compact-v2 的
+	// RECOVER 有自己的六字段契约和自己的派生
+	// `gentle-ai.review-recovery-authorization/v1` 绑定，这两者都无法用
+	// 旧式的 `repositoryId`/`commonDirHash`/`inventoryHash`/`confirmation`
+	// 四元组表达。原生 INSPECT 也从不发布该四元组，因此
+	// 在这里强求它会让唯一受支持的恢复流程不可达
+	// （issue #212）。
+	// RECOVER 在 `executeReviewControllerOperation` 中自行授权，因为
+	// 其绑定只能从一次新的原生 target-status 读取中派生。
 	const isReset = parameters.operation === REVIEW_CONTROLLER_OPERATION.RESET;
 	const maintenance = nativeMaintenanceOperation(parameters.operation);
 	if (!isReset && maintenance === undefined) return;
@@ -4780,48 +4767,46 @@ function nativeStartPreAuthorityRejection(): NativeStartPreAuthorityRejection {
 	};
 }
 
-// Organic-rdd-parity Phase 3 (Design Decision #7): consulted once at the top
-// of the ORDINARY START branch, before targetStatus. Dark until the
-// negotiated version reports the `mode` capability true — `reviewMode`
-// throws VERSION_INCOMPATIBLE in that case, which this treats identically to
-// "capability absent" (today's path unchanged), never as a failure. Any
-// other error (a real native process failure) still surfaces through the
-// caller's existing nativeOperationFailure handling.
+// Organic-rdd-parity 第三阶段（设计决策 #7）：在 ORDINARY START 分支
+// 顶部、targetStatus 之前咨询一次。在协商版本将 `mode` 能力报告为
+// true 之前保持暗置——那种情况下 `reviewMode` 抛出
+// VERSION_INCOMPATIBLE，这里将其与“能力缺失”同等对待
+// （今天的路径不变），绝不当作失败。任何
+// 其他错误（真正的原生进程故障）仍通过调用方既有的
+// nativeOperationFailure 处理浮出。
 const REVIEW_MODE_DISABLED_OUTCOME = "review-mode-disabled";
 
-// Parity with gentle-ai's reviewModeScopeForSource
-// (internal/reviewtransaction/rdd_mode.go): the continuation is scoped to the
-// source that actually decided, so the operator is not left to work out which
-// of the two independent sources they have to change.
+// 与 gentle-ai 的 reviewModeScopeForSource
+// （internal/reviewtransaction/rdd_mode.go）对齐：continuation 按真正
+// 做出决定的来源限定作用域，这样操作者不必自己去推断
+// 两个独立来源中该改哪一个。
 //
-// A clone-local override can only disable. Pi's explicit clone-scope enable
-// clears that override, but cannot enable global RDD: when global is still
-// unset or off, clearing it leaves the effective mode off. Tell the operator
-// to make the global opt-in first when needed, then clear this clone override.
-// Pi never mutates the operator's global gentle-ai state automatically.
+// clone-local 覆盖只能用于关闭。Pi 显式的 clone 范围 enable 会清除
+// 该覆盖，但不能开启全局 RDD：当全局仍未设置或为 off 时，清除覆盖后
+// 生效模式仍是 off。需要时应告诉操作者先完成全局
+// opt-in，再清除这个 clone 覆盖。
+// Pi 从不自动改写操作者的全局 gentle-ai 状态。
 //
-// The default branch changed with the pinned v2.4.0 runtime, which made
-// receipt-driven development opt-in. It used to be unreachable as a reason for
-// reviews being off — an all-sources-unset install resolved to ON with source
-// `default` — so naming a continuation for it would have been a guess, and
-// gentle-ai returned an empty scope to say exactly that. v2.4.0 resolves the
-// same install to OFF with source `default`, which makes it the most common
-// refusal there is: every install that never opted in. gentle-ai answers
-// `global` for it now, not because default is a global opinion but because
-// global is the only scope that can turn reviews on at all, and Pi answers the
-// same. Leaving this undefined would hand the single most common state a dead
-// end.
+// default 分支随锁定的 v2.4.0 运行时而改变，回执驱动开发
+// 变为 opt-in。它过去不可能是评审被关闭的原因——一个所有来源
+// 均未设置的安装会解析为 ON 且来源为 `default`——所以为它命名
+// continuation 只能是瞎猜，gentle-ai 正是为此返回空
+// scope。v2.4.0 把同样的安装解析为 OFF 且来源为 `default`，这让它
+// 成为最常见的拒绝：每一个从未 opt-in 的安装。gentle-ai 现在
+// 对它回答 `global`，不是 default 代表全局意见，而是因为
+// global 是唯一能把评审打开的 scope，Pi 也给出同样
+// 回答。让它保持 undefined 等于把最常见的状态
+// 逼进死胡同。
 function reviewModeContinuation(source: NativeReviewModeSource): string | undefined {
 	if (source === NATIVE_REVIEW_MODE_SOURCE.CLONE_LOCAL) return "If global RDD is still off, write {\"schema\":\"jero.authority.review-mode/v1\",\"value\":\"on\"} to ~/.pi/jero/review-mode.json, then run /jero:review-mode enable to clear this clone-local override.";
 	if (source === NATIVE_REVIEW_MODE_SOURCE.GLOBAL) return "Write {\"schema\":\"jero.authority.review-mode/v1\",\"value\":\"on\"} to ~/.pi/jero/review-mode.json to turn reviews back on; /jero:review-mode enable only clears the clone-local setting, which cannot override a global off.";
 	return "Write {\"schema\":\"jero.authority.review-mode/v1\",\"value\":\"on\"} to ~/.pi/jero/review-mode.json to opt in; RDD is off by default until explicitly enabled. /jero:review-mode enable only clears a clone-local override and cannot enable global RDD.";
 }
 
-// Names the situation before the mechanism, then the mechanism, mirroring
-// gentle-ai's RDDDisabledError.Error(). Pi skips rather than rejects — a
-// disabled switch never blocks here — but it must not discard which source
-// decided, because that is precisely the information the operator needs and
-// the only thing that selects a working way back on.
+// 先说处境再说机制，与 gentle-ai 的
+// RDDDisabledError.Error() 对齐。Pi 选择跳过而非拒绝——被关闭的开关
+// 在这里从不阻塞——但它不能丢弃是哪个来源做的决定，因为那正是
+// 操作者需要的信息，也是唯一能选出可行恢复路径的依据。
 function nativeReviewModeSkipped(operation: ReviewControllerOperation, source: NativeReviewModeSource): Record<string, unknown> {
 	const continuation = reviewModeContinuation(source);
 	return {
@@ -4852,14 +4837,13 @@ async function resolveReviewModeGate(
 	}
 }
 
-// gentle-pi#185: a native CLI without negotiated STATUS support (no
-// `targetStatus`, or a version-incompatible provider) hits this boundary
-// before any candidate-view restoration is attempted, so it can never
-// reproduce the #176 empty-registry failure — but the boundary's own
-// `next_action` was a machine token with nothing a human or an agent could
-// run. `remediation_command` names the recovery action; since the binary
-// retirement, STATUS is served by the in-process authority, so the only way
-// to lose it is a broken jero-pi install.
+// gentle-pi#185：没有协商出 STATUS 支持的原生 CLI（没有
+// `targetStatus`，或 provider 版本不兼容）会在任何候选视图恢复尝试
+// 之前撞上这条边界，因此绝不会复现 #176 的空注册表
+// 失败——但这条边界自己的 `next_action` 是一个机器 token，
+// 人类或代理都无法执行。`remediation_command` 指明恢复动作；
+// 自二进制退役以来，STATUS 由进程内权威提供，唯一
+// 失去它的可能就是 jero-pi 安装损坏。
 const NATIVE_STATUS_UNSUPPORTED_REMEDIATION_COMMAND = "reinstall the jero-pi package (pnpm install); review STATUS is served in-process and there is no external CLI to run";
 
 function nativeStatusUnsupported(operation: ReviewControllerOperation): Record<string, unknown> {
@@ -4879,7 +4863,7 @@ function nativeStatusUnsupported(operation: ReviewControllerOperation): Record<s
 	};
 }
 
-// Bundled and source module instances can coexist, making instanceof insufficient.
+// 打包版与源码版模块实例可能共存，因此 instanceof 不可靠。
 function asNativeReviewCliError(error: unknown): { code: string; diagnostics: NativeReviewProcessDiagnostics } | undefined {
 	if (error instanceof NativeReviewCliError) return error;
 	if (!isRecord(error) || error.name !== "NativeReviewCliError") return undefined;
@@ -4889,7 +4873,7 @@ function asNativeReviewCliError(error: unknown): { code: string; diagnostics: Na
 	return diagnostics === undefined || value.code !== diagnostics.error_code ? undefined : { code: value.code, diagnostics };
 }
 
-// Same coexisting-module-instance caveat as asNativeReviewCliError above.
+// 与上方 asNativeReviewCliError 相同的模块实例共存注意事项。
 function asNativeReviewConsentBindingError(error: unknown): { reason: string; message: string } | undefined {
 	if (error instanceof NativeReviewConsentBindingError) return { reason: error.reason, message: error.message };
 	if (!(error instanceof Error) || error.name !== "NativeReviewConsentBindingError") return undefined;
@@ -4908,16 +4892,15 @@ function nativeStatusFailed(operation: ReviewControllerOperation, error: unknown
 			next_action: "require-complete-native-authority-inventory",
 		};
 	}
-	// gentle-pi#599: a negotiated STATUS/inspect request the native provider
-	// rejects with a decoded failure/v2 envelope (for example a preflight
-	// `invalid_request` refusal for a nested foreign Git repository) used to
-	// fall through to the generic outcome below, discarding the envelope's own
-	// cause, code, retry_safe, and next_action -- the one piece of information
-	// that makes the refusal actionable (pass the intended nested repo as
-	// workspaceRoot). `nativeOperationFailure` already renders this exact
-	// failure-envelope shape faithfully for every mutating operation; reuse it
-	// here instead of masking the refusal as opaque authority-inventory
-	// corruption.
+	// gentle-pi#599：已协商的 STATUS/inspect 请求若被原生 provider 以
+	// 解码后的 failure/v2 封套拒绝（例如针对嵌套外部 Git 仓库的预检
+	// `invalid_request` 拒绝），过去会落到下方通用结果，
+	// 丢弃封套自带的 cause、code、retry_safe 和 next_action——而那正是
+	// 让拒绝可付诸行动的唯一信息（把目标嵌套仓库作为
+	// workspaceRoot 传入）。`nativeOperationFailure` 已经为每个变更操作
+	// 忠实渲染这种确切的失败封套形态；这里复用它，
+	// 而不是把拒绝掩盖成不透明的权威清单
+	// 损坏。
 	if (error instanceof NativeReviewIntegrationError) {
 		return {
 			...nativeOperationFailure(operation, error),
@@ -5005,13 +4988,13 @@ async function executeNativeAuthorityMaintenance(
 
 
 /**
- * Routes the destructive controller operations to their closest audited native
- * equivalent: RESET and RECOVER_LOCK map to `gentle-ai review reclaim`
- * (audited quarantine of one incomplete entry) and RECOVER maps to
- * `gentle-ai review recover` (auditable successor authority). Native inputs
- * the legacy flow never carried are requested through a structured envelope
- * instead of being invented. Pi-owned authorization semantics run before this
- * routing and are unchanged.
+ * 将破坏性控制器操作路由到最接近的已审计原生等价物：
+ * RESET 与 RECOVER_LOCK 映射到 `gentle-ai review reclaim`
+ * （对单个不完整条目的已审计隔离），RECOVER 映射到
+ * `gentle-ai review recover`（可审计的后继权威）。旧流程从未
+ * 携带过的原生输入通过结构化封套请求，
+ * 而不是凭空捏造。Pi 自有的授权语义先于该
+ * 路由运行且保持不变。
  */
 async function executeNativeRecoveryRoute(
 	operation: ReviewControllerOperation,
@@ -5090,10 +5073,10 @@ function mapNativeStartResult(result: NativeStartResult): Record<string, unknown
 		action: result.action,
 		lenses_required: result.lensesRequired,
 		...(result.riskReasons === undefined ? {} : { risk_reasons: result.riskReasons }),
-		// Organic-parity passthrough (Design Decision #8, organic-rdd-parity):
-		// risk_evidence/hint are rendered verbatim from the native start result,
-		// with zero local derivation; both stay absent whenever the negotiated
-		// version's capability is dark (every shipped row today).
+		// Organic-parity 直通（设计决策 #8，organic-rdd-parity）：
+		// risk_evidence/hint 从原生 start 结果原样渲染，
+		// 零本地派生；只要协商版本的能力是暗置的
+		// （今天所有已发布行），两者都保持缺失。
 		...(result.riskEvidence === undefined ? {} : { risk_evidence: result.riskEvidence }),
 		...(result.hint === undefined ? {} : { hint: result.hint }),
 		...(result.nextTransition === undefined ? {} : { next_transition: result.nextTransition }),
@@ -5104,12 +5087,12 @@ function requiredStatusActionText(lineageId?: string): string {
 	return `Run target-scoped review.status${lineageId === undefined ? "" : ` for lineage ${lineageId}`} and follow only its declared action.`;
 }
 
-// The public collect projection is collectBindings: each provider collect
-// input serialized once as the opaque binding jero_review_capture consumes.
-// The raw next_transition.collect.inputs carry the same bytes, so a four-lens
-// collect state used to cost about 28k characters per STATUS, INSPECT, or
-// START answer and again on every blocked retry (#465). The raw transition
-// keeps its kind and reason so the orchestrator still sees the collect state.
+// 公开的 collect 投影是 collectBindings：每个 provider collect
+// 输入序列化一次，作为 jero_review_capture 消费的不透明绑定。
+// 原始 next_transition.collect.inputs 携带相同字节，因此一个四镜头
+// collect 状态过去每次 STATUS、INSPECT 或 START 应答要花约 2.8 万字符，
+// 且每次被阻塞的重试还要再花一次（#465）。原始 transition
+// 保留 kind 与 reason，让编排器仍能看到 collect 状态。
 function withoutRawCollectInputs(raw: Record<string, unknown>): Record<string, unknown> {
 	if (!isRecord(raw.next_transition)) return raw;
 	const { collect: _collect, ...transition } = raw.next_transition;
@@ -5142,10 +5125,10 @@ function mapNativeTargetStatus(operation: ReviewControllerOperation, status: Rev
 			required_status_action: "Use only the provider-selected recovery disposition; do not substitute scope_changed, invalidated, or escalated.",
 		};
 	}
-	// gentle-pi#627: a stale managed-asset set stops the transition with the
-	// exact `gentle-ai sync` invocation that resolves it. Render that command
-	// as the one actionable next step; every other reason code keeps rendering
-	// as a plain blocked result.
+	// gentle-pi#627：过期的受管理资产集会用能解决它的那条
+	// 精确 `gentle-ai sync` 调用来停止 transition。把该命令渲染为
+	// 唯一可行动的下一步；其他所有 reason code 继续
+	// 渲染为普通的 blocked 结果。
 	if (status.nextTransition?.kind === "stop" && status.nextTransition.reasonCode === "managed_assets_outdated" && status.nextTransition.continuation !== undefined) {
 		return {
 			operation,
@@ -5155,8 +5138,8 @@ function mapNativeTargetStatus(operation: ReviewControllerOperation, status: Rev
 			hint: `run ${status.nextTransition.continuation.command}`,
 		};
 	}
-	// gentle-pi#638: an unachievable-lens stop carries the exact withdraw command for every declared slot, mirroring the managed_assets_outdated precedent. A restart that never saw the collect offer still finds its way back from this hint alone.
-	// gentle-pi#822: when the caller asked about one lineage, render only that lineage's withdraw command; the first entry may belong to an unrelated lineage, so an unmatched request omits the hint instead of surfacing a potentially unrelated withdraw command. Without a requested lineage the first entry stays the fallback.
+	// gentle-pi#638：unachievable-lens 停止为每个声明的槽位携带精确的 withdraw 命令，与 managed_assets_outdated 的先例一致。从未见过 collect 提议的重启仍能仅凭这条提示找到回去的路。
+	// gentle-pi#822：当调用方询问某一个 lineage 时，只渲染该 lineage 的 withdraw 命令；第一个条目可能属于无关的 lineage，因此未匹配的请求省略提示，而不是浮出可能无关的 withdraw 命令。没有请求 lineage 时，第一个条目仍是兜底。
 	if (status.nextTransition?.kind === "stop" && status.nextTransition.reasonCode === "unachievable_lens_slot" && status.nextTransition.unachievableLensSlots !== undefined) {
 		const withdrawSlot = requestedLineageId === undefined ? status.nextTransition.unachievableLensSlots[0] : status.nextTransition.unachievableLensSlots.find((slot) => slot.withdraw.binding.lineageId === requestedLineageId);
 		return {
@@ -5288,7 +5271,7 @@ function validateNativeStartUntrackedSelection(value: Record<string, unknown>): 
 	if (!declared) return {};
 	const scope = value.untrackedScope;
 	const expectedUntrackedInventory = value.expectedUntrackedInventory;
-	// Type assertion only: the rows are validated below before any use.
+	// 仅做类型断言：行在使用前会在下方校验。
 	const intendedUntracked = value.intendedUntracked as string[] | undefined;
 	if (
 		(scope !== NATIVE_START_UNTRACKED_SCOPE.EXCLUDE && scope !== NATIVE_START_UNTRACKED_SCOPE.SELECT) ||
@@ -5372,17 +5355,17 @@ type PendingReviewConsentDisposition = (typeof PENDING_REVIEW_CONSENT_DISPOSITIO
 const PENDING_REVIEW_CONSENT_STALE_DISPOSITION_LIMIT = 32;
 
 /**
- * Process-memory-only pending consent partitions. A loaded extension module
- * shares this registry across registrations, while exact Pi session IDs remain
- * the only continuity boundary. It intentionally has no persistence surface.
+ * 仅存于进程内存的待定同意分区。已加载的扩展模块
+ * 在多次注册间共享此注册表，而精确的 Pi 会话 ID 仍是
+ * 唯一的延续边界。它刻意不提供任何持久化面。
  */
 export class PendingReviewConsentRegistry {
 	private readonly sessions = new Map<PendingReviewConsentSessionKey, Map<string, PendingReviewConsent>>();
-	// gentle-pi#455: a binding id is globally unique (randomUUID), so its live
-	// owner and its stale disposition are tracked by binding id alone. This
-	// index lets answer-consent resolve and atomically take exactly once a
-	// binding another active Pi session's START created; the per-session map
-	// above stays authoritative for session-scoped listings and shutdown cleanup.
+	// gentle-pi#455：绑定 id 全局唯一（randomUUID），因此其活跃
+	// 属主与过期处置仅按绑定 id 追踪。该
+	// 索引让 answer-consent 能解析并恰好原子地取走一次由另一个
+	// 活跃 Pi 会话的 START 创建的绑定；上方按会话的
+	// map 仍是会话范围清单与关闭清理的权威。
 	private readonly byBinding = new Map<string, PendingReviewConsentSessionKey>();
 	private readonly staleDispositions = new Map<string, PendingReviewConsentDisposition>();
 
@@ -5399,16 +5382,16 @@ export class PendingReviewConsentRegistry {
 		return pending;
 	}
 
-	// Registers a freshly created pending binding under its owning session and
-	// the cross-session binding index in one step so the two never drift.
+	// 一步把新创建的待定绑定注册到其属主会话与
+	// 跨会话绑定索引，使两者永不漂移。
 	add(sessionKey: PendingReviewConsentSessionKey, pending: PendingReviewConsent): void {
 		this.ensure(sessionKey).set(pending.id, pending);
 		this.byBinding.set(pending.id, sessionKey);
 	}
 
-	// Resolves a live binding to its owning session regardless of which
-	// session asks, so answer-consent can reach a binding another session's
-	// START created (gentle-pi#455).
+	// 无论哪个会话发问，都把活跃绑定解析到其属主会话，
+	// 这样 answer-consent 能触及由另一个会话的
+	// START 创建的绑定（gentle-pi#455）。
 	resolve(bindingId: string): { sessionKey: PendingReviewConsentSessionKey; pending: PendingReviewConsent } | undefined {
 		const sessionKey = this.byBinding.get(bindingId);
 		const pending = sessionKey === undefined ? undefined : this.sessions.get(sessionKey)?.get(bindingId);
@@ -5461,12 +5444,12 @@ export class PendingReviewConsentRegistry {
 const processPendingReviewConsentRegistry = new PendingReviewConsentRegistry();
 const processRetainedNativeStatusSelections = new Map<PendingReviewConsentSessionKey, Map<string, RetainedNativeStatusSelection>>();
 
-// gentle-pi#556 / gentle-ai#4051: nesting depth of named-agent (SDD phase
-// executor or other subagent) starts vs. ends for a session. Starts and
-// ends are paired so a subagent's own loop end never leaves the primary
-// loop's `agent_end` preflight suppressed for the rest of the session: a
-// named-agent start increments the depth, a matching end decrements it,
-// and a fresh primary-loop start resets it to 0.
+// gentle-pi#556 / gentle-ai#4051：会话内具名代理（SDD 阶段
+// 执行器或其他子代理）启动与结束的嵌套深度。启动与
+// 结束成对，因此子代理自身循环的结束绝不会让主
+// 循环的 `agent_end` 预检在会话余下时间里被抑制：
+// 具名代理启动使深度加一，配对的结束使其减一，
+// 新的主循环启动将其重置为 0。
 const processAgentEndSubagentDepth = new Map<PendingReviewConsentSessionKey, number>();
 
 function pendingReviewConsentSessionKey(context: ExtensionContext | undefined, fallbackKey: symbol): PendingReviewConsentSessionKey {
@@ -5474,7 +5457,7 @@ function pendingReviewConsentSessionKey(context: ExtensionContext | undefined, f
 		const sessionManager = (context as unknown as { sessionManager?: { getSessionId?: () => unknown } } | undefined)?.sessionManager;
 		const sessionId = sessionManager?.getSessionId?.();
 		if (typeof sessionId === "string") return sessionId;
-	} catch { /* Minimal or test contexts use the registration-local fallback. */ }
+	} catch { /* 极简或测试上下文使用注册局部兜底键。 */ }
 	return fallbackKey;
 }
 
@@ -5506,14 +5489,14 @@ function cleanupAllPendingReviewConsents(registry: PendingReviewConsentRegistry,
 	for (const pending of registry.take(sessionKey)) cleanupPendingReviewConsent(pending, registry, sessionKey);
 }
 
-// An unused consent binding and the candidate view retained exclusively for
-// that binding expire as one lifecycle unit. TTL expiry is observable the
-// moment synchronous time says `expiresAt <= now`, so cleanup must be
-// synchronous with respect to that observation — the queued cleanup
-// macrotask is a safety net, not the authority. Pruning here (before any
-// later START may reuse the retained view) keeps timer order from deciding
-// correctness: a fresh candidate retry never reuses a view whose binding
-// already expired, so it cannot trip `candidate-target-projection-drift`.
+// 一个未被使用的同意绑定与仅为该绑定保留的候选视图
+// 作为一个生命周期单元一起过期。当同步时间给出
+// `expiresAt <= now` 的那一刻 TTL 过期即被观察到，因此清理必须
+// 相对该观察同步执行——排队的清理宏任务只是
+// 安全网，不是权威。在此处（在任何后续
+// START 复用保留视图之前）修剪，可以不让定时器顺序决定
+// 正确性：新的候选重试绝不会复用绑定
+// 已过期的视图，因此不会触发 `candidate-target-projection-drift`。
 function pruneExpiredReviewConsents(registry: PendingReviewConsentRegistry, sessionKey: PendingReviewConsentSessionKey, now: () => number): void {
 	const pendingReviewConsents = registry.get(sessionKey);
 	if (pendingReviewConsents === undefined) return;
@@ -5581,12 +5564,12 @@ function completedGrantedReviewConsent(outcome: Record<string, unknown>): boolea
 		typeof result.lenses_required === "boolean";
 }
 
-// gentle-pi#516: a binding this session does not hold (already answered,
-// expired, or issued by another Pi session or process) used to fall through
-// to the plain negotiated STATUS, which reads exactly like a healthy pre-start
-// "ready" and sent the model back into START for a second consent prompt. The
-// fact is local and proven before any provider call, so the outcome names the
-// binding and the exit; the current STATUS rides along as context only.
+// gentle-pi#516：本会话不持有的绑定（已被应答、
+// 已过期，或由另一个 Pi 会话或进程签发）过去会落到
+// 普通的已协商 STATUS，其读起来与健康的前置
+// "ready" 一模一样，把模型又送回 START 进行第二次同意提示。该
+// 事实是本地的且在任何 provider 调用前已被证明，因此结果应指明
+// 绑定与出口；当前 STATUS 只是作为上下文随行。
 const STALE_CONSENT_BINDING_DIAGNOSTIC_CODE = {
 	EXPIRED: "consent-binding-expired",
 	ALREADY_CONSUMED: "consent-binding-already-consumed",
@@ -5626,13 +5609,13 @@ function staleConsentBindingOutcome(operation: ReviewControllerOperation, bindin
 	};
 }
 
-// gentle-pi#455 correction: cross-session resolution looks a binding up by
-// its opaque id alone, so it must independently confirm the answering
-// invocation addresses the same repository its owning START minted it for.
-// This is a typed, non-bearer refusal in the same shape family as the
-// stale-binding outcome -- it never runs the mode gate or native
-// answerConsent, and never consumes the binding, so it stays answerable from
-// the correct repository afterwards.
+// gentle-pi#455 修正：跨会话解析仅凭绑定的
+// 不透明 id 查找，因此必须独立确认应答
+// 调用针对的是其属主 START 为之签发该绑定的同一个仓库。
+// 这是一个与过期绑定结果同族的带类型、非持有者
+// 拒绝——它从不运行模式门或原生
+// answerConsent，也从不消耗绑定，因此之后仍可从
+// 正确的仓库应答。
 function consentBindingRepositoryMismatchOutcome(operation: ReviewControllerOperation, binding: string, mintingRepositoryCwd: string, answeringRepositoryCwd: string): Record<string, unknown> {
 	return {
 		operation,
@@ -5649,15 +5632,15 @@ function consentBindingRepositoryMismatchOutcome(operation: ReviewControllerOper
 	};
 }
 
-// gentle-pi#874: the committed-range selector a current STATUS owns. A
-// selectorless STATUS on a clean, fully committed worktree answers with a
-// review.start execute transition naming the exact merge-base the provider
-// wants, so a plain START can adopt the route the provider just rendered
-// instead of making the caller hand-copy `base-ref` into its input. Only the
-// provider's own offered argument is read -- never a guess, a persisted value,
-// or a stale transition -- and anything that is not a full commit id paired
-// with committed-only is refused, so every other STATUS keeps today's
-// behaviour byte-for-byte.
+// gentle-pi#874：当前 STATUS 所拥有的 committed-range 选择器。在干净、
+// 完全已提交的工作树上，无选择器的 STATUS 会以一个
+// 指明 provider 所需确切 merge-base 的 review.start execute
+// transition 作答，因此普通 START 可以采纳 provider 刚渲染的路由，
+// 而不必让调用方手工把 `base-ref` 抄进输入。只读取
+// provider 自己提供的参数——绝不猜测、不读持久化值、
+// 不用过期 transition——且任何不是完整 commit id 配对
+// committed-only 的内容都会被拒绝，因此其他所有 STATUS 保持
+// 今日行为逐字节不变。
 const OFFERED_COMMITTED_RANGE_BASE_REF = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/i;
 
 function offeredCommittedRangeBaseRef(target: ReviewStatusV3): string | undefined {
@@ -5714,13 +5697,13 @@ function completeNativeStart(
 	};
 }
 
-// gentle-ai#4003: every Pi-side teardown step that fails after the native
-// burn is deferred cleanup, not a failed acknowledgement. Only the
-// already-sanitized CandidateViewError surface is relayed; anything else is
-// reduced to the step's fixed code so no path or command text reaches the
-// caller. The candidate-view hint is out-of-band on purpose: no controller
-// operation exposes a cleanup-only retry, and replaying acknowledge-approved
-// would hit the already-burned lineage.
+// gentle-ai#4003：原生销毁之后失败的每个 Pi 侧拆除步骤
+// 都是延迟清理，而非确认失败。只转发
+// 已清洗的 CandidateViewError 表面；其余一切
+// 都归约为该步骤的固定 code，使任何路径或命令文本都到不了
+// 调用方。候选视图提示刻意走带外：没有控制器
+// 操作暴露仅清理的重试，且重放 acknowledge-approved
+// 会撞上已销毁的 lineage。
 const POST_BURN_CLEANUP = {
 	candidateView: { code: "candidate-view-cleanup-failed", nextAction: "retry-candidate-view-cleanup-or-remove-the-view-out-of-band" },
 	retainedSelection: { code: "retained-selection-cleanup-failed", nextAction: "retained-selection-clears-on-the-next-terminal-status" },
@@ -5756,17 +5739,17 @@ function nativeOperationFailure(operation: ReviewControllerOperation | "jero_rev
 					: { mutation_performed: false, mutation_outcome: "none" }),
 			...(typeof value.failureEnvelope.replayability === "string" ? { replayability: value.failureEnvelope.replayability } : {}),
 			...(typeof value.failureEnvelope.nextAction === "string" ? { next_action: value.failureEnvelope.nextAction } : {}),
-			// gentle-pi#627: START's preflight failure envelope for a stale
-			// managed-asset set carries a top-level continuation; render its
-			// `gentle-ai sync` command as the one actionable next step.
+			// gentle-pi#627：针对过期受管理资产集的 START 预检
+			// 失败封套带有顶层 continuation；把它的
+			// `gentle-ai sync` 命令渲染为唯一可行动的下一步。
 			...(value.failureEnvelope.code === "managed_assets_outdated" && typeof value.failureEnvelope.continuation?.command === "string"
 				? { hint: `run ${value.failureEnvelope.continuation.command}` }
 				: {}),
 		};
 	}
-	// Every consent binding guard runs before the provider is launched, so this
-	// is a local mismatch with nothing to reconcile. Reporting it as a native
-	// operation failure hides the one fact that makes it fixable.
+	// 所有同意绑定守卫都在 provider 启动之前运行，因此这是
+	// 一个本地不匹配，无需对账。把它报告成原生
+	// 操作失败会掩盖唯一让它可修复的事实。
 	const consentBinding = asNativeReviewConsentBindingError(error);
 	if (consentBinding !== undefined) {
 		return {
@@ -5793,9 +5776,9 @@ function nativeOperationFailure(operation: ReviewControllerOperation | "jero_rev
 	const mutationOutcome = value.mutationOutcome === "unknown" ? "unknown" : "none";
 	const nativeCliError = asNativeReviewCliError(error);
 	const nativeDiagnostics = nativeCliError?.diagnostics;
-	// A target-status probe verifies `version` before it invokes `review/status`.
-	// Preserve either already-sanitized diagnostic on every controller route rather
-	// than relabeling an actionable failure as an opaque controller failure.
+	// target-status 探测在调用 `review/status` 之前先校验 `version`。
+	// 在每条控制器路由上保留这两种已清洗的诊断，而不是
+	// 把一个可行动的失败重新标注为不透明的控制器失败。
 	const preservesNativeTargetStatusDiagnostic = nativeDiagnostics?.operation === NATIVE_REVIEW_OPERATION.VERSION || nativeDiagnostics?.operation === NATIVE_REVIEW_OPERATION.STATUS;
 	const preservesAnswerConsentStartDiagnostic = operation === REVIEW_CONTROLLER_OPERATION.ANSWER_CONSENT && nativeDiagnostics?.operation === NATIVE_REVIEW_OPERATION.START;
 	const diagnostics = operation === REVIEW_CONTROLLER_OPERATION.START && error instanceof CandidateViewError && value.candidateViewPreNative === true
@@ -5862,13 +5845,13 @@ async function reconcileNativeMutationFailure(
 		const { next_action: staleNextAction, required_status_action: staleStatusDirective, ...reconciledBase } = failure;
 		void staleNextAction;
 		void staleStatusDirective;
-		// Field defect (fambig, 2026-08-16): an envelope-less mutating failure
-		// is stamped mutationOutcome "unknown", but a reconciled authority
-		// revision identical to the pre-operation revision PROVES the failed
-		// call never mutated. Report that proof as mutation_outcome none and
-		// claim no replay prohibition for it. Every genuinely ambiguous result
-		// — revision moved, no pre-operation revision held, or STATUS
-		// unavailable — stays fail-closed exactly as before.
+		// 字段缺陷（fambig，2026-08-16）：无封套的变更失败
+		// 被标记为 mutationOutcome "unknown"，但对账后的权威
+		// revision 与操作前 revision 相同，就证明了失败的
+		// 调用从未变更。把该证明报告为 mutation_outcome none，
+		// 且不对其主张任何重放禁止。所有真正模糊的结果
+		// ——revision 变动、未持有操作前 revision，或 STATUS
+		// 不可用——仍与从前一样保守失败。
 		if (preOperationRevision !== undefined && status.authority?.revision === preOperationRevision) {
 			const { replayability: staleReplayability, ...provenBase } = reconciledBase;
 			void staleReplayability;
@@ -5918,10 +5901,11 @@ function reviewWorkspaceGitIdentity(cwd: string): { toplevel: string; commonDir:
 }
 
 /**
- * Resolves the explicit user-authorized workspace target. An explicit path may
- * be nested and may belong to a repository unrelated to the Pi session cwd;
- * Git resolves it to its canonical worktree top-level. The session cwd remains
- * the legacy default only when no target was selected or remembered.
+ * 解析显式的用户授权工作区目标。显式路径可以
+ * 嵌套，也可以属于与 Pi 会话 cwd 无关的仓库；
+ * Git 会将其解析为规范的工作树顶层。只有当没有
+ * 目标被选择或记住时，会话 cwd 才仍是
+ * 旧式默认。
  */
 function resolveReviewControllerWorkspaceRoot(
 	requested: string | undefined,
@@ -5997,9 +5981,9 @@ function readRetainedNativeUntrackedSelection(selections: Map<string, RetainedNa
 		};
 }
 
-// gentle-pi#706: inspect's untrackedScope round trip retains the resolved
-// selection under the pre-lineage empty-lineage key so the next plain START in
-// that worktree adopts it without re-deriving the selection.
+// gentle-pi#706：inspect 的 untrackedScope 往返把已解析的
+// 选择保留在 pre-lineage 空 lineage 键下，使该工作树中下一次
+// 普通 START 直接采纳它，而无需重新推导选择。
 function nativePreLineageCandidateIdentity(
 	status: ReviewStatusV3,
 ): { targetIdentity: string; candidateTree: string } | undefined {
@@ -6075,13 +6059,13 @@ function requiresExplicitTargetLifecycleRoot(requested: string | undefined, sess
 	return requested !== undefined || workspaceRoot !== sessionCwd;
 }
 
-// gentle-pi#311 P4 — the thin Pi host relay. The provider decides which
-// capture slots the host satisfies by issuing the --materialize token on a
-// pi-bound `review.capture-result` collect input; nothing is ever inferred.
-// P4b: production runners compose the relay with the in-process authority
-// seams (lib/authority/capture-relay.ts) — renderBinding for the prompt
-// bytes, in-process admission for the staged result. The runners stay
-// injectable for tests.
+// gentle-pi#311 P4 —— 轻量 Pi 宿主中继。provider 通过在 pi 绑定的
+// `review.capture-result` collect 输入上签发 --materialize token 来决定
+// 宿主满足哪些捕获槽位；从不做任何推断。
+// P4b：生产 runner 将中继与进程内权威
+// 接缝组合（lib/authority/capture-relay.ts）——renderBinding 负责提示词
+// 字节，进程内 admission 负责暂存结果。runner 保持
+// 可注入以便测试。
 const runJeroAuthorityRelaySlot: ReviewHostRelayRunner = async (request) =>
 	submitReviewHostRelayPreparedResult(
 		await prepareReviewHostRelaySlot(request, undefined, renderJeroCaptureSlotForRelayV1),
@@ -6105,20 +6089,20 @@ function setReviewHostRelayGroupRunnersForTesting(reviewerGroup?: typeof runRevi
 const REVIEW_HOST_RELAY_RETRY_ACTION =
 	"Call fresh STATUS and submit only an exact reoffered one-slot binding; never replay this capture from transcript inference.";
 
-// gentle-pi#522 / #524: gentle-ai refused the submission at admission and
-// stated that the lens slot was not consumed. The refused bytes are the
-// problem, so the continuation is a fresh reviewer run on the reoffered slot,
-// not a replay and not an unknown-outcome reconciliation.
+// gentle-pi#522 / #524：gentle-ai 在准入处拒绝了提交，并
+// 声明镜头槽位未被消耗。被拒绝的字节才是
+// 问题所在，所以 continuation 是在重新提供的槽位上跑一次全新的评审者，
+// 既不是重放，也不是未知结果对账。
 const REVIEW_HOST_RELAY_REFUSED_ACTION =
 	"gentle-ai refused this submission at admission and did not consume the lens slot; the reason is in failure.stderr. "
 	+ "Call fresh STATUS and run only the exact slot it reoffers so the reviewer produces a new result that satisfies that refusal; never resubmit the refused bytes.";
 
-// gentle-pi#638: the declaration recorded, so fresh STATUS stops the review with one withdraw binding per declared slot instead of reoffering the reviewer. The withdraw command is the only way back to the same slot; everything else needs a smaller candidate and a new review.
+// gentle-pi#638：声明已记录，因此全新 STATUS 会以每个声明槽位一个 withdraw 绑定停止评审，而不是重新提供评审者。withdraw 命令是回到同一槽位的唯一途径；其他一切都需要更小的候选和一次新评审。
 const REVIEW_HOST_RELAY_UNACHIEVABLE_ACTION =
 	"A deterministic relay failure was declared unachievable for this bound slot, and fresh STATUS now stops this review instead of reoffering the reviewer. "
 	+ "If the failure was transient, run the withdraw command in unachievable_lens_slots with the same binding so the review re-offers this exact reviewer; otherwise reduce the candidate scope and start a new review.";
 
-// gentle-pi#638: the relay failure was deterministic but gentle-ai refused the declaration, so no slot state changed and the review still needs a provider-bound continuation.
+// gentle-pi#638：中继失败是确定性的，但 gentle-ai 拒绝了该声明，因此槽位状态未变，评审仍需要一个 provider 绑定的 continuation。
 const REVIEW_HOST_RELAY_DECLARATION_FAILED_ACTION =
 	"The relay failure was deterministic for this slot, but gentle-ai refused the unachievable declaration, so no slot state changed. "
 	+ "Call fresh STATUS and follow only its declared action; never replay this capture from transcript inference.";
@@ -6140,9 +6124,9 @@ function reviewHostRelayFailureReport(error: ReviewHostRelayError): Record<strin
 		timed_out: error.timedOut,
 		...(error.elapsedMs === null ? {} : { elapsed_ms: error.elapsedMs }),
 		...(error.timeoutMs === null ? {} : { timeout_ms: error.timeoutMs }),
-		// The captured native stderr is the only place the provider's exact
-		// refusal reason lives (gentle-pi#524); dropping it hid every admission
-		// refusal behind "submission-refused".
+		// 捕获的原生 stderr 是 provider 确切
+		// 拒绝原因的唯一所在（gentle-pi#524）；丢弃它会把每个准入
+		// 拒绝都藏进 "submission-refused" 背后。
 		...(error.stderr.length === 0 ? {} : { stderr: error.stderr }),
 	};
 }
@@ -6171,13 +6155,13 @@ function mapLastEventClosure(
 			...(closure.correctionLines === undefined ? {} : { correction_lines: closure.correctionLines }),
 			...(closure.advisoryFindings === undefined ? {} : { advisory_findings: closure.advisoryFindings }),
 			...(closure.statusContinuation === undefined ? {} : { status_continuation: closure.statusContinuation.raw }),
-			// The host has to see the acknowledgement to run it: approval now
-			// waits for that exact invocation instead of burning on its own, so
-			// dropping it here would strand the lineage as approved forever.
+			// 宿主必须看到确认才能执行它：approval 现在
+			// 等待那次确切调用而不是自行销毁，因此
+			// 在这里丢弃它会让 lineage 永远滞留在 approved。
 			...(closure.acknowledgement === undefined ? {} : { acknowledgement: closure.acknowledgement.raw }),
-			// A present-but-unreadable continuation is not the same as none: the
-			// host is approved and cannot end it here, and silence would read as
-			// nothing left to do.
+			// 存在但无法解码的 continuation 不等于没有：宿主已
+			// approved 且不能在此结束它，沉默会被解读为
+			// 无事可做。
 			...(closure.acknowledgementUndecodable === undefined ? {} : { acknowledgement_undecodable: true }),
 		},
 		lineage_id: closure.lineageId,
@@ -6298,9 +6282,9 @@ async function executeReviewHostRelayCapture(
 			};
 		}
 		if (error.kind === REVIEW_HOST_RELAY_FAILURE.MATERIALIZE_FAILED && /not eligible for immutable receipt review/.test(error.message)) {
-			// jero-pi M3 (design 8): the handshake refusal class is deleted;
-			// a provider refusal of that shape surfaces as a plain materialize
-			// failure carrying its verbatim reason.
+			// jero-pi M3（design 8）：握手拒绝类已删除；
+			// 该形态的 provider 拒绝以普通 materialize
+			// 失败浮出，携带其原样的拒绝原因。
 			return {
 				tool: "jero_review_capture",
 				status: "blocked",
@@ -6311,7 +6295,7 @@ async function executeReviewHostRelayCapture(
 				mutation_outcome: "none",
 			};
 		}
-		// gentle-pi#638: the two deterministic relay failure classes end the slot, not the transport. Declaring the slot unachievable through the native verb records the provider-owned fact that this reviewer cannot complete under current conditions, then exactly one bound STATUS re-query renders the typed stop with its withdraw binding instead of reoffering the same slot. The declaration binding is re-derived from the slot's own provider-issued `--name=value` tokens, never from transcript state.
+		// gentle-pi#638：两类确定性中继失败终结的是槽位而非传输。通过原生动词声明槽位不可达成，会记录 provider 所拥有的事实——该评审者在当前条件下无法完成——随后恰好一次绑定 STATUS 重查渲染带 withdraw 绑定的带类型 stop，而不是重新提供同一槽位。声明绑定从该槽位自己的 provider 签发 `--name=value` token 重新派生，绝不来自 transcript 状态。
 		const unachievableReason = reviewHostRelayUnachievableReason(error);
 		const declarationBinding = unachievableSlotDeclarationBinding(slot);
 		if (unachievableReason !== undefined && declarationBinding !== undefined && nativeReviewCli.captureUnachievableLens !== undefined) {
@@ -6319,9 +6303,9 @@ async function executeReviewHostRelayCapture(
 			try {
 				declared = await nativeReviewCli.captureUnachievableLens({ cwd, ...declarationBinding, reason: unachievableReason, ...(reviewHostRelayUnachievableDetail(error) === undefined ? {} : { detail: reviewHostRelayUnachievableDetail(error)! }), ...(signal === undefined ? {} : { signal }) });
 			} catch (declarationError) {
-				// Fail open only on the unknown-verb capability refusal: an older binary without `capture-unachievable` keeps today's transport-failure behavior below. Every other declaration failure is surfaced, never hidden behind the relay failure it followed.
+				// 仅对未知动词的能力拒绝才放行：没有 `capture-unachievable` 的旧二进制保持下方今日的传输失败行为。其余所有声明失败都浮出，绝不藏在其所跟随的中继失败背后。
 				if (!isNativeReviewUnachievableVerbRefused(declarationError)) {
-					// gentle-pi#822 (outside-diff): the declaration failure's own envelope carries the mutation truth — the process may have recorded the declaration before failing — so the mutation fields are derived from it instead of hardcoded none, and an unknown outcome is proven or disproven by one bound STATUS re-query without ever changing the failure outcome.
+					// gentle-pi#822（diff 之外）：声明失败自己的封套携带变更真相——进程可能在失败前已记录声明——因此变更字段从它派生而非硬编码 none，未知结果由一次绑定 STATUS 重查证明或证伪，且从不改变失败结果。
 					const declarationFailureReport = nativeOperationFailure("jero_review_capture", declarationError);
 					let declarationMutationPerformed = declarationFailureReport.mutation_performed === true;
 					let declarationMutationOutcome: "none" | "unknown" | "committed" = declarationFailureReport.mutation_outcome === "committed" ? "committed" : declarationFailureReport.mutation_outcome === "unknown" ? "unknown" : "none";
@@ -6336,7 +6320,7 @@ async function executeReviewHostRelayCapture(
 								declarationMutationOutcome = "committed";
 							}
 						} catch {
-							// Without proof the mutation stays unknown; the declaration failure is already the reported outcome.
+							// 没有证明，变更保持未知；声明失败已是上报的结果。
 						}
 					}
 					return {
@@ -6358,9 +6342,9 @@ async function executeReviewHostRelayCapture(
 					const status = await reconcileUnknownReviewLastEventCapture(nativeReviewCli, cwd, binding, route === undefined ? { agent: REVIEW_HOST_AGENT } : { ...route, agent: REVIEW_HOST_AGENT });
 					syncRetainedNativeStatusSelections(selections, cwd, status, route?.baseRef);
 					const stop = status.nextTransition?.kind === "stop" && status.nextTransition.reasonCode === "unachievable_lens_slot" ? status.nextTransition : undefined;
-					// gentle-pi#822: the stop may also carry slots declared by other runs, so expose only the entry matching the identity this session just declared. A stop with slots but no matching entry is a reconciliation failure, never a success rendering someone else's withdraw command.
+					// gentle-pi#822：stop 也可能携带其他运行声明的槽位，因此只暴露与本会话刚声明的身份匹配的条目。有槽位但无匹配条目的 stop 是对账失败，绝不是渲染别人 withdraw 命令的成功。
 					const declaredSlot = stop?.unachievableLensSlots?.find((slot) => slot.lens === declaration.lens && slot.selectedOrder === declaration.selected_order && slot.subjectHash === declaration.subject_hash && slot.withdraw.binding.targetIdentity === declarationBinding.targetIdentity && slot.withdraw.binding.lineageId === declarationBinding.lineageId && slot.withdraw.binding.revision === declarationBinding.expectedRevision);
-					// gentle-pi#822: success is proven, never assumed — a STATUS with no unachievable_lens_slot stop at all (no transition, a different reason code, or a collect reoffer) is a reconciliation failure exactly like a stop whose entries do not match the declared identity.
+					// gentle-pi#822：成功是被证明的，绝非假设——一个完全没有 unachievable_lens_slot stop 的 STATUS（无 transition、别的 reason code，或 collect 重新提供）与条目不匹配声明身份的 stop 一样，都是对账失败。
 					if (declaredSlot === undefined) {
 						return {
 							tool: "jero_review_capture",
@@ -6426,7 +6410,7 @@ async function executeReviewHostRelayCapture(
 const REVIEW_PROVIDER_ROLE_RETRY_ACTION =
 	"Call fresh STATUS and execute only the exact one-slot role vector it reoffers; never relaunch from transcript inference.";
 
-// gentle-pi#638: re-derives the capture-unachievable declaration binding from one materialize slot's own provider-issued tokens. The provider renders those tokens as `--name=value` pairs (review-host-relay.ts renderToken), and Go verifies every value against the frozen authority before recording, so a missing required value or subject hash means the slot cannot be declared and the caller keeps its fall-back behavior.
+// gentle-pi#638：从一个 materialize 槽位自己的 provider 签发 token 重新派生 capture-unachievable 声明绑定。provider 将这些 token 渲染为 `--name=value` 对（review-host-relay.ts 的 renderToken），Go 在记录前用冻结权威校验每个值，因此缺失必需值或 subject hash 就意味着该槽位无法声明，调用方保持其回退行为。
 function unachievableSlotDeclarationBinding(slot: ReviewHostRelaySlot): { lineageId: string; targetIdentity: string; expectedRevision: string; requestHash: string; repositoryContext?: string } | undefined {
 	const tokenValue = (name: string): string | undefined => {
 		const prefix = `--${name}=`;
@@ -6490,8 +6474,8 @@ async function executeProviderRoleVectorCapture(
 	}
 }
 
-// The provider-named lenses still awaiting a reviewer result: one lens per
-// pending `review.capture-result` collect input, in provider order.
+// 仍在等待评审者结果的 provider 命名镜头：每个待定
+// `review.capture-result` collect 输入对应一个镜头，按 provider 顺序。
 function pendingReviewerLenses(status: ReviewStatusV3): readonly string[] {
 	if (status.nextTransition?.kind !== "collect") return [];
 	return [...new Set((status.nextTransition.collect?.inputs ?? [])
@@ -6500,38 +6484,38 @@ function pendingReviewerLenses(status: ReviewStatusV3): readonly string[] {
 		.filter((lens): lens is NonNullable<typeof lens> => lens !== undefined))];
 }
 
-// Live defect (2026-08-16, Engram #12461): a successor lineage created by
-// native `review recover` exists only in native authority — this controller
-// never saw its START, so direct reviewer dispatch refused with
-// current-binding-missing even though the controller itself had just decoded
-// the successor's authoritative STATUS. Mirror the START-time registration
-// from STATUS discovery: when an unknown-but-live lineage still collecting
-// reviewer results appears in a status this controller decoded, restore its
-// frozen projection from the native descriptor and bind the dispatch-facing
-// current candidate view with the provider-named pending lenses.
+// 现场缺陷（2026-08-16，Engram #12461）：由原生
+// `review recover` 创建的后继 lineage 只存在于原生权威中——本控制器
+// 从未见过它的 START，因此直接评审者派发以
+// current-binding-missing 拒绝，尽管控制器自己刚解码过
+// 后继者的权威 STATUS。从 STATUS 发现中镜像 START 时注册：
+// 当一个未知但存活、仍在收集
+// 评审者结果的 lineage 出现在本控制器解码的 status 中时，从原生
+// descriptor 恢复其冻结投影，并用 provider 命名的待定镜头绑定面向
+// 派发的当前候选视图。
 //
-// Field report (2026-08-16, gentle-pi 402f9f77): hydration must run from
-// EVERY lane that decodes an authoritative status, not from the STATUS
-// operation alone — the reported flow was `finalize` (blocked on
-// review.capture-result) followed by a reviewer dispatch, which never passed
-// through STATUS. It also never fails its caller: STATUS and the blocked
-// FINALIZE envelope stay read-only, and the outcome is returned so the caller
-// can report it instead of swallowing it.
-// Field defect (2026-08-16, third report): the Pi host relay never ran for a
-// real lineage. Measured against the live 2.4.0-main provider on a faithful
-// reproduction — an agent-less `review status` returns a bare capture-result
-// collect input (lineage, expected-revision, target, repository-context, lens,
-// order, subject-hash), while the SAME status with `--agent pi` additionally
-// carries agent=pi, materialize=true and the provider submission. The adapter
-// never named its agent, so reviewHostRelaySlots() saw zero materialize slots,
-// the relay was unreachable, and no lens was ever launched.
+// 现场报告（2026-08-16，gentle-pi 402f9f77）：水合必须从
+// 每一条解码权威 status 的通道运行，而不只是从 STATUS
+// 操作——报告的流程是 `finalize`（阻塞于
+// review.capture-result）随后一次评审者派发，从未经过
+// STATUS。它也绝不让调用方失败：STATUS 与被阻塞的
+// FINALIZE 封套保持只读，结果被返回，让调用方
+// 上报而不是吞掉。
+// 现场缺陷（2026-08-16，第三份报告）：Pi 宿主中继从未为真实
+// lineage 运行过。对照活的 2.4.0-main provider 做忠实
+// 复现测量——无 agent 的 `review status` 返回裸 capture-result
+// collect 输入（lineage、expected-revision、target、repository-context、
+// lens、order、subject-hash），而同一 status 加 `--agent pi` 会额外
+// 携带 agent=pi、materialize=true 和 provider 提交。适配器
+// 从未指明其 agent，因此 reviewHostRelaySlots() 看到零个 materialize
+// 槽位，中继不可达，没有任何镜头被启动。
 //
-// The agent is PROBED, never assumed. The pinned provider defines `--agent` as
-// of v2.4.0 — v2.2.3 did not define it on `review status` at all and refused it
-// outright — but Pi still never version-sniffs: the installed binary remains
-// the only authority on whether the flag exists. A typed refusal is remembered
-// per provider instance and blocks the lifecycle with its exact provider cause;
-// Pi never degrades it into an agent-less STATUS fallback.
+// agent 是被探测的，绝非假设。锁定的 provider 自
+// v2.4.0 起定义 `--agent`——v2.2.3 在 `review status` 上根本没有定义它并
+// 直接拒绝——但 Pi 依然从不嗅探版本：已安装的二进制仍是
+// 该 flag 是否存在的唯一权威。带类型的拒绝按
+// provider 实例记忆，并以确切的 provider 原因阻塞生命周期；
+// Pi 绝不将其降级为无 agent 的 STATUS 回退。
 const REVIEW_HOST_AGENT = "pi" as const;
 const REVIEW_TRANSPORT_REFUSAL_CODES = new Set([
 	"immutable_review_transport_unsupported",
@@ -6553,12 +6537,12 @@ function hostTransportUnavailable(
 	operation: ReviewControllerOperation | "jero_review_capture" | "jero_review_capture_group",
 	transport: ReviewTransportRefusal,
 ): Record<string, unknown> {
-	// #535: a provider-printed raw `gentle-ai review ...` continuation is a dead
-	// end in this runtime — Pi is not in the provider's immutable review runtime
-	// list, so every CLI-only exit refuses with this same transport code. The
-	// refusal therefore names the continuation that runs in this surface (the
-	// jero_review / jero_review_capture wrapper tools) while the provider's
-	// own diagnostic stays intact in relay_transport as evidence.
+	// #535：provider 打印的原始 `gentle-ai review ...` continuation 在本
+	// 运行时是死路——Pi 不在 provider 的不可变评审运行时
+	// 列表中，因此每个仅 CLI 的出口都以同一传输 code 拒绝。该
+	// 拒绝因此指明在此表面运行的 continuation
+	// （jero_review / jero_review_capture 包装工具），同时 provider 自己的
+	// 诊断在 relay_transport 中原样保留作为证据。
 	const isCapture = operation === "jero_review_capture" || operation === "jero_review_capture_group";
 	return {
 		...(isCapture ? { tool: operation } : { operation }),
@@ -6578,9 +6562,9 @@ function hostTransportUnavailable(
 }
 
 /**
- * Queries negotiated STATUS for the required pi reviewer transport. A typed
- * refusal is cached per provider and returned as unavailable; neither a fresh
- * nor remembered refusal may issue an agent-less lifecycle STATUS request.
+ * 为所需的 pi 评审者传输查询已协商的 STATUS。带类型的
+ * 拒绝按 provider 缓存并作为不可用返回；无论新的
+ * 还是记忆中的拒绝，都不得发起无 agent 的生命周期 STATUS 请求。
  */
 async function negotiatedStatusForHostTransport(
 	nativeReviewCli: NativeReviewCli,
@@ -6597,8 +6581,8 @@ async function negotiatedStatusForHostTransport(
 		return { status };
 	} catch (error) {
 		const code = error instanceof NativeReviewIntegrationError ? error.failureEnvelope.code : undefined;
-		// Only the closed transport-refusal set is typed unavailable; every
-		// other failure remains an error for the caller's normal error path.
+		// 只有封闭的传输拒绝集合才被定型为不可用；其余
+		// 每种失败仍是错误，走调用方的常规错误路径。
 		if (code === undefined || !REVIEW_TRANSPORT_REFUSAL_CODES.has(code)) throw error;
 		const transport: ReviewTransportRefusal = { supported: false, code, message: error.message };
 		reviewTransportRefusalByProvider.set(provider, transport);
@@ -6606,13 +6590,13 @@ async function negotiatedStatusForHostTransport(
 	}
 }
 
-// gentle-pi#568: resolves the current negotiated review STATUS for a session,
-// under the exact guards `agent_end` uses to decide whether to nudge: a
-// native review CLI with both `reviewMode` and `targetStatus`, a UI-bearing
-// context, and RDD effectively on. Returns `undefined` on any missing guard,
-// an effective-off mode, or any STATUS error or transport refusal. Startup
-// negotiation and mutation-gated `agent_end` use the same native whole-target
-// path; neither derives candidate scope from local mutation receipts.
+// gentle-pi#568：为会话解析当前已协商的评审 STATUS，
+// 沿用 `agent_end` 决定是否提醒的确切守卫：一个
+// 同时具备 `reviewMode` 与 `targetStatus` 的原生评审 CLI、带
+// UI 的上下文，以及 RDD 生效开启。任一守卫缺失、
+// 模式生效关闭，或任何 STATUS 错误或传输拒绝，都返回
+// `undefined`。启动协商与变更设门的 `agent_end` 使用同一条原生
+// 全目标路径；两者都不从本地变更回执推导候选范围。
 async function resolveNegotiatedReviewStatusForSession(
 	nativeReviewCli: NativeReviewCli | null,
 	ctx: ExtensionContext,
@@ -6637,10 +6621,10 @@ async function resolveNegotiatedReviewStatusForSession(
 	}
 }
 
-// gentle-pi#556 / gentle-ai#4051: the mutation-gated reminder sent
-// through `agent_end`. It never runs START itself, so it names the one
-// supported continuation (jero_review inspect) and defers the resulting
-// consent envelope to the human.
+// gentle-pi#556 / gentle-ai#4051：经 `agent_end` 发出的
+// 变更设门提醒。它从不自行运行 START，因此指明唯一
+// 受支持的 continuation（jero_review inspect），并把由此产生的
+// 同意封套交还给人类。
 function renderAgentEndReviewPreflightMessage(targetIdentity: string): string {
 	return `Receipt-driven development is enabled, and this worktree holds an unreviewed candidate (target ${targetIdentity}). First determine whether the user explicitly left this exact target unreviewed. If yes, do not invoke review; report that disposition and continue. Only otherwise, call the jero_review tool with {"operation":"inspect"} and follow the transition it returns; it currently offers review.start for this target. An eligible interactive Pi host may resolve consent directly with its own three-action UI. If jero_review instead returns an unresolved gentle-ai.review-integration.consent/v3 envelope, relay that original two-choice provider envelope to the human losslessly. Never answer consent from model prose or tool arguments.\n\nThis extension never runs START itself. This reminder consumes only this session's observed mutation generation.`;
 }
@@ -6668,10 +6652,10 @@ function exactCollectArgument(input: ReviewCollectInputV3, name: string): string
 	return matches.length === 1 ? matches[0]!.value : undefined;
 }
 
-// The intended-untracked collect input arrived with status/v6 and every later
-// status version keeps it; matching one exact version left every workspace
-// with untracked files unable to start a review once gentle-ai answered v7
-// (gentle-pi#610, gentle-ai#4187).
+// intended-untracked collect 输入随 status/v6 到来，其后每个
+// status 版本都保留它；只匹配一个确切版本会让每个
+// 含未跟踪文件的工作区在 gentle-ai 应答 v7 后
+// 无法启动评审（gentle-pi#610，gentle-ai#4187）。
 const INTENDED_UNTRACKED_STATUS_SCHEMA = /^gentle-ai\.review-integration\.status\/v(\d+)$/;
 function statusCarriesIntendedUntrackedSelection(schema: unknown): boolean {
 	const match = typeof schema === "string" ? INTENDED_UNTRACKED_STATUS_SCHEMA.exec(schema) : null;
@@ -6687,10 +6671,10 @@ function reviewIntendedUntrackedInput(status: ReviewStatusV3): ReviewCollectInpu
 	return matches.length === 1 ? matches[0] : undefined;
 }
 
-// gentle-pi#706: the inspect stop on the intended-untracked selection carries no
-// continuation, so the blocked result names it exactly: the inventory digest
-// covers path names only, and the round trip resolves either through the select
-// operation or through inspect's own top-level untrackedScope.
+// gentle-pi#706：intended-untracked 选择上的 inspect stop 不携带
+// continuation，因此 blocked 结果会精确指明它：清单摘要
+// 只覆盖路径名，往返要么经 select
+// 操作解决，要么经 inspect 自己的顶层 untrackedScope 解决。
 const INSPECT_UNTRACKED_SELECTION_NEXT_STEP =
 	'The intended-untracked selection is required before START. The expected_untracked_inventory digest covers untracked path names only (git ls-files --others --exclude-standard); nothing is read or hashed at inventory time, and file content is hashed only for selected paths at candidate freeze. Either call jero_review with operation "select-intended-untracked" passing this selectionBinding and intendedUntracked ([] excludes every eligible path, a subset includes only those paths), or call inspect again with untrackedScope ("exclude", or "select" with intendedUntracked) to resolve the round trip in one call. To keep a path out of the inventory permanently, ignore it through .gitignore or .git/info/exclude.';
 
@@ -6744,9 +6728,9 @@ function selectExactReviewCapture(
 	const input = matches[0]!;
 	const inputLineageId = exactCollectArgument(input, "lineage");
 	const inputTargetIdentity = exactCollectArgument(input, "target");
-	// Go's targeted-validator vector binds its capture target to the correction
-	// target from the provider-owned validation request, rather than STATUS's
-	// current candidate identity. All other captures remain bound to STATUS.
+	// Go 的 targeted-validator 向量把其捕获目标绑定到
+	// provider 拥有的验证请求中的纠正目标，而不是
+	// STATUS 的当前候选身份。其余所有捕获仍绑定到 STATUS。
 	const expectedInputTargetIdentity = input.validationRequest?.correctionTargetIdentity ?? statusTargetIdentity;
 	if (
 		!isCanonicalProcessString(inputLineageId) ||
@@ -6891,10 +6875,10 @@ async function executeReviewCaptureOperation(
 	const selected = selectExactReviewCapture(status, parameters.lineageId, canonicalBinding);
 	if (!isSelectedReviewCapture(selected)) return selected;
 
-	// During correction the flow carries both the original authority target
-	// identity and a distinct provider-issued correction target identity
-	// (gentle-pi#535 row 15). Echo the correction one on the capture result so
-	// the caller never reconstructs which is which from the opaque binding.
+	// 纠正期间，流程同时携带原始权威目标身份
+	// 和一个不同的 provider 签发纠正目标身份
+	// （gentle-pi#535 第 15 行）。在捕获结果上回显纠正
+	// 身份，使调用方绝不必从不透明绑定中重建二者的区别。
 	const correctionTargetIdentity = selected.input.validationRequest?.correctionTargetIdentity ?? selected.input.artifactSubject?.correctionTargetIdentity;
 	const withCorrectionTarget = (result: Record<string, unknown>): Record<string, unknown> =>
 		correctionTargetIdentity === undefined ? result : { ...result, correction_target_identity: correctionTargetIdentity };
@@ -7089,9 +7073,9 @@ function hydrateDispatchBindingFromStatus(candidateViews: CandidateViewRegistry 
 		candidateViews.restoreCurrentForDispatchFromNative(lineageId, contributorRoot, status.projection, lenses);
 		return { hydrated: true, lineage_id: lineageId, lenses };
 	} catch (error) {
-		// Never fail the caller on hydration; the registry records the typed
-		// cause so the later dispatch refusal names the attempt instead of
-		// claiming no binding was ever available.
+		// 水合绝不让调用方失败；注册表记录带类型的
+		// 原因，让随后的派发拒绝指明该尝试，而不是
+		// 宣称从未有过可用绑定。
 		return {
 			hydrated: false,
 			lineage_id: lineageId,
@@ -7121,10 +7105,10 @@ async function executeReviewControllerOperation(
 	const _useTargetLifecycleRoot = requiresExplicitTargetLifecycleRoot(parameters.workspaceRoot, sessionCwd, defaultCwd);
 	const includeWorkspaceRoot = parameters.workspaceRoot !== undefined || defaultCwd !== sessionCwd;
 	if (parameters.operation === REVIEW_CONTROLLER_OPERATION.EXPORT || parameters.operation === REVIEW_CONTROLLER_OPERATION.IMPORT) {
-		// Legacy bundle transport rode on the retired pre-integration graph/compact
-		// stores. The native v2.1.11 CLI exposes no bundle equivalent, so both
-		// operations return a structured retirement envelope; the enum members are
-		// kept so the tool schema stays stable for existing callers.
+		// 旧式 bundle 传输依附于已退役的集成前 graph/compact
+		// 存储。原生 v2.1.11 CLI 未暴露 bundle 等价物，因此两个
+		// 操作都返回结构化的退役封套；枚举成员被
+		// 保留，使工具 schema 对既有调用方保持稳定。
 		return {
 			operation: parameters.operation,
 			status: "blocked",
@@ -7136,10 +7120,10 @@ async function executeReviewControllerOperation(
 		};
 	}
 	if (parameters.operation === REVIEW_CONTROLLER_OPERATION.ASSESS) {
-		// Read-only native risk assessment (gentle-ai#4295, gentle-pi#662). Never
-		// mutates, never requires a lineageId, and never routes through
-		// authorizeDestructiveReviewOperation (it returns early for any
-		// operation that is neither RESET nor a maintenance operation).
+		// 只读原生风险评估（gentle-ai#4295，gentle-pi#662）。从不
+		// 变更，从不要求 lineageId，也从不经过
+		// authorizeDestructiveReviewOperation（它对任何既非
+		// RESET 也非维护操作的 operation 都提前返回）。
 		const input = parseReviewAssessInput(parameters.operation, parameters.input);
 		const details = await resolveReviewAssessmentPlan(nativeReviewCli, defaultCwd, input, signal);
 		return { operation: parameters.operation, ...details, ...(includeWorkspaceRoot ? { workspace_root: defaultCwd } : {}) };
@@ -7153,9 +7137,9 @@ async function executeReviewControllerOperation(
 		parameters.operation === REVIEW_CONTROLLER_OPERATION.INSPECT &&
 		nativeReviewCli !== null
 	) {
-		// A new inspect supersedes every pre-lineage selection before its first
-		// STATUS attempt. A failed or changed-candidate inspect cannot leave an
-		// older selection available for a later START.
+		// 新的 inspect 在其第一次 STATUS 尝试之前取代所有
+		// pre-lineage 选择。失败或候选已变的 inspect 不能把
+		// 更早的选择留给后续 START 使用。
 		clearRetainedNativeUntrackedSelection(retainedUntrackedSelections, defaultCwd, "");
 		try {
 			if (nativeReviewCli.targetStatus !== undefined) {
@@ -7181,7 +7165,7 @@ async function executeReviewControllerOperation(
 					undefined,
 				);
 				if (parameters.untrackedScope === undefined) {
-					// gentle-pi#706: the stop alone never tells the caller what to do next.
+					// gentle-pi#706：stop 本身从不告诉调用方下一步做什么。
 					return {
 						...plainMapped,
 						...("selectionBinding" in plainMapped
@@ -7294,16 +7278,16 @@ async function executeReviewControllerOperation(
 	if (parameters.operation === REVIEW_CONTROLLER_OPERATION.RECOVER_LOCK) {
 		const input = parseControllerJson(requiredControllerString(parameters, "input"), parameters.operation);
 		if (typeof input.ownerHash !== "string") throw new Error("Lock recovery requires an exact ownerHash");
-		// A stuck legacy mutation lock is an incomplete in-flight entry; the
-		// audited native quarantine owns its removal. Lock recovery is not a
-		// destructive authority reset, so pending authorizations survive.
+		// 卡死的旧式变更锁是一个不完整的在途条目；其
+		// 移除归已审计的原生隔离所有。锁恢复不是
+		// 破坏性的权威重置，因此待定授权得以保留。
 		return await executeNativeRecoveryRoute(parameters.operation, "reclaim", input, defaultCwd, nativeReviewCli, undefined, signal);
 	}
 	if (parameters.operation === REVIEW_CONTROLLER_OPERATION.RECOVER) {
 		const input = parseControllerJson(requiredControllerString(parameters, "input"), parameters.operation);
-		// The authorization binding is Pi-derived, never caller-carried. It is
-		// recorded verbatim as a maintainer attestation, so accepting one the
-		// caller composed would let an unapproved actor sign the recovery edge.
+		// 授权绑定由 Pi 派生，绝不由调用方携带。它被
+		// 原样记录为维护者证明，因此接受一个由
+		// 调用方拼写的绑定会让未经批准的执行者为恢复边签名。
 		if (input.maintainerAuthorization !== undefined) {
 			return {
 				operation: parameters.operation,
@@ -7368,11 +7352,11 @@ async function executeReviewControllerOperation(
 			].join("\n"),
 		);
 		if (!approved) throw new Error("Review controller RECOVER was not explicitly authorized");
-		// Time-of-check to time-of-use: the human deliberates for an unbounded
-		// interval, and the authority can advance, be recovered by someone else, or
-		// stop being recovery-eligible while they do. The approval and the derived
-		// binding are pinned to the pre-approval read, so the authority is read once
-		// more and must still match it exactly before anything mutates.
+		// 检查时到使用时：人类可以不受限制地
+		// 思考，在此期间权威可能前进、被别人恢复，或
+		// 不再符合恢复条件。批准与派生
+		// 绑定都钉在批准前的读取上，因此在任何变更
+		// 之前会再读一次权威，且必须仍与之精确匹配。
 		let confirmedStatus: ReviewStatusV3;
 		try {
 			confirmedStatus = await nativeReviewCli.targetStatus(statusRequest);
@@ -7486,11 +7470,11 @@ async function executeReviewControllerOperation(
 		}
 		let acknowledged: NativeReviewAcknowledgeApprovedOutcome | void;
 		try {
-			// gentle-ai #3947: the burn answers with one review-acknowledged/v1
-			// envelope bound to exactly this lineage, target, and revision, and
-			// the burn is reported from that envelope, never from a later
-			// STATUS. Every published release up to v2.5.0-rc.3 still burns in
-			// silence, and that result stays byte-identical.
+			// gentle-ai #3947：销毁操作以一个绑定到确切
+			// lineage、目标与 revision 的 review-acknowledged/v1
+			// 封套作答，销毁结果从该封套报告，绝不来自
+			// 之后的 STATUS。截至 v2.5.0-rc.3 的每个已发布版本仍
+			// 静默销毁，该结果保持逐字节不变。
 			acknowledged = await acknowledgementCli.acknowledgeApproved({
 				argumentTokens,
 				cwd: defaultCwd,
@@ -7501,18 +7485,18 @@ async function executeReviewControllerOperation(
 			if (!nativeMutationRequiresStatus(error)) return nativeOperationFailure(parameters.operation, error);
 			return await reconcileNativeMutationFailure(parameters.operation, error, acknowledgementCli, target, retainedUntrackedSelections);
 		}
-		// gentle-ai#4003: from here the native burn is the committed authority
-		// outcome. Both Pi-side teardown steps run outside the mutation-result
-		// try/catch and each one is guarded on its own, so a cleanup failure is
-		// reported as deferred cleanup and never as a failed acknowledgement
-		// that would invite a replay of a burned operation.
+		// gentle-ai#4003：从这里开始，原生销毁就是已提交的权威
+		// 结果。两个 Pi 侧拆除步骤都在变更结果的
+		// try/catch 之外运行且各自设防，因此清理失败被
+		// 报告为延迟清理，绝不会被报告为失败的确认——
+		// 那会诱使对一个已销毁操作的重放。
 		const retainedSelectionCleanup = deferredPostBurnCleanup(POST_BURN_CLEANUP.retainedSelection, () => clearRetainedNativeUntrackedSelection(retainedUntrackedSelections, defaultCwd, parameters.lineageId));
-		// The registry owns restoring writability of its 0555 views before
-		// removal; a terminal approved cleanup keeps the lineage projection.
+		// 注册表负责在移除前恢复其 0555 视图的
+		// 可写性；终态 approved 清理会保留 lineage 投影。
 		const candidateViewCleanup = deferredPostBurnCleanup(POST_BURN_CLEANUP.candidateView, () => candidateViews?.cleanupTerminal(parameters.lineageId, "approved", defaultCwd));
-		// gentle-pi#668: `closed` is never auto-derived or recorded here --
-		// a parent that wants the on-path passes nativeReviewOutcome:
-		// "closed" explicitly on its next assess call for this candidate.
+		// gentle-pi#668：`closed` 在此从不自动派生或记录——
+		// 想要走上该路径的父会话，会在其对这一候选的下一次
+		// assess 调用中显式传入 nativeReviewOutcome: "closed"。
 		return {
 			operation: parameters.operation,
 			status: "closed",
@@ -7534,9 +7518,9 @@ async function executeReviewControllerOperation(
 		if (Object.keys(input).some((key) => key !== "consentBinding" && key !== "answer") || Object.keys(input).length !== 2) throw new Error("Review controller answer-consent input must contain exactly consentBinding and answer");
 		if (typeof input.consentBinding !== "string" || input.consentBinding.length === 0) throw new Error("Review controller answer-consent requires an opaque consentBinding");
 		if (input.answer !== "granted" && input.answer !== "declined") throw new Error("Review controller answer-consent answer must be granted or declined");
-		// gentle-pi#455: resolve the binding by its opaque id alone, so a
-		// binding one active Pi session's START created is answerable from any
-		// active session presenting it -- not only the session that created it.
+		// gentle-pi#455：仅凭不透明 id 解析绑定，这样
+		// 由某个活跃 Pi 会话的 START 创建的绑定，可由任何
+		// 出示它的活跃会话应答——而不只是创建它的会话。
 		const resolved = pendingReviewConsentRegistry.resolve(input.consentBinding);
 		const pending = resolved?.pending;
 		const owningSession = resolved?.sessionKey ?? pendingReviewConsentSession;
@@ -7583,8 +7567,8 @@ async function executeReviewControllerOperation(
 		try {
 			const gated = await resolveReviewModeGate(nativeReviewCli, parameters.operation, defaultCwd, signal);
 			if (gated !== undefined) {
-				// gentle-pi#668: mode disabled for this exact candidate -- keyed by
-				// its targetIdentity, never by repository alone.
+				// gentle-pi#668：模式对该确切候选禁用——按其
+				// targetIdentity 键控，绝不仅按仓库。
 				recordNativeReviewOutcome(pending.authorityCwd, pending.consent.targetIdentity, NATIVE_REVIEW_OUTCOME.UNAVAILABLE);
 				cleanupPendingReviewConsent(pending, pendingReviewConsentRegistry, owningSession);
 				return gated;
@@ -7593,8 +7577,8 @@ async function executeReviewControllerOperation(
 			cleanupPendingReviewConsent(pending, pendingReviewConsentRegistry, owningSession);
 			return nativeOperationFailure(parameters.operation, error);
 		}
-		// The one-shot binding is consumed before the first answer-path await. Any
-		// ambiguous provider result reconciles through STATUS and can never be replayed.
+		// 一次性绑定在应答路径第一个 await 之前就被消耗。任何
+		// 模糊的 provider 结果都经 STATUS 对账，且绝不能被重放。
 		let completed: Record<string, unknown>;
 		try {
 			const answered = await nativeReviewCli.answerConsent({
@@ -7604,8 +7588,8 @@ async function executeReviewControllerOperation(
 				...(signal === undefined ? {} : { signal }),
 			});
 			if (answered.kind === "declined") {
-				// gentle-pi#668: candidate-scoped decline, keyed by this exact
-				// candidate's targetIdentity, never by repository alone.
+				// gentle-pi#668：候选范围的拒绝，按该确切
+				// 候选的 targetIdentity 键控，绝不仅按仓库。
 				recordNativeReviewOutcome(pending.authorityCwd, pending.consent.targetIdentity, NATIVE_REVIEW_OUTCOME.DECLINED);
 				pending.cleanupCandidate();
 				return {
@@ -7617,8 +7601,8 @@ async function executeReviewControllerOperation(
 				};
 			}
 			retainNativeUntrackedSelection(retainedUntrackedSelections, pending.authorityCwd, answered.start.lineageId, pending.untrackedSelection);
-			// gentle-pi#706: a START completed through answer-consent consumed the
-			// adopted pre-lineage selection too; clear it like the direct path.
+			// gentle-pi#706：经 answer-consent 完成的 START 也消耗了
+			// 所采纳的 pre-lineage 选择；像直接路径一样清除它。
 			clearRetainedNativeUntrackedSelection(retainedUntrackedSelections, pending.authorityCwd, "");
 			completed = completeNativeStart(parameters.operation, answered.start, pending.repositoryCwd, pending.candidateView, pending.candidateViews);
 		} catch (error) {
@@ -7675,9 +7659,9 @@ async function executeReviewControllerOperation(
 				validateNativeStartUntrackedSelection(rawStart);
 			if (explicitUntrackedSelection.reason !== undefined)
 				return nativeStartRejection(explicitUntrackedSelection.reason);
-			// gentle-pi#706: a plain START adopts the selection an inspect
-			// untrackedScope round trip retained pre-lineage; explicit input or a
-			// carried submission always wins over the retained entry.
+			// gentle-pi#706：普通 START 采纳由 inspect
+			// untrackedScope 往返在 pre-lineage 保留的选择；显式输入或
+			// 携带的提交永远优先于保留条目。
 			const retainedPreLineageSelection =
 				explicitUntrackedSelection.untrackedScope === undefined &&
 				intendedUntrackedSelection === undefined
@@ -7729,16 +7713,16 @@ async function executeReviewControllerOperation(
 				}, retainedUntrackedSelections, defaultCwd);
 				if (negotiated.transport !== undefined) return hostTransportUnavailable(parameters.operation, negotiated.transport);
 				target = negotiated.status!;
-				// gentle-pi#874: the STATUS this START already fetched can itself
-				// offer the committed-range START for an empty workspace candidate.
-				// Adopt its own base commit *here*, before the candidate view and the
-				// native START are resolved, and re-derive the target for that range,
-				// so all three agree on one base-diff identity. Adopting the offer
-				// later left the workspace target and the base-diff candidate view
-				// disagreeing, and START failed with identity-mismatch. Both an
-				// explicit caller baseRef and any START with an untracked selection in
-				// play keep today's single-STATUS flow; only an adopted offer pays the
-				// second read-only STATUS.
+				// gentle-pi#874：本 START 已获取的 STATUS 自身就可以
+				// 为空工作区候选提供 committed-range START。
+				// 就在*这里*采纳其 base commit，在候选视图与原生
+				// START 解析之前，并为该范围重新推导目标，
+				// 使三者就同一个 base-diff 身份达成一致。晚些采纳
+				// 该提议会让工作区目标与 base-diff 候选视图
+				// 不一致，START 以 identity-mismatch 失败。显式
+				// 调用方 baseRef 与任何带未跟踪选择的 START
+				// 都保持今日的单 STATUS 流程；只有采纳提议才付出
+				// 第二次只读 STATUS 的代价。
 				if (canonicalBaseRef === undefined && untrackedSelection.untrackedScope === undefined && untrackedSubmission === undefined) {
 					const offeredBaseRef = offeredCommittedRangeBaseRef(target);
 					if (offeredBaseRef !== undefined) {
@@ -7772,21 +7756,21 @@ async function executeReviewControllerOperation(
 			} catch (error) {
 				return nativeOperationFailure(parameters.operation, error);
 			}
-			// gentle-pi#323: the replay key must fold in the current candidate
-			// content identity. Without it, a second START with identical
-			// {cwd, lineageId, input, inputPath} reuses a still-live (never
-			// lineage-bound) frozen candidate view from within the consent TTL
-			// window even after the live candidate content changed underneath
-			// it, and dead-ends at candidate-target-projection-drift with no
-			// recovery. Folding in currentCandidateTree makes a content change
-			// mint a fresh replay key -- and therefore a fresh candidate view --
-			// instead of reusing the stale one.
+			// gentle-pi#323：重放键必须折入当前候选的
+			// 内容身份。没有它，第二次携带相同
+			// {cwd, lineageId, input, inputPath} 的 START 会在同意
+			// TTL 窗口内复用一个仍存活（从未绑定
+			// lineage）的冻结候选视图，即使其下的活候选内容
+			// 已改变，并最终死路于 candidate-target-projection-drift
+			// 而无恢复。折入 currentCandidateTree 使内容变化
+			// 铸出新的重放键——从而新的候选视图——
+			// 而不是复用过期视图。
 			const replayKey = JSON.stringify({ cwd: defaultCwd, lineageId: parameters.lineageId ?? null, input: parameters.input ?? null, inputPath: parameters.inputPath ?? null, candidateTree: target.projection.currentCandidateTree });
-			// Synchronously drop any binding whose TTL has already elapsed
-			// before reusing its retained candidate view, so a fresh-candidate
-			// retry cannot reuse a view tied to an expired binding and trip
-			// candidate-target-projection-drift. Timer order must not decide
-			// correctness: the queued cleanup macrotask may not have fired yet.
+			// 在复用其保留的候选视图之前，同步丢弃任何 TTL
+			// 已耗尽的绑定，使新候选的
+			// 重试不能复用绑定已过期的视图并触发
+			// candidate-target-projection-drift。定时器顺序不得决定
+			// 正确性：排队的清理宏任务可能尚未触发。
 			pruneExpiredReviewConsents(pendingReviewConsentRegistry, pendingReviewConsentSession, reviewConsentNow);
 			const candidateIntendedUntracked = target.projection.intendedUntracked;
 			let candidateView: ReturnType<CandidateViewRegistry["create"]> | undefined;
@@ -7844,7 +7828,7 @@ async function executeReviewControllerOperation(
 							cleanupCandidate: () => {
 								if (candidateCleaned) return;
 								candidateCleaned = true;
-								try { consentCandidateView.cleanup(); } catch { /* Failed ownership proof preserves the view; consent expiry/teardown still completes. */ }
+								try { consentCandidateView.cleanup(); } catch { /* 所有权证明失败时保留视图；同意过期/拆除仍会完成。 */ }
 							},
 							...(retainedUntrackedSelection === undefined ? {} : { untrackedSelection: retainedUntrackedSelection }),
 							consent: error.consent,
@@ -7868,8 +7852,8 @@ async function executeReviewControllerOperation(
 					};
 				}
 				retainNativeUntrackedSelection(retainedUntrackedSelections, defaultCwd, result.lineageId, retainedUntrackedSelection);
-				// gentle-pi#706: the adopted pre-lineage selection dies with the START
-				// that consumed it; it must never leak to the next candidate.
+				// gentle-pi#706：被采纳的 pre-lineage 选择随消耗它的
+				// START 一同消亡；绝不能泄漏给下一个候选。
 				clearRetainedNativeUntrackedSelection(retainedUntrackedSelections, defaultCwd, "");
 				return completeNativeStart(parameters.operation, result, defaultCwd, candidateView, candidateViews);
 			} catch (error) {
@@ -8112,21 +8096,21 @@ function resolveStartupControllerSddStatus(
 export interface JeroRuntimeDependencies {
 	nativeReviewCli?: NativeReviewCli | null;
 	candidateViews?: CandidateViewRegistry | null;
-	// An injected registry gives tests and host integrations explicit ownership;
-	// normal package registrations share the module-local process-memory registry.
+	// 注入的注册表让测试与宿主集成获得显式所有权；
+	// 正常的包注册共享模块本地的进程内存注册表。
 	pendingReviewConsentRegistry?: PendingReviewConsentRegistry;
-	// Deterministic test seam for the consent-binding TTL clock. Production
-	// leaves both undefined so the consent path observes real wall-clock time;
-	// tests inject a fake clock so expiry is observable without a 10-minute
-	// sleep and without relying on the queued cleanup macrotask firing.
+	// 同意绑定 TTL 时钟的确定性测试接缝。生产
+	// 两者均保持 undefined，让同意路径观察真实墙钟时间；
+	// 测试注入假时钟，使过期可观察，而无需 10 分钟
+	// 睡眠，也不依赖排队的清理宏任务触发。
 	now?: () => number;
 	scheduleTimer?: (callback: () => void, delayMs: number) => { unref: () => void };
-	// The environment the session's child processes inherit; tests inject a
-	// plain object so the handshake declaration is observable without
-	// touching the test runner's own process.env.
+	// 会话子进程继承的环境；测试注入一个
+	// 普通对象，使握手声明可观察，而无需
+	// 触碰测试运行器自己的 process.env。
 	processEnv?: NodeJS.ProcessEnv;
-	// Package-owned children use this parent-bound channel only to ask whether
-	// their own pending ordinary START may replay a grant locally.
+	// 包自有子进程仅通过这条父绑定的通道询问
+	// 自己待定的普通 START 能否在本地重放授权。
 	childStandingReviewPermissionClient?: Pick<ChildStandingReviewPermissionClient, "requestAuthorization" | "close">;
 }
 
@@ -8137,10 +8121,10 @@ export function createJeroAiExtension(dependencies: JeroRuntimeDependencies = {}
 function createJeroAiExtensionForTesting(
 	dependencies: JeroRuntimeDependencies = {},
 ): (pi: ExtensionAPI) => void {
-	// P4c/P4d: the default CLI is the fail-closed P1 stub with the SDD projection
-	// pair, the review read path, the RDD mode pair, the SDD attempt pair, and
-	// (P4d-e) the START pair - direct starts and the consent ceremony - served
-	// in-process by the jero authority (lib/jero-authority-cli.ts).
+	// P4c/P4d：默认 CLI 是保守失败的 P1 桩，带 SDD 投影
+	// 对、评审读路径、RDD 模式对、SDD 尝试对，以及
+	// （P4d-e）START 对——直接启动与同意仪式——由
+	// jero 权威在进程内提供（lib/jero-authority-cli.ts）。
 	const nativeReviewCli = dependencies.nativeReviewCli === undefined
 		? createJeroAuthorityReviewCli() as unknown as NativeReviewCli
 		: dependencies.nativeReviewCli;
@@ -8169,7 +8153,7 @@ function createJeroAiExtensionForTesting(
 				REVIEW_SESSION_PERMISSION_STATUS_KEY,
 				active ? REVIEW_SESSION_PERMISSION_STATUS_TEXT : undefined,
 			);
-		} catch { /* Status is nonblocking and never permission authority. */ }
+		} catch { /* 状态显示是非阻塞的，也绝不是权限权威。 */ }
 	};
 	const capturePermissionIdentity = (context: ExtensionContext, cwd: string = context.cwd): Promise<ReviewSessionIdentity | undefined> =>
 		captureReviewSessionIdentity({ ...context, cwd }, permissionEnvironment);
@@ -8196,8 +8180,8 @@ function createJeroAiExtensionForTesting(
 	pi.on("session_shutdown", (event, context) => {
 		reminderSessionActive = false;
 		reminderEpoch += 1;
-		// Pi tears down this registry on reload as well as session replacement/quit.
-		try { candidateViews?.cleanupAll(); } catch { /* Preserve failed owned views for later recovery. */ }
+		// Pi 在 reload 以及会话替换/退出时都会拆除该注册表。
+		try { candidateViews?.cleanupAll(); } catch { /* 保留失败的自有视图以便稍后恢复。 */ }
 		const reason = (event as { reason?: unknown }).reason;
 		if (reason !== "reload") {
 			if (childStandingReviewPermissionLease !== undefined) childStandingReviewPermissionLease.closeIfCurrent();
@@ -8234,8 +8218,8 @@ function createJeroAiExtensionForTesting(
 		},
 	});
 
-	// The lens a reviewer capture runs is inside its collect binding, so the
-	// card can say "review capture · risk" instead of a bare operation name.
+	// 评审者捕获运行的镜头位于其 collect 绑定内，因此
+	// 卡片可以显示 "review capture · risk" 而不是光秃秃的操作名。
 	const lensLabel = (lens: unknown): string | undefined =>
 		typeof lens === "string" && lens.length > 0 ? lens.replace(/^review-/, "") : undefined;
 	const collectBindingLens = (binding: unknown): string | undefined => {
@@ -8365,7 +8349,7 @@ function createJeroAiExtensionForTesting(
 			const sessionKey = pendingReviewConsentSessionKey(ctx, pendingReviewConsentFallbackKey);
 			const retainedSelections = processRetainedNativeStatusSelections.get(sessionKey)
 				?? processRetainedNativeStatusSelections.set(sessionKey, new Map()).get(sessionKey)!;
-			// Snapshot before native awaits: a concurrent own write is a new generation.
+			// 在原生 await 之前快照：并发的自身写入即是新一代。
 			const acknowledgementEpoch = reminderEpoch;
 			let acknowledgementRoot: string | undefined;
 			let acknowledgementMutation: string | undefined;
@@ -8375,7 +8359,7 @@ function createJeroAiExtensionForTesting(
 					acknowledgementRoot = resolveReviewControllerWorkspaceRoot(parsed.workspaceRoot, ctx.cwd, candidateViews, parsed.lineageId);
 					acknowledgementMutation = pendingReviewMutation(ctx.sessionManager, acknowledgementRoot);
 				}
-			} catch { /* Controller validation owns invalid parameters and unavailable roots. */ }
+			} catch { /* 非法参数与不可用根目录由控制器校验负责。 */ }
 			let details = await executeReviewControllerOperation(
 				parameters,
 				ctx.cwd,
@@ -8397,7 +8381,7 @@ function createJeroAiExtensionForTesting(
 					if (reminderSessionActive && acknowledgementEpoch === reminderEpoch && acknowledgementRoot && pendingReviewConsentSessionKey(ctx, pendingReviewConsentFallbackKey) === sessionKey) {
 						consumeReviewMutation(pi, ctx.sessionManager, acknowledgementRoot, acknowledgementMutation, "acknowledged", details.target_identity);
 					}
-				} catch { /* Bookkeeping cannot hide a confirmed native burn. */ }
+				} catch { /* 簿记不能掩盖已确认的原生销毁。 */ }
 			}
 			if (
 				isHostReviewConsentEligibleOperation(parameters) &&
@@ -8431,16 +8415,16 @@ function createJeroAiExtensionForTesting(
 					const parsed = parseReviewControllerParameters(parameters);
 					permissionWorkspaceRoot = resolveReviewControllerWorkspaceRoot(parsed.workspaceRoot, ctx.cwd, candidateViews, parsed.lineageId);
 				} catch {
-					// The successful native operation above remains authoritative; an
-					// unresolvable local binding simply cannot consume host permission.
+					// 上方成功的原生操作仍是权威；无法解析的
+					// 本地绑定只是无法消耗宿主权限。
 				}
 				const initialIdentity = permissionWorkspaceRoot === undefined
 					? undefined
 					: await capturePermissionIdentity(ctx, permissionWorkspaceRoot);
 				if (eligiblePending !== undefined && initialIdentity === undefined) {
-					// A package child has no local standing grant. It may ask its
-					// inherited parent only for the canonical repository identity of
-					// this exact pending target, then replay this local binding once.
+					// 包子进程没有本地常备授权。它只能为其
+					// 继承的父会话询问该确切待定目标的规范仓库身份，
+					// 然后在本地重放该绑定一次。
 					const repositoryIdentity = permissionWorkspaceRoot === undefined
 						? undefined
 						: await resolveCanonicalGitRepositoryIdentity(permissionWorkspaceRoot);
@@ -8461,9 +8445,9 @@ function createJeroAiExtensionForTesting(
 							if (!permissionAlreadyActive && selection.kind === "host-session" && completedGrantedReviewConsent(details)) {
 								if (grantReviewSessionPermission(confirmedIdentity, initialEpoch)) {
 									setReviewSessionPermissionStatus(ctx, true);
-									try { ctx.ui.notify("Reviews are allowed for this Pi session and this Git repository.", "info"); } catch { /* Nonblocking indication only. */ }
+									try { ctx.ui.notify("本 Pi 会话与该 Git 仓库已允许进行评审。", "info"); } catch { /* 仅为非阻塞指示。 */ }
 								} else {
-									try { ctx.ui.notify("This review started, but the in-memory session permission registry was incompatible, so later candidates will ask again.", "warning"); } catch { /* Best effort. */ }
+									try { ctx.ui.notify("该评审已启动，但内存中的会话权限注册表不兼容，后续候选将再次询问。", "warning"); } catch { /* 尽力而为。 */ }
 								}
 							}
 						}
@@ -8484,7 +8468,7 @@ function createJeroAiExtensionForTesting(
 	pi.on("session_start", async (event, ctx) => {
 		reminderSessionActive = true;
 		reminderEpoch += 1;
-		try { candidateViews?.sweepOrphans(ctx.cwd); } catch { /* Ownership sweeping must not block startup. */ }
+		try { candidateViews?.sweepOrphans(ctx.cwd); } catch { /* 所有权清扫不得阻塞启动。 */ }
 		const reason = (event as { reason?: unknown }).reason;
 		if (reason !== "reload") revokeCurrentReviewSessionPermission(ctx);
 		await refreshReviewSessionPermissionStatus(ctx);
@@ -8494,14 +8478,14 @@ function createJeroAiExtensionForTesting(
 			const modelResult = await applySavedModelConfig(ctx);
 			if (ctx.hasUI && modelResult.invalidPath) {
 				ctx.ui.notify(
-					`el Jero skipped model config because ${modelResult.invalidPath} is invalid JSON or not an object. Fix or remove the file, then run /jero:models again.`,
+					`el Jero 已跳过模型配置：${modelResult.invalidPath} 不是合法的 JSON 或不是对象。请修复或删除该文件，然后重新运行 /jero:models。`,
 					"warning",
 				);
 				return;
 			}
 			if (ctx.hasUI && modelResult.updated > 0) {
 				ctx.ui.notify(
-					`el Jero applied saved model config to ${modelResult.updated} agent(s). Global delegation/review assets ready: ${installResult.agents} new agent(s), ${installResult.chains} new chain(s), ${installResult.support} new support file(s).`,
+					`el Jero 已将保存的模型配置应用到 ${modelResult.updated} 个代理。全局 delegation/review 资产已就绪：${installResult.agents} 个新代理、${installResult.chains} 条新链、${installResult.support} 个新支持文件。`,
 					"info",
 				);
 			}
@@ -8510,18 +8494,18 @@ function createJeroAiExtensionForTesting(
 				const message =
 					error instanceof Error ? error.message : String(error);
 				ctx.ui.notify(
-					`el Jero model config sweep failed: ${message}`,
+					`el Jero 模型配置扫描失败：${message}`,
 					"warning",
 				);
 			}
 		}
-		// Keep the startup transport negotiation, but do not treat its target as
-		// an ownership baseline: reload may have outstanding durable receipts.
+		// 保留启动时的传输协商，但不要把其目标当作
+		// 所有权基线：reload 可能仍有未完成的持久回执。
 		try {
 			const sessionKey = pendingReviewConsentSessionKey(ctx, pendingReviewConsentFallbackKey);
 			await resolveNegotiatedReviewStatusForSession(nativeReviewCli, ctx, sessionKey);
 		} catch {
-			// Startup negotiation is best-effort only; never surface or throw.
+			// 启动协商只是尽力而为；绝浮出或抛出。
 		}
 	});
 
@@ -8553,14 +8537,14 @@ function createJeroAiExtensionForTesting(
 				await runSddPreflight(ctx);
 			}
 		} catch (error) {
-			// Pi logs thrown before_agent_start errors and continues. Return an
-			// unresolved gate instead of silently losing the preflight instructions.
+			// Pi 会记录 before_agent_start 抛出的错误并继续。返回一个
+			// 未解决的门，而不是默默丢失预检指令。
 			return { systemPrompt: `${event.systemPrompt}\n\nSDD preflight unresolved: ${error instanceof Error ? error.message : String(error)}\nSTOP: Do not initialize the project, launch phases, write artifacts, or infer consent. Request session preflight confirmation before continuing.` };
 		}
 		const prefs = getSddPreflightPreferences(ctx);
-		// RPC children never resolve or persist defaults. The parent dispatch gate
-		// transports the rendered block in the existing task context, and Gentle
-		// Agents refuses a missing/malformed payload before spawning the child.
+		// RPC 子进程从不解析或持久化默认值。父会话派发门
+		// 在既有的任务上下文中传输渲染出的块，且 Gentle
+		// Agents 会在生成子进程之前拒绝缺失/畸形的载荷。
 		const sddPrompt =
 			prefs && (!isNamedAgent || isSddAgent)
 				? `\n\n${renderSddPreflightPrompt(prefs)}`
@@ -8599,13 +8583,13 @@ function createJeroAiExtensionForTesting(
 			: launchSddChange === undefined
 				? ""
 				: "\n\n## Native SDD Status Engine\nSDD selection blocked: the receiving agent has no recognized SDD phase.\nDo not run phase work; return this blocker to the parent.";
-		// gentle-pi#661: the RDD status line (and the rest of the gentle prompt)
-		// is built only for the primary session, mirrored on the
-		// reviewContractPrompt condition below -- named/SDD agents never reach
-		// this branch, so no line is resolved or computed for them.
-		// resolveRddStatusLine never throws and never hangs past
-		// RDD_STATUS_TIMEOUT_MS: an absent/timed-out/aborted/failing native
-		// binary renders the fail-closed "unknown" line instead.
+		// gentle-pi#661：RDD 状态行（以及 gentle 提示词的其余部分）
+		// 只为主会话构建，与下方 reviewContractPrompt 的条件
+		// 互为镜像——具名/SDD 代理永远不会走到这个
+		// 分支，因此不会为它们解析或计算任何行。
+		// resolveRddStatusLine 永不抛错，也绝不拖过
+		// RDD_STATUS_TIMEOUT_MS：缺失/超时/中止/失败的原生
+		// 二进制会渲染保守失败的 "unknown" 行。
 		const gentlePrompt = isNamedAgent || isSddAgent
 			? ""
 			: `\n\n${buildGentlePrompt(
@@ -8614,9 +8598,9 @@ function createJeroAiExtensionForTesting(
 					readActiveToolNames(pi),
 					await resolveRddStatusLine(nativeReviewCli, ctx.cwd, AbortSignal.timeout(RDD_STATUS_TIMEOUT_MS), undefined, ctx),
 				)}`;
-		// gentle-pi#560 / gentle-ai#4056, #4057: inject the mirrored provider
-		// contract bundle's review execution contract for the primary session
-		// only, and only when a native review CLI is actually present.
+		// gentle-pi#560 / gentle-ai#4056, #4057：仅为主会话注入镜像
+		// provider 契约 bundle 的评审执行契约，且只在
+		// 原生评审 CLI 确实存在时注入。
 		const reviewContractPrompt =
 			!isNamedAgent && !isSddAgent && nativeReviewCli !== null
 				? (() => {
@@ -8629,12 +8613,12 @@ function createJeroAiExtensionForTesting(
 		};
 	});
 
-	// gentle-pi#556 / gentle-ai#4051: with RDD enabled, the agent could finish
-	// an authorized implementation and report completion without ever running
-	// the review STATUS preflight or offering the consent question. This
-	// handler is read-only and idempotent: it never runs START, never answers
-	// consent, or chooses a partial candidate. Durable own-mutation receipts
-	// gate STATUS and consume only the generation captured before that await.
+	// gentle-pi#556 / gentle-ai#4051：RDD 开启时，代理可能完成
+	// 一次已授权的实现并报告完成，却从未运行
+	// 评审 STATUS 预检或提出同意问题。该
+	// 处理器是只读且幂等的：它从不运行 START，从不
+	// 应答同意，也不选择部分候选。持久的自身变更回执
+	// 为 STATUS 设门，且只消耗该 await 之前捕获的代。
 	pi.on("agent_end", async (_event, ctx) => {
 		if (nativeReviewCli?.reviewMode === undefined || nativeReviewCli.targetStatus === undefined) return;
 		if (ctx.hasUI !== true || !reminderSessionActive) return;
@@ -8653,7 +8637,7 @@ function createJeroAiExtensionForTesting(
 		const epoch = reminderEpoch;
 		const status = await resolveNegotiatedReviewStatusForSession(nativeReviewCli, ctx, sessionKey);
 		if (status === undefined || !reminderSessionActive || epoch !== reminderEpoch || pendingReviewConsentSessionKey(ctx, pendingReviewConsentFallbackKey) !== sessionKey) return;
-		// Another concurrent end or ACK may already have consumed this prefix.
+		// 另一个并发的结束或 ACK 可能已消耗该前缀。
 		if (!pendingReviewMutation(ctx.sessionManager, root, mutation)) return;
 		if (status.nextTransition?.kind !== "execute" || status.nextTransition.execute.operation !== "review.start") return;
 		const targetIdentity = status.targetIdentity;
@@ -8674,7 +8658,7 @@ function createJeroAiExtensionForTesting(
 		try {
 			const root = resolveSessionWorktree(event.input.path, ctx.cwd)?.root;
 			if (root) recordReviewMutation(pi, ctx.sessionManager, root, { source: "direct", toolName: event.toolName, toolCallId: event.toolCallId });
-		} catch { /* Receipt persistence must not change a successful tool result. */ }
+		} catch { /* 回执持久化不得改变一次成功的工具结果。 */ }
 	});
 
 	pi.on("tool_call", async (event, ctx) => {
@@ -8690,8 +8674,8 @@ function createJeroAiExtensionForTesting(
 				return { block: true, reason: "SDD dispatch requires exactly one shipped SDD agent name." };
 			}
 			if (sddAgent !== undefined) {
-				// An RPC child is a delegated actor, never an authority originator. It
-				// must receive the already-confirmed block from its interactive parent.
+				// RPC 子进程是被委托的执行者，绝不是权威发起者。它
+				// 必须从其交互式父会话接收已确认的块。
 				if (ctx.mode === "rpc") {
 					return { block: true, reason: "SDD dispatch refused: an RPC child cannot originate or persist SDD preflight defaults." };
 				}
@@ -8707,9 +8691,9 @@ function createJeroAiExtensionForTesting(
 					if (event.input.context !== undefined && typeof event.input.context !== "string") {
 						return { block: true, reason: "SDD dispatch refused: child context must be text." };
 					}
-					// The existing context payload is the sole parent-to-child transport.
-					// Refuse a caller-authored lookalike so the child receives one exact,
-					// parent-rendered authority block rather than an ambiguous mixture.
+					// 既有的 context 载荷是唯一的父到子传输通道。
+					// 拒绝调用方拼写的仿制品，使子进程收到一个精确的、
+					// 由父会话渲染的权威块，而不是含糊的混合物。
 					const context = typeof event.input.context === "string" ? event.input.context.trim() : "";
 					if (/^## SDD Session Preflight[ \t]*$/m.test(context)) {
 						return { block: true, reason: "SDD dispatch refused: child context already contains an untrusted preflight block." };
@@ -8768,7 +8752,7 @@ function createJeroAiExtensionForTesting(
 			"Run or reuse session SDD preflight; use --edit to change preferences.",
 		handler: async (args, ctx) => {
 			if (args.trim() !== "" && args.trim() !== "--edit") {
-				ctx.ui.notify("Usage: /jero:sdd-preflight [--edit]", "warning");
+				ctx.ui.notify("用法：/jero:sdd-preflight [--edit]", "warning");
 				return;
 			}
 			try {
@@ -8805,7 +8789,7 @@ function createJeroAiExtensionForTesting(
 		const { parsed, request, status } = await readCommandSddStatus(args, ctx);
 		const planning = status.planningHome;
 		const changeRoot = status.changeRoot;
-		// Native context is an upper bound, never the human's per-call grant.
+		// 原生上下文是上界，绝不是人类逐次调用的授权。
 		if (status.changeName === null || !ctx.hasUI || typeof ctx.ui?.confirm !== "function" || !nativeReviewCli?.sddContinue) {
 			showCommandSddStatus(status, parsed.json, ctx);
 			return;
@@ -8896,22 +8880,22 @@ function createJeroAiExtensionForTesting(
 		handler: async (args, ctx) => {
 			const subAction = args.trim().length === 0 ? "status" : args.trim();
 			if (subAction !== "status" && subAction !== "revoke") {
-				ctx.ui.notify(`Unknown /jero:review-session-permission sub-action "${subAction}". Use status or revoke.`, "warning");
+				ctx.ui.notify(`未知的 /jero:review-session-permission 子操作 "${subAction}"。请使用 status 或 revoke。`, "warning");
 				return;
 			}
 			if (subAction === "revoke") {
 				const revoked = await revokeCurrentRepositoryReviewSessionPermission(ctx);
-				ctx.ui.notify(revoked ? "Review permission revoked for this Git repository in this Pi session. Provider review mode and authority were not changed." : "No review permission is active for this Git repository in this Pi session. Provider review mode and authority were not changed.", "info");
+				ctx.ui.notify(revoked ? "已在此 Pi 会话中撤销该 Git 仓库的评审权限。provider 评审模式与权威未被更改。" : "此 Pi 会话中没有针对该 Git 仓库的活动评审权限。provider 评审模式与权威未被更改。", "info");
 				return;
 			}
 			const identity = await refreshReviewSessionPermissionStatus(ctx);
 			if (identity === undefined) {
-				ctx.ui.notify("Review session permission is unavailable: it requires the interactive Pi TUI, a non-child session, a nonempty session ID, and a canonical Git worktree.", "info");
+				ctx.ui.notify("评审会话权限不可用：它需要交互式 Pi TUI、非子会话、非空会话 ID 以及规范的 Git 工作树。", "info");
 				return;
 			}
 			ctx.ui.notify(hasReviewSessionPermission(identity)
-				? "Reviews are allowed for this Pi session and Git repository. Use /jero:review-session-permission revoke to ask again."
-				: "Reviews are not pre-authorized for this Pi session; each medium- or high-risk candidate asks normally.", "info");
+				? "本 Pi 会话与该 Git 仓库已允许进行评审。使用 /jero:review-session-permission revoke 可恢复逐次询问。"
+				: "本 Pi 会话的评审未获预授权；每个中高危及候选将正常逐次询问。", "info");
 		},
 	});
 
@@ -8920,11 +8904,11 @@ function createJeroAiExtensionForTesting(
 		handler: async (args, ctx) => {
 			const subAction = args.trim().length === 0 ? NATIVE_REVIEW_MODE_OPERATION.STATUS : args.trim();
 			if (subAction !== NATIVE_REVIEW_MODE_OPERATION.STATUS && subAction !== NATIVE_REVIEW_MODE_OPERATION.ENABLE && subAction !== NATIVE_REVIEW_MODE_OPERATION.DISABLE) {
-				ctx.ui.notify(`Unknown /jero:review-mode sub-action "${subAction}". Use status, disable, or enable.`, "warning");
+				ctx.ui.notify(`未知的 /jero:review-mode 子操作 "${subAction}"。请使用 status、disable 或 enable。`, "warning");
 				return;
 			}
 			if (nativeReviewCli?.reviewMode === undefined) {
-				ctx.ui.notify("Jero review mode is not available with the currently negotiated native version.", "info");
+				ctx.ui.notify("当前协商的原生版本不支持 Jero 评审模式。", "info");
 				return;
 			}
 			try {
@@ -8936,23 +8920,23 @@ function createJeroAiExtensionForTesting(
 					);
 				}
 				const report = `receipt-driven development: ${result.status.effective} (decided by ${result.status.source})`;
-				// A mutating sub-action that left the effective mode unchanged did
-				// not do what the user asked, and reporting only the resulting
-				// status reads as if it had. This is reachable for exactly one
-				// shape: `enable` against a global off. Pi always passes
-				// `--scope clone` (Design Decision #7), which only clears a
-				// clone-local override and cannot enable global RDD. The native call
-				// exits 0, reports operation "enable", and changes nothing. Say
-				// that, and name the global-record edit that resolves it.
+				// 一个变更类子操作若未改变生效模式，就没有做到
+				// 用户要求的事，而只报告结果状态读起来
+				// 就像做到了。恰好只有一种形态会到达这里：
+				// 针对全局 off 的 `enable`。Pi 总是传
+				// `--scope clone`（设计决策 #7），它只会清除
+				// clone-local 覆盖，无法开启全局 RDD。原生调用
+				// 以 0 退出、报告操作 "enable"，却什么都没改。要把
+				// 这一点说出来，并指明能解决它的全局记录编辑。
 				const requested = subAction === NATIVE_REVIEW_MODE_OPERATION.ENABLE ? "on" : subAction === NATIVE_REVIEW_MODE_OPERATION.DISABLE ? "off" : result.status.effective;
 				if (result.status.effective !== requested) {
-					ctx.ui.notify(`${report}\nThat did not turn reviews back on: /jero:review-mode enable only clears a clone-local override, which cannot override a global off. Write \{"schema":"jero.authority.review-mode/v1","value":"on"\} to ${join(gentleAiConfigHome(), "review-mode.json")} to turn them back on.`, "warning");
+					ctx.ui.notify(`${report}\n这并未重新开启评审：/jero:review-mode enable 只会清除 clone-local 覆盖，无法压过全局 off。请将 \{"schema":"jero.authority.review-mode/v1","value":"on"\} 写入 ${join(gentleAiConfigHome(), "review-mode.json")} 以重新开启。`, "warning");
 					return;
 				}
 				ctx.ui.notify(report, "info");
 			} catch (error) {
 				if (asNativeReviewCliError(error)?.code === NATIVE_REVIEW_ERROR_CODE.VERSION_INCOMPATIBLE) {
-					ctx.ui.notify("Jero review mode is not available with the currently negotiated native version.", "info");
+					ctx.ui.notify("当前协商的原生版本不支持 Jero 评审模式。", "info");
 					return;
 				}
 				ctx.ui.notify(error instanceof Error ? error.message : String(error), "error");
@@ -8960,16 +8944,16 @@ function createJeroAiExtensionForTesting(
 		},
 	});
 
-	// Mirrors jero:review-mode: a user-owned switch, never an automated one.
-	// It matters more here than there, because this policy governs whether
-	// background subagents may be launched at all, so nothing in Pi may write
-	// it. The only writer is this handler, reached only by explicit invocation.
+	// 与 jero:review-mode 互为镜像：用户所有的开关，绝不是自动开关。
+	// 它在这里比在那里更重要，因为该策略决定
+	// 后台子代理是否可以被启动，因此 Pi 中任何东西都不得写
+	// 它。唯一的写入者就是这个处理器，且只能经显式调用到达。
 	pi.registerCommand("jero:background-subagents", {
 		description: "Show or set the managed background-subagents policy (status|enable|disable). Every sub-action is user-initiated only; Pi automation never toggles it.",
 		handler: async (args, ctx) => {
 			const subAction = args.trim().length === 0 ? "status" : args.trim();
 			if (subAction !== "status" && subAction !== "enable" && subAction !== "disable") {
-				ctx.ui.notify(`Unknown /jero:background-subagents sub-action "${subAction}". Use status, enable, or disable.`, "warning");
+				ctx.ui.notify(`未知的 /jero:background-subagents 子操作 "${subAction}"。请使用 status、enable 或 disable。`, "warning");
 				return;
 			}
 			try {

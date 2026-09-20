@@ -15,22 +15,19 @@ import {
 } from "./protocol.ts";
 import type { JeroAuthorityContextV1 } from "./review.ts";
 
-// `authority.sdd.attempt` (spec _tools/p2-m4-sdd-analysis.md §A.2/A.3/D): the
-// runtime-attempt authority, in-process. The binary's `sdd-attempt acquire|
-// settle` compact flow becomes a store-level append-only ledger — one file per
-// (workspaceRoot, changeName) under `<store>/sdd-attempts/`, written atomically
-// (temp + rename) under the authority mutation lock so an acquire is durable
-// BEFORE the caller can launch any runtime-bearing work (R1). Tokens are minted
-// with node:crypto and persisted only as sha256 (R2: admission re-derives from
-// the ledger, never from process memory). Acquire and settle use DISTINCT
-// request ids; reusing an operation's own request id is idempotent replay of
-// that exact operation (sdd-status-contract.md:68). Terminal settlements retain
-// the untracked scope VERBATIM (R4). The ledger never leaks into SDD status
-// records (contract :66 — status reports artifact state only).
+// `authority.sdd.attempt`（规范 _tools/p2-m4-sdd-analysis.md §A.2/A.3/D）：
+// 进程内的运行时尝试权威。二进制的 `sdd-attempt acquire|settle` 紧凑
+// 流程变成存储层级的只追加台账——`<store>/sdd-attempts/` 下每个
+// (workspaceRoot, changeName) 一个文件，在权威变更锁下原子写入
+// （临时文件 + 重命名），使 acquire 在调用方能启动任何承载运行时的
+// 工作“之前”就已持久（R1）。令牌用 node:crypto 铸造，且只以 sha256
+// 持久化（R2：受理从台账重新推导，绝不用进程内存）。acquire 与 settle
+// 使用“互不相同”的请求 id；复用某操作自己的请求 id 是该操作的幂等
+// 重放（sdd-status-contract.md:68）。终局结算逐字保留未跟踪范围（R4）。
+// 台账绝不泄漏进 SDD 状态记录（契约 :66——状态只报告产物状态）。
 //
-// Deliberately NOT verified in-process: maxChangedLines (the actor's realized
-// diff size is measured by the launching layer; P4 seam) and the remediation
-// observation prose (agents-runner owns observation evidence upstream).
+// 刻意不在进程内校验：maxChangedLines（参与者实际 diff 大小由启动层
+// 测量；P4 接缝）与修正观察散文（上游由 agents-runner 持有观察证据）。
 
 const REQUEST_ID_PATTERN = /^[a-z0-9][a-z0-9._-]{0,127}$/;
 const CANONICAL_PROCESS_STRING = /^[^\r\n]*$/;
@@ -61,9 +58,9 @@ export interface JeroSddAcquireInputV1 extends JeroSddAttemptSelectionV1 {
 	evidenceGoal: string;
 	maxAttempts?: number;
 	maxChangedLines?: number;
-	/** sha256 identity, or the empty string to accept a no-prior-state ledger. */
+	/** sha256 身份，或空字符串以接受无先前状态的台账。 */
 	expectedRevision?: string;
-	/** Idempotent replay token from a prior proceed. */
+	/** 先前 proceed 的幂等重放令牌。 */
 	token?: string;
 	remediatesEvidenceRevision?: string;
 }
@@ -80,7 +77,7 @@ export interface JeroSddSettleInputV1 extends JeroSddAttemptSelectionV1 {
 	harnessDisposition: "reused" | "invalidated";
 	cleanupEvidence: string;
 	processEvidence: string;
-	/** Optional verify-report envelope; when present its evidence_revision must match evidenceRevision. */
+	/** 可选的 verify-report 封套；存在时其 evidence_revision 必须与 evidenceRevision 匹配。 */
 	verifyResult?: JeroVerifyResultV1;
 }
 
@@ -111,8 +108,8 @@ function validateCommon(input: { workspaceRoot: string; changeName: string; requ
 	if (!isAbsolute(input.workspaceRoot) || !canonicalProcessString(input.workspaceRoot)) throw new Error("workspaceRoot must be an absolute canonical path");
 	if (!canonicalProcessString(input.changeName)) throw new Error("changeName must be a canonical process string");
 	if (!REQUEST_ID_PATTERN.test(input.requestId)) throw new Error("requestId must match ^[a-z0-9][a-z0-9._-]{0,127}$");
-	// Node's own canonical form: separator-stable on Windows, so the ledger
-	// key hashes the same identity regardless of the caller's input form.
+	// Node 自身的权威形态：在 Windows 上分隔符稳定，因此无论调用方的
+	// 输入形态如何，台账键都哈希出相同的身份。
 	return resolve(input.workspaceRoot);
 }
 
@@ -164,9 +161,9 @@ function acquireResultForV1(attempt: JeroSddAttemptRecordV1): { kind: "result"; 
 }
 
 /**
- * `sdd-attempt acquire`: launches only on `proceed`; `blocked` names the live
- * attempt; `complete` names budget exhaustion. Request-id replay is idempotent;
- * token replay re-derives admission from the ledger, never from memory.
+ * `sdd-attempt acquire`：仅在 `proceed` 时启动；`blocked` 点名活动尝试；
+ * `complete` 点名预算耗尽。请求 id 重放是幂等的；令牌重放从台账重新
+ * 推导受理，绝不用内存。
  */
 export function acquireJeroSddAttemptV1(context: JeroAuthorityContextV1, input: JeroSddAcquireInputV1): JeroSddAttemptResultV1 {
 	let root: string;
@@ -188,7 +185,7 @@ export function acquireJeroSddAttemptV1(context: JeroAuthorityContextV1, input: 
 		const read = readLedgerV1(context.store.store_root, root, input.changeName);
 		if (read.kind === "corrupted") return { kind: "refused", code: "ledger-corrupted", detail: read.detail } as const;
 		if (read.kind === "ok") {
-			// Idempotent replay of this exact acquire (contract :68).
+			// 此精确 acquire 的幂等重放（契约 :68）。
 			const byRequestId = read.ledger.attempts.find((attempt) => attempt.request_id === input.requestId);
 			if (byRequestId !== undefined) return acquireResultForV1(byRequestId);
 			if (input.token !== undefined) {
@@ -235,11 +232,10 @@ export function acquireJeroSddAttemptV1(context: JeroAuthorityContextV1, input: 
 }
 
 /**
- * `sdd-attempt settle`: single finalization (append-only; a second settle for
- * the same attempt refuses naming the recorded terminal state — R3). Evidence
- * pairing follows the upstream boolean exactly: interrupted carries no
- * evidence, failed requires evidence_revision, passed requires one of the two
- * evidence fields. Terminal settlements retain the untracked scope verbatim.
+ * `sdd-attempt settle`：单一终结（只追加；对同一尝试的第二次 settle 以
+ * 点名已记录终局状态的方式拒绝——R3）。证据配对严格遵循上游布尔式：
+ * interrupted 不携带证据，failed 需要 evidence_revision，passed 需要两个
+ * 证据字段之一。终局结算逐字保留未跟踪范围。
  */
 export function settleJeroSddAttemptV1(context: JeroAuthorityContextV1, input: JeroSddSettleInputV1): JeroSddAttemptResultV1 {
 	let root: string;
@@ -257,8 +253,8 @@ export function settleJeroSddAttemptV1(context: JeroAuthorityContextV1, input: J
 		boundedText(input.processEvidence, 500, "processEvidence");
 		if (input.outcome === "interrupted" ? evidenceRevision !== undefined || input.remediationEvidence !== undefined : !evidenceRevision && !(input.outcome === "passed" && input.remediationEvidence)) throw new Error("invalid terminal evidence pairing");
 		if (input.verifyResult !== undefined) {
-			// The caller-supplied envelope must already be the decoded record; the
-			// sha256 evidence link is the settle-time binding (spec §C).
+			// 调用方提供的封套必须已是解码后的记录；sha256 证据链接是
+			// settle 时的绑定（spec §C）。
 			decodeJeroVerifyResultV1(input.verifyResult);
 			if (input.verifyResult.evidence_revision !== evidenceRevision) throw new Error("verifyResult.evidence_revision must match evidenceRevision");
 		}
@@ -272,7 +268,7 @@ export function settleJeroSddAttemptV1(context: JeroAuthorityContextV1, input: J
 		if (read.kind === "empty") return { kind: "refused", code: "no-live-attempt", detail: "no attempt ledger exists for this change" } as const;
 		const live = liveAttemptV1(read.ledger);
 		if (live === undefined) {
-			// Idempotent replay of this exact settle.
+			// 此精确 settle 的幂等重放。
 			const settled = read.ledger.attempts.find((attempt) => attempt.settlement?.request_id === input.requestId);
 			if (settled !== undefined) return { kind: "result", state: "complete", reason: `attempt already settled ${settled.settlement!.outcome}` } as const;
 			return { kind: "refused", code: "no-live-attempt", detail: "the recorded attempt is already settled" } as const;
@@ -295,14 +291,14 @@ export function settleJeroSddAttemptV1(context: JeroAuthorityContextV1, input: J
 		const attempts = [...read.ledger.attempts];
 		attempts[attempts.length - 1] = settledAttempt;
 		writeLedgerV1(context, { ...read.ledger, attempts });
-		// Proceed while budget remains; complete names exhaustion (contract :68).
+		// 预算仍存时 proceed；complete 点名耗尽（契约 :68）。
 		return attempts.length >= settledAttempt.max_attempts
 			? ({ kind: "result", state: "complete", reason: "attempt budget exhausted" } as const)
 			: ({ kind: "result", state: "proceed" } as const);
 	});
 }
 
-/** The current ledger revision — the expectedRevision callers pin against. */
+/** 当前台账修订号——调用方钉住的 expectedRevision。 */
 export function jeroSddAttemptLedgerRevisionV1(context: JeroAuthorityContextV1, workspaceRoot: string, changeName: string): string | undefined {
 	const read = readLedgerV1(context.store.store_root, workspaceRoot, changeName);
 	return read.kind === "ok" ? ledgerRevisionV1(read.ledger) : undefined;

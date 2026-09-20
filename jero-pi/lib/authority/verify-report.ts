@@ -1,17 +1,15 @@
 import { decodeJeroVerifyResultV1, type JeroVerifyResultV1 } from "./protocol.ts";
 
-// verify-report.md envelope extraction (spec _tools/p2-m4-sdd-analysis.md
-// §C): the markdown/YAML front-matter bridge into the strict
-// `jero.verify-result/v1` decoder owned by protocol.ts (M1). The SDD verify
-// phase writes its report as a fenced JSON block inside verify-report.md; the
-// extraction accepts exactly that shape — one fenced ```json block whose
-// contents decode as the envelope — and nothing else.
+// verify-report.md 封套提取（规范 _tools/p2-m4-sdd-analysis.md §C）：
+// 通向 protocol.ts（M1）持有的严格 `jero.verify-result/v1` 解码器的
+// markdown/YAML 前言桥接。SDD verify 阶段把报告写成 verify-report.md
+// 内部的围栏 JSON 块；提取只接受该形态——恰好一个围栏 ```json 块且
+// 内容可解码为封套——别无其他。
 //
-// INTENTIONAL DIVERGENCE (design §5.1.8): upstream's newest head retired
-// gentle-ai.verify-result/v1 attestation admission; jero-pi deliberately
-// reinstates the discipline in-process under the jero.* namespace. The
-// envelope fields are ours and evolve through schema review, not free-form
-// edits.
+// 刻意分歧（设计 §5.1.8）：上游最新 head 已退役
+// gentle-ai.verify-result/v1 的证明受理；jero-pi 刻意在 jero.* 命名空间
+// 下于进程内恢复该纪律。封套字段属于我们，并经 schema 评审演进，
+// 而非自由形式的编辑。
 
 export type JeroVerifyReportRefusalCode =
 	| "missing-evidence"
@@ -26,9 +24,9 @@ export type JeroVerifyReportResultV1 =
 const FENCED_JSON = /```json\s*\n([\s\S]*?)\n```/g;
 
 /**
- * Extracts the verification envelope from a verify-report.md body. Strict:
- * exactly one fenced json block, decoding through the strict decoder —
- * unknown keys, bad ratios, and non-sha256 identities all refuse typed.
+ * 从 verify-report.md 正文提取验证封套。严格：恰好一个围栏 json 块，
+ * 经严格解码器解码——未知键、错误比率与非 sha256 身份都以类型化方式
+ * 拒绝。
  */
 export function extractJeroVerifyReportV1(text: string): JeroVerifyReportResultV1 {
 	const matches = [...text.matchAll(FENCED_JSON)];
@@ -48,12 +46,11 @@ export function extractJeroVerifyReportV1(text: string): JeroVerifyReportResultV
 }
 
 /**
- * The settle-side evidence gate for `passed` outcomes (spec §C): the envelope
- * must be well-formed and its evidence_revision must be the identity the
- * settlement presents. Freshness against the acquire point and scope
- * containment are the caller's journaled context (the attempt ledger records
- * remediates_evidence_revision and the untracked trio); this helper is the
- * reusable in-process check the P4 wrapper calls before settling.
+ * `passed` 结局的 settle 侧证据门（spec §C）：封套必须格式完好，且其
+ * evidence_revision 必须是结算出示的身份。相对 acquire 时点的新鲜度
+ * 与范围包含性属于调用方的日志化上下文（尝试台账记录
+ * remediates_evidence_revision 与未跟踪三元组）；本辅助函数是 P4 封装
+ * 在结算之前调用的可复用进程内检查。
  */
 export function validateJeroVerifyEvidenceForSettleV1(options: { envelopeText: string; evidenceRevision: string }): JeroVerifyReportResultV1 {
 	const extracted = extractJeroVerifyReportV1(options.envelopeText);

@@ -77,7 +77,7 @@ export type SddDeliveryStrategy =
 	| "auto-chain"
 	| "single-pr"
 	| "exception-ok";
-/** @deprecated Use SddDeliveryStrategy; legacy values normalize at persistence boundaries. */
+/** @deprecated 请改用 SddDeliveryStrategy；旧值在持久化边界归一化。 */
 export type SddChainedPrStrategy =
 	| SddDeliveryStrategy
 	| "auto-forecast"
@@ -86,8 +86,8 @@ export type SddChainedPrStrategy =
 	| "force-chained";
 export type SddPreflightField = "executionMode" | "artifactStore" | "chainedPrStrategy" | "reviewBudgetLines";
 export const SDD_PREFLIGHT_FIELDS = ["executionMode", "artifactStore", "chainedPrStrategy", "reviewBudgetLines"] as const;
-// The parent dispatch and the process-spawn boundary share this exact shipped
-// inventory so a newly packaged SDD actor cannot bypass preflight transport.
+// 父级派发与进程生成边界共享这份精确的已发布
+// 清单，使新打包的 SDD 角色无法绕过预检传输。
 export const SHIPPED_SDD_AGENT_NAMES = Object.freeze([
 	"sdd-init",
 	"sdd-onboard",
@@ -108,7 +108,7 @@ export const SHIPPED_SDD_AGENT_NAMES = Object.freeze([
 export interface SddPreflightPreferences {
 	executionMode: SddExecutionMode;
 	artifactStore: SddArtifactStore;
-	/** Runtime values are canonical; legacy assignments normalize at persistence/render boundaries. */
+	/** 运行时值为权威值；旧赋值在持久化/渲染边界归一化。 */
 	chainedPrStrategy: SddChainedPrStrategy;
 	reviewBudgetLines: number;
 	engramAvailable: boolean;
@@ -160,7 +160,7 @@ interface ManagedAssetsLockOwner {
 	createdAtMs: number;
 }
 
-/** @internal The hold option exists only to make process-lock regression tests deterministic. */
+/** @internal hold 选项的存在只是为了让进程锁回归测试可确定。 */
 interface PackageAssetInstallLockOptions {
 	timeoutMs?: number;
 	retryMs?: number;
@@ -191,10 +191,10 @@ function isSddArtifactStore(value: unknown): value is SddArtifactStore {
 	return value === "openspec" || value === "engram" || value === "hybrid" || value === "none";
 }
 
-// normalizeSddArtifactStore accepts the canonical names and the legacy "both"
-// spelling of the dual-store mode. Operator preflight files written before the
-// rename carry "both" on disk; rejecting it would silently drop the operator's
-// choice back to the default, so it maps forward instead.
+// normalizeSddArtifactStore 接受权威命名以及双存储模式的旧拼写 "both"。
+// 改名之前写入的操作员预检文件在磁盘上携带 "both"；
+// 拒绝它会静默把操作员的选择丢回默认值，
+// 因此选择向前映射。
 export function normalizeSddArtifactStore(value: unknown): SddArtifactStore | undefined {
 	if (value === "both") return "hybrid";
 	return isSddArtifactStore(value) ? value : undefined;
@@ -344,7 +344,7 @@ function releaseManagedAssetsLock(lock: { path: string; owner: ManagedAssetsLock
 	try {
 		unlinkSync(lock.path);
 	} catch {
-		// An unreadable or replaced lock remains for an operator to inspect.
+		// 无法读取或已被替换的锁保留下来供操作员检查。
 	}
 }
 
@@ -473,7 +473,7 @@ function replaceManagedAssetFileAtomically(path: string, content: string): void 
 		try {
 			unlinkSync(temporaryPath);
 		} catch {
-			// A renamed or otherwise inaccessible temporary file needs no further action.
+			// 已改名或因其他原因不可访问的临时文件无需进一步处理。
 		}
 	}
 }
@@ -499,16 +499,16 @@ export function updatePackageManagedSddAgentOwnership(
 		const registryPath = join(agentHome, "jero", MANAGED_ASSETS_MANIFEST);
 		const legacyRegistryPath = join(agentHome, "gentle-ai", MANAGED_ASSETS_MANIFEST);
 		const manifestPath = existsSync(registryPath) ? registryPath : legacyRegistryPath;
-		// Read may fall back to the pre-rename registry; writes always land in the jero location.
+		// 读取可能回落到改名前的注册表；写入总是落在 jero 位置。
 		const manifest = readManagedAssetsManifest(manifestPath);
 		if (manifest.assets[ownershipKey] !== managedAssetHash(previousContent)) {
 			return false;
 		}
 		const installedContent = readFileSync(installedPath, "utf8");
-		// The next-content branch preserves the prior internal caller contract:
-		// callers that wrote the file before this function still receive a managed
-		// manifest update. New callers take the previous-content branch below so
-		// the file and manifest update share this lock.
+		// next-content 分支保留先前的内部调用方契约：
+		// 在本函数之前已写文件的调用方仍能收到受管
+		// 清单更新。新调用方走下面的 previous-content 分支，使
+		// 文件与清单更新共享这把锁。
 		if (installedContent !== nextContent && installedContent !== previousContent) {
 			return false;
 		}
@@ -565,7 +565,7 @@ export function isPackageManagedSddAsset(
 }
 
 // ---------------------------------------------------------------------------
-// Durable store — survives restarts, resumed sessions, and non-SDD agent starts
+// 持久存储 —— 跨越重启、恢复的会话与非 SDD 角色启动而存活
 // ---------------------------------------------------------------------------
 
 export function sddPreflightDiskPath(cwd: string): string {
@@ -578,11 +578,11 @@ export function readSddPreflightFromDisk(cwd: string): SddPreflightPreferences |
 	try {
 		const parsed: unknown = JSON.parse(readFileSync(path, "utf8"));
 		if (!isRecord(parsed)) return undefined;
-		// Validate required fields to guard against stale/corrupt writes.
+		// 校验必填字段，防范过期/损坏的写入。
 		const { executionMode, artifactStore, chainedPrStrategy, reviewBudgetLines, engramAvailable, prompted } = parsed;
-		// Normalize before validating: a preflight file written before the
-		// dual-store rename carries "both", and discarding it would silently
-		// drop the operator's choice back to the default.
+		// 校验之前先归一化：双存储改名之前写入的预检
+		// 文件携带 "both"，丢弃它会静默把操作员的
+		// 选择丢回默认值。
 		const canonicalArtifactStore = normalizeSddArtifactStore(artifactStore);
 		if (
 			!isSddExecutionMode(executionMode) ||
@@ -625,7 +625,7 @@ export function writeSddPreflightToDisk(cwd: string, prefs: SddPreflightPreferen
 		mkdirSync(dirname(path), { recursive: true });
 		writeFileSync(path, JSON.stringify(canonical, null, 2));
 	} catch {
-		// Disk write failures are non-fatal; in-memory cache is the primary store
+		// 磁盘写入失败非致命；内存缓存是主存储
 	}
 }
 
@@ -707,7 +707,7 @@ function copyDirectoryFiles(
 				skipped += 1;
 				continue;
 			} else if (ownershipKey === "agents/sdd-research.md" && installedContent !== undefined) {
-				// Keep routing adopted by the legacy migration on subsequent refreshes.
+				// 在后续刷新时保留旧迁移所采纳的路由。
 				nextSource = migrateLegacyAssetContent(ownershipKey, installedContent, source);
 			}
 		}
@@ -718,25 +718,24 @@ function copyDirectoryFiles(
 	return { copied, skipped };
 }
 
-// Assets retired by gentle-pi#311 P5: the Pi-owned adversarial review actors.
-// The refuter and validator verdicts now execute through Go-owned pi
-// processes via provider-rendered self-contained vectors, so these agent
-// definitions have no runtime consumer. The migration manifests under
-// assets/migrations are append-only legacy-hash HISTORY (adoption evidence
-// for force-installs) with no removal semantics, so history stays untouched
-// and retirement happens here: an installed copy is deleted only when its
-// content hash proves package ownership (current manifest or legacy
-// history); user-modified copies are left in place and only lose managed
-// ownership.
+// 由 gentle-pi#311 P5 退役的资产：Pi 拥有的对抗性评审角色。
+// refuter 与 validator 的裁决现在经由提供方渲染的自包含向量
+// 通过 Go 拥有的 pi 进程执行，因此这些角色
+// 定义已没有运行时消费者。assets/migrations 下的迁移
+// 清单是只追加的旧哈希历史（强制安装的
+// 采纳证据），没有删除语义，因此历史保持原样，
+// 退役在这里发生：已安装副本只有在其内容哈希证明
+// 包所有权（当前清单或旧历史）时才被删除；
+// 用户修改过的副本原样保留，只是失去受管所有权。
 const RETIRED_MANAGED_ASSETS = Object.freeze([
 	"agents/review-refuter.md",
 	"agents/review-validator.md",
 ]);
 
-// P5b: assets renamed into the jero namespace. History manifests stay
-// untouched (append-only adoption evidence); an installed OLD-name copy
-// is removed only when its hash proves package ownership, exactly like
-// retirement — the new-name file then installs through the normal copy.
+// P5b：改名进入 jero 命名空间的资产。历史清单保持
+// 原样（只追加的采纳证据）；已安装的旧名副本
+// 只有在其哈希证明包所有权时才被移除，与退役
+// 完全一致 —— 新名文件随后经正常拷贝安装。
 const RENAMED_MANAGED_ASSETS = Object.freeze({
 	"agents/gentle-ai-explore.md": "agents/jero-explore.md",
 	"agents/gentle-ai-verify.md": "agents/jero-verify.md",
@@ -811,14 +810,14 @@ function removeRetiredManagedAssets(
 				continue;
 			}
 		}
-		// Managed copies are gone; user-modified copies stay but stop being
-		// package-managed either way.
+		// 受管副本已移除；用户修改过的副本保留，
+		// 但无论哪种情况都不再是包管理的。
 		delete manifest.assets[ownershipKey];
 	}
 }
 
-// Legacy all-owner entry point retained for compatibility.
-// Owner-specific commands and SDD preflight use installPackageAssets directly.
+// 为兼容保留的旧全所有者入口。
+// 按所有者的命令与 SDD 预检直接使用 installPackageAssets。
 export function installSddAssets(
 	cwd: string,
 	force: boolean,
@@ -840,7 +839,7 @@ export function installPackageAssets(
 		const registryPath = join(agentHome, "jero", MANAGED_ASSETS_MANIFEST);
 		const legacyRegistryPath = join(agentHome, "gentle-ai", MANAGED_ASSETS_MANIFEST);
 		const manifestPath = existsSync(registryPath) ? registryPath : legacyRegistryPath;
-		// Read may fall back to the pre-rename registry; writes always land in the jero location.
+		// 读取可能回落到改名前的注册表；写入总是落在 jero 位置。
 		let legacyAssetHashes: (() => Readonly<Record<string, readonly string[]>>) | undefined;
 		if (force) {
 			let cachedLegacyAssetHashes: Record<string, readonly string[]> | undefined;
@@ -889,12 +888,11 @@ export function installPackageAssets(
 }
 
 function hasAffirmativeSddIntent(text: string): boolean {
-	// Natural-language routing must not depend on a closed list of complete
-	// phrases. An SDD mention becomes an invocation only with an imperative,
-	// request, or first-person intent marker; a neutral statement such as
-	// "I use SDD sometimes" remains ordinary conversation.
+	// 自然语言路由不得依赖封闭的完整短语列表。SDD 提及只有在
+	// 出现祈使、请求或第一人称意图标记时才成为调用；
+	// 诸如 "I use SDD sometimes" 的中性陈述仍是普通对话。
 	if (!/\bsdd\b/i.test(text)) return false;
-	return /(?:\b(?:please|por\s+favor)\b|\b(?:want|need|would\s+like|let'?s|quiero|queremos|necesito|quisiera|me\s+gustar[ií]a|vamos|vayamos|hagamos|usemos)\b|^(?:use|run|start|build|create|implement|handle|make|usa|usá|corre|corré|arranca|arrancá|inicia|iniciá|empeza|empezá|hacelo|hazlo|hacerlo)\b)/i.test(text);
+	return /(?:\bplease\b|请|麻烦|帮我|\b(?:want|need|would\s+like|let'?s)\b|我想|我要|我们要|我们需要|需要|想要|让我们|来用|^(?:use|run|start|build|create|implement|handle|make)\b|^(?:用|使用|运行|启动|开始|构建|创建|实现|处理|做))/i.test(text);
 }
 
 export function isSddPreflightTrigger(text: string): boolean {
@@ -903,7 +901,7 @@ export function isSddPreflightTrigger(text: string): boolean {
 	if (/[?？]\s*$/.test(trimmed)) return false;
 	if (
 		/(?:\b(?:don't|do\s+not|never)\b|\bnot\s+(?:want|need|plan(?:ning)?|intend|use|using)\b)[^.!?\n]{0,80}\bsdd\b/i.test(trimmed) ||
-		/\b(?:sin\s+usar|no\s+(?:quiero|queremos|necesito|necesitamos|quisiera|quisiéramos|vamos\s+a|pienso|planeo|usar))\b[^.!?\n]{0,80}\bsdd\b/i.test(trimmed)
+		/(?:别用|不要用|不用|不想|不需要|不打算|没(?:打算|计划))[^.!?\n]{0,80}\bsdd\b/i.test(trimmed)
 	) {
 		return false;
 	}
@@ -952,14 +950,14 @@ export async function collectSddPreflightPreferences(
 	engramAvailable: boolean,
 	options: SddPreflightResolutionOptions = {},
 ): Promise<SddPreflightPreferences> {
-	// Disk preferences suggest values; they never carry current-session consent.
+	// 磁盘偏好只是建议值；它们绝不携带当前会话的同意。
 	const allowExceptionOk = options.acceptSizeException === true;
 	const persisted = normalizedSelections(options.persisted, engramAvailable, allowExceptionOk);
 	const resolved: Partial<Record<SddPreflightField, unknown>> = { ...persisted };
 	let prompted = false;
 	let sizeExceptionAccepted = allowExceptionOk && persisted.chainedPrStrategy === "exception-ok";
 	const promptFields = new Set(options.promptFields ?? []);
-	// RPC is headless even though Pi exposes functional dialog methods there.
+	// RPC 是无头的，尽管 Pi 在那里暴露了可用的对话框方法。
 	if (ctx.hasUI && ctx.mode !== "rpc" && promptFields.size === 0) {
 		const suggestions = { ...DEFAULT_SDD_PREFLIGHT, ...persisted };
 		ctx.ui.notify(`SDD session suggestions: mode=${suggestions.executionMode}; artifacts=${suggestions.artifactStore}; delivery=${suggestions.chainedPrStrategy}; budget=${suggestions.reviewBudgetLines}. Saved preferences are not session consent.`, "info");
@@ -1067,9 +1065,9 @@ export async function ensureSddPreflight(
 	callbacks: SddPreflightCallbacks,
 	resolutionOptions: SddPreflightResolutionOptions = {},
 ): Promise<SddPreflightPreferences> {
-	// `collectSddPreflightPreferences` remains a pure suggestion resolver for
-	// callers that need to render options. Persisting or promoting those options
-	// is parent-only: an RPC child must consume the transported rendered block.
+	// `collectSddPreflightPreferences` 对需要渲染选项的调用方
+	// 保持为纯粹的建议解析器。持久化或提升这些选项
+	// 只属于父级：RPC 子进程必须消费传输过来的已渲染块。
 	if (ctx.mode === "rpc") {
 		throw new Error("SDD preflight must be resolved by the parent; an RPC child cannot originate or persist defaults.");
 	}
@@ -1128,6 +1126,6 @@ export function getSddPreflightPreferences(
 	const sessionKey = sddPreflightSessionKey(ctx);
 	const cached = sddPreflightBySession.get(sessionKey);
 	if (cached) return cached;
-	// Only ensureSddPreflight may promote disk suggestions to resolved session choices.
+	// 只有 ensureSddPreflight 可以把磁盘建议提升为已解析的会话选择。
 	return undefined;
 }

@@ -1,19 +1,17 @@
 import { join } from "node:path";
 import { conservativeOwnerDeathProofV1, ReviewMutationLockV1, type ReviewLockOwnerV1, type ReviewLockPlatformAdapterV1 } from "../review-lock.ts";
 
-// Authority mutation lock over the jero review store (design §5.1.2, §5.1.3).
+// jero 评审存储之上的权威变更锁（设计 §5.1.2、§5.1.3）。
 //
-// This is a thin wrapper around the ported `ReviewMutationLockV1`; the lock
-// class itself is NOT modified. Passing the jero store root directly as the
-// control root lands the lock at `<store>/locks/authority.lock` (the class
-// only special-cases control roots literally named "control"), with
-// acquisition intents fenced at `<store>/locks/authority.lock-intents/`.
+// 这是对移植而来的 `ReviewMutationLockV1` 的薄封装；锁类本身未被修改。
+// 直接把 jero 存储根当作控制根传入，锁会落在
+// `<store>/locks/authority.lock`（该类只对字面名为 “control” 的控制根做
+// 特殊处理），获取意图则围栏在 `<store>/locks/authority.lock-intents/`。
 //
-// Status reporting uses the compact vocabulary `owned | ambiguous |
-// released`: a lock directory left behind by a provably dead owner reads as
-// `released` and must never block a new START — it still has to go through
-// `recover()` before `acquire()` can succeed, because the underlying lock
-// never steals an existing directory.
+// 状态上报使用紧凑词汇 `owned | ambiguous | released`：被证明已死亡的
+// 所有者留下的锁目录读作 `released`，绝不得阻塞新的 START——在
+// `acquire()` 成功之前仍必须先经过 `recover()`，因为底层锁绝不窃取
+// 已存在的目录。
 
 export type JeroAuthorityLockStatus = "owned" | "ambiguous" | "released";
 
@@ -37,7 +35,7 @@ export class JeroAuthorityLocksV1 {
 		return this.#lock.acquire();
 	}
 
-	/** Runs an action while holding the authority lock; the lock is always released. */
+	/** 持有权威锁运行一个动作；锁总会被释放。 */
 	withLock<T>(action: (owner: ReviewLockOwnerV1) => T): T {
 		const owner = this.#lock.acquire();
 		try {
@@ -52,9 +50,9 @@ export class JeroAuthorityLocksV1 {
 	}
 
 	/**
-	 * Reports lock status in the compact vocabulary. `absent` maps to
-	 * `released` (nothing is held); an `owned` directory whose owner is
-	 * provably dead is the LOCK-leftover case and also reads as `released`.
+	 * 以紧凑词汇报告锁状态。`absent` 映射为 `released`（未持有任何
+	 * 内容）；所有者被证明已死亡的 `owned` 目录属于 LOCK 残留情形，
+	 * 同样读作 `released`。
 	 */
 	inspect(): JeroAuthorityLockStatusV1 {
 		const inspection = this.#lock.inspect();
@@ -63,12 +61,12 @@ export class JeroAuthorityLocksV1 {
 		return { status: conservativeOwnerDeathProofV1(inspection.owner) ? "released" : "owned", owner: inspection.owner };
 	}
 
-	/** Quarantines a stale (provably dead-owner) lock; the token fence is owned by the wrapped class. */
+	/** 隔离过期（所有者被证明已死）的锁；令牌围栏由被包装的类拥有。 */
 	recover(expectedOwnerHash: string): void {
 		this.#lock.recover(expectedOwnerHash);
 	}
 
-	/** Recovers an incomplete acquisition (lock directory without owner.json) fenced by a matching durable intent. */
+	/** 恢复一次不完整的获取（无 owner.json 的锁目录），由匹配的持久意图围栏。 */
 	recoverIncomplete(expectedToken: string): void {
 		this.#lock.recoverIncomplete(expectedToken);
 	}

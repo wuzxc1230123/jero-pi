@@ -1,12 +1,11 @@
 import { canonicalBytesV1, sha256Hex } from "../review-canonical.ts";
 
-// jero-authority hashing primitives (design §5.1.2, §9).
+// jero-authority 哈希原语（设计 §5.1.2、§9）。
 //
-// The jero authority namespace is deliberately separate from upstream
-// `domainHashV1`, whose output embeds the `gentle-ai.review-` prefix:
-// jero identities are computed over the same canonical JSON bytes but
-// under fresh `jero.authority.<domain>/v1` domains, so a jero identity can
-// never collide with — or be mistaken for — an upstream gentle-ai identity.
+// jero 权威命名空间刻意与上游 `domainHashV1` 分离，后者的输出嵌入了
+// `gentle-ai.review-` 前缀：jero 身份对相同的权威 JSON 字节计算，但使用
+// 崭新的 `jero.authority.<domain>/v1` 域，因此 jero 身份绝不与上游
+// gentle-ai 身份冲突——也不会被误认作后者。
 
 export class JeroAuthorityCanonicalError extends Error {
 	constructor(message: string) {
@@ -25,22 +24,20 @@ function concatBytes(head: Uint8Array, tail: Uint8Array): Uint8Array {
 }
 
 /**
- * Domain-separated SHA-256 over canonical JSON bytes:
- * `jero.authority.<domain>/v1\0<canonicalBytesV1(value)>`.
+ * 对权威 JSON 字节的域分隔 SHA-256：
+ * `jero.authority.<domain>/v1\0<canonicalBytesV1(value)>`。
  *
- * Never substitute `domainHashV1` here — its output embeds the upstream
- * `gentle-ai.review-` prefix and would forge identity continuity with a
- * foreign authority store.
+ * 绝不在此处替换为 `domainHashV1`——它的输出嵌入了上游
+ * `gentle-ai.review-` 前缀，会伪造与外来权威存储之间的身份连续性。
  */
 export function jeroDomainHash(domain: string, value: unknown): string {
 	if (!JERO_DOMAIN.test(domain)) throw new JeroAuthorityCanonicalError("Jero authority hash domain is invalid");
 	return sha256Hex(concatBytes(new TextEncoder().encode(`jero.authority.${domain}/v1\0`), canonicalBytesV1(value)));
 }
 
-// Schema strings for the internal `jero.authority/v1` record family. All
-// persisted authority records carry one of these in their `schema` field and
-// strict decoders reject any other value (design §5.1.7: unknown keys and
-// unknown schemas fail closed).
+// 内部 `jero.authority/v1` 记录家族的 schema 字符串。所有持久化的权威
+// 记录都在其 `schema` 字段携带其中之一，严格解码器拒绝任何其他值
+// （设计 §5.1.7：未知键与未知 schema 保守失败）。
 export const JERO_AUTHORITY_SCHEMA_PREFIX = "jero.authority/v1";
 
 export const JERO_REPOSITORY_IDENTITY_SCHEMA = "jero.authority.repository/v1";

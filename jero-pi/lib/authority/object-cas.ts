@@ -2,15 +2,14 @@ import { closeSync, existsSync, fsyncSync, linkSync, mkdirSync, openSync, readFi
 import { dirname, join } from "node:path";
 import { canonicalBytesV1, canonicalJsonV1, parseCanonicalJsonV1, sha256Hex } from "../review-canonical.ts";
 
-// Generic content-addressed object store for the jero authority
-// (design §5.1.2: `objects/<sha256>` under the jero-review store root).
+// jero 权威的通用内容寻址对象存储（设计 §5.1.2：jero-review 存储根
+// 下的 `objects/<sha256>`）。
 //
-// The immutable-install discipline (mkdir 0o700 parent; byte-equal existing
-// object is an idempotent no-op, different bytes are a conflict; otherwise
-// wx-temp 0o600 -> fsync -> link -> directory fsync, win32 skips the
-// directory fsync) is mirrored exactly from review-object-store.ts
-// `installImmutable`. Hashes are plain SHA-256 over the canonical bytes —
-// content addressing, not domain-separated identity.
+// 不可变安装纪律（父目录 mkdir 0o700；已存在对象字节相等则是幂等空
+// 操作，字节不同则是冲突；否则 wx 临时文件 0o600 -> fsync -> link ->
+// 目录 fsync，win32 跳过目录 fsync）精确镜像自
+// review-object-store.ts 的 `installImmutable`。哈希是对权威字节的普通
+// SHA-256——内容寻址，而非域分隔身份。
 
 export class JeroObjectCasError extends Error {
 	constructor(message: string) {
@@ -20,14 +19,14 @@ export class JeroObjectCasError extends Error {
 }
 
 export interface JeroCasPutOptionsV1 {
-	/** Expected value of the record's `schema` field (fail-closed on mismatch). */
+	/** 记录 `schema` 字段的期望值（不匹配则保守失败）。 */
 	schema: string;
 }
 
 export interface JeroCasPutResultV1 {
-	/** Content hash of the installed canonical bytes (also the object id). */
+	/** 已安装权威字节的内容哈希（同时是对象 id）。 */
 	hash: string;
-	/** True when the object was already present with identical bytes. */
+	/** 对象已以相同字节存在时为 true。 */
 	idempotent: boolean;
 }
 
@@ -48,10 +47,9 @@ export class JeroObjectCasV1 {
 	}
 
 	/**
-	 * Installs a typed record as canonical JSON at `objects/<sha256>`.
-	 * Installing identical bytes twice is an idempotent no-op; different
-	 * bytes under the same hash fail closed as a conflict carrying both
-	 * the requested and the actually-stored content hashes.
+	 * 把类型化记录以权威 JSON 安装到 `objects/<sha256>`。两次安装相同
+	 * 字节是幂等空操作；同一哈希下的不同字节以冲突保守失败，并携带
+	 * 请求的与实际存储的两个内容哈希。
 	 */
 	put(record: unknown, options: JeroCasPutOptionsV1): JeroCasPutResultV1 {
 		if (typeof record !== "object" || record === null || Array.isArray(record)) throw new JeroObjectCasError("CAS record must be an object");
@@ -86,9 +84,9 @@ export class JeroObjectCasV1 {
 	}
 
 	/**
-	 * Reads and strictly decodes the object at `objects/<hash>`. The stored
-	 * bytes must re-serialize to their own canonical form and must hash to
-	 * the requested id before the caller-supplied decoder runs.
+	 * 读取并严格解码 `objects/<hash>` 处的对象。在调用方提供的解码器
+	 * 运行之前，存储的字节必须能重新序列化为自身的权威形态，且必须
+	 * 哈希到所请求的 id。
 	 */
 	get<T>(hash: string, decode: (value: unknown) => T): T {
 		const path = this.objectPath(hash);

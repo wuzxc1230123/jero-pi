@@ -5,15 +5,13 @@ import { canonicalJsonV1, parseCanonicalJsonV1 } from "../review-canonical.ts";
 import { assertManagedStorePathV1, reviewGitEnvironment } from "../review-repository.ts";
 import { JERO_REPOSITORY_IDENTITY_SCHEMA, jeroDomainHash } from "./canonical.ts";
 
-// jero-authority store root resolution (design §5.1.2, §5.1.6).
+// jero-authority 存储根解析（设计 §5.1.2、§5.1.6）。
 //
-// The jero authority store lives at `<git-common-dir>/jero-review/`. The Git
-// environment discipline (GIT_* refusal set, canonical probe flags) and the
-// symlink-refusing managed-path walk are reused from lib/review-repository.ts
-// via its exported helpers; only the root constants and the identity domain
-// are jero-specific. Internal probe helpers throw a private typed error and
-// the single exported resolver converts every failure into a discriminated
-// refusal — never a raw throw and never a silent best-effort path.
+// jero 权威存储位于 `<git-common-dir>/jero-review/`。Git 环境纪律
+// （GIT_* 拒绝集、权威探测标志）与拒绝符号链接的管理路径遍历通过其
+// 导出的辅助函数从 lib/review-repository.ts 复用；只有根常量与身份域
+// 是 jero 专属。内部探测辅助函数抛出私有的类型化错误，唯一的导出
+// 解析器把每种失败转换为可辨识拒绝——绝不裸抛，也绝不静默尽力而为。
 
 export class JeroAuthorityStoreError extends Error {
 	constructor(message: string) {
@@ -62,11 +60,11 @@ const OBJECT_FORMAT = /^(sha1|sha256)$/;
 const OBJECT_ID = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/;
 const DETAIL_LIMIT = 400;
 
-// Upstream gentle-ai authority data that marks a repository as carrying a
-// FOREIGN authority store. Any hit refuses START fail-closed with no
-// migration (design §5.1.6): `gentle-ai/reviews` is the TS graph-v1 store
-// (its published roots are probed by name), `gentle-ai/review-transactions`
-// is the Go compact store (any content, including `v2/LOCK`, is a hit).
+// 标记仓库携带“外来”权威存储的上游 gentle-ai 权威数据。任何命中都
+// 以保守失败拒绝 START，且无迁移（设计 §5.1.6）：
+// `gentle-ai/reviews` 是 TS graph-v1 存储（其公开的根目录按名探测），
+// `gentle-ai/review-transactions` 是 Go 紧凑存储（任何内容——包括
+// `v2/LOCK`——都算命中）。
 const FOREIGN_REVIEW_STORE_CHILDREN = ["IDENTITY", "graph-v1", "control", "snapshots", "lineages", "locks"] as const;
 const FOREIGN_TRANSACTION_STORE = ["gentle-ai", "review-transactions"] as const;
 const FOREIGN_REVIEW_STORE = ["gentle-ai", "reviews"] as const;
@@ -98,9 +96,9 @@ function oneGitLine(cwd: string, args: readonly string[]): string {
 	return lines[0]!;
 }
 
-// No-follow probes (lstat, never stat/exists-through-symlink): a symlink
-// planted at any foreign-authority name counts as data, and any path that
-// cannot be conclusively shown absent counts as a hit (fail-closed).
+// 不跟随的探测（lstat，绝不用 stat/exists 穿透符号链接）：植入在任何
+// 外来权威名称上的符号链接都算数据，且任何无法确证不存在的路径都算
+// 命中（保守失败）。
 function foreignHits(commonDirectory: string): string[] {
 	const hits: string[] = [];
 	const reviewRoot = join(commonDirectory, ...FOREIGN_REVIEW_STORE);
@@ -120,10 +118,10 @@ function foreignHits(commonDirectory: string): string[] {
 		try {
 			for (const entry of readdirSync(transactionRoot).toSorted()) hits.push([...FOREIGN_TRANSACTION_STORE, entry].join("/"));
 		} catch {
-			// The root itself is already a hit; unreadable content stays fail-closed.
+			// 根目录本身已是命中；不可读的内容保持保守失败。
 		}
-		// Named probe for the published compact-store lock: any content counts,
-		// but LOCK is the canonical marker and is reported by name.
+		// 对公开的紧凑存储锁的点名探测：任何内容都算命中，
+		// 但 LOCK 是权威标记并按名上报。
 		const compactLock = [...FOREIGN_TRANSACTION_STORE, "v2", "LOCK"].join("/");
 		try {
 			lstatSync(join(commonDirectory, ...FOREIGN_TRANSACTION_STORE, "v2", "LOCK"));
@@ -164,8 +162,8 @@ function probeLiveRepository(cwd: string): LiveRepositoryProbe {
 	if (new Set(liveAnchors).size !== liveAnchors.length || liveAnchors.some((anchor) => !OBJECT_ID.test(anchor))) {
 		throw new JeroAuthorityProbeError("authority-unavailable", "Repository root commit anchors are invalid");
 	}
-	// The store root walk reuses the upstream symlink-refusing discipline
-	// (RESL managed-path check) against the jero directory name.
+	// 存储根遍历对 jero 目录名复用上游的拒绝符号链接纪律
+	// （RESL 管理路径检查）。
 	let storeRoot: string;
 	try {
 		storeRoot = assertManagedStorePathV1(canonicalCommonDirectory, join(canonicalCommonDirectory, JERO_STORE_DIRECTORY_NAME));
@@ -176,14 +174,13 @@ function probeLiveRepository(cwd: string): LiveRepositoryProbe {
 }
 
 // ---------------------------------------------------------------------------
-// Pinned repository identity (jero namespace).
+// 钉住的仓库身份（jero 命名空间）。
 //
-// Mirrors the upstream IDENTITY discipline from review-repository.ts
-// (wx-temp + fsync + link + EEXIST-read-back, bounded parse retry, pinned
-// root-commit subset validation) re-implemented locally because the upstream
-// read-back validates the `gentle-ai.review-repository/v1` schema and would
-// reject a jero identity body. The identity domain hash is jero's own, so
-// jero repository ids are never upstream ids.
+// 镜像 review-repository.ts 的上游 IDENTITY 纪律（wx 临时文件 + fsync
+// + link + EEXIST 读回、有界解析重试、钉住根提交子集校验），但因上游
+// 读回校验的是 `gentle-ai.review-repository/v1` schema、会拒绝 jero
+// 身份正文而在本地重新实现。身份域哈希是 jero 自己的，因此 jero
+// 仓库 id 绝不是上游 id。
 // ---------------------------------------------------------------------------
 
 function isValidJeroRepositoryIdentityBody(value: unknown): value is JeroRepositoryIdentityBodyV1 {
@@ -280,12 +277,11 @@ function writePinnedIdentity(storeRoot: string, identity: JeroRepositoryIdentity
 }
 
 /**
- * Resolves the jero authority store for a working directory. Foreign
- * upstream authority data (`gentle-ai/reviews`, `gentle-ai/review-transactions`)
- * is detected BEFORE any jero state is written and refuses resolution
- * fail-closed with no migration. The pinned root-commit identity is written
- * once and reused, with the upstream subset-validation semantics (orphan
- * roots tolerated, removed pinned roots refused).
+ * 为某个工作目录解析 jero 权威存储。外来的上游权威数据
+ * （`gentle-ai/reviews`、`gentle-ai/review-transactions`）在任何 jero
+ * 状态被写入“之前”检测，并以无迁移的保守失败拒绝解析。钉住的根提交
+ * 身份写入一次并被复用，采用上游的子集校验语义（容忍孤立根，拒绝被
+ * 移除的钉住根）。
  */
 export function resolveJeroAuthorityStoreV1(cwd: string): JeroAuthorityStoreResolutionV1 {
 	try {
@@ -338,7 +334,7 @@ export function jeroLineageDirectory(storeRoot: string, lineageId: string): stri
 	return lineageDirectory;
 }
 
-/** Standalone foreign-authority inventory over a Git common directory. */
+/** 对 Git common directory 的独立外来权威清点。 */
 export function jeroForeignAuthorityStoreCheck(commonDirectory: string): readonly string[] {
 	return foreignHits(commonDirectory);
 }

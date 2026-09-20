@@ -15,12 +15,11 @@ import { issueJeroReviewReceiptV1, type JeroFindingSubmissionRowV1 } from "./fin
 import { isJeroLineageId } from "./store-root.ts";
 import { canonicalJsonV1 } from "../review-canonical.ts";
 
-// `authority.review.validate` (spec §E): evidence-first correction ordering
-// through the ported review-correction-lifecycle decision machine (wrapped
-// as-is — resolveCorrectionStep + assertDistinctCorrectionEvidence), then
-// targeted-validation admission over the frozen correction scope. The answer
-// document contract is enforced by the ported review-compact-contract.ts
-// wrapper (wrapped as-is).
+// `authority.review.validate`（spec §E）：经移植的
+// review-correction-lifecycle 决策机（原样封装——resolveCorrectionStep +
+// assertDistinctCorrectionEvidence）实现证据先行的修正顺序，随后在冻结
+// 修正范围上做定向验证受理。答案文档契约由移植的
+// review-compact-contract.ts 封装强制执行（原样封装）。
 
 export type JeroValidateRefusalCode =
 	| "invalid-request" | "invalid-state" | "lineage-missing" | "corrupted" | "terminal-immutable"
@@ -39,7 +38,7 @@ export interface JeroReviewValidateInputV1 {
 	readonly lineageId: string;
 	readonly evidence: JeroCorrectionEvidenceSubmissionV1;
 	readonly validation: CompactTargetedValidationInput;
-	/** Rows the validator observed as NEW findings caused by the fix (the wrapper's `fix_caused_findings` answer is always `[]`). */
+	/** validator 观察到的、由修正“新”引发的发现行（封装的 `fix_caused_findings` 答案恒为 `[]`）。 */
 	readonly fix_caused_result?: readonly JeroFindingSubmissionRowV1[];
 	readonly idempotencyKey?: string;
 }
@@ -74,7 +73,7 @@ function evidenceOfV1(submission: JeroCorrectionEvidenceSubmissionV1): Correctio
 }
 
 function loadLineageV1(context: JeroAuthorityContextV1, lineageId: string): { ok: true; record: JeroLineageStateFileV1 } | { ok: false; code: JeroValidateRefusalCode; detail?: string } {
-	// F1: a malformed lineageId is a typed refusal, never a raw store error.
+	// F1：畸形的 lineageId 是类型化拒绝，绝不透出原始存储错误。
 	if (!isJeroLineageId(lineageId)) return { ok: false, code: "invalid-request", detail: `lineageId ${JSON.stringify(lineageId)} is not a canonical review-<16hex> lineage id` };
 	const loaded = context.lineages.load(lineageId);
 	if (loaded.kind === "missing") return { ok: false, code: "lineage-missing", detail: `lineage ${lineageId} does not exist` };
@@ -82,7 +81,7 @@ function loadLineageV1(context: JeroAuthorityContextV1, lineageId: string): { ok
 	return { ok: true, record: loaded.record };
 }
 
-/** §E request-hash binding: the answer document must carry this hash over the frozen correction scope. */
+/** §E 的请求哈希绑定：答案文档必须在冻结修正范围上携带此哈希。 */
 export function expectedJeroTargetedValidationRequestHashV1(state: JeroReviewTransactionStateV1): string {
 	return jeroDomainHash("targeted-validation-request", {
 		lineage_id: state.lineage_id,
@@ -94,17 +93,16 @@ export function expectedJeroTargetedValidationRequestHashV1(state: JeroReviewTra
 }
 
 /**
- * VALIDATE (spec §E). The correction evidence outcome is resolved FIRST
- * (evidence-first ordering); only `passed` unlocks targeted validation, a
- * `verification_failed` capture reopens the correction charging nothing, and
- * `procedural_tooling_failed` is a terminal escalation. The answer document
- * then pairs 1:1 with the frozen `fix_finding_ids` under the bound
- * request_hash; regressions and fix-caused findings escalate — validation
- * failure never reopens correction (openspec review-transaction :104).
+ * VALIDATE（spec §E）。修正证据结局“首先”被裁决（证据先行顺序）；
+ * 只有 `passed` 解锁定向验证，`verification_failed` 的捕获免费重开
+ * 修正，`procedural_tooling_failed` 是终局升级。答案文档随后在绑定的
+ * request_hash 下与冻结的 `fix_finding_ids` 一一配对；回归与修正引发
+ * 的发现触发升级——验证失败绝不重开修正（openspec
+ * review-transaction :104）。
  */
 export function reviewValidateV1(context: JeroAuthorityContextV1, input: JeroReviewValidateInputV1): JeroReviewValidateResultV1 {
-	// Wrapper contract (as-is port): exact keys, digest-shaped request_hash,
-	// fix_caused_findings must be an explicitly empty array, evidence non-empty.
+	// 封装契约（原样移植）：精确键集、摘要形的 request_hash、
+	// fix_caused_findings 必须是显式空数组、证据非空。
 	try {
 		parseNativeCompactFinalizeInput({ cwd: input.cwd, lineageId: input.lineageId, validation: { ...input.validation } });
 	} catch (error) {
@@ -119,21 +117,20 @@ export function reviewValidateV1(context: JeroAuthorityContextV1, input: JeroRev
 		return { kind: "refused", code: "terminal-immutable", detail: `lineage ${state.lineage_id} is terminal (${state.state})` };
 	}
 	if (state.mode === "judgment_day") {
-		// M3 (§J.4 cross-mode): Judgment Day runs zero targeted validators —
-		// the scoped re-judgment admission in judgment-day.ts is the JD twin
-		// of the validate-fix transition.
+		// M3（§J.4 跨模式）：Judgment Day 运行零个定向 validator——
+		// judgment-day.ts 中的定向再判决受理是 validate-fix 转移的 JD
+		// 孪生。
 		return { kind: "refused", code: "cross-mode-operation-refused", detail: "the ordinary targeted validation is not a Judgment Day operation" };
 	}
-	// Evidence-first ordering (spec §E / openspec review-correction-lifecycle :9-11).
+	// 证据先行顺序（spec §E / openspec review-correction-lifecycle :9-11）。
 	const step = resolveCorrectionStep(correctionStatusOfV1(state), evidenceOfV1(input.evidence));
 	if (state.state !== "fix_validating") {
 		return { kind: "refused", code: "evidence-first-required", detail: `targeted validation requires fix_validating (lineage is in ${state.state}); record correction evidence first` };
 	}
-	// Distinct immutable evidence directories across recaptures. The reopen
-	// below clears the recorded evidence, so distinctness ALSO holds against
-	// the failed revision's identity (F3): the same identity may never be
-	// re-presented after a failed capture — a reused evidence directory is a
-	// replaced record, not a fresh capture.
+	// 跨重新捕获的互异不可变证据目录。下面的重开会清除已记录证据，
+	// 因此相异性“同样”对失败修订的身份成立（F3）：同一身份绝不能在
+	// 失败捕获之后再次提交——复用的证据目录是被替换的记录，不是新
+	// 捕获。
 	if (state.failed_evidence_revision !== undefined && input.evidence.evidenceIdentity === state.failed_evidence_revision) {
 		return { kind: "refused", code: "evidence-replaced", detail: `correction evidence identity ${JSON.stringify(input.evidence.evidenceIdentity)} was already used by the failed capture it supersedes; every recapture must land under a distinct immutable evidence identity` };
 	}
@@ -156,7 +153,7 @@ export function reviewValidateV1(context: JeroAuthorityContextV1, input: JeroRev
 		}
 	}
 	if (step.kind === "recapture-required") {
-		// §A.2 row 7c: reopen without charging anything; prior record immutable.
+		// §A.2 行 7c：免费重开；先前记录不可变。
 		const next = clone(state);
 		next.state = "fixing";
 		next.failed_evidence_revision = input.evidence.evidenceIdentity;
@@ -176,7 +173,7 @@ export function reviewValidateV1(context: JeroAuthorityContextV1, input: JeroRev
 		}
 	}
 	if (step.kind === "terminal-escalation") {
-		// §A.2 row 7d: procedural tooling failure escalates before any retry.
+		// §A.2 行 7d：程序性工具故障在任何重试之前升级。
 		return runValidateOperationV1(context, record, input, (next) => {
 			next.correction_evidence = {
 				outcome: input.evidence.outcome,
@@ -197,7 +194,7 @@ export function reviewValidateV1(context: JeroAuthorityContextV1, input: JeroRev
 			};
 		});
 	}
-	// step.kind === "run-targeted-validation": admit the answer document.
+	// step.kind === “run-targeted-validation”：受理答案文档。
 	const expectedHash = expectedJeroTargetedValidationRequestHashV1(state);
 	if (input.validation.request_hash !== expectedHash) {
 		return { kind: "refused", code: "request-hash-mismatch", detail: `validation request_hash does not bind the frozen correction scope (expected ${expectedHash.slice(0, 16)}…)` };
@@ -228,12 +225,12 @@ export function reviewValidateV1(context: JeroAuthorityContextV1, input: JeroRev
 				receipt_hash: receipt.envelope.receipt_hash,
 			};
 		};
-		// The validator cannot add findings: new rows caused by the fix escalate (§E).
+		// validator 不能新增发现：由修正引发的新行触发升级（§E）。
 		if (fixCaused.length > 0) {
 			next.fix_caused_findings = fixCaused.map((finding, index) => ({ id: finding.id ?? `fix-caused-${index}`, ...(finding.location === undefined ? {} : { location: finding.location }), ...(finding.severity === undefined ? {} : { severity: finding.severity }), ...(finding.claim === undefined ? {} : { claim: finding.claim }), ...(finding.proof_refs === undefined ? {} : { proof_refs: [...finding.proof_refs] }) }));
 			return escalate("targeted_validator_rejected", "the targeted validator reported findings caused by the correction");
 		}
-		// Original acceptance criteria must pass; one passing regression proof per frozen ID.
+		// 原始验收标准必须通过；每个冻结 ID 一条通过的回归证明。
 		if (!input.validation.original_criteria.passed) {
 			return escalate("targeted_validator_rejected", "original acceptance criteria did not pass");
 		}
@@ -252,8 +249,8 @@ export function reviewValidateV1(context: JeroAuthorityContextV1, input: JeroRev
 			fix_delta_hash: next.fix_delta_hash,
 			passed: true,
 		};
-		// Follow-ups are inert observations (§D.4), mapped through the ported
-		// toNativeValidatorDocument so wrapper rows and record rows agree.
+		// Follow-up 是惰性观察（§D.4），经移植的 toNativeValidatorDocument
+		// 映射，使封装行与记录行一致。
 		const document = toNativeValidatorDocument({ ...input.validation, fix_caused_findings: [] });
 		for (const followUp of document.follow_ups) {
 			const observation = `${followUp.observation}`;
@@ -273,8 +270,8 @@ export function reviewValidateV1(context: JeroAuthorityContextV1, input: JeroRev
 }
 
 function runValidateOperationV1(context: JeroAuthorityContextV1, record: JeroLineageStateFileV1, input: JeroReviewValidateInputV1, apply: (state: JeroReviewTransactionStateV1) => JeroReviewValidateResultV1): JeroReviewValidateResultV1 {
-	// F14: the request hash binds request CONTENT only; the idempotency key is
-	// addressing, not content (canonical JSON drops undefined object values).
+	// F14：请求哈希只绑定请求“内容”；幂等键是寻址信息而非内容
+	// （权威 JSON 会丢弃 undefined 的对象值）。
 	const requestHash = jeroDomainHash("request", { operation: "validate-fix", lineage_id: record.lineage_id, input: { ...input, idempotencyKey: undefined } });
 	const idempotencyKey = input.idempotencyKey ?? `validate-fix:${requestHash.slice(0, 16)}`;
 	try {

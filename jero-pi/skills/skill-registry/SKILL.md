@@ -1,51 +1,51 @@
 ---
 name: jero-skill-registry
-description: "Trigger: update skills, skill registry, actualizar skills, after skill changes. Index available skills by trigger and path."
+description: "触发词：更新技能、技能注册表、actualizar skills、技能变更之后。按触发词与路径索引可用技能。"
 license: MIT
 metadata:
   author: gentleman-programming
   version: "1.0"
 ---
 
-## Activation Contract
+## 激活契约
 
-Use this skill after installing, removing, creating, moving, or renaming skills, or when a delegator needs a fresh skill index.
+在安装、删除、创建、移动或重命名技能之后，或委托者需要最新技能索引时，使用本技能。
 
-## Hard Rules
+## 硬性规则
 
-- The registry is an index, not a compiler or summary. `SKILL.md` remains the source of truth.
-- Do not generate or inject compact rules by default; preserve author intent by passing exact skill paths to subagents.
-- Always write `.atl/skill-registry.md` regardless of SDD persistence mode.
-- Save the registry to Engram as `topic_key: skill-registry` when available, with `capture_prompt: false`.
-- Skip `sdd-*`, `_shared`, and `skill-registry`; deduplicate by skill name, preferring project-level skills over user-level skills.
-- Add `.atl/` to `.gitignore` when possible unless explicitly disabled.
+- 注册表是索引，不是编译器或摘要。`SKILL.md` 仍是事实来源。
+- 默认不生成或注入紧凑规则；通过把精确技能路径传给子代理来保留作者意图。
+- 无论 SDD 持久化模式如何，始终写 `.atl/skill-registry.md`。
+- 可用时，把注册表以 `topic_key: skill-registry` 保存到 Engram，并设 `capture_prompt: false`。
+- 跳过 `sdd-*`、`_shared` 与 `skill-registry`；按技能名去重，项目级技能优先于用户级技能。
+- 可能时把 `.atl/` 加入 `.gitignore`，除非被显式禁用。
 
-## Decision Gates
+## 决策门
 
-| Situation | Action |
+| 情形 | 动作 |
 | --- | --- |
-| Same skill exists globally and in project | Keep the project-level skill |
-| Same skill exists in multiple global locations | Keep the first source in scan order |
-| No skills found | Write an empty registry so agents stop searching blindly |
-| Agent will delegate work | Select matching registry rows and pass their `SKILL.md` paths |
+| 同一技能同时存在于全局与项目 | 保留项目级技能 |
+| 同一技能存在于多个全局位置 | 保留扫描顺序中的第一个来源 |
+| 未找到任何技能 | 写入空注册表，让 agent 停止盲目搜索 |
+| agent 将要委托工作 | 选择匹配的注册表行并传入其 `SKILL.md` 路径 |
 
-## Execution Steps
+## 执行步骤
 
-1. Scan all known user and project skill directories for `*/SKILL.md`.
-2. Read frontmatter only as needed to extract `name` and `description` trigger text.
-3. Render `.atl/skill-registry.md` with scanned sources, registry contract, skill name, trigger/description, scope, and exact path.
-4. Persist to Engram when available using `title: skill-registry`, `topic_key: skill-registry`, `type: config`, and `capture_prompt: false`.
-5. Return the registry path, skill count, cache status, and whether Engram was updated.
+1. 扫描所有已知的用户与项目技能目录中的 `*/SKILL.md`。
+2. 只按需读取 frontmatter，以提取 `name` 与 `description` 触发文本。
+3. 渲染 `.atl/skill-registry.md`，包含扫描来源、注册表契约、技能名、触发词/描述、范围与精确路径。
+4. 可用时持久化到 Engram，使用 `title: skill-registry`、`topic_key: skill-registry`、`type: config` 与 `capture_prompt: false`。
+5. 返回注册表路径、技能数量、缓存状态以及 Engram 是否已更新。
 
-## Output Contract
+## 输出契约
 
-Return:
-- Project name and `.atl/skill-registry.md` path.
-- Number of indexed skills.
-- Whether the cache was hit or regenerated.
-- Any skipped or duplicate skills when relevant.
+返回：
+- 项目名与 `.atl/skill-registry.md` 路径。
+- 已索引技能的数量。
+- 缓存是命中还是重新生成。
+- 相关时，被跳过或重复的技能。
 
-## References
+## 参考
 
-- `docs/skill-style-guide.md` — how skills should be authored before indexing.
-- `skills/_shared/skill-resolver.md` — how delegators use the index.
+- `docs/skill-style-guide.md` —— 索引之前，技能应如何撰写。
+- `skills/_shared/skill-resolver.md` —— 委托者如何使用该索引。

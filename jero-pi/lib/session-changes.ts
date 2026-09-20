@@ -30,7 +30,7 @@ export function textSnapshot(text: string): ChangeSnapshot {
 	return { kind: "text", text };
 }
 
-/** Read only the named mutation target. Never traverse, follow symlinks, or open a FIFO for blocking I/O. */
+/** 只读取点名的变更目标。绝不遍历、跟随符号链接，或为阻塞 I/O 打开 FIFO。 */
 export async function readChangeSnapshot(path: string): Promise<ChangeSnapshot> {
 	let file: Awaited<ReturnType<typeof open>> | undefined;
 	try {
@@ -100,7 +100,7 @@ export class SessionChanges {
 		if (previous && !sameSnapshot(previous.after, evidence.before)) state.unavailable = "Snapshot continuity lost (external or unobserved edit); session diff unavailable.";
 		if (evidence.before.kind === "unavailable") state.unavailable ??= evidence.before.reason;
 		if (evidence.after.kind === "unavailable") state.unavailable ??= evidence.after.reason;
-		// Keep the final state even after an own revert, to detect later external edits.
+		// 即使自身已回滚也保留最终状态，以便检测后续的外部编辑。
 		this.patch(evidence.path, state);
 		files.set(evidence.path, state);
 		this.cached = undefined;

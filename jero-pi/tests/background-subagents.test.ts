@@ -761,7 +761,7 @@ test("an unknown sub-action warns and changes nothing", async (t) => {
 	assert.equal(notice.type, "warning");
 	assert.equal(
 		notice.message,
-		'Unknown /jero:background-subagents sub-action "toggle". Use status, enable, or disable.',
+		'未知的 /jero:background-subagents 子操作 "toggle"。请使用 status、enable 或 disable。',
 	);
 	assert.equal(
 		existsSync(join(configHome, "background-subagents.json")),

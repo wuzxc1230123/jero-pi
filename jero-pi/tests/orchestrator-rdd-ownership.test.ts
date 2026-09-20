@@ -6,7 +6,7 @@ import test from "node:test";
 const ROOT = join(import.meta.dirname, "..");
 const ASSETS = join(ROOT, "assets");
 const BOUNDARY =
-	"This package injects the mirrored provider-bundle review execution contract into this session's system prompt at start; Jero writes nothing into the Pi system prompt, and this package owns everything else here. Absent that mirrored contract, this package invents no lifecycle instructions.";
+	"本包启动时把镜像的提供方捆绑评审执行契约注入本会话系统提示；Jero 不向 Pi 系统提示写入任何内容，本包拥有此处其余一切。缺少该镜像契约时，本包不发明生命周期指令。";
 
 function read(relativePath: string): string {
 	return readFileSync(join(ROOT, relativePath), "utf8");
@@ -35,13 +35,13 @@ test("static prompts omit stale native RDD lifecycle mirrors", () => {
 
 test("lossless blocking prompts keep strict closed envelopes off the free-text questionnaire tool", () => {
 	for (const clause of [
-		"No closed single-select questionnaire tool ships with jero-pi",
-		"The externally owned `ask_user_question` always appends its own free-text sentinel row, so a strictly closed envelope is never exactly representable through it",
-		"never use it for provider-owned consent prompts, maintenance authorizations, or any exact opaque-token decision",
-		"never pass its free-text answer through opaque-token mapping",
-		"the selected continuation remains the exact captured provider-owned choice invocation",
-		"Never append that host action to the decoded or relayed provider envelope",
-		"If the runtime returns the envelope unresolved, the original two-choice fallback above applies unchanged",
+		"jero-pi 不内置封闭单选问卷工具",
+		"外部所有的 `ask_user_question` 总会追加自己的自由文本哨兵行，因此严格封闭的封套永远无法经由它精确表达",
+		"绝不将它用于提供方所有的同意提示、维护授权或任何精确的不透明令牌决策",
+		"绝不把其自由文本答案送入不透明令牌映射",
+		"所选延续仍是精确捕获的提供方所有选择调用",
+		"绝不把该宿主动作追加到已解码或已中继的提供方封套",
+		"若运行时返回未裁决封套，上述原始双选择回退不变适用",
 	]) {
 		assert.ok(delegation.includes(clause), `lossless prompt is missing: ${clause}`);
 	}
@@ -73,27 +73,27 @@ test("rendered parent prompt keeps the RDD boundary while omitting lifecycle mir
 });
 
 test("static prompts retain normal SDD and delegated-work guidance", () => {
-	for (const heading of ["## SDD Workflow (lazy-loaded)", "## Memory Contract"]) {
+	for (const heading of ["## SDD 工作流（懒加载）", "## 记忆契约"]) {
 		assert.ok(core.includes(heading), `core lost ${heading}`);
 	}
 	for (const heading of [
-		"### Delegation Rules",
+		"### 委托规则",
 		"#### Background Subagent Policy",
 		"#### Allowed edit surfaces (MANDATORY)",
-		"### 3. SDD (optional)",
+		"### 3. SDD（可选）",
 	]) {
 		assert.ok(delegation.includes(heading), `delegation lost ${heading}`);
 	}
 });
 
 test("always-on parent prompt requires a narrow writer edit surface before launch", () => {
-	assert.match(core, /Before launching (?:a )?bounded writer/i);
+	assert.match(core, /启动有界写者/);
 	assert.match(core, /`jero-worker`/);
 	assert.match(core, /`worker`/);
 	assert.match(core, /## Allowed edit surfaces/);
-	assert.match(core, /repository-relative/i);
-	assert.match(core, /never `\.`|never a bare repository root/i);
-	assert.match(core, /do not ask the human to author paths or globs/i);
+	assert.match(core, /仓库相对路径/);
+	assert.match(core, /绝不使用 `\.`、裸仓库根/);
+	assert.match(core, /不要让人类撰写路径或 glob/);
 });
 
 test("review integration documents the opaque Pi adapter and Go-owned authority boundary", () => {

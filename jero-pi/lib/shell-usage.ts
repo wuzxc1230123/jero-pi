@@ -1,10 +1,9 @@
 import { truncateToWidth } from "@earendil-works/pi-tui";
 import { paintGauge } from "./shell-gauge.ts";
 
-// Gentle Shell subscription usage: the rate-limit windows each connected
-// provider reports. Codex sends them as SSE headers and through its usage
-// endpoint; both land in the same model. Parsing is pure and never keeps
-// account details beyond the plan name.
+// Gentle Shell 订阅用量：每个已连接提供方上报的限流窗口。Codex 以
+// SSE 头及其用量端点发送；两者汇入同一模型。解析是纯函数，且除套餐
+// 名外绝不保留账户细节。
 
 export interface UsageWindow {
 	label: string;
@@ -155,8 +154,8 @@ export function parseCodexHeaders(headers: Record<string, string>, now: number):
 	return { provider: CODEX_PROVIDER, plan: undefined, limits: [{ name: CODEX_MAIN_LIMIT, windows, limitReached: Boolean(reached) }], fetchedAt: now };
 }
 
-// Claude Pro/Max sends utilization as a 0..1 fraction per window and reset
-// times in Unix seconds on every response; there is no usage endpoint.
+// Claude Pro/Max 在每个响应中按窗口发送 0..1 的利用率分数和 Unix 秒的
+// 重置时间；没有用量端点。
 export function parseAnthropicHeaders(headers: Record<string, string>, now: number): ProviderUsage | undefined {
 	const windows: UsageWindow[] = [];
 	for (const [key, seconds] of ANTHROPIC_WINDOWS) {
@@ -204,8 +203,8 @@ function updatedAgo(fetchedAt: number, now: number): string {
 	return minutes < 1 ? "updated just now" : `updated ${minutes}m ago`;
 }
 
-// The active provider comes first, marked with the petal, and explains
-// itself when it has no data yet. Other providers seen this session follow.
+// 活动提供方排在最前并带花瓣标记；尚无数据时会自我说明。
+// 本会话见过的其他提供方随后列出。
 export function renderUsagePanel(usages: ProviderUsage[], theme: UsageTheme, width: number, now: number, active?: ActiveProvider): string[] {
 	const activeUsage = active ? usages.find((usage) => usage.provider === active.provider) : undefined;
 	const others = usages.filter((usage) => usage !== activeUsage);

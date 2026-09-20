@@ -7,8 +7,8 @@ export const SIDEBAR_BREAKPOINT = 140;
 const RAIL_WIDTH = 50;
 const RAIL_PADDING = 1;
 const GAP = 3;
-// Experimental Pi 0.85.1 internals. Only the fullscreen layout tree is adapted;
-// regular mode keeps native scrollback and the original bottom components.
+// 实验性的 Pi 0.85.1 内部机制。只适配全屏布局树；普通模式保留原生
+// 回滚缓冲与原有的底部组件。
 const NODE = Symbol.for("@earendil-works/pi-tui/layout-node");
 type LayoutNode = { type: string; entries?: unknown[]; gap?: number; align?: string };
 type LayoutRoot = Component & { [NODE]?: () => LayoutNode };
@@ -37,17 +37,15 @@ function sidebarCache(tui: TUI): SidebarCache {
 	return terminal[CACHE] ??= { revision: 0 };
 }
 
-/** Mark terminal-owned fullscreen sidebar output stale after a part state change. */
+/** 在部件状态变化后将终端持有的全屏侧栏输出标记为过期。 */
 export function invalidateSidebar(tui: TUI): void {
 	if (tui.terminal) sidebarCache(tui).revision++;
 }
 
-// The memo keys on part identity and an explicit revision, neither of which can
-// see live session state read inside a rail's render closure: a model switch, a
-// new context percentage or an extension status change leaves the prepared lines
-// intact. A rail that paints such state declares a digest of it, so the memo can
-// notice by itself; a throwing digest degrades that rail to invalidation-only
-// rather than taking the whole sidebar down with it.
+// 记忆化以部件身份和显式修订号作键，两者都看不到侧栏渲染闭包内读取的
+// 活动会话状态：模型切换、新的上下文百分比或扩展状态变化都不会改变
+// 已准备好的行。绘制这类状态的侧栏会声明其摘要，让记忆化自行察觉；
+// 抛错的摘要只让该侧栏退化为仅靠失效更新，而不是拖垮整个侧栏。
 function railDigest(rail: SidebarRail): string | undefined {
 	try {
 		return rail.digest?.();
@@ -104,8 +102,8 @@ export function installSidebar(tui: TUI, theme: ShellBarTheme): () => void {
 	};
 	scroll.handleMouse = (event) => {
 		if (event.type === "wheel") {
-			// Consume even at the boundary or over blank rail space: Pi 0.85.1
-			// can send unconsumed delta to the primary transcript despite containment.
+			// 在边界或侧栏空白区域也要消费滚轮：尽管设置了 contain，
+			// Pi 0.85.1 仍可能把未消费的增量发给主转录区。
 			scroll.scrollBy(event.wheelDelta ?? 0);
 			return {
 				handled: true,
@@ -152,7 +150,7 @@ export function installSidebar(tui: TUI, theme: ShellBarTheme): () => void {
 				railLines.push(...section.lines.map((line) => " ".repeat(RAIL_PADDING) + line + " ".repeat(RAIL_PADDING)));
 				hits.push({ key: section.key, component: section.component, startY, height: section.lines.length, width: contentWidth - RAIL_PADDING * 2 });
 			}
-			// Height is owned by the native ScrollView, never by the transcript.
+			// 高度由原生 ScrollView 拥有，绝不由转录区决定。
 			const active = railLines.length > 0 && railLines.every((line) => visibleWidth(line) <= contentWidth);
 			prepared = { revision: cache.revision, width, mode: host.mode, root, theme, parts, digests, contentWidth, active, lines: railLines, hits };
 			state.active = active;
@@ -198,8 +196,8 @@ export function installSidebar(tui: TUI, theme: ShellBarTheme): () => void {
 		}
 	};
 	attach();
-	// Pi replaces renderers without a session event. Rebind only that transition;
-	// resize and scroll remain owned by Pi's native layout/render loop.
+	// Pi 替换渲染器时不发会话事件。只对那一次转换重新绑定；
+	// 尺寸调整与滚动仍由 Pi 原生的布局/渲染循环拥有。
 	const timer = setInterval(attach, 100);
 	timer.unref();
 	return () => {

@@ -1,4 +1,4 @@
-# Judgment Day Prompts and Formats
+# Judgment Day 提示词与格式
 
 ## Judge Prompt
 
@@ -112,6 +112,6 @@ Return only this graph-v1 native JSON shape:
 Do not put `summary`, `skill_resolution`, prose, or orchestration metadata inside or beside the native JSON result. Skill resolution is parent-owned orchestration metadata.
 ```
 
-## Verdict
+## 裁定
 
-The controller records `approved` only when no severe rows survive and final verification passes. Otherwise it records `escalated`. Actor prose is never terminal authority.
+只有当没有严重行存活且最终验证通过时，控制器才记录 `approved`；否则记录 `escalated`。执行者的散文绝不是终局权威。

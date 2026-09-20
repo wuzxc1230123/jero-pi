@@ -18,12 +18,12 @@ import {
 	type TodoState,
 } from "../lib/shell-todo.ts";
 
-// Gentle Todo: the task list the model keeps while it works, drawn as a
-// Gentle Shell card above the editor. Three things keep it current that a
-// static tool description cannot: `write` replaces the whole list in one
-// call, every turn's system prompt carries the open tasks and the rules, and
-// a list that goes untouched while tasks stay open is marked stale for both
-// the human and the model.
+// Gentle Todo：模型工作时维护的任务清单，绘制为
+// 编辑器上方的 Gentle Shell 卡片。三件事让它保持最新，这是静态
+// 工具描述做不到的：`write` 一次调用替换整个清单，
+// 每回合的系统提示词都携带未完成任务与规则，并且
+// 任务仍开放却久未更新的清单会对人类
+// 和模型同时标记为过期。
 
 const WIDGET_KEY = "gentle-todo";
 const COLLAPSE_KEY_DEFAULT = "ctrl+shift+t";
@@ -71,7 +71,7 @@ interface TodoSession {
 	state: TodoState;
 	turn: number;
 	collapsed: boolean;
-	/** A finished list stays on screen for the turn it finished in, then clears. */
+	/** 已完成的清单在其完成的那一回合内停留在屏幕上，随后清空。 */
 	clearOnNextTurn: boolean;
 	ui: ExtensionContext["ui"] | undefined;
 	host: { requestRender(): void } | undefined;
@@ -194,8 +194,8 @@ export default function jeroTodo(pi: ExtensionAPI, env: NodeJS.ProcessEnv = proc
 
 	pi.on("session_start", (_event, ctx) => {
 		const current = session(ctx);
-		// A list that was already finished when the session was left is history,
-		// not work: it would otherwise sit on screen until two more turns pass.
+		// 会话离开时已完成的清单是历史而非
+		// 待办：否则它会在屏幕上再停留两个回合。
 		const replayed = replayTodo(ctx.sessionManager.getBranch());
 		current.state = replayed.tasks.length > 0 && todoSummary(replayed).open === 0 ? { ...replayed, tasks: [] } : replayed;
 		current.turn = ctx.sessionManager.getBranch().filter((entry) => (entry as { type?: string }).type === "message" && (entry as { message?: { role?: string } }).message?.role === "user").length;

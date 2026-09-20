@@ -438,6 +438,6 @@ test("reconciliation retries only exact pending mutations and preserves uncertai
 test("remediation actor explains one-launch human authority and indexed command evidence", async () => {
 	const { readFileSync } = await import("node:fs");
 	const text = readFileSync("assets/agents/sdd-remediate.md", "utf8");
-	assert.match(text, /fresh host UI confirmation/); assert.match(text, /each repeated command.*separate execution/);
-	assert.match(text, /reconcile.*without.*another actor/);
+	assert.match(text, /一次新鲜的宿主 UI 确认/); assert.match(text, /把每条重复命令视为独立的执行槽位/);
+	assert.match(text, /对账.*而不启动另一个执行器/);
 });

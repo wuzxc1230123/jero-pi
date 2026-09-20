@@ -26,7 +26,7 @@ import { createJeroAiExtension } from "../extensions/jero-ai.ts";
 // ---------------------------------------------------------------------------
 
 const REJECTION =
-	"Writer tasks must include the exact Markdown heading `## Allowed edit surfaces` with narrow repository-relative paths or narrow globs, one per line. Every non-empty line belongs to the section until the next canonical Markdown heading and must be a valid surface entry. Paths containing whitespace require whole-entry backticks; begin explanatory prose under the next Markdown heading. The parent must derive or map that canonical block from the delegated task and relaunch the writer; do not accept aliases, and do not ask the human to author paths or globs.";
+	"写者任务必须包含精确的 Markdown 标题 `## Allowed edit surfaces`，其中列出狭窄的仓库相对路径或狭窄的 glob，每行一条。直到下一个规范 Markdown 标题之前的每个非空行都属于该小节，且必须是有效的编辑面条目。包含空白字符的路径需要整条反引号包裹；解释性文字请放在下一个 Markdown 标题之下。父会话必须从被委托的任务推导或映射出该规范块并重新启动写者；不接受别名，也不要让人类来编写路径或 glob。";
 
 type ToolCallHandler = (
 	event: { toolName: string; input: unknown },

@@ -7,12 +7,11 @@ import { createNativePointerScope, type NativePointerRegion } from "./native-poi
 import { formatTokens } from "./shell-bar.ts";
 import { PresenceCursor, readActivity, type Header, type Target } from "./orchestrator-presence.ts";
 
-// Gentle Agents overlay: tasks on the left, the selected task's thread on
-// the right. Only the selected task is subscribed, thread items are rendered
-// once each (they are immutable until replaced), and the viewport shows the
-// tail unless the human scrolls up. Current scope contains direct live children;
-// all sessions is a presence directory, not a history browser. Remote activity
-// is presentation-only and never enters the local TaskStore.
+// Gentle Agents 覆盖层：左侧为任务，右侧为所选任务的线程。
+// 只有所选任务被订阅，线程条目各自只渲染一次（在被替换之前
+// 不可变），视口默认显示尾部，除非用户向上滚动。当前范围只含直接
+// 存活的子任务；全部会话是一个存在感目录，而非历史浏览器。远程活动
+// 仅用于展示，绝不进入本地 TaskStore。
 
 export interface AgentsViewTheme extends AgentsThreadTheme {}
 
@@ -77,7 +76,7 @@ const EMPTY_THREAD = "waiting for the first event";
 const FOLLOW_BUTTON = "[ Follow ]";
 const OPEN_BUTTON = "[ Open session ]";
 const CLOSE_BUTTON = "[× Close]";
-// At the 60-cell split boundary these four controls fit before any hints.
+// 在 60 格分割边界处，这四个控件能先于任何按键提示放下。
 const STOP_BUTTON = "[Stop]";
 const SCOPE_BUTTON = "[Scope]";
 const KEYS = [
@@ -159,8 +158,8 @@ export class AgentsView {
 	private readonly modeRegion: NativePointerRegion;
 	private hoveredControl: "follow" | "open" | "close" | "mode" | undefined;
 	private pointerLayout: PointerLayout | undefined;
-	// Keyboard input has no terminal width, so retain its last rendered width
-	// independently from disposable pointer hit geometry.
+	// 键盘输入没有终端宽度，因此独立于一次性指针命中几何，
+	// 单独保留其最后一次渲染宽度。
 	private lastRenderedWidth: number | undefined;
 	private closed = false;
 	private unsubscribeTask: (() => void) | undefined;
@@ -173,8 +172,8 @@ export class AgentsView {
 	private presenceCursor?: PresenceCursor;
 	private presenceTimer?: ReturnType<typeof setTimeout>;
 
-	// One directory page or one pinned activity per turn; yield between reads.
-	// Keep the previous directory until a traversal completes, avoiding page flicker.
+	// 每轮只读一个目录页或一个固定活动；读与读之间让出事件循环。
+	// 遍历完成前保留上一个目录，避免页面闪烁。
 	private refreshPresence(): void {
 		const source = this.deps.presence;
 		if (!source || this.closed) return;
@@ -379,7 +378,7 @@ export class AgentsView {
 			this.pointerLayout = { ...layout, height: 1, sourceHeight: layout.height, narrowView: this.narrowView, closeButton: { x: 0, width: 1 } };
 			return ["×" + fit(" Close Agents", layout.width - 1)];
 		}
-		// Retained terminal rows never belong in either live scope.
+		// 保留的终端行绝不属于任何一个存活范围。
 		const now = this.deps.now();
 		if (this.tasks.some((task) => !this.inScope(task, now))) this.refreshTasks();
 		if (this.pointerLayout && (this.pointerLayout.width !== layout.width || this.pointerLayout.height !== layout.height || this.pointerLayout.mode !== layout.mode || this.pointerLayout.narrowView !== this.narrowView)) this.clearFooterLayout();
@@ -451,7 +450,7 @@ export class AgentsView {
 		return [...KEYS.slice(0, 1), ...details, ...KEYS.slice(1, 3), ...stop, ...scope, ...KEYS.slice(3)];
 	}
 
-	// A new scope reads from the top: selection, list window, and thread reset.
+	// 新范围从顶部开始读取：选择、列表窗口与线程全部重置。
 	private toggleScope(): void {
 		this.clearFooterLayout();
 		this.scope = this.scope === VIEW_SCOPE.SESSION ? VIEW_SCOPE.ALL : VIEW_SCOPE.SESSION;
@@ -478,8 +477,8 @@ export class AgentsView {
 		return this.scope === VIEW_SCOPE.ALL && this.isNarrow() && !this.narrowGroup;
 	}
 
-	// Keep the selected row inside the list window, moving the window by the
-	// least amount needed; the wheel moves the same window on its own.
+	// 让所选行保持在列表窗口内，以最小幅度移动窗口；
+	// 滚轮则独立移动同一窗口。
 	private followSelection(rows: number): void {
 		const manual = this.manualListOffsets.get(this.listKey());
 		if (manual !== undefined) {
@@ -693,7 +692,7 @@ export class AgentsView {
 		const visible = Math.max(0, rows - 1);
 		const maxScroll = Math.max(0, lines.length - visible);
 		if (this.follow) this.scroll = maxScroll;
-		// A taller/wider presentation may clamp its window, not the saved position.
+		// 更高/更宽的呈现可以钳制其窗口，但不钳制已保存的位置。
 		const start = Math.min(this.scroll, maxScroll);
 		return [header, ...lines.slice(start, start + visible)];
 	}
@@ -701,8 +700,8 @@ export class AgentsView {
 	private select(index: number, rows = this.visibleRows(), revealSelection = true): void {
 		const next = rows[Math.max(0, Math.min(rows.length - 1, index))];
 		if (!next) return;
-		// Keyboard movement reveals the selection; pointer activation keeps the
-		// manually positioned list available for Back, even after height clamping.
+		// 键盘移动会揭示所选行；指针激活则保留手工定位的
+		// 列表供 Back 使用，即使高度被钳制之后也一样。
 		if (revealSelection) this.manualListOffsets.delete(this.listKey());
 		if (this.directoryRoot()) {
 			this.groupCursor = next.id;
@@ -720,7 +719,7 @@ export class AgentsView {
 		this.deps.requestRender();
 	}
 
-	// One page is the thread area: the body minus its header row.
+	// 一页即线程区域：主体减去其表头行。
 	private pageRows(): number {
 		return Math.max(1, this.bodyRows() - 1);
 	}

@@ -3,9 +3,9 @@ import { realpathSync, lstatSync, openSync, readSync, fstatSync, closeSync } fro
 import { createHash } from "node:crypto";
 import type { AgentDefinition } from "./agents-config.ts";
 
-// Exact registered Pi names, not provider display namespaces. MCP's generic
-// `mcp` and dynamic `mcp__context7` gateways are deliberately NOT grants: an
-// active gateway does not prove which remote methods it can safely expose.
+// 精确的 Pi 注册名称，而非提供方显示命名空间。MCP 的通用 `mcp` 与
+// 动态 `mcp__context7` 网关刻意不算授权：活动网关不能证明它能安全
+// 暴露哪些远端方法。
 export const RESEARCH_TOOLS = ["fetch_content", "web_search", "source_check", "get_search_content"] as const;
 export const RESEARCH_CHILD_TOOLS_ENV = "JERO_PI_RESEARCH_TOOLS";
 export const RESEARCH_SELECTION_ENV = "JERO_PI_RESEARCH_SELECTION";
@@ -29,7 +29,7 @@ export function resolveResearchCapabilities(pi: Inventory, restriction?: readonl
 			.filter(tool => active.has(tool.name) && tool.sourceInfo?.source !== "sdk" &&
 				(restriction === undefined || restriction.includes(tool.name)))
 			.map(tool => tool.name);
-	} catch { /* Inventory failure is not a grant. */ }
+	} catch { /* 清点失败不算授权。 */ }
 	const tools = RESEARCH_TOOLS.filter(name => names.includes(name));
 	const capability = (required: string[], guidance: string): Capability => {
 		const missing = required.filter(name => !tools.includes(name as typeof RESEARCH_TOOLS[number]));
@@ -62,7 +62,7 @@ export function researchAgent(agent: AgentDefinition, pi: Inventory, selection?:
 	const requested = selection && typeof selection === "object" && !Array.isArray(selection)
 		? selection as Record<string, unknown> : {};
 	let registered: ReturnType<NonNullable<Inventory["getAllTools"]>> = [];
-	try { registered = pi.getAllTools?.() ?? []; } catch { /* No provenance, no route. */ }
+	try { registered = pi.getAllTools?.() ?? []; } catch { /* 无来源，无路由。 */ }
 	for (const [kind, capability] of Object.entries(capabilities)) {
 		const value = requested[kind];
 		const grant = value && typeof value === "object" ? value as Partial<ResearchGrant> : {};
@@ -89,9 +89,8 @@ export function researchAgent(agent: AgentDefinition, pi: Inventory, selection?:
 
 export const RESEARCH_ARTIFACT_ENV = "JERO_PI_RESEARCH_ARTIFACT";
 const ARTIFACT_STORES = ["openspec", "engram", "both", "none"] as const;
-// The store identifier stays "engram" until the P5 identity pass; the
-// LOCATOR carries the jero memory model: one topic key, replace-on-save
-// semantics, no numeric id or write counter.
+// 存储标识符在 P5 身份改造之前保持 "engram"；LOCATOR 携带的是 jero
+// 记忆模型：一个主题键、保存即替换语义、没有数字 id 或写入计数器。
 interface EngramLocator {
 	topic_key: string;
 }
@@ -113,7 +112,7 @@ export interface ResearchArtifactIntent {
 }
 const record = (value: unknown): Record<string, unknown> => value !== null && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
 const positive = (value: unknown) => Number.isSafeInteger(value) && Number(value) > 0;
-// Missing leaves are allowed for diagnostic persistence; existing symlinks are not.
+// 缺失的叶子路径因诊断持久化而允许；已存在的符号链接则不允许。
 export function canonicalArtifactPath(path: string): string {
 	try { lstatSync(path); }
 	catch (error) {
@@ -155,7 +154,7 @@ export function parseResearchArtifactIntent(value: unknown, cwd: string, previou
 	return scope;
 }
 
-// Negative intersection only: callers must still enforce host permissions/inventory.
+// 仅做反向交集：调用方仍必须执行宿主权限/清点校验。
 export function researchArtifactCall(scope: ResearchArtifactIntent, cwd: string, tool: string, input: Record<string, unknown>): number {
 	if (realpathSync(cwd) !== scope.worktree) throw new Error("Research artifact worktree changed.");
 	const index = scope.locators.findIndex(locator => {
@@ -175,13 +174,13 @@ export function researchArtifactCall(scope: ResearchArtifactIntent, cwd: string,
 	return index;
 }
 
-// Consume actual child tool results, never transported success assertions.
+// 消费子工具的实际结果，绝不消费传输而来的成功断言。
 export function researchArtifactReadback(locator: ResearchLocator, tool: string, returned: unknown, afterWrite = false): boolean {
 	let bytes: unknown = returned;
 	if (tool === "mem_read") {
-		// The jero memory tool answers with its rendered text: an optional
-		// one-line provenance header ("saved <iso> · tags: ..."), a blank
-		// separator, then the entry body verbatim. The digest binds the body.
+		// jero 记忆工具以其渲染文本作答：可选的一行来源头
+		// （“saved <iso> · tags: ...”）、一个空行分隔符，然后是逐字的
+		// 条目正文。摘要绑定的是正文。
 		const expected = locator.engram;
 		if (!expected || typeof returned !== "string" || !returned.includes("\n\n")) return false;
 		const [header] = returned.split("\n\n", 1);
@@ -215,8 +214,8 @@ export function parseResearchPersistence(value: unknown, scope: ResearchArtifact
 	return structuredClone({ accepted, writes });
 }
 
-// Pi may defer custom entries in an in-memory/unflushed session. Verify the
-// actual bounded tail, not appendEntry's void return or an in-memory receipt.
+// Pi 可能在内存中/未落盘的会话里延迟自定义条目。校验实际的有界尾部，
+// 而不是 appendEntry 的 void 返回值或内存中的回执。
 export function assertResearchCheckpoint(file: string, expected: unknown): void {
 	const fd = openSync(file, "r");
 	try {

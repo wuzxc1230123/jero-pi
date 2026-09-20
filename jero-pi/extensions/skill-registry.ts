@@ -119,7 +119,7 @@ async function findSkillFiles(root: string): Promise<string[]> {
 			const skillInfo = await stat(candidate);
 			if (skillInfo.isFile()) out.push(candidate);
 		} catch {
-			// Missing or unreadable skill files are ignored; the registry is best-effort.
+			// 缺失或不可读的技能文件将被忽略；注册表是尽力而为的。
 		}
 	}
 	return out.sort();
@@ -462,9 +462,9 @@ function shouldSkipDuplicateExtensionLoad(
 ): boolean {
 	const currentPath = extensionSourcePath(source);
 	const projectLocalPath = comparablePath(join(cwd, "extensions", "skill-registry.ts"));
-	// A source URL that cannot be converted to a native path (a POSIX file
-	// URL on Windows, say) is definitionally not the project-local copy: the
-	// project-local extension still wins when one exists.
+	// 无法转换为本地路径的源 URL（例如 Windows 上的 POSIX file
+	// URL）在定义上就不是项目本地副本：只要存在
+	// 项目本地扩展，它仍然胜出。
 	if ((currentPath ?? projectLocalPath + "\u0000foreign") !== projectLocalPath && existsSync(projectLocalPath)) {
 		return true;
 	}
@@ -483,7 +483,7 @@ function closeSkillRegistryWatchers(): void {
 		try {
 			watcher.close();
 		} catch {
-			// Best-effort shutdown; stale handles must not block process exit.
+			// 尽力而为的关闭；残留句柄不得阻塞进程退出。
 		}
 	}
 	activeWatchers.clear();
@@ -511,7 +511,7 @@ async function startSkillRegistryWatcher(
 						notify(`Skill registry refreshed (${result.skillCount} skills)`);
 					}
 				} catch {
-					// Keep the watcher best-effort; session_start/manual refresh surfaces detailed failures.
+					// 监视器保持尽力而为；session_start/手动刷新会呈现详细失败。
 				}
 			})();
 		}, WATCH_DEBOUNCE_MS);
@@ -521,7 +521,7 @@ async function startSkillRegistryWatcher(
 			const watcher = watch(dir, { recursive: true }, refresh);
 			activeWatchers.add(watcher);
 		} catch {
-			// Some filesystems do not support recursive watches; session_start/manual refresh still work.
+			// 部分文件系统不支持递归监视；session_start/手动刷新仍然可用。
 		}
 	}
 }
@@ -588,7 +588,7 @@ export default function (pi: ExtensionAPI) {
 						try {
 							await regenerateRegistry(ctx.cwd, true);
 						} catch {
-							// Best-effort same-session self-heal in case the stale extension already ran.
+							// 尽力而为的同会话自愈，以防过期的扩展已经运行过。
 						}
 					})();
 				}, WATCH_DEBOUNCE_MS);

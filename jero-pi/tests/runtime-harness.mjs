@@ -431,18 +431,18 @@ async function run() {
 		const promptResult = await promptHook({ systemPrompt: "base" }, createCtx(promptCwd));
 		assert.match(promptResult.systemPrompt, /base/);
 		assert.match(promptResult.systemPrompt, /el Jero/);
-		assert.match(promptResult.systemPrompt + delegationDetail, /do not pass the `model` parameter by default/);
+		assert.match(promptResult.systemPrompt + delegationDetail, /默认不传 `model` 参数/);
 		assert.match(
 			promptResult.systemPrompt + delegationDetail,
-			/SDD model assignment tables apply only to SDD\/Judgment-Day phase agents/,
+			/SDD 模型分配表仅适用于 SDD\/Judgment-Day 阶段代理/,
 		);
 		assert.doesNotMatch(promptResult.systemPrompt, /Every Agent tool call MUST include `model`/);
 		assert.doesNotMatch(promptResult.systemPrompt, /default\s*\|\s*sonnet\s*\|\s*Non-SDD general delegation/);
-		assert.match(promptResult.systemPrompt, /openspec\/config\.yaml.*not session preflight/s);
-		assert.match(promptResult.systemPrompt, /Do not mark SDD preflight complete/);
+		assert.match(promptResult.systemPrompt, /openspec\/config\.yaml[\s\S]*都不是会话预检/);
+		assert.match(promptResult.systemPrompt, /不要标记 SDD 预检完成/);
 		assert.ok(
 			promptResult.systemPrompt.includes(
-				`Package assets root: \`${join(ROOT, "assets")}\`. Lazy asset paths below are relative to this root.`,
+				`包资产根目录：\`${join(ROOT, "assets")}\`。下方懒加载资产路径均相对该根目录。`,
 			),
 			"parent prompt must declare the one absolute root for relative lazy asset paths",
 		);
@@ -460,11 +460,11 @@ async function run() {
 			'{"mode":"neutral"}\n',
 		);
 		const neutralPromptResult = await promptHook({ systemPrompt: "base" }, createCtx(promptCwd));
-		assert.match(neutralPromptResult.systemPrompt, /Do not use slang or regional expressions/);
+		assert.match(neutralPromptResult.systemPrompt, /不使用俚语或地域性表达/);
 		assert.doesNotMatch(
 			neutralPromptResult.systemPrompt,
-			/When the user writes Spanish, answer in natural Rioplatense Spanish with voseo/,
-			"neutral persona prompt must not include unconditional voseo instructions after reload",
+			/用户使用中文时，用自然、地道的简体中文/,
+			"neutral persona prompt must not include the gentleman-only natural-Chinese clause after reload",
 		);
 		const subagentPromptResult = await promptHook(
 			{ agentName: "worker", systemPrompt: "worker base" },
@@ -484,7 +484,7 @@ async function run() {
 		const localOverridePromptResult = await promptHook({ systemPrompt: "base" }, createCtx(promptCwd));
 		assert.match(
 			localOverridePromptResult.systemPrompt,
-			/When the user writes Spanish, answer in natural Rioplatense Spanish with voseo/,
+			/用户使用中文时，用自然、地道的简体中文/,
 		);
 		const personaCtx = createCtx(promptCwd, true);
 		personaCtx.ui.select = async () => "neutral";
@@ -497,7 +497,7 @@ async function run() {
 			await readFile(join(promptCwd, ".pi", "jero", "persona.json"), "utf8"),
 			'{\n  "mode": "neutral"\n}\n',
 		);
-		assert.match(personaCtx.ui.notifications.at(-1).message, /Global config:/);
+		assert.match(personaCtx.ui.notifications.at(-1).message, /全局配置：/);
 		const onboardCtx = createCtx(promptCwd, true, "sdd-onboard-session");
 		onboardCtx.ui.select = async (_label, options) => options[0];
 		const onboardPromptResult = await promptHook(
@@ -595,9 +595,9 @@ async function run() {
 				createCtx(toolCwd),
 			);
 			assert.equal(writerResult?.block, true, `${label} writer scope must be blocked before dispatch`);
-			assert.match(writerResult?.reason ?? "", /derive|map/i);
-			assert.match(writerResult?.reason ?? "", /relaunch/i);
-			assert.match(writerResult?.reason ?? "", /do not ask.*human.*paths or globs/i);
+			assert.match(writerResult?.reason ?? "", /推导或映射/);
+			assert.match(writerResult?.reason ?? "", /重新启动/);
+			assert.match(writerResult?.reason ?? "", /不要让人类来编写路径或 glob/);
 			assert.equal(writerDispatch.task, task, "writer guard must not mutate child input");
 		}
 
@@ -734,7 +734,7 @@ async function run() {
 			const original = structuredClone(input);
 			const result = await toolHook({ toolName: "subagent_run", input }, createCtx(toolCwd));
 			assert.equal(result?.block, true, `${label} jd-fix-agent dispatch must be blocked`);
-			assert.match(result?.reason ?? "", /Judgment Day fix dispatch/i);
+			assert.match(result?.reason ?? "", /Judgment Day 修复派发要求/);
 			assert.deepEqual(input, original, `${label} jd-fix-agent rejection must not mutate input`);
 		}
 		assert.equal(
@@ -1089,8 +1089,8 @@ async function run() {
 			join(globalAgentHome, "agents", "review-risk.md"),
 			"utf8",
 		);
-		assert.match(installedRiskSource, /exactly once against the supplied `initial_review_tree`/);
-		assert.match(installedRiskSource, /cannot authorize transitions, fixes, receipts, gates, or delivery/);
+		assert.match(installedRiskSource, /对所提供的 `initial_review_tree` 恰好运行一次/);
+		assert.match(installedRiskSource, /不能授权转移、修复、回执、闸门或交付/);
 		await commands.get("jero:sdd-preflight").handler("", createCtx(noUiCwd, false, "startup-sdd-install"));
 		assert.equal(existsSync(join(globalAgentHome, "agents", "sdd-apply.md")), true);
 		assert.equal(existsSync(join(globalAgentHome, "chains", "sdd-full.chain.md")), true);
@@ -1226,7 +1226,7 @@ async function run() {
 		const ctx = createCtx(lazySddCwd, true);
 		const inputHook = hooks.get("input")[0];
 		assert.deepEqual(
-			await inputHook({ text: "hola, solo mirando", source: "interactive" }, ctx),
+			await inputHook({ text: "你好，随便看看", source: "interactive" }, ctx),
 			{ action: "continue" },
 		);
 		assert.deepEqual(
@@ -1250,7 +1250,7 @@ async function run() {
 			{ action: "continue" },
 		);
 		assert.deepEqual(
-			await inputHook({ text: "sin usar SDD por ahora", source: "interactive" }, ctx),
+			await inputHook({ text: "暂时不用 SDD", source: "interactive" }, ctx),
 			{ action: "continue" },
 		);
 		assert.deepEqual(
@@ -1262,7 +1262,7 @@ async function run() {
 			{ action: "continue" },
 		);
 		assert.deepEqual(
-			await inputHook({ text: "no quiero usar SDD por ahora", source: "interactive" }, ctx),
+			await inputHook({ text: "现在还不想用 SDD", source: "interactive" }, ctx),
 			{ action: "continue" },
 		);
 		assert.deepEqual(
@@ -1277,7 +1277,7 @@ async function run() {
 		assert.equal(existsSync(join(globalAgentHome, "agents", "sdd-apply.md")), false);
 
 		assert.deepEqual(
-			await inputHook({ text: "vamos con sdd", source: "interactive" }, ctx),
+			await inputHook({ text: "让我们用 SDD 吧", source: "interactive" }, ctx),
 			{ action: "continue" },
 		);
 		assert.equal(existsSync(join(lazySddCwd, ".pi", "agents", "sdd-apply.md")), false);
@@ -1937,7 +1937,7 @@ async function run() {
 		assert.match(invalidGlobalSkippedAgent, /model: global\/provider-model/);
 		assert.doesNotMatch(invalidGlobalSkippedAgent, /model: legacy\/provider-model/);
 		assert.equal(legacyCtx.ui.notifications.at(-1).level, "warning");
-		assert.match(legacyCtx.ui.notifications.at(-1).message, /skipped model config/);
+		assert.match(legacyCtx.ui.notifications.at(-1).message, /已跳过模型配置/);
 		let modelPanelOpened = false;
 		legacyCtx.ui.custom = () => {
 			modelPanelOpened = true;
@@ -1947,7 +1947,7 @@ async function run() {
 		assert.equal(modelPanelOpened, false);
 		assert.equal(await readFile(globalModelsPath, "utf8"), "{ invalid json");
 		assert.equal(legacyCtx.ui.notifications.at(-1).level, "warning");
-		assert.match(legacyCtx.ui.notifications.at(-1).message, /cannot open model config/);
+		assert.match(legacyCtx.ui.notifications.at(-1).message, /无法打开模型配置/);
 		await writeFile(globalModelsPath, JSON.stringify({}, null, 2));
 		await hooks.get("session_start")[0]({ reason: "startup" }, legacyCtx);
 		const emptyGlobalPreservesAgent = await readFile(
@@ -2446,7 +2446,7 @@ async function run() {
 		await commands.get("jero:models").handler("", ctx);
 		assert.match(
 			ctx.ui.notifications.at(-1).message,
-			/Custom model id must be a single-line/,
+			/自定义模型 id 必须是单行/,
 		);
 		const rejectedCustomConfig = JSON.parse(
 			await readFile(globalModelsPath, "utf8"),

@@ -1,52 +1,52 @@
 ---
 name: jero-skill-creator
-description: "Trigger: /skill-creation, skill creation, skill creator, create skill, new skill. Create LLM-first skills with valid frontmatter."
+description: "触发词：/skill-creation、技能创建、skill creator、create skill、新技能。创建带合法 frontmatter 的 LLM 优先技能。"
 license: Apache-2.0
 metadata:
   author: gentleman-programming
   version: "1.0"
 ---
 
-## Activation Contract
+## 激活契约
 
-Use this skill when creating or updating a reusable AI skill for Pi or another agent runtime.
+为 Pi 或其他 agent 运行时创建或更新可复用 AI 技能时，使用本技能。
 
-Create a skill when:
-- a workflow or convention is reused across sessions;
-- generic agent behavior needs project-specific constraints;
-- a decision tree helps the agent choose safely;
-- examples, templates, or references would make future execution more reliable.
+在以下情况创建技能：
+- 某个工作流或惯例跨会话复用；
+- 泛用 agent 行为需要项目特定的约束；
+- 一棵决策树能帮助 agent 安全选择；
+- 示例、模板或参考能让未来执行更可靠。
 
-Do not create a skill for a one-off task, generic documentation, or rules that belong in code/tests.
+不要为一次性任务、泛用文档或属于代码/测试的规则创建技能。
 
-## Hard Rules
+## 硬性规则
 
-- Follow `docs/skill-style-guide.md` as the normative source for skill structure and style.
-- A skill is an LLM runtime contract, not human-facing docs.
-- Keep `SKILL.md` concise: target 180–450 tokens, max 1000.
-- Use imperative instructions and concrete gates; avoid tutorials and background prose.
-- Frontmatter `description` must be one physical YAML-safe line and include trigger words first.
-- Do not add a `Keywords` section; put essential trigger words in `description`.
-- Put templates, schemas, and generated examples in `assets/`.
-- Put longer rationale or local doc links in `references/`.
-- After changing project skills, refresh the registry with `/skill-registry:refresh` when available.
+- 遵循 `docs/skill-style-guide.md`，把它作为技能结构与风格的规范来源。
+- 技能是 LLM 运行时契约，不是面向人的文档。
+- 保持 `SKILL.md` 简洁：目标 180–450 token，上限 1000。
+- 使用祈使句指令与具体的门控；避免教程式与背景散文。
+- frontmatter 的 `description` 必须是单行、YAML 安全的物理行，并把触发词放在最前。
+- 不要添加 `Keywords` 小节；把关键触发词放进 `description`。
+- 模板、schema 与生成示例放入 `assets/`。
+- 较长的理由或本地文档链接放入 `references/`。
+- 修改项目技能后，可用时用 `/skill-registry:refresh` 刷新注册表。
 
-## Decision Gates
+## 决策门
 
-| Need | Action |
+| 需求 | 动作 |
 | --- | --- |
-| Small reusable behavior | Create `skills/{skill-name}/SKILL.md` only |
-| Templates, schemas, fixtures | Add `skills/{skill-name}/assets/` |
-| Longer explanation or edge cases | Add `skills/{skill-name}/references/` |
-| Existing skill covers it | Update the existing skill instead |
-| Skill affects delegation discovery | Ensure trigger words appear in `description` |
+| 小的可复用行为 | 只创建 `skills/{skill-name}/SKILL.md` |
+| 模板、schema、fixture | 添加 `skills/{skill-name}/assets/` |
+| 较长的解释或边界情况 | 添加 `skills/{skill-name}/references/` |
+| 既有技能已覆盖 | 改为更新既有技能 |
+| 技能影响委托发现 | 确保触发词出现在 `description` 中 |
 
-## Execution Steps
+## 执行步骤
 
-1. Read `docs/skill-style-guide.md` before creating or updating skills.
-2. Inspect existing skills and confirm the new skill does not duplicate one.
-3. Choose a kebab-case skill name that matches the user-facing trigger.
-4. Create or update this structure:
+1. 创建或更新技能前，先读 `docs/skill-style-guide.md`。
+2. 检视既有技能，确认新技能不与之重复。
+3. 选择与用户面触发词匹配的 kebab-case 技能名。
+4. 创建或更新此结构：
 
 ```text
 skills/{skill-name}/
@@ -55,7 +55,7 @@ skills/{skill-name}/
 └── references/   # optional
 ```
 
-5. Use this frontmatter shape:
+5. 使用此 frontmatter 形态：
 
 ```yaml
 ---
@@ -68,19 +68,19 @@ metadata:
 ---
 ```
 
-6. Write sections in this order: Activation Contract, Hard Rules, Decision Gates, Execution Steps, Output Contract, References.
-7. If this is a packaged `jero-pi` skill, add it to `scripts/verify-package-files.mjs`.
-8. Refresh or document the skill registry update path.
+6. 按此顺序撰写小节：Activation Contract、Hard Rules、Decision Gates、Execution Steps、Output Contract、References。
+7. 若这是打包的 `jero-pi` 技能，把它加入 `scripts/verify-package-files.mjs`。
+8. 刷新技能注册表，或记录其更新路径。
 
-## Output Contract
+## 输出契约
 
-Return:
-- Files created or modified.
-- Whether this created a new skill or updated an existing one.
-- Any supporting `assets/` or `references/` files added.
-- Whether package verification or skill registry refresh is needed.
+返回：
+- 创建或修改的文件。
+- 本次是新建技能还是更新既有技能。
+- 添加的任何 `assets/` 或 `references/` 支撑文件。
+- 是否需要包验证或技能注册表刷新。
 
-## References
+## 参考
 
-- `docs/skill-style-guide.md` — normative LLM-first skill style guide.
-- `skills/skill-registry/SKILL.md` — registry refresh and indexing contract.
+- `docs/skill-style-guide.md` —— 规范的 LLM 优先技能风格指南。
+- `skills/skill-registry/SKILL.md` —— 注册表刷新与索引契约。

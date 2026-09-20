@@ -7,27 +7,24 @@ import type { JeroAuthorityContextV1 } from "./review.ts";
 import type { JeroLineageStateFileV1 } from "./lineage-store.ts";
 import type { JeroReviewStateName } from "./protocol.ts";
 
-// `authority.maintenance.*` (design §5.1.1 maintenance rows + §5.1.6 ruling,
-// spec _tools/p2-m5-maintenance-analysis.md): the destructive recovery routes
-// the Go binary served as review reclaim/recover/abandon/reconcile-authority.
-// jero-pi keeps abandon and reconcile-authority (real engineering value) and
-// does NOT port quarantine-legacy / repair-legacy-alias — a new package with
-// a new store namespace has no historical lineages to migrate.
+// `authority.maintenance.*`（设计 §5.1.1 维护行 + §5.1.6 裁决，规范
+// _tools/p2-m5-maintenance-analysis.md）：Go 二进制以 review
+// reclaim/recover/abandon/reconcile-authority 提供的破坏性恢复路由。
+// jero-pi 保留 abandon 与 reconcile-authority（真实工程价值），不移植
+// quarantine-legacy / repair-legacy-alias——带新存储命名空间的新包没有
+// 需要迁移的历史血脉。
 //
-// Discipline (readme-reference.md:182-196): every destructive transition runs
-// through an EXACT authorization binding the maintainer re-derives and the
-// authority re-derives AGAIN before accepting — the request's binding must
-// equal the freshly computed one, field for field. Fresh interactive approval
-// is the extension layer's job (P4); the authority side fails closed whenever
-// a required binding is absent or drifted. Recovery grants no new budget.
-// Quarantine is rename-aside, never delete: the audit trail survives.
+// 纪律（readme-reference.md:182-196）：每个破坏性转移都经由一个“精确”
+// 授权绑定，维护者重新推导它，权威在接受前“再次”重新推导——请求的
+// 绑定必须逐字段等于新计算出的那个。新的交互式批准是扩展层的职责
+// （P4）；权威侧在必需绑定缺失或漂移时保守失败。恢复不授予新预算。
+// 隔离是改名挪开，绝不删除：审计轨迹得以幸存。
 //
-// The binding schema strings stay gentle-ai.* until the P5 identity pass —
-// they are rendered to maintainers and hashed nowhere; renaming them here
-// would silently orphan upstream-documented bindings.
+// 绑定 schema 字符串在 P5 身份改造之前保持 gentle-ai.*——它们被渲染
+// 给维护者且无处被哈希；在这里改名会静默孤立上游文档化的绑定。
 
-// Upstream maintainer-authorization character discipline
-// (native-review-cli.ts:1603-1605): non-empty, LF the only permitted control.
+// 上游维护者授权的字符纪律（native-review-cli.ts:1603-1605）：
+// 非空，LF 是唯一允许的控制字符。
 const CONTROL_EXCEPT_LF = "[\\u0000-\\u0009\\u000b-\\u001f\\u007f]";
 const LF_ONLY_BINDING = new RegExp(CONTROL_EXCEPT_LF);
 
@@ -84,7 +81,7 @@ export type JeroMaintenanceResultV1 =
 	| { readonly kind: "abandoned" | "reclaimed" | "recovered" | "reconciled"; readonly lineage: string; readonly auditRecord: Record<string, unknown> }
 	| { readonly kind: "refused"; readonly code: JeroMaintenanceRefusalCode; readonly detail: string };
 
-/** The exact eight-line abandon binding (native-review-cli.ts:1710-1724, verbatim). */
+/** 精确的八行 abandon 绑定（native-review-cli.ts:1710-1724，逐字）。 */
 export function jeroAbandonAuthorizationV1(request: Pick<JeroAbandonInputV1, "lineage" | "expectedRevision" | "snapshotIdentity" | "capturedLensResults" | "findingsPresent" | "actor" | "reason">): string {
 	return [
 		"gentle-ai.review-abandon-authorization/v2",
@@ -98,7 +95,7 @@ export function jeroAbandonAuthorizationV1(request: Pick<JeroAbandonInputV1, "li
 	].join("\n");
 }
 
-/** The exact seven-line reconcile binding (+optional dual anomaly, native-review-cli.ts:1766-1777). */
+/** 精确的七行 reconcile 绑定（+可选的双重异常，native-review-cli.ts:1766-1777）。 */
 export function jeroReconcileAuthorizationV1(request: Pick<JeroReconcileInputV1, "predecessorLineage" | "expectedPredecessorRevision" | "successorLineage" | "expectedSuccessorRevision" | "actor" | "reason" | "anomalies">): string {
 	return [
 		"gentle-ai.review-reconcile-authorization/v1",
@@ -143,8 +140,8 @@ function appendStoreLogV1(context: JeroAuthorityContextV1, entry: Record<string,
 		const parsed = JSON.parse(readFileSync(logPath, "utf8")) as unknown;
 		if (Array.isArray(parsed)) entries = parsed as Record<string, unknown>[];
 	} catch {
-		// An unreadable store log starts fresh — the quarantined evidence
-		// directories carry the durable history.
+		// 不可读的存储日志从头开始——被隔离的证据目录持有持久的
+		// 历史。
 	}
 	mkdirSync(context.store.store_root, { recursive: true, mode: 0o700 });
 	const temporary = join(context.store.store_root, `.maintenance-log.${randomUUID()}.tmp`);
@@ -161,10 +158,9 @@ function loadForMaintenanceV1(context: JeroAuthorityContextV1, lineageId: string
 }
 
 /**
- * `maintenance.abandon` — the audited discard of a live review. The authority
- * re-derives non-terminal eligibility AND the exact discarded work (captured
- * lenses, findings presence, snapshot identity, revision); any drift between
- * the binding and the record refuses before anything mutates.
+ * `maintenance.abandon`——对活动评审的留审计弃置。权威重新推导非终局
+ * 资格“以及”精确的被弃工作（已捕获评审视角、发现存在性、快照身份、
+ * 修订号）；绑定与记录之间的任何漂移都在变更之前被拒绝。
  */
 export function abandonJeroLineageV1(context: JeroAuthorityContextV1, input: JeroAbandonInputV1): JeroMaintenanceResultV1 {
 	for (const [name, value] of [["lineage", input.lineage], ["expectedRevision", input.expectedRevision], ["snapshotIdentity", input.snapshotIdentity], ["actor", input.actor], ["reason", input.reason]] as const) {
@@ -177,9 +173,8 @@ export function abandonJeroLineageV1(context: JeroAuthorityContextV1, input: Jer
 	if (input.maintainerAuthorization !== jeroAbandonAuthorizationV1(input)) {
 		return { kind: "refused", code: "authorization-mismatch", detail: "maintainerAuthorization must equal the exact eight-line lineage/revision/snapshot/reason/discarded-work/actor binding" };
 	}
-	// Read-only eligibility checks first; the journaled mutation acquires the
-	// authority lock itself (runOperation), and the lock is exclusive-mkdir,
-	// NOT re-entrant — no outer withLock may wrap it.
+	// 先做只读资格检查；记日志的变更自行获取权威锁（runOperation），
+	// 且该锁是独占 mkdir、不可重入——任何外层 withLock 都不得包裹它。
 	const loaded = loadForMaintenanceV1(context, input.lineage);
 	if (loaded.kind === "refused") return loaded;
 	const record = loaded.record;
@@ -204,9 +199,8 @@ export function abandonJeroLineageV1(context: JeroAuthorityContextV1, input: Jer
 		discarded_work: { captured_lens_results: [...input.capturedLensResults], findings_present: input.findingsPresent },
 		binding_sha256: sha256Hex(input.maintainerAuthorization),
 	};
-	// Journaled exactly-once terminal transition (op "abandon"); the state
-	// write locks internally and the optimistic-revision guard replays the
-	// eligibility derivations against the record it actually mutates.
+	// 记日志的恰好一次终局转移（操作 “abandon”）；状态写入在内部加锁，
+	// 乐观修订号守卫对着它实际变更的记录重放资格推导。
 	const mutation = context.lineages.runOperation({
 		lineageId: input.lineage,
 		operation: "abandon",
@@ -226,9 +220,9 @@ export function abandonJeroLineageV1(context: JeroAuthorityContextV1, input: Jer
 }
 
 /**
- * `maintenance.reclaim` (the upstream RESET/RECOVER_LOCK landing point): the
- * repository-bound destructive recovery. The whole lineage directory moves
- * aside to a quarantine name — evidence retained, loadable authority gone.
+ * `maintenance.reclaim`（上游 RESET/RECOVER_LOCK 的落点）：仓库绑定的
+ * 破坏性恢复。整个血脉目录被改名挪到隔离名下——证据保留，可加载的
+ * 权威不复存在。
  */
 export function reclaimJeroAuthorityV1(context: JeroAuthorityContextV1, input: { lineage: string; actor: string; reason: string }): JeroMaintenanceResultV1 {
 	for (const [name, value] of [["lineage", input.lineage], ["actor", input.actor], ["reason", input.reason]] as const) {
@@ -268,9 +262,8 @@ function writeRecoveryV1(context: JeroAuthorityContextV1, successor: JeroLineage
 }
 
 /**
- * `maintenance.recover` — record the recovery linkage on the successor. The
- * predecessor is validated and then never touched; the successor receives the
- * recovery metadata; no budget is granted (readme :196).
+ * `maintenance.recover`——在继任血脉上记录恢复关联。前驱被校验后绝不
+ * 再被触碰；继任者接收恢复元数据；不授予任何预算（readme :196）。
  */
 export function recoverJeroLineageV1(context: JeroAuthorityContextV1, input: JeroRecoverInputV1): JeroMaintenanceResultV1 {
 	for (const [name, value] of [["predecessorLineage", input.predecessorLineage], ["expectedPredecessorRevision", input.expectedPredecessorRevision], ["successorLineage", input.successorLineage], ["actor", input.actor], ["reason", input.reason]] as const) {
@@ -300,10 +293,9 @@ export function recoverJeroLineageV1(context: JeroAuthorityContextV1, input: Jer
 }
 
 /**
- * `maintenance.reconcile-authority` — intentionally narrow (readme :190):
- * with the published dual anomaly the bound invalid recovery successor is
- * quarantined; without anomalies the successor merely receives the recovery
- * linkage. The predecessor is never mutated either way.
+ * `maintenance.reconcile-authority`——刻意收窄（readme :190）：带公开的
+ * 双重异常时，被绑定的无效恢复继任者被隔离；不带异常时继任者只是
+ * 接收恢复关联。两种情况下前驱都绝不被变更。
  */
 export function reconcileJeroAuthorityV1(context: JeroAuthorityContextV1, input: JeroReconcileInputV1): JeroMaintenanceResultV1 {
 	for (const [name, value] of [["predecessorLineage", input.predecessorLineage], ["expectedPredecessorRevision", input.expectedPredecessorRevision], ["successorLineage", input.successorLineage], ["expectedSuccessorRevision", input.expectedSuccessorRevision], ["actor", input.actor], ["reason", input.reason]] as const) {
@@ -336,7 +328,7 @@ export function reconcileJeroAuthorityV1(context: JeroAuthorityContextV1, input:
 			binding_sha256: sha256Hex(input.maintainerAuthorization),
 		};
 		if (input.anomalies === JERO_RECONCILE_ANOMALIES.COMBINED) {
-			// The narrow destructive path: quarantine ONLY the bound successor.
+			// 收窄的破坏性路径：只隔离被绑定的继任者。
 			const directory = jeroLineageDirectory(context.store.store_root, input.successorLineage);
 			if (existsSync(directory)) {
 				const quarantineName = `.quarantine-${input.successorLineage}-${randomUUID()}`;

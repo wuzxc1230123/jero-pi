@@ -8,13 +8,12 @@ import type { JeroAuthorityContextV1 } from "./review.ts";
 import type { JeroFixApplicationV1 } from "./finalize.ts";
 import { readJeroSnapshotRecordV1 } from "./snapshots.ts";
 
-// `authority.fix.derive` (Q-B): the bounded-edit application facts for the
-// CURRENT worktree, authored against the ORIGINAL review tree so the budget
-// is charged relative to the reviewed candidate (F5). The worktree is never
-// mutated — the correction is staged into an isolated GIT_INDEX_FILE whose
-// objects land in the snapshot's isolated store, making the fix tree visible
-// to finalize's own re-derivation (deriveJeroCorrectionLinesV1) without any
-// caller-declared fact being trusted (§9.2: actor output is untrusted data).
+// `authority.fix.derive`（Q-B）：针对“当前”工作树的有界编辑应用事实，
+// 以“原始”评审树为基准编写，使预算相对被评审的候选计费（F5）。工作树
+// 绝不被变更——修正被暂存进一个隔离的 GIT_INDEX_FILE，其对象落在快照
+// 的隔离存储中，使修正树对 finalize 自身的重新派生
+// （deriveJeroCorrectionLinesV1）可见，且不信任任何调用方声明的事实
+// （§9.2：参与者输出是不可信数据）。
 
 export type JeroFixApplicationOutcomeV1 =
 	| { readonly kind: "ok"; readonly fix: JeroFixApplicationV1 }

@@ -1,9 +1,7 @@
-// Agent-model profiles: named, switchable snapshots of the global
-// `models.json` routing behind `/jero:profiles`. The store lives at
-// `<configHome>/profiles.json` and single-profile exports at
-// `<configHome>/profiles.export.json`. Everything here is pure except the two
-// path helpers and the thin read/write wrappers at the bottom; the extension
-// panel owns all TUI and orchestration concerns.
+// 代理模型档案：`/jero:profiles` 背后的全局 `models.json` 路由的具名可切换
+// 快照。存储位于 `<configHome>/profiles.json`，单档案导出位于
+// `<configHome>/profiles.export.json`。除底部两个路径辅助函数和轻量读写
+// 封装外，这里的一切都是纯函数；扩展面板负责所有 TUI 与编排事务。
 
 import { randomUUID } from "node:crypto";
 import { closeSync, constants, existsSync, mkdirSync, openSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
@@ -43,20 +41,19 @@ export class AgentProfileError extends Error {
 }
 
 const PROFILE_NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
-// Names that pass the slug pattern would still collide with object prototype
-// members when used as record keys, so they are rejected explicitly.
+// 通过 slug 模式的名称在用作记录键时仍会与对象原型成员冲突，
+// 因此这里显式拒绝它们。
 const RESERVED_PROFILE_NAMES = new Set(["__proto__", "constructor", "prototype"]);
 
 const INHERIT_MODEL_LABEL = "inherit";
 
 /**
- * Reserved routing key for the orchestrator selection.
+ * 为编排器选择保留的路由键。
  *
- * A profile is a complete snapshot of the routing, and the orchestrator is part
- * of it, but the orchestrator is not an agent: it is never written to
- * `subagents.json`, never has an agent file, and its model lives in Pi's global
- * `settings.json`. The key is reserved so the routing map can carry it while
- * every agent-facing path skips it.
+ * 档案是路由的完整快照，编排器是其中的一部分，但编排器不是代理：
+ * 它从不写入 `subagents.json`，从没有代理文件，其模型位于 Pi 的全局
+ * `settings.json` 中。保留该键是为了让路由映射能够携带它，同时所有
+ * 面向代理的路径都跳过它。
  */
 export const PROFILE_ORCHESTRATOR_KEY = "orchestrator";
 
@@ -64,7 +61,7 @@ export function isProfileOrchestratorKey(key: string): boolean {
 	return key === PROFILE_ORCHESTRATOR_KEY;
 }
 
-/** The profile's own orchestrator entry, when the profile defines one. */
+/** 档案自身定义的编排器条目（若档案定义了它）。 */
 export function readProfileOrchestrator(
 	config: AgentModelConfig,
 ): AgentRoutingEntry | undefined {
@@ -74,8 +71,8 @@ export function readProfileOrchestrator(
 }
 
 /**
- * The routing map without its reserved orchestrator key, for every caller that
- * counts or lists roles: the orchestrator is not a role.
+ * 移除保留编排器键后的路由映射，供所有计数或列出角色的调用方使用：
+ * 编排器不是角色。
  */
 export function profileRoleEntries(config: AgentModelConfig): Array<[string, AgentRoutingEntry]> {
 	return Object.entries(config).filter(([agent]) => !isProfileOrchestratorKey(agent));
@@ -93,12 +90,12 @@ export function emptyProfilesFile(): AgentProfilesFile {
 	return { kind: PROFILES_KIND, version: PROFILES_VERSION, active: undefined, profiles: {} };
 }
 
-// ---- Parse and normalize ----
+// ---- 解析与规范化 ----
 
 export interface ProfilesParseDrops {
 	droppedProfiles: string[];
 	droppedAgents: Array<{ profile: string; agent: string }>;
-	/** An `active` marker that did not name a normalized profile, when present. */
+	/** 未指向某个已规范化档案的 `active` 标记（若存在）。 */
 	droppedActive?: string;
 }
 
@@ -156,8 +153,8 @@ export function normalizeProfilesFile(value: unknown): NormalizedProfilesFile | 
 		) {
 			active = value.active;
 		} else {
-			// Never clear the marker silently: a stale `active` is exactly the state
-			// an operator needs to see, not have disappear.
+			// 绝不静默清除该标记：过期的 `active` 正是操作员需要看到的状态，
+			// 而不是让它凭空消失。
 			drops.droppedActive =
 				typeof value.active === "string" ? value.active : JSON.stringify(value.active);
 		}
@@ -204,7 +201,7 @@ export function serializeProfilesFile(file: AgentProfilesFile): string {
 	return `${JSON.stringify(payload, null, 2)}\n`;
 }
 
-// ---- Store mutations (each returns a new file and never mutates the input) ----
+// ---- 存储变更（每个都返回新文件，绝不改动输入） ----
 
 export function createProfile(
 	file: AgentProfilesFile,
@@ -299,7 +296,7 @@ export function setActiveProfile(file: AgentProfilesFile, name: string): AgentPr
 	return { ...file, active: name };
 }
 
-// ---- Summaries and panel decision helpers ----
+// ---- 摘要与面板决策辅助 ----
 
 export interface ProfileModelSummary {
 	model: string;
@@ -350,9 +347,8 @@ export interface ProfileRoutingRow {
 }
 
 /**
- * One row per agent, in a stable alphabetical order so the profile's routing and
- * the effective routing can be compared line by line, and with the reserved
- * orchestrator key excluded because it is rendered on its own line.
+ * 每个代理一行，按稳定的字母顺序排列，使档案路由与生效路由能够逐行
+ * 比较；保留的编排器键被排除在外，因为它单独渲染成一行。
  */
 export function profileRoutingRows(config: AgentModelConfig): ProfileRoutingRow[] {
 	return profileRoleEntries(config)
@@ -365,9 +361,8 @@ export function profileRoutingRows(config: AgentModelConfig): ProfileRoutingRow[
 }
 
 /**
- * Column widths shared by every routing table in one panel, so the profile's
- * routing and the effective routing align column for column instead of each
- * section sizing itself.
+ * 同一面板内所有路由表共享的列宽，使档案路由与生效路由逐列对齐，
+ * 而不是各区块各自计算宽度。
  */
 export function routingColumnWidths(
 	...groups: ProfileRoutingRow[][]
@@ -387,9 +382,8 @@ export function formatRoutingRow(
 }
 
 /**
- * A single line describing an orchestrator selection, for the panel header. The
- * label distinguishes "this profile sets nothing" from "settings.json cannot be
- * read", which are different operator states.
+ * 描述编排器选择的单行文本，用于面板头部。该标签区分“此档案未设置任何
+ * 内容”与“settings.json 无法读取”，这是两种不同的操作员状态。
  */
 export function formatOrchestratorSelection(entry: AgentRoutingEntry | undefined): string {
 	if (entry?.model === undefined) {
@@ -423,7 +417,7 @@ export function bootstrapProfilesFile(currentConfig: AgentModelConfig): AgentPro
 	return Object.keys(config).length > 0 ? setActiveProfile(file, "current") : file;
 }
 
-// ---- Single-profile export ----
+// ---- 单档案导出 ----
 
 export interface ProfileExport {
 	name: string;
@@ -475,7 +469,7 @@ export function parseProfileExportText(text: string): ProfileExport | undefined 
 	return result ? { name: result.name, config: result.config } : undefined;
 }
 
-// ---- Path helpers and file wrappers ----
+// ---- 路径辅助与文件封装 ----
 
 export type ProfilesFileReadResult =
 	| { status: "missing" }
@@ -498,18 +492,17 @@ export function readProfilesFileResult(path: string): ProfilesFileReadResult {
 	} catch {
 		return { status: "invalid" };
 	}
-	// Parse through normalizeProfilesFile so the caller can name every entry
-	// dropped by normalization instead of losing it silently.
+	// 经 normalizeProfilesFile 解析，让调用方能点名每个被规范化丢弃的条目，
+	// 而不是静默丢失。
 	const normalized = normalizeProfilesFile(value);
 	if (!normalized) return { status: "invalid" };
 	return { status: "valid", file: normalized.file, drops: normalized.drops };
 }
 
 /**
- * Replace the store through a sibling temp file and a rename. A direct write that
- * is interrupted leaves truncated JSON, which `readProfilesFileResult` must then
- * reject as unreadable, so the destination is only ever swapped for a complete
- * file and the temp file is removed on every failure path.
+ * 通过同目录临时文件加重命名来替换存储。直接写入一旦被中断会留下截断的
+ * JSON，届时 `readProfilesFileResult` 只能将其判为不可读，因此目标文件只会在
+ * 完整文件就绪后才被替换，且临时文件在每条失败路径上都会被移除。
  */
 export function writeProfilesFileSync(path: string, file: AgentProfilesFile): void {
 	mkdirSync(dirname(path), { recursive: true });
@@ -519,10 +512,9 @@ export function writeProfilesFileSync(path: string, file: AgentProfilesFile): vo
 		constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL,
 		0o600,
 	);
-	// Every step records its own failure and cleanup never throws, so the error
-	// that actually broke the write is the one reported: a failing close or unlink
-	// must not mask a failed write or rename, and the temp file is removed on every
-	// path.
+	// 每一步各自记录自己的失败，清理永不抛错，因此真正导致写入失败的那个
+	// 错误才是被上报的：close 或 unlink 失败不得掩盖写入或重命名失败，
+	// 且临时文件在每条路径上都会被移除。
 	const failures: unknown[] = [];
 	try {
 		writeFileSync(descriptor, serializeProfilesFile(file));

@@ -358,13 +358,13 @@ function readMarkdownSection(source: string, heading: string): string {
 
 function assertWorkerFallbackRouting(section: string, sectionName: string): void {
 	const boundedWriterPolicy = section.match(
-		/For bounded multi-file writes,[\s\S]*?(?=\n\n|\n\s*\d+\.|$)/,
+		/对有界多文件写入，[\s\S]*?(?=\n\n|\n\s*\d+\.|$)/,
 	)?.[0];
 	assert.ok(boundedWriterPolicy, `${sectionName} must define bounded writer routing`);
 
 	const preferred = boundedWriterPolicy.indexOf("`jero-worker`");
-	const configuredFallback = boundedWriterPolicy.indexOf("user-configured `worker`");
-	const nativeFallback = boundedWriterPolicy.indexOf("native `Agent`");
+	const configuredFallback = boundedWriterPolicy.indexOf("用户配置的 `worker`");
+	const nativeFallback = boundedWriterPolicy.indexOf("原生 `Agent`");
 
 	assert.ok(preferred >= 0, `${sectionName} must reference exact jero-worker name`);
 	assert.ok(
@@ -377,12 +377,12 @@ function assertWorkerFallbackRouting(section: string, sectionName: string): void
 	);
 	assert.match(
 		boundedWriterPolicy,
-		/If neither (?:worker )?definition exists[^.]*native `Agent`[^.]*even when `subagent_\*` tools are available\./,
+		/若两个写者定义都不存在[^。]*原生 `Agent`[^。]*即使 `subagent_\*` 工具可用。/,
 		`${sectionName} must choose native Agent when neither worker definition exists`,
 	);
 	assert.match(
 		section,
-		/If no delegation mechanism is available, stop/,
+		/若无(?:任何)?委托机制可用，停止/,
 		`${sectionName} must stop when delegation is impossible`,
 	);
 }
@@ -636,19 +636,38 @@ test("unowned legacy research migrates by exact normalized hash, preserving rout
 	const packaged = readFileSync(join(PACKAGE_ROOT, "assets", "agents", "sdd-research.md"), "utf8");
 	const oldAdmission = "- Evidence grants for this runtime are `documentation=[]; open-web=[]`. Never infer evidence capability from bash, persistence tools, or any inherited tool; persistence tools are not evidence grants. Unsupported or undeclared classes deny admission and emit no claims.\n- Because this runtime declares no evidence grants, retain the selected request, persist a `blocked` outcome with no claims, and stop.\n";
 	const legacy = packaged
-		.replace("You are the SDD research executor for Jero.", "You are the SDD research executor for Gentle AI.")
+		.replace("你是 Jero 的 SDD research executor。", "You are the SDD research executor for Gentle AI.")
 		.replace("  - mem_read" + String.fromCharCode(10), "  - mem_get_observation" + String.fromCharCode(10))
-		.replace("OpenSpec requires its exact absolute change-local `.md` path. Memory requires the exact `topic_key` (`sdd/<change>/<artifact>`).", "OpenSpec requires its exact absolute change-local `.md` path. Engram requires exact observation `id`, `project`, `topic_key`, and positive `revision_count`.")
-		.replace("OpenSpec requires complete JSON bytes, matching revision and digest; memory requires the rendered `mem_read` text (a `saved <timestamp>` header line, a blank separator, then the entry body verbatim) with a matching body digest.", "OpenSpec requires complete JSON bytes, matching revision and digest; Engram requires matching returned id/project/topic_key/revision_count and content digest.")
-		.replace("arbitrary topic keys and generic gateways are not recovery routes. Search uses the exact project/topic query; only a matching project/topic entry may supply the already-carried topic key.", "arbitrary observation IDs and generic gateways are not recovery routes. Search uses the exact project/topic query; only a matching project/topic observation may supply the already-carried ID.")
-		.replace("(`engram`/`both`: use `mem_read` with the topic key, falling back to `mem_search`/`mem_list` when the exact key is unknown; `openspec`: read the file under `openspec/changes/{change}/`)", "(`engram`/`both`: use the injected Engram memory read tools for the topic key, then fetch the full observation; `openspec`: read the file under `openspec/changes/{change}/`)")
-		.replace("- `engram`/`both`: call `mem_save` with `topic` `\"sdd/{change}/research\"` and the full artifact body as `content` (saving again with the same topic replaces the entry).", "- `engram`/`both`: call the injected Engram save tool with title and `topic_key` `\"sdd/{change}/research\"`, `type: \"architecture\"`, `project` from context, and `capture_prompt: false` when the tool schema supports it (omit the field if an older schema rejects it).")
+		.replace("OpenSpec 要求其确切的变更本地绝对 `.md` 路径。记忆要求确切的 `topic_key`（`sdd/<change>/<artifact>`）。", "OpenSpec requires its exact absolute change-local `.md` path. Engram requires exact observation `id`, `project`, `topic_key`, and positive `revision_count`.")
+		.replace("OpenSpec 要求完整 JSON 字节、匹配的 revision 和 digest；记忆要求渲染后的 `mem_read` 文本（一行 `saved <timestamp>` 头部、一个空行分隔符，然后逐字逐句的条目正文）且正文 digest 匹配。", "OpenSpec requires complete JSON bytes, matching revision and digest; Engram requires matching returned id/project/topic_key/revision_count and content digest.")
+		.replace("任意主题键和通用网关都不是恢复路径。搜索使用精确的项目/主题查询；只有匹配的项目/主题条目才能提供已携带的主题键。", "arbitrary observation IDs and generic gateways are not recovery routes. Search uses the exact project/topic query; only a matching project/topic observation may supply the already-carried ID.")
+		.replace("要读取的输入（`engram`/`both`：用主题键调用 `mem_read`，确切键未知时回退到 `mem_search`/`mem_list`；`openspec`：读取 `openspec/changes/{change}/` 下的文件）：", "Inputs to read (`engram`/`both`: use the injected Engram memory read tools for the topic key, then fetch the full observation; `openspec`: read the file under `openspec/changes/{change}/`):")
+		.replace("- `engram`/`both`：调用 `mem_save`，`topic` 为 `\"sdd/{change}/research\"`，完整产物体作为 `content`（用同一主题再次保存会替换该条目）。", "- `engram`/`both`: call the injected Engram save tool with title and `topic_key` `\"sdd/{change}/research\"`, `type: \"architecture\"`, `project` from context, and `capture_prompt: false` when the tool schema supports it (omit the field if an older schema rejects it).")
 		.replace("Nothing extracts this block automatically — durable capture happens only through the explicit `mem_save` persistence required by the Memory Contract above, or when the parent or user directs a save; you do not parse the block yourself.", "The Engram memory provider automatically extracts and persists these items as passive capture; you do not parse the block or invoke passive-capture tools yourself.")
-		.replace(/## Parent Preflight Transport\n[\s\S]*?(?=## Skill Resolution Contract)/, "")
-		.replace(/## Bounded artifact handoff\n[\s\S]*?(?=## Memory Contract)/, "")
+		.replace(/## Parent Preflight Transport\n[\s\S]*?(?=## 技能解析契约)/, "")
+		.replace(/## 有界产物交接\n[\s\S]*?(?=## 记忆契约)/, "")
 		.replace(/  - fetch_content\n  - web_search\n  - source_check\n  - get_search_content\n/, "")
-		.replace(/- Use the injected `## SDD Research Capabilities`[\s\S]*?(?=- Admission denial)/, oldAdmission)
-		.replace(/Use `done` only when all selected questions[\s\S]*?product decisions remain separately confirmed by the parent\./i, "For this runtime the outcome is `blocked` with an admission denial and no claims.");
+		.replace(/- 使用注入的 `## SDD Research Capabilities`[\s\S]*?(?=- 准入被拒)/, oldAdmission)
+		.replace(/仅当所有被选问题都有经验证的来源背书答案时使用 `done`[\s\S]*?产品决策仍由父会话单独确认。/, "For this runtime the outcome is `blocked` with an admission denial and no claims.")
+		.replace("## 技能解析契约", "## Skill Resolution Contract")
+		.replace("在本 SDD 阶段使用为你指定的执行器/阶段技能。对项目/用户技能，优先使用父会话注入的 `## Skills to load before work` 路径；开工前读取这些精确的 `SKILL.md` 文件。正常运行期间不得自行发现额外的项目/用户技能或注册表。", "Use your assigned executor/phase skill for this SDD phase. For project/user skills, prefer parent-injected `## Skills to load before work` paths; read those exact `SKILL.md` files before work. Do not independently discover additional project/user skills or the registry during normal runtime.")
+		.replace("若技能路径缺失，仅允许将显式回退加载作为降级自愈。将 `skill_resolution` 报告为 `paths-injected`、`fallback-registry`、`fallback-path` 或 `none`；出现回退意味着父会话下次应传入已索引的路径。", "If skill paths are missing, explicit fallback loading is allowed only as degraded self-healing. Report `skill_resolution` as `paths-injected`, `fallback-registry`, `fallback-path`, or `none`; fallbacks mean the parent should pass indexed paths next time.")
+		.replace("- 仅在编排器选择 `sdd-research` 并提供已持久化的研究意图时运行：变更名、问题清单、所请求的来源类别和产物存储。将该意图视为不可变；若其缺失，返回 `blocked` 且不做任何声明。", "- Run only when the orchestrator selects `sdd-research` and supplies the persisted research intent: the change name, the questions, the requested source classes, and the artifact store. Treat that intent as immutable; if it is absent, return `blocked` with no claims.")
+		.replace("- 准入被拒、证据不完整、来源无效或持久化分歧都不会产生未经验证的声明，并阻塞提案就绪。", "- Admission denial, partial evidence, invalid sources, or persistence divergence emits no unvalidated claim and blocks proposal readiness.")
+		.replace("- 将证据声明与非权威的产品选择分开；编排器拥有产品决策和提案准入。", "- Keep evidence claims separate from non-authoritative product choices; the orchestrator owns product decisions and proposal admission.")
+		.replace("- 绝不启动子代理。父会话/编排器拥有委托权。", "- Do NOT launch child subagents. Parent/orchestrator owns delegation.")
+		.replace("- 按下文记忆契约持久化研究与预提案产物；绝不声称执行了未实际执行的持久化。", "- Persist the research and pre-proposal artifacts per the Memory Contract below; never claim persistence you did not perform.")
+		.replace("- 保持输出简洁并返回 SDD 结果契约。", "- Keep output concise and return the SDD result contract.")
+		.replace("## 记忆契约", "## Memory Contract")
+		.replace("在做阶段工作之前，直接从活动后端读取输入产物；不要等待父会话内联它们。父会话可以传递产物引用和上下文，但获取所需输入是本阶段的责任。", "Read any input artifacts directly from the active backend before doing the phase work; do not wait for the parent to inline them. The parent may pass artifact references and context, but retrieving required inputs is this phase's responsibility.")
+		.replace("- 探索结果（存在时）：`sdd/{change}/explore`（openspec：`openspec/changes/{change}/` 下的探索文件）。", "- Exploration (when it exists): `sdd/{change}/explore` (openspec: the exploration file under `openspec/changes/{change}/`).")
+		.replace("返回前将本阶段产物持久化到活动后端（强制）：", "Persist this phase's artifact to the active backend before returning (mandatory):")
+		.replace("- `openspec`：写入/更新 `openspec/changes/{change}/research.md`。", "- `openspec`: write/update `openspec/changes/{change}/research.md`.")
+		.replace("- `none`：内联返回研究记录。", "- `none`: return the research record inline.")
+		.replace("研究产物使用 schema `gentle-ai.sdd-research/v1`：一个正的 `revision`、显式的 `done | partial | blocked` 结果、问题清单、准入和观察到的精确授权、来源，以及经验证的声明（每条声明映射到来源 ID）。", "The research artifact uses schema `gentle-ai.sdd-research/v1`: a positive `revision`, an explicit `done | partial | blocked` outcome, the questions, admission and the observed exact grants, sources, and validated claims where each claim maps to source IDs. ")
+		.replace("还要更新预提案状态（`engram`/`both`：主题 `\"sdd/{change}/preproposal\"`；相同的保存约定），使用 schema `gentle-ai.sdd-preproposal/v1`：一个正的 `revision`、探索引用、研究请求和类别、准入结果、证据引用、产品决策（`pending | confirmed`）和 `proposal_ready`。", "Also update the pre-proposal state (`engram`/`both`: topic `\"sdd/{change}/preproposal\"`; same save conventions) using schema `gentle-ai.sdd-preproposal/v1`: a positive `revision`, the exploration reference, the research request and classes, the admission outcome, evidence references, product decisions (`pending | confirmed`), and `proposal_ready`.")
+		.replace("混合（`both`）持久化意味着两个存储中字节一致。混合不匹配或单侧写入失败时，绝不偏爱任何一个存储：从保留的意图恢复，而非从幸存的存储恢复，并在恢复期间保持提案就绪为假。", "Hybrid (`both`) persistence means identical bytes in both stores. On hybrid mismatch or a one-sided write failure, never prefer one store: recover from the retained intent, not from a surviving store, and keep proposal readiness false for recovery.")
+		.replace("绝不声称执行了未实际执行的持久化。", "Never claim persistence you did not perform.");
 	const manifest = JSON.parse(readFileSync(join(PACKAGE_ROOT, "assets", "migrations", "managed-assets-v2.5.0.json"), "utf8"));
 	assert.equal(sha256(legacy), manifest.assets["agents/sdd-research.md"], "fixture reconstruction must match observed old package bytes");
 	const temporary = mkdtempSync(join(tmpdir(), "gentle-research-migration-"));
@@ -828,8 +847,8 @@ test("first forced sync migrates untouched v0.13 assets, preserves routing, and 
 		);
 
 		const userEditedMigration = migrated.replace(
-			"Run this selected lens exactly once against the supplied `initial_review_tree`.",
-			"Run this selected lens exactly once against the supplied `initial_review_tree` with a user-authored note.",
+			"对所提供的 `initial_review_tree` 恰好运行一次本被选评审视角。",
+			"对所提供的 `initial_review_tree` 恰好运行一次本被选评审视角，并附用户撰写的备注。",
 		);
 		assert.notEqual(userEditedMigration, migrated, "the fixture must exercise post-migration drift");
 		writeFileSync(installedReviewRisk, userEditedMigration);
@@ -1038,8 +1057,8 @@ test("forced package installation preserves a thinking-only edit to a managed ag
 test("forced package installation preserves an ordinary body edit to a managed agent", () => {
 	assertManagedAgentUserEditIsPreserved("an ordinary body edit", (source) =>
 		source.replace(
-			"You are the read-only explorer for generic non-SDD work.",
-			"Preserve this user-authored body change. You are the read-only explorer for generic non-SDD work.",
+			"你是通用非 SDD 工作的只读探索者。",
+			"保留这条用户撰写的正文修改。你是通用非 SDD 工作的只读探索者。",
 		),
 	);
 });
@@ -1164,18 +1183,18 @@ test("jero-worker packages the exact scoped writer contract", () => {
 	);
 	assert.ok(!tools.includes("glob"), "the unsupported glob tool must not return");
 
-	const interactionContract = readMarkdownSection(source, "Interaction contract");
+	const interactionContract = readMarkdownSection(source, "交互契约");
 	assert.doesNotMatch(
 		interactionContract,
 		/```text/,
 		"the interaction section must not define a second normative envelope",
 	);
-	assert.match(interactionContract, /stop editing/i);
-	assert.match(interactionContract, /full schema in the Return contract/);
+	assert.match(interactionContract, /停止编辑/);
+	assert.match(interactionContract, /按返回契约返回完整 schema/);
 	assert.match(interactionContract, /`status: interaction_required`/);
-	assert.match(interactionContract, /nested `interaction_required` payload/);
+	assert.match(interactionContract, /嵌套 `interaction_required` 载荷/);
 
-	const returnContract = readTextContract(source, "Return contract");
+	const returnContract = readTextContract(source, "返回契约");
 	assert.deepEqual(contractFields(returnContract), [
 		"status",
 		"summary",
@@ -1204,43 +1223,43 @@ test("jero-worker packages the exact scoped writer contract", () => {
 	);
 	assert.doesNotMatch(source, /fallback-(?:registry|path)/);
 
-	const returnContractSection = readMarkdownSection(source, "Return contract");
+	const returnContractSection = readMarkdownSection(source, "返回契约");
 	assert.match(
 		returnContractSection,
-		/Use `skill_resolution: paths-invalid` only when the parent injected one or more exact skill paths and any supplied path cannot be read/,
+		/仅当父会话注入了一个或多个确切技能路径且有任一路径无法读取时，使用 `skill_resolution: paths-invalid`/,
 	);
 	assert.match(
 		returnContractSection,
-		/With `skill_resolution: paths-invalid`, keep `status: blocked`/,
+		/使用 `skill_resolution: paths-invalid` 时，保持 `status: blocked`/,
 	);
 
-	const contextContract = readMarkdownSection(source, "Context contract");
-	assert.match(contextContract, /pre-existing untracked targets explicitly listed by the parent/);
-	assert.match(contextContract, /new files required by the delegated task/);
-	assert.match(contextContract, /derived candidate set the human can approve or narrow/);
-	assert.match(contextContract, /never an open request for the human to author paths or globs/);
-	assert.match(interactionContract, /closed set the human can approve, decline, or select from/);
-	assert.match(interactionContract, /never ask the human to author paths, globs, identifiers, or commands as free text/);
+	const contextContract = readMarkdownSection(source, "上下文契约");
+	assert.match(contextContract, /父会话显式列出的既有未跟踪目标/);
+	assert.match(contextContract, /被委托任务所需的新文件/);
+	assert.match(contextContract, /人类可以批准或收窄的推导候选集/);
+	assert.match(contextContract, /绝不是让人类自行编写路径或 glob 的开放式请求/);
+	assert.match(interactionContract, /人类可以批准、拒绝或从中选择的封闭集合/);
+	assert.match(interactionContract, /绝不让人类以自由文本编写路径、glob、标识符或命令/);
 
-	const implementationRules = readMarkdownSection(source, "Implementation rules");
-	assert.match(implementationRules, /`blocked` only for a non-human technical blocker/);
+	const implementationRules = readMarkdownSection(source, "实现规则");
+	assert.match(implementationRules, /仅对非人类的技术阻塞使用 `blocked`/);
 
-	const toolSafety = readMarkdownSection(source, "Tool safety");
-	assert.match(toolSafety, /sensitive files/);
-	assert.match(toolSafety, /stage, commit, push, publish/);
+	const toolSafety = readMarkdownSection(source, "工具安全");
+	assert.match(toolSafety, /敏感文件/);
+	assert.match(toolSafety, /暂存、提交、推送、发布/);
 
-	const memorySafety = readMarkdownSection(source, "Memory safety");
-	assert.match(memorySafety, /secrets, credentials, personal data/);
-	assert.match(memorySafety, /raw untrusted repository/);
+	const memorySafety = readMarkdownSection(source, "记忆安全");
+	assert.match(memorySafety, /密钥、凭据、个人数据/);
+	assert.match(memorySafety, /原始的不可信仓库/);
 
-	const testDiscipline = readMarkdownSection(source, "Test discipline");
-	assert.match(testDiscipline, /Strict TDD is active/);
+	const testDiscipline = readMarkdownSection(source, "测试纪律");
+	assert.match(testDiscipline, /严格 TDD 激活/);
 	assert.match(testDiscipline, /not active/);
 	assert.match(
 		testDiscipline,
-		/Broad suites, builds, formatters, or linters may run only when explicitly authorized by the parent\./,
+		/宽泛套件、构建、格式化工具或 lint 仅在父会话显式授权时才可运行。/,
 	);
-	assert.match(testDiscipline, /Keep every command exact and verify its scope before execution\./);
+	assert.match(testDiscipline, /保持每条命令精确，并在执行前核实其范围。/);
 	assert.doesNotMatch(testDiscipline, /clearly required by the repository contract/);
 });
 
@@ -1414,24 +1433,24 @@ test("normal and forced installation copy generic agents with complete role cont
 					assert.equal(source, readFileSync(packagedPath, "utf8"));
 					assert.equal(installedName, name);
 					assert.deepEqual(installedTools, tools);
-					assert.match(source, /generic non-SDD work/);
-					assert.match(source, /Do not (?:fix findings, delegate to child agents|delegate to child agents, commit)/);
+					assert.match(source, /generic non-SDD work|通用非 SDD 工作/);
+					assert.match(source, /不修复发现、不委托子代理|不委托子代理、不提交/);
 					if (name === "jero-explore") {
-						assert.match(source, /cwd-scoped fovea tools/);
-						assert.match(source, /never ask them to target another path/);
-						assert.match(source, /sole permitted mutation/);
-						assert.match(source, /all tracked files, source files, and other project content remain read-only/);
-						assert.match(source, /If the fovea tools are unavailable or fail/);
-						assert.match(source, /Do not use that fallback before they are unavailable or fail/);
+						assert.match(source, /以 cwd 为范围的 fovea 工具/);
+						assert.match(source, /绝不让它们指向另一个路径/);
+						assert.match(source, /唯一被允许的变更/);
+						assert.match(source, /所有已跟踪文件、源码文件和其他项目内容保持只读/);
+						assert.match(source, /若 fovea 工具不可用或失败/);
+						assert.match(source, /在它们不可用或失败之前不得使用该回退/);
 					}
-					assert.match(source, /Do not (?:edit, write|edit, write, or fix findings)/);
-					assert.match(source, /compressed (?:handoff|evidence handoff)/);
-					assert.match(source, /Do not use SDD phase protocols or review lenses\./);
+					assert.match(source, /不编辑、不写入/);
+					assert.match(source, /压缩的(?:交接|证据交接)/);
+					assert.match(source, /不使用 SDD 阶段协议或评审视角。/);
 					if (name === "jero-verify") {
-						assert.match(source, /exact test, build, or lint commands explicitly authorized by the parent/);
-						assert.match(source, /only outputs the parent explicitly identified as expected/);
-						assert.match(source, /unexpected mutation as a blocker/);
-						assert.match(source, /do not clean it up or fix it/);
+						assert.match(source, /父会话显式授权的确切测试、构建或 lint 命令/);
+						assert.match(source, /父会话显式指明为预期的输出/);
+						assert.match(source, /意外的变更视为阻塞项/);
+						assert.match(source, /不清理或修复它/);
 					}
 				}
 			} finally {
@@ -1449,8 +1468,8 @@ test("bounded implementation routing uses the same explicit fallback in both pol
 		join(PACKAGE_ROOT, "assets", "orchestrator-delegation.md"),
 		"utf8",
 	);
-	const simpleDelegation = readMarkdownSection(routing, "2. Simple Delegation");
-	const mandatoryDelegation = readMarkdownSection(routing, "Mandatory Delegation Triggers");
+	const simpleDelegation = readMarkdownSection(routing, "2. 简单委托");
+	const mandatoryDelegation = readMarkdownSection(routing, "强制委托触发条件");
 
 	assertWorkerFallbackRouting(simpleDelegation, "Simple Delegation");
 	assertWorkerFallbackRouting(mandatoryDelegation, "Mandatory Delegation Triggers");
@@ -1469,23 +1488,23 @@ test("bounded implementation routing uses the same explicit fallback in both pol
 test("orchestrator routes generic roles without static RDD lens routing", () => {
 	for (const file of ["orchestrator.md", "orchestrator-delegation.md"]) {
 		const routing = readFileSync(join(PACKAGE_ROOT, "assets", file), "utf8");
-		assert.match(routing, /generic non-SDD exploration[\s\S]*`jero-explore`/);
+		assert.match(routing, /通用非 SDD 探索[\s\S]*`jero-explore`/);
 		assert.match(
 			routing,
-			/bounded (?:non-SDD )?(?:implementation|multi-file writes)[\s\S]*`jero-worker`/,
+			/有界(?:实现|多文件写入)[\s\S]*`jero-worker`/,
 		);
-		assert.match(routing, /generic non-SDD (?:technical )?verification[\s\S]*`jero-verify`/);
-		assert.match(routing, /SDD roles stay inside SDD|Use `sdd-explore` and `sdd-verify` only inside SDD/);
-		assert.match(routing, /(?:truly local )?read-only check(?:ing)? of (?:known )?1[-–]3 known files|1[-–]3-file read-only check/);
-		assert.match(routing, /(?:verification that |verification commands →).*executes? or delegates?|executing\/delegating verification commands/);
-		assert.match(routing, /missing(?: or |\/)unusable[\s\S]*native `Agent`[\s\S]*(?:the )?same read-only/);
-		assert.match(routing, /report (?:the )?fallback/);
+		assert.match(routing, /通用非 SDD 验证[\s\S]*`jero-verify`/);
+		assert.match(routing, /SDD 角色留在 SDD 内|`sdd-explore` 与 `sdd-verify` 仅在 SDD 内使用/);
+		assert.match(routing, /(?:真正本地的 )?1[-–]3 个已知文件(?:的)?只读检查|1[-–]3 文件只读检查/);
+		assert.match(routing, /执行\/委托验证命令|委托执行或转委托命令/);
+		assert.match(routing, /缺失(?:或|\/)不可用[\s\S]*?(?:原生 `Agent`[\s\S]*?同样的只读|同一只读[\s\S]*?原生 `Agent`)/);
+		assert.match(routing, /报告回退/);
 		assert.doesNotMatch(routing, /review lenses? (?:inside|only inside)|review lens routing/i);
 	}
 
 	const core = readFileSync(join(PACKAGE_ROOT, "assets", "orchestrator.md"), "utf8");
-	assert.match(core, /injects the mirrored provider-bundle review execution contract/);
-	assert.match(core, /this package invents no lifecycle instructions/);
+	assert.match(core, /把镜像的提供方捆绑评审执行契约注入/);
+	assert.match(core, /本包不发明生命周期指令/);
 });
 
 test("pre-release package and runtime stop before publication", () => {

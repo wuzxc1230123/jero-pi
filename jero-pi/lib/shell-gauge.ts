@@ -1,4 +1,4 @@
-// Shared gauge primitives for the Gentle Shell bar and panels.
+// Gentle Shell 状态栏与面板共享的仪表原语。
 
 const GAUGE_TONE = {
 	ACCENT: "accent",

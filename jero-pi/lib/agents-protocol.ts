@@ -2,10 +2,9 @@ import type { RemediationObservations, RemediationScope } from "./agents-runner.
 import type { NativeSddAcquireRequest, NativeSddSettleRequest, NativeSddAttemptResult } from "./authority/client-contract.ts";
 import { sanitizeTerminalText } from "./terminal-theme.ts";
 
-// Gentle Agents protocol. A child pi process streams RPC events; the host
-// turns each one into a small typed delta, applies it to an append-only,
-// bounded thread, and tells only the listeners of that task. Nothing here
-// rebuilds a transcript, re-validates a whole snapshot, or fans out globally.
+// Gentle Agents 协议。子 pi 进程流式输出 RPC 事件；宿主将每个事件变成
+// 一个小型类型化增量，应用到只追加且有界的线程上，并只通知该任务的
+// 监听者。这里不做重建转录、整体快照重校验或全局扇出。
 
 export const TASK_STATUS = {
 	QUEUED: "queued",
@@ -76,15 +75,15 @@ export type ChildUnavailable = Readonly<{ state: "unavailable" }>;
 export type ChildMetadata = Readonly<{ state: "observed"; value: string }> | ChildUnavailable;
 export type ChildTokenMeasurement = Readonly<{ state: "reported"; value: number }> | ChildUnavailable;
 export interface ChildResponseObservation {
-	/** SDK message metadata, not authenticated route or selected-model evidence. */
+	/** SDK 消息元数据，不是经过认证的路由或已选模型证据。 */
 	readonly provider: ChildMetadata;
 	readonly model: ChildMetadata;
 	readonly responseModel: ChildMetadata;
-	/** Exact provider-native effort when supplied, NOT Pi's selected effort. */
+	/** 提供方原生返回的精确 effort（若提供），而非 Pi 选择的 effort。 */
 	readonly providerThinkingLevel: ChildMetadata;
 	readonly selected: Readonly<{ provider: ChildUnavailable; model: ChildUnavailable; effort: ChildUnavailable }>;
 	readonly stopReason: "stop" | "length" | "toolUse" | "error" | "aborted";
-	/** Reasoning is a subset of output, not an additional token total. */
+	/** 推理是输出的一部分，不是额外的 token 总量。 */
 	readonly tokens: Readonly<Record<"input" | "output" | "cacheRead" | "cacheWrite" | "totalTokens" | "reasoning", ChildTokenMeasurement>>;
 }
 export interface ResponseObservationEvent { type: typeof TASK_EVENT.RESPONSE_OBSERVATION; observation: ChildResponseObservation }
@@ -124,13 +123,13 @@ export interface RemediationTaskState extends RemediationObservations {
 
 export interface TaskRecord {
 	sddRemediation?: RemediationTaskState;
-	/** Exact runtime-generated SDD preflight block retained only for continuation transport. */
+	/** 运行时精确生成的 SDD 预检块，仅为续跑传输而保留。 */
 	sddPreflightContext?: string;
 	id: string;
 	agent: string;
 	mode: string;
 	prompt: string;
-	/** One line for the card: what the subagent is doing. */
+	/** 卡片上的一行文字：子代理正在做什么。 */
 	label: string;
 	cwd: string;
 	parentSessionId: string;
@@ -162,7 +161,7 @@ export type TaskListener = (task: TaskRecord, thread: TaskThread) => void;
 export type SummaryListener = (summary: TaskSummary) => void;
 
 const DEFAULT_LIMITS: ThreadLimits = { maxItems: 400, maxOutputChars: 16_000 };
-/** Child UI requests that block on an answer; everything else (notify, setStatus, setWidget) is noise here. */
+/** 会阻塞等待回答的子进程 UI 请求；其余一切（notify、setStatus、setWidget）在此均视为噪音。 */
 export const DIALOG_METHODS: ReadonlySet<string> = new Set(["select", "confirm", "input", "editor"]);
 const LABEL_MAX = 72;
 const TEXT_CAP = 20_000;
@@ -190,8 +189,8 @@ function terminalAssistant(messages: unknown): Omit<AgentEndEvent, "type"> {
 		const message = messages[index] as { role?: string; content?: unknown; stopReason?: unknown };
 		if (message?.role !== "assistant") continue;
 		const stopReason = clean(message.stopReason).toLowerCase();
-		// Do not preserve unbounded provider error payloads. The terminal reason is
-		// enough for an operator to distinguish failure from an empty report.
+		// 不保留无界的提供方错误载荷。终局原因已足以让操作员区分失败与
+		// 空报告。
 		if (stopReason === "error") return { text: "", outcome: "error", diagnostic: "assistant reported an error" };
 		if (stopReason === "aborted") return { text: "", outcome: "aborted", diagnostic: "assistant aborted" };
 		const text = contentText(message.content);
@@ -213,13 +212,13 @@ const CHILD_UNAVAILABLE: ChildUnavailable = Object.freeze({ state: "unavailable"
 const CHILD_SELECTION = Object.freeze({ provider: CHILD_UNAVAILABLE, model: CHILD_UNAVAILABLE, effort: CHILD_UNAVAILABLE });
 
 function childMetadata(value: unknown, max: number): ChildMetadata {
-	// Retain bounded identifier fields only; do not truncate into another identity.
+	// 只保留有界的标识符字段；绝不截断成另一个身份。
 	return typeof value === "string" && value.length <= max && /^[A-Za-z0-9][A-Za-z0-9._:/-]*$/.test(value)
 		? Object.freeze({ state: "observed", value }) : CHILD_UNAVAILABLE;
 }
 
 function childTokens(value: unknown): ChildTokenMeasurement {
-	// SDK default zeros are not provider-presence evidence (same as primary adapter).
+	// SDK 默认的零值不是提供方在场的证据（与主适配器一致）。
 	return typeof value === "number" && Number.isSafeInteger(value) && value > 0 && value <= 1_000_000_000
 		? Object.freeze({ state: "reported", value }) : CHILD_UNAVAILABLE;
 }
@@ -231,7 +230,7 @@ function childResponse(message: Raw): ChildResponseObservation | undefined {
 	return Object.freeze({
 		provider: childMetadata(message.provider, 32), model: childMetadata(message.model, 128),
 		responseModel: childMetadata(message.responseModel, 128), providerThinkingLevel: childMetadata(message.providerThinkingLevel, 32),
-		// RPC has no per-request selected state; get_state observes launch only.
+		// RPC 没有按请求维度的已选状态；get_state 只观察启动时点。
 		selected: CHILD_SELECTION, stopReason: reason,
 		tokens: Object.freeze({ input: childTokens(usage?.input), output: childTokens(usage?.output),
 			cacheRead: childTokens(usage?.cacheRead), cacheWrite: childTokens(usage?.cacheWrite),
@@ -239,8 +238,8 @@ function childResponse(message: Raw): ChildResponseObservation | undefined {
 	});
 }
 
-// One RPC line in, zero or more deltas out. Streaming deltas carry only the
-// chunk; whole-message payloads that pi repeats on every update are ignored.
+// 一行 RPC 输入，零个或多个增量输出。流式增量只携带分块；
+// pi 每次更新都重复的整体消息载荷会被忽略。
 export function normalizeRpcEvent(raw: unknown, options: { observeResponses?: boolean } = {}): TaskEvent[] {
 	if (!raw || typeof raw !== "object") return [];
 	const event = raw as Raw;
@@ -293,8 +292,7 @@ export function normalizeRpcEvent(raw: unknown, options: { observeResponses?: bo
 	}
 }
 
-// The card shows one line per task: an explicit label, or the first sentence
-// of the prompt clipped to a readable length.
+// 卡片每个任务只显示一行：显式标签，或截取到可读长度的提示词首句。
 export function taskLabel(prompt: string, label?: string): string {
 	const explicit = clean(label).replace(/\s+/g, " ").trim();
 	if (explicit.length > 0) return explicit.length > LABEL_MAX ? `${explicit.slice(0, LABEL_MAX - 1)}…` : explicit;
@@ -370,8 +368,8 @@ export function isFinished(status: TaskStatus): boolean {
 	return FINISHED_STATUSES.includes(status);
 }
 
-// What a task event means for the record itself: the step label the widget
-// shows, the counters, and the waiting/running flip around user questions.
+// 任务事件对记录本身的意义：挂件显示的步骤标签、各计数器，
+// 以及围绕用户提问的等待/运行状态翻转。
 function recordPatch(task: TaskRecord, event: TaskEvent): Partial<TaskRecord> {
 	const resumed = task.status === TASK_STATUS.WAITING && event.type !== TASK_EVENT.ASK ? { status: TASK_STATUS.RUNNING } : {};
 	switch (event.type) {
@@ -424,8 +422,7 @@ export class TaskStore {
 		this.notifySummary();
 	}
 
-	// Bring a task back from disk with its thread; a live task is never
-	// overwritten by a stored copy.
+	// 连同线程一起把任务从磁盘恢复；活动任务绝不被存储副本覆盖。
 	restore(task: TaskRecord, thread: TaskThread): boolean {
 		if (this.tasks.has(task.id)) return false;
 		this.tasks.set(task.id, task);
@@ -452,8 +449,8 @@ export class TaskStore {
 		return summarize(this.list(parentSessionId));
 	}
 
-	// A status change is the only thing the summary cares about; everything
-	// that happens inside a task stays with that task's listeners.
+	// 状态变化是摘要唯一关心的内容；任务内部发生的一切
+	// 都只归该任务的监听者。
 	update(id: string, patch: Partial<TaskRecord>): TaskRecord | undefined {
 		const current = this.tasks.get(id);
 		if (!current) return undefined;

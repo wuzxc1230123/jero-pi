@@ -21,8 +21,8 @@ export interface NativePointerMouseObserver {
 }
 
 /**
- * A composable adapter around the public MouseRegion component.
- * Child dispatch stays first, so an already handled child result is unchanged.
+ * 公开 MouseRegion 组件的可组合适配器。
+ * 子分发保持优先，已被处理的子结果不会被改变。
  */
 export class NativePointerRegion implements Component {
 	private readonly adapter: MouseRegion;
@@ -91,7 +91,7 @@ export class NativePointerRegion implements Component {
 	}
 }
 
-/** Coordinates pointer regions with a root-compatible native mouse observer. */
+/** 用与根兼容的原生鼠标观察者协调各指针区域。 */
 export class NativePointerScope {
 	private readonly regions = new Set<NativePointerRegion>();
 	private moved = false;

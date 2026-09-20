@@ -1,8 +1,8 @@
 import { Key, matchesKey, truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import { renderUsagePanel, type ActiveProvider, type UsageStore, type UsageTheme } from "./shell-usage.ts";
 
-// Gentle Shell subscriptions overlay: a framed panel over the usage store.
-// It reads the store on every render, so a refresh only needs to record.
+// Gentle Shell 订阅覆盖层：叠在用量存储之上的带框面板。它在每次
+// 渲染时读取存储，因此刷新只需要做记录。
 
 export interface UsageViewDeps {
 	theme: UsageTheme;

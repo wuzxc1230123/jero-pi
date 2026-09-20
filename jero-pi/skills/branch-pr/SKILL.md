@@ -1,31 +1,31 @@
 ---
 name: jero-branch-pr
-description: "Create Jero pull requests with issue-first checks. Trigger: creating, opening, or preparing PRs for review."
+description: "创建带 issue 先行检查的 Jero 拉取请求。触发词：创建、打开或准备送审 PR。"
 license: Apache-2.0
 metadata:
   author: gentleman-programming
   version: "2.0"
 ---
 
-## When to Use
+## 何时使用
 
-Use this skill when:
-- Creating a pull request for any change
-- Preparing a branch for submission
-- Helping a contributor open a PR
-
----
-
-## Critical Rules
-
-1. **Every PR MUST link an approved issue** — no exceptions
-2. **Every PR MUST have exactly one `type:*` label**
-3. **Automated checks must pass** before merge is possible
-4. **Blank PRs without issue linkage will be blocked** by GitHub Actions
+在以下情况使用本技能：
+- 为任何变更创建拉取请求
+- 准备提交一个分支
+- 协助贡献者打开 PR
 
 ---
 
-## Workflow
+## 关键规则
+
+1. **每个 PR 必须链接一个已批准的 issue** —— 没有例外
+2. **每个 PR 必须有且仅有一个 `type:*` 标签**
+3. **自动化检查必须通过**，否则无法合并
+4. **未链接 issue 的空白 PR 会被 GitHub Actions 拦截**
+
+---
+
+## 工作流
 
 ```
 1. Verify issue has `status:approved` label
@@ -39,63 +39,63 @@ Use this skill when:
 
 ---
 
-## Branch Naming
+## 分支命名
 
-Branch names MUST match this regex:
+分支名必须匹配此正则：
 
 ```
 ^(feat|fix|chore|docs|style|refactor|perf|test|build|ci|revert)\/[a-z0-9._-]+$
 ```
 
-**Format:** `type/description` — lowercase, no spaces, only `a-z0-9._-` in description.
+**格式：** `type/description` —— 全小写、不含空格，描述部分仅可用 `a-z0-9._-`。
 
-| Type | Branch pattern | Example |
+| 类型 | 分支模式 | 示例 |
 |------|---------------|---------|
-| Feature | `feat/<description>` | `feat/user-login` |
-| Bug fix | `fix/<description>` | `fix/zsh-glob-error` |
-| Chore | `chore/<description>` | `chore/update-ci-actions` |
-| Docs | `docs/<description>` | `docs/installation-guide` |
-| Style | `style/<description>` | `style/format-scripts` |
-| Refactor | `refactor/<description>` | `refactor/extract-shared-logic` |
-| Performance | `perf/<description>` | `perf/reduce-startup-time` |
-| Test | `test/<description>` | `test/add-setup-coverage` |
-| Build | `build/<description>` | `build/update-shellcheck` |
+| 新功能 | `feat/<description>` | `feat/user-login` |
+| 缺陷修复 | `fix/<description>` | `fix/zsh-glob-error` |
+| 杂务 | `chore/<description>` | `chore/update-ci-actions` |
+| 文档 | `docs/<description>` | `docs/installation-guide` |
+| 格式 | `style/<description>` | `style/format-scripts` |
+| 重构 | `refactor/<description>` | `refactor/extract-shared-logic` |
+| 性能 | `perf/<description>` | `perf/reduce-startup-time` |
+| 测试 | `test/<description>` | `test/add-setup-coverage` |
+| 构建 | `build/<description>` | `build/update-shellcheck` |
 | CI | `ci/<description>` | `ci/add-branch-validation` |
-| Revert | `revert/<description>` | `revert/broken-setup-change` |
+| 回退 | `revert/<description>` | `revert/broken-setup-change` |
 
 ---
 
-## PR Body Format
+## PR 正文格式
 
-Every PR body MUST contain:
+每个 PR 正文必须包含：
 
-### 1. Linked Issue (REQUIRED)
+### 1. 关联 issue（必填）
 
 ```markdown
 Closes #<issue-number>
 ```
 
-Valid keywords: `Closes #N`, `Fixes #N`, `Resolves #N` (case insensitive).
-The linked issue MUST have the `status:approved` label.
+合法关键字：`Closes #N`、`Fixes #N`、`Resolves #N`（大小写不敏感）。
+被链接的 issue 必须带有 `status:approved` 标签。
 
-### 2. PR Type (REQUIRED)
+### 2. PR 类型（必填）
 
-Check exactly ONE in the template and add the matching label:
+在模板中恰好勾选一项并添加对应标签：
 
-| Checkbox | Label to add |
+| 复选框 | 需添加的标签 |
 |----------|-------------|
-| Bug fix | `type:bug` |
-| New feature | `type:feature` |
-| Documentation only | `type:docs` |
-| Code refactoring | `type:refactor` |
-| Maintenance/tooling | `type:chore` |
-| Breaking change | `type:breaking-change` |
+| 缺陷修复 | `type:bug` |
+| 新功能 | `type:feature` |
+| 仅文档 | `type:docs` |
+| 代码重构 | `type:refactor` |
+| 维护/工具 | `type:chore` |
+| 破坏性变更 | `type:breaking-change` |
 
-### 3. Summary
+### 3. 摘要
 
-1-3 bullet points of what the PR does.
+用 1-3 个要点说明该 PR 做了什么。
 
-### 4. Changes Table
+### 4. 变更表
 
 ```markdown
 | File | Change |
@@ -103,7 +103,7 @@ Check exactly ONE in the template and add the matching label:
 | `path/to/file` | What changed |
 ```
 
-### 5. Test Plan
+### 5. 测试计划
 
 ```markdown
 - [x] Scripts run without errors: `shellcheck scripts/*.sh`
@@ -111,48 +111,48 @@ Check exactly ONE in the template and add the matching label:
 - [x] Skills load correctly in target agent
 ```
 
-### 6. Contributor Checklist
+### 6. 贡献者检查清单
 
-All boxes must be checked:
-- Linked an approved issue
-- Added exactly one `type:*` label
-- Ran shellcheck on modified scripts
-- Skills tested in at least one agent
-- Docs updated if behavior changed
-- Conventional commit format
-- No `Co-Authored-By` trailers
+必须勾选全部复选框：
+- 链接了已批准的 issue
+- 添加了恰好一个 `type:*` 标签
+- 对改动的脚本运行过 shellcheck
+- 技能已在至少一个 agent 中测试
+- 行为变更时更新了文档
+- 使用常规提交格式
+- 不含 `Co-Authored-By` 尾注
 
 ---
 
-## Automated Checks (all must pass)
+## 自动化检查（必须全部通过）
 
-The jero-pi repository CI runs these jobs on every PR; other target repositories run their own — check `.github/workflows/` there instead of assuming these.
+jero-pi 仓库的 CI 会在每个 PR 上运行以下作业；其他目标仓库运行各自的检查——请查看那里的 `.github/workflows/`，不要想当然。
 
-| Check | Job name | What it verifies |
+| 检查 | 作业名 | 验证内容 |
 |-------|----------|-----------------|
-| CI | `verify` | Tests (incl. offline gate), typecheck, runtime modules, authority boundary, package contents, packed-artifact gate, dependency audit |
-| CI | `review-repository-windows` | Windows Git authority probe and candidate-view regression |
+| CI | `verify` | 测试（含离线门控）、类型检查、运行时模块、权威边界、包内容、packed 产物门控、依赖审计 |
+| CI | `review-repository-windows` | Windows Git 权威探测与候选视图回归 |
 
 ---
 
-## Conventional Commits
+## 常规提交
 
-Commit messages MUST match this regex:
+提交信息必须匹配此正则：
 
 ```
 ^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([a-z0-9\._-]+\))?!?: .+
 ```
 
-**Format:** `type(scope): description` or `type: description`
+**格式：** `type(scope): description` 或 `type: description`
 
-- `type` — required, one of: `build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`, `revert`, `style`, `test`
-- `(scope)` — optional, lowercase with `a-z0-9._-`
-- `!` — optional, indicates breaking change
-- `description` — required, starts after `: `
+- `type` —— 必填，取值之一：`build`、`chore`、`ci`、`docs`、`feat`、`fix`、`perf`、`refactor`、`revert`、`style`、`test`
+- `(scope)` —— 可选，小写，可用 `a-z0-9._-`
+- `!` —— 可选，表示破坏性变更
+- `description` —— 必填，从 `: ` 之后开始
 
-Type-to-label mapping:
+类型到标签的映射：
 
-| Commit type | PR label |
+| 提交类型 | PR 标签 |
 |-------------|----------|
 | `feat` | `type:feature` |
 | `fix` | `type:bug` |
@@ -167,7 +167,7 @@ Type-to-label mapping:
 | `revert` | `type:bug` |
 | `feat!` / `fix!` | `type:breaking-change` |
 
-Examples:
+示例：
 ```
 feat(scripts): add Codex support to setup.sh
 fix(skills): correct topic key format in sdd-apply
@@ -184,7 +184,7 @@ feat!: redesign skill loading system
 
 ---
 
-## Commands
+## 命令
 
 ```bash
 # Create branch

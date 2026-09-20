@@ -340,7 +340,7 @@ interface ReviewTransactionStoreOptions {
 const authoritativeReceiptBrand: unique symbol = Symbol("gentle-ai.authoritative-receipt");
 let mutationLockPlatformForTesting: ReviewLockPlatformAdapterV1 | undefined;
 
-/** @internal Test-only injection for exercising graph authority without a native platform adapter. */
+/** @internal 仅供测试注入，用于在没有原生平台适配器的情况下演练图权威。 */
 export function setReviewMutationLockPlatformForTesting(
 	platform: ReviewLockPlatformAdapterV1 | undefined,
 ): void {
@@ -1106,9 +1106,9 @@ export class ReviewTransactionStore {
 		options: Pick<ReviewTransactionStoreOptions, "faultInjector" | "mutationLockPlatform"> = {},
 	): ReviewTransactionStore {
 		const authority = resolveRepositoryAuthorityV1(cwd);
-		// jero-pi: upstream legacy-store detection was deleted with the binary.
-		// The foreign-authority-store refusal (design §5.1.6) lands in
-		// lib/authority storage at P2.
+		// jero-pi：上游的旧存储检测已随二进制一起删除。
+		// 外部权威存储拒绝（design §5.1.6）将在
+		// P2 落到 lib/authority 存储中。
 		return new ReviewTransactionStore({ faultInjector: options.faultInjector, mutationLockPlatform: options.mutationLockPlatform ?? mutationLockPlatformForTesting }, authority, cwd);
 	}
 

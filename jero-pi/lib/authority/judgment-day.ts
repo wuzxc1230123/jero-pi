@@ -14,15 +14,14 @@ import type { JeroFindingRowV1, JeroJudgeProofV1, JeroReviewTransactionStateV1 }
 import { canonicalHash, type CanonicalFrozenRowV1 } from "../review-transaction.ts";
 import type { JudgmentDayRejudgmentRequestV1 } from "../review-policy-judgment-day.ts";
 
-// The Judgment Day driver (spec §F): two blind judges, zero refuters, at
-// most two discovery/re-judgment rounds, findings surviving round two
-// escalate with no third round. review-policy-judgment-day.ts is the
-// semantic ORACLE (graph-v1 ReviewStateV1 mismatch — same disposition as
-// review-policy-ordinary in M2): the budget table, the fix-coverage
-// canonicalHash equality, and JudgmentDayRejudgmentRequestV1 are normative
-// and reused verbatim where self-contained; every reduction here is
-// reimplemented over JeroReviewTransactionStateV1 and journaled through the
-// EXISTING authority operations only (§0: no new ops).
+// Judgment Day 驱动器（spec §F）：两个盲评裁判、零个 refuter、至多两轮
+// 发现/再判决，第二轮幸存的发现直接升级，没有第三轮。
+// review-policy-judgment-day.ts 是语义“权威裁决”（graph-v1
+// ReviewStateV1 不匹配——与 M2 中 review-policy-ordinary 的处置相同）：
+// 预算表、修正覆盖的 canonicalHash 相等性以及
+// JudgmentDayRejudgmentRequestV1 是规范性的，在自包含处逐字复用；
+// 这里的每个归约都在 JeroReviewTransactionStateV1 上重新实现，且只经
+// “既有”的权威操作记入日志（§0：不新增操作）。
 
 export type JeroJudgmentDayRefusalCode =
 	| "invalid-request" | "lineage-missing" | "corrupted" | "invalid-state"
@@ -39,11 +38,11 @@ export type JeroJudgmentDayResultV1 =
 	| { readonly kind: "terminal"; readonly lineage_id: string; readonly state: "approved" | "escalated"; readonly receipt_hash: string; readonly revision?: string };
 
 // ---------------------------------------------------------------------------
-// Immutable budget table (spec §F, mapped onto jero counters):
-// review_batches 1 = full_reviews; review_actors 2 / judge_runs 6 =
-// judge_executions; refuter_batches 0; fix_batches ≤ 2; validator_runs 0 =
-// scoped_fix_validations; final_verifications ≤ 1; judgment_rounds 2 =
-// scoped_rejudgments cap.
+// 不可变预算表（spec §F，映射到 jero 计数器）：
+// review_batches 1 = full_reviews；review_actors 2 / judge_runs 6 =
+// judge_executions；refuter_batches 0；fix_batches ≤ 2；validator_runs 0 =
+// scoped_fix_validations；final_verifications ≤ 1；judgment_rounds 2 =
+// scoped_rejudgments 上限。
 // ---------------------------------------------------------------------------
 
 export const JERO_JUDGMENT_DAY_BUDGET = Object.freeze({
@@ -69,11 +68,10 @@ export function assertJeroJudgmentDayBudgetsV1(state: JeroReviewTransactionState
 }
 
 // ---------------------------------------------------------------------------
-// Judgment ledger sidecar: the graph-v1 discovery rows persist beside the
-// record (the compact record's finding rows carry no status_at_freeze /
-// evidence_class / evidence_claim columns and §I.9 sanctions no protocol
-// field for them). Same layout family as reviewer-results: a typed JSON
-// file under lineages/<id>/.
+// 判决台账边车：graph-v1 的发现行持久化在记录旁边（紧凑记录的发现行
+// 不携带 status_at_freeze / evidence_class / evidence_claim 列，且 §I.9
+// 不认可为它们新增协议字段）。与 reviewer-results 同一布局家族：
+// lineages/<id>/ 下的类型化 JSON 文件。
 // ---------------------------------------------------------------------------
 
 export const JERO_JUDGMENT_LEDGER_SCHEMA = "jero.authority.judgment-ledger/v1";
@@ -109,9 +107,8 @@ const FROZEN_ROW_LENSES: readonly string[] = ["review-risk", "review-resilience"
 const FROZEN_ROW_SEVERITIES: readonly string[] = ["BLOCKER", "CRITICAL", "WARNING", "SUGGESTION"];
 const FROZEN_ROW_STATUSES: readonly string[] = ["open", "refuted", "info"];
 const FROZEN_ROW_EVIDENCE_CLASSES: readonly string[] = ["deterministic", "inferential-severe", "info"];
-// start.ts mints this all-zeros sentinel before any freeze ran; a real
-// freeze always writes the `sha256:`-prefixed domain hash, so the sentinel
-// can never collide with a frozen ledger hash.
+// start.ts 在任何冻结发生之前铸造这个全零哨兵；真正的冻结总是写入带
+// `sha256:` 前缀的域哈希，因此哨兵绝不与冻结台账哈希冲突。
 const UNFROZEN_LEDGER_HASH = "0".repeat(64);
 
 function judgmentLedgerIntegrityDetailV1(reason: string): string {
@@ -119,9 +116,8 @@ function judgmentLedgerIntegrityDetailV1(reason: string): string {
 }
 
 /**
- * Strict-decodes one sidecar judge proof row (§9 unknown-key discipline).
- * Blind/confirmed are literal true — the sidecar only ever persists proofs
- * of blind judges whose admission confirmed them.
+ * 严格解码单个边车裁判证明行（§9 的未知键纪律）。Blind/confirmed 是
+ * 字面 true——边车只持久化“受理即确认”的盲评裁判证明。
  */
 function decodeJudgeProofRowV1(value: unknown, index: number): JeroJudgeProofV1 {
 	if (typeof value !== "object" || value === null || Array.isArray(value)) throw new TypeError(`judge_proofs[${index}]: expected object`);
@@ -164,14 +160,13 @@ function decodeJudgmentLedgerRoundsV1(value: unknown): JeroJudgmentLedgerV1["rou
 }
 
 /**
- * MA1 (review): every read of the judgment-ledger sidecar verifies it —
- * strict decode, `canonicalHash(rows) === frozen_ledger_hash` (row tamper
- * probe), the judge_proofs cross-check against the record's persisted
- * `judge_proof_hash`, the post-freeze cross-check of the record's persisted
- * `ledger_hash` against the sidecar's `frozen_ledger_hash`, and the
- * rounds/counters staleness probe (a crash-rolled-back record desyncs the
- * appended rounds). Any mismatch is a typed integrity failure: the caller
- * refuses with invalid-state and the operator re-admits the judges.
+ * MA1（评审）：每次读取判决台账边车都校验它——严格解码、
+ * `canonicalHash(rows) === frozen_ledger_hash`（行篡改探针）、judge_proofs
+ * 对照记录持久化 `judge_proof_hash` 的交叉校验、冻结后记录持久化
+ * `ledger_hash` 对照边车 `frozen_ledger_hash` 的交叉校验，以及
+ * 轮次/计数器过期探针（崩溃回滚的记录会使追加的轮次失同步）。任何
+ * 不匹配都是类型化的完整性失败：调用方以 invalid-state 拒绝，操作员
+ * 重新受理裁判。
  */
 export function readJeroJudgmentLedgerV1(context: JeroAuthorityContextV1, record: JeroLineageStateFileV1): JeroJudgmentLedgerReadResultV1 {
 	let parsed: unknown;
@@ -197,17 +192,17 @@ export function readJeroJudgmentLedgerV1(context: JeroAuthorityContextV1, record
 		if (canonicalHash(rows) !== ledger.frozen_ledger_hash) {
 			return { kind: "integrity-failed", detail: judgmentLedgerIntegrityDetailV1("the judgment ledger rows do not hash to the frozen ledger hash (tampered sidecar)") };
 		}
-		// Judge proofs must still bind the record's persisted proof hash.
+		// 裁判证明必须仍然绑定记录持久化的证明哈希。
 		if (record.state.judge_proof_hash === undefined || jeroDomainHash("judge-proof", judgeProofs) !== record.state.judge_proof_hash) {
 			return { kind: "integrity-failed", detail: judgmentLedgerIntegrityDetailV1("the sidecar judge proofs do not match the record's persisted judge_proof_hash") };
 		}
-		// Post-freeze: the record's ledger_hash is derived from the sidecar's
-		// frozen_ledger_hash at discovery freeze; a later sidecar edit breaks it.
+		// 冻结后：记录的 ledger_hash 在发现冻结时派生自边车的
+		// frozen_ledger_hash；之后的边车编辑会破坏它。
 		if (record.state.ledger_hash !== UNFROZEN_LEDGER_HASH && record.state.ledger_hash !== `sha256:${jeroDomainHash("ledger", { frozen_ledger_hash: ledger.frozen_ledger_hash })}`) {
 			return { kind: "integrity-failed", detail: judgmentLedgerIntegrityDetailV1("the sidecar frozen ledger hash does not match the record's persisted ledger_hash") };
 		}
-		// Staleness: the sidecar rounds append inside the journaled rejudgment
-		// apply, so a record that rolled back past a sidecar write desyncs them.
+		// 过期探针：边车轮次在记日志的再判决 apply 内追加，因此回滚越过
+		// 边车写入的记录会使两者失同步。
 		if (ledger.rounds.length !== record.state.counters.scoped_rejudgments) {
 			return { kind: "integrity-failed", detail: judgmentLedgerIntegrityDetailV1(`the sidecar carries ${ledger.rounds.length} re-judgment rounds but the record persisted ${record.state.counters.scoped_rejudgments}`) };
 		}
@@ -217,15 +212,15 @@ export function readJeroJudgmentLedgerV1(context: JeroAuthorityContextV1, record
 	}
 }
 
-/** Maps a verified-ledger read failure onto the typed JD refusal (MA1). */
+/** 把已验证台账的读取失败映射为类型化的 JD 拒绝（MA1）。 */
 function ledgerReadRefusalV1(read: JeroJudgmentLedgerReadResultV1): { kind: "refused"; code: "invalid-state"; detail: string } {
 	if (read.kind !== "integrity-failed") return { kind: "refused" as const, code: "invalid-state" as const, detail: "the judgment ledger sidecar is missing; re-admit the judges" };
 	return { kind: "refused" as const, code: "invalid-state" as const, detail: read.detail };
 }
 
 // ---------------------------------------------------------------------------
-// Compiled judge instruction sets (transcribed from assets/agents/jd-judge-a.md
-// and jd-judge-b.md — B differs only in name/independence framing).
+// 编译的裁判指令集（转录自 assets/agents/jd-judge-a.md 与
+// jd-judge-b.md——B 只在名称/独立性表述上不同）。
 // ---------------------------------------------------------------------------
 
 const JUDGE_SHARED_CONTRACT = [
@@ -280,7 +275,7 @@ const JUDGE_SHARED_CONTRACT = [
 const JUDGE_A_PREAMBLE = "You are Judgment Day judge A.";
 const JUDGE_B_PREAMBLE = "You are Judgment Day judge B. Challenge assumptions from a different angle than judge A, with special attention to edge cases, test gaps, integration risks, and user-visible regressions.";
 
-/** Renders BOTH blind judge prompt vectors for discovery (spec §F confirm-judges). */
+/** 渲染用于发现阶段的“两个”盲评裁判提示向量（spec §F confirm-judges）。 */
 export function renderJeroJudgmentDayJudgeVectorsV1(context: JeroAuthorityContextV1, lineageId: string): { kind: "ok"; vectors: readonly { judge_id: "judge-a" | "judge-b"; promptBytes: Buffer }[] } | { kind: "refused"; code: JeroJudgmentDayRefusalCode; detail?: string } {
 	const loaded = loadForJudgmentDayV1(context, lineageId);
 	if (loaded.ok === false) return { kind: "refused", ...loaded };
@@ -310,7 +305,7 @@ export function renderJeroJudgmentDayJudgeVectorsV1(context: JeroAuthorityContex
 }
 
 // ---------------------------------------------------------------------------
-// Admissions
+// 受理
 // ---------------------------------------------------------------------------
 
 function loadForJudgmentDayV1(context: JeroAuthorityContextV1, lineageId: string): { ok: true; record: JeroLineageStateFileV1 } | { ok: false; code: JeroJudgmentDayRefusalCode; detail?: string } {
@@ -339,18 +334,15 @@ export interface JeroJudgeDiscoverySubmissionV1 {
 }
 
 function runJudgmentDayOperationV1(context: JeroAuthorityContextV1, record: JeroLineageStateFileV1, operation: Parameters<JeroAuthorityContextV1["lineages"]["runOperation"]>[0]["operation"], idempotencySuffix: string, input: unknown, apply: (state: JeroReviewTransactionStateV1) => JeroJudgmentDayResultV1): JeroJudgmentDayResultV1 {
-	// MA3 (review): fold the CURRENT revision into the request hash — and
-	// through it into the idempotency key. Two fix submissions with identical
-	// bytes but different authority moments (round 1 vs the post-rejudgment
-	// reopen) then journal as distinct operations instead of the second being
-	// answered with the first's stored result (the replay wedge that left the
-	// lineage stuck in `fixing`). The alternative — a state-aware replay guard
-	// inside lineage-store — would special-case JD in the generic journal; the
-	// revision fold keeps the journal generic and state-awareness at the JD
-	// boundary, where every admission already refuses submissions from
-	// unexpected states. Trade-off: an exact retry that arrives AFTER its
-	// operation completed now hits the state gate as a typed invalid-state
-	// refusal instead of a stored-result replay — fail-closed, never corrupting.
+	// MA3（评审）：把“当前”修订号折进请求哈希——并经由它折进幂等键。
+	// 两个字节完全相同但权威时刻不同的修正提交（第 1 轮与再判决重开
+	// 之后）随后作为不同操作记入日志，而不是第二个被第一个的存储结果
+	// 应答（那正是曾让血脉卡死在 `fixing` 的重放楔子）。替代方案——在
+	// lineage-store 内做状态感知的重放守卫——会在通用日志里为 JD 特判；
+	// 修订号折入保持日志通用，并把状态感知留在 JD 边界，那里每个受理
+	// 本就拒绝来自意外状态的提交。取舍：在其操作完成“之后”到达的精确
+	// 重试现在会撞上状态门，得到类型化的 invalid-state 拒绝而非存储结果
+	// 重放——保守失败，绝不损坏。
 	const requestHash = jeroDomainHash("request", { operation, lineage_id: record.lineage_id, revision: record.revision, input });
 	try {
 		const outcome = context.lineages.runOperation({
@@ -382,11 +374,11 @@ class JeroJudgmentDayApplyRefusal extends Error {
 }
 
 /**
- * confirm-judges (§F): admit exactly TWO blind judges and ZERO refuters.
- * Persists judge_proofs + judge_proof_hash + judge_agreement_hash in the
- * record, the merged discovery rows in the judgment-ledger sidecar, and
- * charges judge_executions +2. The transition is reviewing→judges_confirmed
- * (transitions.ts row), journaled under the existing freeze-ledger op.
+ * confirm-judges（§F）：恰好受理“两个”盲评裁判、零个 refuter。在记录
+ * 中持久化 judge_proofs + judge_proof_hash + judge_agreement_hash，在
+ * 判决台账边车中持久化合并后的发现行，并给 judge_executions +2 计费。
+ * 转移为 reviewing→judges_confirmed（transitions.ts 的行），记入既有
+ * freeze-ledger 操作。
  */
 export function admitJeroJudgmentDayJudgesV1(context: JeroAuthorityContextV1, input: { readonly lineageId: string; readonly judges: readonly JeroJudgeDiscoverySubmissionV1[] }): JeroJudgmentDayResultV1 {
 	const loaded = loadForJudgmentDayV1(context, input.lineageId);
@@ -398,9 +390,9 @@ export function admitJeroJudgmentDayJudgesV1(context: JeroAuthorityContextV1, in
 	if (record.state.state !== "reviewing") {
 		return { kind: "refused", code: "invalid-state", detail: `judge admission requires reviewing (lineage is in ${record.state.state})` };
 	}
-	// NIT (review): the two blind judges carry DISTINCT non-empty judge ids and
-	// canonical 64-hex execution/result digests — a duplicated id or a
-	// non-digest hash cannot mint a binding judge_proof_hash.
+	// NIT（评审）：两个盲评裁判携带“互不相同”的非空裁判 id 与权威的
+	// 64 位十六进制执行/结果摘要——重复的 id 或非摘要哈希无法铸造有
+	// 绑定力的 judge_proof_hash。
 	const judgeIds = new Set<string>();
 	for (const [index, judge] of input.judges.entries()) {
 		if (typeof judge.judge_id !== "string" || judge.judge_id.length === 0) {
@@ -457,10 +449,10 @@ export function admitJeroJudgmentDayJudgesV1(context: JeroAuthorityContextV1, in
 }
 
 /**
- * freeze-judgment-ledger (§F): freezes the merged judge rows as the finding
- * ledger. Zero severe open rows skip straight to final verification
- * (recordJudgmentDayDiscovery phase mapping); severe rows land fix_required
- * with the severe ids as the fix set. Journaled under freeze-ledger.
+ * freeze-judgment-ledger（§F）：把合并后的裁判行冻结为发现台账。零个
+ * 严重的 open 行直接跳到最终验证（recordJudgmentDayDiscovery 的阶段
+ * 映射）；严重行落入 fix_required 并以严重 id 作为修正集。记入
+ * freeze-ledger 操作。
  */
 export function admitJeroJudgmentDayDiscoveryFreezeV1(context: JeroAuthorityContextV1, input: { readonly lineageId: string }): JeroJudgmentDayResultV1 {
 	const loaded = loadForJudgmentDayV1(context, input.lineageId);
@@ -487,8 +479,8 @@ export function admitJeroJudgmentDayDiscoveryFreezeV1(context: JeroAuthorityCont
 		next.ledger_findings_hash = `sha256:${jeroDomainHash("ledger-findings", findings)}`;
 		next.ledger_hash = `sha256:${jeroDomainHash("ledger", { frozen_ledger_hash: ledger.frozen_ledger_hash })}`;
 		next.evidence_hash = jeroDomainHash("evidence", { previous: next.evidence_hash, addition: { judgment_ledger: ledger.frozen_ledger_hash } });
-		// Zero severe rows: straight to final verification (upstream phase
-		// FINAL_VERIFICATION). Severe rows: the fix loop begins.
+		// 零个严重行：直接进入最终验证（上游阶段 FINAL_VERIFICATION）。
+		// 严重行：修正循环开始。
 		next.state = severe.length === 0 ? "ready_final_verification" : "fix_required";
 		return { kind: "discovery_frozen", lineage_id: next.lineage_id, state: severe.length === 0 ? "ready_final_verification" : "fix_required", severe_finding_ids: severe, revision: "" };
 	});
@@ -500,14 +492,12 @@ export function admitJeroJudgmentDayDiscoveryFreezeV1(context: JeroAuthorityCont
 }
 
 /**
- * The Judgment Day fix admission (§F): the fix must address EVERY surviving
- * finding in one batch — `canonicalHash(requiredIds) === canonicalHash(fixedIds)`
- * (review-policy-judgment-day.ts, reused verbatim). Round 1 journals
- * authorize-fix then applies; round 2 (after a re-judgment reopen) applies
- * under the fix_batches budget. The declared candidate tree is re-derived
- * against the lineage's isolated snapshot object store (the F5 discipline);
- * the ORDINARY line-budget escalation is bypassed (the immutable JD budget
- * counts batches, not lines).
+ * Judgment Day 的修正受理（§F）：修正必须在一批内处理“每个”幸存发现
+ * ——`canonicalHash(requiredIds) === canonicalHash(fixedIds)`
+ * （review-policy-judgment-day.ts，逐字复用）。第 1 轮先记
+ * authorize-fix 再应用；第 2 轮（再判决重开之后）在 fix_batches 预算下
+ * 应用。声明的候选树对照血脉的隔离快照对象存储重新派生（F5 纪律）；
+ * 普通的行数预算升级被绕过（不可变的 JD 预算按批次而非行数计数）。
  */
 export function admitJeroJudgmentDayFixV1(context: JeroAuthorityContextV1, input: {
 	readonly lineageId: string;
@@ -553,7 +543,7 @@ export function admitJeroJudgmentDayFixV1(context: JeroAuthorityContextV1, input
 	}
 	const round = (state.counters.fix_batches + 1) as 1 | 2;
 	if (state.state === "fix_required") {
-		// Round 1: authorize-fix (fix_required→fixing), then the apply.
+		// 第 1 轮：authorize-fix（fix_required→fixing），随后应用。
 		const authorized = runJudgmentDayOperationV1(context, record, "authorize-fix", "judgment-day-fix", input, (next) => {
 			const transition = checkJeroReviewTransitionV1(next.state, next.mode, "authorize-fix", { fixRounds: next.counters.fix_rounds, fixBatches: next.counters.fix_batches });
 			if (!transition.legal) return { kind: "refused", code: "invalid-state", detail: transition.reason };
@@ -584,9 +574,8 @@ export function admitJeroJudgmentDayFixV1(context: JeroAuthorityContextV1, input
 }
 
 /**
- * The expected scoped re-judgment request (§F, reused verbatim in shape):
- * requested_ids, their EXACT frozen rows, the frozen ledger hash, the fix
- * diff and its hash, the candidate tree, and the round.
+ * 预期的定向再判决请求（§F，形态逐字复用）：requested_ids、它们的
+ * “精确”冻结行、冻结台账哈希、修正 diff 及其哈希、候选树与轮次。
  */
 export function buildJeroJudgmentDayRejudgmentRequestV1(context: JeroAuthorityContextV1, lineageId: string): { kind: "ok"; request: JudgmentDayRejudgmentRequestV1 } | { kind: "refused"; code: JeroJudgmentDayRefusalCode; detail?: string } {
 	const loaded = loadForJudgmentDayV1(context, lineageId);
@@ -648,11 +637,11 @@ function collectJudgeResultsV1(judge: string, results: readonly JeroJudgmentDayJ
 }
 
 /**
- * Scoped re-judgment admission (§F): both judges return per-id
- * verified|corroborated|regression; new/duplicated/omitted/invalid outcomes
- * append escalation reasons; the SURVIVOR rule keeps any id not `verified`
- * by BOTH judges. Round-2 survivors force the final-verification tail with
- * the no-third-round reason. Survivors after round 1 reopen the fix.
+ * 定向再判决受理（§F）：两位裁判按 id 返回
+ * verified|corroborated|regression；新增/重复/遗漏/无效的结局追加升级
+ * 原因；“幸存者”规则保留任何未被“两位”裁判共同 `verified` 的 id。
+ * 第二轮幸存者以无第三轮的原因强制进入最终验证收尾。第一轮后的
+ * 幸存者重开修正循环。
  */
 export function admitJeroJudgmentDayRejudgmentV1(context: JeroAuthorityContextV1, input: {
 	readonly lineageId: string;
@@ -694,11 +683,11 @@ export function admitJeroJudgmentDayRejudgmentV1(context: JeroAuthorityContextV1
 		const reasons = [...escalationReasons];
 		if (survivors.length > 0 && next.counters.scoped_rejudgments >= 2) {
 			reasons.push(`Findings ${survivors.join(", ")} survived Judgment Day round two; no third round is allowed.`);
-			// Round-2 survivors force the final-verification tail, which
-			// escalates (the survivors stay frozen in fix_finding_ids).
+			// 第二轮幸存者强制进入最终验证收尾并升级
+			// （幸存者保持冻结在 fix_finding_ids 中）。
 			next.state = "ready_final_verification";
 		} else if (survivors.length > 0) {
-			// Round 1 survivors reopen the fix loop.
+			// 第一轮幸存者重开修正循环。
 			next.state = "fixing";
 		} else {
 			next.state = "ready_final_verification";
@@ -718,10 +707,10 @@ export function admitJeroJudgmentDayRejudgmentV1(context: JeroAuthorityContextV1
 }
 
 /**
- * The Judgment Day final-verification tail (§F): identical to the ordinary
- * tail (finalize verify, journaled record-final-evidence + outcome) except
- * that findings which survived round two force the escalation — there is no
- * third round. `validator_runs 0`: no targeted validator ever runs.
+ * Judgment Day 的最终验证收尾（§F）：与普通收尾（finalize 验证、记日志
+ * 的 record-final-evidence + 结局）完全一致，唯一例外是第二轮幸存的
+ * 发现强制升级——没有第三轮。`validator_runs 0`：从不运行任何定向
+ * validator。
  */
 export function admitJeroJudgmentDayFinalVerificationV1(context: JeroAuthorityContextV1, input: { readonly lineageId: string; readonly cwd: string; readonly final_evidence: string; readonly final_verification_passed: boolean }): JeroJudgmentDayResultV1 {
 	const loaded = loadForJudgmentDayV1(context, input.lineageId);

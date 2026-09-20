@@ -3,18 +3,18 @@ import { isFinished, TASK_STATUS, type TaskRecord, type TaskStatus } from "./age
 import { formatTokens } from "./shell-bar.ts";
 import { CARD_TONE, cardInnerWidth, renderCard, type CardTheme, type CardTone } from "./shell-card.ts";
 
-// Gentle Agents widget: the card above the editor. Reads task records only
-// (status, prompt, counters, timestamps), so drawing it costs nothing per
-// event. One row per task: glyph, agent, task summary, then
-// model · effort · tokens · cost · time right-aligned.
+// Gentle Agents 挂件：编辑器上方的卡片。只读取任务记录
+// （状态、提示词、计数器、时间戳），因此绘制不随事件产生开销。
+// 每个任务一行：字形、代理、任务摘要，随后右对齐的
+// model · effort · tokens · cost · time。
 
 export const AGENTS_GLYPH = "❀";
 
 export interface AgentsWidgetOptions {
 	collapsed: boolean;
 	collapseKey?: string;
-	// Rows the card may spend on tasks; beyond that the rest fold into one
-	// "… N more" line so the card never pushes the editor off the screen.
+	// 卡片可用于任务的行数；超出部分折叠为一行 “… N more”，
+	// 卡片因此绝不会把编辑器挤出屏幕。
 	maxRows?: number;
 	viewKey?: string;
 }
@@ -83,8 +83,8 @@ function clip(text: string, width: number): string {
 	return `${out}${ELLIPSIS}`;
 }
 
-// Every active task plus the few that finished within the last minute, in
-// the order they started, so a batch reads top to bottom like a timeline.
+// 所有活动任务加上最近一分钟内完成的少数任务，按启动顺序排列，
+// 批次因此可以像时间线一样自上而下阅读。
 export function widgetTasks(tasks: readonly TaskRecord[], now: number): TaskRecord[] {
 	const active = tasks.filter((task) => !isFinished(task.status));
 	const finished = tasks
@@ -94,9 +94,8 @@ export function widgetTasks(tasks: readonly TaskRecord[], now: number): TaskReco
 	return [...active, ...finished].sort(startOrder);
 }
 
-// How long until the next finished row leaves the card, or undefined when no
-// shown row is waiting to expire. The host asks for exactly one frame at that
-// moment instead of ticking while the terminal is idle.
+// 距下一行已完成任务离开卡片还有多久；没有可显示行在等待过期时为
+// undefined。宿主在该时刻恰好请求一帧，而不是在终端空闲时持续计时。
 export function widgetExpiryMs(tasks: readonly TaskRecord[], now: number): number | undefined {
 	const deadlines = widgetTasks(tasks, now)
 		.filter((task) => isFinished(task.status) && task.endedAt !== null)
@@ -104,7 +103,7 @@ export function widgetExpiryMs(tasks: readonly TaskRecord[], now: number): numbe
 	return deadlines.length === 0 ? undefined : Math.max(1, Math.min(...deadlines));
 }
 
-// A quarter of the terminal, never fewer than three rows nor more than eight.
+// 终端的四分之一，绝不少于三行，也不多于八行。
 export function widgetRows(terminalRows: number | undefined): number {
 	if (terminalRows === undefined) return ROWS_MAX;
 	return Math.max(ROWS_MIN, Math.min(ROWS_MAX, Math.floor(terminalRows * ROWS_RATIO)));
@@ -114,8 +113,8 @@ function startOrder(a: TaskRecord, b: TaskRecord): number {
 	return (a.startedAt ?? a.createdAt) - (b.startedAt ?? b.createdAt);
 }
 
-// When the card overflows, questions and running work keep their rows first;
-// what stays visible is still drawn in start order.
+// 卡片溢出时，提问与进行中的工作优先保留行；
+// 留下来的可见内容仍按启动顺序绘制。
 function visibleRows(shown: readonly TaskRecord[], maxRows: number | undefined): { listed: TaskRecord[]; hidden: number } {
 	if (maxRows === undefined || shown.length <= maxRows) return { listed: [...shown], hidden: 0 };
 	const kept = Math.max(1, maxRows - 1);
@@ -163,7 +162,7 @@ function taskText(task: TaskRecord): string {
 	return task.label;
 }
 
-// Narrow cards give up the task and usage columns before execution metadata.
+// 窄卡片先放弃任务与用量列，最后才放弃执行元数据。
 function columns(tasks: readonly TaskRecord[], inner: number, now: number): Columns {
 	const name = Math.max(0, Math.min(NAME_MAX, inner - 3, Math.max(...tasks.map((task) => visibleWidth(task.agent)))));
 	const fixed = 1 + GLYPH_GAP.length + name + COLUMN_GAP.length;
@@ -181,8 +180,8 @@ function row(task: TaskRecord, theme: CardTheme, cols: Columns, now: number, all
 	const metadata = cols.fullMetrics ? meta(task, now, true) : task.status === TASK_STATUS.QUEUED ? clip("queued", cols.meta) : executionLabel(task, cols.meta);
 	const tail = theme.fg(META_ROLE, " ".repeat(Math.max(0, cols.meta - visibleWidth(metadata))) + metadata);
 	if (cols.inner < 3) return [theme.fg(look.role, clip(look.glyph, cols.inner))];
-	// The scrollable sidebar can preserve identity and execution metadata on
-	// separate rows. The height-capped above-editor widget keeps its row budget.
+	// 可滚动的侧栏可以把身份与执行元数据分到不同行；
+	// 受高度约束的编辑器上方挂件则守住行数预算。
 	if (allowMetadataRow && cols.task === 0 && task.status !== TASK_STATUS.QUEUED && visibleWidth(executionLabel(task)) > cols.meta) {
 		return [head, theme.fg(META_ROLE, executionLabel(task, cols.inner))];
 	}
@@ -214,8 +213,8 @@ function tone(tasks: readonly TaskRecord[]): CardTone {
 	return CARD_TONE.INFO;
 }
 
-// The batch clock: from the first start among the shown tasks until now, or
-// until the last one ended when nothing is running.
+// 批次时钟：从所示任务中最早的启动时刻到当前时刻；
+// 没有任务在运行时则到最后一个结束时刻。
 function batchElapsed(tasks: readonly TaskRecord[], now: number): string | undefined {
 	const starts = tasks.map((task) => task.startedAt).filter((value): value is number => value !== null);
 	if (starts.length === 0) return undefined;

@@ -1,36 +1,36 @@
 ---
 name: jero-comment-writer
-description: "Write warm, direct collaboration comments. Trigger: PR feedback, issue replies, reviews, Slack messages, or GitHub comments."
+description: "撰写温暖、直接的协作评论。触发词：PR 反馈、issue 回复、评审、Slack 消息或 GitHub 评论。"
 license: Apache-2.0
 metadata:
   author: gentleman-programming
   version: "1.0"
 ---
 
-## When to Use
+## 何时使用
 
-Load this skill whenever you write a comment that another human will read.
+每当撰写会被另一个人阅读的评论时，加载本技能。
 
-Use it for:
+适用于：
 
-- GitHub PR or issue comments.
-- Review feedback and requested changes.
-- Maintainer replies.
-- Slack, Discord, or async project updates.
+- GitHub PR 或 issue 评论。
+- 评审反馈与修改要求。
+- 维护者回复。
+- Slack、Discord 或异步项目动态。
 
-## Voice Rules
+## 语气规则
 
-| Rule | Requirement |
+| 规则 | 要求 |
 |------|-------------|
-| Be useful fast | Start with the actionable point. Do not recap the whole PR before feedback. |
-| Be warm and direct | Sound like a thoughtful teammate, not a corporate bot. |
-| Keep it short | Prefer 1 to 3 short paragraphs or a tight bullet list. |
-| Explain why | Give the technical reason when asking for a change. |
-| Avoid pile-ons | Comment on the highest-value issue, not every tiny preference. |
-| Match target context language | Write in the target context language by default: Spanish issue/thread -> Spanish comment, English issue/thread -> English comment, mixed context -> target message language. If the user explicitly requests a language or tone, follow that request. Do not use the active persona as the source of truth for public comments. For Spanish comments, use neutral/professional Spanish by default unless the user or target context clearly calls for regional tone. |
-| No em dashes | Use commas, periods, or parentheses instead. |
+| 快速给出有用信息 | 从可操作的要点开始。反馈前不要先复述整个 PR。 |
+| 温暖而直接 | 听起来像一个体贴的队友，而不是官腔机器人。 |
+| 保持简短 | 优先 1 到 3 个短段落，或一份紧凑的要点列表。 |
+| 解释原因 | 要求变更时给出技术理由。 |
+| 避免堆叠批评 | 只评论价值最高的问题，不纠缠每个细小偏好。 |
+| 匹配目标上下文语言（Match target context language） | 技术产物默认使用简体中文；当下游目标上下文明显为英文时（英文仓库既有惯例、英文 issue/PR 线程）使用英文，即遵循目标上下文语言（target context language）。若用户明确指定语言（explicitly requests a language）或语气，遵循该要求。公开评论不要以当前激活人设作为语言依据。中文评论默认使用中性、专业的简体中文（neutral/professional Simplified Chinese by default），除非用户或目标上下文明确需要地域语气。 |
+| 不用长破折号 | 用逗号、句号或括号代替。 |
 
-## Comment Formula
+## 评论公式
 
 ```text
 <Direct observation or request>
@@ -40,9 +40,9 @@ Use it for:
 <Concrete next action>
 ```
 
-## Examples
+## 示例
 
-### Request change
+### 要求修改
 
 ```markdown
 Good approach overall. I'd split this into a separate commit because it mixes validation logic with UI wiring.
@@ -50,7 +50,7 @@ Good approach overall. I'd split this into a separate commit because it mixes va
 That keeps the reviewer's focus narrower and makes rollback cleaner if the integration fails.
 ```
 
-### Approve with a note
+### 批准并附注
 
 ```markdown
 Approved. The scope is clear and the change is well-contained.
@@ -58,7 +58,7 @@ Approved. The scope is clear and the change is well-contained.
 For the next PR, add links to the previous and following PRs so the chain stays navigable.
 ```
 
-### Ask for split
+### 要求拆分
 
 ```markdown
 This PR exceeds the 400-line budget, so we need to split it or justify `size:exception`.
@@ -66,7 +66,7 @@ This PR exceeds the 400-line budget, so we need to split it or justify `size:exc
 Suggested order: foundation + tests first, then integration, then docs. That gives each review a clear start and end.
 ```
 
-## Commands
+## 命令
 
 ```bash
 # Inspect a PR before writing review feedback

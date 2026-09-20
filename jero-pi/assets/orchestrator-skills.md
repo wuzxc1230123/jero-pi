@@ -1,49 +1,49 @@
-# Orchestrator — Skills Detail (lazy-loaded)
+# 编排器——技能细则（懒加载）
 
-Bind this to the parent Pi session only, on skill resolution/discovery. Not always-on; loaded on demand from `assets/orchestrator.md`'s `## Skill Registry Protocol` and `## Intent-Driven Skill Discovery` pointers.
+仅绑定到父 Pi 会话，用于技能解析/发现。非常驻；按 `assets/orchestrator.md` 中技能注册协议与意图驱动技能发现的指针按需加载。
 
-## Skill Registry Protocol
+## 技能注册协议
 
-The parent resolves skills once per session or before first delegation:
+父会话每会话一次、或在首次委托前解析技能：
 
-1. Read `.atl/skill-registry.md` if present.
-2. Match task context and target files against the `Trigger / description` column.
-3. Pass only matching `Path` values to subagents under `## Skills to load before work`.
-4. Tell subagents to read those exact `SKILL.md` files before reading, writing, reviewing, testing, or creating artifacts.
-5. If the registry is absent, continue but mention that project-specific skill paths were unavailable.
+1. 若存在则读 `.atl/skill-registry.md`。
+2. 把任务上下文与目标文件对照 `Trigger / description` 列匹配。
+3. 只把匹配的 `Path` 值经 `## Skills to load before work` 传给子代理。
+4. 告知子代理在读、写、评审、测试或创建产物之前先读这些确切的 `SKILL.md` 文件。
+5. 若注册表缺失，继续但说明项目专属技能路径不可用。
 
-Subagents should receive exact indexed paths. They should not have to rediscover the registry.
+子代理应收到精确的已索引路径，不应自行重新发现注册表。
 
-Important distinction: SDD subagents still use their assigned executor/phase skill (for example `sdd-apply`, `sdd-design`, or `sdd-verify`). What they should not do during normal runtime is independently discover additional project/user `SKILL.md` files or the registry. The parent passes selected project/user skill paths explicitly.
+重要区别：SDD 子代理仍使用其被指派的执行器/阶段技能（例如 `sdd-apply`、`sdd-design` 或 `sdd-verify`）。它们在常规运行时不应做的是独立发现更多项目/用户 `SKILL.md` 文件或注册表。父会话显式传递选定的项目/用户技能路径。
 
-If a subagent reports `skill_resolution`, interpret it as project/user skill resolution:
+若子代理报告 `skill_resolution`，将其解读为项目/用户技能解析：
 
-- `paths-injected`: parent supplied `## Skills to load before work` with exact `SKILL.md` paths.
-- `fallback-registry`: subagent self-loaded skill paths from the registry because parent paths were missing; degraded but auditable.
-- `fallback-path`: subagent loaded explicit skill paths because parent paths were missing; degraded but auditable.
-- `none`: no project/user skills were loaded.
+- `paths-injected`：父会话以确切 `SKILL.md` 路径提供了 `## Skills to load before work`。
+- `fallback-registry`：因父会话路径缺失，子代理自行从注册表加载技能路径；降级但可审计。
+- `fallback-path`：因父会话路径缺失，子代理加载了显式技能路径；降级但可审计。
+- `none`：未加载任何项目/用户技能。
 
-If any subagent reports a fallback instead of `paths-injected`, treat it as an orchestration gap and correct future delegations by passing exact indexed paths directly.
+若任何子代理报告回退而非 `paths-injected`，视为编排缺口，并在后续委托中直接传递精确索引路径予以纠正。
 
-## Intent-Driven Skill Discovery
+## 意图驱动技能发现
 
-For skill-shaped requests, do not treat injected `<available_skills>` as complete. Use the registry and filesystem only as a discovery aid; do not let a trigger table override the user's concrete request or turn a small request into a larger workflow.
+对技能形状的请求，不要把注入的 `<available_skills>` 当作完备。注册表与文件系统仅作发现辅助；不要让触发表覆盖用户的具体请求，也不要把小请求变成更大的工作流。
 
-Discovery order:
+发现顺序：
 
-1. Read `.atl/skill-registry.md` when present.
-2. If the registry suggests a specific skill, load the indexed `SKILL.md` path before acting.
-3. If the expected skill is absent from the registry but the request clearly names a known workflow, search common project/user skill dirs such as `./skills`, `.pi/skills`, `.agents/skills`, `~/.config/opencode/skills`, `~/.claude/skills`, and other configured skill roots.
-4. Prefer the most specific project skill over a global skill with the same intent.
-5. If no matching skill exists, continue with the smallest safe fallback and say which expected skill was unavailable.
+1. 存在时读 `.atl/skill-registry.md`。
+2. 若注册表提示特定技能，行动前加载其索引的 `SKILL.md` 路径。
+3. 若注册表中没有预期技能，但请求明确命名了已知工作流，检索常见项目/用户技能目录，如 `./skills`、`.pi/skills`、`.agents/skills`、`~/.config/opencode/skills`、`~/.claude/skills` 及其他配置的技能根。
+4. 同一意图下，优先最具体的项目技能而非全局技能。
+5. 若无匹配技能，以最小安全回退继续，并说明哪个预期技能不可用。
 
-Common intent hints, not hard routing:
+常见意图提示，非硬性路由：
 
-| User intent                | Skill to check                         |
+| 用户意图                | 待查技能                         |
 | -------------------------- | -------------------------------------- |
-| PR review / GitHub PR URL  | project review skill, then `pr-review` |
-| Post-ready review comments | `comment-writer`                       |
-| Create/open/prepare PR     | `jero-branch-pr`                  |
-| Split/stack/large PR       | `jero-chained-pr`                 |
+| PR 评审 / GitHub PR URL  | 项目评审技能，然后 `pr-review` |
+| PR 就绪后的评审评论 | `comment-writer`                       |
+| 创建/打开/准备 PR     | `jero-branch-pr`                  |
+| 拆分/堆叠/大型 PR       | `jero-chained-pr`                 |
 
-Keep this lightweight: loading a skill should improve the immediate task, not force extra ceremony.
+保持轻量：加载技能应改善当前任务，而不是强加额外仪式。

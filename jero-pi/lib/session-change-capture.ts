@@ -11,7 +11,7 @@ interface Pending { sessionId: string; inputPath: string; path: string; root: st
 const normalized = (text: string) => text.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n");
 const unknown = (): ChangeSnapshot => ({ kind: "unavailable", reason: "Tool snapshots could not be verified; diff unavailable." });
 
-/** Observe explicit write/edit outcomes, never infer ownership from Git status or shell text. */
+/** 观察显式的 write/edit 结果，绝不从 Git 状态或 shell 文本推断所有权。 */
 export function installSessionChangeCapture(pi: ExtensionAPI, env: NodeJS.ProcessEnv = process.env, resolver: WorktreeResolver = resolveSessionWorktree): void {
 	const child = env.JERO_PI_AGENTS_CHILD === "1";
 	const pending = new Map<string, Pending>();
@@ -33,7 +33,7 @@ export function installSessionChangeCapture(pi: ExtensionAPI, env: NodeJS.Proces
 			const own = resolver(current.cwd, current.cwd);
 			const target = resolver(data.evidence.root, current.cwd);
 			if (own && target?.root === data.evidence.root && own.commonDir === target.commonDir) publish(data.evidence);
-		} catch { /* Observation cannot change tool outcomes. */ }
+		} catch { /* 观察不能改变工具结果。 */ }
 	});
 	pi.on("tool_call", async (event, ctx) => {
 		const input = event.input as Record<string, unknown>;
@@ -55,7 +55,7 @@ export function installSessionChangeCapture(pi: ExtensionAPI, env: NodeJS.Proces
 			const before = await readChangeSnapshot(canonicalPath);
 			if (ctx.sessionManager.getSessionId() !== sessionId || current?.sessionManager.getSessionId() !== sessionId) return;
 			pending.set(event.toolCallId, { sessionId, inputPath: input.path, path: canonicalPath, root: target.root, relativePath: relative(target.root, canonicalPath), before, toolName: event.toolName });
-		} catch { /* No bookkeeping error blocks an edit. */ }
+		} catch { /* 簿记错误不得阻塞编辑。 */ }
 	});
 	pi.on("tool_result", async (event, ctx) => {
 		const item = pending.get(event.toolCallId);
@@ -73,14 +73,14 @@ export function installSessionChangeCapture(pi: ExtensionAPI, env: NodeJS.Proces
 			}
 			if (item.sessionId !== ctx.sessionManager.getSessionId() || pending.get(event.toolCallId) !== item) return;
 			item.evidence = { id: event.toolCallId, root: item.root, path: item.relativePath, before, after: verified };
-			// Use the existing RPC tool-result envelope, not a new IPC channel or a model message.
+			// 使用既有的 RPC 工具结果封套，而不是新建 IPC 通道或模型消息。
 			if (child) return { details: { ...(event.details && typeof event.details === "object" ? event.details : {}), gentleSessionChange: item.evidence } };
 		} catch { pending.delete(event.toolCallId); }
 	});
 	pi.on("tool_execution_end", (event, ctx) => {
 		const item = pending.get(event.toolCallId); pending.delete(event.toolCallId);
 		if (!child && event.isError === false && item?.evidence && item.sessionId === ctx.sessionManager.getSessionId()) {
-			try { publish(item.evidence); } catch { /* Preserve the tool's outcome. */ }
+			try { publish(item.evidence); } catch { /* 保持工具的原有结果。 */ }
 		}
 	});
 	pi.on("session_shutdown", () => { pending.clear(); current = undefined; store = undefined; off(); });

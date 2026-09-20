@@ -446,7 +446,7 @@ test("shipped controller fails closed while static prompts defer RDD lifecycle o
 	assert.match(toolContract, /ambiguous START output.*target-scoped native status.*declared action.*ambiguous jero_review_capture.*never replays/is);
 	assert.doesNotMatch(toolContract, /START throws.*lineage does not exist/is);
 
-	const boundary = "This package injects the mirrored provider-bundle review execution contract into this session's system prompt at start; Jero writes nothing into the Pi system prompt, and this package owns everything else here. Absent that mirrored contract, this package invents no lifecycle instructions.";
+	const boundary = "本包启动时把镜像的提供方捆绑评审执行契约注入本会话系统提示；Jero 不向 Pi 系统提示写入任何内容，本包拥有此处其余一切。缺少该镜像契约时，本包不发明生命周期指令。";
 	const core = readFileSync("assets/orchestrator.md", "utf8");
 	assert.match(core, new RegExp(boundary.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
 

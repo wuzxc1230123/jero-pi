@@ -33,10 +33,10 @@ import { resolveGentlePiAgentHome } from "../lib/agent-home.ts";
 import { assertResearchCheckpoint, parseResearchPersistence, RESEARCH_PERSISTENCE_ENTRY, canonicalArtifactPath, researchAgent, renderResearchCapabilities, RESEARCH_CHILD_TOOLS_ENV, RESEARCH_SELECTION_ENV, RESEARCH_ARTIFACT_ENV, parseResearchArtifactIntent, researchArtifactCall, researchArtifactReadback, type ResearchArtifactIntent, type ResearchWriteIdentity } from "../lib/sdd-research-capabilities.ts";
 import { CHILD_METRICS_EVENT, CHILD_METRICS_REVOKED, childEvent, launchSelection, type LaunchSelection } from "../lib/runtime-metrics-children.ts";
 
-// Gentle Agents: subagents as isolated `pi --mode rpc` children, a task
-// store that notifies per task, and a Gentle Shell card above the editor.
-// The tool names match the retired pi-subagents package so prompts, skills,
-// and gentle-ai's delegation rules keep working unchanged.
+// Gentle Agents：子代理作为隔离的 `pi --mode rpc` 子进程运行，任务
+// 存储逐任务通知，并在编辑器上方显示一张 Gentle Shell 卡片。
+// 工具名与已退役的 pi-subagents 包保持一致，因此提示词、技能与
+// gentle-ai 的委托规则无需改动即可继续工作。
 
 export const AGENTS_WIDGET_KEY = "gentle-agents";
 export const AGENTS_COMMAND_NAME = "jero:agents";
@@ -217,7 +217,7 @@ export async function reconcileManagedRemediation(task: TaskRecord, native: Nati
 		...(acquire.untrackedScope === undefined ? {} : { untrackedScope: acquire.untrackedScope, expectedUntrackedInventory: acquire.expectedUntrackedInventory, intendedUntracked: acquire.intendedUntracked }),
 	};
 	state.settle = structuredClone(settle);
-	await persist(task); // Recovered token and exact settlement replay input become durable atomically before native mutation.
+	await persist(task); // 恢复出的令牌与精确的结算重放输入在原生变更前原子落盘。
 	return settleExact(settle, acquired.state);
 }
 
@@ -251,7 +251,7 @@ export async function admitManagedRemediation(request: TaskRequest, input: unkno
 	}
 	preparedTask.sddRemediation.acquireResult = structuredClone(admitted);
 	if (admitted.state === "proceed" && admitted.token) preparedTask.sddRemediation.token = admitted.token;
-	await persist(preparedTask); // Token durability precedes any actor dispatch.
+	await persist(preparedTask); // 令牌落盘先于任何执行体派发。
 	if (admitted.state !== "proceed" || !admitted.token) throw new Error(`Managed remediation admission ${admitted.state}; no actor started`);
 	let finalizationStarted = false;
 	return {
@@ -276,7 +276,7 @@ export async function admitManagedRemediation(request: TaskRequest, input: unkno
 			const actorStatus = task.status;
 			if (actorStatus === TASK_STATUS.COMPLETED) task.status = payload.outcome === "passed" ? TASK_STATUS.WAITING : TASK_STATUS.FAILED;
 			state.settle = structuredClone(payload);
-			await persist(task); // Exact native replay inputs must be durable BEFORE mutation.
+			await persist(task); // 精确的原生重放输入必须在变更之前先落盘。
 			try { state.settlement = await native.sddAttemptSettle!(structuredClone(payload)); }
 			catch (error) {
 				if (!(error instanceof TypeError) && !(error instanceof NativeReviewCliError && error.mutationOutcome === "none")) {
@@ -301,8 +301,8 @@ export async function admitManagedRemediation(request: TaskRequest, input: unkno
 	};
 }
 
-// Installed only for the admitted remediation child. Stock shell execution,
-// cancellation, truncation and rendering remain owned by the SDK definition.
+// 仅为已获准的修复子进程安装。原生的 shell 执行、取消、
+// 截断与渲染仍由 SDK 定义所有。
 export function remediationBash(cwd: string, operations: BashOperations = createLocalBashOperations(), scope?: RemediationScope) {
 	const captured = new Map<string, { toolCallId: string; command: string; cwd: string; exitCode: number | null }>();
 	const remaining = [...(scope?.commands ?? [])], used = new Set<string>();
@@ -370,8 +370,8 @@ export function agentsEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
 	return !(value === "0" || value === "false" || value === "off");
 }
 
-// The retired pi-subagents package registers the same tool names. While it
-// is still installed we stay out of the way and say how to switch.
+// 已退役的 pi-subagents 包注册了相同的工具名。只要它
+// 仍被安装，我们就主动避让并说明如何切换。
 export const LEGACY_SUBAGENTS_PACKAGE = "pi-subagents-j0k3r";
 
 export function legacySubagentsInstalled(home: string): boolean {
@@ -462,8 +462,8 @@ function finishedText(task: TaskRecord): string {
 	return `Subagent ${task.agent} ${task.status}${task.error ? `: ${task.error}` : ""}${task.result ? `\n\nLast answer:\n${task.result}` : ""}`;
 }
 
-// pi's keybinding hint needs a live theme; outside one (tests, headless) the
-// plain words still tell the reader what the key does.
+// pi 的按键提示需要可用的实时主题；在没有主题的场景（测试、无头
+// 模式）下，纯文字仍能告诉读者该键的作用。
 function expandHint(expanded: boolean): string {
 	try {
 		return keyHint("app.tools.expand", expanded ? "collapse" : "expand");
@@ -472,15 +472,15 @@ function expandHint(expanded: boolean): string {
 	}
 }
 
-// What the model reads when a background task ends: the outcome first, then
-// the answer itself. The card renderer shows the same text.
+// 后台任务结束时模型读到的内容：先看结果状态，再看
+// 答案本身。卡片渲染器显示同样的文本。
 export function completionText(task: TaskRecord): string {
 	const outcome = task.status === "completed" ? "finished" : task.status.replace("_", " ");
 	return `Subagent ${task.agent} (task ${task.id}, "${task.label}") ${outcome}.\n\n${finishedText(task)}`;
 }
 
-// Host-side answer to a child's dialog: the same ctx.ui the human already
-// uses, so a subagent's question looks like any other pi dialog.
+// 宿主端对子进程对话框的应答：使用人类已在用的同一个
+// ctx.ui，因此子代理的提问看起来与其他任何 pi 对话框一样。
 export async function answerThroughUi(ui: ExtensionContext["ui"] | undefined, ask: AskRequest, raw: Record<string, unknown>): Promise<AskAnswer> {
 	if (!ui) return { cancelled: true };
 	const title = `${AGENTS_GLYPH} ${ask.title}`;
@@ -539,9 +539,9 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 		try {
 			const parsed: unknown = JSON.parse(env[RESEARCH_CHILD_TOOLS_ENV]!);
 			if (Array.isArray(parsed) && parsed.every(value => typeof value === "string")) allowed = parsed;
-		} catch { /* Invalid launch restrictions deny every tool. */ }
+		} catch { /* 无效的启动限制将拒绝所有工具。 */ }
 		let selection: unknown;
-		try { selection = JSON.parse(env[RESEARCH_SELECTION_ENV] ?? "null"); } catch { /* Missing selection grants no research. */ }
+		try { selection = JSON.parse(env[RESEARCH_SELECTION_ENV] ?? "null"); } catch { /* 缺少选择则不授予任何研究能力。 */ }
 		const current = () => researchAgent({ tools: allowed, instructions: "" } as AgentDefinition, pi, selection);
 		pi.on("before_agent_start", (event, ctx) => {
 			reads.clear(); initialReads.clear(); writes.clear(); calls.clear(); pending.clear(); accepted.clear(); readbackMismatch = false;
@@ -614,7 +614,7 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 				let valid = false;
 				try {
 					valid = event.isError === false && Array.isArray(event.content) && event.content.length > 0 && Array.from(event.content).every(part => part !== null && typeof part === "object" && part.type === "text" && typeof part.text === "string" && part.text.trim().length > 0);
-				} catch { /* Malformed mutation results cannot authorize completion. */ }
+				} catch { /* 畸形的变更结果无法确认完成。 */ }
 				if (!valid) readbackMismatch = true;
 				try { checkpoint(ctx, { toolCallId: event.toolCallId, tool: event.toolName, index, valid, isError: event.isError, resultDigest: createHash("sha256").update(JSON.stringify(event.content) ?? "undefined").digest("hex") }); }
 				catch { readbackMismatch = true; }
@@ -643,7 +643,7 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 				const divergent = scope.locators.some((_, i) => tools.every(tool => reads.has(`${i}:${tool}`)) && new Set(tools.map(tool => reads.get(`${i}:${tool}`))).size !== 1);
 				if (divergent) matched = false;
 				complete = matched && !readbackMismatch && scope.store !== "none" && scope.locators.every((_, i) => tools.every(tool => reads.has(`${i}:${tool}`)));
-			} catch { matched = false; /* Unsupported or undurable readback is not evidence. */ }
+			} catch { matched = false; /* 不受支持或无法持久化的回读不构成证据。 */ }
 			if (!matched) { reads.clear(); readbackMismatch = true; }
 			const note = !matched ? "Research readback mismatch: proposal_ready=false; retain intent and uncertainty." : complete ? "Readback identity matched in all selected stores; not evidence validation or proposal admission." : "Research readback incomplete: proposal_ready=false; read every selected store.";
 			return { content: [...event.content, { type: "text" as const, text: note }], isError: event.isError || !matched };
@@ -653,10 +653,10 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 	if (env.JERO_PI_AGENTS_CHILD === "1") {
 		if (env[REMEDIATION_PLAN_ENV] !== undefined) {
 			let granted: RemediationScope | undefined;
-			// The bash-result forwarder is registered once: session_start may
-			// re-fire (resume/reload), and re-registering per firing would
-			// accumulate listeners and double-process results. It consults the
-			// current shell instead of closing over one.
+			// bash 结果转发器只注册一次：session_start 可能
+			// 重复触发（恢复/重载），若每次触发都注册会
+			// 累积监听器并重复处理结果。它查询
+			// 当前 shell，而不是闭包捕获某一个。
 			let activeRemediationShell: ReturnType<typeof remediationBash> | undefined;
 			pi.on("tool_result", event => event.toolName === "bash" && activeRemediationShell !== undefined ? activeRemediationShell.result(event) : undefined);
 			pi.on("tool_call", (event, current) => remediationToolAllowed(granted, current.cwd, event.toolName, event.input) ? undefined : { block: true, reason: "Outside exact remediation human authorization" });
@@ -664,7 +664,7 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 				granted = undefined;
 				try {
 					const retained = JSON.parse(env[REMEDIATION_PLAN_ENV]!);
-					// SDK flags are owner-local; the runner transports the same selected context.
+					// SDK 标志属于属主本地；运行器会传输同一份已选定的上下文。
 					const selection = Object.hasOwn(retained, "selection") ? retained.selection : JSON.parse(String(pi.getFlag("jero-sdd-change")));
 					parseSddChange(selection, "sdd-remediate");
 					const plan = parseRemediationPlan(retained.plan, ctx.cwd);
@@ -673,7 +673,7 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 					pi.registerTool(shell.definition);
 					activeRemediationShell = shell;
 					granted = retained.scope;
-				} catch { /* No valid host grant: deny every tool, even if Pi continues initialization. */ }
+				} catch { /* 没有有效的宿主授权：拒绝所有工具，即使 Pi 继续初始化。 */ }
 			});
 		}
 		if (childIpc) registerChildMessaging(pi, childIpc);
@@ -682,11 +682,11 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 	if (!agentsEnabled(env)) return;
 	const deps: AgentsDeps = { ...defaultDeps(env), ...overrides };
 	const selectedHome = overrides.agentHome ?? (overrides.home === undefined ? resolveGentlePiAgentHome(deps.env) : join(deps.home, ".pi", "agent"));
-	// Expand environment tildes like Pi, but leave explicit path APIs literal.
+	// 像 Pi 一样展开环境变量里的波浪号，但对显式路径 API 保持字面量。
 	const environmentHome = overrides.agentHome === undefined && overrides.home === undefined;
 	const expandedHome = environmentHome && selectedHome === "~" ? deps.home
 		: environmentHome && (selectedHome.startsWith("~/") || (process.platform === "win32" && selectedHome.startsWith("~\\"))) ? join(deps.home, selectedHome.slice(2)) : selectedHome;
-	// Freeze the host's root before a child uses a different session cwd.
+	// 在子进程使用不同的会话 cwd 之前冻结宿主根目录。
 	const agentHome = resolve(expandedHome);
 	if (legacySubagentsInstalledAt(agentHome)) {
 		pi.on("session_start", (_event, ctx) => {
@@ -752,9 +752,9 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 	});
 	let stopAllConfirmation: Promise<void> | undefined;
 
-	// The card and its clock follow the session pi has open right now; a task
-	// started before /new or /resume stays in the store and comes back with
-	// its session. Before the first session_start there is nothing to scope by.
+	// 卡片及其时钟跟随 pi 当前打开的会话；在 /new 或 /resume 之前启动的
+	// 任务仍留在存储中，并随其会话一起回来。第一个 session_start
+	// 之前，没有任何可以用来圈定范围的东西。
 	const activeSessionId = (): string | undefined => (sessions === undefined ? undefined : sessions.getSessionId() ?? "");
 	const visibleTasks = (): TaskRecord[] => store.list(activeSessionId());
 
@@ -768,9 +768,9 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 		}, RENDER_COALESCE_MS);
 	};
 
-	// The elapsed column ticks once a second while something runs. Once every
-	// task is done, one frame is due when the next finished row leaves the
-	// card, so an idle terminal still sees it clear.
+	// 有任务运行时，耗时列每秒跳动一次。一旦所有
+	// 任务结束，下一个已完成行离开卡片时还应补一帧，
+	// 这样空闲的终端仍能看到它清空。
 	const tickClock = () => {
 		cancelClock?.();
 		cancelClock = undefined;
@@ -792,40 +792,38 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 		}, expiry);
 	};
 
-	// A finished task goes to disk once, after its child is gone; the history
-	// is then trimmed to the configured size. Failures never reach the TUI.
+	// 已结束的任务在其子进程消失后一次性写入磁盘；随后历史
+	// 被裁剪到配置的大小。失败情况不会进入 TUI。
 	const persist = (task: TaskRecord) => {
 		void saveTask(tasksDir, task, store.thread(task.id))
 			.then(() => pruneHistory(tasksDir, loadAgentsConfig({ cwd: task.cwd, home: deps.home, agentHome }).historyMaxTasks))
 			.catch(() => {});
 	};
 
-	// A background result used to be handed straight to the host as a followUp
-	// message, but the host only drains that queue when the parent agent stops
-	// calling tools entirely, so in a long orchestrator run the notification
-	// could land nearly an hour after the parent pulled the same result (#867).
-	// Gentle Agents now owns the pending completions: they settle here, are
-	// flushed at the next turn boundary, and a stale one never re-enters the
-	// conversation.
+	// 后台结果过去作为 followUp 消息直接交给宿主，但宿主只在父代理
+	// 完全停止调用工具时才清空该队列，因此在长时间编排器运行中，
+	// 通知可能落后父代理拉取同一结果近一个小时才送达（#867）。
+	// 现在 Gentle Agents 自己持有待处理的完成通知：它们在此结算，
+	// 在下一个回合边界冲刷，过期结果绝不重新进入
+	// 会话。
 	const completions = createCompletionQueue<TaskRecord>();
 	let activeAgentRuns = 0;
 
 	const deliver = (task: TaskRecord) => {
-		// Ownership is consulted at delivery time, matching onNotification and
-		// onQuery: a completion owned by another session is dropped, not delivered.
+		// 交付时才检查所有权，与 onNotification 和
+		// onQuery 一致：属于其他会话的完成通知会被丢弃，而非交付。
 		if (activeSessionId() !== task.parentSessionId) return;
-		// "steer" + triggerTurn keeps delivery bounded to the current turn. While
-		// the parent streams, the host polls steering each turn and injects the
-		// message before the next LLM call; "followUp" is NOT acceptable here
-		// because the host drains the follow-up queue only in the run loop's stop
-		// branch, so a parent that keeps calling tools would see the completion
-		// only when the whole run ends — the original #867 delay. When the parent
-		// is idle, triggerTurn runs the prompt immediately, preserving wake-up.
+		// "steer" + triggerTurn 将交付限定在当前回合内。父代理
+		// 流式输出期间，宿主每回合轮询 steering 并在下一次 LLM 调用前
+		// 注入消息；这里不能用 "followUp"，因为宿主只在运行循环的停止
+		// 分支清空 follow-up 队列，持续调用工具的父代理要等整个运行
+		// 结束才能看到完成通知——正是当初 #867 的延迟。父代理空闲时，
+		// triggerTurn 立即执行该提示，保留了唤醒行为。
 		pi.sendMessage({ customType: AGENTS_RESULT_TYPE, content: completionText(task), display: true, details: taskDetails(task) }, { deliverAs: "steer", triggerTurn: true });
 	};
 
-	// A stale completion must not re-enter the LLM conversation, so it is
-	// delivered as durable TUI-only content and the human still sees it.
+	// 过期的完成通知不得重新进入 LLM 会话，因此它以
+	// 仅 TUI 可见的持久内容交付，人类仍然能看到它。
 	const deliverStale = (task: TaskRecord, settledAt: number) => {
 		if (activeSessionId() !== task.parentSessionId) return;
 		const ageSeconds = Math.max(0, Math.round((deps.now() - settledAt) / 1000));
@@ -837,28 +835,27 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 			try {
 				if (stale) deliverStale(task, settledAt);
 				else deliver(task);
-			} catch { /* Best-effort delivery: at most once, even if forwarding fails. */ }
+			} catch { /* 尽力而为的交付：至多一次，即使转发失败。 */ }
 		}
 	};
 
-	// A completion settles into our queue. An idle parent flushes right away so
-	// the wake-up behavior is unchanged; a busy parent flushes at the next turn
-	// boundary, and the steer mode injects it before that turn's next LLM call
-	// instead of parking it behind the whole run.
+	// 完成通知结算进我们的队列。空闲的父代理立即冲刷，
+	// 因此唤醒行为保持不变；忙碌的父代理在下一个回合
+	// 边界冲刷，steer 模式在该回合的下一次 LLM 调用前注入它，
+	// 而不是把它搁置到整个运行之后。
 	const settleCompletion = (task: TaskRecord) => {
 		completions.enqueue(task, deps.now());
 		if (activeAgentRuns === 0) flushCompletions();
 	};
 
-	// `agent_start`/`agent_end` bracket a parent agent run; `turn_end` fires at
-	// every turn boundary inside one, so with steering delivery a held
-	// completion is injected before the next LLM call and never outlives the
-	// current turn. `agent_end` stays a flush trigger for runs that end without
-	// a final `turn_end` (an aborted run, or the host's early post-run return
-	// when a run produced no assistant message; the host compensates via
-	// hasQueuedMessages() + continue(), so steering there is still bounded).
-	// `agent_settled` is the final idle boundary after retries — normally a
-	// no-op safety net, since anything enqueued while idle flushes right away.
+	// `agent_start`/`agent_end` 括起一次父代理运行；`turn_end` 在
+	// 其内部每个回合边界触发，因此配合 steer 交付，滞留的完成通知会在
+	// 下一次 LLM 调用前注入，绝不会越过当前
+	// 回合。`agent_end` 仍是那些没有最终 `turn_end` 就结束的运行的冲刷
+	// 触发器（被中止的运行，或运行未产生助手消息时宿主的提前返回；
+	// 宿主通过 hasQueuedMessages() + continue() 补偿，因此那里的
+	// steer 仍是有界的）。`agent_settled` 是重试之后的最终空闲边界——
+	// 通常是一个无操作的安全网，因为空闲时入队的任何东西都会立即冲刷。
 	pi.on("agent_start", () => { activeAgentRuns += 1; });
 	pi.on("agent_end", () => {
 		activeAgentRuns = Math.max(0, activeAgentRuns - 1);
@@ -896,16 +893,16 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 					let path = tool.path.replace(/^@/, "");
 					if (path === "~" || path.startsWith("~/")) path = os.homedir() + path.slice(1);
 					if (realpathSync(resolve(task.cwd, path)) === resolve(root, tool.evidence.path)) pi.events.emit(SESSION_CHANGE_RELAY, { sessionId: task.parentSessionId, evidence: { ...tool.evidence, id: `${task.id}:${tool.toolCallId}` } });
-				} catch { /* Missing or mismatched targets cannot supply session diffs. */ }
+				} catch { /* 缺失或不匹配的目标无法提供会话差异。 */ }
 			}
 			recordReviewMutation(pi, sessions, root, { source: "subagent", taskId: task.id, toolName: tool.toolName, toolCallId: tool.toolCallId });
 		},
 		onFinish: (task, observations) => {
-			// Completion is the only forwarding opportunity. No pending event, policy
-			// query or promise survives this callback; the receiver drops when busy.
+			// 完成是唯一的转发时机。没有任何未决事件、策略
+			// 查询或 Promise 能活过这个回调；接收方忙时会丢弃。
 			const { id, parentSessionId, status } = task;
 			const metrics = metricTasks.get(id);
-			metricTasks.delete(id); // Deliver at most once, even if forwarding fails.
+			metricTasks.delete(id); // 至多交付一次，即使转发失败。
 			try {
 				const authorized = metrics?.valid();
 				if (metrics) metrics.finished = true;
@@ -913,14 +910,14 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 					const event = childEvent(parentSessionId, id, metrics.selection, status, observations, metrics.started);
 					if (event && metrics.current()) pi.events.emit(CHILD_METRICS_EVENT, event);
 				}
-			} catch { /* Metrics must never interrupt task finalization. */ }
+			} catch { /* 指标绝不能打断任务收尾。 */ }
 			try {
 				ownedTaskIds.delete(task.id);
 				requestRender();
 				persist(task);
 				const yielded = yieldedTaskIds.delete(task.id);
 				if ((task.mode === AGENT_MODE.BACKGROUND && task.status !== TASK_STATUS.CANCELLED) || (yielded && task.status !== TASK_STATUS.CANCELLED && activeSessionId() === task.parentSessionId)) settleCompletion(task);
-			} catch { /* Best-effort completion bookkeeping cannot strand runner waiters. */ }
+			} catch { /* 尽力而为的完成登记不能困住运行器的等待者。 */ }
 		},
 	});
 
@@ -947,8 +944,8 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 		};
 	});
 
-	// A stale completion is appended as a custom entry: durable transcript
-	// content for the human that never participates in the LLM context.
+	// 过期的完成通知作为自定义条目追加：面向人类的持久转录
+	// 内容，从不参与 LLM 上下文。
 	pi.registerEntryRenderer(AGENTS_STALE_RESULT_TYPE, (entry, options, theme) => {
 		const data = (entry.data ?? {}) as { taskId?: unknown; agent?: unknown; label?: unknown; status?: unknown; ageSeconds?: unknown };
 		const taskId = typeof data.taskId === "string" ? data.taskId : "unknown";
@@ -1018,7 +1015,7 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 		return confirmation;
 	};
 
-	// Tasks from earlier sessions come back from disk on demand.
+	// 早先会话的任务按需从磁盘恢复。
 	const resolveTask = async (id: string): Promise<TaskRecord | undefined> => {
 		const live = store.get(id);
 		if (live) return live;
@@ -1077,7 +1074,7 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 			ctx.ui.notify("This task has no session file yet.", "warning");
 			return;
 		}
-		// The child's session is JSONL; the reader gets a markdown transcript.
+		// 子进程的会话是 JSONL；读取方拿到的是 markdown 转录。
 		let transcriptPath: string;
 		try {
 			transcriptPath = await writeTranscript(chosen);
@@ -1096,8 +1093,8 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 		await writeFile(path, markdown, "utf8");
 		return path;
 	};
-	// A status change is worth a frame right away; deltas inside a task are
-	// coalesced so a chatty child cannot flood the terminal.
+	// 状态变化值得立即渲染一帧；任务内部的增量会被合并，
+	// 话痨的子进程无法灌满终端。
 	store.subscribeSummary(() => {
 		publishActivity();
 		if (sidebarTui) invalidateSidebar(sidebarTui);
@@ -1130,10 +1127,10 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 	const buildRequest = (ctx: ExtensionContext, agent: AgentDefinition, prompt: string, label: string | undefined, context: string | undefined, mode: AgentMode, resume?: string, workspaceRoot?: string, sddChange?: SddChangeSelection, researchSelection?: unknown, researchArtifact?: unknown, remediationIntent?: unknown): TaskRequest => {
 		const registry = registryFor(ctx);
 		const parentCwd = ctx.sessionManager.getCwd();
-		// An explicit target is validated before any queue or session-dir writes.
+		// 显式目标在任何队列或会话目录写入之前先校验。
 		const parentIdentity = deps.resolveWorktree(parentCwd, parentCwd);
 		const selectedRoot = workspaceRoot ?? sddChange?.workspaceRoot;
-		// Preserve ordinary non-Git continuation, without admitting any new root.
+		// 保留普通的非 Git 续跑，且不引入任何新根目录。
 		const sameNonGitContinuation = resume !== undefined && selectedRoot === parentCwd && !parentIdentity;
 		const target = selectedRoot !== undefined && !sameNonGitContinuation ? registry.validate(selectedRoot) : parentIdentity?.root;
 		if (sddChange && target !== sddChange.workspaceRoot && target !== resolve(sddChange.workspaceRoot)) {
@@ -1193,9 +1190,9 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 	};
 
 	const launch = async (ctx: ExtensionContext, request: TaskRequest, signal?: AbortSignal): Promise<ToolText> => {
-		// This is the process-spawn boundary. A child receives its task context only
-		// after its RPC process starts, so validate the single parent transport here
-		// rather than letting a child invent/persist preferences during startup.
+		// 这是进程派生边界。子进程只有在 RPC 进程启动后才能收到任务上下文，
+		// 因此在这里校验单一父级传输，
+		// 而不是放任子进程在启动期间捏造/持久化偏好。
 		if (SHIPPED_SDD_AGENT_NAME_SET.has(request.agent.name) && !isParentConfirmedSddPreflightContext(request.context)) {
 			throw new Error("SDD child dispatch refused: parent-confirmed SDD preflight context is missing or malformed.");
 		}
@@ -1210,11 +1207,11 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 				Object.assign(request, await admitManagedRemediation(request, request.remediationIntent, native, persist, ctx, prepared));
 				if (activeSessionId() !== request.parentSessionId) throw new Error("Parent session changed; retain admission and refuse actor replay");
 				prepared.sddRemediation!.actorClaimed = true;
-				await persist(prepared); // A crash beyond here is an unknown actor effect, not rerun permission.
+				await persist(prepared); // 此处之后的崩溃属于未知的执行体影响，而非重跑许可。
 			} catch (error) { store.update(prepared.id, { status: TASK_STATUS.FAILED, error: "Remediation admission/dispatch refused; reconcile retained history" }); throw error; }
 		}
-		// Bounded live observation only. Rows stay in-process (jero-pi keeps no
-		// outbound telemetry); no policy process or renewal timer ever starts.
+		// 仅有界的实时观测。数据行只留在进程内（jero-pi 不保留
+		// 外发遥测）；绝不启动任何策略进程或续期定时器。
 		const owner = metricsOwner;
 		const metrics = { selection: undefined as LaunchSelection | undefined,
 			started: 0, launched: false, finished: false,
@@ -1235,10 +1232,10 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 		ownedTaskIds.add(task.id);
 		store.subscribe(task.id, () => { publishActivity(); requestRender(); });
 		if (request.mode === AGENT_MODE.BACKGROUND) return text(`Started ${task.agent} in the background as task ${task.id}. Use subagent_status or subagent_result with that id.`, taskDetails(task));
-		// A tool call aborted by the host (a human interrupting the turn, a timeout)
-		// would otherwise leave the child running and end the call with no result and
-		// no recorded reason. Cancel through the runner so the lifecycle runs and the
-		// record is persisted, and tell the user why.
+		// 被宿主中止的工具调用（人类打断回合、超时）
+		// 否则会留下仍在运行的子进程，并且调用结束时没有结果也没有
+		// 记录原因。通过运行器取消，让生命周期走完并持久化
+		// 记录，同时告知用户原因。
 		const onAbort = (): void => {
 			if (runner.cancel(task.id, `cancelled: the tool call was aborted${abortReasonText(signal?.reason)}`)) {
 				ctx.ui.notify(
@@ -1346,8 +1343,8 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 	tool("result", "Return the final answer of a finished subagent task, or its current state if it is still running.", { required: ["task_id"], properties: { task_id: { type: "string" } } }, async (params) => {
 		const task = await resolveTask(String(params.task_id));
 		if (!task) return text(`Error: no task ${String(params.task_id)}`, { error: "unknown task" });
-		// The parent just pulled a finished result; its pending completion must
-		// never be replayed on top of it.
+		// 父代理刚刚拉取了已完成的结果；其待处理的完成通知绝不能
+		// 在其上叠加重放。
 		if (isFinished(task.status)) completions.consume(task.id);
 		return text(isFinished(task.status) ? finishedText(task) : `Task ${task.id} is still ${task.status} (last: ${task.lastStep}).`, taskDetails(task));
 	});
@@ -1380,8 +1377,8 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 			const previous = await resolveTask(String(params.task_id));
 			if (!previous) return text(`Error: no task ${String(params.task_id)}`, { error: "unknown task" });
 			if (!isFinished(previous.status) || !previous.sessionPath) return text(`Error: task ${previous.id} cannot be continued yet (${previous.status}).`, { error: "not continuable" });
-			// Continuing acts on the previous result, so any pending completion for
-			// it is already consumed by the parent.
+			// 续跑基于上一个结果进行，因此它对应的任何待处理完成通知
+			// 都已被父代理消费。
 			completions.consume(previous.id);
 			const agent = discoverAgents(roots(ctx)).agents.find((candidate) => candidate.name === previous.agent);
 			if (!agent) return text(`Error: subagent "${previous.agent}" is no longer defined.`, { error: "unknown agent" });
@@ -1430,8 +1427,8 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 	}
 
 	pi.on("session_start", (_event, ctx) => {
-		// A resumed, reloaded, or replaced session starts with an empty completion
-		// queue so nothing pending from another session can replay here.
+		// 恢复、重载或替换后的会话以空的完成队列启动，
+		// 因此来自其他会话的任何待处理项都不会在此重放。
 		completions.dropAll();
 		presence?.dispose();
 		registryFor(ctx);

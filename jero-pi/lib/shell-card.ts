@@ -1,8 +1,8 @@
 import { truncateToWidth, visibleWidth, wrapTextWithAnsi } from "@earendil-works/pi-tui";
 
-// Gentle Shell cards: the shape every Gentle notice takes in the transcript
-// and above the editor. The same rounded frame as the prompt and the
-// overlays, with the title in the card's tone. Pure: strings in, lines out.
+// Gentle Shell 卡片：每条 Gentle 通知在转录区和编辑器上方呈现的形态。
+// 与提示符及覆盖层相同的圆角框架，标题使用卡片的色调。纯函数：
+// 字符串进，行出。
 
 export const CARD_TONE = {
 	INFO: "info",
@@ -27,7 +27,7 @@ export interface CardTheme {
 
 export interface CardRenderOptions {
 	expanded: boolean;
-	/** Right-aligned hint in the top rule, e.g. the expand key. May carry ANSI. */
+	/** 顶框线中右对齐的提示，例如展开键。可以携带 ANSI。 */
 	hint?: string;
 }
 
@@ -60,8 +60,8 @@ function bodyLines(card: Card, innerWidth: number): string[] {
 	return card.body.flatMap((paragraph) => (paragraph === "" ? [""] : wrapTextWithAnsi(paragraph, innerWidth)));
 }
 
-// The left rail, corners included, carries the tone at full strength; the
-// rest of the frame stays in the theme's border color, so the state reads from the rail.
+// 左侧轨（含拐角）以全强度呈现色调；框架其余部分保持主题的边框色，
+// 状态因此从侧轨上读出。
 const FRAME_ROLE = "border";
 
 function soft(theme: CardTheme, _tone: CardTone, text: string): string {

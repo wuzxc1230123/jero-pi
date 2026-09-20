@@ -18,9 +18,9 @@ import { installSidebar, invalidateSidebar } from "../lib/shell-sidebar-layout.t
 import { SessionChanges, SESSION_CHANGE_EVENT } from "../lib/session-changes.ts";
 import { installSessionChangeCapture } from "../lib/session-change-capture.ts";
 
-// Gentle Shell: the visual layer gentle-pi puts on top of pi. It installs the
-// status bar, the petal prompt, the working-tree changes widget and overlay,
-// the subscription usage view, and the cards Gentle notices are drawn with.
+// Gentle Shell：gentle-pi 叠加在 pi 之上的视觉层。它安装
+// 状态栏、花瓣提示符、工作树变更挂件与覆盖层、
+// 订阅用量视图，以及绘制 Gentle 通知所用的卡片。
 
 export interface ShellFooterData {
 	getGitBranch(): string | null;
@@ -58,9 +58,9 @@ export interface ShellDeps {
 	gitRunner(cwd: string): GitRunner;
 }
 
-// The rail digest runs every frame. Cache parsing by file identity and metadata,
-// not just mtime: profile writes replace the store atomically. Keep the cache
-// local to this shell instance and recheck on the next frame after panel edits.
+// 侧栏摘要每帧运行。按文件身份与元数据缓存解析结果，
+// 而不只靠 mtime：profile 写入是原子替换整个存储。缓存
+// 保持在当前 shell 实例本地，面板编辑后在下一帧重新检查。
 export function createActiveProfileReader(env: NodeJS.ProcessEnv = process.env): () => string | undefined {
 	const path = profilesFilePath(env.JERO_PI_CONFIG_HOME ?? join(os.homedir(), ".pi", "jero"));
 	let fingerprint: string | undefined;
@@ -83,7 +83,7 @@ export function createActiveProfileReader(env: NodeJS.ProcessEnv = process.env):
 	};
 }
 
-// jero-pi: the dev-binary override channel is gone with the packaged binary.
+// jero-pi：随打包二进制一起，开发版二进制覆盖通道已移除。
 function ambientDevBinary(): DevBinaryNotice | undefined {
 	return undefined;
 }
@@ -206,8 +206,8 @@ export class GentlePromptEditor extends CustomEditor {
 		const lines = super.render(Math.max(1, width - 2));
 		if (this.getText() === "" && lines.length === 3) lines[1] = withPromptHint(lines[1], PROMPT_HINT, this.deps.fg);
 		const state = this.promptState === PROMPT_STATE.WORKING && this.deps.pending() ? PROMPT_STATE.QUEUED : this.promptState;
-		// The frame keeps the theme's border color rather than pi's thinking-level
-		// color, so the prompt reads as one panel with the cards around it.
+		// 边框保持主题的边框色而非 pi 的思考级别
+		// 颜色，让提示符与周围卡片读起来像一个整体面板。
 		return framePromptLines(lines, width, {
 			state,
 			tick: this.tick,
@@ -251,8 +251,8 @@ const OVERLAY_HEIGHT_RATIO = 0.8;
 const OVERLAY_MIN_ROWS = 8;
 
 export function shellGitRunner(cwd: string, env: NodeJS.ProcessEnv = process.env, run: typeof execFile = execFile): GitRunner {
-	// Pi exec cannot replace the inherited environment. Use argv directly and
-	// a complete sanitized environment for discovery, status, and lazy diffs.
+	// Pi exec 无法替换继承的环境变量。直接使用 argv，并为
+	// 发现、状态与惰性 diff 提供完整净化过的环境。
 	const childEnv = worktreeGitEnvironment(env);
 	return (args) => new Promise((resolve) => {
 		run("git", ["-C", cwd, ...args], {
@@ -261,8 +261,8 @@ export function shellGitRunner(cwd: string, env: NodeJS.ProcessEnv = process.env
 			shell: false,
 			windowsHide: true,
 			timeout: GIT_TIMEOUT_MS,
-			// Pi exec accumulates output without a maxBuffer cap. In particular,
-			// large porcelain inventories must not become partial successful scans.
+			// Pi exec 累积输出而不设 maxBuffer 上限。尤其是，
+			// 大的 porcelain 清单绝不能变成残缺的成功扫描。
 			maxBuffer: Infinity,
 		}, (error, stdout) => {
 			resolve({ stdout, code: error ? typeof error.code === "number" ? error.code : 1 : 0 });
@@ -289,10 +289,10 @@ export function openInExternalEditor(host: ExternalEditorHost, path: string, env
 	const useShell = platform === "win32";
 	host.stop();
 	try {
-		// With `shell: true` Node hands cmd.exe a raw space-joined command line,
-		// so any argument containing a space (a transcript under a spaced user
-		// directory, an editor flag path) splits into phantom arguments. Quote
-		// every argument for cmd; doubling is cmd's in-quote quote escape.
+		// 使用 `shell: true` 时，Node 交给 cmd.exe 的是按空格拼接的原始
+		// 命令行，因此任何含空格的参数（带空格的用户目录下的转录文件、
+		// 编辑器标志路径）都会被拆成幻影参数。为 cmd
+		// 给每个参数加引号；双写引号是 cmd 的引号内转义。
 		const argv = [...editorArgs, path].map((arg) => (useShell && /\s/.test(arg) ? `"${arg.replace(/"/g, '""')}"` : arg));
 		spawn(editor, argv, { cwd, stdio: "inherit", shell: useShell });
 	} finally {
@@ -329,7 +329,7 @@ interface OverlayDeps {
 	pollMs: number;
 }
 
-// Refresh only the captured session model. Never read live files or Git here.
+// 只刷新捕获到的会话模型。此处绝不读取实时文件或 Git。
 async function showChangesOverlay(ctx: ExtensionContext, deps: OverlayDeps): Promise<void> {
 	let host: ExternalEditorHost | undefined;
 	let view: WorktreeChangesView | undefined;
@@ -421,8 +421,8 @@ function cardComponent(card: Card, theme: CardTheme, options: CardComponentOptio
 	};
 }
 
-// Widgets above the editor sit flush against the prompt frame; a blank line
-// after the card keeps the two frames apart.
+// 编辑器上方的挂件紧贴提示符边框；卡片后面的一个空行
+// 使两个边框保持间隔。
 function spaced(component: { render(width: number): string[]; invalidate(): void }) {
 	return {
 		render(width: number) {
@@ -446,8 +446,8 @@ export function devBinaryCard(notice: DevBinaryNotice): Card {
 
 const USAGE_REFRESH_MS = 5 * 60_000;
 
-// The Codex usage endpoint is what the Codex CLI itself reads. The OAuth
-// token pi already holds carries the account id; nothing else is sent.
+// Codex 用量端点正是 Codex CLI 自己读取的那个。pi 已持有的
+// OAuth 令牌携带账号 id；不发送其他任何东西。
 export async function fetchCodexUsage(token: string | undefined, fetchFn: typeof fetch, now: number): Promise<ProviderUsage | undefined> {
 	if (!token) return undefined;
 	const accountId = accountIdFromToken(token);
@@ -561,10 +561,10 @@ export default function gentleShell(pi: ExtensionAPI, env: NodeJS.ProcessEnv = p
 		ctx.ui.setFooter((tui, theme, footerData) => {
 			renderHost = { requestRender: () => tui.requestRender(), invalidateSidebar: () => invalidateSidebar(tui) };
 			const bottom = createShellBarComponent(pi, ctx, renderHost, theme, footerData, () => tracker.model.files.length, () => usage.get(ctx.model?.provider ?? ""));
-			// The Status card paints live session state that no event re-registers a
-			// part for: model, effort, context, cost, session name and extension
-			// statuses. The digest is what keeps the fullscreen memo honest, and it
-			// rebuilds the model exactly as the narrow bottom bar does every frame.
+			// 状态卡片绘制的是没有任何事件会为之重新注册部件的实时会话
+			// 状态：模型、思考力度、上下文、成本、会话名称与扩展
+			// 状态。摘要是让全屏备忘保持忠实的关键，它
+			// 每帧都像底部窄栏一样精确重建模型。
 			const footerModel = () => buildShellBarModel(pi, ctx, footerData, { dirty: tracker.model.files.length, usage: usage.get(ctx.model?.provider ?? ""), profile: deps.activeProfile() });
 			const part = sidebarPart(tui, "footer", bottom, {
 				digest: () => JSON.stringify(footerModel()),
@@ -578,7 +578,7 @@ export default function gentleShell(pi: ExtensionAPI, env: NodeJS.ProcessEnv = p
 		installPrompt(ctx, (created) => {
 			prompt = created;
 		});
-		// The petal already says the agent is working; pi's own "Working" row would say it twice.
+		// 花瓣已表明代理正在工作；pi 自带的 "Working" 行会把它说两遍。
 		ctx.ui.setWorkingVisible(false);
 		const notice = deps.devBinary();
 		ctx.ui.setWidget(
@@ -621,7 +621,7 @@ export default function gentleShell(pi: ExtensionAPI, env: NodeJS.ProcessEnv = p
 	}
 	pi.on("agent_start", (_event, ctx) => {
 		prompt?.setWorking(true);
-		// The dev-binary card is a startup notice: it leaves with the first prompt.
+		// 开发版二进制卡片是启动通知：随第一条提示一起离场。
 		if (ctx.hasUI) ctx.ui.setWidget(DEV_BINARY_WIDGET_KEY, undefined);
 	});
 	pi.on("agent_end", async (_event, ctx) => {

@@ -21,13 +21,12 @@ import { writeFileSync, mkdirSync } from "node:fs";
 import { canonicalJsonV1 } from "../review-canonical.ts";
 import { capturedJeroArtifactsCompleteV1 } from "./result-artifacts.ts";
 
-// `authority.review.finalize` (spec §D): lens-result admission (`freeze-
-// ledger`), classification/refutation (`resolve-evidence`), correction-plan
-// admission (`authorize-fix`), bounded-edit application, and final
-// verification (`verify`) — each reduction reimplemented over the compact
-// `JeroReviewTransactionStateV1` record with review-policy-ordinary.ts as the
-// semantic oracle, and the wrapper input contract enforced by the ported
-// review-compact-contract.ts (wrapped as-is).
+// `authority.review.finalize`（spec §D）：评审视角结果受理
+// （`freeze-ledger`）、分类/驳斥（`resolve-evidence`）、修正计划受理
+// （`authorize-fix`）、有界编辑应用与最终验证（`verify`）——每个归约
+// 都在紧凑的 `JeroReviewTransactionStateV1` 记录上重新实现，以
+// review-policy-ordinary.ts 为语义权威裁决，封装输入契约由移植的
+// review-compact-contract.ts 强制执行（原样封装）。
 
 export type JeroFinalizeRefusalCode =
 	| "not-a-git-repository" | "git-unavailable" | "authority-unavailable" | "foreign-authority-store"
@@ -77,7 +76,7 @@ export interface JeroFixApplicationV1 {
 export interface JeroReviewFinalizeInputV1 {
 	readonly cwd: string;
 	readonly lineageId?: string;
-	/** Absent ⇒ forecast-only run, spends nothing (spec §D.1). */
+	/** 缺省 ⇒ 仅预报运行，不消耗任何资源（spec §D.1）。 */
 	readonly reviewer_run_acknowledged?: boolean;
 	readonly review_result?: { readonly lens_results: readonly JeroLensResultSubmissionV1[] };
 	readonly classifications?: readonly JeroFindingClassificationSubmissionV1[];
@@ -118,11 +117,11 @@ function clone<T>(value: T): T {
 }
 
 /**
- * Wraps the ported `parseNativeCompactFinalizeInput` as-is (spec §D.1): the
- * wrapper-known subset must satisfy the exact key set and pairing rules of
- * review-compact-contract.ts; M2's own extensions (review_result,
- * classifications, refuter_batch, fix_application) are strict-decoded
- * separately below because the upstream wrapper never carried them.
+ * 原样封装移植的 `parseNativeCompactFinalizeInput`（spec §D.1）：
+ * 封装已知子集必须满足 review-compact-contract.ts 的精确键集与配对
+ * 规则；M2 自己的扩展（review_result、classifications、
+ * refuter_batch、fix_application）在下面单独严格解码，因为上游封装
+ * 从不携带它们。
  */
 export function parseFinalizeWrapperSubsetV1(input: JeroReviewFinalizeInputV1): CompactFinalizeContractInput {
 	const wrapperInput: Record<string, unknown> = { cwd: input.cwd };
@@ -143,9 +142,8 @@ function decodeFinalizeExtensionsV1(input: JeroReviewFinalizeInputV1): string | 
 			for (const key of Object.keys(result)) if (!["lens", "findings", "evidence"].includes(key)) return `review_result.lens_results[${index}] carries unknown field ${key}`;
 			if (typeof result.lens !== "string" || !(Object.keys(BARE_LENS) as readonly string[]).includes(result.lens)) return `review_result.lens_results[${index}].lens is unsupported`;
 			if (!Array.isArray(result.findings)) return `review_result.lens_results[${index}].findings must be an array`;
-			// Mi8 (review ruling), mirroring capture.ts: findings present ⇒
-			// evidence may be empty (each finding carries its own proof_refs);
-			// clean (empty findings) ⇒ evidence must be non-empty.
+			// Mi8（评审裁决），镜像 capture.ts：存在发现 ⇒ evidence 可以为空
+			// （每个发现自带 proof_refs）；干净（无发现）⇒ evidence 必须非空。
 			if (!Array.isArray(result.evidence) || result.evidence.some((row: unknown) => typeof row !== "string" || row.length === 0)) return `review_result.lens_results[${index}].evidence must be a string array`;
 			if (result.findings.length === 0 && result.evidence.length === 0) return `review_result.lens_results[${index}]: empty findings require non-empty evidence`;
 			for (const [row, finding] of result.findings.entries()) {
@@ -190,7 +188,7 @@ function decodeFinalizeExtensionsV1(input: JeroReviewFinalizeInputV1): string | 
 	return undefined;
 }
 
-/** §D.8 receipt issuance: envelope + `lineages/<id>/review-receipt.json` + CAS install of the body. */
+/** §D.8 回执签发：封套 + `lineages/<id>/review-receipt.json` + 正文的 CAS 安装。 */
 export function issueJeroReviewReceiptV1(context: JeroAuthorityContextV1, state: JeroReviewTransactionStateV1): { ok: true; envelope: JeroReceiptEnvelopeV1 } | { ok: false; detail: string } {
 	const body: JeroReceiptBodyV1 = {
 		schema: JERO_RECEIPT_BODY_SCHEMA,
@@ -217,8 +215,8 @@ export function issueJeroReviewReceiptV1(context: JeroAuthorityContextV1, state:
 	try {
 		const receiptPath = jeroReceiptPathV1(context.store.store_root, state.lineage_id);
 		mkdirSync(context.store.store_root, { recursive: true });
-		// Canonical JSON with NO trailing newline: parseCanonicalJsonV1
-		// re-serializes and compares, so the file must be byte-canonical.
+		// 权威 JSON“不带”尾随换行：parseCanonicalJsonV1 会重新序列化并
+		// 比较，因此该文件必须是字节权威的。
 		writeFileSync(receiptPath, canonicalJsonV1(envelope), { mode: 0o600 });
 		context.cas.put(envelope.body, { schema: JERO_RECEIPT_BODY_SCHEMA });
 	} catch (error) {
@@ -237,11 +235,11 @@ function escalateStateV1(state: JeroReviewTransactionStateV1, marker: JeroEscala
 	state.invalidation_reason = `escalation cause ${marker.cause}${marker.finding_ids.length > 0 ? `: ${marker.finding_ids.join(", ")}` : ""}`;
 }
 
-/** Loads the lineage for a mutating operation; typed refusal for every failure mode. */
+/** 为变更操作加载血脉；每种失败模式都是类型化拒绝。 */
 function loadForMutationV1(context: JeroAuthorityContextV1, lineageId: string | undefined, cwd: string):
 	{ ok: true; record: JeroLineageStateFileV1 } | { ok: false; code: JeroFinalizeRefusalCode; detail?: string } {
 	if (lineageId === undefined) return { ok: false, code: "invalid-request", detail: "finalize requires lineageId" };
-	// F1: a malformed lineageId is a typed refusal, never a raw store error.
+	// F1：畸形的 lineageId 是类型化拒绝，绝不透出原始存储错误。
 	if (!isJeroLineageId(lineageId)) return { ok: false, code: "invalid-request", detail: `lineageId ${JSON.stringify(lineageId)} is not a canonical review-<16hex> lineage id` };
 	const loaded = context.lineages.load(lineageId);
 	if (loaded.kind === "missing") return { ok: false, code: "lineage-missing", detail: `lineage ${lineageId} does not exist` };
@@ -263,9 +261,9 @@ function lensCounterKeyV1(lens: JeroLensName): "risk_executions" | "resilience_e
 }
 
 /**
- * FINALIZE (spec §D). One discriminated union covers every reduction; the
- * persisted state routes to exactly one, so replaying a completed step is an
- * invalid-state refusal and terminal states are immutable.
+ * FINALIZE（spec §D）。一个可辨识联合覆盖全部归约；持久化状态恰好
+ * 路由到其中一个，因此重放已完成的步骤是 invalid-state 拒绝，终局
+ * 状态不可变。
  */
 export function reviewFinalizeV1(context: JeroAuthorityContextV1, input: JeroReviewFinalizeInputV1): JeroReviewFinalizeResultV1 {
 	if (("validation" in input) && (input as { validation?: unknown }).validation !== undefined) {
@@ -286,11 +284,10 @@ export function reviewFinalizeV1(context: JeroAuthorityContextV1, input: JeroRev
 	if (isJeroTerminalReviewStateV1(state.state)) {
 		return { kind: "refused", code: "terminal-immutable", detail: `lineage ${state.lineage_id} is terminal (${state.state})` };
 	}
-	// Input-first dispatch for lens admission (§A.2 illegal #2): a lens-result
-	// submission is a freeze-ledger attempt from ANY state — the replay check
-	// and the state gate both live inside that path, so a replay of a
-	// completed freeze still returns its stored result while a second,
-	// divergent admission from a non-reviewing state fails closed.
+	// 评审视角受理的输入先行派发（§A.2 非法 #2）：评审视角结果提交从
+	// “任何”状态出发都是一次 freeze-ledger 尝试——重放检查与状态门都在
+	// 该路径内部，因此已完成冻结的重放仍返回其存储结果，而来自非
+	// reviewing 状态的第二次、有分歧的受理保守失败。
 	if (input.review_result !== undefined && state.state !== "findings_frozen" || (input.review_result !== undefined && input.reviewer_run_acknowledged === true)) {
 		return finalizeFreezeLedgerV1(context, record, input);
 	}
@@ -314,9 +311,8 @@ class JeroApplyRefusalError extends Error {
 }
 
 function runJournaledV1(context: JeroAuthorityContextV1, record: JeroLineageStateFileV1, operation: "freeze-ledger" | "resolve-evidence" | "authorize-fix" | "apply-fix" | "verify", input: JeroReviewFinalizeInputV1, apply: (state: JeroReviewTransactionStateV1) => JeroReviewFinalizeResultV1): JeroReviewFinalizeResultV1 {
-	// F14: the request hash binds request CONTENT only — the idempotency key is
-	// addressing, not content, so it is stripped before hashing (canonical JSON
-	// drops undefined object values).
+	// F14：请求哈希只绑定请求“内容”——幂等键是寻址信息而非内容，因此
+	// 在哈希前被剥离（权威 JSON 会丢弃 undefined 的对象值）。
 	const requestHash = jeroDomainHash("request", { operation, lineage_id: record.lineage_id, input: { ...input, idempotencyKey: undefined } });
 	const idempotencyKey = input.idempotencyKey ?? `${operation}:${requestHash.slice(0, 16)}`;
 	try {
@@ -328,15 +324,15 @@ function runJournaledV1(context: JeroAuthorityContextV1, record: JeroLineageStat
 			apply: (current) => {
 				const next = clone(current.state);
 				const result = apply(next);
-				// A refused reduction must never reach the journal: abort the
-				// save by throwing, and surface the typed refusal below.
+				// 被拒绝的归约绝不能进入日志：抛出以中止保存，
+				// 并在下面呈现类型化拒绝。
 				if (result.kind === "refused") throw new JeroApplyRefusalError(result);
 				return { draft: { state: next, request_journal: current.request_journal }, result };
 			},
 		});
 		const result = outcome.result;
-		// The stored canonical result omits the save revision (it is derived
-		// from the journal that stores it); patch it into the live reply.
+		// 存储的权威结果省略保存修订号（它派生自存储它的日志）；把修订号
+		// 补进现场回复。
 		if (result.kind === "frozen" || result.kind === "refuter_required" || result.kind === "evidence_resolved" || result.kind === "fix_authorized" || result.kind === "fix_applied") {
 			return { ...result, revision: outcome.revision };
 		}
@@ -347,7 +343,7 @@ function runJournaledV1(context: JeroAuthorityContextV1, record: JeroLineageStat
 	}
 }
 
-// --- reviewing → findings_frozen: lens-result admission (§D.1 lens results) ---
+// --- reviewing → findings_frozen：评审视角结果受理（§D.1 评审视角结果） ---
 
 function finalizeFreezeLedgerV1(context: JeroAuthorityContextV1, record: JeroLineageStateFileV1, input: JeroReviewFinalizeInputV1): JeroReviewFinalizeResultV1 {
 	const state = record.state;
@@ -358,9 +354,10 @@ function finalizeFreezeLedgerV1(context: JeroAuthorityContextV1, record: JeroLin
 		return { kind: "refused", code: "invalid-request", detail: "finalize from reviewing requires review_result.lens_results" };
 	}
 	const selected = state.selected_lenses ?? [];
-	// Zero-lens lineages never reach `reviewing` finalize (START closed them).
+	// 零评审视角的血脉绝不会到达 `reviewing` 的 finalize（START 已将其
+	// 闭合）。
 	if (selected.length === 0) return { kind: "refused", code: "invalid-state", detail: "a zero-lens lineage cannot admit lens results" };
-	// Forecast-only run: spends nothing (§D.1 reviewer_run_acknowledged absent).
+	// 仅预报运行：不消耗任何资源（§D.1 reviewer_run_acknowledged 缺省）。
 	if (input.reviewer_run_acknowledged !== true) {
 		return {
 			kind: "forecast",
@@ -374,17 +371,16 @@ function finalizeFreezeLedgerV1(context: JeroAuthorityContextV1, record: JeroLin
 	if (new Set(submissionLenses).size !== submissionLenses.length) {
 		return { kind: "refused", code: "invalid-request", detail: "each selected lens appears exactly once" };
 	}
-	// Lenses run exactly once, only over the selected set (illegal #2/#7).
+	// 评审视角恰好运行一次，且只作用于已选集合（非法 #2/#7）。
 	if (submissionLenses.length !== selected.length || !selected.every((lens) => submissionLenses.includes(lens))) {
 		return { kind: "refused", code: "invalid-request", detail: "lens results must cover exactly the selected lenses" };
 	}
-	// MA4 (review ruling): freeze-ledger requires the captured reviewer
-	// artifacts to be complete ON DISK — every selected lens admitted through
-	// result-artifacts.ts with its per-lens result file present and hashing to
-	// the manifest row. A hand-built review_result can no longer freeze after
-	// an artifact was deleted (the STATUS execute path advertises the same
-	// `captured_artifacts=complete` precondition; the gate runs before the
-	// journal so an artifact deletion also refuses exact replays).
+	// MA4（评审裁决）：freeze-ledger 要求已捕获的评审员产物在“磁盘上”
+	// 完整——每个已选评审视角都已通过 result-artifacts.ts 受理，其各自
+	// 的结果文件存在且哈希等于清单行。产物被删除后，手写的
+	// review_result 不再能冻结（STATUS execute 路径宣告同样的
+	// `captured_artifacts=complete` 前置条件；该门在日志之前运行，因此
+	// 产物删除也拒绝精确重放）。
 	const completeness = capturedJeroArtifactsCompleteV1(context, record);
 	if (!completeness.complete) {
 		return {
@@ -429,7 +425,7 @@ function finalizeFreezeLedgerV1(context: JeroAuthorityContextV1, record: JeroLin
 	});
 }
 
-// --- findings_frozen → evidence_classified / fix_required / escalated (§D.2-D.5) ---
+// --- findings_frozen → evidence_classified / fix_required / escalated（§D.2-D.5） ---
 
 export function pendingRefuterRequestHashV1(pending: readonly string[]): string {
 	return `sha256:${jeroDomainHash("refuter-request", [...pending].toSorted())}`;
@@ -445,7 +441,7 @@ function finalizeResolveEvidenceV1(context: JeroAuthorityContextV1, record: Jero
 	}
 	const findings = state.findings;
 	const severeIds = findings.filter((finding) => finding.severity !== undefined && SEVERE.has(finding.severity)).map(({ id }) => id);
-	// Malformed classification input escalates (§D.5): unknown or duplicated IDs.
+	// 畸形的分类输入触发升级（§D.5）：未知或重复的 ID。
 	const seen = new Set<string>();
 	for (const classification of input.classifications) {
 		if (!findings.some((finding) => finding.id === classification.finding_id)) {
@@ -462,9 +458,9 @@ function finalizeResolveEvidenceV1(context: JeroAuthorityContextV1, record: Jero
 		const disposition = byId.get(id)?.causal_disposition;
 		return disposition === undefined || disposition === "introduced" || disposition === "behavior-activated" || disposition === "worsened";
 	});
-	// First FINALIZE for inferential severe rows: canonical rows + a
-	// content-derived request hash WITHOUT the state transition; the second
-	// replays with that hash plus one complete refuter batch (readme:295).
+	// 推理型严重行的第一次 FINALIZE：权威行 + 内容派生的请求哈希，
+	// “不”做状态转移；第二次携带该哈希加一个完整 refuter 批次重放
+	// （readme:295）。
 	if (needsRefuter.length > 0 && input.refuter_batch === undefined) {
 		const requestHash = pendingRefuterRequestHashV1(needsRefuter);
 		const next = clone(state);
@@ -499,8 +495,8 @@ function finalizeResolveEvidenceV1(context: JeroAuthorityContextV1, record: Jero
 		let cause: JeroEscalationCause = "insufficient_evidence";
 		const refuterOutcomes = new Map<string, { outcome: string; proof: string }>();
 		if (input.refuter_batch !== undefined) {
-			// §A.2 illegal #12: invalid/missing/duplicate/unknown/inconclusive
-			// refuter output escalates WITHOUT a second batch.
+			// §A.2 非法 #12：无效/缺失/重复/未知/不确定的 refuter 输出触发
+			// 升级，“没有”第二批。
 			if (input.refuter_batch.request_hash !== pendingRefuterRequestHashV1(next.pending_refuter_ids)) {
 				return { kind: "refused", code: "invalid-request", detail: "refuter batch request_hash does not bind the pending refuter request" };
 			}
@@ -531,7 +527,7 @@ function finalizeResolveEvidenceV1(context: JeroAuthorityContextV1, record: Jero
 			}
 			next.counters.refuter_batches += 1;
 		}
-		// Record classifications.
+		// 记录分类。
 		for (const classification of input.classifications!) {
 			next.classifications[classification.finding_id] = {
 				finding_id: classification.finding_id,
@@ -557,7 +553,7 @@ function finalizeResolveEvidenceV1(context: JeroAuthorityContextV1, record: Jero
 			const refuted = refuterOutcomes.get(finding.id)?.outcome === "refuted";
 			const inconclusive = refuterOutcomes.get(finding.id)?.outcome === "inconclusive";
 			if (severe && inconclusive) {
-				// readme:293 — an inconclusive refuter escalates without replacement.
+				// readme:293——不确定的 refuter 直接升级，没有补位批次。
 				next.outcomes[finding.id] = "inconclusive";
 				escalation.push(`finding ${finding.id} remained inconclusive after the only refuter batch`);
 				escalationIds.push(finding.id);
@@ -572,7 +568,7 @@ function finalizeResolveEvidenceV1(context: JeroAuthorityContextV1, record: Jero
 				continue;
 			}
 			if (!CANDIDATE_CAUSED.has(disposition)) {
-				// pre-existing / base-only become inert follow-ups (§D.4).
+				// pre-existing / base-only 变成惰性随访（§D.4）。
 				next.outcomes[finding.id] = "info";
 				if (classification.class !== "insufficient") {
 					followUps.push({ observation: `${finding.id}: ${disposition} (not candidate-caused)`, proof_refs: [classification.proof] });
@@ -583,7 +579,7 @@ function finalizeResolveEvidenceV1(context: JeroAuthorityContextV1, record: Jero
 				next.outcomes[finding.id] = "refuted";
 				continue;
 			}
-			// §D.3: only severe candidate-caused findings with valid proof enter correction IDs.
+			// §D.3：只有带有效证据的严重且候选致因发现才进入修正 ID。
 			next.outcomes[finding.id] = severe ? "corroborated" : "info";
 			if (severe) fixFindingIds.push(finding.id);
 		}
@@ -619,7 +615,7 @@ function finalizeResolveEvidenceV1(context: JeroAuthorityContextV1, record: Jero
 	});
 }
 
-/** Content-driven escalation through the journaled resolve-evidence path (malformed input rows). */
+/** 经记日志的 resolve-evidence 路径实现的内容驱动升级（畸形的输入行）。 */
 function escalateNowV1(context: JeroAuthorityContextV1, record: JeroLineageStateFileV1, input: JeroReviewFinalizeInputV1, operation: "resolve-evidence", marker: JeroEscalationMarkerV1): JeroReviewFinalizeResultV1 {
 	return runJournaledV1(context, record, operation, input, (next) => {
 		escalateStateV1(next, marker);
@@ -635,24 +631,24 @@ function escalateNowV1(context: JeroAuthorityContextV1, record: JeroLineageState
 	});
 }
 
-// --- fix_required → fixing: correction-plan admission (§A.2 row 5) ---
+// --- fix_required → fixing：修正计划受理（§A.2 行 5） ---
 
 function finalizeAuthorizeFixV1(context: JeroAuthorityContextV1, record: JeroLineageStateFileV1, input: JeroReviewFinalizeInputV1): JeroReviewFinalizeResultV1 {
 	const state = record.state;
 	if (!isJeroOrdinaryModeV1(state.mode)) {
-		// M3 (§J.4 cross-mode): the ordinary correction-plan admission never
-		// runs on a Judgment Day lineage; judgment-day.ts owns the JD fix loop.
+		// M3（§J.4 跨模式）：普通的修正计划受理绝不在 Judgment Day 血脉上
+		// 运行；judgment-day.ts 拥有 JD 修正循环。
 		return { kind: "refused", code: "cross-mode-operation-refused", detail: "the ordinary correction-plan admission is not a Judgment Day operation" };
 	}
 	if (input.correction_line_forecast === undefined) {
 		return { kind: "refused", code: "invalid-request", detail: "finalize from fix_required requires correction_line_forecast" };
 	}
 	if (!Number.isSafeInteger(input.correction_line_forecast) || input.correction_line_forecast < 1 || input.correction_line_forecast > 200) {
-		// Plan forecast is bounded 1..200 (native-review-cli :2451 parity).
+		// 计划预报有界 1..200（与 native-review-cli :2451 对齐）。
 		return { kind: "refused", code: "invalid-request", detail: "correction_line_forecast must be an integer in 1..200" };
 	}
 	if (state.counters.fix_rounds >= 1 && isJeroOrdinaryModeV1(state.mode)) {
-		// §A.2 illegal #4: a second correction transaction fails closed.
+		// §A.2 非法 #4：第二个修正事务保守失败。
 		return { kind: "refused", code: "second-correction-refused", detail: "ordinary permits exactly one correction transaction" };
 	}
 	return runJournaledV1(context, record, "authorize-fix", input, (next) => {
@@ -672,13 +668,13 @@ function finalizeAuthorizeFixV1(context: JeroAuthorityContextV1, record: JeroLin
 	});
 }
 
-// --- fixing → fix_validating: bounded-edit application (§A.2 row 6) ---
+// --- fixing → fix_validating：有界编辑应用（§A.2 行 6） ---
 
 function finalizeApplyFixV1(context: JeroAuthorityContextV1, record: JeroLineageStateFileV1, input: JeroReviewFinalizeInputV1): JeroReviewFinalizeResultV1 {
 	const state = record.state;
 	if (!isJeroOrdinaryModeV1(state.mode)) {
-		// M3 (§J.4 cross-mode): the ordinary bounded-edit application never
-		// runs on a Judgment Day lineage; judgment-day.ts owns the JD fix loop.
+		// M3（§J.4 跨模式）：普通的有界编辑应用绝不在 Judgment Day 血脉上
+		// 运行；judgment-day.ts 拥有 JD 修正循环。
 		return { kind: "refused", code: "cross-mode-operation-refused", detail: "the ordinary bounded-edit application is not a Judgment Day operation" };
 	}
 	if (input.fix_application === undefined) {
@@ -687,14 +683,13 @@ function finalizeApplyFixV1(context: JeroAuthorityContextV1, record: JeroLineage
 	const fix = input.fix_application;
 	const genesis = new Set(state.genesis_paths ?? []);
 	if (!fix.correction_paths.every((path) => genesis.has(path))) {
-		// A fix touching a non-genesis path fails closed (§J.2).
+		// 触及非 genesis 路径的修正保守失败（§J.2）。
 		return { kind: "refused", code: "non-genesis-path", detail: `fix touches paths outside the frozen genesis scope: ${fix.correction_paths.filter((path) => !genesis.has(path)).join(", ")}` };
 	}
-	// F5 (§9.2 actor output is untrusted): the declared fix facts are
-	// re-derived from the lineage's isolated snapshot object store — the
-	// declared candidate tree must resolve and the declared line count must
-	// equal the `git diff --numstat` derivation over the genesis paths. The
-	// budget and the receipt are therefore never under the caller's control.
+	// F5（§9.2 参与者输出不可信）：声明的修正事实从血脉的隔离快照对象
+	// 存储重新派生——声明的候选树必须可解析，且声明的行数必须等于对
+	// genesis 路径的 `git diff --numstat` 派生。预算与回执因此绝不受调用方
+	// 控制。
 	let derivation: { lines: number; touchedNonGenesisPaths: readonly string[] };
 	try {
 		derivation = deriveJeroCorrectionLinesV1({
@@ -716,10 +711,9 @@ function finalizeApplyFixV1(context: JeroAuthorityContextV1, record: JeroLineage
 	const actualLines = derivation.lines;
 	const budget = state.correction_budget ?? 0;
 	if (actualLines > budget) {
-		// §A.2 illegal #5: a budget overrun escalates; it never reopens
-		// correction. Journaled under the apply-time operation (F14) — the
-		// escalation happens while APPLYING the bounded edit, not while
-		// admitting the correction plan.
+		// §A.2 非法 #5：预算超支触发升级；它绝不重开修正。记入应用期
+		// 操作（F14）——升级发生在“应用”有界编辑之时，而非受理修正计划
+		// 之时。
 		return runJournaledV1(context, record, "apply-fix", input, (next) => {
 			const transition = checkJeroReviewTransitionV1(next.state, next.mode, "apply-fix", { fixRounds: next.counters.fix_rounds, fixBatches: next.counters.fix_batches });
 			if (!transition.legal) return { kind: "refused", code: "invalid-state", detail: transition.reason };
@@ -736,7 +730,7 @@ function finalizeApplyFixV1(context: JeroAuthorityContextV1, record: JeroLineage
 			};
 		});
 	}
-	// Row 6 carries no journal operation of its own (§A.2 journal column): a plain save.
+	// 行 6 没有自己的日志操作（§A.2 的日志列）：一次普通保存。
 	const transition = checkJeroReviewTransitionV1(state.state, state.mode, "apply-fix", { fixRounds: state.counters.fix_rounds, fixBatches: state.counters.fix_batches });
 	if (!transition.legal) return { kind: "refused", code: "invalid-state", detail: transition.reason };
 	const next = clone(state);
@@ -759,7 +753,7 @@ function finalizeApplyFixV1(context: JeroAuthorityContextV1, record: JeroLineage
 	}
 }
 
-// --- ready_final_verification → approved | escalated (§A.2 rows 8-9, §D.7) ---
+// --- ready_final_verification → approved | escalated（§A.2 行 8-9，§D.7） ---
 
 function finalizeVerifyV1(context: JeroAuthorityContextV1, record: JeroLineageStateFileV1, input: JeroReviewFinalizeInputV1): JeroReviewFinalizeResultV1 {
 	if (input.final_evidence === undefined) {
@@ -769,7 +763,7 @@ function finalizeVerifyV1(context: JeroAuthorityContextV1, record: JeroLineageSt
 		const transition = checkJeroReviewTransitionV1(next.state, next.mode, "record-final-evidence", { fixRounds: next.counters.fix_rounds, fixBatches: next.counters.fix_batches });
 		if (!transition.legal) return { kind: "refused", code: "invalid-state", detail: transition.reason };
 		next.counters.final_verifications += 1;
-		// Final evidence is hashed now, never at START (readme:299).
+		// 最终证据在“此刻”哈希，绝不在 START 时（readme:299）。
 		next.evidence_hash = evidenceChainV1(next.evidence_hash, { final_evidence_sha256: jeroDomainHash("final-evidence", input.final_evidence) });
 		next.state = "final_verifying";
 		const passed = input.final_verification_passed === true || input.final_verification_outcome === "passed";

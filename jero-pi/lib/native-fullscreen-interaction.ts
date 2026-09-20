@@ -36,9 +36,9 @@ export class NativeFullscreenInteraction extends Container {
 }
 
 /**
- * Compose native Container mouse dispatch with one keyboard-owning control.
- * Optional observers run around native delegation without rewriting its result,
- * so native layout, targeting, focus, wheel, and click semantics stay intact.
+ * 将原生 Container 的鼠标派发与一个拥有键盘的控件组合。
+ * 可选的观察者围绕原生委托运行且不改写其结果，
+ * 因此原生的布局、命中、焦点、滚轮与点击语义保持完好。
  */
 export function createNativeFullscreenInteraction(
 	options: NativeFullscreenInteractionOptions,

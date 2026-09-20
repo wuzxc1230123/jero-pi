@@ -6,10 +6,9 @@ import os from "node:os";
 import { dirname, join } from "node:path";
 import { emptyThread, type TaskRecord, type TaskThread } from "./agents-protocol.ts";
 
-// Gentle Agents history: one JSON file per finished task, written by the
-// host after the child is gone and read back lazily when the overlay opens
-// or a tool asks for a task from an earlier session. Everything is async so
-// the terminal never waits on disk.
+// Gentle Agents 历史：每个已完成的任务一个 JSON 文件，由宿主在子进程
+// 消失后写入，并在覆盖层打开或工具请求较早会话的任务时惰性读回。
+// 一切皆为异步，终端绝不等磁盘。
 
 export interface StoredTask {
 	task: TaskRecord;
@@ -20,12 +19,10 @@ export function remediationUnresolved(task: TaskRecord): boolean {
 	const state = task.sddRemediation;
 	if (!state) return false;
 	if (state.acquireUncertain || state.settlementUncertain) return true;
-	// A received settlement is a definite native outcome, whatever its state
-	// (including "blocked"): it is terminal task history, never local
-	// ambiguity. Native admission is the sole authority over any later
-	// attempt for the same cwd/change; only genuinely uncertain outcomes, or
-	// no settlement at all with a still-retained token/claimed actor, are
-	// unresolved.
+	// 已接收的结算是确定的原生结果，无论其状态如何（包括 "blocked"）：
+	// 它是终局的任务历史，绝非本地歧义。原生受理对同一 cwd/变更的任何
+	// 后续尝试拥有唯一权威；只有真正不确定的结果，或完全没有结算但
+	// 仍持有 token/已认领执行者的情况，才算未解决。
 	if (state.settlement) return false;
 	return !!state.token || !!state.actorClaimed || !["blocked", "complete"].includes(state.acquireResult?.state ?? "");
 }
@@ -166,7 +163,7 @@ export async function loadHistory(dir: string): Promise<StoredTask[]> {
 	return stored.filter((entry): entry is StoredTask => entry !== undefined).sort((a, b) => b.task.createdAt - a.task.createdAt);
 }
 
-// Keep the newest `maxTasks` files; the rest go. Returns how many were removed.
+// 保留最新的 `maxTasks` 个文件，其余删除。返回删除数量。
 export async function pruneHistory(dir: string, maxTasks: number): Promise<number> {
 	const stored = await loadHistory(dir);
 	const extra = stored.filter(({ task }) => !remediationUnresolved(task)).slice(Math.max(0, maxTasks));

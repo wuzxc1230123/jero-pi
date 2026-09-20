@@ -2,10 +2,10 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { THINKING_LEVELS as ROUTING_THINKING_LEVELS, type ThinkingLevel as RoutingThinkingLevel } from "./model-routing-authority.ts";
 
-// Gentle Agents configuration. Agent definitions are markdown files with YAML
-// frontmatter (the format gentle-ai installs) and runtime settings come from
-// subagents.json at the global and project level. Everything here is pure
-// apart from the discovery helpers, which take their roots as arguments.
+// Gentle Agents 配置。代理定义是带 YAML frontmatter 的 markdown 文件
+// （gentle-ai 安装的格式），运行时设置来自全局与项目层级的
+// subagents.json。除发现辅助函数（以根目录作参数）外，这里的一切都是
+// 纯函数。
 
 export const AGENT_MODE = {
 	TASK: "task",
@@ -16,7 +16,7 @@ export type AgentMode = (typeof AGENT_MODE)[keyof typeof AGENT_MODE];
 
 export type ThinkingLevel = RoutingThinkingLevel;
 
-// Preserve the uppercase compatibility keys without maintaining a second level list.
+// 保留大写兼容键，同时不必维护第二份层级列表。
 export const THINKING_LEVEL = Object.fromEntries(
 	ROUTING_THINKING_LEVELS.map((level) => [level.toUpperCase(), level]),
 ) as { readonly [Level in ThinkingLevel as Uppercase<Level>]: Level };
@@ -119,8 +119,8 @@ function parseInlineList(value: string): string[] {
 	return value.slice(1, -1).split(",").map(unquote).filter((item) => item.length > 0);
 }
 
-// Just enough YAML for agent frontmatter: `key: scalar`, `key: [a, b]`, and
-// `key:` followed by `- item` lines. Anything else stays a plain string.
+// 仅供代理 frontmatter 使用的最小 YAML 子集：`key: scalar`、`key: [a, b]`，
+// 以及 `key:` 后跟若干 `- item` 行。其余内容一律保持普通字符串。
 export function parseFrontmatter(text: string): Frontmatter {
 	const match = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/.exec(text);
 	if (!match) return { data: {}, body: text.trim() };
@@ -199,9 +199,8 @@ export function parseAgentDefinition(text: string, filePath: string, scope: Agen
 	};
 }
 
-// Discovery order is precedence order: a later directory replaces an earlier
-// definition with the same name, so project beats global and `subagents/`
-// beats `agents/` within each scope.
+// 发现顺序即优先顺序：后出现的目录会替换先前同名定义，
+// 因此项目覆盖全局，且每个作用域内 `subagents/` 覆盖 `agents/`。
 function profileRoot(roots: DiscoveryRoots): string {
 	return roots.agentHome ?? join(roots.home, ".pi", "agent");
 }
@@ -257,8 +256,8 @@ function mergeProfiles(base: Record<string, ModelProfile>, override: Record<stri
 	return merged;
 }
 
-// Project settings override global ones field by field; model profiles merge
-// per agent so a project can change one effort without repeating the model.
+// 项目设置逐字段覆盖全局设置；模型档案按代理合并，
+// 项目因此可以只改一个 effort 而不必重复写模型。
 export function parseAgentsConfig(global: RawConfig, project: RawConfig): AgentsConfig {
 	const merged: Record<string, unknown> = { ...(global ?? {}), ...(project ?? {}) };
 	const thinking = parseThinking(merged.default_effort ?? merged.default_thinking_level ?? merged.default_thinking);
@@ -268,8 +267,8 @@ export function parseAgentsConfig(global: RawConfig, project: RawConfig): Agents
 		defaultThinking: thinking !== undefined && THINKING_LEVELS.includes(thinking) ? (thinking as ThinkingLevel) : undefined,
 		defaultMode: mode !== undefined && AGENT_MODES.includes(mode) ? (mode as AgentMode) : AGENT_MODE.TASK,
 		modelProfiles: mergeProfiles(parseProfiles(global?.model_profiles), parseProfiles(project?.model_profiles)),
-		// `timeout_ms` remains accepted as an inert legacy key so existing JSON
-		// files load normally; only silence is bounded by `stall_timeout_ms`.
+		// `timeout_ms` 仍作为惰性遗留键被接受，以便现有 JSON 文件正常加载；
+		// 只有静默时长由 `stall_timeout_ms` 约束。
 		stallTimeoutMs: positiveInteger(merged.stall_timeout_ms, DEFAULT_STALL_TIMEOUT_MS),
 		maxConcurrency: positiveInteger(merged.max_concurrency, DEFAULT_MAX_CONCURRENCY),
 		historyMaxTasks: positiveInteger(merged.history_max_tasks, DEFAULT_HISTORY_MAX_TASKS),

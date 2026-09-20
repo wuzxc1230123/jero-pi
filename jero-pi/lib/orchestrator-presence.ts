@@ -3,18 +3,18 @@ import * as fs from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { stripVTControlCharacters } from "node:util";
 
-// Same-profile OS-user trust boundary, not an authorization channel. POSIX modes
-// restrict newly created storage; Windows deployments must supply their own ACLs.
-// Synchronous bounded I/O serializes publication/disposal without promise races.
+// 同配置 OS 用户内的信任边界，不是授权通道。POSIX 权限位
+// 限制新建存储；Windows 部署必须自行提供 ACL。
+// 有界的同步 I/O 让发布/清理串行化，避免 promise 竞争。
 export const ACTIVITY_LIMIT = 16 * 1024 * 1024;
 const HEADER_LIMIT = 16 * 1024;
 const HASH = /^[a-f0-9]{64}$/;
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;
 const STATUSES = ["running", "queued", "waiting", "completed", "failed", "cancelled", "timed_out"];
 type ObjectValue = Record<string, any>;
-/** Remote records belong in a separate read-only store, never the local TaskStore.
- * Key them by (header.sessionHash, header.incarnation, summary.id), not bare task ID.
- * The header supplies parent identity; callers project only that session's tasks. */
+/** 远端记录属于独立的只读存储，绝不进入本地 TaskStore。
+ * 以 (header.sessionHash, header.incarnation, summary.id) 作键，而非裸任务 ID。
+ * 头部提供父会话身份；调用方只投影该会话的任务。 */
 export interface RemoteSummary {
 	id: string; agent: string; label: string; status: string; model: string;
 	createdAt: number; startedAt: number | null; endedAt: number | null; lastActivityAt: number;
@@ -46,9 +46,9 @@ const summaryTextKeys = ["id", "agent", "label", "status", "model"];
 const summaryKeys = [...summaryTextKeys, "createdAt", "startedAt", "endedAt", "lastActivityAt"];
 const toolKeys = ["kind", "callId", "name", "output", "running", "isError"];
 
-/** Retains every item and every output character; no prompt fallback or invocation
- * args (which can embed subagent prompts), session metadata, or control handles.
- * This is a field whitelist, not content redaction: retained text can contain secrets. */
+/** 保留每个条目和每个输出字符；不含提示词回退或调用参数
+ * （其中可能嵌入子代理提示词）、会话元数据或控制句柄。
+ * 这是字段白名单，不是内容脱敏：保留的文本可能包含机密。 */
 export function projectActivity(input: readonly ActivityInput[]): Activity {
 	const activity = { tasks: input.map(({ task, thread }) => ({
 		summary: pick(task, summaryKeys) as ActivityInput["task"],
@@ -98,14 +98,14 @@ function directory(path: string, privateMode = false, owned = privateMode) {
 }
 function rootFor(profile: string, create = false) {
 	const absolute = resolve(profile);
-	// Reject symlink ancestors too. The caller supplies an existing profile root.
+	// 符号链接祖先同样拒绝。调用方提供的是已存在的配置根目录。
 	for (let path = absolute;; path = dirname(path)) {
 		directory(path);
 		if (dirname(path) === path) break;
 	}
 	const shared = join(absolute, "gentle-agents");
 	const root = join(shared, "presence");
-	// History may already own a 0755 shared root. Never change its permissions.
+	// 历史模块可能已持有 0755 的共享根目录。绝不更改其权限。
 	for (const path of [shared, root]) {
 		if (create) {
 			try { fs.mkdirSync(path, { mode: 0o700 }); }
@@ -166,12 +166,12 @@ function emptyPage(): PresencePage {
 	return { entries: [], scanned: 0, rejected: 0, overflow: false };
 }
 
-/** A bounded, process-local continuation: each next() examines at most 128 entries.
- * Exhaustion closes automatically; callers abandoning traversal must close in finally.
- * Overflow means the page budget was exhausted; the next page may be empty.
- * A stable directory is traversed once in OS order. Concurrent mutations can cause
- * misses/duplicates: deduplicate activation keys and open a fresh cursor on refresh.
- * This is not a snapshot or a liveness guarantee. No stale files are deleted. */
+/** 有界的进程内续体：每次 next() 最多检查 128 个条目。
+ * 遍历耗尽时自动关闭；中途放弃遍历的调用方必须在 finally 中关闭。
+ * 溢出表示页预算已耗尽；下一页可能为空。
+ * 稳定目录按 OS 顺序只遍历一次。并发变更可能导致
+ * 遗漏/重复：按激活键去重，并在刷新时打开新的游标。
+ * 这不是快照，也不是存活保证。不删除任何过期文件。 */
 export class PresenceCursor {
 	private dir?: fs.Dir;
 	private readonly profile: string;
@@ -210,7 +210,7 @@ export class PresenceCursor {
 	}
 }
 
-/** First-page convenience only. Use PresenceCursor when overflow is visible. */
+/** 仅首页便捷封装。一旦可见溢出，请改用 PresenceCursor。 */
 export function listPresence(profile: string, now = Date.now()): PresencePage {
 	try {
 		const cursor = new PresenceCursor(profile);
@@ -218,10 +218,10 @@ export function listPresence(profile: string, now = Date.now()): PresencePage {
 	} catch (error) { return { ...emptyPage(), unavailable: reason(error) }; }
 }
 
-/** The selection pins both activation and generation; never fall back to another session. */
+/** 该选择同时钉住激活标识与世代号；绝不回退到其他会话。 */
 export function readActivity(profile: string, selection: Header): { activity?: Activity; unavailable?: string } {
 	try {
-		// Directory list adds only this reader-owned display hint.
+		// 目录列表只会附带这个读取方自有的显示提示。
 		const { recent: _recent, ...h } = selection as Header & { recent?: boolean };
 		if (!validHeader(h)) throw new Error("malformed");
 		if (h.unavailable) return { unavailable: h.unavailable };
@@ -247,7 +247,7 @@ export class PresencePublisher {
 	private heartbeat?: ReturnType<typeof setInterval>;
 	private disposed = false;
 	private owned = new Map<string, { dev: number; ino: number }>();
-	/** Timer I/O failures stop publication; consumers still apply the recent TTL. */
+	/** 定时器 I/O 失败会停止发布；消费者仍按 recent TTL 处理。 */
 	error?: string;
 
 	private constructor(options: { profile: string; sessionId: string; label: string }) {
@@ -266,8 +266,8 @@ export class PresencePublisher {
 			return publisher;
 		} catch (error) { publisher.dispose(); throw error; }
 	}
-	/** Eagerly projects/serializes each supplied snapshot to detach caller-owned data.
-	 * Only disk publication is coalesced; callers should avoid unrelated invalidations. */
+	/** 主动投影/序列化每个传入快照，以脱离调用方自有数据。
+	 * 只有磁盘发布被合并；调用方应避免无关的失效请求。 */
 	update(input: readonly ActivityInput[]) {
 		if (this.disposed) throw new Error("disposed");
 		const next = JSON.stringify(projectActivity(input));
@@ -316,8 +316,8 @@ export class PresencePublisher {
 		this.publishHeader();
 		this.published = this.pending;
 	}
-	/** Idempotent, non-recursive cleanup, limited to files this activation published.
-	 * Replaced or linked files are deliberately left for their owner to handle. */
+	/** 幂等、非递归的清理，仅限本次激活发布过的文件。
+	 * 被替换或被链接的文件刻意留给其所有者处理。 */
 	dispose() {
 		if (this.disposed) return;
 		this.disposed = true;
@@ -330,7 +330,7 @@ export class PresencePublisher {
 				const stat = fs.lstatSync(path);
 				regular(stat);
 				if (stat.dev === identity.dev && stat.ino === identity.ino) fs.unlinkSync(path);
-			} catch { /* Never follow or remove a replacement when storage becomes unsafe. */ }
+			} catch { /* 存储变得不安全时，绝不跟随或移除替换文件。 */ }
 		}
 		this.owned.clear();
 	}

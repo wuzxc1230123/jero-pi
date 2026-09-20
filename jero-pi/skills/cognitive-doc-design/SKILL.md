@@ -1,37 +1,37 @@
 ---
 name: jero-cognitive-doc-design
-description: "Design docs that reduce cognitive load. Trigger: writing guides, READMEs, RFCs, onboarding, architecture, or review-facing docs."
+description: "设计降低认知负荷的文档。触发词：撰写指南、README、RFC、入职文档、架构文档或面向评审的文档。"
 license: Apache-2.0
 metadata:
   author: gentleman-programming
   version: "1.0"
 ---
 
-## When to Use
+## 何时使用
 
-Load this skill when creating or editing documentation that people need to understand quickly, retain, or use during review.
+在创建或编辑人们需要快速理解、记住或在评审中使用的文档时，加载本技能。
 
-Use it especially for:
+尤其适用于：
 
-- PR descriptions and review notes.
-- Contributor or maintainer guides.
-- Architecture, workflow, or onboarding docs.
-- Any doc that currently feels long, dense, or hard to scan.
+- PR 描述与评审备注。
+- 贡献者或维护者指南。
+- 架构、工作流或入职文档。
+- 任何目前显得冗长、密集或难以浏览的文档。
 
-## Critical Patterns
+## 关键模式
 
-| Pattern | Rule |
+| 模式 | 规则 |
 |---------|------|
-| Lead with the answer | Put the decision, action, or outcome first. Context comes after. |
-| Progressive disclosure | Start with the happy path, then add details, edge cases, and references. |
-| Chunking | Group related information into small sections. Keep flat lists short. |
-| Signposting | Use headings, labels, callouts, and summaries so readers know where they are. |
-| Recognition over recall | Prefer tables, checklists, examples, and templates over prose that must be remembered. |
-| Review empathy | Design docs so reviewers can verify intent without reconstructing the whole story. |
+| 结论先行 | 把决策、行动或结果放在最前，背景随后。 |
+| 渐进披露 | 从正常路径开始，再补充细节、边界情况与参考资料。 |
+| 分块 | 把相关信息组成小节，保持平铺列表简短。 |
+| 路标 | 用标题、标签、提示框和摘要让读者随时知道自己在哪。 |
+| 识别优于回忆 | 优先使用表格、检查单、示例和模板，而非需要记忆的散文。 |
+| 评审共情 | 让评审者无需重建整个故事即可核验意图。 |
 
-## Documentation Shape
+## 文档形态
 
-Use this default structure unless the repo already provides a stronger template:
+除非仓库已提供更强的模板，否则使用此默认结构：
 
 ```markdown
 # <Outcome-oriented title>
@@ -60,17 +60,17 @@ Use this default structure unless the repo already provides a stronger template:
 <Link or action that continues the workflow.>
 ```
 
-## PR and Review Docs
+## PR 与评审文档
 
-When documenting a PR, reduce reviewer burnout by making the review path explicit:
+为 PR 写文档时，让评审路径显式，以减少评审者疲劳：
 
-- State what to review first.
-- State what is intentionally out of scope.
-- Link the previous and next PR when work is chained.
-- Keep each section focused on one decision or unit of work.
-- Use checklists for acceptance criteria and verification.
+- 说明先评审什么。
+- 说明哪些是有意排除在范围外的。
+- 工作成链时，链接前一个与下一个 PR。
+- 每个小节聚焦一个决策或一个工作单元。
+- 用检查单承载验收标准与验证。
 
-## Commands
+## 命令
 
 ```bash
 # Check markdown files changed in the current branch

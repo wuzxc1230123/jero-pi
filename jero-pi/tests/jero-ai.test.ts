@@ -576,7 +576,7 @@ test("models exports missing, normalized project, and global-precedence saved ro
 				: { worker: { model: "anthropic/opus", thinking: "high" } };
 			assert.deepEqual(JSON.parse(readFileSync(fixture.exportPath, "utf8")).agents, agents);
 			assert.equal(fixture.notifications[0]?.severity, "info");
-			assert.match(fixture.notifications[0]!.message, /exported/);
+			assert.match(fixture.notifications[0]!.message, /导出到/);
 			assert.equal(fixture.panelVisits(), 2);
 			await fixture.run("jero:status");
 			const report = fixture.notifications.at(-1)!.message;
@@ -604,7 +604,7 @@ test("invalid global routing overrides valid project in models, status, and expo
 			await fixture.run("jero:models");
 			assert.equal(fixture.notifications[0]?.severity, "warning");
 			assert.ok(fixture.notifications[0]?.message.includes(fixture.globalPath));
-			assert.match(fixture.notifications[0]!.message, atExport ? /export failed/ : /cannot open model config/);
+			assert.match(fixture.notifications[0]!.message, atExport ? /模型路由导出失败/ : /无法打开模型配置/);
 			assert.equal(fixture.panelVisits(), atExport ? 2 : 0);
 			assert.equal(existsSync(fixture.exportPath), false);
 			await fixture.run("jero:status");
@@ -679,7 +679,7 @@ test("session startup reports invalid project routing without mutating the profi
 	const warning = notifications.find((entry) => entry.message.includes(join(projectConfigDir, "models.json")));
 	assert.ok(warning, JSON.stringify(notifications));
 	assert.equal(warning!.severity, "warning");
-	assert.match(warning!.message, /skipped model config/);
+	assert.match(warning!.message, /已跳过模型配置/);
 	assert.equal(readFileSync(profilePath, "utf8"), before);
 
 	writeFileSync(join(projectConfigDir, "models.json"), '{"worker":"openai/gpt-5"}');
@@ -694,7 +694,7 @@ test("session startup reports invalid project routing without mutating the profi
 	const globalWarning = notifications.find((entry) => entry.message.includes(globalPath));
 	assert.ok(globalWarning, JSON.stringify(notifications));
 	assert.equal(globalWarning.severity, "warning");
-	assert.match(globalWarning.message, /skipped model config/);
+	assert.match(globalWarning.message, /已跳过模型配置/);
 	assert.equal(readFileSync(profilePath, "utf8"), before);
 });
 
@@ -823,8 +823,8 @@ test("runtime guidance keeps review policy out of the static orchestrator and te
 
 	const orchestrator = readFileSync("assets/orchestrator.md", "utf8")
 		+ readFileSync("assets/orchestrator-delegation.md", "utf8");
-	assert.match(orchestrator, /injects the mirrored provider-bundle review execution contract/);
-	assert.match(orchestrator, /this package invents no lifecycle instructions/);
+	assert.match(orchestrator, /把镜像的提供方捆绑评审执行契约注入本会话系统提示/);
+	assert.match(orchestrator, /本包不发明生命周期指令/);
 	for (const lifecycleMarker of ["review-risk", "review-reliability", "review-resilience", "review-readability", "Authority-First Terminal Procedure", "reconcile-terminal-mirrors"]) {
 		assert.doesNotMatch(orchestrator, new RegExp(lifecycleMarker), `static orchestrator must not mirror ${lifecycleMarker}`);
 	}
@@ -1643,7 +1643,7 @@ test("applying a profile persists its orchestrator and never leaks the key into 
 	assert.equal(readFileSync(join(fixture.root, ".pi", "agents", "worker.md"), "utf8"), readFileSync(join(fixture.root, ".pi", "agents", "worker.md"), "utf8"));
 	assert.match(readFileSync(join(fixture.root, ".pi", "agents", "worker.md"), "utf8"), /model: openai\/alpha/);
 	const applied = fixture.notifications.at(-1)?.message ?? "";
-	assert.match(applied, /Orchestrator set to nan\/glm5\.3 · max/);
+	assert.match(applied, /将编排器设为 nan\/glm5\.3 · max/);
 });
 
 test("applying a profile without an orchestrator entry leaves settings.json untouched", async (t) => {
@@ -1667,8 +1667,8 @@ test("a profile store entry with only the orchestrator key counts zero roles", a
 	applyOnce(fixture);
 	await fixture.run("jero:profiles");
 	const applied = fixture.notifications.at(-1)?.message ?? "";
-	assert.match(applied, /0 agents updated/);
-	assert.match(applied, /Orchestrator set to nan\/glm5\.3 · high/);
+	assert.match(applied, /更新了 0 个代理/);
+	assert.match(applied, /将编排器设为 nan\/glm5\.3 · high/);
 });
 
 test("applying a profile replaces materialized routing for agents the profile omits", async (t) => {
@@ -1693,7 +1693,7 @@ test("applying a profile replaces materialized routing for agents the profile om
 	// models.json stays the profile itself, not a padded copy.
 	assert.deepEqual(JSON.parse(readFileSync(fixture.globalPath, "utf8")), { worker: { model: "openai/alpha" } });
 	const applied = fixture.notifications.at(-1)?.message ?? "";
-	assert.match(applied, /applied profile "team"/);
+	assert.match(applied, /已应用 profile "team"/);
 });
 
 test("a failed apply restores the previous profile's routing with the same replacement semantics", async (t) => {
@@ -1715,7 +1715,7 @@ test("a failed apply restores the previous profile's routing with the same repla
 	applyOnce(fixture);
 	await fixture.run("jero:profiles");
 
-	const warning = fixture.notifications.find((entry) => /could not apply profile "team"/.test(entry.message));
+	const warning = fixture.notifications.find((entry) => /无法应用 profile "team"/.test(entry.message));
 	assert.ok(warning, "the failed apply is reported");
 	assert.deepEqual(JSON.parse(readFileSync(fixture.globalPath, "utf8")), { helper: { model: "openai/beta" } });
 	const profiles = JSON.parse(readFileSync(subagentsPath, "utf8"));

@@ -13,14 +13,14 @@ const CANDIDATE_GIT_TIMEOUT_MS = 10_000;
 const CANDIDATE_GIT_TIMEOUT_MAX_MS = 120_000;
 const CANDIDATE_GIT_TIMEOUT_ENV = "JERO_PI_CANDIDATE_GIT_TIMEOUT_MS";
 const CANDIDATE_GIT_MAX_BUFFER_BYTES = 64 * 1024 * 1024;
-// Keep the copied index at least one timestamp tick behind its source. The
-// two-second target also clears filesystems whose mtime granularity is a second
-// or coarser without needlessly assigning an arbitrary historical timestamp.
+// 保持拷贝的索引比其来源至少落后一个时间戳刻度。两秒的
+// 目标值也能覆盖 mtime 粒度为秒或更粗的文件系统，
+// 同时避免无谓地赋予一个任意的历史时间戳。
 const PRIVATE_INDEX_RACY_SAFETY_NS = 1_000_000_000n;
 const PRIVATE_INDEX_RACY_BACKDATE_NS = 2_000_000_000n;
 
-// Candidate views may materialize full repository trees. Large repositories can
-// raise this bounded deadline without creating an unbounded child process.
+// 候选视图可能物化完整仓库树。大型仓库可以调高
+// 这个有界期限，而不会产生无界子进程。
 function resolveCandidateGitTimeoutMs(environment: NodeJS.ProcessEnv = process.env): number {
 	const value = environment[CANDIDATE_GIT_TIMEOUT_ENV];
 	if (value === undefined || !/^[1-9]\d*$/.test(value)) return CANDIDATE_GIT_TIMEOUT_MS;
@@ -180,7 +180,7 @@ export interface CreateCandidateViewRequest {
 	contributorRoot: string;
 	baseRef?: string;
 	committedOnly?: boolean;
-	/** Undefined keeps legacy all-untracked capture; [] excludes untracked files. */
+	/** undefined 保留旧的全量未跟踪捕获；[] 排除未跟踪文件。 */
 	intendedUntracked?: readonly string[];
 	replayKey?: string;
 }
@@ -212,17 +212,17 @@ export interface NativeCandidateProjectionDescriptor {
 	paths: readonly string[];
 	intendedUntracked: readonly string[];
 	projection: "workspace" | "staged";
-	// Optional so Phase 3 stays additive: existing callers keep the legacy
-	// sorted-path behavior until the v2 switchover supplies a manifest.
+	// 设为可选以保持 Phase 3 只做增量：既有调用方保持旧的
+	// 排序路径行为，直到 v2 切换提供 manifest。
 	manifest?: readonly ChangedPathEntry[];
-	// The provider artifact-subject's `changed_path_manifest_sha256` claim.
-	// Production callers verify this field across all collect inputs and their
-	// artifact subjects; hand-built descriptors may still use Pi's local digest
-	// as a self-consistency check.
+	// 提供方产物主体的 `changed_path_manifest_sha256` 声明。
+	// 生产调用方会跨所有 collect 输入及其产物主体校验
+	// 该字段；手工构造的描述符仍可用 Pi 的本地摘要
+	// 做自洽检查。
 	manifestSha256?: string;
-	// Set only by the production status adapter after it has checked every
-	// provider-issued collect input and artifact subject for one identical hash.
-	// Provider canonicalization is intentionally not reimplemented here.
+	// 仅由生产状态适配器在逐一检查每个提供方签发的
+	// collect 输入与产物主体并得到同一个哈希后设置。
+	// 刻意不在这里重新实现提供方的规范化。
 	providerManifestHashVerified?: true;
 }
 
@@ -351,13 +351,13 @@ function gitlinkMapsEqual(left: Readonly<Record<string, string>>, right: Readonl
 	return entries.length === Object.keys(right).length && entries.every(([path, objectId]) => right[path] === objectId);
 }
 
-// Two materialized candidate views describe the exact same reviewable content
-// when their base, candidate tree, commit-state, and changed scope all match.
-// This is what makes a retried native START's freshly-materialized duplicate
-// view safely discardable in favor of an already-bound one (gentle-pi
-// candidate-view rebind defect, ga#4085 / ga#4050): the comparison never
-// trusts a caller-supplied claim, only Git-derived identity already computed
-// by materializeCandidateView for both records.
+// 两个物化候选视图在其基线、候选树、提交状态与变更范围
+// 全部一致时，描述的是完全相同的可评审内容。
+// 正因如此，重试的原生 START 新鲜物化出的重复视图可以
+// 安全丢弃，让位于已绑定的那个（gentle-pi
+// candidate-view 重绑缺陷，ga#4085 / ga#4050）：该比较从不
+// 信任调用方提供的声明，只信任 materializeCandidateView 已为
+// 两条记录算出的 Git 派生身份。
 function candidateRecordsShareIdentity(left: CandidateViewRecord, right: CandidateViewRecord): boolean {
 	return left.contributorRoot === right.contributorRoot &&
 		left.baseCommit === right.baseCommit &&
@@ -440,11 +440,11 @@ function gitPathTokens(cwd: string, arguments_: readonly string[], executor: Can
 	return splitNulTerminated(raw, "candidate scope Git output is not NUL-terminated");
 }
 
-// One manifest entry per changed path, carrying the state contract v2 ships in
-// `changed_path_manifest`. `deriveChangedScope` cannot produce this: it runs
-// `--name-status`, which reports a status and a path but never an old mode, so
-// a mode-only or type change is invisible to it. `--raw` carries both modes and
-// both blob ids, which is what makes `modeOnly` decidable at all.
+// 每个变更路径一条 manifest 条目，承载 v2 在
+// `changed_path_manifest` 中交付的状态契约。`deriveChangedScope`
+// 产不出它：它跑的是 `--name-status`，只报告状态与路径、
+// 从不报告旧模式，因此仅模式或类型变更对它不可见。`--raw`
+// 携带两个模式与两个 blob id，这才让 `modeOnly` 可判定。
 export interface ChangedPathEntry {
 	readonly path: string;
 	readonly status: string;
@@ -456,20 +456,20 @@ export interface ChangedPathEntry {
 }
 
 //
-// gentle-pi#518: both derivations diff with `--no-renames`, exactly as the
-// native provider does. A rename is then its source deletion plus its
-// destination addition, one path each, so the projection identity Pi freezes
-// is the identity native STATUS projects. Rename detection here previously
-// kept only the destination, and an exact staged rename was rejected before
-// native admission with candidate-target-projection-drift.
+// gentle-pi#518：两处推导都用 `--no-renames` 做 diff，与原生
+// 提供方完全一致。重命名因此是源删除加目的
+// 新增，各占一条路径，所以 Pi 冻结的投影身份
+// 即原生 STATUS 投影的身份。这里的重命名检测此前
+// 只保留目的地，导致精确的暂存重命名在被原生
+// 准入之前就以 candidate-target-projection-drift 被拒绝。
 export function deriveChangedPathManifest(cwd: string, baseTree: string, candidateTree: string, executor: CandidateGitExecutor = defaultCandidateGitExecutor): readonly ChangedPathEntry[] {
 	const tokens = gitPathTokens(cwd, ["diff", "--raw", "-z", "--abbrev=40", "--no-ext-diff", "--no-renames", baseTree, candidateTree], executor);
 	const entries: ChangedPathEntry[] = [];
 	for (let index = 0; index < tokens.length;) {
 		const header = tokens[index++]?.toString("ascii");
 		if (header === undefined) break;
-		// `:<old_mode> <new_mode> <old_sha> <new_sha> <status>`; with rename
-		// detection off, Git never emits a two-path R or C record here.
+		// `:<old_mode> <new_mode> <old_sha> <new_sha> <status>`；关闭重命名
+		// 检测后，Git 绝不会在这里输出双路径的 R 或 C 记录。
 		const match = /^:([0-7]{6}) ([0-7]{6}) ([0-9a-f]{7,64}) ([0-9a-f]{7,64}) ([AMDT])$/.exec(header);
 		if (match === null) throw new CandidateViewError("candidate manifest Git output contains an unsafe raw header", "manifest-derivation-invalid");
 		const [, oldMode, newMode, oldSha, newSha, status] = match;
@@ -483,23 +483,23 @@ export function deriveChangedPathManifest(cwd: string, baseTree: string, candida
 			newMode,
 			deleted: status === "D",
 			typeChanged: status === "T",
-			// Identical blob on both sides with different modes is the case the
-			// sorted-path comparison could never see.
+			// 两侧 blob 相同而模式不同，正是排序路径
+			// 比较永远看不到的情形。
 			modeOnly: oldSha === newSha && oldMode !== newMode,
 		}));
 	}
 	return Object.freeze([...entries].sort((left, right) => (left.path < right.path ? -1 : left.path > right.path ? 1 : 0)));
 }
 
-// Pi's own canonical digest of a changed-path manifest: sorted by path, with
-// the wire (snake_case) field names the v2 `changed_path` schema uses. This
-// is deliberately NOT an attempt to reproduce the provider's undocumented
-// `changed_path_manifest_sha256` canonicalization byte-for-byte (design.md's
-// open question). It is Pi's own self-consistency check: does the manifest a
-// descriptor carries digest to the same value the descriptor claims for it?
-// A caller (or a corrupted transport) that supplies a manifest and a claimed
-// digest that disagree with each other is caught here, independent of and
-// before any comparison against live Git content.
+// Pi 自己的变更路径 manifest 权威摘要：按路径排序，使用
+// v2 `changed_path` schema 的 wire（snake_case）字段名。这
+// 刻意不是要逐字节复现提供方未公开的
+// `changed_path_manifest_sha256` 规范化（design.md 的
+// 开放问题）。它是 Pi 自己的自洽检查：描述符携带的
+// manifest 是否摘要出与描述符所声明一致的值？提供
+// manifest 与所声明摘要彼此矛盾的调用方（或被篡改的
+// 传输）在这里被抓住，独立于且先于
+// 与实时 Git 内容的任何比较。
 export function digestChangedPathManifest(manifest: readonly ChangedPathEntry[]): string {
 	const canonical = [...manifest]
 		.sort((left, right) => (left.path < right.path ? -1 : left.path > right.path ? 1 : 0))
@@ -519,15 +519,15 @@ function assertManifestMatchesGit(descriptor: NativeCandidateProjectionDescripto
 	const claimed = descriptor.manifest;
 	if (claimed === undefined) return;
 
-	// Self-consistency: does the manifest digest to what the subject claims
-	// for it? Checked before any Git comparison, same as input-divergence.
+	// 自洽性：manifest 是否摘要出主体为其声明的
+	// 值？先于任何 Git 比较检查，与 input-divergence 一样。
 	if (descriptor.manifestSha256 !== undefined && descriptor.providerManifestHashVerified !== true && digestChangedPathManifest(claimed) !== descriptor.manifestSha256) {
 		throw new CandidateViewError("native manifest does not digest to its own artifact-subject claim", "manifest-subject-drift");
 	}
 
-	// First: is the provider's own input self-consistent? A manifest that does
-	// not describe the descriptor's paths is not a drift observation, it is a
-	// malformed input, and saying so separately keeps the diagnosis honest.
+	// 第一步：提供方自身的输入是否自洽？一个不
+	// 描述描述符路径的 manifest 不是漂移观测，而是
+	// 格式错误的输入；单独说明这一点能让诊断保持诚实。
 	const claimedPaths = [...claimed.map((entry) => entry.path)].sort();
 	if (JSON.stringify(claimedPaths) !== JSON.stringify([...descriptor.paths].sort())) {
 		throw new CandidateViewError("native manifest does not describe the same paths as its own projection", "manifest-input-divergence");
@@ -554,9 +554,9 @@ function deriveChangedScope(cwd: string, baseTree: string, candidateTree: string
 	const present = new Map(entries.map((entry) => [entry.path, entry]));
 	const paths = new Set<string>();
 	const deleted = new Set<string>();
-	// `--no-renames` mirrors the native projection: a rename is one deleted
-	// path plus one added path (gentle-pi#518), and every record carries
-	// exactly one path.
+	// `--no-renames` 镜像原生投影：重命名是一条删除
+	// 路径加一条新增路径（gentle-pi#518），且每条记录
+	// 恰好携带一条路径。
 	const tokens = gitPathTokens(cwd, ["diff", "--name-status", "-z", "--no-ext-diff", "--no-renames", baseTree, candidateTree], executor);
 	for (let index = 0; index < tokens.length;) {
 		const status = tokens[index++]?.toString("ascii");
@@ -674,10 +674,10 @@ function explicitBaseRefCandidates(cwd: string, selector: string, env: NodeJS.Pr
 	return [...new Set(candidates)].filter((candidate) => refs.has(candidate));
 }
 
-// Runs a probe command that may exit nonzero as an expected signal (absent
-// ref, detached HEAD). Returns the exit status and trimmed stdout. Timeout,
-// output-limit, and unexpected Git failures propagate as sanitized
-// CandidateViewError diagnostics, same as candidateGit.
+// 运行一个可能以非零退出作为预期信号（引用
+// 不存在、分离 HEAD）的探测命令。返回退出状态与裁剪过的 stdout。
+// 超时、输出超限与意外的 Git 失败以经过净化的
+// CandidateViewError 诊断传播，与 candidateGit 相同。
 function probeCandidateGit(cwd: string, arguments_: readonly string[], env: NodeJS.ProcessEnv, executor: CandidateGitExecutor): { status: number; stdout: string } {
 	const timeoutMs = resolveCandidateGitTimeoutMs(env);
 	try {
@@ -695,13 +695,13 @@ function probeCandidateGit(cwd: string, arguments_: readonly string[], env: Node
 	}
 }
 
-// An unborn repository's HEAD is a symbolic ref to a branch with no commits.
-// `symbolic-ref --quiet HEAD` exits nonzero for a detached HEAD (not unborn).
-// `rev-parse --verify --quiet <ref>` distinguishes a valid unborn (status 1,
-// ref absent) from a broken symbolic ref (exit 0, ref OID text exists even
-// when the object is missing). Any other status (128, etc.) signals
-// corruption or an I/O failure, so it fails closed instead of masquerading as
-// an unborn repository.
+// 未诞生仓库的 HEAD 是指向无提交分支的符号引用。
+// `symbolic-ref --quiet HEAD` 对分离 HEAD（非未诞生）以非零退出。
+// `rev-parse --verify --quiet <ref>` 区分合法的未诞生（状态 1、
+// 引用不存在）与损坏的符号引用（退出 0，即使对象
+// 缺失也存在引用 OID 文本）。任何其他状态（128 等）都表示
+// 损坏或 I/O 失败，因此保守失败而不是
+// 伪装成未诞生仓库。
 function isUnbornSymbolicHead(cwd: string, env: NodeJS.ProcessEnv, executor: CandidateGitExecutor): boolean {
 	const symbolic = probeCandidateGit(cwd, ["symbolic-ref", "--quiet", "HEAD"], env, executor);
 	if (symbolic.status !== 0) return false;
@@ -712,19 +712,19 @@ function isUnbornSymbolicHead(cwd: string, env: NodeJS.ProcessEnv, executor: Can
 	throw candidateGitFailure(CANDIDATE_VIEW_GIT_FAILURE_CATEGORY.GIT_FAILURE, refProbeArguments, resolveCandidateGitTimeoutMs(env));
 }
 
-// Derives Git's repository-native empty tree without hardcoding the SHA-1 id,
-// so a sha256 repository derives its own empty-tree object id. `mktree` with
-// ignored stdin reads empty input and writes the empty tree object.
+// 推导 Git 仓库原生的空树而不硬编码 SHA-1 id，
+// 使 sha256 仓库推导自己的空树对象 id。忽略 stdin 的
+// `mktree` 读入空输入并写出空树对象。
 function resolveEmptyTree(cwd: string, env: NodeJS.ProcessEnv, executor: CandidateGitExecutor): string {
 	return git(cwd, ["mktree"], env, executor);
 }
 
 function resolveCandidateBase(cwd: string, baseRef: string | undefined, env: NodeJS.ProcessEnv, executor: CandidateGitExecutor): ResolvedCandidateBase {
 	const selector = baseRef ?? "HEAD";
-	// An unborn repository has a symbolic HEAD pointing at a branch with no
-	// commits yet. Its review base is Git's repository-native empty tree, not a
-	// missing or malformed commit. Only the default/HEAD selector is entitled to
-	// the empty-tree base; a detached HEAD over a missing commit stays fail-closed.
+	// 未诞生仓库的 HEAD 符号指向尚无提交的分支。其
+	// 评审基线是 Git 仓库原生的空树，而不是缺失
+	// 或格式错误的提交。只有默认/HEAD 选择器有资格使用
+	// 空树基线；指向缺失提交的分离 HEAD 保持保守失败。
 	if (selector === "HEAD" && isUnbornSymbolicHead(cwd, env, executor)) {
 		return { commit: "HEAD", tree: resolveEmptyTree(cwd, env, executor) };
 	}
@@ -777,21 +777,22 @@ function checkoutMaterializedEntries(root: string, entries: readonly CandidateTr
 	flush();
 }
 
-// Creates an unborn worktree (symbolic HEAD pointing at a branch with no
-// commits, no ref written, no phantom commit). Git 2.42+ supports --orphan
-// directly; older Git lacks the flag and reports an unsupported-option usage
-// error (exit status 129). Only that exact status triggers the fallback: a
-// temporary empty-tree commit seeds a detached --no-checkout worktree, then
-// a symbolic-ref rewrite makes HEAD unborn. The temporary commit is never
-// referenced by any ref and is GC-able, so it is not a phantom commit. The
-// fallback uses a deterministic author/committer identity and timestamp in a
-// copied environment so it does not depend on user.name/user.email or the
-// ambient date. Contributor HEAD, branch, refs, and index are never touched.
+// 创建未诞生工作树（HEAD 符号指向无提交的分支、
+// 不写引用、无幻影提交）。Git 2.42+ 直接支持
+// --orphan；更老的 Git 没有该标志并报告
+// unsupported-option 用法错误（退出状态 129）。只有该精确
+// 状态才触发回退：先由临时空树提交种子一个分离的
+// --no-checkout 工作树，再用 symbolic-ref 重写使 HEAD
+// 未诞生。临时提交不被任何引用引用、可被
+// GC，因此不是幻影提交。回退在拷贝的
+// 环境中使用确定性的作者/提交者身份与时间戳，
+// 因而不依赖 user.name/user.email 或
+// 当前日期。贡献者的 HEAD、分支、引用与索引绝不被触碰。
 function addUnbornWorktree(cwd: string, root: string, branch: string, env: NodeJS.ProcessEnv, executor: CandidateGitExecutor): void {
 	const primary = probeCandidateGit(cwd, ["worktree", "add", "--orphan", "-b", branch, root], env, executor);
 	if (primary.status === 0) return;
-	// Only the unsupported-option usage status (129, pre-2.42 Git lacking --orphan)
-	// triggers the fallback. Every other status propagates as a git-failure.
+	// 只有 unsupported-option 用法状态（129，缺 --orphan 的
+	// 2.42 之前 Git）才触发回退。其他状态一律作为 git-failure 传播。
 	if (primary.status !== 129 || existsSync(root)) throw candidateGitFailure(CANDIDATE_VIEW_GIT_FAILURE_CATEGORY.GIT_FAILURE, ["worktree", "add", "--orphan", "-b", branch, root], resolveCandidateGitTimeoutMs(env));
 	const fallbackEnv = {
 		...env,
@@ -821,9 +822,9 @@ function isErrnoCode(error: unknown, code: string): boolean {
 }
 
 function timestampSeconds(timestampNs: bigint): number {
-	// Node's utimes API takes Unix seconds as a number. Splitting the value keeps
-	// the seconds conversion exact; the explicit racy-clean backdate below is far
-	// larger than the fractional precision a Number can represent at this epoch.
+	// Node 的 utimes API 接受以数字表示的 Unix 秒。拆分数值可保持
+	// 秒转换精确；下面明确的 racy-clean 回拨远大于
+	// Number 在该时期能表示的小数精度。
 	return Number(timestampNs / 1_000_000_000n) + Number(timestampNs % 1_000_000_000n) / 1_000_000_000;
 }
 
@@ -833,11 +834,11 @@ function seedPrivateIndexFromLiveIndex(cwd: string, indexPath: string, executor:
 	if (entry === undefined) return false; if (!entry.isFile()) throw new CandidateViewError("candidate live Git index is not a regular file");
 	if (entry.mtimeNs < PRIVATE_INDEX_RACY_BACKDATE_NS) throw new CandidateViewError("candidate live Git index timestamp is too early for racy-clean protection");
 	copyFileSync(liveIndex, indexPath);
-	// Git's racy-clean check compares index and tracked-file mtimes. copyFileSync
-	// gives the private index a new timestamp; restoring a Date can also lose
-	// nanoseconds. Backdate the bigint live timestamp instead, then verify the
-	// filesystem applied enough of that bounded interval for Git to refresh
-	// content rather than trusting a racy-clean stat match.
+	// Git 的 racy-clean 检查比较索引与被跟踪文件的 mtime。copyFileSync
+	// 会给私有索引新时间戳；恢复 Date 还会丢失
+	// 纳秒。改为回拨 bigint 的活跃时间戳，然后验证
+	// 文件系统应用了足够大的有界区间，使 Git 刷新
+	// 内容而不是信任一个 racy-clean 的 stat 匹配。
 	utimesSync(indexPath, timestampSeconds(entry.atimeNs), timestampSeconds(entry.mtimeNs - PRIVATE_INDEX_RACY_BACKDATE_NS));
 	const privateMtimeNs = lstatSync(indexPath, { bigint: true }).mtimeNs;
 	if (privateMtimeNs >= entry.mtimeNs || entry.mtimeNs - privateMtimeNs < PRIVATE_INDEX_RACY_SAFETY_NS) {
@@ -874,11 +875,12 @@ function materializeCandidateView(request: CreateCandidateViewRequest, executor:
 	try {
 		const baseCommit = base.commit;
 		const unborn = baseCommit === "HEAD";
-		// Workspace candidates seed their isolated index from the resolved live index; missing indexes use the frozen base.
+		// 工作区候选用解析出的活跃索引播种其隔离索引；缺失索引时使用冻结基线。
 		const seededFromLiveIndex = !committedOnly && intendedUntracked !== undefined && seedPrivateIndexFromLiveIndex(contributorRoot, indexPath, executor);
 		if (!seededFromLiveIndex) {
-			// For an unborn repository the base tree is Git's empty tree, so seed the
-			// private candidate index from `--empty` instead of a non-existent commit.
+			// 未诞生仓库的基线树是 Git 的空树，因此用
+			// `--empty` 而不是不存在的提交为私有候选
+			// 索引播种。
 			if (unborn) git(contributorRoot, ["read-tree", "--empty"], environment, executor);
 			else git(contributorRoot, ["read-tree", candidateCommit.commit], environment, executor);
 		}
@@ -897,17 +899,17 @@ function materializeCandidateView(request: CreateCandidateViewRequest, executor:
 		} catch (error) {
 			throw new CandidateViewError("candidate view owner preparation failed", "candidate-owner-preparation-failed", undefined, { cause: error });
 		}
-		// The worktree is created under the same try/catch cleanup boundary as
-		// the read-tree materialization that follows. addUnbornWorktree's
-		// fallback path can register a worktree with `worktree add` and then
-		// fail on a later step (for example `symbolic-ref`); moving creation
-		// here ensures any such partial registration is removed by the catch
-		// below instead of leaking a registered/admin worktree and directory.
+		// 工作树与随后的 read-tree 物化处于同一个
+		// try/catch 清理边界内。addUnbornWorktree 的
+		// 回退路径可能已用 `worktree add` 注册了工作树却在
+		// 后续步骤失败（例如 `symbolic-ref`）；把创建
+		// 移到这里确保这类部分注册会被下面的 catch
+		// 移除，而不是泄漏已注册/管理的工作树与目录。
 		try {
-			// An unborn repository has no commit to detach a worktree at. addUnbornWorktree
-			// creates an orphan worktree (unborn branch, no commit, no ref) to host the
-			// materialized candidate tree without a phantom commit, with a fallback for
-			// Git versions older than 2.42 that do not support --orphan.
+			// 未诞生仓库没有可供工作树分离的提交。addUnbornWorktree
+			// 创建孤儿工作树（未诞生分支、无提交、无引用）来承载
+			// 物化的候选树而不产生幻影提交，并为不支持
+			// --orphan 的 2.42 之前 Git 版本提供回退。
 			if (unborn) addUnbornWorktree(contributorRoot, root, `jero-candidate-${randomUUID()}`, process.env, executor);
 			else git(contributorRoot, ["worktree", "add", "--detach", "--no-checkout", root, candidateCommit.commit], process.env, executor);
 			git(root, ["read-tree", candidateTree], process.env, executor);
@@ -919,7 +921,7 @@ function materializeCandidateView(request: CreateCandidateViewRequest, executor:
 			makeReadonly(root, entries);
 			return { owner, token: basename(root), root: realpathSync(root), parent, contributorRoot, commonDir: canonicalCommonDir, baseCommit, baseTree: base.tree, candidateTree, committedOnly, intendedUntracked, entries, gitlinks: tree.gitlinks, scope, gitExecutor: executor };
 		} catch (error) {
-			try { removeCandidateOwner(owner, (args) => git(canonicalCommonDir, args, process.env, executor), makeWritableForCleanup, false, platform); } catch { /* Preserve the marker and any partial worktree for conservative recovery. */ }
+			try { removeCandidateOwner(owner, (args) => git(canonicalCommonDir, args, process.env, executor), makeWritableForCleanup, false, platform); } catch { /* 保守恢复时保留标记与任何部分工作树。 */ }
 			throw error;
 		}
 	} finally {
@@ -984,17 +986,17 @@ export class CandidateViewRegistry {
 		this.gitExecutor = gitExecutor;
 		this.platform = platform;
 	}
-	// Lifecycle state is scoped to the canonical target worktree as well as the
-	// provider lineage. Lineage text is repository-local and may legitimately be
-	// identical in two repositories owned by one Pi session.
+	// 生命周期状态既按提供方 lineage 划分作用域，也按权威
+	// 目标工作树划分。lineage 文本是仓库局部的，同一
+	// Pi 会话拥有的两个仓库中合法地可能相同。
 	private readonly lineages = new Map<string, string>();
 	private readonly projections = new Map<string, FrozenCandidateProjection>();
 	private readonly replays = new Map<string, string>();
 	private readonly current = new Map<string, { lineageId: string; token: string }>();
-	// The last dispatch-binding hydration that was attempted and failed. A
-	// swallowed hydration failure is its own defect (field report 2026-08-16):
-	// without it the later dispatch refusal claims no binding was ever
-	// available instead of naming the attempt and its typed cause.
+	// 最后一次被尝试且失败的派发绑定水合。被
+	// 吞掉的水合失败本身就是缺陷（现场报告 2026-08-16）：
+	// 没有它，后来的派发拒绝会声称从未有过可用绑定，
+	// 而不是点名该次尝试及其类型化原因。
 	private readonly lastHydrationFailures = new Map<string, { lineageId: string; reason: string; message: string }>();
 
 	private canonicalRoot(contributorRoot: string): string {
@@ -1042,9 +1044,9 @@ export class CandidateViewRegistry {
 	}
 
 	/**
-	 * Returns the one active target root bound to a lineage, or undefined.
-	 * Throws when that lineage is bound across multiple roots; callers must pass
-	 * an explicit workspaceRoot to resolve the ambiguity.
+	 * 返回绑定到某条 lineage 的唯一活跃目标根，或 undefined。
+	 * 该 lineage 绑定到多个根时抛出；调用方必须传入
+	 * 显式的 workspaceRoot 来消解歧义。
 	 */
 	resolveWorkspaceRoot(lineageId: string): string | undefined {
 		const key = this.uniqueKey(this.lineages, lineageId, undefined);
@@ -1080,12 +1082,12 @@ export class CandidateViewRegistry {
 			const cwd = realpathSync(contributorRoot);
 			const common = realpathSync(resolve(cwd, git(cwd, ["rev-parse", "--git-common-dir"], process.env, this.gitExecutor)));
 			sweepCandidateOwners(common, (args) => git(common, args, process.env, this.gitExecutor), makeWritableForCleanup, this.platform);
-		} catch { /* Non-repositories and unavailable ownership are preserved. */ }
+		} catch { /* 非仓库与不可用的所有权保持原样。 */ }
 	}
 
 	cleanupAll(): void {
 		for (const token of [...this.records.keys()]) {
-			try { this.cleanup(token); } catch { /* Continue other owned views; failed records remain retryable. */ }
+			try { this.cleanup(token); } catch { /* 继续处理其他自有视图；失败的记录仍可重试。 */ }
 		}
 	}
 
@@ -1111,15 +1113,16 @@ export class CandidateViewRegistry {
 		const candidate = this.records.get(request.token);
 		const key = candidate === undefined ? undefined : this.lineageKey(candidate.contributorRoot, request.lineageId);
 		const existingToken = key === undefined ? undefined : this.lineages.get(key);
-		// A retried native START for a lineage this controller already bound
-		// (native reports it "resumed") re-materializes a fresh, content-
-		// identical candidate view under a new token before it reaches here.
-		// Rebinding that duplicate to the same lineage key used to fail closed
-		// with "candidate view lineage binding is missing or ambiguous" even
-		// though nothing is actually ambiguous: it is the exact same reviewable
-		// content, re-verified from Git. Discard the redundant duplicate and
-		// keep the already-bound view current instead of failing the retry
-		// (gentle-pi candidate-view rebind defect, ga#4085 / ga#4050).
+		// 为本控制器已绑定的 lineage 重试原生
+		// START（原生报告为 "resumed"）时，会在到达这里之前
+		// 重新物化出一个内容相同的新候选视图（新
+		// 令牌）。把该重复视图重新绑定到同一 lineage 键过去会
+		// 以 "candidate view lineage binding is missing or ambiguous"
+		// 保守失败，尽管实际并无歧义：这是完全相同的
+		// 可评审内容，且已由 Git 重新验证。改为丢弃冗余的
+		// 重复视图并保持已绑定视图为当前视图，而不是让
+		// 重试失败（gentle-pi candidate-view 重绑缺陷，
+		// ga#4085 / ga#4050）。
 		if (candidate !== undefined && existingToken !== undefined && existingToken !== request.token) {
 			const existing = this.records.get(existingToken);
 			let existingSafe = false;
@@ -1323,9 +1326,10 @@ export class CandidateViewRegistry {
 		const base = head.tree === descriptor.baseTree ? head : resolveCandidateBaseTree(root, descriptor.baseTree, this.gitExecutor);
 		const committedOnly = head.tree === descriptor.currentCandidateTree && base.tree !== head.tree;
 		if (!committedOnly && head.tree !== descriptor.baseTree) throw new CandidateViewError("native projection base no longer matches HEAD");
-		// Native `staged` covers both a committed HEAD range and the exact current
-		// index over HEAD. Re-derive the latter from Git instead of trusting the
-		// label; this also rejects dirty-inclusive snapshots mislabeled as staged.
+		// 原生 `staged` 同时覆盖已提交的 HEAD 区间与
+		// HEAD 上的精确当前索引。改为从 Git 重新推导后者而不是
+		// 信任标签；这也会拒绝被误标为 staged 的
+		// 含脏快照。
 		const stagedIndex = !committedOnly && descriptor.baseTree === head.tree &&
 			git(root, ["write-tree"], process.env, this.gitExecutor) === descriptor.currentCandidateTree;
 		if (
@@ -1336,10 +1340,10 @@ export class CandidateViewRegistry {
 		}
 		const tree = parseTree(root, descriptor.currentCandidateTree, this.gitExecutor);
 		const scope = deriveChangedScope(root, descriptor.baseTree, descriptor.currentCandidateTree, [...tree.entries, ...tree.gitlinks], this.gitExecutor);
-		// A manifest SUBSUMES the sorted-path comparison rather than stacking on
-		// top of it: it checks the same path set plus the mode, status, and
-		// type state the path set cannot express, and it names which of those
-		// drifted. Descriptors without a manifest keep the legacy check.
+		// manifest 是取代（SUBSUMES）排序路径比较而不是叠加在
+		// 其上：它检查同一路径集外加路径集无法表达的
+		// 模式、状态与类型状态，并点名其中哪一项
+		// 漂移了。没有 manifest 的描述符保持旧检查。
 		if (descriptor.manifest !== undefined) {
 			assertManifestMatchesGit(descriptor, deriveChangedPathManifest(root, descriptor.baseTree, descriptor.currentCandidateTree, this.gitExecutor));
 		} else if (JSON.stringify(scope.paths) !== JSON.stringify([...descriptor.paths].sort())) {
@@ -1360,32 +1364,32 @@ export class CandidateViewRegistry {
 	}
 
 	/**
-	 * Re-derives this lineage's FINALIZE binding from the provider's own
-	 * projection, replacing a binding this session is still holding.
+	 * 从提供方自己的投影重新推导该 lineage 的 FINALIZE 绑定，
+	 * 替换本会话仍持有的绑定。
 	 *
-	 * Field defect (Engram #12547): once a bounded correction is admitted, the
-	 * candidate identity legitimately moves, and the provider issues its
-	 * finalize transition for that corrected target. A session that started the
-	 * review still holds the START-time immutable reviewer view, so comparing
-	 * it against the corrected projection reads as drift and no receipt is ever
-	 * minted — while a fresh process, which restores from the native descriptor,
-	 * finalizes the very same lineage successfully. This makes the in-session
-	 * path behave like that already-correct fresh-process path.
+	 * 现场缺陷（Engram #12547）：一旦有界修正被准入，
+	 * 候选身份合法地移动，提供方为修正后的
+	 * 目标发出 finalize 转换。启动评审的
+	 * 会话仍持有 START 时的不可变评审器视图，因此把它
+	 * 与修正后的投影比较会被读作漂移，永远铸造不出
+	 * 回执 —— 而从原生描述符恢复的新进程
+	 * 能成功完成同一条 lineage 的 finalize。这里让会话内
+	 * 路径表现得像那条已修正的新进程路径。
 	 *
-	 * This is a re-derivation, not a relaxation: the replacement is
-	 * materialized from Git and must match the provider descriptor exactly
-	 * (base tree, projection kind, changed-path manifest), and the caller still
-	 * asserts the binding afterwards. The immutable reviewer view is retired
-	 * here on purpose — the lenses that consumed it finished before the
-	 * correction.
+	 * 这是重新推导，不是放宽：替换物由
+	 * Git 物化且必须与提供方描述符精确一致
+	 * （基线树、投影种类、变更路径 manifest），调用方之后
+	 * 仍会断言绑定。不可变评审器视图在此被有意退役 ——
+	 * 消费它的各评审视角已在修正之前
+	 * 完成。
 	 */
 	rebindForFinalizeFromNative(lineageId: string, contributorRoot: string, descriptor: NativeCandidateProjectionDescriptor): CandidateView {
 		return this.restoreForFinalizeFromNative(lineageId, contributorRoot, descriptor);
 	}
 
 	/**
-	 * Restores a lineage's FINALIZE binding (gentle-pi #185): the stale entry
-	 * is only detached, not destroyed, so a failed restore can undo it.
+	 * 恢复某条 lineage 的 FINALIZE 绑定（gentle-pi #185）：过期条目
+	 * 只是被分离，不被销毁，因此失败的恢复可以撤销它。
 	 */
 	restoreForFinalizeFromNative(lineageId: string, contributorRoot: string, descriptor: NativeCandidateProjectionDescriptor): CandidateView {
 		const root = this.canonicalRoot(contributorRoot);
@@ -1425,13 +1429,12 @@ export class CandidateViewRegistry {
 	}
 
 	/**
-	 * Mirrors the START-time dispatch registration for a lineage this
-	 * controller never started (live defect 2026-08-16: a successor created
-	 * by native `review recover` exists only in native authority). The
-	 * authoritative STATUS descriptor supplies the frozen projection; the
-	 * live candidate is re-materialized and must match it exactly before the
-	 * dispatch-facing current binding is established with the provider-named
-	 * pending lenses.
+	 * 为本控制器从未启动过的 lineage 镜像 START 时的
+	 * 派发注册（现场缺陷 2026-08-16：由原生
+	 * `review recover` 创建的后继只存在于原生权威中）。权威
+	 * 的 STATUS 描述符提供冻结投影；先重新物化
+	 * 存活候选并要求其精确匹配，然后才用提供方命名的
+	 * 待定评审视角建立面向派发的当前绑定。
 	 */
 	restoreCurrentForDispatchFromNative(lineageId: string, contributorRoot: string, descriptor: NativeCandidateProjectionDescriptor, selectedLenses: readonly string[]): void {
 		const root = this.canonicalRoot(contributorRoot);
@@ -1517,7 +1520,7 @@ export class CandidateViewRegistry {
 		return this.currentBinding(contributorRoot).lineageId;
 	}
 
-	/** The last failed dispatch-binding hydration, for controller envelopes. */
+	/** 最后一次失败的派发绑定水合，供控制器封套使用。 */
 	lastDispatchHydrationFailure(contributorRoot?: string): Readonly<{ lineageId: string; reason: string; message: string }> | undefined {
 		if (contributorRoot !== undefined) return this.lastHydrationFailures.get(this.canonicalRoot(contributorRoot));
 		return this.lastHydrationFailures.size === 1 ? [...this.lastHydrationFailures.values()][0] : undefined;
@@ -1646,7 +1649,7 @@ function compareCanonicalStrings(left: string, right: string): number {
 }
 
 function canonicalStringMap(value: Readonly<Record<string, string>>): Record<string, string> {
-	// Plain objects enumerate integer-like keys numerically; canonical round trips intentionally preserve that ordering.
+	// 普通对象按数值枚举整数型键；权威往返有意保留该排序。
 	return Object.fromEntries(Object.entries(value).sort(([left], [right]) => compareCanonicalStrings(left, right)));
 }
 
@@ -1825,9 +1828,9 @@ function candidateContextBlock(lineageId: string, agents: readonly ReviewLens[],
 }
 
 /**
- * Validates and mutates the actual mutable Pi `subagent_run` tool input before
- * execution. It deliberately derives all review context from the controller's
- * in-memory registry rather than user-provided lineage, cwd, paths, or content.
+ * 在执行前校验并改动 Pi 实际可变的 `subagent_run` 工具输入。
+ * 它刻意从控制器的内存注册表派生全部评审上下文，而不是
+ * 用户提供的 lineage、cwd、路径或内容。
  */
 export function injectReviewCandidateView(input: unknown, candidateViews: CandidateViewRegistry | null): void {
 	if (!isRecord(input)) return;

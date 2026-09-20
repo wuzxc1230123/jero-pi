@@ -1,53 +1,53 @@
 ---
 name: jero-chained-pr
-description: "Trigger: PRs over 400 lines, stacked PRs, review slices. Split oversized changes into chained PRs that protect review focus."
+description: "触发词：超过 400 行的 PR、堆叠 PR、评审切片。把过大变更拆分为链式 PR，保护评审专注度。"
 license: Apache-2.0
 metadata:
   author: gentleman-programming
   version: "1.0"
 ---
 
-## Activation Contract
+## 激活契约
 
-Load this skill when a planned PR may exceed **400 changed lines**, SDD forecasts `400-line budget risk: High` or `Chained PRs recommended: Yes`, or the user asks for chained/stacked PRs, review slices, or reviewer-load control.
+当计划中的 PR 可能超过 **400 行改动**、SDD 预测出 `400-line budget risk: High` 或 `Chained PRs recommended: Yes`，或用户要求链式/堆叠 PR、评审切片或评审者负载控制时，加载本技能。
 
-## Hard Rules
+## 硬性规则
 
-- Split PRs over **400 changed lines** unless a maintainer explicitly accepts `size:exception`.
-- The budget constrains how work is **sliced**, never the code itself. Never delete comments, blank lines, docs, or tests, and never compress or restyle code, to fit under the budget.
-- Slicing is bounded: make **one** honest slicing pass. If no cohesive split brings every slice within budget, stop iterating, keep the best cohesive split, and report the final line count with a `size:exception` recommendation.
-- Keep each PR reviewable in about **≤60 minutes**.
-- Use one deliverable work unit per PR; keep tests/docs with the unit they verify.
-- State start, end, prior dependencies, follow-up work, and out-of-scope items in every chained PR.
-- Every child PR must include a dependency diagram marking the current PR with `📍`.
-- In Feature Branch Chain, create a draft/no-merge tracker PR; child PR #1 targets the tracker branch, later children target the immediate parent branch.
-- Treat polluted diffs as base bugs: retarget or rebase until only the current work unit appears.
-- Do not mix chain strategies after the user chooses one.
+- 除非维护者明确接受 `size:exception`，超过 **400 行改动**的 PR 必须拆分。
+- 该预算约束的是工作的**切分**方式，绝不是代码本身。绝不为凑进预算而删除注释、空行、文档或测试，也绝不压缩或重排代码风格。
+- 切分是有界的：只做**一次**诚实的切分尝试。若无任何内聚拆分能让每个切片都进预算，停止迭代，保留最佳内聚拆分，并报告最终行数与 `size:exception` 建议。
+- 每个 PR 应可在约 **≤60 分钟**内完成评审。
+- 每个 PR 对应一个可交付工作单元；测试/文档与其验证的对象留在同一单元。
+- 每个链式 PR 都必须说明起点、终点、前置依赖、后续工作与范围外事项。
+- 每个子 PR 必须附一张依赖图，用 `📍` 标出当前 PR。
+- 功能分支链中，创建一个 draft/禁合并的追踪 PR；子 PR #1 以追踪分支为目标，后续子 PR 以直接父分支为目标。
+- 把受污染的 diff 视为基础缺陷：重定目标或 rebase，直到 diff 只含当前工作单元。
+- 用户选定链策略后不得混用其他策略。
 
-## Decision Gates
+## 决策门
 
-| Condition | Action |
+| 条件 | 动作 |
 |---|---|
-| PR ≤400 changed lines and focused | Keep single PR. |
-| PR >400, each slice can land independently | Use Stacked PRs to main. |
-| PR >400, feature must integrate before main | Use Feature Branch Chain with tracker. |
-| Generated/vendor/migration diff cannot split cleanly | Ask maintainer for `size:exception`. |
-| No cohesive split fits the budget after one slicing pass | Stop; deliver the best split, report the overage and why it cannot shrink further, and recommend `size:exception`. |
-| SDD provides `delivery_strategy` | Follow it before apply/PR creation. |
+| PR ≤400 行改动且聚焦 | 保持单个 PR。 |
+| PR >400 行，每个切片可独立合入 | 使用 Stacked PRs 到 main。 |
+| PR >400 行，功能必须先集成再进 main | 使用带追踪 PR 的 Feature Branch Chain。 |
+| 生成/供应商/迁移 diff 无法干净拆分 | 请维护者给 `size:exception`。 |
+| 一次切分后仍无内聚拆分能进预算 | 停止；交付最佳拆分，报告超出量与无法再缩小的原因，并建议 `size:exception`。 |
+| SDD 给出 `delivery_strategy` | 在 apply/创建 PR 前遵循它。 |
 
-## Execution Steps
+## 执行步骤
 
-1. Estimate changed lines and identify independent work units.
-2. Ask for a chain strategy when none is cached and the budget is exceeded.
-3. Create branches/PRs using the chosen strategy only.
-4. Add Chain Context to each PR without replacing the repo PR template.
-5. Verify each PR independently: CI/tests/docs/manual checks, rollback scope, and clean diff.
-6. Keep tracker PR draft/no-merge until all child PRs are reviewed and integrated.
+1. 估算改动行数并识别独立的工作单元。
+2. 当无缓存策略且超出预算时，询问链策略。
+3. 只使用所选策略创建分支/PR。
+4. 为每个 PR 添加 Chain Context，不替换仓库 PR 模板。
+5. 独立验证每个 PR：CI/测试/文档/手工检查、回滚范围与干净 diff。
+6. 追踪 PR 保持 draft/禁合并，直到所有子 PR 评审并集成完毕。
 
-## Output Contract
+## 输出契约
 
-Return the chosen strategy, PR order, current PR boundary, dependency diagram, review budget (`additions + deletions`), verification plan, and any `size:exception` rationale.
+返回所选策略、PR 顺序、当前 PR 边界、依赖图、评审预算（`additions + deletions`）、验证计划以及任何 `size:exception` 理由。
 
-## References
+## 参考
 
-- [references/chaining-details.md](references/chaining-details.md) — strategy diagrams, PR body section, branch commands, and reviewer guidance.
+- [references/chaining-details.md](references/chaining-details.md) —— 策略图、PR 正文小节、分支命令与评审者指引。

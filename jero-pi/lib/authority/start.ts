@@ -25,10 +25,9 @@ import type { ReviewDiffStat } from "../review-risk.ts";
 import { FULL_4R_LENSES } from "../review-triggers.ts";
 import type { JeroSnapshotKind } from "./protocol.ts";
 
-// `authority.review.start` (spec §B): freeze computation over the jero
-// snapshots seam, risk tier → lenses via the ported classifier, content-
-// derived lineage identity, artifact subjects, foreign-store refusal, lock
-// discipline, and the START consent gate — all as one discriminated union.
+// `authority.review.start`（spec §B）：基于 jero 快照接缝的冻结计算、
+// 经移植分类器的风险层级 → 评审视角、内容派生的血脉身份、产物主题、
+// 外来存储拒绝、锁纪律，以及 START 同意门——全部汇成一个可辨识联合。
 
 export type JeroReviewStartRefusalCode =
 	| "not-a-git-repository" | "git-unavailable" | "authority-unavailable" | "foreign-authority-store"
@@ -37,15 +36,15 @@ export type JeroReviewStartRefusalCode =
 
 export interface JeroReviewStartTargetV1 {
 	readonly cwd: string;
-	/** Requires `committedOnly: true` (fail-closed pairing, spec §B.1). */
+	/** 要求 `committedOnly: true`（保守失败配对，spec §B.1）。 */
 	readonly baseRef?: string;
 	readonly committedOnly?: boolean;
 	readonly lineageId?: string;
-	/** M3 (§G): `"staged"` freezes the candidate from the Git INDEX via a temporary index — never the live worktree, never the real index. */
+	/** M3（§G）：`"staged"` 经临时索引从 Git INDEX 冻结候选——绝不用活动工作树，也绝不用真实索引。 */
 	readonly projection?: "workspace" | "staged";
-	/** Drift detection only: `sha256:<64-hex>` the caller expects (spec §B.1). */
+	/** 仅用于漂移检测：调用方期望的 `sha256:<64 位十六进制>`（spec §B.1）。 */
 	readonly targetIdentity?: string;
-	/** Judgment Day starts ONLY on explicit request (spec §G). */
+	/** Judgment Day 仅在显式请求时启动（spec §G）。 */
 	readonly requestMode?: "ordinary" | "judgment-day";
 }
 
@@ -59,7 +58,7 @@ export interface JeroReviewStartSelectionV1 {
 	readonly expectedUntrackedInventory?: string;
 	readonly intendedUntracked?: readonly string[];
 	readonly intendedUntrackedSelection?: JeroIntendedUntrackedSelectionV1;
-	/** §B.5 consent answer; standing session grants are TS-side and arrive as `standingGrant`. */
+	/** §B.5 的同意答案；常设会话授权在 TS 侧，以 `standingGrant` 传入。 */
 	readonly consent?: "granted" | "declined";
 	readonly standingGrant?: boolean;
 	readonly idempotencyKey?: string;
@@ -116,11 +115,11 @@ export type JeroReviewStartResultV1 =
 	| ({ readonly kind: "replayed" } & JeroStartAuthorityFieldsV1)
 	| ({ readonly kind: "closed" } & JeroStartAuthorityFieldsV1);
 
-// Wire risk-reason vocabulary (spec §B.3, discrepancy #6): emit ONLY the
-// 6-value signal set even though the upstream phrase map knows 8. The code
-// list is the closed 11-value wire schema vocabulary (start.schema.json);
-// jero's derivation never emits `service_token`/`shell_source` (upstream-only
-// codes) — they stay listed so the type documents the full wire contract.
+// 线上风险原因词汇（spec §B.3，差异 #6）：尽管上游短语映射认识 8 个
+// 信号，也只发出 6 值信号集。代码列表是封闭的 11 值线上 schema 词汇
+// （start.schema.json）；jero 的派生绝不发出 `service_token`/
+// `shell_source`（仅上游代码）——它们留在列表中是为了让类型记录完整的
+// 线上契约。
 const RISK_REASON_CODES = ["configuration_change", "empty_content", "executable_change", "executable_mode", "hot_path", "large_change", "non_executable_only", "process_boundary", "process_scan_limit", "service_token", "shell_source"] as const;
 export type JeroRiskReasonCode = (typeof RISK_REASON_CODES)[number];
 
@@ -148,7 +147,7 @@ function signalForToken(token: string): JeroRiskSignal {
 	}
 }
 
-/** Risk reasons over the freeze diff: closed 11-code / 6-signal vocabulary, ≥1 unique row. */
+/** 冻结 diff 上的风险原因：封闭的 11 码 / 6 信号词汇，至少一行且不重复。 */
 export function deriveJeroRiskReasonsV1(stats: readonly ReviewDiffStat[], manifestPaths: readonly { path: string; oldMode?: string; newMode?: string; modeOnly?: boolean }[]): JeroRiskReasonV1[] {
 	const rows: JeroRiskReasonV1[] = [];
 	const push = (row: JeroRiskReasonV1) => {
@@ -311,36 +310,35 @@ function buildStartRecordV1(lineageId: string, mode: JeroReviewMode, derivation:
 		selected_lenses: derivation.record.lenses.filter((lens) => (JERO_LENS_NAMES as readonly string[]).includes(lens)) as JeroLensName[],
 		original_changed_lines: derivation.risk.original_changed_lines,
 		correction_budget: derivation.risk.correction_budget,
-		// M3 (§G/discrepancy #4): persisted so STATUS's frozen block always
-		// comes from the record, never a live re-derivation.
+		// M3（§G/差异 #4）：持久化它，使 STATUS 的冻结块始终来自记录，
+		// 绝不来自活动的重派生。
 		changed_path_manifest_sha256: derivation.changed_path_manifest_sha256,
 	};
 }
 
-/** `true` when the lineage journal holds a completed acknowledge burn. */
+/** 血脉日志持有已完成的 acknowledge 焚毁时为 `true`。 */
 export function isJeroLineageConsumedV1(record: JeroLineageStateFileV1): boolean {
 	return record.request_journal.some((entry) => entry.operation === "acknowledge" && entry.status === "completed");
 }
 
 /**
- * START (spec §B). Fail-closed discriminated union out; the consent gate
- * fires for medium/high candidates ONLY while no authority has been frozen
- * for the derived identity yet (upstream native-review-cli.ts:1806-1820 —
- * "the provider has frozen no authority yet"), so an existing reviewing
- * lineage resumes without re-asking.
+ * START（spec §B）。输出为保守失败的可辨识联合；同意门只在中/高风险
+ * 候选“且”派生身份尚未冻结任何权威时触发（上游
+ * native-review-cli.ts:1806-1820——“提供方尚未冻结任何权威”），
+ * 因此已存在的 reviewing 血脉恢复时无需重新询问。
  */
 export function reviewStartV1(context: JeroAuthorityContextV1, target: JeroReviewStartTargetV1, selection: JeroReviewStartSelectionV1 = {}): JeroReviewStartResultV1 {
 	assertPairingRulesV1(target, selection);
 	const requestMode = target.requestMode ?? "ordinary";
-	// Lock discipline (spec §A.2 illegal #11): a live owned/ambiguous lock
-	// refuses START; a released (provably dead-owner) leftover does NOT block.
+	// 锁纪律（spec §A.2 非法 #11）：活动的 owned/ambiguous 锁拒绝 START；
+	// released（所有者被证明已死）的残留不阻塞。
 	const lockStatus = context.locks.inspect();
 	if (lockStatus.status === "owned") return { kind: "refused", code: "authority-lock-held", detail: "the authority mutation lock is owned by a live owner" };
 	if (lockStatus.status === "ambiguous") return { kind: "refused", code: "authority-lock-ambiguous", detail: "the authority mutation lock is in an ambiguous state" };
 	if (lockStatus.status === "released" && lockStatus.owner !== undefined) {
-		// The lineage store now takes this lock for every mutation (F2), and
-		// acquire() never steals an existing directory: quarantine the
-		// provably dead-owner leftover first so the save below can acquire.
+		// 血脉存储现在为每次变更获取该锁（F2），而 acquire() 绝不窃取已
+		// 存在的目录：先隔离这个被证明所有者已死的残留，下面的保存才能
+		// 获取锁。
 		try {
 			context.locks.recover(lockStatus.owner.owner_hash);
 		} catch (error) {
@@ -376,10 +374,9 @@ export function reviewStartV1(context: JeroAuthorityContextV1, target: JeroRevie
 		return { kind: "refused", code: "identity-mismatch", detail: `caller bound lineage ${target.lineageId}, candidate derives ${lineageId}` };
 	}
 
-	// Pre-freeze untracked-scope validation (F12): a declared intended path
-	// must be ⊆ the live `ls-files --others --exclude-standard` inventory the
-	// derivation just discovered — a path Git does not report as untracked is
-	// a caller assertion about a scope that does not exist.
+	// 冻结前的未跟踪范围校验（F12）：声明的意图路径必须 ⊆ 派生刚刚发现
+	// 的活动 `ls-files --others --exclude-standard` 清单——Git 未报告为
+	// 未跟踪的路径是调用方对不存在范围的断言。
 	if (selection.intendedUntracked !== undefined) {
 		const untrackedSet = new Set(derivation.record.intended_untracked);
 		const unknown = selection.intendedUntracked.filter((path) => !untrackedSet.has(path));
@@ -410,10 +407,9 @@ export function reviewStartV1(context: JeroAuthorityContextV1, target: JeroRevie
 	if (loaded.kind === "corrupted") return { kind: "refused", code: "corrupted", detail: loaded.detail };
 	if (loaded.kind === "ok") {
 		const record = loaded.record;
-		// A consumed (burned) lineage refuses every START — checked BEFORE the
-		// replay branch (F9): under the default idempotency key the original
-		// start entry always matches, so replay would otherwise resurrect an
-		// approved authority that acknowledgement already burned.
+		// 已消费（焚毁）的血脉拒绝一切 START——在重放分支“之前”检查
+		// （F9）：默认幂等键下原始 start 条目总能匹配，否则重放会复活一个
+		// 已被 acknowledge 焚毁的已批准权威。
 		if (isJeroLineageConsumedV1(record)) {
 			return { kind: "refused", code: "lineage-consumed", detail: "this candidate's approved authority was consumed by acknowledgement; maintenance (M5) clears consumed lineages" };
 		}
@@ -421,10 +417,9 @@ export function reviewStartV1(context: JeroAuthorityContextV1, target: JeroRevie
 		if (existingStart !== undefined) {
 			if (existingStart.request_hash !== requestHash) return { kind: "refused", code: "identity-mismatch", detail: "idempotency key was reused with a different request" };
 			if (record.state.state === "approved") {
-				// Crash-window healing (F8): the zero-lens close journals first
-				// and writes the receipt second; a crash in between is repaired
-				// here — issuance is content-derived, so re-issuing an already
-				// persisted receipt is byte-idempotent.
+				// 崩溃窗口治愈（F8）：零评审视角的闭合先写日志再写回执；
+				// 其间的崩溃在此修复——签发是内容派生的，因此对已持久化
+				// 回执的重新签发是字节幂等的。
 				const healed = issueJeroReviewReceiptV1(context, record.state);
 				if (healed.ok === false) return { kind: "refused", code: "authority-unavailable", detail: healed.detail };
 			}
@@ -451,9 +446,8 @@ export function reviewStartV1(context: JeroAuthorityContextV1, target: JeroRevie
 		if (record.state.state !== "reviewing" || record.state.snapshot.identity !== targetIdentity) {
 			return { kind: "refused", code: "lineage-not-startable", detail: `lineage ${lineageId} is in persisted state ${record.state.state}` };
 		}
-		// A live reviewing lineage resumes WITHOUT re-asking consent (F10): the
-		// gate below only fires while no authority has been frozen for this
-		// candidate yet.
+		// 活动的 reviewing 血脉恢复时“不”重新询问同意（F10）：下面的门
+		// 只在该候选尚未冻结任何权威时触发。
 		return {
 			kind: "resumed",
 			action: "resumed",
@@ -476,10 +470,9 @@ export function reviewStartV1(context: JeroAuthorityContextV1, target: JeroRevie
 		};
 	}
 
-	// §B.5 consent gate (creation path only, F10): medium/high under mode-on
-	// without an answer or a standing grant freezes no authority. Upstream asks
-	// only while no authority has been frozen for the candidate yet
-	// (native-review-cli.ts:1806-1820), so resumes and replays above bypass it.
+	// §B.5 同意门（仅创建路径，F10）：模式开启下中/高风险且无答案或
+	// 常设授权时不冻结任何权威。上游只在该候选尚未冻结任何权威时询问
+	// （native-review-cli.ts:1806-1820），因此上面的恢复与重放绕过它。
 	const modeState = effectiveJeroReviewModeV1(context.store.store_root, { globalModePath: context.globalReviewModePath });
 	const consentRequired = (riskLevel === "medium" || riskLevel === "high") &&
 		modeState.effective === "on" && selection.consent === undefined && selection.standingGrant !== true;
@@ -518,8 +511,8 @@ export function reviewStartV1(context: JeroAuthorityContextV1, target: JeroRevie
 	const record = buildStartRecordV1(lineageId, mode, derivation, candidateKind === "base-diff" ? "base-diff" : "current-changes");
 	const riskReasons = deriveJeroRiskReasonsV1(derivation.numstat, derivation.changed_path_manifest);
 
-	// Zero-lens low-risk close (§A.2 row 1b): approved at once, receipt written
-	// at once; the budget is still frozen.
+	// 零评审视角的低风险闭合（§A.2 行 1b）：立即 approved，立即写回执；
+	// 预算仍然冻结。
 	if (requestMode === "ordinary" && lenses.length === 0) {
 		record.state = "approved";
 	}
@@ -553,7 +546,7 @@ export function reviewStartV1(context: JeroAuthorityContextV1, target: JeroRevie
 		mode,
 	};
 	if (record.state === "approved") {
-		// Zero-lens close creates no lens subjects (fixture: artifact_subjects []).
+		// 零评审视角闭合不创建评审视角主题（fixture：artifact_subjects []）。
 		return { kind: "closed", action: "closed", ...shared, artifact_subjects: [] };
 	}
 	return {

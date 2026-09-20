@@ -1,10 +1,9 @@
 import { Socket } from "node:net";
 import type { Readable, Writable } from "node:stream";
 
-// This is a deliberately tiny parent-owned channel for package-launched Pi
-// children. It carries only a one-shot authorization question and answer; no
-// review candidate, consent binding, provider vector, or session authority is
-// serialized across the process boundary.
+// 这是刻意保持极小的父方持有通道，面向由包启动的 Pi 子进程。它只承载
+// 一次性的授权问答；任何评审候选、同意绑定、提供方向量或会话权威
+// 都不跨越进程边界序列化。
 
 const REQUEST_TYPE = "standing-review-permission-request";
 const RESPONSE_TYPE = "standing-review-permission-response";
@@ -104,7 +103,7 @@ function attachJsonLines(stream: Readable, onValue: (value: unknown) => void): (
 		for (const raw of lines) {
 			const line = raw.endsWith("\r") ? raw.slice(0, -1) : raw;
 			if (line.length === 0 || Buffer.byteLength(line) > MAX_LINE_BYTES) continue;
-			try { onValue(JSON.parse(line)); } catch { /* Malformed child traffic is denied by silence. */ }
+			try { onValue(JSON.parse(line)); } catch { /* 畸形的子进程流量以沉默拒绝。 */ }
 		}
 	};
 	stream.on("data", onData);
@@ -120,9 +119,9 @@ function write(channel: Writable, value: Response | Request): boolean {
 }
 
 /**
- * The parent binds this broker to one live AgentRunner task. Every request
- * calls `authorize` again, so replacement, revocation, cancellation, and a
- * dead parent session fail closed without trusting child environment state.
+ * 父方将此代理绑定到一个活动中的 AgentRunner 任务。每个请求都重新
+ * 调用 `authorize`，因此替换、撤销、取消以及父会话死亡都以保守失败
+ * 收场，绝不信任子进程环境状态。
  */
 export class ParentStandingReviewPermissionBroker {
 	private closed = false;
@@ -137,8 +136,8 @@ export class ParentStandingReviewPermissionBroker {
 		this.channel = channel;
 		this.authorize = authorize;
 		this.maxRequests = Number.isSafeInteger(options.maxRequests) && options.maxRequests! > 0 ? options.maxRequests! : DEFAULT_MAX_REQUESTS;
-		// These listeners deliberately outlive detach(): late pipe errors can arrive
-		// after close and must stay confined to this task's broker.
+		// 这些监听器刻意比 detach() 存活更久：迟到的管道错误可能在关闭后
+		// 到达，且必须只局限于本任务的代理。
 		channel.readable.on("error", this.onChannelTerminal);
 		channel.readable.on("close", this.onChannelTerminal);
 		channel.readable.on("end", this.onChannelTerminal);
@@ -189,9 +188,9 @@ function registryClient(state: ChildPermissionRegistry): ChildStandingReviewPerm
 	if (state.terminal) return undefined;
 	if (state.client !== undefined) return state.client;
 	try {
-		// Node exposes stdin/out/err but not a process.stdio array. The package
-		// runner creates fd 3 as an inherited duplex pipe; wrap it once for this
-		// process and let reload closures share the same reader and request state.
+		// Node 暴露 stdin/out/err 但没有 process.stdio 数组。包运行器把
+		// fd 3 创建为继承的双向管道；为本进程包装一次，让重载后的闭包
+		// 共享同一读取器与请求状态。
 		const stream = new Socket({ fd: 3, readable: true, writable: true });
 		let record: ChildStandingReviewPermissionClientHandle | undefined;
 		const client = new ChildStandingReviewPermissionClient({ readable: stream, writable: stream }, {}, () => {
@@ -206,12 +205,12 @@ function registryClient(state: ChildPermissionRegistry): ChildStandingReviewPerm
 		state.client = record;
 		return record;
 	} catch {
-		// An absent or incompatible inherited descriptor is never authorization.
+		// 缺失或不兼容的继承描述符绝不算授权。
 		return undefined;
 	}
 }
 
-/** The child can ask only whether its parent currently permits a replay. */
+/** 子进程只能询问其父方当前是否允许重放。 */
 export function createChildStandingReviewPermissionClient(
 	processEnv: NodeJS.ProcessEnv = process.env,
 ): ChildStandingReviewPermissionClientHandle | undefined {
@@ -224,7 +223,7 @@ export interface ChildStandingReviewPermissionLease {
 	closeIfCurrent(): void;
 }
 
-/** A replacement extension becomes the sole terminal owner of the shared fd3 client. */
+/** 替换后的扩展成为共享 fd3 客户端的唯一终局所有者。 */
 export function acquireChildStandingReviewPermissionClient(
 	processEnv: NodeJS.ProcessEnv = process.env,
 ): ChildStandingReviewPermissionLease | undefined {
@@ -296,7 +295,7 @@ export class ChildStandingReviewPermissionClient {
 		this.channel.readable.off("error", this.onClosed);
 		this.failPending();
 		this.onTerminal();
-		try { this.channel.readable.destroy(); } catch { /* Closing an unavailable child fd is best effort. */ }
+		try { this.channel.readable.destroy(); } catch { /* 关闭不可用的子进程 fd 尽力而为。 */ }
 	}
 
 	private failPending(): void {

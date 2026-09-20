@@ -1,17 +1,17 @@
-# Chained PR Details
+# 链式 PR 细节
 
-## Strategy Notes
+## 策略说明
 
-| | Stacked PRs to main | Feature Branch Chain |
+| | 堆叠 PR 到 main | 功能分支链 |
 |---|---|---|
-| Speed | Each slice can ship in order | Full feature waits for tracker merge |
-| Rollback | Revert individual main PRs | Revert/hold the whole feature branch |
-| Risk | Partial behavior may land | Nothing lands until the chain completes |
-| Complexity | Simpler retarget/rebase flow | Requires tracker and strict diff hygiene |
+| 速度 | 每个切片可按序发布 | 完整功能需等追踪 PR 合并 |
+| 回滚 | 回退单个 main PR | 回退/搁置整个功能分支 |
+| 风险 | 可能先合入部分行为 | 链完成前什么都不合入 |
+| 复杂度 | 重定目标/rebase 流程更简单 | 需要追踪 PR 与严格的 diff 卫生 |
 
-## Feature Branch Chain
+## 功能分支链
 
-Use when the feature branch accumulates the final integration while child PRs are reviewed as focused slices.
+当功能分支承接最终集成、而子 PR 作为聚焦切片接受评审时使用。
 
 ```text
 main
@@ -24,17 +24,17 @@ main
                 └── feat/my-feature-03-slice
 ```
 
-Steps:
+步骤：
 
-1. Create the feature/tracker branch from `main`.
-2. Open the tracker PR to `main`; mark it draft/no-merge.
-3. Create PR #1 from a child branch and target it to the tracker branch.
-4. Create each later child branch from the previous PR branch and target it to that parent branch.
-5. Merge/integrate children in order; merge the tracker only after the chain is complete.
+1. 从 `main` 创建功能/追踪分支。
+2. 向 `main` 打开追踪 PR；标记为 draft/禁合并。
+3. 从子分支创建 PR #1，目标为追踪分支。
+4. 每个后续子分支从上一个 PR 分支创建，并以该父分支为目标。
+5. 按序合并/集成分支；链完成后再合并追踪分支。
 
-## Stacked PRs to Main
+## 堆叠 PR 到 main
 
-Use when each slice can land on `main` in order.
+当每个切片都能按序落到 `main` 时使用。
 
 ```text
 main <- PR 1: foundation
@@ -42,11 +42,11 @@ main <- PR 1: foundation
                 └── PR 3: docs/tests built on PR 2
 ```
 
-After a parent PR merges, rebase/retarget the next PR so GitHub shows only the current slice.
+父 PR 合并后，对下一个 PR rebase/重定目标，使 GitHub 只显示当前切片。
 
-## Chain Context Section
+## Chain Context 小节
 
-Append this section to the repo PR template; do not replace required issue/checklist sections.
+把此小节附加到仓库 PR 模板之后；不要替换必需的 issue/检查单小节。
 
 ```markdown
 ## Chain Context
@@ -83,7 +83,7 @@ main
 - [ ] Tests, docs, or manual verification cover this unit
 ```
 
-## Commands
+## 命令
 
 ```bash
 gh pr view <PR_NUMBER> --json additions,deletions,changedFiles,title,url
@@ -91,9 +91,9 @@ gh pr create --base feat/my-feature --title "feat(scope): focused slice" --body-
 gh pr create --base feat/my-feature-01-core --title "feat(scope): next focused slice" --body-file pr-body.md
 ```
 
-## Reviewer Guidance
+## 评审者指引
 
-- Ask for a split when a PR exceeds 400 changed lines without `size:exception`.
-- Recommend Feature Branch Chain when work must integrate before `main`.
-- Recommend stacked PRs when each slice can merge independently.
-- Review child PRs against immediate parent branches; a polluted diff is a branching bug.
+- PR 超过 400 行改动且无 `size:exception` 时，要求拆分。
+- 工作必须先于 `main` 集成时，推荐功能分支链。
+- 每个切片可独立合并时，推荐堆叠 PR。
+- 对照直接父分支评审子 PR；受污染的 diff 属于分支缺陷。

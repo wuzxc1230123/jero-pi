@@ -1,8 +1,8 @@
 import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 
-// Gentle Shell changes: the working tree against HEAD, new files included.
-// Git is the source of truth; this module turns raw `git diff --numstat` and
-// `git status --porcelain -z` output into a model and renders the widget.
+// Gentle Shell 变更：工作树相对 HEAD 的改动，含新文件。Git 是事实源；
+// 本模块把原始的 `git diff --numstat` 与 `git status --porcelain -z`
+// 输出变成模型并渲染挂件。
 
 export const CHANGE_STATUS = {
 	MODIFIED: "modified",
@@ -120,8 +120,8 @@ export function changesSummary(model: ChangesModel): string {
 	return `${model.files.length} ${noun} · +${model.added} −${model.deleted}${model.files.some(file => file.countsUnavailable) ? " · partial counts" : ""}`;
 }
 
-// One line: summary, the files joined by dots, and the command pushed to
-// the right edge. The file list goes first when the terminal is narrow.
+// 一行：摘要、以点连接的文件列表，命令推到右边缘。终端较窄时文件
+// 列表先行让位。
 export function renderChangesWidget(model: ChangesModel, theme: ChangesTheme, width: number): string[] {
 	if (model.files.length === 0) return [];
 	const noun = model.files.length === 1 ? "file" : "files";
@@ -151,7 +151,7 @@ export interface WorktreeChanges {
 	model: ChangesModel;
 }
 
-// -z avoids Git's quoting of paths containing whitespace or newlines.
+// -z 避免 Git 对含空白或换行的路径做引号转义。
 export function parseWorktrees(text: string): Array<{ root: string; branch?: string }> {
 	return text.split("\0\0").flatMap((record) => {
 		const fields = record.split("\0");
@@ -189,8 +189,8 @@ export class WorktreeChangesTracker {
 	}
 
 	async refresh(): Promise<ChangesModel> {
-		// A scan can take longer than the polling interval in a large clone.
-		// Share it rather than extending it indefinitely with queued polls.
+		// 大克隆里一次扫描可能超过轮询间隔。共享它，而不是让排队的
+		// 轮询无限延长它。
 		if (this.inFlight) return this.inFlight;
 		this.inFlight = this.capture();
 		try {
@@ -204,7 +204,7 @@ export class WorktreeChangesTracker {
 		const result = await this.discover(["worktree", "list", "--porcelain", "-z"]).catch(() => ({ code: 128, stdout: "" }));
 		const trees: WorktreeChanges[] = [];
 		const metadata = new Map((result.code === 0 ? parseWorktrees(result.stdout) : []).map((tree) => [tree.root, tree]));
-		// Discovery labels registered roots; it never grants visibility to siblings.
+		// 发现只为已注册的根目录标注；绝不赋予对兄弟工作树的可见性。
 		const roots = new Set(this.registeredRoots());
 		for (const root of roots) {
 			const tree = metadata.get(root) ?? { root };
@@ -213,12 +213,12 @@ export class WorktreeChangesTracker {
 				await tracker.start();
 				if (tracker.model.files.length) trees.push({ ...tree, model: tracker.model });
 			} catch {
-				// Linked roots can disappear between discovery and status.
+				// 链接的根目录可能在发现与状态查询之间消失。
 			}
 		}
 		const latest = new Set(this.registeredRoots());
-		// A root admitted during status must not wait for a later poll (which may
-		// be disabled). Ordinary overlapping polls still share exactly one scan.
+		// 状态查询期间被接纳的根目录不必等待后续轮询（轮询可能被禁用）。
+		// 普通的重叠轮询仍恰好共享一次扫描。
 		if (latest.size !== roots.size || [...latest].some((root) => !roots.has(root))) return this.capture();
 		this.worktrees = trees;
 		return this.model;
@@ -230,9 +230,8 @@ const noLines: LineCounter = async () => 0;
 const NUMSTAT_ARGS = ["diff", "--numstat", "HEAD"];
 const PORCELAIN_ARGS = ["status", "--porcelain=v1", "--untracked-files=all", "-z"];
 
-// Tracks working-tree changes. Concurrent refreshes coalesce: one git
-// round-trip runs at a time and a refresh requested meanwhile triggers
-// exactly one more.
+// 跟踪工作树变更。并发刷新合并：同一时刻只跑一次 git 往返，期间
+// 又到达的刷新恰好再触发一次。
 export class ChangesTracker {
 	private readonly git: GitRunner;
 	private readonly countLines: LineCounter;
@@ -283,7 +282,7 @@ export class ChangesTracker {
 		const [numstat, porcelain] = await Promise.all([this.git(NUMSTAT_ARGS), this.git(PORCELAIN_ARGS)]);
 		if (porcelain.code !== 0) return undefined;
 		const files = snapshotChanges({ numstat: numstat.stdout, porcelain: porcelain.stdout });
-		// Untracked files never appear in numstat; count their lines directly.
+		// 未跟踪文件从不出现在 numstat 里；直接统计其行数。
 		for (const file of files) {
 			if (file.status === CHANGE_STATUS.UNTRACKED) file.added = await this.countLines(file.path).catch(() => 0);
 		}

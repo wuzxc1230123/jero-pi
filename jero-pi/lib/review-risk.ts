@@ -29,8 +29,8 @@ export interface ReviewRiskClassification {
 	selected_lenses: readonly ReviewLens[];
 }
 
-// This deliberately excludes only generated adapter goldens. Ordinary tests,
-// fixtures, snapshots, and files merely containing "golden" remain authored.
+// 刻意只排除生成式适配器金样。普通测试、fixture、快照以及仅包含
+// "golden" 字样的文件仍计为 authored。
 export const GENERATED_GOLDEN_PATH = /^testdata\/golden(?:\/|$)/;
 
 const DOCUMENTATION_PATH = /(?:^|\/)(?:readme|changelog|contributing|license)(?:\.(?:md|mdx|rst|adoc|txt))?$|(?:^|\/)(?:docs?|documentation)\/.+\.(?:md|mdx|rst|adoc|txt)$/i;

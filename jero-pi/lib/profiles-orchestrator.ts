@@ -1,17 +1,14 @@
-// Orchestrator selection for agent-model profiles.
+// 代理模型档案的编排器选择。
 //
-// A profile is a complete snapshot of the routing, and the orchestrator is part
-// of that routing. Unlike every agent, the orchestrator does not live in
-// `models.json`: Pi keeps it in its own global `settings.json` as
-// `defaultProvider` / `defaultModel` / `defaultThinkingLevel`. This module owns
-// reading and writing those three keys and nothing else.
+// 档案是路由的完整快照，编排器是路由的一部分。与所有代理不同，
+// 编排器不存放在 `models.json` 中：Pi 将其保存在自己的全局
+// `settings.json` 里，即 `defaultProvider` / `defaultModel` /
+// `defaultThinkingLevel`。本模块只负责读写这三个键，不做别的。
 //
-// The write is deliberately conservative. It re-serializes the whole file so
-// every unrelated key Pi and other extensions own (`packages`, telemetry
-// settings, theme, terminal options) survives, it refuses to touch a file it
-// cannot parse instead of replacing it with a fresh object, and it swaps the
-// destination through a sibling temp file plus a rename so an interrupted write
-// can never leave truncated JSON behind.
+// 写入刻意保守。它对整个文件重新序列化，使 Pi 与其他扩展拥有的
+// 所有无关键（`packages`、遥测设置、主题、终端选项）得以幸存；
+// 它拒绝改动无法解析的文件而不是用新对象替换；它通过同目录
+// 临时文件加重命名来替换目标，被中断的写入绝不会留下截断的 JSON。
 
 import { randomUUID } from "node:crypto";
 import { closeSync, constants, existsSync, mkdirSync, openSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
@@ -22,7 +19,7 @@ import {
 	type AgentRoutingEntry,
 } from "./model-routing-authority.ts";
 
-/** The three Pi settings keys a profile's orchestrator entry owns. */
+/** 档案编排器条目拥有的三个 Pi 设置键。 */
 export const ORCHESTRATOR_SETTINGS_KEYS = [
 	"defaultProvider",
 	"defaultModel",
@@ -35,10 +32,9 @@ export interface OrchestratorModelRef {
 }
 
 /**
- * Split a `provider/model` routing id. A profile entry stores one opaque model
- * id, while Pi stores the two halves separately, so the split happens here and
- * only here. Ids without a provider half are rejected rather than guessed: an
- * orchestrator write is not the place to invent a provider.
+ * 拆分 `provider/model` 路由 id。档案条目存储一个不透明的模型 id，
+ * 而 Pi 分开存储两半，因此拆分只在这里发生。缺少提供方一半的 id
+ * 会被拒绝而不是猜测：编排器写入不是臆造提供方的地方。
  */
 export function parseOrchestratorModelRef(modelId: unknown): OrchestratorModelRef | undefined {
 	const normalized = normalizeModelId(modelId);
@@ -61,9 +57,9 @@ export type OrchestratorSettingsReadResult =
 	| { status: "valid"; entry?: AgentRoutingEntry; value: Record<string, unknown> };
 
 /**
- * Read the effective orchestrator selection from a Pi settings file. A settings
- * file that is absent or unreadable is reported, never silently treated as
- * "no orchestrator": the panel has to distinguish "not set" from "cannot tell".
+ * 从 Pi 设置文件读取生效的编排器选择。缺失或不可读的设置文件
+ * 会被如实上报，绝不静默当作“无编排器”：面板必须区分“未设置”
+ * 与“无法判断”。
  */
 export function readOrchestratorSettings(settingsPath: string): OrchestratorSettingsReadResult {
 	if (!existsSync(settingsPath)) return { status: "missing" };
@@ -93,16 +89,14 @@ export type OrchestratorSettingsWriteResult =
 	| { status: "written"; previous?: string };
 
 /**
- * Persist one orchestrator routing entry into a Pi settings file.
+ * 将一个编排器路由条目持久化进 Pi 设置文件。
  *
- * `entry` is a profile routing entry: `{ model?, thinking? }`. A missing model
- * means the profile says nothing about the orchestrator, so the file is left
- * exactly as it was — a profile without an orchestrator entry must never move
- * the orchestrator, not even to "unset".
+ * `entry` 是档案路由条目：`{ model?, thinking? }`。缺失 model 表示
+ * 档案对编排器未置一词，文件因此保持原样——没有编排器条目的档案
+ * 绝不能移动编排器，连移到“未设置”也不行。
  *
- * `previous` carries the raw bytes that were there before a successful write so
- * the caller can honour its own revert contract. `undefined` means the file did
- * not exist and restoring means removing it.
+ * `previous` 携带成功写入之前的原始字节，让调用方履行自己的回滚
+ * 契约。`undefined` 表示文件原本不存在，恢复即删除它。
  */
 export function applyOrchestratorSettings(
 	settingsPath: string,
@@ -118,8 +112,8 @@ export function applyOrchestratorSettings(
 	}
 	const read = readOrchestratorSettings(settingsPath);
 	if (read.status === "invalid") return { status: "invalid", reason: read.reason };
-	// Safe after the invalid check above: the file either parses as an object or
-	// does not exist, and a missing file means there is nothing to restore.
+	// 经过上面的无效检查后这里是安全的：文件要么解析为对象，
+	// 要么不存在，而文件不存在意味着无需恢复。
 	const previous = readPrevious(settingsPath);
 	const next: Record<string, unknown> = { ...(read.status === "valid" ? read.value : {}) };
 	next.defaultProvider = reference.provider;
@@ -141,8 +135,8 @@ function readPrevious(settingsPath: string): string | undefined {
 }
 
 /**
- * Restore the bytes a successful orchestrator write replaced. `undefined` means
- * the write created the file, so restoring removes it.
+ * 恢复被成功编排器写入替换的字节。`undefined` 表示写入创建了
+ * 该文件，恢复即删除它。
  */
 export function restoreOrchestratorSettings(
 	settingsPath: string,
@@ -160,9 +154,8 @@ export function restoreOrchestratorSettings(
 }
 
 /**
- * Sibling temp file plus rename, with the same failure discipline as the profile
- * store: every step records its own error, cleanup never throws, and the error
- * that actually broke the write is the one reported.
+ * 同目录临时文件加重命名，遵循与档案存储相同的失败纪律：每一步
+ * 各自记录错误，清理永不抛错，真正破坏写入的错误才被上报。
  */
 function writeFileAtomically(path: string, text: string): void {
 	mkdirSync(dirname(path), { recursive: true });

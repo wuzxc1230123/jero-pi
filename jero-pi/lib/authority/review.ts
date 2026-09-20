@@ -27,29 +27,27 @@ import { abandonJeroLineageV1, jeroAbandonAuthorizationV1, reclaimJeroAuthorityV
 import type { JeroReviewModeValue } from "./protocol.ts";
 import type { ReviewAssessmentV1 } from "../review-risk-assessment.ts";
 
-// The single extensions-facing facade over the resolved jero authority store
-// (design §5.1.1 table): `authority.review.start/status/finalize/validate/
-// acknowledge`, `authority.risk.assess`, `authority.mode.get/set`. This
-// module wires the M1 substrate (lineage store, CAS, locks, store root) into
-// one context object; every API is a typed function in, discriminated union
-// out. It imports NO extensions/ code and reads no environment variables —
-// the §9 module boundary dependency-cruiser will pin.
+// 面向扩展的唯一外观，叠在已解析的 jero 权威存储之上（设计 §5.1.1
+// 表）：`authority.review.start/status/finalize/validate/acknowledge`、
+// `authority.risk.assess`、`authority.mode.get/set`。本模块把 M1 基底
+// （血脉存储、CAS、锁、存储根）接线成一个上下文对象；每个 API 都是
+// 类型化函数进、可辨识联合出。它不导入任何 extensions/ 代码，也不读
+// 环境变量——§9 模块边界将由 dependency-cruiser 钉住。
 
 export interface JeroAuthorityContextV1 {
-	/** The resolved (foreign-checked, identity-pinned) jero authority store. */
+	/** 已解析（外来检查、身份钉住）的 jero 权威存储。 */
 	readonly store: JeroAuthorityStoreV1;
-	/** Lineage records under `<store>/lineages/`. */
+	/** `<store>/lineages/` 下的血脉记录。 */
 	readonly lineages: JeroLineageStoreV1;
-	/** Content-addressed objects under `<store>/objects/`. */
+	/** `<store>/objects/` 下的内容寻址对象。 */
 	readonly cas: JeroObjectCasV1;
-	/** Authority mutation lock; backs the lineage store's mutating APIs and START's live-lock gate (released leftovers never block). */
+	/** 权威变更锁；支撑血脉存储的变更类 API 与 START 的活动锁门（已释放的残留绝不阻塞）。 */
 	readonly locks: JeroAuthorityLocksV1;
 	/**
-	 * The caller-resolved location of the global review-mode record. The
-	 * authority never reads the environment (boundary §9.1): the host's
-	 * `JERO_PI_CONFIG_HOME` override is applied by the caller before the
-	 * context exists, so every mode read — START's consent gate included —
-	 * sees the same global record as the rest of the package.
+	 * 调用方解析的全局评审模式记录位置。权威绝不读取环境（边界
+	 * §9.1）：宿主的 `JERO_PI_CONFIG_HOME` 覆盖由调用方在上下文存在
+	 * 之前应用，因此每次模式读取——包括 START 的同意门——看到的
+	 * 全局记录都与包的其余部分一致。
 	 */
 	readonly globalReviewModePath: string;
 }
@@ -58,19 +56,17 @@ export type JeroAuthorityContextResolutionV1 =
 	| { readonly kind: "ok"; readonly context: JeroAuthorityContextV1 }
 	| { readonly kind: "refused"; readonly code: "not-a-git-repository" | "git-unavailable" | "authority-unavailable" | "foreign-authority-store"; readonly detail?: string };
 
-/** Resolves the jero authority store and derives every substrate handle. */
+/** 解析 jero 权威存储并派生所有基底句柄。 */
 export function resolveJeroAuthorityContextV1(cwd: string, options: { globalReviewModePath?: string } = {}): JeroAuthorityContextResolutionV1 {
 	const store = resolveJeroAuthorityStoreV1(cwd);
 	if (store.kind !== "ok") {
 		return { kind: "refused", code: store.kind, ...("detail" in store ? { detail: store.detail } : { detail: (store as { hits: readonly string[] }).hits.join(", ") }) };
 	}
-	// The locks wrapper is constructed FIRST so every mutating lineage-store
-	// API runs under the authority mutation lock (findings F2): START,
-	// FINALIZE, VALIDATE, and ACKNOWLEDGE all persist through this handle.
-	// Reads (load/list) stay lock-free. No operation nests: none of the
-	// apply() callbacks call back into the store, so withAuthorityLock
-	// never re-enters acquire() (the underlying lock is exclusive-mkdir,
-	// not re-entrant).
+	// 锁封装“最先”构造，使血脉存储的每个变更类 API 都在权威变更锁下
+	// 运行（发现 F2）：START、FINALIZE、VALIDATE 与 ACKNOWLEDGE 都经
+	// 此句柄持久化。读取（load/list）保持无锁。没有操作嵌套：所有
+	// apply() 回调都不会回调进存储，因此 withAuthorityLock 绝不重入
+	// acquire()（底层锁是独占 mkdir，不可重入）。
 	const locks = new JeroAuthorityLocksV1(store.store_root, store.repository_id, store.authority_id);
 	const context: JeroAuthorityContextV1 = {
 		store,
@@ -84,86 +80,86 @@ export function resolveJeroAuthorityContextV1(cwd: string, options: { globalRevi
 
 export const authority = {
 	review: {
-		/** Spec §B — START: freeze, consent gate, created/resumed/replayed/closed variants. */
+		/** 规范 §B——START：冻结、同意门、created/resumed/replayed/closed 变体。 */
 		start: (context: JeroAuthorityContextV1, target: JeroReviewStartTargetV1, selection?: JeroReviewStartSelectionV1): JeroReviewStartResultV1 =>
 			reviewStartV1(context, target, selection ?? {}),
-		/** Spec §C — STATUS: read-only applicability quadruple. */
+		/** 规范 §C——STATUS：只读的适用性四元组。 */
 		status: (context: JeroAuthorityContextV1, target: JeroReviewStatusTargetV1): JeroReviewStatusResultV1 =>
 			reviewStatusV1(context, target),
-		/** Spec §D — FINALIZE: lens admission, evidence resolution, correction, final verification. */
+		/** 规范 §D——FINALIZE：评审视角受理、证据裁决、修正、最终验证。 */
 		finalize: (context: JeroAuthorityContextV1, input: JeroReviewFinalizeInputV1): JeroReviewFinalizeResultV1 =>
 			reviewFinalizeV1(context, input),
-		/** Spec §E — VALIDATE: evidence-first correction ordering + targeted validation. */
+		/** 规范 §E——VALIDATE：证据先行的修正顺序 + 定向验证。 */
 		validate: (context: JeroAuthorityContextV1, input: JeroReviewValidateInputV1): JeroReviewValidateResultV1 =>
 			reviewValidateV1(context, input),
-		/** Spec §F — ACKNOWLEDGE: the approved-authority burn, journaled exactly-once. */
+		/** 规范 §F——ACKNOWLEDGE：已批准权威的焚毁，恰好一次记入日志。 */
 		acknowledge: (context: JeroAuthorityContextV1, input: JeroReviewAcknowledgeInputV1): JeroReviewAcknowledgeResultV1 =>
 			reviewAcknowledgeV1(context, input),
 	},
 	capture: {
-		/** Spec §A/§I.1 — renderBinding: the four capture slots rendered in-process (store-pure, spawn-free). */
+		/** 规范 §A/§I.1——renderBinding：在进程内渲染的四个捕获槽（存储纯、不派发）。 */
 		renderBinding: (slot: JeroCaptureSlotV1): JeroCaptureRenderResultV1 => renderJeroCaptureBindingV1(slot),
-		/** Spec §I.1 — the slots the lineage's current state offers. */
+		/** 规范 §I.1——血脉当前状态提供的槽位。 */
 		nextSlots: (context: JeroAuthorityContextV1, lineageId: string) => nextJeroCaptureSlotsV1(context, lineageId),
 	},
 	judgmentDay: {
-		/** Spec §F — the two blind judge prompt vectors for discovery. */
+		/** 规范 §F——用于发现阶段的两个盲评裁判提示向量。 */
 		renderJudgeVectors: (context: JeroAuthorityContextV1, lineageId: string) => renderJeroJudgmentDayJudgeVectorsV1(context, lineageId),
-		/** Spec §F — confirm-judges: admit exactly two blind judges, zero refuters. */
+		/** 规范 §F——confirm-judges：恰好受理两个盲评裁判、零个 refuter。 */
 		confirmJudges: (context: JeroAuthorityContextV1, input: Parameters<typeof admitJeroJudgmentDayJudgesV1>[1]): JeroJudgmentDayResultV1 => admitJeroJudgmentDayJudgesV1(context, input),
-		/** Spec §F — freeze-judgment-ledger: freeze the merged judge rows; zero severe skips to final verification. */
+		/** 规范 §F——freeze-judgment-ledger：冻结合并后的裁判行；零个严重发现时跳到最终验证。 */
 		freezeDiscovery: (context: JeroAuthorityContextV1, input: { readonly lineageId: string }): JeroJudgmentDayResultV1 => admitJeroJudgmentDayDiscoveryFreezeV1(context, input),
-		/** Spec §F — the one-batch fix covering every surviving finding. */
+		/** 规范 §F——覆盖每个幸存发现的单批次修正。 */
 		applyFix: (context: JeroAuthorityContextV1, input: Parameters<typeof admitJeroJudgmentDayFixV1>[1]): JeroJudgmentDayResultV1 => admitJeroJudgmentDayFixV1(context, input),
-		/** Spec §F — the expected scoped re-judgment request. */
+		/** 规范 §F——预期的定向再判决请求。 */
 		rejudgmentRequest: (context: JeroAuthorityContextV1, lineageId: string) => buildJeroJudgmentDayRejudgmentRequestV1(context, lineageId),
-		/** Spec §F — scoped re-judgment: survivor = not verified by BOTH judges; round-2 survivors escalate. */
+		/** 规范 §F——定向再判决：幸存 = 未被“两位”裁判共同 verified；第二轮幸存者升级。 */
 		rejudge: (context: JeroAuthorityContextV1, input: Parameters<typeof admitJeroJudgmentDayRejudgmentV1>[1]): JeroJudgmentDayResultV1 => admitJeroJudgmentDayRejudgmentV1(context, input),
-		/** Spec §F — the final-verification tail (ordinary verify + round-2-survivor escalation). */
+		/** 规范 §F——最终验证收尾（普通验证 + 第二轮幸存者升级）。 */
 		finalVerification: (context: JeroAuthorityContextV1, input: Parameters<typeof admitJeroJudgmentDayFinalVerificationV1>[1]): JeroJudgmentDayResultV1 => admitJeroJudgmentDayFinalVerificationV1(context, input),
 	},
 	risk: {
-		/** Spec §I.7 — read-only risk assessment; failures fail closed to high. */
+		/** 规范 §I.7——只读风险评估；失败保守失败到 high。 */
 		assess: (request: JeroRiskAssessRequestV1): ReviewAssessmentV1 => assessJeroReviewRiskV1(request),
 	},
 	mode: {
-		/** Spec §I.8 — read-only mode status (global + clone + effective). */
+		/** 规范 §I.8——只读模式状态（全局 + 克隆 + 生效值）。 */
 		get: (cwd: string): JeroReviewModeOutcomeV1 => getJeroReviewModeV1(cwd),
-		/** Spec §I.8 — clone-scoped mode mutation only. */
+		/** 规范 §I.8——仅克隆作用域的模式变更。 */
 		set: (cwd: string, value: JeroReviewModeValue): JeroReviewModeOutcomeV1 => setJeroReviewModeV1(cwd, value),
 	},
 	sdd: {
-		/** Spec §A.1 — the pure status projection over the openspec tree. */
+		/** 规范 §A.1——对 openspec 树的纯状态投影。 */
 		status: (context: JeroAuthorityContextV1, request: { changeName?: string; workspaceRoot: string }): JeroSddStatusResultV1 =>
 			jeroSddStatusV1(context, request),
-		/** Spec §A.4 — the mutating continuation with an exact selected change. */
+		/** 规范 §A.4——带精确选定变更的变更型继续。 */
 		continue: (context: JeroAuthorityContextV1, request: { changeName: string; workspaceRoot: string }): JeroSddContinueResultV1 =>
 			jeroSddContinueV1(context, request),
 		attempt: {
-			/** Spec §A.2 — acquire: single live attempt, durable before launch (R1), token admission (R2). */
+			/** 规范 §A.2——acquire：单一活动尝试，启动前持久（R1），令牌受理（R2）。 */
 			acquire: (context: JeroAuthorityContextV1, input: JeroSddAcquireInputV1): JeroSddAttemptResultV1 =>
 				acquireJeroSddAttemptV1(context, input),
-			/** Spec §A.3 — settle: single finalization (R3), verbatim untracked scope (R4), evidence pairing. */
+			/** 规范 §A.3——settle：单一终结（R3）、逐字未跟踪范围（R4）、证据配对。 */
 			settle: (context: JeroAuthorityContextV1, input: JeroSddSettleInputV1): JeroSddAttemptResultV1 =>
 				settleJeroSddAttemptV1(context, input),
-			/** The ledger revision callers pin as expectedRevision. */
+			/** 调用方钉为 expectedRevision 的台账修订号。 */
 			revision: (context: JeroAuthorityContextV1, workspaceRoot: string, changeName: string): string | undefined =>
 				jeroSddAttemptLedgerRevisionV1(context, workspaceRoot, changeName),
 		},
 	},
 	maintenance: {
-		/** Spec _tools/p2-m5-maintenance-analysis.md — the exact eight-line binding derivation. */
+		/** 规范 _tools/p2-m5-maintenance-analysis.md——精确的八行绑定派生。 */
 		abandonAuthorization: jeroAbandonAuthorizationV1,
-		/** §5.1.6 — audited discard of a live review; re-derives the discarded work fail-closed. */
+		/** §5.1.6——对活动评审的留审计弃置；保守失败地重新推导被弃工作。 */
 		abandon: (context: JeroAuthorityContextV1, input: JeroAbandonInputV1): JeroMaintenanceResultV1 =>
 			abandonJeroLineageV1(context, input),
-		/** §5.1.6 — repository-bound destructive recovery: quarantine the lineage, retain evidence. */
+		/** §5.1.6——仓库绑定的破坏性恢复：隔离血脉、保留证据。 */
 		reclaim: (context: JeroAuthorityContextV1, input: { lineage: string; actor: string; reason: string }): JeroMaintenanceResultV1 =>
 			reclaimJeroAuthorityV1(context, input),
-		/** §5.1.6 — record the recovery linkage on the successor; predecessor untouched, no new budget. */
+		/** §5.1.6——在继任者上记录恢复关联；前驱不受触碰，不授予新预算。 */
 		recover: (context: JeroAuthorityContextV1, input: JeroRecoverInputV1): JeroMaintenanceResultV1 =>
 			recoverJeroLineageV1(context, input),
-		/** §5.1.6 — narrow reconciliation: dual anomaly quarantines only the bound successor. */
+		/** §5.1.6——收窄的调和：双重异常只隔离被绑定的继任者。 */
 		reconcile: (context: JeroAuthorityContextV1, input: JeroReconcileInputV1): JeroMaintenanceResultV1 =>
 			reconcileJeroAuthorityV1(context, input),
 	},
