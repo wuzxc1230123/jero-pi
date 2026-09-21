@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { appendFileSync, chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { createRequire, syncBuiltinESMExports } from "node:module";
-import { join, relative, resolve } from "node:path";
+import { join, relative, resolve, sep } from "node:path";
 import { pendingReviewMutation, REVIEW_REMINDER_RECEIPT } from "../lib/review-reminder-receipt.ts";
 import { SESSION_WORKTREE_ENTRY, SESSION_WORKTREE_CHANGED } from "../lib/session-worktree-registry.ts";
 import test, { after, mock } from "node:test";
@@ -833,7 +833,7 @@ for (const matching of [true, false]) {
   ctx.sessionManager.getBranch=(()=>h.entries) as any;
   d.deps.resolveWorktree=(path,base)=>{
    const full=resolve(base,path);
-   return full===target||full.startsWith(target+"/")?{root:target,commonDir:"/fixture/common"}:undefined;
+   return full===target||full.startsWith(target+sep)?{root:target,commonDir:"/fixture/common"}:undefined;
   };
   const spawn=d.deps.spawn!;
   d.deps.spawn=(...args)=>{
@@ -870,7 +870,7 @@ for (const scenario of ["own", "other-root", "escaped", "sibling", "session-swit
 		ctx.sessionManager.getBranch = (() => h.entries) as typeof ctx.sessionManager.getBranch;
 		d.deps.resolveWorktree = (path, base) => {
 			const absolute = resolve(base, path);
-			const worktree = [cwd, sibling].find((candidate) => absolute === candidate || absolute.startsWith(`${candidate}/`));
+			const worktree = [cwd, sibling].find((candidate) => absolute === candidate || absolute.startsWith(candidate + sep));
 			return worktree ? { root: worktree, commonDir: "/fixture/common" } : undefined;
 		};
 		const spawn = d.deps.spawn!;
@@ -911,12 +911,23 @@ test("default Node spawn adapter distinguishes IPC-only and permission-capable c
 	const shutdown: Array<() => Promise<void>> = [];
 	const canonicalGitCwd = join(root, "canonical-git-project");
 	const gitBin = join(root, "canonical-git-bin");
-	mkdirSync(join(canonicalGitCwd, ".git"), { recursive: true });
-	mkdirSync(gitBin, { recursive: true });
-	const gitFixture = join(gitBin, "git");
-	writeFileSync(gitFixture, `#!/bin/sh\nif [ "$1" = "-C" ] && [ "$2" = "${canonicalGitCwd}" ] && [ "$3" = "rev-parse" ] && [ "$4" = "--git-common-dir" ]; then\n  printf '.git\\n'\n  exit 0\nfi\nexit 1\n`);
-	chmodSync(gitFixture, 0o755);
+	// Windows 的 CreateProcess 不解析无扩展名的 shebang 假 git；改用真实
+	// git init 初始化探针目录——语义等价：rev-parse --git-common-dir 输出
+	// ".git"，非 git 目录（nonGitCwd 位于 tmpdir，不在任何仓库内）探测
+	// 自然失败。POSIX 保留 PATH 劫持的确定性假探针。
+	const windowsRealGit = process.platform === "win32";
+	if (windowsRealGit) {
+		mkdirSync(canonicalGitCwd, { recursive: true });
+		createRequire(import.meta.url)("node:child_process").execFileSync("git", ["init", canonicalGitCwd], { stdio: "ignore" });
+	} else {
+		mkdirSync(join(canonicalGitCwd, ".git"), { recursive: true });
+		mkdirSync(gitBin, { recursive: true });
+		const gitFixture = join(gitBin, "git");
+		writeFileSync(gitFixture, `#!/bin/sh\nif [ "$1" = "-C" ] && [ "$2" = "${canonicalGitCwd}" ] && [ "$3" = "rev-parse" ] && [ "$4" = "--git-common-dir" ]; then\n  printf '.git\\n'\n  exit 0\nfi\nexit 1\n`);
+		chmodSync(gitFixture, 0o755);
+	}
 	const withCanonicalGitFixture = <T>(action: () => T): T => {
+		if (windowsRealGit) return action();
 		const previousPath = process.env.PATH;
 		process.env.PATH = gitBin;
 		try {
@@ -1181,16 +1192,16 @@ test("delayed child spawn retains the originating session and cannot append into
 
 test("agentRuntimePaths isolates sessions and transcripts by profile and retains the explicit-home fallback", () => {
 	assert.deepEqual(agentRuntimePaths("/home/x", "/profiles/pi-principal/agent"), {
-		sessions: "/profiles/pi-principal/agent/gentle-agents/sessions",
-		transcripts: "/profiles/pi-principal/agent/gentle-agents/transcripts",
+		sessions: join("/profiles/pi-principal/agent", "gentle-agents", "sessions"),
+		transcripts: join("/profiles/pi-principal/agent", "gentle-agents", "transcripts"),
 	});
 	assert.deepEqual(agentRuntimePaths("/home/x", "/profiles/pi-lab/agent"), {
-		sessions: "/profiles/pi-lab/agent/gentle-agents/sessions",
-		transcripts: "/profiles/pi-lab/agent/gentle-agents/transcripts",
+		sessions: join("/profiles/pi-lab/agent", "gentle-agents", "sessions"),
+		transcripts: join("/profiles/pi-lab/agent", "gentle-agents", "transcripts"),
 	});
 	assert.deepEqual(agentRuntimePaths("/home/x"), {
-		sessions: "/home/x/.pi/agent/gentle-agents/sessions",
-		transcripts: "/home/x/.pi/agent/gentle-agents/transcripts",
+		sessions: join("/home/x", ".pi", "agent", "gentle-agents", "sessions"),
+		transcripts: join("/home/x", ".pi", "agent", "gentle-agents", "transcripts"),
 	});
 });
 
@@ -1962,7 +1973,7 @@ test("selected child routes recheck provenance and keep separately authorized lo
  const names = ["fetch_content", "web_search", "read", "write", "mem_save", "subagent_parent_message"];
  const selection = { documentation: { tools: ["fetch_content"], extensions: { fetch_content: "/installed/web.ts" } } };
  const path = join(root, "openspec/changes/demo/research.md");
- const scope = { store: "both", worktree: root, changeName: "demo", retainedIntent: "docs", locators: [{ artifact: "research", path, revision: 1, digest: "a".repeat(64), engram: { id: 1, project: "pi", topic_key: "sdd/demo/research", revision_count: 1 } }] };
+ const scope = { store: "both", worktree: root, changeName: "demo", retainedIntent: "docs", locators: [{ artifact: "research", path, revision: 1, digest: "a".repeat(64), engram: { topic_key: "sdd/demo/research" } }] };
  for (const mismatch of ["none", "path", "sdk", "inactive", "unregistered", "restriction"]) {
   const hooks = new Map<string, (event: { toolName?: string; systemPrompt?: string; input?: object }, ctx?: { cwd: string }) => { block?: boolean; systemPrompt?: string } | undefined>();
   const active = names.filter(name => mismatch !== "inactive" || name !== "fetch_content");

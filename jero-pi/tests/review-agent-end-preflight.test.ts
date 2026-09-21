@@ -25,7 +25,6 @@ import type { ReviewStatusV3 } from "../lib/authority/wire-contract.ts";
 // `session_start`'s real SDD asset install and model config sweep never
 // touch this machine's actual home directory. The cwd is an isolated Git
 // fixture so mutation receipts exercise canonical root resolution.
-
 type AnyHandler = (event: unknown, ctx: ExtensionContext) => unknown;
 type RegisteredTool = Parameters<ExtensionAPI["registerTool"]>[0];
 type SentMessage = { message: Record<string, unknown>; options: Record<string, unknown> };
@@ -125,6 +124,7 @@ function stopStatus(targetIdentity: string): ReviewStatusV3 {
 }
 
 const agentEndEvent = { type: "agent_end", messages: [] };
+
 let mutationCall = 0;
 const sessionGitRoot = realpathSync(childProcess.execFileSync("git", ["rev-parse", "--show-toplevel"], { encoding: "utf8" }).trim());
 const OWN_WRITE_PATH = fileURLToPath(import.meta.url);
@@ -196,6 +196,7 @@ for (const scenario of ["same", "changed", "sibling-root", "nested-root", "faile
 			reviewMode: onMode("on"),
 			targetStatus: async (request: unknown) => {
 				statusRequests.push(request);
+				
 				return burned ? executeStartStatus(nextTarget) : approved;
 			},
 			acknowledgeApproved: async (request: unknown) => {
@@ -232,10 +233,12 @@ for (const scenario of ["same", "changed", "sibling-root", "nested-root", "faile
 		});
 		assert.deepEqual(acknowledgementRequests, [{ cwd, argumentTokens: arguments_.map(({ token }) => token), binding }]);
 		if (scenario !== "unknown") assert.deepEqual(statusRequests, [{ cwd, lineageId }], "ACK reports burn without a later STATUS");
-		const callsBeforeEnd = statusRequests.length;
 		assert.deepEqual(sent, [], "no earlier reminder can mask the post-burn regression");
 
 		if (scenario === "shutdown") { await handlers.get("session_shutdown")!({}, session); await handlers.get("session_start")!({}, session); }
+		// shutdown 后的 session_start 会重新协商一次宿主 STATUS（缓存随
+		// 拆除清空）；基线必须取在它之后，断言才只覆盖 end 事件本身。
+		const callsBeforeEnd = statusRequests.length;
 		const endSession = scenario === "sibling-root" ? ctx(lineageId, true, siblingRoot)
 			: scenario === "nested-root" ? ctx(lineageId, true, join(cwd, "tests"))
 			: scenario === "other-session" ? ctx(`${lineageId}-new`, true, cwd) : session;
@@ -268,6 +271,7 @@ test("agent_end performs no STATUS call and sends nothing when RDD is off", asyn
 });
 
 test("agent_end nudges exactly once when RDD is on and STATUS offers review.start", async () => {
+	await withSessionStartEnv(async (cwd) => {
 	const targetIdentity = `sha256:${"a".repeat(64)}`;
 	const statusRequests: Array<{ agent?: string }> = [];
 	const native = {
@@ -279,7 +283,7 @@ test("agent_end nudges exactly once when RDD is on and STATUS offers review.star
 	} as unknown as NativeReviewCli;
 	const { handlers, sent } = harness(native);
 	const agentEnd = handlers.get("agent_end");
-	const session = ctx("agent-end-execute");
+	const session = ctx("agent-end-execute", true, cwd);
 	await directWrite(handlers, session);
 	await agentEnd!(agentEndEvent, session);
 
@@ -293,9 +297,11 @@ test("agent_end nudges exactly once when RDD is on and STATUS offers review.star
 	assert.ok(content.includes(targetIdentity), "message must name the target identity");
 	assert.equal(entry?.options.triggerTurn, true);
 	assert.equal(statusRequests[0]?.agent, "pi");
+	});
 });
 
 test("agent_end nudges once per target identity and again for a fresh identity", async () => {
+	await withSessionStartEnv(async (cwd) => {
 	let targetIdentity = `sha256:${"b".repeat(64)}`;
 	const native = {
 		reviewMode: onMode("on"),
@@ -303,7 +309,7 @@ test("agent_end nudges once per target identity and again for a fresh identity",
 	} as unknown as NativeReviewCli;
 	const { handlers, sent } = harness(native);
 	const agentEnd = handlers.get("agent_end");
-	const session = ctx("agent-end-repeat");
+	const session = ctx("agent-end-repeat", true, cwd);
 	await directWrite(handlers, session);
 
 	await agentEnd!(agentEndEvent, session);
@@ -314,6 +320,7 @@ test("agent_end nudges once per target identity and again for a fresh identity",
 	await directWrite(handlers, session);
 	await agentEnd!(agentEndEvent, session);
 	assert.equal(sent.length, 2, "a different target identity nudges again");
+	});
 });
 
 test("agent_end sends nothing when STATUS offers collect or stop", async () => {
@@ -350,6 +357,7 @@ test("agent_end skips headless sessions before any native call", async () => {
 });
 
 test("agent_end pairs a named agent's start with its own end, then still nudges for the primary loop's end", async () => {
+	await withSessionStartEnv(async (cwd) => {
 	const targetIdentity = `sha256:${"f".repeat(64)}`;
 	const native = {
 		reviewMode: onMode("on"),
@@ -359,7 +367,7 @@ test("agent_end pairs a named agent's start with its own end, then still nudges 
 	const beforeAgentStart = handlers.get("before_agent_start");
 	const agentEnd = handlers.get("agent_end");
 	assert.equal(typeof beforeAgentStart, "function");
-	const session = ctx("agent-end-subagent");
+	const session = ctx("agent-end-subagent", true, cwd);
 	await directWrite(handlers, session);
 
 	await beforeAgentStart!({ agentName: "review-readability", systemPrompt: "" }, session);
@@ -368,6 +376,7 @@ test("agent_end pairs a named agent's start with its own end, then still nudges 
 
 	await agentEnd!(agentEndEvent, session);
 	assert.equal(sent.length, 1, "the primary loop's end still nudges once the subagent's end is paired off");
+	});
 });
 
 test("jero-worker agent_end never queries native review", async () => {
@@ -392,6 +401,7 @@ test("jero-worker agent_end never queries native review", async () => {
 });
 
 test("agent_end resets the subagent depth when a fresh primary loop starts", async () => {
+	await withSessionStartEnv(async (cwd) => {
 	const targetIdentity = `sha256:${"1".repeat(64)}`;
 	const native = {
 		reviewMode: onMode("on"),
@@ -400,7 +410,7 @@ test("agent_end resets the subagent depth when a fresh primary loop starts", asy
 	const { handlers, sent } = harness(native);
 	const beforeAgentStart = handlers.get("before_agent_start");
 	const agentEnd = handlers.get("agent_end");
-	const session = ctx("agent-end-subagent-reset");
+	const session = ctx("agent-end-subagent-reset", true, cwd);
 	await directWrite(handlers, session);
 
 	await beforeAgentStart!({ agentName: "review-readability", systemPrompt: "" }, session);
@@ -408,6 +418,7 @@ test("agent_end resets the subagent depth when a fresh primary loop starts", asy
 	await agentEnd!(agentEndEvent, session);
 
 	assert.equal(sent.length, 1, "a fresh primary-loop start resets the depth so its own end nudges");
+	});
 });
 
 test("agent_end handler exists but sends nothing when nativeReviewCli is null", async () => {
@@ -434,6 +445,7 @@ test("agent_end sends nothing and does not throw when target STATUS rejects", as
 });
 
 test("session_shutdown ignores late agent_end after a consumed mutation", async () => {
+	await withSessionStartEnv(async (cwd) => {
 	const targetIdentity = `sha256:${"9".repeat(64)}`;
 	const native = {
 		reviewMode: onMode("on"),
@@ -443,7 +455,7 @@ test("session_shutdown ignores late agent_end after a consumed mutation", async 
 	const agentEnd = handlers.get("agent_end");
 	const shutdown = handlers.get("session_shutdown");
 	assert.equal(typeof shutdown, "function");
-	const session = ctx("agent-end-shutdown");
+	const session = ctx("agent-end-shutdown", true, cwd);
 	await directWrite(handlers, session);
 
 	await agentEnd!(agentEndEvent, session);
@@ -452,6 +464,7 @@ test("session_shutdown ignores late agent_end after a consumed mutation", async 
 	await shutdown!({}, session);
 	await agentEnd!(agentEndEvent, session);
 	assert.equal(sent.length, 1, "late agent_end after shutdown cannot remind");
+	});
 });
 
 for (const scenario of ["reload", "fork", "new", "off-branch"] as const) {
@@ -479,7 +492,8 @@ for (const scenario of ["reload", "fork", "new", "off-branch"] as const) {
 
 for (const scenario of ["concurrent-write", "shutdown"] as const) {
 	test(`agent_end binds consumption to the captured mutation during async STATUS: ${scenario}`, async () => {
-		const session = ctx(`status-race-${scenario}`);
+		await withSessionStartEnv(async (cwd) => {
+		const session = ctx(`status-race-${scenario}`, true, cwd);
 		let resolveStatus!: (status: ReviewStatusV3) => void;
 		let entered!: () => void;
 		const statusEntered = new Promise<void>((resolve) => { entered = resolve; });
@@ -501,6 +515,7 @@ for (const scenario of ["concurrent-write", "shutdown"] as const) {
 		await h.handlers.get("agent_end")!(agentEndEvent, session);
 		assert.equal(h.sent.length, scenario === "concurrent-write" ? 2 : 0);
 		assert.equal(calls, scenario === "concurrent-write" ? 2 : 1);
+		});
 	});
 }
 

@@ -59,11 +59,25 @@ if (inputToken !== undefined) {
 		if (process.env.RELAY_FAKE_SUBMIT_CAPTURE) fs.writeFileSync(process.env.RELAY_FAKE_SUBMIT_CAPTURE, bytes);
 		const accepted = JSON.stringify({ schema: "gentle-ai.review-result-artifact/v2", admission_decision: "completed" });
 		if (mode === "cleanup-fail") {
-			process.stdout.write(accepted, () => {
+			// Windows 忽略目录只读位（rmdir 照常成功）；改用分离锁持进程：
+			// 在暂存目录内保持一个打开句柄使 rm 失败。等锁持方就绪后再退出，
+			// 消除父方立即清理的竞态。POSIX 保留 chmod 语义。
+			if (process.platform === "win32") {
+				// Windows 忽略目录只读位，且打开的文件句柄不阻塞 POSIX 语义
+				// 的 rm；唯一可靠的占位是让一个分离进程把工作目录设进被清理
+				// 的暂存目录（inputPath 的直接父目录），rm 以 EPERM 失败。
+				// 锁持方监视暂存父目录里的 kill 旗标以协作退出，避免泄漏。
+				const lockDir = path.dirname(inputPath);
+				const ready = inputPath + ".holder-ready";
+				const killFlag = path.join(path.dirname(path.dirname(inputPath)), "kill-holders");
+				require("node:child_process").spawn(process.execPath, ["-e", "process.chdir(process.argv[1]); require('node:fs').writeFileSync(process.argv[2], 'ready'); setInterval(() => { if (require('node:fs').existsSync(process.argv[3])) process.exit(0); }, 100);", lockDir, ready, killFlag], { detached: true, stdio: "ignore" }).unref();
+				const deadline = Date.now() + 5000;
+				while (!fs.existsSync(ready) && Date.now() < deadline) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 25);
+			} else {
 				fs.chmodSync(path.dirname(path.dirname(inputPath)), 0o500);
-				process.exit(0);
-			});
-			return;
+			}
+			process.stdout.write(accepted);
+			process.exit(0);
 		}
 		process.stdout.write(accepted);
 		process.exit(0);
@@ -145,7 +159,19 @@ interface RelayHarness {
 
 function harness(t: test.TestContext, overrides: Record<string, string> = {}): RelayHarness {
 	const directory = realpathSync(mkdtempSync(join(tmpdir(), "gentle-pi-relay-harness-")));
-	t.after(() => rmSync(directory, { recursive: true, force: true }));
+	// Windows 上被 abort 杀掉的子进程（其 cwd 即本目录）句柄释放可能滞后
+	// 于 close 事件，立即 rmSync 偶发 EPERM；以退避重试收敛。
+	t.after(async () => {
+		for (let attempt = 0; attempt < 20; attempt++) {
+			try {
+				rmSync(directory, { recursive: true, force: true });
+				return;
+			} catch (error) {
+				if ((error as NodeJS.ErrnoException).code !== "EPERM" || attempt === 19) throw error;
+				await new Promise((resolve) => setTimeout(resolve, 50));
+			}
+		}
+	});
 	const gentleAi = join(directory, "gentle-ai");
 	const pi = join(directory, "pi");
 	writeFileSync(gentleAi, FAKE_GENTLE_AI);
@@ -419,7 +445,9 @@ test("preparation keeps reviewer bytes private through deferred submission", asy
 
 
 test("the supplied AbortSignal stays live through deferred submission", async (t) => {
-	const fixture = harness(t, { RELAY_FAKE_SUBMIT_DELAY_MS: "1000" });
+	// 延迟必须远超 waitFor 轮询在高负载下的完成时间：否则提交可能在
+	// abort 前自然结束，测试以"缺失拒绝"偶发失败。
+	const fixture = harness(t, { RELAY_FAKE_SUBMIT_DELAY_MS: "20000" });
 	const controller = new AbortController();
 	const prepared = await prepareReviewHostRelaySlot(relayRequest(fixture, { signal: controller.signal }));
 	const submission = submitReviewHostRelayPreparedResult(prepared);
@@ -746,8 +774,11 @@ test("relay scratch and staging directories are removed after failures too", asy
 test("a result staging cleanup failure remains a typed submit failure", async (t) => {
 	const fixture = harness(t, { RELAY_FAKE_SUBMIT_MODE: "cleanup-fail" });
 	const scratchParent = realpathSync(mkdtempSync(join(tmpdir(), "gentle-pi-relay-cleanup-")));
-	const originalTmpdir = process.env.TMPDIR;
+	// Windows 的 os.tmpdir() 读取 TEMP/TMP 而非 TMPDIR；三个都设才能让
+	// 生产侧的暂存父目录跨平台落进本夹具目录。
+	const originals = { TMPDIR: process.env.TMPDIR, TEMP: process.env.TEMP, TMP: process.env.TMP };
 	process.env.TMPDIR = scratchParent;
+	if (process.platform === "win32") { process.env.TEMP = scratchParent; process.env.TMP = scratchParent; }
 	try {
 		const error = await rejectsWithRelayError(
 			runReviewHostRelaySlot(relayRequest(fixture)),
@@ -757,10 +788,23 @@ test("a result staging cleanup failure remains a typed submit failure", async (t
 		assert.equal(error.mutationOutcome, "unknown");
 		assert.match(error.message, /staging cleanup/i);
 	} finally {
-		if (originalTmpdir === undefined) delete process.env.TMPDIR;
-		else process.env.TMPDIR = originalTmpdir;
+		for (const [name, value] of Object.entries(originals)) {
+			if (value === undefined) delete process.env[name];
+			else process.env[name] = value;
+		}
 		chmodSync(scratchParent, 0o700);
-		rmSync(scratchParent, { recursive: true, force: true });
+		// win32 锁持进程监视 kill 旗标并退出；轮询直到暂存父目录可清理。
+		try {
+			writeFileSync(join(scratchParent, "kill-holders"), "stop");
+		} catch { /* 目录已不可写或已消失时直接尝试清理。 */ }
+		for (let attempt = 0; attempt < 30; attempt++) {
+			try {
+				rmSync(scratchParent, { recursive: true, force: true });
+				break;
+			} catch {
+				await new Promise((resolve) => setTimeout(resolve, 100));
+			}
+		}
 	}
 });
 
