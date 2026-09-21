@@ -2,36 +2,43 @@
 
 > 2026-09-15，jero-pi G4 测试收尾时建立。判定方法：同一测试文件在参考库 gentle-pi-main（同机、同 Node）跑出**相同失败集** → Windows 环境基线，不算 jero-pi 回归。上游对照运行只写 OS tmpdir，参考库只读。
 > 复跑方法：`node /c/Users/Administrator/AppData/Local/Temp/claude/run-jero-tests.mjs`（按文件、180s/文件预算，HANG 即超时标记）。
+>
+> **2026-09-21 大清账**：下表多数族已修复（见底部"2026-09-21 清账批次"）。
+> 现存挂起仅剩 PowerShell ACL 三件套。逐文件快照见该节。
 
-## 挂起（4，HANG）
+## 挂起（剩 3，HANG；原 4）
 
 | 文件 | 备注 |
 |---|---|
-| review-candidate-view.test.ts | 上游同挂（历史基线） |
-| review-controller-native-routing.test.ts | 上游同挂（历史基线） |
-| review-controller-workspace-root.test.ts | 上游同挂（历史基线） |
-| review-recovered-lineage-routing.test.ts | 本机新增发现，同族 |
+| review-candidate-view.test.ts | PowerShell ACL 冷启动慢（每边界 1.5-2.5s），根治=icacls/并行化专项 |
+| review-controller-native-routing.test.ts | 同族（导入 CandidateViewRegistry，首测试即挂） |
+| review-controller-workspace-root.test.ts | 同族 |
+| ~~review-recovered-lineage-routing.test.ts~~ | 2026-09-21 转绿（2/2 干净退出） |
 
-全量 `node --test tests/*.test.ts` 会因此永不结束——只能按文件带预算跑。
+全量 `node --test tests/*.test.ts` 仍因上述三件套不结束——只能按文件带预算跑。
 
-## 失败（按文件，上挂数=jero 挂数且名单一致）
+## 失败（2026-09-21 清账后全部归零；历史记录见 git）
 
-| 文件 | 上游失败数 | 根因族 |
+| 文件 | 原失败数 | 修复（2026-09-21） |
 |---|---|---|
-| gentle-agents.test.ts | 7 | spawn/git 子进程（attribution、diff relay、spawn adapter、agentRuntimePaths 显式 home 路径） |
-| gentle-shell.test.ts | 1 | 断言正则期望 `/` 分隔路径，Windows 实际 `\` |
-| opaque-pi-reviewer-adapter.test.ts | 4 | spawn 无扩展名可执行文件（pi/env-probe）ENOENT，Windows 不解析 |
-| openspec-guardrails.test.ts | 1 | 同 gentle-shell：正则 vs 反斜杠 |
-| orchestrator-budget.test.ts | 1 | 子进程 ESM 导入 `d:` 协议路径（Windows 绝对路径非 file:// URL） |
-| review-agent-end-preflight.test.ts | 11 | spawn/IPC 族 |
-| review-gate.test.ts | 4 | git push 探针 spawn 族 |
-| review-host-relay.test.ts | 25 | env-probe spawn ENOENT（与上游 13/25 完全同数） |
-| review-session-standing-permission-ipc.test.ts | 2 | fd3/IPC 族 |
-| review-snapshot.test.ts | 1 | 嵌套 cwd 快照（Windows git 行为） |
-| review-transaction.test.ts | 1 | annotated tag push 探针 |
-| review-risk-assessment.test.ts | 1 | 上游同败（对照：48 pass / 1 fail） |
-| sdd-managed-runtime-settlement.test.ts | 15 | "native SDD planning home escaped its workspace" 等，上游同败 |
-| skill-registry.test.ts | 1 | `fileURLToPath('file:///home/...')` 无盘符 URL 在 Windows 抛 "path must be absolute" |
+| gentle-agents→jero-agents.test.ts | 7 | resolveWorktree 用 sep；spawn adapter win32 真实 git init 探针；agentRuntimePaths join；locator fixture 补 P4e-1 迁移 |
+| review-host-relay.test.ts | 22 | shebang 路由（生产 lib/review-host-relay.ts）；cleanup-fail 分离 CWD 占位进程 + kill 旗标；TEMP/TMP；abort 延迟；EPERM 退避 |
+| review-agent-end-preflight.test.ts | 6+挂起 | 六测试补 withSessionStartEnv；STATUS 基线移点；**binds-consumption await 永悬修复后整文件 41/41 干净退出**（原"挂起名单"真凶） |
+| review-session-standing-permission-ipc.test.ts | 2 | **生产修复**：fd3 管道 prime 帧 + 500ms 心跳（Windows 上管道在父进程首次写入前双向死锁、静默后休眠） |
+| sdd-managed-runtime-settlement.test.ts | 15 | fixture join；R1 断言 JSON 转义形式 |
+| review-risk-assessment / jero-shell / openspec-guardrails / orchestrator-budget / skill-registry / review-snapshot / review-transaction / review-gate / opaque-pi-reviewer-adapter | — | 2026-09-18 批次已修，维持绿 |
+
+## 表现不稳定（慢机/PowerShell 冷启动依赖）——review-session-standing-permission-controller.test.ts
+
+同文件同代码两侧皆有：机器热时上游 18/0 全过；冷机单跑上游 2 分钟跑不完（4 pass/1 fail/未完成）。根因：`lib/review-candidate-view-owner.ts` 的 Windows SID/DACL 校验每次 spawn PowerShell（无记忆化），本机单次 1–3s，单次超 5s 时 execFileSync timeout 抛 WindowsOwnerValidationError 表现为断言失败；整体则表现为文件级"挂起"。CPU profile 证据：44s 中 ~40s 在 windowsOwnerSid/windowsLocalAdministratorSid 的 spawnSync。判定：环境基线（上游存在同样问题），非 jero-pi 移植缺陷。
+
+## 2026-09-21 新增 Windows 机制认知（生产级，非测试技巧）
+
+1. **fd3 管道死锁**：spawn stdio[3] 管道在父进程首次写入前不投递任何方向数据；静默 ~秒级后再次休眠（竞态）。修复=broker 构造时空行 prime + 500ms unref 心跳（lib/review-session-standing-permission-ipc.ts）。
+2. **中央运行器的 shebang 路由**：collectGentleAiProcess 与 createNodeExecFileAdapter 已按 opaque-pi-reviewer-adapter 同规则路由（检测 `#!` 头→execPath 运行）。新增 spawn/execFile 场景沿用。
+3. **目录清理占位**：Windows 忽略目录只读位；打开句柄不阻 POSIX 语义 rm；可靠占位=分离进程 chdir 进目标目录（EPERM），配 kill 旗标协作退出。打开句柄挡 rm 的旧模式在新 Node 已失效。
+4. **TMPDIR**：Windows os.tmpdir() 读 TEMP/TMP，三个都设才跨平台生效。
+5. **abort 杀进程的句柄滞后**：close 事件后 cwd 句柄释放可滞后，teardown rmSync 需 EPERM 退避重试。
 
 ### 表现不稳定（慢机/PowerShell 冷启动依赖）——review-session-standing-permission-controller.test.ts
 
