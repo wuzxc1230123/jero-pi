@@ -73,6 +73,7 @@ function sha256(content: string): string {
 
 interface PackageJsonPiManifest {
 	extensions?: string[];
+	skills?: string[];
 }
 
 interface PackageJson {
@@ -237,32 +238,78 @@ test("package manifest keeps the zero-binary install posture (jero-pi P1)", () =
 	assert.ok(!existsSync(join(PACKAGE_ROOT, "contracts")), "contracts/ tree must stay retired");
 });
 
-test("package manifest installs pi-pretty through a wrapper without bundling native optional dependencies", () => {
+// P4 落地（设计 §5.3 集成矩阵）：六个伴生 pi-package 是硬依赖，其资源经
+// node_modules 路径进 pi manifest 才会被宿主加载（宿主目录扫描跳过
+// node_modules；packages.md "Dependencies" 契约）。缺路径时宿主静默跳过，
+// 即"依赖存在即用"。禁止 bundledDependencies：pi-pretty/pi-lens 含平台
+// 特定原生依赖，必须由宿主安装时的 npm install 按用户平台解析。
+const COMPANION_EXTENSION_REFS: Record<string, string> = {
+	"@heyhuynhgiabuu/pi-pretty": "node_modules/@heyhuynhgiabuu/pi-pretty/dist/index.js",
+	"@juicesharp/rpiv-ask-user-question": "node_modules/@juicesharp/rpiv-ask-user-question/index.ts",
+	"pi-fovea": "node_modules/pi-fovea/src/index.ts",
+	"pi-intercom": "node_modules/pi-intercom/index.ts",
+	"pi-lens": "node_modules/pi-lens/dist/index.js",
+	"pi-web-access": "node_modules/pi-web-access/index.ts",
+};
+const COMPANION_SKILL_REFS = [
+	"node_modules/pi-fovea/skills",
+	"node_modules/pi-intercom/skills",
+	"node_modules/pi-lens/skills",
+];
+
+test("companion pi-packages load through node_modules manifest references without bundling", () => {
 	const packageJson = readPackageJson();
 
-	assert.equal(
-		packageJson.dependencies?.["@heyhuynhgiabuu/pi-pretty"],
-		"0.6.14",
-		"gentle-pi must install the tested pi-pretty version as a normal dependency",
-	);
 	assert.ok(
 		packageJson.pi?.extensions?.includes("./extensions"),
-		"gentle-pi must load packaged extension wrappers",
+		"jero-pi must load its own packaged extensions",
 	);
-	assert.ok(
-		!packageJson.pi?.extensions?.includes(
-			"./node_modules/@heyhuynhgiabuu/pi-pretty/dist/index.js",
-		),
-		"gentle-pi must not reference pnpm-unportable nested node_modules paths",
+	for (const [name, ref] of Object.entries(COMPANION_EXTENSION_REFS)) {
+		assert.ok(
+			packageJson.pi?.extensions?.includes(ref),
+			`the pi manifest must reference ${name} through its node_modules entry`,
+		);
+		const entry = join(PACKAGE_ROOT, ...ref.split("/"));
+		assert.ok(existsSync(entry), `companion entry ${ref} must exist after install`);
+		const companion = JSON.parse(readFileSync(join(PACKAGE_ROOT, "node_modules", ...name.split("/"), "package.json"), "utf8"));
+		const companionEntry = companion.pi?.extensions?.[0]?.replace(/^\.\//, "");
+		assert.ok(
+			companionEntry !== undefined && ref.endsWith(companionEntry),
+			`the ${name} reference must match the companion's own pi manifest entry`,
+		);
+	}
+	for (const ref of COMPANION_SKILL_REFS) {
+		assert.ok(
+			packageJson.pi?.skills?.includes(ref),
+			`the pi manifest must reference companion skills at ${ref}`,
+		);
+		assert.ok(existsSync(join(PACKAGE_ROOT, ...ref.split("/"))), `companion skills dir ${ref} must exist after install`);
+	}
+	assert.equal(
+		packageJson.bundledDependencies,
+		undefined,
+		"companions must not be bundled: pi-pretty/pi-lens native dependencies resolve per-platform at install time",
 	);
-	assert.ok(
-		!packageJson.bundledDependencies?.includes("@heyhuynhgiabuu/pi-pretty"),
-		"pi-pretty must not be bundled because its native optional dependencies are platform-specific",
+	assert.equal(
+		packageJson.bundleDependencies,
+		undefined,
+		"companions must not be bundled: pi-pretty/pi-lens native dependencies resolve per-platform at install time",
 	);
-	assert.ok(
-		!packageJson.bundleDependencies?.includes("@heyhuynhgiabuu/pi-pretty"),
-		"pi-pretty must not be bundled because its native optional dependencies are platform-specific",
-	);
+});
+
+test("companion dependencies are exact-pinned and pi-tui stays a host-provided peer", () => {
+	const packageJson = readPackageJson();
+
+	for (const name of Object.keys(COMPANION_EXTENSION_REFS)) {
+		const version = packageJson.dependencies?.[name];
+		assert.ok(
+			version !== undefined && /^\d/.test(version),
+			`companion ${name} must be an exact-pinned dependency (got ${String(version)})`,
+		);
+	}
+	assert.equal(packageJson.dependencies?.["@earendil-works/pi-tui"], undefined, "the host bundles pi-tui; jero-pi must not install its own copy");
+	assert.equal(packageJson.peerDependencies?.["@earendil-works/pi-tui"], "*", "pi-tui belongs to the host-provided core peer family");
+	assert.equal(packageJson.devDependencies?.["@earendil-works/pi-tui"], "0.85.1", "tests pin pi-tui to the tested host version");
 });
 
 test("package verification pins the relocated golden vectors as the behavioral spec", () => {

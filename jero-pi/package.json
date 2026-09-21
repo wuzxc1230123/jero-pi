@@ -45,7 +45,13 @@
 	"pi": {
 		"image": "assets/jero-logo.png",
 		"extensions": [
-			"./extensions"
+			"./extensions",
+			"node_modules/@heyhuynhgiabuu/pi-pretty/dist/index.js",
+			"node_modules/@juicesharp/rpiv-ask-user-question/index.ts",
+			"node_modules/pi-fovea/src/index.ts",
+			"node_modules/pi-intercom/index.ts",
+			"node_modules/pi-lens/dist/index.js",
+			"node_modules/pi-web-access/index.ts"
 		],
 		"themes": [
 			"./themes"
@@ -54,11 +60,13 @@
 			"./prompts"
 		],
 		"skills": [
-			"./skills"
+			"./skills",
+			"node_modules/pi-fovea/skills",
+			"node_modules/pi-intercom/skills",
+			"node_modules/pi-lens/skills"
 		]
 	},
 	"dependencies": {
-		"@earendil-works/pi-tui": "0.85.1",
 		"@heyhuynhgiabuu/pi-pretty": "0.6.14",
 		"@juicesharp/rpiv-ask-user-question": "2.10.1",
 		"pi-fovea": "0.27.0",
@@ -67,10 +75,12 @@
 		"pi-web-access": "0.29.0"
 	},
 	"peerDependencies": {
-		"@earendil-works/pi-coding-agent": ">=0.85.1"
+		"@earendil-works/pi-coding-agent": ">=0.85.1",
+		"@earendil-works/pi-tui": "*"
 	},
 	"devDependencies": {
 		"@earendil-works/pi-coding-agent": "0.85.1",
+		"@earendil-works/pi-tui": "0.85.1",
 		"@types/node": "^24.13.3",
 		"typescript": "^5.9.3"
 	},

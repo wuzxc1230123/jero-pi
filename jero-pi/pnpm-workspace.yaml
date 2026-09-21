@@ -1,4 +1,9 @@
-# Use hoisted node_modules so npm bundledDependencies can be packed for Pi package dependencies.
+# Use hoisted node_modules so the pi manifest's companion node_modules/ resource
+# references (pi-fovea/pi-intercom/pi-lens/pi-web-access/rpiv/pi-pretty entries
+# and skills dirs) materialize as real paths in dev checkouts and local-path
+# installs. Companions are deliberately NOT bundled: pi-pretty/pi-lens carry
+# platform-specific native dependencies that must resolve via the host's
+# npm install on the user's machine.
 nodeLinker: hoisted
 
 # Reject installs of packages published less than 3 days ago (4320 minutes).

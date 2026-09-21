@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@earendil-works/pi-tui':
-        specifier: 0.85.1
-        version: 0.85.1
       '@heyhuynhgiabuu/pi-pretty':
         specifier: 0.6.14
         version: 0.6.14(@earendil-works/pi-tui@0.85.1)
@@ -33,6 +30,9 @@ importers:
       '@earendil-works/pi-coding-agent':
         specifier: 0.85.1
         version: 0.85.1(ws@8.21.3)
+      '@earendil-works/pi-tui':
+        specifier: 0.85.1
+        version: 0.85.1
       '@types/node':
         specifier: ^24.13.3
         version: 24.13.4

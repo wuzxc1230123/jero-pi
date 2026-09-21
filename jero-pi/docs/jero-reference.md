@@ -76,7 +76,19 @@ sibling `jero-*` names.
 
 ## Supply chain
 
-All seven companion dependencies are pinned exact; `pnpm-workspace.yaml`
-enforces release age, trust no-downgrade, and no exotic subdependency
-sources; the lockfile is committed; CI re-runs the dependency audit and the
-packed-artifact assertion (`scripts/verify-package-files.mjs`).
+All six companion dependencies are pinned exact; `@earendil-works/pi-tui`
+is a `"*"` peer (the host bundles the pi-tui/pi-ai/pi-agent-core core
+family; tests pin 0.85.1 to the tested host). Companions load through
+`node_modules/` resource references in the `pi` manifest — the host's
+documented contract for depending on other pi-packages; missing paths are
+skipped silently, so "installed means usable" holds without a wrapper
+layer. Nothing is bundled: pi-pretty and pi-lens carry platform-specific
+native dependencies that must resolve per-platform through the host's
+`npm install`; exact pins in `dependencies` govern the resolved versions.
+The per-companion off switch is Pi's settings-level package/resource
+filtering (plus pi-pretty's own `PRETTY_DISABLE_TOOLS`); the wrapper-era
+`JERO_PI_PRETTY` env from the design matrix is retired with the wrapper.
+`pnpm-workspace.yaml` enforces release age, trust no-downgrade, and no
+exotic subdependency sources; the lockfile is committed; CI re-runs the
+dependency audit and the packed-artifact assertion
+(`scripts/verify-package-files.mjs`).
