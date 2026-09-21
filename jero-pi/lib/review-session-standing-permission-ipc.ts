@@ -128,6 +128,7 @@ export class ParentStandingReviewPermissionBroker {
 	private acceptedRequests = 0;
 	private readonly channel: StandingReviewPermissionChannel;
 	private readonly detach: () => void;
+	private heartbeat: ReturnType<typeof setInterval> | undefined;
 	private readonly authorize: (repositoryIdentity: string) => Promise<boolean> | boolean;
 	private readonly maxRequests: number;
 	private readonly onChannelTerminal = () => this.close();
@@ -159,11 +160,32 @@ export class ParentStandingReviewPermissionBroker {
 					this.respond({ type: RESPONSE_TYPE, id: incoming.id, granted: false });
 				});
 		});
+		// Windows 上 spawn 继承的 fd3 管道在父进程首次写入前不投递任何方向
+		// 的数据（子进程 net.Socket 的写会无限滞留缓冲，形成双向死锁），
+		// 且静默一段时间后通道会再次休眠。构造时写入一个空行 prime 帧、
+		// 之后以低频心跳空行维持活性：子方 attachJsonLines 对空行静默
+		// 跳过，POSIX 行为不变。心跳 unref，不延长代理生命周期。
+		try {
+			this.channel.writable.write("\n");
+		} catch {
+			/* 已关闭的管道由上面的终端监听器收敛。 */
+		}
+		const heartbeat = setInterval(() => {
+			if (this.closed || this.channel.writable.destroyed || this.channel.writable.writableEnded) return;
+			try {
+				this.channel.writable.write("\n");
+			} catch {
+				this.close();
+			}
+		}, 500);
+		heartbeat.unref?.();
+		this.heartbeat = heartbeat;
 	}
 
 	close(): void {
 		if (this.closed) return;
 		this.closed = true;
+		if (this.heartbeat !== undefined) clearInterval(this.heartbeat);
 		this.detach();
 	}
 
