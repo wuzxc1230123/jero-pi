@@ -27,6 +27,7 @@
 // 绑定、证据、提示词、schema、预算或准入。
 
 import { spawn } from "node:child_process";
+import { closeSync, openSync, readSync } from "node:fs";
 import { chmod, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { isAbsolute, join } from "node:path";
@@ -383,6 +384,23 @@ interface ProcessCapture {
 	elapsedMs: number;
 }
 
+// Windows 的 CreateProcess 只解析 *.exe；带 shebang 的无扩展启动器
+// （含 POSIX 风格垫片）无法直接 spawn（ENOENT）。改为经由当前 Node
+// 可执行文件运行——子进程的 process.argv[2:] 与 POSIX 直执行完全一致。
+// 与 lib/opaque-pi-reviewer-adapter.ts 的路由规则保持一致。
+function launchableProcessTarget(file: string): { file: string; argumentPrefix: readonly string[] } {
+	if (process.platform === "win32" && !/\.(exe|cmd|bat)$/i.test(file)) {
+		try {
+			const fd = openSync(file, "r");
+			try {
+				const header = Buffer.alloc(2);
+				if (readSync(fd, header, 0, 2, 0) === 2 && header[0] === 0x23 && header[1] === 0x21) return { file: process.execPath, argumentPrefix: [file] };
+			} finally { closeSync(fd); }
+		} catch { /* 不可读的启动器向下穿透到直接 spawn，后者自行给出类型化启动失败。 */ }
+	}
+	return { file, argumentPrefix: [] };
+}
+
 function collectGentleAiProcess(
 	file: string,
 	arguments_: readonly string[],
@@ -390,7 +408,8 @@ function collectGentleAiProcess(
 ): Promise<ProcessCapture> {
 	return new Promise((resolve, reject) => {
 		const startedAt = Date.now();
-		const child = spawn(file, [...arguments_], {
+		const target = launchableProcessTarget(file);
+		const child = spawn(target.file, [...target.argumentPrefix, ...arguments_], {
 			cwd: options.cwd,
 			env: options.env,
 			stdio: ["pipe", "pipe", "pipe"],

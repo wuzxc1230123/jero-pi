@@ -3,6 +3,7 @@
 // lib/authority）。保守失败的桩保留为可测试注入的参考实现与 Q-C 的
 // 不可达成表面；生产默认值是进程内适配器（lib/jero-authority-cli.ts）。
 import { execFile } from "node:child_process";
+import { closeSync, openSync, readSync } from "node:fs";
 import { realpath } from "node:fs/promises";
 import { isAbsolute, join, posix, win32 } from "node:path";
 import { promisify } from "node:util";
@@ -908,10 +909,29 @@ export function gentleAiProcessEnvironment(base                    = {})        
 	return { ...base };
 }
 
+// Windows 的 CreateProcess 只解析 *.exe；带 shebang 的无扩展启动器无法
+// 直接 execFile（ENOENT）。win32 上检测到 shebang 头时经由当前 Node
+// 可执行文件运行——子进程的 process.argv[2:] 与 POSIX 直执行一致，
+// 与 lib/opaque-pi-reviewer-adapter.ts、lib/review-host-relay.ts 的
+// 路由规则保持一致。
+function launchableExecFileTarget(file        )                                                       {
+	if (process.platform === "win32" && !/\.(exe|cmd|bat)$/i.test(file)) {
+		try {
+			const fd = openSync(file, "r");
+			try {
+				const header = Buffer.alloc(2);
+				if (readSync(fd, header, 0, 2, 0) === 2 && header[0] === 0x23 && header[1] === 0x21) return { file: process.execPath, argumentsPrefix: [file] };
+			} finally { closeSync(fd); }
+		} catch { /* 不可读的启动器向下穿透到直接 execFile，后者自行给出类型化启动失败。 */ }
+	}
+	return { file, argumentsPrefix: [] };
+}
+
 export function createNodeExecFileAdapter()                  {
 	return async (request) => {
 		try {
-			const output = await execFileAsync(request.file, [...request.arguments], { cwd: request.cwd, encoding: "utf8", shell: false, windowsHide: true, timeout: request.timeoutMs, maxBuffer: request.maxBufferBytes, signal: request.signal });
+			const target = launchableExecFileTarget(request.file);
+			const output = await execFileAsync(target.file, [...target.argumentsPrefix, ...request.arguments], { cwd: request.cwd, encoding: "utf8", shell: false, windowsHide: true, timeout: request.timeoutMs, maxBuffer: request.maxBufferBytes, signal: request.signal });
 			return { stdout: output.stdout, stderr: output.stderr, exitCode: 0, signal: null, timedOut: false, outputLimitExceeded: false };
 		} catch (error) {
 			const detail = error                                                                                                                                   ;
