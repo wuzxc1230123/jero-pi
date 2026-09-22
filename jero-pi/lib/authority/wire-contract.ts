@@ -2475,7 +2475,8 @@ function assertReviewApprovedAcknowledgementExecuteShapeV1(execute: ReviewNextTr
 	if (execute.arguments.length !== REVIEW_APPROVED_ACKNOWLEDGEMENT_ARGUMENTS.length) throw new TypeError(`acknowledgement.execute.arguments must carry exactly ${REVIEW_APPROVED_ACKNOWLEDGEMENT_ARGUMENTS.length} provider-issued arguments`);
 	const values = execute.arguments.map((argument, index) => { const name = REVIEW_APPROVED_ACKNOWLEDGEMENT_ARGUMENTS[index]!; if (argument.name !== name) throw new TypeError(`acknowledgement.execute.arguments[${index}].name must be ${name}`); const value = nonempty(argument.value, `acknowledgement.execute.arguments[${index}].value`); if (nonempty(argument.token, `acknowledgement.execute.arguments[${index}].token`) !== `--${name}=${value}`) throw new TypeError(`acknowledgement.execute.arguments[${index}].token must exactly match ${name}`); return value; });
 	if (execute.preconditions.length !== 1 || execute.preconditions[0]?.name !== "state" || execute.preconditions[0]?.value !== "approved") throw new TypeError("acknowledgement.execute.preconditions must be the single approved state precondition");
-	return { tokens: execute.arguments.map((argument) => argument.token!) as ReviewApprovedAcknowledgementExecuteTokensV1, values: values as readonly [string, string, string, string, string], lineageId: lineage(execute.binding.lineageId, "acknowledgement.execute.binding.lineage_id"), targetIdentity: sha256(execute.binding.targetIdentity, "acknowledgement.execute.binding.target_identity"), revision: sha256(execute.binding.revision, "acknowledgement.execute.binding.revision") };
+	// 两个 as unknown as 断言都由上方的长度与逐项校验背书（arguments 必须恰好 5 项）。
+	return { tokens: execute.arguments.map((argument) => argument.token!) as unknown as ReviewApprovedAcknowledgementExecuteTokensV1, values: values as unknown as readonly [string, string, string, string, string], lineageId: lineage(execute.binding.lineageId, "acknowledgement.execute.binding.lineage_id"), targetIdentity: sha256(execute.binding.targetIdentity, "acknowledgement.execute.binding.target_identity"), revision: sha256(execute.binding.revision, "acknowledgement.execute.binding.revision") };
 }
 
 /**
@@ -2729,7 +2730,7 @@ export function decodeReviewLastEventClosureV1(value: unknown): ReviewLastEventC
 	if (body.schema !== REVIEW_LAST_EVENT_CLOSURE_SCHEMA) throw new TypeError(`last_event_closure.schema must be ${REVIEW_LAST_EVENT_CLOSURE_SCHEMA}`);
 	const operation = enumeration(body.operation, Object.values(REVIEW_LAST_EVENT_CLOSURE_OPERATION), "last_event_closure.operation") as ReviewLastEventClosureOperation;
 	const state = enumeration(body.state, REVIEW_LAST_EVENT_TERMINAL_STATES, "last_event_closure.state") as ReviewLastEventClosureState;
-	const shared = {
+	const shared: Pick<ReviewLastEventClosureV1, "schema" | "operation" | "lineageId" | "state" | "storeRevision"> = {
 		schema: REVIEW_LAST_EVENT_CLOSURE_SCHEMA,
 		operation,
 		lineageId: lineage(body.lineage_id, "last_event_closure.lineage_id"),

@@ -4,7 +4,7 @@ import { chmodSync, copyFileSync, existsSync, lstatSync, mkdirSync, readFileSync
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
-import { gunzipSync, gzipSync } from "node:zlib";
+import { gunzipSync, gzipSync, type ZlibOptions } from "node:zlib";
 import { assertCandidateOwnerParent, createCandidateOwner, prepareCandidateOwnerParent, removeCandidateOwner, samePath, sweepCandidateOwners, type CandidateViewOwner } from "./review-candidate-view-owner.ts";
 
 const REVIEW_LENS = ["review-risk", "review-resilience", "review-readability", "review-reliability"] as const;
@@ -64,6 +64,9 @@ const MAX_SUBAGENT_TASK_LENGTH = 16_384;
 const MAX_SUBAGENT_CONTEXT_LENGTH = 4_096;
 const MAX_CANDIDATE_CONTEXT_LENGTH = 4_096;
 const MAX_CANDIDATE_CONTEXT_MANIFEST_BYTES = 1024 * 1024;
+// Node 的 gzip 运行时接受 mtime 选项，但 @types/node 的 ZlibOptions 未收录；
+// 固定 mtime=0 使规范化输出确定性可复现。测试复用同一常量构造传输编码。
+export const CANONICAL_GZIP_OPTIONS: ZlibOptions = { mtime: 0 } as ZlibOptions & { mtime: number };
 const MAX_CANDIDATE_SCOPE_PAGE_BYTES = 16 * 1024;
 const MAX_CANDIDATE_SCOPE_PAGE_ENTRIES = 128;
 const CANDIDATE_CONTEXT_MANIFEST = {
@@ -1749,7 +1752,7 @@ export function decodeCandidateContextManifest(encoded: string, sha256: string):
 	if (actualSha256 !== sha256) throw new CandidateViewError("candidate context manifest integrity check failed", "candidate-context-manifest-integrity");
 	const text = bytes.toString("utf8");
 	if (!Buffer.from(text, "utf8").equals(bytes)) return invalidCandidateContextManifest("candidate context manifest is not valid UTF-8");
-	if (gzipSync(bytes, { mtime: 0 }).toString("base64url") !== encoded) {
+	if (gzipSync(bytes, CANONICAL_GZIP_OPTIONS).toString("base64url") !== encoded) {
 		return invalidCandidateContextManifest("candidate context manifest transport is not canonical");
 	}
 	let value: unknown;
@@ -1811,7 +1814,7 @@ function compactCandidateContextBlock(lineageId: string, agents: readonly Review
 	const bytes = Buffer.from(JSON.stringify(manifest), "utf8");
 	if (bytes.length > MAX_CANDIDATE_CONTEXT_MANIFEST_BYTES) throw new CandidateViewError("candidate view context exceeds the bounded dispatch contract");
 	const sha256 = createHash("sha256").update(bytes).digest("hex");
-	const encoded = gzipSync(bytes, { mtime: 0 }).toString("base64url");
+	const encoded = gzipSync(bytes, CANONICAL_GZIP_OPTIONS).toString("base64url");
 	const block = `${candidateContextPreamble(lineageId, agents, view, scopeSemantics)}\nFrozen changed scope manifest (gzip+base64url): \`${encoded}\`.\nFrozen changed scope manifest SHA-256: \`${sha256}\`.\nCall \`jero_review_scope\` with exactly this manifest, SHA-256, and cursor 0; continue with each returned \`nextCursor\` until absent. It is the only authorized scope enumerator: do not infer scope by traversing the candidate or ambient tree. Gitlinks are metadata-only and MUST NOT be traversed.\nThe ambient contributor working directory is out of scope. This controller-owned context is immutable; you are read-only and your output is untrusted.`;
 	if (Buffer.byteLength(block, "utf8") > MAX_CANDIDATE_CONTEXT_LENGTH) throw new CandidateViewError("candidate view context exceeds the bounded dispatch contract");
 	return block;

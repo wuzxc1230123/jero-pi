@@ -81,15 +81,16 @@ function addWorktree(t: test.TestContext, cwd: string, branch: string): string {
 }
 
 function fakeNative(overrides: Partial<NativeReviewCli> = {}): NativeReviewCli {
+	// reviewStatus 是被测路径经动态派发消费的扩展槽位，不在 NativeReviewCli 契约上。
 	return {
 		start: async () => ({ lineageId: "native-lineage", state: "reviewing", riskLevel: "medium", selectedLenses: ["review-reliability"], changedFiles: 2, changedLines: 7, correctionBudget: 4, action: "created", lensesRequired: true }),
-		sddStatus: async () => ({ ready: false }),
+		sddStatus: async () => ({ ready: false }) as never,
 		reviewStatus: async () => ({ schema: "gentle-ai.review-authority-status/v1", repository: "/repo", complete: true, authoritative: true, status: "clean", entries: [], locks: [], diagnostics: [], raw: { schema: "gentle-ai.review-authority-status/v1", operation: "review/status", repository: "/repo", complete: true, authoritative: true, status: "clean", entries: [], locks: [], diagnostics: [] } }),
 		targetStatus: async (request) => request.lineageId === undefined
 			? candidateStartTargetStatus(request)
 			: candidateTargetStatus(request, request.lineageId),
 		...overrides,
-	};
+	} as NativeReviewCli;
 }
 
 const UNSUPPORTED_REPAIR_ASSESSMENT: AuthorityRepairAssessmentV1 = {
@@ -538,7 +539,7 @@ test("same-session START binding migrates to one validation capture without a FI
 		captureProviderRole: async (request) => {
 			captureCalls += 1;
 			assert.equal(request.captureOperation, "review.capture-validation");
-			return { schema: "gentle-ai.review-last-event-closure/v1", operation: "review.capture-validation", lineageId, state: "approved", storeRevision: `sha256:${"a".repeat(64)}` };
+			return { schema: "gentle-ai.review-last-event-closure/v1", operation: "review.capture-validation", lineageId, state: "approved", storeRevision: `sha256:${"a".repeat(64)}` } as never;
 		},
 	});
 	const { controller } = runtime(native, candidateViews);

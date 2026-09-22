@@ -27,7 +27,7 @@ function rail(f: ReturnType<typeof fixture>): ScrollView {
 test("grouped Status preserves structured fields and opaque integration text", () => {
 	const lines = renderShellSidebarBar({
 		cwd: "/project", branch: "main", dirty: 2, sessionName: "session",
-		modelId: "model", effort: "high", contextPercent: 45, contextWindow: 1000,
+		modelId: "model", effort: "high", contextPercent: 45, contextWindow: 1000, usage: undefined,
 		costTotal: 1, subscription: false, statuses: ["opaque integration"],
 	}, theme, 46);
 	const text = lines.join("\n");

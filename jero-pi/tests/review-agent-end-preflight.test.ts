@@ -221,8 +221,8 @@ for (const scenario of ["same", "changed", "sibling-root", "nested-root", "faile
 		await directWrite(handlers, session);
 		const result = await review.execute("post-ack", { operation: "acknowledge-approved", lineageId }, undefined, undefined, session);
 		if (unsuccessful) {
-			assert.equal(result.details.outcome, scenario === "failed" ? "native-operation-failed" : "native-mutation-status-reconciled");
-			assert.equal(result.details.mutation_outcome, scenario === "failed" ? "none" : "unknown");
+			assert.equal((result.details as Record<string, unknown>).outcome, scenario === "failed" ? "native-operation-failed" : "native-mutation-status-reconciled");
+			assert.equal((result.details as Record<string, unknown>).mutation_outcome, scenario === "failed" ? "none" : "unknown");
 		} else assert.deepEqual(result.details, {
 			operation: "acknowledge-approved", status: "closed",
 			outcome: "native-approved-acknowledgement-completed",
@@ -561,7 +561,7 @@ test("session_start negotiates the current target identity when RDD is on", asyn
 		const session = {
 			...ctx("session-baseline-record", true, cwd),
 			ui: { notify: (message: string, severity: string) => notifications.push({ message, severity }) },
-		};
+		} as unknown as ExtensionContext;
 		await sessionStart!({}, session);
 		assert.equal(statusRequests[0]?.agent, "pi");
 		assert.deepEqual(sent, []);

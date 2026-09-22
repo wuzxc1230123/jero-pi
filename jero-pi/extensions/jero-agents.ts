@@ -77,7 +77,8 @@ function parseSddChange(value: unknown, agentName: string): SddChangeSelection |
 		throw new Error("sdd_change must contain only a non-empty changeName, workspaceRoot, and the agent's matching phase.");
 	}
 	if (expectedPhase === "remediate" && (typeof selection.failedEvidenceRevision !== "string" || !/^sha256:[0-9a-f]{64}$/.test(selection.failedEvidenceRevision))) throw new Error("Invalid remediation revision");
-	return { changeName: selection.changeName, workspaceRoot: selection.workspaceRoot, phase: selection.phase, ...(expectedPhase === "remediate" ? { failedEvidenceRevision: selection.failedEvidenceRevision as string } : {}) };
+	// phase 已通过上方与 expectedPhase 的相等校验，直接携带已收窄的类型。
+	return { changeName: selection.changeName, workspaceRoot: selection.workspaceRoot, phase: expectedPhase, ...(expectedPhase === "remediate" ? { failedEvidenceRevision: selection.failedEvidenceRevision as string } : {}) };
 }
 
 const REMEDIATION_SCHEMA = {
@@ -429,7 +430,7 @@ function registerChildMessaging(pi: ExtensionAPI, ipc: IpcEndpoint): void {
 		label: "Agent parent message",
 		description: "Send a bounded notification or correlated query to this subagent's parent.",
 		parameters: { type: "object", additionalProperties: false, required: ["message"], properties: { kind: { type: "string", enum: ["notification", "query"] }, message: { type: "string" } } } as never,
-		async execute(_id, params) {
+		async execute(_id, params): Promise<ToolText> {
 			const input = params as { kind?: unknown; message?: unknown };
 			if (typeof input.message !== "string") throw new Error("parent messages require text");
 			if (input.kind === undefined || input.kind === "notification") {

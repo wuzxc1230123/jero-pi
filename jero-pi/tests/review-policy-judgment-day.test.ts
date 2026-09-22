@@ -8,6 +8,7 @@ import {
 	TERMINAL_STATE,
 	createReviewState,
 	type CanonicalFrozenRowV1,
+	type ReviewMode,
 	type ReviewStateV1,
 } from "../lib/review-transaction.ts";
 import {
@@ -27,7 +28,7 @@ const TREE = {
 	FIX_TWO: "4".repeat(40),
 } as const;
 
-function judgmentDayState(mode = REVIEW_MODE.JUDGMENT_DAY): ReviewStateV1 {
+function judgmentDayState(mode: ReviewMode = REVIEW_MODE.JUDGMENT_DAY): ReviewStateV1 {
 	return createReviewState({
 		lineageId: "judgment-day-lineage",
 		mode,

@@ -179,7 +179,7 @@ test("startup skip honors no skill registry controls", () => {
 });
 
 test("duplicate extension load is skipped only across different sources", () => {
-	const state = {};
+	const state = {} as never;
 
 	assert.equal(
 		__testing.shouldSkipDuplicateExtensionLoad("file:///repo/extensions/skill-registry.ts?first", "/workspace", state),
@@ -205,12 +205,12 @@ test("project-local skill registry extension wins over installed package copy", 
 		__testing.shouldSkipDuplicateExtensionLoad(
 			"file:///home/.pi/agent/npm/node_modules/gentle-pi/extensions/skill-registry.ts",
 			cwd,
-			{},
+			{} as never,
 		),
 		true,
 	);
 	assert.equal(
-		__testing.shouldSkipDuplicateExtensionLoad(pathToFileURL(localExtension).href, cwd, {}),
+		__testing.shouldSkipDuplicateExtensionLoad(pathToFileURL(localExtension).href, cwd, {} as never),
 		false,
 	);
 });

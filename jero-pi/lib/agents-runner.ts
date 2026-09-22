@@ -14,11 +14,11 @@ import { isFinished, normalizeRpcEvent, TASK_EVENT, TASK_STATUS, taskLabel, type
 // 并对每个任务实施不活动看门狗。
 
 export interface ChildLike {
-	pid: number | undefined;
+	pid?: number | undefined;
 	stdin: Writable;
 	stdout: Readable;
 	stderr: Readable | null | undefined;
-	stdio?: Array<Duplex | null | undefined>;
+	stdio?: Array<Readable | Writable | null | undefined>;
 	kill(signal?: NodeJS.Signals): boolean;
 	send?(message: Record<string, unknown>, callback?: (error: Error | null) => void): boolean;
 	disconnect?(): void;
@@ -602,7 +602,8 @@ export class AgentRunner {
 			if (!request.prepareResponseObservations) this.checkObservationGrant(live);
 		}
 		this.live.set(id, live);
-		const permissionPipe = child.stdio?.[3];
+		// fd3 授权管道按构造为 Duplex（"pipe" 槽位）；stdio 的索引类型只承认单向流。
+		const permissionPipe = child.stdio?.[3] as Duplex | null | undefined;
 		if (hasParentPermissionChannel && permissionPipe !== undefined && permissionPipe !== null) {
 			live.permissionBroker = new ParentStandingReviewPermissionBroker(
 				{ readable: permissionPipe, writable: permissionPipe },

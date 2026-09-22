@@ -42,7 +42,7 @@ function nonPiV3Consent() {
 }
 
 function consentCustom(select: (title: string, options: string[]) => Promise<string | undefined>) {
-	return async (factory: (...args: never[]) => unknown) => {
+	return async (factory: (...args: unknown[]) => unknown) => {
 		let result: unknown;
 		const component = factory(
 			{ terminal: { rows: 24 }, requestRender() {} },
@@ -244,7 +244,7 @@ function piConsent() {
 		choices: decoded.choices.map((choice) => ({
 			...choice,
 			invocation: choice.invocation.replace(" --consent ", " --agent pi --consent "),
-		})) as typeof decoded.choices,
+		})) as unknown as typeof decoded.choices,
 	};
 }
 
@@ -610,7 +610,7 @@ test("a package-owned child replays its exact pending ordinary grant from a sibl
 	const childRoot = siblingWorktree(t, parentRoot);
 	const unrelatedRoot = reviewRepository(t);
 	writeFileSync(join(childRoot, "app.ts"), "export const value = 2;\n");
-	const parentManager = {};
+	const parentManager: { getSessionId?: () => string } = {};
 	const parentIdentity = await captureReviewSessionIdentity({
 		cwd: parentRoot,
 		mode: "tui",

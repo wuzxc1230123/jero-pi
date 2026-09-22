@@ -1372,7 +1372,7 @@ test("plain START adopts the pre-lineage selection retained by inspect and delet
 		retained,
 	);
 	assert.equal(started.operation, "start");
-	assert.equal(started.result.lineage_id, "review-started");
+	assert.equal((started.result as Record<string, unknown>).lineage_id, "review-started");
 	assert.equal(starts.length, 1);
 	assert.equal(requests.length, 3);
 	const startStatusRequest = requests[2]!;
@@ -1533,7 +1533,7 @@ test("a failed START retains a pre-lineage selection for a same-candidate retry"
 			{ operation: "start", input: JSON.stringify({ mode: "ordinary" }) },
 			cwd, native, undefined, null, undefined, retained,
 		);
-		assert.equal(retried.result.lineage_id, "retried");
+		assert.equal((retried.result as Record<string, unknown>).lineage_id, "retried");
 		assert.equal(starts, 2);
 		assert.equal(retained.has(`${cwd}\u0000`), false);
 	});

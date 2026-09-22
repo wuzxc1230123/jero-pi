@@ -283,8 +283,9 @@ function readManagedAssetsLockOwner(lockPath: string): ManagedAssetsLockOwner | 
 	try {
 		if (!lstatSync(lockPath).isFile()) return undefined;
 		const parsed: unknown = JSON.parse(readFileSync(lockPath, "utf8"));
-		if (!isRecord(parsed) || parsed.schemaVersion !== 1 || typeof parsed.token !== "string" || parsed.token.length === 0 || !Number.isInteger(parsed.pid) || parsed.pid <= 0 || typeof parsed.createdAtMs !== "number" || !Number.isFinite(parsed.createdAtMs)) return undefined;
-		return parsed as ManagedAssetsLockOwner;
+		// typeof 守卫只负责把 unknown 收窄成 number；整数语义仍由 isInteger 把关。
+		if (!isRecord(parsed) || parsed.schemaVersion !== 1 || typeof parsed.token !== "string" || parsed.token.length === 0 || typeof parsed.pid !== "number" || !Number.isInteger(parsed.pid) || parsed.pid <= 0 || typeof parsed.createdAtMs !== "number" || !Number.isFinite(parsed.createdAtMs)) return undefined;
+		return parsed as unknown as ManagedAssetsLockOwner;
 	} catch {
 		return undefined;
 	}

@@ -66,7 +66,7 @@ function materializeInput(lineageId: string, suffix = "0"): ReviewCollectInputV3
 			baseTree: TREE,
 			candidateTree: TREE,
 			changedPathManifestSha256: SHA,
-			lens: `review-risk-${suffix}`,
+			lens: `review-risk-${suffix}` as ReviewCollectInputV3["artifactSubject"]["lens"],
 			selectedOrder: Number(suffix),
 		},
 		submission: {

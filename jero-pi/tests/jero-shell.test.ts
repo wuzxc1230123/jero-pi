@@ -359,7 +359,7 @@ test("registered prompt stays transparent while idle, working, and queued", () =
 	const { pi, handlers, tools } = fakePi();
 	gentleShell(pi, {});
 	const { ctx, ui } = fakeContext();
-	ctx.ui.theme = { ...plainTheme, getBgAnsi: () => "\x1b[44m" } as typeof ctx.ui.theme;
+	(ctx.ui as { theme: typeof ctx.ui.theme }).theme = { ...plainTheme, getBgAnsi: () => "\x1b[44m" } as unknown as typeof ctx.ui.theme;
 	const editor = installedPrompt(ctx, ui, handlers);
 	try {
 		for (const state of ["idle", "working", "queued"]) {
@@ -568,7 +568,7 @@ test("shell Git runner hides initial and repeated background polling children", 
 	const calls: Array<{ command: string; args: readonly string[]; options: Record<string, unknown> }> = [];
 	const run = ((command: string, args: readonly string[], options: Record<string, unknown>, callback: (error: Error | null, stdout: string) => void) => {
 		calls.push({ command, args, options });
-		callback(null, "", "");
+		callback(null, "");
 	}) as typeof import("node:child_process").execFile;
 	const git = shellGitRunner("/repo with spaces & metacharacters", { PATH: process.env.PATH }, run);
 	await git(["status", "--porcelain=v1", "-z"]);

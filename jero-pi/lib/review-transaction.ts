@@ -1057,7 +1057,8 @@ export function validateReviewGraphReplayV1(events: readonly ReturnType<ReviewGr
 			const expected = { ...previous!, revision: state.revision, request_journal: state.request_journal, ...(nextClaims.length === 0 ? {} : { child_claims: nextClaims }) };
 			if (canonicalHash(expected) !== canonicalHash(state)) throw new ReviewIntegrityError("Graph gate replay does not match event state");
 		} else if ((Object.values(REVIEW_TRANSITION) as string[]).includes(event.body.reducer_transition)) {
-			const replayed = reduceReviewState(previous!, event.body.reducer_transition as ReviewTransition, event.body.reducer_input);
+			// reducer_input 的形状由下方重放哈希比对兜底：不匹配即抛出完整性错误。
+		const replayed = reduceReviewState(previous!, event.body.reducer_transition as ReviewTransition, event.body.reducer_input as ReviewReducerInput);
 			const expected = { ...replayed, revision: state.revision, request_journal: state.request_journal };
 			if (canonicalHash(expected) !== canonicalHash(state)) throw new ReviewIntegrityError("Graph adjacent reducer replay does not match event state");
 		} else {
@@ -1456,8 +1457,9 @@ export class ReviewTransactionStore {
 		const existing = current ? (current.body.lineages as Array<Record<string, unknown>>).find((value) => value.lineage_id === next.lineage_id && value.mode === "graph") : undefined;
 		if (previous && !existing) throw new ReviewIntegrityError("Graph predecessor is missing");
 		if (!previous && existing) throw new ReviewIntegrityError("Graph lineage already exists");
-		const predecessor = existing?.head_event_id;
-		if (predecessor !== undefined && typeof predecessor !== "string") throw new ReviewIntegrityError("Graph head is invalid");
+		const rawPredecessor = existing?.head_event_id;
+		if (rawPredecessor !== undefined && typeof rawPredecessor !== "string") throw new ReviewIntegrityError("Graph head is invalid");
+		const predecessor = rawPredecessor as string | undefined;
 		const last = next.request_journal.at(-1);
 		const descriptor = (() => { try { return graph.readStoreDescriptor(); } catch { return undefined; } })();
 		const reducerTransition = eventContext?.transition ?? (predecessor === undefined ? "start" : last?.operation ?? "state-update");

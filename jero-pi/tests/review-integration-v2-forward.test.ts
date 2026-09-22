@@ -682,7 +682,8 @@ test("review-acknowledged/v1 is disjoint from every prior captured identity in b
 		assert.throws(() => decodeReviewAcknowledgedV1(fixture(DEV_FIXTURES, name)), /schema|object/, `${name} must not decode as an acknowledgement`);
 	}
 	const acknowledged = acknowledgedFixture();
-	const priorDecoders: Array<[string, (value: unknown) => unknown]> = [
+	// 少数 decoder（如 capabilities/v2）需要额外的 verifiedExecutableDigest 实参；rest 签名统一容纳。
+	const priorDecoders: Array<[string, (...args: never[]) => unknown]> = [
 		["status/v3", decodeReviewStatusV3],
 		["start/v3", decodeReviewStartV3],
 		["start/v4", decodeReviewStartV4],
@@ -696,7 +697,7 @@ test("review-acknowledged/v1 is disjoint from every prior captured identity in b
 		["repair/v2", decodeReviewRepairV2],
 	];
 	for (const [name, decoder] of priorDecoders) {
-		assert.throws(() => decoder(clone(acknowledged)), `${name} must reject the acknowledged envelope`);
+		assert.throws(() => decoder(clone(acknowledged) as never), `${name} must reject the acknowledged envelope`);
 	}
 });
 

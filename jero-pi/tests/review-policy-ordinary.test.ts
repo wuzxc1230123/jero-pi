@@ -111,7 +111,7 @@ function validationProof(ids: readonly string[]) {
 
 test("ordinary discovery runs the selected zero, one, or four lenses exactly once", () => {
 	for (const selected of [
-		{ route: REVIEW_ROUTE.TRIVIAL, lenses: [] },
+		{ route: REVIEW_ROUTE.TRIVIAL, lenses: [] as ReviewLens[] },
 		{ route: REVIEW_ROUTE.STANDARD, lenses: [REVIEW_LENS.READABILITY] },
 		{ route: REVIEW_ROUTE.FULL_4R, lenses: FULL_4R_LENSES },
 	] as const) {
@@ -121,7 +121,7 @@ test("ordinary discovery runs the selected zero, one, or four lenses exactly onc
 				rows:
 					selected.lenses.length === 0
 						? []
-						: rows().filter(({ lens }) => selected.lenses.includes(lens as ReviewLens)),
+						: rows().filter(({ lens }) => (selected.lenses as readonly string[]).includes(lens)),
 			},
 		);
 		assert.equal(discovered.phase, REVIEW_PHASE.DISCOVERY_COMPLETE);
@@ -167,7 +167,8 @@ test("no-finding ordinary path runs zero refuters, fixes, and validators then ve
 	assert.equal(resolved.counters.refuter_batches, 0);
 	assert.equal(resolved.counters.fix_batches, 0);
 	assert.equal(resolved.counters.validator_runs, 0);
-	assert.throws(() => ordinaryValidatorRequest(resolved), /fix.*required/i);
+	// 本例没有 fix 记录：函数在触碰 proof 之前就拒绝，因此省略 proof 是被测路径的一部分。
+	assert.throws(() => ordinaryValidatorRequest(resolved, undefined as never), /fix.*required/i);
 
 	const terminal = recordOrdinaryFinalVerification(resolved, { passed: true });
 	assert.equal(terminal.terminal_state, TERMINAL_STATE.APPROVED);

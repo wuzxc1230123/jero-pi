@@ -393,7 +393,7 @@ test("ordinary follow-ups are ID-sorted action-free validation evidence and do n
 	assert.equal(recorded.phase, REVIEW_PHASE.FINAL_VERIFICATION);
 	assert.equal(recorded.counters.validator_runs, fixed.counters.validator_runs + 1);
 	assert.equal(recorded.current_candidate_tree, fixed.current_candidate_tree);
-	assert.equal(recorded.follow_ups, undefined);
+	assert.equal("follow_ups" in recorded, false);
 });
 
 test("new ordinary lineages fail closed when immutable genesis paths are absent", () => {

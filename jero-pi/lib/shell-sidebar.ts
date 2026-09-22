@@ -25,7 +25,7 @@ export function sidebarState(tui: TUI): SidebarState {
 }
 
 /** 保持原有底部组件挂载，只抑制其绘制。 */
-export function sidebarPart<T extends Component & { dispose?(): void }>(tui: TUI, key: string, bottom: T, rail: SidebarRail = bottom): T {
+export function sidebarPart<T extends Component & { dispose?(): void }>(tui: TUI, key: string, bottom: T, rail: SidebarRail = bottom): T & { dispose?(): void } {
 	// 最小化扩展宿主无法共享终端持有的布局状态。
 	if (!tui.terminal) return bottom;
 	const state = sidebarState(tui);

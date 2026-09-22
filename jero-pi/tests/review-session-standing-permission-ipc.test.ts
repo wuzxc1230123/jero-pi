@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { PassThrough, Writable } from "node:stream";
+import { Duplex, PassThrough, Writable } from "node:stream";
 import test from "node:test";
 
 const REPOSITORY_ID = `sha256:${"a".repeat(64)}`;
@@ -40,7 +40,8 @@ async function productionChild(requests: number, authorize: () => boolean, optio
 		env: { ...process.env, JERO_PI_AGENTS_CHILD: "1", JERO_PI_AGENTS_PARENT_PERMISSION_FD: "3" },
 		stdio: options.withoutChannel ? ["ignore", "pipe", "pipe"] : ["ignore", "pipe", "pipe", "pipe"],
 	});
-	const pipe = child.stdio[3];
+	// fd3 是 spawn "pipe" 槽位的双向流；stdio 索引类型只承认单向流。
+	const pipe = child.stdio[3] as Duplex | null | undefined;
 	const broker = pipe === null || pipe === undefined
 		? undefined
 		: new ParentStandingReviewPermissionBroker({ readable: pipe, writable: pipe }, authorize, options);
@@ -103,7 +104,8 @@ test("fresh Jiti moduleCache:false reloads share fd3 structurally and reject sta
 		env: { ...process.env, JERO_PI_AGENTS_CHILD: "1", JERO_PI_AGENTS_PARENT_PERMISSION_FD: "3" },
 		stdio: ["ignore", "pipe", "pipe", "pipe"],
 	});
-	const pipe = child.stdio[3];
+	// fd3 是 spawn "pipe" 槽位的双向流；stdio 索引类型只承认单向流。
+	const pipe = child.stdio[3] as Duplex | null | undefined;
 	assert.ok(pipe);
 	const broker = new ParentStandingReviewPermissionBroker({ readable: pipe, writable: pipe }, () => true);
 	let stdout = "";

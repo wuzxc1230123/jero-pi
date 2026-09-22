@@ -204,7 +204,8 @@ export function installSidebar(tui: TUI, theme: ShellBarTheme): () => void {
 		stopped = true;
 		state.active = false;
 		clearInterval(timer);
-		scroll.hideTransientScrollbar();
+		// pi-tui 把该方法标为 private，但它正是停用转换滚动条所需的运行时钩子。
+		(scroll as unknown as { hideTransientScrollbar(): void }).hideTransientScrollbar();
 		for (const cleanup of cleanups.reverse()) cleanup();
 		tui.requestRender();
 	};

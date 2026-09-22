@@ -88,7 +88,7 @@ function ambientDevBinary(): DevBinaryNotice | undefined {
 	return undefined;
 }
 
-const defaultShellDeps: Omit<ShellDeps, "activeProfile"> = { fetch: (...args) => globalThis.fetch(...args), now: () => Date.now(), devBinary: ambientDevBinary, resolveWorktree: resolveSessionWorktree, gitRunner: shellGitRunner };
+const defaultShellDeps: Omit<ShellDeps, "activeProfile"> = { fetch: (input, init) => globalThis.fetch(input, init), now: () => Date.now(), devBinary: ambientDevBinary, resolveWorktree: resolveSessionWorktree, gitRunner: shellGitRunner };
 
 interface AssistantUsageEntry {
 	type: string;

@@ -16,7 +16,7 @@ import type {
 import { __testing, applyModelConfig, applyModelConfigAsync, createJeroAiExtension } from "../extensions/jero-ai.ts";
 import { PROFILES_KIND, PROFILES_VERSION } from "../lib/agent-profiles.ts";
 import { NATIVE_REVIEW_ERROR_CODE, NativeReviewCliError, type NativeReviewCli } from "../lib/authority/client-contract.ts";
-import { CandidateViewError, type CandidateViewRegistry } from "../lib/review-candidate-view.ts";
+import { CANONICAL_GZIP_OPTIONS, CandidateViewError, type CandidateViewRegistry } from "../lib/review-candidate-view.ts";
 import { installPackageAssets } from "../lib/sdd-preflight.ts";
 import type { ReviewCollectInputV3, ReviewStatusV3 } from "../lib/authority/wire-contract.ts";
 import { stripAnsi } from "../lib/terminal-theme.ts";
@@ -272,7 +272,7 @@ test("registered Gentle Review tools preserve result envelopes and redact collap
 	const scope = tools.get("jero_review_scope");
 	const manifest = { version: 1, scopeByMode: { "100644": ["src/file.ts"] }, gitlinks: {} };
 	const bytes = Buffer.from(JSON.stringify(manifest), "utf8");
-	const encoded = gzipSync(bytes, { mtime: 0 }).toString("base64url");
+	const encoded = gzipSync(bytes, CANONICAL_GZIP_OPTIONS).toString("base64url");
 	const sha256 = createHash("sha256").update(bytes).digest("hex");
 
 	const result = await scope.execute(
@@ -280,7 +280,7 @@ test("registered Gentle Review tools preserve result envelopes and redact collap
 		{ manifest: encoded, sha256, cursor: 0 },
 		undefined,
 		undefined,
-		{ cwd: process.cwd() } as ExtensionContext,
+		{ cwd: process.cwd() } as unknown as ExtensionContext,
 	);
 	const visibleEnvelope = JSON.parse(result.content[0].text);
 	assert.deepEqual(visibleEnvelope, {
@@ -366,7 +366,7 @@ function routingConsumerFixture(t: test.TestContext, agents = ["worker"]) {
 		on() {},
 		registerTool() {},
 		registerCommand(name, command) { commands.set(name, command); },
-	} as ExtensionAPI);
+	} as unknown as ExtensionAPI);
 	const notifications: Array<{ message: string; severity: string }> = [];
 	// The profiles panel reads the terminal rows to size its full-screen frame, so
 	// the fake UI hands every factory a TUI-shaped stand-in with a mutable height.
@@ -1174,7 +1174,7 @@ test("delivery commands bypass RDD under every mode outcome while command safety
 			cwd: process.cwd(),
 			hasUI: true,
 			ui: { confirm: async () => true },
-		} as ExtensionContext;
+		} as unknown as ExtensionContext;
 
 		for (const command of commands) {
 			const result = await toolCall!({ toolName: "bash", input: { command } }, ctx);
@@ -1213,10 +1213,11 @@ test("guarded command confirmation emits a generic correlated permission lifecyc
 		},
 		events: {
 			emit(channel: string, data: EmittedEvent["data"]) {
+				const state = "state" in data ? data.state : undefined;
 				sequence.push(
 					channel === "herdr:blocked"
 						? `herdr:${"active" in data && data.active ? "active" : "inactive"}`
-						: `event:${data.state}`,
+						: `event:${state}`,
 				);
 				emitted.push({ channel, data } as EmittedEvent);
 			},
@@ -1238,7 +1239,7 @@ test("guarded command confirmation emits a generic correlated permission lifecyc
 					return confirm();
 				},
 			},
-		} as ExtensionContext;
+		} as unknown as ExtensionContext;
 		let resolveConfirmation!: (approved: boolean) => void;
 		confirm = () => new Promise<boolean>((resolve) => { resolveConfirmation = resolve; });
 		const denied = toolCall!({
@@ -1372,7 +1373,7 @@ test("concurrent guarded confirmations coalesce the Herdr lifecycle per extensio
 			ui: {
 				confirm: async () => new Promise<boolean>((resolve) => { confirmations.push(resolve); }),
 			},
-		} as ExtensionContext);
+		} as unknown as ExtensionContext);
 		const firstRequest = first.handlers.get("tool_call")!({ toolName: "bash", input: { command: "git rebase main" } }, context(first.confirmations));
 		const secondRequest = first.handlers.get("tool_call")!({ toolName: "bash", input: { command: "git rebase main --another-command" } }, context(first.confirmations));
 		await Promise.resolve();
@@ -1450,12 +1451,12 @@ test("permission lifecycle is inactive for unguarded and headless commands", asy
 			cwd,
 			hasUI: false,
 			ui: { confirm },
-		} as ExtensionContext), undefined);
+		} as unknown as ExtensionContext), undefined);
 		assert.deepEqual(await toolCall!({ toolName: "bash", input: { command: "git rebase main" } }, {
 			cwd,
 			hasUI: false,
 			ui: { confirm },
-		} as ExtensionContext), {
+		} as unknown as ExtensionContext), {
 			block: true,
 			reason: "Jero safety policy requires interactive confirmation before this command.",
 		});
@@ -1510,7 +1511,7 @@ test("bash tool_call confirms a late guarded npm publish and denies on non-appro
 				return false;
 			},
 		},
-	} as ExtensionContext;
+	} as unknown as ExtensionContext;
 
 	const prefix = "noise ".repeat(80);
 	const command = `${prefix}npm publish --tag beta`;
@@ -1562,7 +1563,7 @@ test("bash tool_call confirms every compound action and centers a long git -C pu
 			cwd: process.cwd(),
 			hasUI: true,
 			ui: { confirm: async (title: string, message: string) => (confirmArgs.push([title, message]), false) },
-		} as ExtensionContext);
+		} as unknown as ExtensionContext);
 		assert.deepEqual(result, {
 			block: true,
 			reason: "Jero safety policy blocked the command because it was not confirmed.",

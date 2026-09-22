@@ -500,7 +500,7 @@ function assessOnNativeCli(currentTargetIdentity: () => string): Partial<NativeR
 	return {
 		reviewMode: async () => ({ operation: "status", scope: "clone", status: { global: "on", cloneLocal: "", effective: "on", source: NATIVE_REVIEW_MODE_SOURCE.GLOBAL } }),
 		assess: async () => ({ schema: REVIEW_ASSESSMENT_SCHEMA, risk: "high", reasons: [], changedPaths: 1, changedLines: 5, candidate: { kind: "current-changes", baseRef: undefined } }),
-		targetStatus: (async () => ({ applicability: "current_target", targetIdentity: currentTargetIdentity() })) as NativeReviewCli["targetStatus"],
+		targetStatus: (async () => ({ applicability: "current_target", targetIdentity: currentTargetIdentity() })) as unknown as NativeReviewCli["targetStatus"],
 	};
 }
 

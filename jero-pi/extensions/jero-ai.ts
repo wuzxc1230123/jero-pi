@@ -1752,10 +1752,14 @@ function resolveSddChangeSelection(serialized: unknown, cwd: string, agentName: 
 	if (!isRecord(value) || Object.keys(value).sort().join(",") !== (value.phase === "remediate" ? "changeName,failedEvidenceRevision,phase,workspaceRoot" : SDD_CHANGE_KEYS.join(","))) {
 		throw new Error("SDD selection must contain only changeName, workspaceRoot, and phase.");
 	}
-	const { changeName, workspaceRoot, phase } = value;
+	const { changeName, workspaceRoot } = value;
+	const phase = value.phase;
 	if (typeof changeName !== "string" || changeName.length === 0 ||
-		typeof workspaceRoot !== "string" || workspaceRoot.length === 0 ||
-		(phase !== "apply" && phase !== "verify" && phase !== "sync" && phase !== "archive" && phase !== "remediate")) {
+		typeof workspaceRoot !== "string" || workspaceRoot.length === 0) {
+		throw new Error("SDD selection has an invalid identity.");
+	}
+	// phase 的判别单独成句，让字面量联合收窄在深嵌套复合条件下不退化为 string。
+	if (phase !== "apply" && phase !== "verify" && phase !== "sync" && phase !== "archive" && phase !== "remediate") {
 		throw new Error("SDD selection has an invalid identity.");
 	}
 	if (agentName !== `sdd-${phase}`) throw new Error("SDD selection phase does not match the child agent.");
@@ -1771,7 +1775,8 @@ function resolveSddChangeSelection(serialized: unknown, cwd: string, agentName: 
 		throw new Error("SDD selection workspaceRoot does not match the canonical child root.");
 	}
 	if (phase === "remediate" && (typeof value.failedEvidenceRevision !== "string" || !/^sha256:[0-9a-f]{64}$/.test(value.failedEvidenceRevision))) throw new Error("Invalid remediation revision");
-	return { changeName, workspaceRoot: canonicalCwd, phase, ...(phase === "remediate" ? { failedEvidenceRevision: value.failedEvidenceRevision as string } : {}) };
+	// 判别收窄得到的字面量联合在对象属性位置会拓宽为 string；显式收窄回声明的相位联合。
+	return { changeName, workspaceRoot: canonicalCwd, phase: phase as SddPhase | "remediate", ...(phase === "remediate" ? { failedEvidenceRevision: value.failedEvidenceRevision as string } : {}) };
 }
 
 function resolveSddChangeStartup(
@@ -4554,15 +4559,21 @@ function parseReviewControllerParameters(value: unknown): ReviewControllerParame
 		}
 	}
 
-	const needsLineage = ![REVIEW_CONTROLLER_OPERATION.START, REVIEW_CONTROLLER_OPERATION.ANSWER_CONSENT, REVIEW_CONTROLLER_OPERATION.STATUS, REVIEW_CONTROLLER_OPERATION.EXPORT, REVIEW_CONTROLLER_OPERATION.IMPORT, REVIEW_CONTROLLER_OPERATION.INSPECT, REVIEW_CONTROLLER_OPERATION.RESET, REVIEW_CONTROLLER_OPERATION.RECOVER, REVIEW_CONTROLLER_OPERATION.RECOVER_LOCK, REVIEW_CONTROLLER_OPERATION.ABANDON, REVIEW_CONTROLLER_OPERATION.RECONCILE_AUTHORITY, REVIEW_CONTROLLER_OPERATION.REPAIR, REVIEW_CONTROLLER_OPERATION.ASSESS].includes(value.operation as ReviewControllerOperation);
+	const needsLineage = !([REVIEW_CONTROLLER_OPERATION.START, REVIEW_CONTROLLER_OPERATION.ANSWER_CONSENT, REVIEW_CONTROLLER_OPERATION.STATUS, REVIEW_CONTROLLER_OPERATION.EXPORT, REVIEW_CONTROLLER_OPERATION.IMPORT, REVIEW_CONTROLLER_OPERATION.INSPECT, REVIEW_CONTROLLER_OPERATION.RESET, REVIEW_CONTROLLER_OPERATION.RECOVER, REVIEW_CONTROLLER_OPERATION.RECOVER_LOCK, REVIEW_CONTROLLER_OPERATION.ABANDON, REVIEW_CONTROLLER_OPERATION.RECONCILE_AUTHORITY, REVIEW_CONTROLLER_OPERATION.REPAIR, REVIEW_CONTROLLER_OPERATION.ASSESS] as readonly ReviewControllerOperation[]).includes(value.operation);
 	if (needsLineage && (typeof value.lineageId !== "string" || value.lineageId.trim().length === 0)) {
 		throw new Error("Review controller requires a lineageId");
 	}
+	const untrackedScope = value.untrackedScope === NATIVE_START_UNTRACKED_SCOPE.EXCLUDE ? value.untrackedScope
+		: value.untrackedScope === NATIVE_START_UNTRACKED_SCOPE.SELECT ? value.untrackedScope
+		: undefined;
+	let intendedUntracked: readonly string[] | undefined;
+	// 上方 hasIntendedUntracked 块的 Array.isArray 检查保证数组性；元素类型与原 any[] 透传一致。
+	if (hasIntendedUntracked) intendedUntracked = [...value.intendedUntracked as string[]];
 	const parameters: ReviewControllerParameters = {
 		operation: value.operation,
 		...(typeof value.lineageId === "string" ? { lineageId: value.lineageId } : {}),
-		...(value.operation === REVIEW_CONTROLLER_OPERATION.INSPECT && value.untrackedScope !== undefined ? { untrackedScope: value.untrackedScope } : {}),
-		...(value.operation === REVIEW_CONTROLLER_OPERATION.INSPECT && value.intendedUntracked !== undefined ? { intendedUntracked: [...value.intendedUntracked] } : {}),
+		...(value.operation === REVIEW_CONTROLLER_OPERATION.INSPECT && untrackedScope !== undefined ? { untrackedScope } : {}),
+		...(value.operation === REVIEW_CONTROLLER_OPERATION.INSPECT && intendedUntracked !== undefined ? { intendedUntracked } : {}),
 	};
 	for (const key of ["changeName", "idempotencyKey", "transition", "input", "outputPath", "inputPath", "operationId", "lineageIds", "acknowledgeUntrustedBundleSource", "workspaceRoot"] as const) {
 		const optional = value[key];
@@ -4584,15 +4595,28 @@ function parseReviewCaptureParameters(value: unknown): ReviewCaptureParameters {
 	if (unexpected !== undefined) throw new Error(`Review capture does not accept ${unexpected}`);
 	if (!isCanonicalProcessString(value.lineageId)) throw new Error("Review capture requires an exact non-empty lineageId");
 	if (typeof value.collectBinding !== "string" || value.collectBinding.length === 0) throw new Error("Review capture requires a JSON-serialized collectBinding");
-	if (value.reviewerRunAcknowledged !== undefined && typeof value.reviewerRunAcknowledged !== "boolean") throw new Error("Review capture reviewerRunAcknowledged must be boolean");
-	if (value.correctionLines !== undefined && (!Number.isSafeInteger(value.correctionLines) || value.correctionLines < 1)) throw new Error("Review capture correctionLines must be a positive integer");
-	if (value.workspaceRoot !== undefined && typeof value.workspaceRoot !== "string") throw new Error("Review capture workspaceRoot must be a string");
+	let reviewerRunAcknowledged: boolean | undefined;
+	if (value.reviewerRunAcknowledged !== undefined) {
+		if (typeof value.reviewerRunAcknowledged !== "boolean") throw new Error("Review capture reviewerRunAcknowledged must be boolean");
+		reviewerRunAcknowledged = value.reviewerRunAcknowledged;
+	}
+	let correctionLines: number | undefined;
+	if (value.correctionLines !== undefined) {
+		// typeof 守卫只负责把 unknown 收窄成 number；整数语义仍由 isSafeInteger 把关。
+		if (typeof value.correctionLines !== "number" || !Number.isSafeInteger(value.correctionLines) || value.correctionLines < 1) throw new Error("Review capture correctionLines must be a positive integer");
+		correctionLines = value.correctionLines;
+	}
+	let workspaceRoot: string | undefined;
+	if (value.workspaceRoot !== undefined) {
+		if (typeof value.workspaceRoot !== "string") throw new Error("Review capture workspaceRoot must be a string");
+		workspaceRoot = value.workspaceRoot;
+	}
 	return {
 		lineageId: value.lineageId,
 		collectBinding: value.collectBinding,
-		...(value.reviewerRunAcknowledged === undefined ? {} : { reviewerRunAcknowledged: value.reviewerRunAcknowledged }),
-		...(value.correctionLines === undefined ? {} : { correctionLines: value.correctionLines }),
-		...(value.workspaceRoot === undefined ? {} : { workspaceRoot: value.workspaceRoot }),
+		...(reviewerRunAcknowledged === undefined ? {} : { reviewerRunAcknowledged }),
+		...(correctionLines === undefined ? {} : { correctionLines }),
+		...(workspaceRoot === undefined ? {} : { workspaceRoot }),
 	};
 }
 
@@ -4603,13 +4627,21 @@ function parseReviewCaptureGroupParameters(value: unknown): ReviewCaptureGroupPa
 	if (unexpected !== undefined) throw new Error(`Review capture group does not accept ${unexpected}`);
 	if (!isCanonicalProcessString(value.lineageId)) throw new Error("Review capture group requires an exact non-empty lineageId");
 	if (!Array.isArray(value.collectBindings) || value.collectBindings.length === 0 || value.collectBindings.some((binding) => typeof binding !== "string" || binding.length === 0)) throw new Error("Review capture group requires one or more JSON-serialized collectBindings");
-	if (value.reviewerRunAcknowledged !== undefined && typeof value.reviewerRunAcknowledged !== "boolean") throw new Error("Review capture group reviewerRunAcknowledged must be boolean");
-	if (value.workspaceRoot !== undefined && typeof value.workspaceRoot !== "string") throw new Error("Review capture group workspaceRoot must be a string");
+	let reviewerRunAcknowledged: boolean | undefined;
+	if (value.reviewerRunAcknowledged !== undefined) {
+		if (typeof value.reviewerRunAcknowledged !== "boolean") throw new Error("Review capture group reviewerRunAcknowledged must be boolean");
+		reviewerRunAcknowledged = value.reviewerRunAcknowledged;
+	}
+	let workspaceRoot: string | undefined;
+	if (value.workspaceRoot !== undefined) {
+		if (typeof value.workspaceRoot !== "string") throw new Error("Review capture group workspaceRoot must be a string");
+		workspaceRoot = value.workspaceRoot;
+	}
 	return {
 		lineageId: value.lineageId,
 		collectBindings: [...value.collectBindings],
-		...(value.reviewerRunAcknowledged === undefined ? {} : { reviewerRunAcknowledged: value.reviewerRunAcknowledged }),
-		...(value.workspaceRoot === undefined ? {} : { workspaceRoot: value.workspaceRoot }),
+		...(reviewerRunAcknowledged === undefined ? {} : { reviewerRunAcknowledged }),
+		...(workspaceRoot === undefined ? {} : { workspaceRoot }),
 	};
 }
 
@@ -5776,10 +5808,10 @@ function nativeOperationFailure(operation: ReviewControllerOperation | "jero_rev
 	const mutationOutcome = value.mutationOutcome === "unknown" ? "unknown" : "none";
 	const nativeCliError = asNativeReviewCliError(error);
 	const nativeDiagnostics = nativeCliError?.diagnostics;
-	// target-status 探测在调用 `review/status` 之前先校验 `version`。
-	// 在每条控制器路由上保留这两种已清洗的诊断，而不是
-	// 把一个可行动的失败重新标注为不透明的控制器失败。
-	const preservesNativeTargetStatusDiagnostic = nativeDiagnostics?.operation === NATIVE_REVIEW_OPERATION.VERSION || nativeDiagnostics?.operation === NATIVE_REVIEW_OPERATION.STATUS;
+	// target-status 探测只以 `review/status` 操作标注诊断（本仓的 Node
+	// 权威没有独立的 version 探测操作），在每条控制器路由上保留这类
+	// 已清洗的诊断，而不是把一个可行动的失败重新标注为不透明的控制器失败。
+	const preservesNativeTargetStatusDiagnostic = nativeDiagnostics?.operation === NATIVE_REVIEW_OPERATION.STATUS;
 	const preservesAnswerConsentStartDiagnostic = operation === REVIEW_CONTROLLER_OPERATION.ANSWER_CONSENT && nativeDiagnostics?.operation === NATIVE_REVIEW_OPERATION.START;
 	const diagnostics = operation === REVIEW_CONTROLLER_OPERATION.START && error instanceof CandidateViewError && value.candidateViewPreNative === true
 		? error.diagnostics ?? { code: error.reason, message: "candidate view rejected before native START" }
@@ -5972,13 +6004,15 @@ function retainNativeUntrackedSelection(selections: Map<string, RetainedNativeSt
 
 function readRetainedNativeUntrackedSelection(selections: Map<string, RetainedNativeStatusSelection>, workspaceRoot: string, lineageId: string): NativeStartUntrackedSelection {
 	const selection = selections.get(reviewLifecycleStorageKey(workspaceRoot, lineageId));
-	return selection === undefined || "baseRef" in selection
-		? {}
-		: {
-			untrackedScope: selection.untrackedScope,
-			expectedUntrackedInventory: selection.expectedUntrackedInventory,
-			intendedUntracked: [...selection.intendedUntracked],
-		};
+	// 判别键是运行时契约：capture-route 条目以 baseRef 键为标记，保留条目的
+	// 实际形状比联合类型宽，不得改用其他键判别。
+	if (selection === undefined || "baseRef" in selection) return {};
+	const untracked = selection as RetainedNativeUntrackedSelection;
+	return {
+		untrackedScope: untracked.untrackedScope,
+		expectedUntrackedInventory: untracked.expectedUntrackedInventory,
+		intendedUntracked: [...untracked.intendedUntracked],
+	};
 }
 
 // gentle-pi#706：inspect 的 untrackedScope 往返把已解析的
@@ -6750,6 +6784,10 @@ function isSelectedReviewCapture(value: SelectedReviewCapture | Record<string, u
 	return "input" in value && "binding" in value;
 }
 
+function isSelectedReviewCaptureGroup(value: SelectedReviewCaptureGroup | Record<string, unknown>): value is SelectedReviewCaptureGroup {
+	return "slots" in value && "binding" in value;
+}
+
 function captureGroupRejected(reason: string): Record<string, unknown> { return captureBindingRejected(reason, true); }
 
 function hasExactReviewCaptureSuffix(status: ReviewStatusV3, expected: readonly string[]): boolean {
@@ -7004,7 +7042,7 @@ async function executeReviewCaptureGroupOperation(
 		return { ...captureGroupRejected(error instanceof Error ? error.message : String(error)), outcome: "native-status-failed" };
 	}
 	const group = selectExactReviewCaptureGroup(status, parameters.lineageId, canonicalBindings);
-	if (!("slots" in group && "binding" in group)) return group;
+	if (!isSelectedReviewCaptureGroup(group)) return group;
 	if (parameters.reviewerRunAcknowledged !== true) {
 		return {
 			tool: "jero_review_capture_group",
@@ -7096,7 +7134,7 @@ async function executeReviewControllerOperation(
 	pendingReviewConsentRegistry: PendingReviewConsentRegistry = processPendingReviewConsentRegistry,
 	pendingReviewConsentFallbackKey: symbol = Symbol("pending-review-consent-fallback"),
 	reviewConsentNow: () => number = Date.now,
-	reviewConsentScheduleTimer: (callback: () => void, delayMs: number) => { unref: () => void } = setTimeout,
+	reviewConsentScheduleTimer: (callback: () => void, delayMs: number) => ReturnType<typeof setTimeout> = setTimeout,
 	intendedUntrackedSelection?: NativeIntendedUntrackedSelectionSubmission,
 ): Promise<Record<string, unknown>> {
 	const parameters = parseReviewControllerParameters(parametersValue);
@@ -7281,7 +7319,7 @@ async function executeReviewControllerOperation(
 		// 卡死的旧式变更锁是一个不完整的在途条目；其
 		// 移除归已审计的原生隔离所有。锁恢复不是
 		// 破坏性的权威重置，因此待定授权得以保留。
-		return await executeNativeRecoveryRoute(parameters.operation, "reclaim", input, defaultCwd, nativeReviewCli, undefined, signal);
+		return await executeNativeRecoveryRoute(parameters.operation, "reclaim", input, defaultCwd, nativeReviewCli, signal);
 	}
 	if (parameters.operation === REVIEW_CONTROLLER_OPERATION.RECOVER) {
 		const input = parseControllerJson(requiredControllerString(parameters, "input"), parameters.operation);
@@ -7468,19 +7506,20 @@ async function executeReviewControllerOperation(
 		} catch (error) {
 			return nativeOperationFailure(parameters.operation, error);
 		}
-		let acknowledged: NativeReviewAcknowledgeApprovedOutcome | void;
+		let acknowledged: NativeReviewAcknowledgeApprovedOutcome | undefined;
 		try {
 			// gentle-ai #3947：销毁操作以一个绑定到确切
 			// lineage、目标与 revision 的 review-acknowledged/v1
 			// 封套作答，销毁结果从该封套报告，绝不来自
 			// 之后的 STATUS。截至 v2.5.0-rc.3 的每个已发布版本仍
 			// 静默销毁，该结果保持逐字节不变。
-			acknowledged = await acknowledgementCli.acknowledgeApproved({
+			// acknowledgeApproved 以 void 表示"静默销毁、无封套"，在此统一为 undefined。
+			acknowledged = (await acknowledgementCli.acknowledgeApproved({
 				argumentTokens,
 				cwd: defaultCwd,
 				binding: { lineageId: parameters.lineageId, targetIdentity: status.targetIdentity, revision: status.authority.revision },
 				...(signal === undefined ? {} : { signal }),
-			});
+			})) as NativeReviewAcknowledgeApprovedOutcome | undefined;
 		} catch (error) {
 			if (!nativeMutationRequiresStatus(error)) return nativeOperationFailure(parameters.operation, error);
 			return await reconcileNativeMutationFailure(parameters.operation, error, acknowledgementCli, target, retainedUntrackedSelections);
@@ -7687,7 +7726,7 @@ async function executeReviewControllerOperation(
 			let canonicalBaseRef: string | undefined;
 			if (baseRef !== undefined) {
 				try {
-					canonicalBaseRef = resolveCanonicalCandidateBase(defaultCwd, baseRef).commit;
+					canonicalBaseRef = resolveCanonicalCandidateBase(defaultCwd, baseRef as string).commit;
 				} catch (error) {
 					if (error instanceof CandidateViewError && error.diagnostics !== undefined) return nativeOperationFailure(parameters.operation, Object.assign(error, { candidateViewPreNative: true }));
 					if (error instanceof CandidateViewError && (error.reason === "base-ref-ambiguous" || error.reason === "base-ref-unresolvable" || error.reason === "base-ref-moved")) return nativeStartRejection(error.reason);
@@ -7797,7 +7836,7 @@ async function executeReviewControllerOperation(
 						...(untrackedSubmission === undefined ? {} : { intendedUntrackedSelection: untrackedSubmission }),
 						...(parameters.lineageId === undefined ? {} : { lineageId: parameters.lineageId }),
 						...(policy.policyPath === undefined ? {} : { policyPath: policy.policyPath }),
-						...(focus === undefined ? {} : { focus }),
+						...(focus === undefined ? {} : { focus: focus as string }),
 						...(signal === undefined ? {} : { signal }),
 					});
 				} catch (error) {
@@ -7993,8 +8032,9 @@ async function executeReviewControllerOperation(
 				const negotiated = await negotiatedStatusForHostTransport(nativeReviewCli, {
 					cwd: defaultCwd,
 					...(parameters.lineageId === undefined ? {} : { lineageId: parameters.lineageId }),
-					...(effectiveBaseRef === undefined ? {} : { baseRef: effectiveBaseRef, committedOnly: true }),
-					...(effectiveUntrackedSelection.untrackedScope === undefined ? {} : effectiveUntrackedSelection),
+					// baseRef 的进程字符串规范已在上方 isCanonicalProcessString 校验背书。
+					...(effectiveBaseRef === undefined ? {} : { baseRef: effectiveBaseRef as string, committedOnly: true }),
+					...(effectiveUntrackedSelection.untrackedScope === undefined ? {} : { untrackedScope: effectiveUntrackedSelection.untrackedScope, expectedUntrackedInventory: effectiveUntrackedSelection.expectedUntrackedInventory, intendedUntracked: effectiveUntrackedSelection.intendedUntracked }),
 					...(signal === undefined ? {} : { signal }),
 				}, retainedUntrackedSelections, defaultCwd);
 				if (negotiated.transport !== undefined) {
@@ -8104,7 +8144,7 @@ export interface JeroRuntimeDependencies {
 	// 测试注入假时钟，使过期可观察，而无需 10 分钟
 	// 睡眠，也不依赖排队的清理宏任务触发。
 	now?: () => number;
-	scheduleTimer?: (callback: () => void, delayMs: number) => { unref: () => void };
+	scheduleTimer?: (callback: () => void, delayMs: number) => ReturnType<typeof setTimeout>;
 	// 会话子进程继承的环境；测试注入一个
 	// 普通对象，使握手声明可观察，而无需
 	// 触碰测试运行器自己的 process.env。

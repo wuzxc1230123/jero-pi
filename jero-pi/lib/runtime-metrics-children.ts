@@ -17,7 +17,7 @@ const tokenFields = ["input", "output", "cacheRead", "cacheWrite", "reasoning", 
  * 只缓存固定的包目录；不保留运行时指令。
  */
 let definitions: Array<{ name: string; fingerprint: string; fingerprintClass?: AgentClass }> | undefined;
-const packagedAgentClassAliases = new Map([["sdd-proposal", "sdd-propose"]] as const);
+const packagedAgentClassAliases = new Map<string, string>([["sdd-proposal", "sdd-propose"]] as const);
 function fingerprintAgentClassName(name: string): string {
 	// 枚举名称不带前缀；打包代理带 jero- 前缀
 	// （保留 gentle-ai- 以兼容仍在分类的任何历史安装副本）。

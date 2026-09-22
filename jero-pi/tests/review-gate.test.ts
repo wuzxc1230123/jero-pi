@@ -14,6 +14,7 @@ import {
 	recheckReleaseFastPathRemoteHeadV1,
 	resolveConfiguredPushDestinationV1,
 	type GateTargetV1,
+	type ReleaseGateTargetV1,
 	type GhCommandRunnerV1,
 	type ReleaseFastPathEvidenceV1,
 } from "../lib/review-publication-gate.ts";
@@ -179,7 +180,8 @@ test("unbranded receipts are rejected before lifecycle gate evaluation", (t) => 
 	execFileSync("git", ["read-tree", finalTree], { cwd: repository });
 	assert.throws(() => validateReviewGate({
 		store,
-		receipt,
+		// 故意投喂非权威回执：验证网关在类型层要求权威回执、在运行时拒绝无品牌封套。
+		receipt: receipt as unknown as AuthoritativeReceiptV1,
 		target: { kind: GATE_TARGET_KIND.INTENDED_COMMIT, intended_commit_tree: finalTree },
 		repositoryCwd: repository,
 		idempotencyKey: "unbranded-gate",
@@ -339,7 +341,7 @@ test("push gate allows normal same-name updates while preserving exact-old and c
 			old_peeled_commit: finalCommit,
 			old_tree: finalTree,
 		}],
-	} as const;
+	} as unknown as GateTargetV1;
 	assert.equal(
 		evaluateGateTarget(receipt, driftedUpdate, repository).status,
 		GATE_RESULT.DENY,
@@ -348,7 +350,7 @@ test("push gate allows normal same-name updates while preserving exact-old and c
 		kind: GATE_TARGET_KIND.PUSH,
 		remote,
 		updates: [{ ...target.updates[0], destination_ref: "refs/heads/final" }],
-	} as const;
+	} as unknown as GateTargetV1;
 	assert.equal(
 		evaluateGateTarget(receipt, createOverExisting, repository).status,
 		GATE_RESULT.DENY,
@@ -580,7 +582,7 @@ test("scope child claim and parent gate journal publish atomically across faults
 	assert.equal(store.read(receipt.body.lineage_id).child_claims?.length, 1);
 });
 
-function releaseTarget(repository: GateRepository): GateTargetV1 {
+function releaseTarget(repository: GateRepository): ReleaseGateTargetV1 {
 	return {
 		kind: GATE_TARGET_KIND.RELEASE,
 		tag_ref: "refs/tags/v1.2.3",
@@ -628,7 +630,7 @@ test("release fast path independently accepts complete successful Check Runs des
 	const repository = createGateRepository(t);
 	setRemoteMain(repository, repository.finalCommit);
 	const calls: string[][] = [];
-	const checkRuns = (checks: unknown[], totalCount = checks.length, legacyStatus = "pending"): GhCommandRunnerV1 => (args) => {
+	const checkRuns = (checks: readonly unknown[], totalCount = checks.length, legacyStatus = "pending"): GhCommandRunnerV1 => (args) => {
 		calls.push([...args]);
 		if (args[1] === `repos/{owner}/{repo}/commits/${repository.finalCommit}/check-runs?per_page=100`) {
 			return { status: 0, stdout: JSON.stringify({ total_count: totalCount, returned: checks.length, checks }) };

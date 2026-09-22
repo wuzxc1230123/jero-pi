@@ -46,7 +46,7 @@ const SAMPLE_PREFS: SddPreflightPreferences = {
 };
 
 function preflightContext(cwd: string, hasUI: boolean, calls: string[] = [], answers: Record<string, string> = {}) {
-	return { cwd, hasUI, ui: { select: async (title: string) => (calls.push(`select:${title}`), answers[title]), input: async (title: string) => (calls.push(`input:${title}`), answers[title]), notify: () => {} } } as Parameters<typeof collectSddPreflightPreferences>[0];
+	return { cwd, hasUI, ui: { select: async (title: string) => (calls.push(`select:${title}`), answers[title]), input: async (title: string) => (calls.push(`input:${title}`), answers[title]), notify: () => {} } } as unknown as Parameters<typeof collectSddPreflightPreferences>[0];
 }
 function writeRawPreflight(cwd: string, chainedPrStrategy: string, prompted = true): string {
 	const path = sddPreflightDiskPath(cwd); mkdirSync(join(cwd, ".pi", "jero"), { recursive: true }); writeFileSync(path, JSON.stringify({ executionMode: "auto", artifactStore: "openspec", chainedPrStrategy, reviewBudgetLines: 400, engramAvailable: false, prompted })); return path;
@@ -477,7 +477,7 @@ test("a persisted legacy 'both' artifact store loads as hybrid", async () => {
 		JSON.stringify({ executionMode: "auto", artifactStore: "hybrid", chainedPrStrategy: "ask-on-risk", reviewBudgetLines: 400, engramAvailable: true, prompted: true }),
 	);
 
-	const loaded = readSddPreflightFromDisk(cwd, true);
+	const loaded = readSddPreflightFromDisk(cwd);
 	assert.equal(loaded?.artifactStore, "hybrid", "legacy 'both' must normalize to the canonical name, not be discarded");
 });
 
@@ -489,7 +489,7 @@ test("a persisted canonical 'hybrid' artifact store loads unchanged", async () =
 		JSON.stringify({ executionMode: "auto", artifactStore: "hybrid", chainedPrStrategy: "ask-on-risk", reviewBudgetLines: 400, engramAvailable: true, prompted: true }),
 	);
 
-	const loaded = readSddPreflightFromDisk(cwd, true);
+	const loaded = readSddPreflightFromDisk(cwd);
 	assert.equal(loaded?.artifactStore, "hybrid");
 });
 

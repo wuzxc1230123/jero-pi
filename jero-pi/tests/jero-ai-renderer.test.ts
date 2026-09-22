@@ -61,7 +61,7 @@ test("review call and result cards have no passive background fill", () => {
 	]) {
 		const call = new GentleAiCallCard();
 		call.update(options.isPartial ? "running" : "completed", "review capture", theme, "$ capture");
-		const lines = [...call.render(40), ...renderJeroResult({ content: [{ type: "text", text: "Result" }] }, options, theme).render(40)];
+		const lines = [...call.render(40), ...renderJeroResult({ details: {}, content: [{ type: "text", text: "Result" }] }, options, theme).render(40)];
 		for (const [row, line] of lines.entries()) {
 			let bg = false, column = 0;
 			for (const token of line.match(/\x1b\[[\d;]*m|[^\x1b]/gu) ?? []) {
@@ -79,13 +79,13 @@ test("review call and result cards have no passive background fill", () => {
 });
 
 test("a partial result draws no bottom rule and a final one draws exactly one", () => {
-	const partial = renderJeroResult({ content: [{ type: "text", text: "half" }] }, { expanded: false, isPartial: true }, plainTheme).render(60).map(stripAnsi);
+	const partial = renderJeroResult({ details: {}, content: [{ type: "text", text: "half" }] }, { expanded: false, isPartial: true }, plainTheme).render(60).map(stripAnsi);
 	assert.deepEqual(partial.map((line) => line.slice(0, 1)), ["│"], "only the count row, no closing rule");
-	const final = renderJeroResult({ content: [{ type: "text", text: "one\ntwo" }] }, { expanded: false }, plainTheme).render(60).map(stripAnsi);
+	const final = renderJeroResult({ details: {}, content: [{ type: "text", text: "one\ntwo" }] }, { expanded: false }, plainTheme).render(60).map(stripAnsi);
 	assert.equal(final.length, 2);
 	assert.match(final[0], /^│ 2 lines +│$/);
 	assert.match(final[1], /^╰─+╯$/);
-	const empty = renderJeroResult({ content: [] }, { expanded: false }, plainTheme).render(60).map(stripAnsi);
+	const empty = renderJeroResult({ details: {}, content: [] }, { expanded: false }, plainTheme).render(60).map(stripAnsi);
 	assert.deepEqual(empty.map((line) => line.slice(0, 1)), ["╰"]);
 });
 
@@ -93,11 +93,11 @@ test("promoting the shared state to finished invalidates after the render return
 	const state: Record<string, unknown> = {};
 	let invalidations = 0;
 	const context = { state, invalidate: () => (invalidations += 1) };
-	renderJeroResult({ content: [{ type: "text", text: "done" }] }, { expanded: false }, plainTheme, context as never);
+	renderJeroResult({ details: {}, content: [{ type: "text", text: "done" }] }, { expanded: false }, plainTheme, context as never);
 	assert.equal(invalidations, 0, "no reentrant invalidate while rendering");
 	await new Promise((resolve) => queueMicrotask(() => resolve(undefined)));
 	assert.equal(invalidations, 1);
-	renderJeroResult({ content: [{ type: "text", text: "done" }] }, { expanded: false }, plainTheme, context as never);
+	renderJeroResult({ details: {}, content: [{ type: "text", text: "done" }] }, { expanded: false }, plainTheme, context as never);
 	await new Promise((resolve) => queueMicrotask(() => resolve(undefined)));
 	assert.equal(invalidations, 1, "an unchanged state does not invalidate again");
 });

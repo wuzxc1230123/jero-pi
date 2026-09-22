@@ -94,8 +94,9 @@ export function parseChildFrame(value: unknown): { frame?: ChildFrame; id?: stri
 function parseAck(value: unknown): AckFrame | undefined {
 	if (!record(value) || !exact(value, ["id", "kind", "accepted", "error"]) || !validChildId(value.id) || value.kind !== "ack" || typeof value.accepted !== "boolean") return undefined;
 	if (value.accepted && value.error !== undefined) return undefined;
-	if (value.error !== undefined && !boundedText(value.error, CHILD_ACK_ERROR_MAX_BYTES)) return undefined;
-	return { id: value.id, accepted: value.accepted, ...(value.error === undefined ? {} : { error: value.error }) };
+	if (value.error === undefined) return { id: value.id, accepted: value.accepted };
+	if (!boundedText(value.error, CHILD_ACK_ERROR_MAX_BYTES)) return undefined;
+	return { id: value.id, accepted: value.accepted, error: value.error };
 }
 
 function parseReply(value: unknown): ReplyFrame | undefined {
