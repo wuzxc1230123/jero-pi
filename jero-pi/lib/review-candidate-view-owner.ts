@@ -27,6 +27,21 @@ const WINDOWS_SYSTEM = "S-1-5-18";
 const WINDOWS_ADMINISTRATORS = "S-1-5-32-544";
 const WINDOWS_SYSTEM_DIRECTORY = "\\\\?\\GLOBALROOT\\SystemRoot\\System32";
 
+// 构造子进程 env：先剔除 SystemRoot 的全部大小写变体再写入真实值。
+// Windows 环境变量大小写不敏感——伪装测试对 process.env.SystemRoot 的
+// 赋值可能在枚举快照里留下 SYSTEMROOT 等变体副本，单纯的
+// { ...process.env, SystemRoot: real } 无法可靠覆盖，PowerShell 引擎
+// 会因拿到伪装的 SystemRoot 启动失败（0x8009001d）。
+function canonicalSystemRootEnv(systemRoot: string, extra: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
+	const env: NodeJS.ProcessEnv = {};
+	for (const [key, value] of Object.entries(process.env)) {
+		if (key.toUpperCase() === "SYSTEMROOT") continue;
+		env[key] = value;
+	}
+	env.SystemRoot = systemRoot;
+	return { ...env, ...extra };
+}
+
 function windowsSystemExecutable(name: "whoami.exe" | "icacls.exe" | "WindowsPowerShell\\v1.0\\powershell.exe"): string {
 	try {
 		return realpathSync.native(join(WINDOWS_SYSTEM_DIRECTORY, name));
@@ -49,7 +64,7 @@ function windowsLocalAdministratorSid(): string {
 	if (windowsLocalAdministratorSidMemo.value !== undefined) return windowsLocalAdministratorSidMemo.value;
 	const script = "$ErrorActionPreference='Stop';$descriptor=New-Object System.Security.AccessControl.RawSecurityDescriptor 'D:(A;;FA;;;LA)';$descriptor.DiscretionaryAcl[0].SecurityIdentifier.Value";
 	const systemRoot = dirname(dirname(windowsSystemExecutable("whoami.exe")));
-	const output = execFileSync(windowsSystemExecutable("WindowsPowerShell\\v1.0\\powershell.exe"), ["-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand", Buffer.from(script, "utf16le").toString("base64")], { encoding: "utf8", timeout: 30000, maxBuffer: 4096, stdio: ["ignore", "pipe", "pipe"], windowsHide: true, env: { ...process.env, SystemRoot: systemRoot } });
+	const output = execFileSync(windowsSystemExecutable("WindowsPowerShell\\v1.0\\powershell.exe"), ["-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand", Buffer.from(script, "utf16le").toString("base64")], { encoding: "utf8", timeout: 30000, maxBuffer: 4096, stdio: ["ignore", "pipe", "pipe"], windowsHide: true, env: canonicalSystemRootEnv(systemRoot) });
 	const matches = output.match(/S-\d+(?:-\d+)+/gi) ?? [];
 	if (matches.length !== 1 || !isWindowsSid(matches[0]!)) throw new Error("Windows local Administrator SID is unavailable");
 	return (windowsLocalAdministratorSidMemo.value = matches[0]!.toUpperCase());
@@ -152,7 +167,7 @@ const windowsOwnerBatchEnv = "JERO_PI_CANDIDATE_OWNER_PATHS";
 function windowsOwnerSidsBatch(paths: readonly string[]): string[] {
 	const script = "$ErrorActionPreference='Continue';$paths=$env:JERO_PI_CANDIDATE_OWNER_PATHS.Split(';');foreach($p in $paths){try{$item=Get-Item -LiteralPath $p -Force;$sec=$item.GetAccessControl([System.Security.AccessControl.AccessControlSections]::Owner);$sid=$sec.GetOwner([System.Security.Principal.SecurityIdentifier]);Write-Output $sid.Value}catch{Write-Output 'ERROR'}}" ;
 	const systemRoot = dirname(dirname(windowsSystemExecutable("whoami.exe")));
-	const output = execFileSync(windowsSystemExecutable("WindowsPowerShell\\v1.0\\powershell.exe"), ["-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand", Buffer.from(script, "utf16le").toString("base64")], { encoding: "utf8", timeout: 60000, maxBuffer: 64 * 1024, stdio: ["ignore", "pipe", "pipe"], windowsHide: true, env: { ...process.env, SystemRoot: systemRoot, [windowsOwnerBatchEnv]: paths.join(";") } });
+	const output = execFileSync(windowsSystemExecutable("WindowsPowerShell\\v1.0\\powershell.exe"), ["-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand", Buffer.from(script, "utf16le").toString("base64")], { encoding: "utf8", timeout: 60000, maxBuffer: 64 * 1024, stdio: ["ignore", "pipe", "pipe"], windowsHide: true, env: canonicalSystemRootEnv(systemRoot, { [windowsOwnerBatchEnv]: paths.join(";") }) });
 	const lines = output.split(/\r?\n/).filter((line) => line.trim() !== "");
 	return paths.map((_, index) => (lines[index] ?? "ERROR").trim());
 }
@@ -168,7 +183,7 @@ function windowsOwnerSid(path: string, kind: WindowsObjectKind): string {
 	const systemRoot = dirname(dirname(windowsSystemExecutable("whoami.exe")));
 	let output: string;
 	try {
-		output = execFileSync(windowsSystemExecutable("WindowsPowerShell\\v1.0\\powershell.exe"), ["-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand", Buffer.from(script, "utf16le").toString("base64")], { encoding: "utf8", maxBuffer: 4096, stdio: ["ignore", "pipe", "pipe"], windowsHide: true, env: { ...process.env, SystemRoot: systemRoot, JERO_PI_CANDIDATE_OWNER_PATH: path }, timeout: 30000 });
+		output = execFileSync(windowsSystemExecutable("WindowsPowerShell\\v1.0\\powershell.exe"), ["-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand", Buffer.from(script, "utf16le").toString("base64")], { encoding: "utf8", maxBuffer: 4096, stdio: ["ignore", "pipe", "pipe"], windowsHide: true, env: canonicalSystemRootEnv(systemRoot, { JERO_PI_CANDIDATE_OWNER_PATH: path }), timeout: 30000 });
 	} catch {
 		throw new WindowsOwnerValidationError();
 	}
@@ -199,7 +214,7 @@ function enforcePrivateWindowsDacl(path: string, identity: WindowsAclIdentity = 
 	// icacls 读取 DACL。
 	const script = "$ErrorActionPreference='Stop';$acl=New-Object System.Security.AccessControl.DirectorySecurity;$acl.SetSecurityDescriptorSddlForm($env:JERO_PI_CANDIDATE_ACL_SDDL,[System.Security.AccessControl.AccessControlSections]::Access);[System.IO.Directory]::SetAccessControl($env:JERO_PI_CANDIDATE_ACL_PATH,$acl)";
 	const systemRoot = dirname(dirname(windowsSystemExecutable("whoami.exe")));
-	execFileSync(windowsSystemExecutable("WindowsPowerShell\\v1.0\\powershell.exe"), ["-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand", Buffer.from(script, "utf16le").toString("base64")], { encoding: "utf8", maxBuffer: 16384, stdio: ["ignore", "pipe", "pipe"], windowsHide: true, env: { ...process.env, SystemRoot: systemRoot, JERO_PI_CANDIDATE_ACL_PATH: path, JERO_PI_CANDIDATE_ACL_SDDL: sddl }, timeout: 30000 });
+	execFileSync(windowsSystemExecutable("WindowsPowerShell\\v1.0\\powershell.exe"), ["-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand", Buffer.from(script, "utf16le").toString("base64")], { encoding: "utf8", maxBuffer: 16384, stdio: ["ignore", "pipe", "pipe"], windowsHide: true, env: canonicalSystemRootEnv(systemRoot, { JERO_PI_CANDIDATE_ACL_PATH: path, JERO_PI_CANDIDATE_ACL_SDDL: sddl }), timeout: 30000 });
 
 	assertPrivateWindowsDacl(path, "directory", true, identity);
 }
@@ -246,6 +261,16 @@ function privateWindowsCandidateOwnerBoundary(commonDir: string, enforce = false
 // 不可用的来源会禁用回收（包括跨重启回收）。
 function localHost(): string | null {
 	try {
+		if (process.platform === "win32") {
+			// MachineGuid 是 Windows 的稳定机器身份（跨重启不变），与
+			// darwin 的 bootsessionuuid、linux 的 boot_id+pid ns 同构。
+			// 没有它，host 恒为 null，dead() 永远为假——Windows 上死候选
+			// 永不被回收。
+			const reg = join(process.env.SystemRoot ?? "C:\\Windows", "System32", "reg.exe");
+			const output = execFileSync(reg, ["query", "HKLM\\SOFTWARE\\Microsoft\\Cryptography", "/v", "MachineGuid"], { encoding: "utf8", timeout: 5000, maxBuffer: 4096, stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
+			const guid = output.match(/MachineGuid\s+REG_SZ\s+([0-9A-Fa-f-]+)/)?.[1];
+			if (guid) return `windows:${guid.toLowerCase()}`;
+		}
 		if (process.platform === "darwin") {
 			const boot = execFileSync("/usr/sbin/sysctl", ["-n", "kern.bootsessionuuid"], { encoding: "utf8", timeout: 1000, maxBuffer: 4096, stdio: ["ignore", "pipe", "pipe"] }).trim();
 			if (BOOT_UUID.test(boot)) return `darwin:${boot.toLowerCase()}`;
@@ -440,7 +465,8 @@ export function removeCandidateOwner(owner: CandidateViewOwner, git: Git, makeWr
 		makeWritable(root);
 		// Git 与 chmod 是竞态边界：在请求 Git 移除该根目录之前，
 		// 立即重复路径、所有者、锁与精确注册证明。
-		if (registration(root, commonDir, git, platform) !== registered ||
+		const secondRegistration = registration(root, commonDir, git, platform);
+		if (secondRegistration !== registered ||
 			JSON.stringify([directory(parent, true, platform), directory(root), regular(markerPath(root), true, platform)]) !== JSON.stringify(identity)) throw new Error("Candidate cleanup identity changed");
 		checkOwner();
 		checkLock();

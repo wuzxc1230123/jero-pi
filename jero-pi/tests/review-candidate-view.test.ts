@@ -10,7 +10,7 @@ import {
 } from "node:fs";
 import { syncBuiltinESMExports } from "node:module";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { join, resolve, sep } from "node:path";
 import { default as test } from "node:test";
 import { gzipSync } from "node:zlib";
 import {
@@ -366,7 +366,12 @@ for (const scenario of ["self", "live", "EPERM", "unknown", "malformed", "foreig
 		if (scenario === "escape") owner.root = cwd;
 		writeFileSync(marker, scenario === "malformed" ? "{" : JSON.stringify(owner));
 		if (scenario === "legacy") rmSync(marker);
-		if (scenario === "public-marker") chmodSync(marker, 0o644);
+		if (scenario === "public-marker") {
+			// POSIX：chmod 0o644 即失去属主私有。Windows 的 chmod 不改
+			// DACL——用 icacls 给 Everyone 追加显式授权才构成"公开标记"。
+			if (process.platform === "win32") execFileSync("icacls", [marker, "/grant", "*S-1-1-0:(R)"], { windowsHide: true });
+			else chmodSync(marker, 0o644);
+		}
 		if (scenario === "locked") git(cwd, "worktree", "lock", view.root);
 		if (scenario === "backlink" || scenario === "admin-symlink") {
 			const admin = readFileSync(join(view.root, ".git"), "utf8").slice(8).trim();
@@ -494,7 +499,10 @@ for (const race of ["root", "registration", "lock"] as const) {
 			const result = execFileSync(file, args, options);
 			if (args.includes("list") && ++lists === 2) {
 				if (race === "root") { renameSync(view.root, `${view.root}.saved`); mkdirSync(view.root); }
-				if (race === "registration") return String(result).replace(`worktree ${view.root}`, `worktree ${view.root}.other`);
+				// porcelain 在 Windows 上输出正斜杠路径；view.root 用平台分隔符，
+				// 直接 replace 永不命中，竞态注入就会静默失效。
+				const porcelainRoot = view.root.split(sep).join("/");
+				if (race === "registration") return String(result).replace(`worktree ${porcelainRoot}`, `worktree ${view.root}.other`);
 				if (race === "lock") writeFileSync(`${view.root}.reaper-lock`, "replacement");
 			}
 			return result;

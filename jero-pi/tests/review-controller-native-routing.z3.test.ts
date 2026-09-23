@@ -411,8 +411,9 @@ test("current STATUS binding allows exactly one provider capture and never follo
 test("ordinary START transports native focus and safe policy inputs without rebuilding provider authority", async (t) => {
 	const cwd = repository(t);
 	const seen: Array<Record<string, unknown>> = [];
-	mkdirSync(join(cwd, ".gentle-ai", "policies"), { recursive: true });
-	const policyPath = join(cwd, ".gentle-ai", "policies", "focus.json");
+	// 策略根是 .jero/policies（品牌重命名后的现行布局）。
+	mkdirSync(join(cwd, ".jero", "policies"), { recursive: true });
+	const policyPath = join(cwd, ".jero", "policies", "focus.json");
 	writeFileSync(policyPath, "{}\n");
 	const native = {
 		targetStatus: async () => startStatus(cwd),
@@ -422,7 +423,7 @@ test("ordinary START transports native focus and safe policy inputs without rebu
 		},
 	} as unknown as NativeReviewCli;
 	for (const focus of [undefined, "risk", "resilience", "readability", "reliability"] as const) {
-		const input = { mode: "ordinary", ...(focus === undefined ? {} : { focus }), ...(focus === "risk" ? { policyPath: ".gentle-ai/policies/focus.json" } : {}) };
+		const input = { mode: "ordinary", ...(focus === undefined ? {} : { focus }), ...(focus === "risk" ? { policyPath: ".jero/policies/focus.json" } : {}) };
 		const result = await __testing.executeReviewControllerOperation({ operation: "start", input: JSON.stringify(input) }, cwd, native);
 		assert.equal(result.operation, "start");
 	}

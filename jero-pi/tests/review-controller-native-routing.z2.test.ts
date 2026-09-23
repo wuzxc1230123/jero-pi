@@ -93,7 +93,7 @@ test("candidate lifecycle sweeps startup and cleans every shutdown including rel
 		assert.deepEqual(violations, []);
 		assert.ok(destinations.length > 0, "startup must actually write fixture assets");
 		assert.ok(discovery.includes(join(cwd, "HOME", ".agents")), "home agent discovery must use the fixture");
-		assert.equal(existsSync(join(cwd, "JERO_PI_AGENT_HOME", "gentle-ai", "managed-assets.json")), true);
+		assert.equal(existsSync(join(cwd, "JERO_PI_AGENT_HOME", "jero", "managed-assets.json")), true);
 		assert.match(readFileSync(homeAgent, "utf8"), /model: fixture\/model/);
 		assert.ok(destinations.includes(homeAgent), "the discovered fixture agent must actually receive routing");
 		assert.ok(destinations.includes(join(cwd, "JERO_PI_AGENT_HOME", "subagents.json")));
