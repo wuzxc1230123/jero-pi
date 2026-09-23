@@ -28,7 +28,7 @@ trustPolicy: no-downgrade
 blockExoticSubdeps: true
 
 allowBuilds:
-  '@ast-grep/cli': set this to true or false
+  '@ast-grep/cli': false
   '@google/genai': true
   esbuild: false
   koffi: true
