@@ -1,0 +1,92 @@
+{
+	"name": "jero-pi",
+	"version": "0.1.0",
+	"description": "Pi coding-agent harness rebuilt on jero-pi: SDD/OpenSpec, subagents, strict TDD evidence, in-process review authority, persistent memory, zero native binaries.",
+	"license": "MIT",
+	"type": "module",
+	"keywords": [
+		"pi-package",
+		"pi",
+		"pi-coding-agent",
+		"jero-pi",
+		"sdd",
+		"openspec",
+		"subagents",
+		"tdd",
+		"code-review",
+		"ai-coding-agent",
+		"agent-harness"
+	],
+	"files": [
+		"assets/",
+		"docs/",
+		"extensions/",
+		"lib/",
+		"prompts/",
+		"runtime/",
+		"skills/",
+		"scripts/",
+		"tests/",
+		"themes/",
+		"README.md",
+		"schemas/"
+	],
+	"scripts": {
+		"postinstall": "node scripts/install-tui-mode-setting.mjs",
+		"test": "node --experimental-strip-types --test \"tests/*.test.ts\" \"tests/authority/*.test.ts\" \"tests/authority/conformance/*.test.ts\" && pnpm run test:harness",
+		"test:harness": "node --experimental-strip-types tests/runtime-harness.mjs",
+		"build:runtime-modules": "node scripts/build-runtime-modules.mjs --write",
+		"check:runtime-modules": "node scripts/build-runtime-modules.mjs --check",
+		"typecheck": "node scripts/check-types.mjs",
+		"prepack": "pnpm test && pnpm run check:runtime-modules && pnpm run check:authority-boundary && node scripts/verify-package-files.mjs",
+		"prepublishOnly": "pnpm test && pnpm run check:runtime-modules && pnpm run check:authority-boundary && node scripts/verify-package-files.mjs",
+		"check:authority-boundary": "node scripts/check-authority-boundary.mjs"
+	},
+	"pi": {
+		"image": "assets/jero-logo.png",
+		"extensions": [
+			"./extensions",
+			"node_modules/@heyhuynhgiabuu/pi-pretty/dist/index.js",
+			"node_modules/@juicesharp/rpiv-ask-user-question/index.ts",
+			"node_modules/pi-fovea/src/index.ts",
+			"node_modules/pi-intercom/index.ts",
+			"node_modules/pi-lens/dist/index.js",
+			"node_modules/pi-web-access/index.ts"
+		],
+		"themes": [
+			"./themes"
+		],
+		"prompts": [
+			"./prompts"
+		],
+		"skills": [
+			"./skills",
+			"node_modules/pi-fovea/skills",
+			"node_modules/pi-intercom/skills",
+			"node_modules/pi-lens/skills"
+		]
+	},
+	"dependencies": {
+		"@heyhuynhgiabuu/pi-pretty": "0.6.14",
+		"@juicesharp/rpiv-ask-user-question": "2.10.1",
+		"pi-fovea": "0.27.0",
+		"pi-intercom": "0.13.0",
+		"pi-lens": "4.1.6",
+		"pi-web-access": "0.29.0"
+	},
+	"peerDependencies": {
+		"@earendil-works/pi-coding-agent": ">=0.85.1",
+		"@earendil-works/pi-tui": "*"
+	},
+	"devDependencies": {
+		"@earendil-works/pi-coding-agent": "0.85.1",
+		"@earendil-works/pi-tui": "0.85.1",
+		"@types/node": "^24.13.3",
+		"typescript": "^5.9.3"
+	},
+	"packageManager": "pnpm@11.1.1",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/jero-pi/jero-pi.git"
+	}
+}

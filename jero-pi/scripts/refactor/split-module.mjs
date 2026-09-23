@@ -63,7 +63,9 @@ for (let i = 0; i < lines.length; i++) {
 				}
 			} else {
 				const defaultMatch = stmt.match(/^import\s+([A-Za-z_$][\w$]*)\s+from/m);
-				if (defaultMatch) externals.set(defaultMatch[1], { module: fromMatch[1], kind: "value", reexport: false, default: true });
+				const namespaceMatch = stmt.match(/^import\s+\*\s+as\s+([A-Za-z_$][\w$]*)\s+from/m);
+				if (namespaceMatch) externals.set(namespaceMatch[1], { module: fromMatch[1], kind: "value", reexport: false, default: false, namespace: true });
+				else if (defaultMatch) externals.set(defaultMatch[1], { module: fromMatch[1], kind: "value", reexport: false, default: true });
 			}
 		}
 		i = j;
@@ -153,7 +155,7 @@ const deriveImports = (body, fromDir, opts) => {
 	if (!skipExternals) {
 		for (const [symbol, info] of externals) {
 			if (info.reexport) continue;
-			if (usedIn(body, symbol)) recordImport(rerootSpec(info.module, fromDir), { name: symbol, kind: info.kind, default: info.default });
+			if (usedIn(body, symbol)) recordImport(rerootSpec(info.module, fromDir), { name: symbol, kind: info.kind, default: info.default, namespace: info.namespace });
 		}
 	}
 	for (const [symbol, info] of decls) {
@@ -189,21 +191,26 @@ const deriveImports = (body, fromDir, opts) => {
 		return out.join("\n\t");
 	};
 	const defaults = [];
+	const namespaces = [];
 	const named = [];
 	for (const [moduleName, entries] of byModule) {
-		const group = entries.some((e) => e.default) ? formatGroup(entries.filter((e) => !e.default)) : formatGroup(entries);
+		const nsEntry = entries.find((e) => e.namespace);
+		const others = entries.filter((e) => !e.namespace);
+		if (nsEntry) namespaces.push(`import * as ${nsEntry.name} from "${moduleName}";`);
+		if (others.length === 0) continue;
+		const group = formatGroup(others);
 		const stmt = group.includes("\n")
 			? `import {\n\t${group}\n} from "${moduleName}";`
 			: `import { ${group} } from "${moduleName}";`;
-		if (entries.some((e) => e.default)) {
-			const def = entries.find((e) => e.default);
+		if (others.some((e) => e.default)) {
+			const def = others.find((e) => e.default);
 			defaults.push(`import ${def.name} from "${moduleName}";`);
-			if (entries.some((e) => !e.default)) named.push(stmt);
+			if (others.some((e) => !e.default)) named.push(stmt);
 		} else {
 			named.push(stmt);
 		}
 	}
-	return [...defaults, ...named].join("\n");
+	return [...namespaces, ...defaults, ...named].join("\n");
 };
 
 // ---- 生成各模块 ----------------------------------------------------------------
@@ -244,7 +251,7 @@ const applyPromote = (body, home) => {
 	const names = promote.get(home);
 	if (!names) return body;
 	for (const symbol of names) {
-		const re = new RegExp(`(^|\\n)(const|function|interface|class|let|type) ${symbol}\\b`);
+		const re = new RegExp(`(^|\\n)(?:async\\s+)?(const|function|interface|class|let|type) ${symbol}\\b`);
 		const match = body.match(re);
 		if (!match) throw new Error(`无法提升导出：${home}/${symbol}`);
 		const at = match.index + match[1].length;

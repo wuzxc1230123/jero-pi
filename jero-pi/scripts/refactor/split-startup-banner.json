@@ -1,0 +1,30 @@
+{
+	"source": "extensions/startup-banner.ts",
+	"remainder": {
+		"header": "// 启动横幅扩展主体：默认导出的动画编排、渲染循环与命令注册。\n// 配置/调色板、logo 模型与统计探测已拆至 lib/banner-*。",
+		"ranges": [[1, 7], [545, 1062]]
+	},
+	"modules": [
+		{
+			"name": "config",
+			"file": "banner-config.ts",
+			"dir": "../lib",
+			"header": "// 启动横幅配置：agent 目录、banner 配置读写、调色板与 ASCII 归一化/填充助手。\n// 自 extensions/startup-banner.ts 拆分（机械平移，语义零改动）。",
+			"ranges": [[9, 118]]
+		},
+		{
+			"name": "logo-model",
+			"file": "banner-logo-model.ts",
+			"dir": "../lib",
+			"header": "// 启动横幅 logo 模型：单元格类型、字母跨度、笔画序映射、笔画节奏与 LayoutBuilder。\n// 自 extensions/startup-banner.ts 拆分（机械平移，语义零改动）。",
+			"ranges": [[120, 467]]
+		},
+		{
+			"name": "stats",
+			"file": "banner-stats.ts",
+			"dir": "../lib",
+			"header": "// 启动横幅统计探测：intro 模式选择、SDD 代理计数、包扩展计数与 git 分支读取。\n// 自 extensions/startup-banner.ts 拆分（机械平移，语义零改动）。",
+			"ranges": [[469, 543]]
+		}
+	]
+}
