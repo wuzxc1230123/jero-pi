@@ -23,11 +23,6 @@ import {
 	setWindowsAclAuthorityForTesting, validatePrivateWindowsDacl, validatePrivateWindowsOwner,
 	WindowsDaclValidationError, WindowsOwnerValidationError
 } from "../lib/review-candidate-view-owner.ts";
-import { commitFileAfterBase, compactCandidateContextManifest, emptyTreeOf, publicationFailure, unbornRepository } from "./review-candidate-view.test.ts";
-import {
-	baseTreeOf, bindingFailureRegistry, type CandidateViewRegistryInternals,
-	candidateViewWorktreeCount, materializationFailureRegistry, stagedFinalizeDescriptor, treeOf
-} from "./review-candidate-view.z3.test.ts";
 
 
 export function git(cwd: string, ...arguments_: string[]): string {

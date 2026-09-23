@@ -34,7 +34,7 @@ import {
 	cwd, deps, fakeContext, fakePi, fakeTui, type Handler, home, mouse, nonGitCwd, type Overlay,
 	PARENT_CONFIRMED_SDD_CONTEXT, plainTheme, type Registered, root
 } from "./jero-agents-shared.ts";
-import { eventually, liveInstance, liveOverlay, liveProfile, shutdownAndRestoreNativeSpawn, tick } from "./jero-agents.test.ts";
+import { shutdownAndRestoreNativeSpawn, tick } from "./jero-agents.test.ts";
 
 test("default Node spawn adapter distinguishes IPC-only and permission-capable canonical Git children", async () => {
 	const childProcess = createRequire(import.meta.url)("node:child_process") as typeof import("node:child_process");

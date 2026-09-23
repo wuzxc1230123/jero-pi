@@ -34,7 +34,7 @@ import {
 	cwd, deps, fakeContext, fakePi, fakeTui, type Handler, home, mouse, nonGitCwd, type Overlay,
 	PARENT_CONFIRMED_SDD_CONTEXT, plainTheme, type Registered, root
 } from "./jero-agents-shared.ts";
-import { eventually, liveInstance, liveOverlay, liveProfile, shutdownAndRestoreNativeSpawn, tick } from "./jero-agents.test.ts";
+import { eventually, tick } from "./jero-agents.test.ts";
 
 test("the overlay confirms a running task once and reports when it finishes during confirmation", async () => {
 	const { pi, tools, fire, commands, sent } = fakePi();

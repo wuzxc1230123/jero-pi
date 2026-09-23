@@ -36,6 +36,17 @@ const maskBody = (body) => {
 			if (out[k] !== "\n") out[k] = " ";
 		}
 	};
+	// 正则字面量判定：按前驱有效字符。前一字符是这些（或行首）时 "/"
+	// 开启正则，否则按除法处理。测试代码常见 /...`.../ 这类含反引号的
+	// 正则，不识别会破坏后续模板配对。
+	const regexPrecededBy = () => {
+		for (let k = i - 1; k >= 0; k--) {
+			const c = out[k];
+			if (c === " " || c === "\n" || c === "\t") continue;
+			return "({[,;=:!&|?+-*%<>~^".includes(c);
+		}
+		return true;
+	};
 	while (i < n) {
 		const ch = body[i];
 		const next = body[i + 1];
@@ -50,6 +61,27 @@ const maskBody = (body) => {
 			i += 2;
 			while (i < n && !(body[i] === "*" && body[i + 1] === "/")) i += 1;
 			i += 2;
+			blank(start, i);
+			continue;
+		}
+		if (ch === "/" && regexPrecededBy()) {
+			// 正则字面量：跳到闭合 "/"（越过转义与字符类），整体置空
+			const start = i;
+			i += 1;
+			let inClass = false;
+			while (i < n) {
+				const c = body[i];
+				if (c === "\\") {
+					i += 2;
+					continue;
+				}
+				if (c === "[") inClass = true;
+				else if (c === "]") inClass = false;
+				else if (c === "/" && !inClass) break;
+				else if (c === "\n") break; // 跨行即非正则，止损
+				i += 1;
+			}
+			i += 1;
 			blank(start, i);
 			continue;
 		}
@@ -236,7 +268,7 @@ const formatGroup = (entries) => {
 	return out.join("\n\t");
 };
 
-const emitSupersetImports = (self) => {
+const emitSupersetImports = (self, body) => {
 	const byModule = new Map();
 	const record = (moduleName, entry) => {
 		if (!byModule.has(moduleName)) byModule.set(moduleName, []);
@@ -246,10 +278,20 @@ const emitSupersetImports = (self) => {
 		if (info.reexport) continue;
 		record(info.module, { name: symbol, kind: info.kind, default: info.default, namespace: info.namespace, orig: info.orig });
 	}
+	// shared 与外部依赖走超集（无重复注册风险）；其他 part 是测试文件，
+	// 超集导入会在本进程重复注册对侧用例——改为掩码使用检测，只导入
+	// 真正引用的对侧顶层夹具。
+	const bodyMask = body === undefined ? "" : maskBody(body);
 	for (const [symbol, info] of decls) {
 		if (info.home === undefined || info.home === self) continue;
-		const target = info.home === "shared" ? `./${sharedName}` : `./${partName(info.home)}`;
-		record(target, { name: symbol, kind: info.kind, default: false, orig: undefined });
+		if (info.home === "shared") {
+			record(`./${sharedName}`, { name: symbol, kind: info.kind, default: false, orig: undefined });
+			continue;
+		}
+		if (body !== undefined && new RegExp(`\\b${symbol}\\b`).test(bodyMask)) {
+			if (process.env.SPLIT_TEST_DEBUG === symbol) console.error(`[dbg] detected ${symbol} home=${info.home} self=${self}`);
+			record(`./${partName(info.home)}`, { name: symbol, kind: info.kind, default: false, orig: undefined });
+		}
 	}
 	const namespaces = [];
 	const named = [];
@@ -301,6 +343,6 @@ derived.forEach((part, index) => {
 	const label = index === 0 ? "第 1 段（留守原文件名）" : `第 ${index + 1} 段`;
 	const note = `（共 ${partCount} 段；夹具在 ${sharedName}）`;
 	const dest = index === 0 ? sourcePath : join(sourceDir, partName(index));
-	writeFileSync(dest, `// ${base} 测试${label}${note}。\n// 机械平移自原 ${base}.test.ts，语义零改动。\n\n${emitSupersetImports(index)}\n\n${part.body}\n`, "utf8");
+	writeFileSync(dest, `// ${base} 测试${label}${note}。\n// 机械平移自原 ${base}.test.ts，语义零改动。\n\n${emitSupersetImports(index, part.body)}\n\n${part.body}\n`, "utf8");
 });
 process.stdout.write(`${sharedName}: ${sharedSource.split("\n").length} 行夹具；共 ${partCount} 段：${derived.map((p, i) => `${partName(i)}=${p.body.split("\n").length}`).join(" ")}\n`);

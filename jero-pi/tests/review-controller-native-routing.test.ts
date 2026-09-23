@@ -21,8 +21,7 @@ import {
 	approvedAcknowledgementStatus, burnedAcknowledgementStatus, collectInput,
 	managedAssetsOutdatedStatus, SHA, status, TREE
 } from "./review-controller-native-routing-shared.ts";
-import { type RegisteredControllerTool, reviewContext, reviewRuntime, startStatus, untrackedStopFixture } from "./review-controller-native-routing.z2.test.ts";
-import { fourLensCollectStatus, occurrences } from "./review-controller-native-routing.z3.test.ts";
+import { reviewContext, reviewRuntime } from "./review-controller-native-routing.z2.test.ts";
 
 test("STATUS renders the managed_assets_outdated continuation command as the actionable next step", async () => {
 	const lineageId = "managed-assets-outdated";

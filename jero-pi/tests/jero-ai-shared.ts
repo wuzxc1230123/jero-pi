@@ -17,8 +17,6 @@ import { installPackageAssets } from "../lib/sdd-preflight.ts";
 import { type ReviewCollectInputV3, type ReviewStatusV3 } from "../lib/authority/wire-contract.ts";
 import { stripAnsi } from "../lib/terminal-theme.ts";
 import { cardBody, cardHint, cardTitle, cardTone } from "./gentle-card-text.ts";
-import { routingConsumerFixture, type RoutingConsumerPanel } from "./jero-ai.test.ts";
-import { applyOnce, profilesStoreFixture } from "./jero-ai.z2.test.ts";
 
 
 initTheme("dark");

@@ -25,11 +25,7 @@ import {
 	WindowsDaclValidationError, WindowsOwnerValidationError
 } from "../lib/review-candidate-view-owner.ts";
 import { git, mockOwnerProbe, mockWindowsAcl, orphanFixture, ownerMarker, repository } from "./review-candidate-view-shared.ts";
-import { commitFileAfterBase, compactCandidateContextManifest, emptyTreeOf, publicationFailure, unbornRepository } from "./review-candidate-view.test.ts";
-import {
-	baseTreeOf, bindingFailureRegistry, type CandidateViewRegistryInternals,
-	candidateViewWorktreeCount, materializationFailureRegistry, stagedFinalizeDescriptor, treeOf
-} from "./review-candidate-view.z3.test.ts";
+import { compactCandidateContextManifest } from "./review-candidate-view.test.ts";
 
 test("candidate view skips a shared index that disappears during stat or copy", (t) => {
 	const contributorRoot = repository(t);

@@ -16,9 +16,6 @@ import { __testing, createJeroAiExtension, PendingReviewConsentRegistry } from "
 import { CandidateViewRegistry } from "../lib/review-candidate-view.ts";
 import { NATIVE_REVIEW_ERROR_CODE, type NativeReviewCli, NativeReviewCliError, NativeReviewConsentRequiredError } from "../lib/authority/client-contract.ts";
 import { decodeReviewConsentV3, decodeReviewStatusV3, type ReviewCollectInputV3, type ReviewStatusV3 } from "../lib/authority/wire-contract.ts";
-import { bindingOf, candidateRepository, correctionPlanInput, repository } from "./review-controller-native-routing.test.ts";
-import { type RegisteredControllerTool, reviewContext, reviewRuntime, startStatus, untrackedStopFixture } from "./review-controller-native-routing.z2.test.ts";
-import { fourLensCollectStatus, occurrences } from "./review-controller-native-routing.z3.test.ts";
 
 
 export const SHA = `sha256:${"a".repeat(64)}`;

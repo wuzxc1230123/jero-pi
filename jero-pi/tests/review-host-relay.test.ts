@@ -23,7 +23,6 @@ import {
 	readLog, rejectsWithRelayError, type RelayHarness, relayRequest, REVIEWER_GROUP_LENSES,
 	reviewerGroupRequests, SUBMISSION, waitFor
 } from "./review-host-relay-shared.ts";
-import { admittingRequest, collectInput } from "./review-host-relay.z2.test.ts";
 
 test("the central native CLI runner no longer declares any relay contract on gentle-ai spawns (design 8)", async (t) => {
 	const fixture = harness(t);

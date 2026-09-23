@@ -15,7 +15,6 @@ import {
 	assertAdditionalProperty, assertNestedRequired, assertRequired, clone, type Decoder, devFixture,
 	devFixtureRoot, digest, executableDigest, fixture, fixtureRoot, type JsonObject
 } from "./review-integration-v2-shared.ts";
-import { approvedAcknowledgementTransition } from "./review-integration-v2.z2.test.ts";
 
 test("current review integration fixtures decode", () => {
 	assert.equal(decodeReviewCapabilitiesV2(fixture("capabilities.fixture.json"), executableDigest).contract, REVIEW_INTEGRATION_CONTRACT);

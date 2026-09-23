@@ -21,8 +21,7 @@ import {
 	approvedAcknowledgementStatus, burnedAcknowledgementStatus, collectInput,
 	managedAssetsOutdatedStatus, SHA, status, TREE
 } from "./review-controller-native-routing-shared.ts";
-import { bindingOf, candidateRepository, correctionPlanInput, repository } from "./review-controller-native-routing.test.ts";
-import { fourLensCollectStatus, occurrences } from "./review-controller-native-routing.z3.test.ts";
+import { repository } from "./review-controller-native-routing.test.ts";
 
 test("candidate lifecycle sweeps startup and cleans every shutdown including reload", async (t) => {
 	const cwd = repository(t);

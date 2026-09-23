@@ -29,7 +29,6 @@ import { AgentRunner } from "../lib/agents-runner.ts";
 import { type NativeReviewCli } from "../lib/authority/client-contract.ts";
 import { CHILD_METRICS_EVENT } from "../lib/runtime-metrics-children.ts";
 import { renderSddPreflightPrompt } from "../lib/sdd-preflight.ts";
-import { eventually, liveInstance, liveOverlay, liveProfile, shutdownAndRestoreNativeSpawn, tick } from "./jero-agents.test.ts";
 
 
 // Gentle Agents extension: the subagent_* tools drive isolated pi children,

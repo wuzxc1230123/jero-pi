@@ -17,7 +17,6 @@ import {
 	runReviewHostRelayReviewerGroup, runReviewHostRelaySlot, submitReviewHostRelayPreparedResult
 } from "../lib/review-host-relay.ts";
 import { decodeReviewNextTransitionV3, type ReviewCaptureSubmissionV1, type ReviewCollectInputV3 } from "../lib/authority/wire-contract.ts";
-import { admittingRequest, collectInput } from "./review-host-relay.z2.test.ts";
 
 
 // ---------------------------------------------------------------------------

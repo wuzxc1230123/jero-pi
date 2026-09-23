@@ -10,8 +10,6 @@ import {
 	decodeReviewProjectionV1, decodeReviewRepairV2, decodeReviewStartV3, decodeReviewStatusV3,
 	REVIEW_INTEGRATION_CONTRACT, REVIEW_START_STATE
 } from "../lib/authority/wire-contract.ts";
-import { managedAssetsContinuation, repairAssessment, unachievableSlot } from "./review-integration-v2.test.ts";
-import { approvedAcknowledgementTransition } from "./review-integration-v2.z2.test.ts";
 
 
 export const fixtureRoot = join(process.cwd(), "tests", "fixtures", "review-integration", "v2", "fixtures");

@@ -23,7 +23,6 @@ import {
 	registeredGentleTools, renderComponent, reviewRepository, type ReviewStartRepository,
 	startedReviewResult, writeMarkdown
 } from "./jero-ai-shared.ts";
-import { applyOnce, profilesStoreFixture } from "./jero-ai.z2.test.ts";
 
 test("authority unavailability fails closed without installer recovery or lifecycle-script attribution", async () => {
 	const result = await __testing.executeReviewControllerOperation(

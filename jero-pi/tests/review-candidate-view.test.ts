@@ -25,10 +25,6 @@ import {
 	WindowsDaclValidationError, WindowsOwnerValidationError
 } from "../lib/review-candidate-view-owner.ts";
 import { git, mockOwnerProbe, mockWindowsAcl, orphanFixture, ownerMarker, repository } from "./review-candidate-view-shared.ts";
-import {
-	baseTreeOf, bindingFailureRegistry, type CandidateViewRegistryInternals,
-	candidateViewWorktreeCount, materializationFailureRegistry, stagedFinalizeDescriptor, treeOf
-} from "./review-candidate-view.z3.test.ts";
 
 test("candidate ownership is private and durable before worktree add; ordinary cleanup removes its marker", (t) => {
 	const cwd = repository(t);

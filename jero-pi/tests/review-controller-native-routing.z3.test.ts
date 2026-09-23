@@ -21,8 +21,8 @@ import {
 	approvedAcknowledgementStatus, burnedAcknowledgementStatus, collectInput,
 	managedAssetsOutdatedStatus, SHA, status, TREE
 } from "./review-controller-native-routing-shared.ts";
-import { bindingOf, candidateRepository, correctionPlanInput, repository } from "./review-controller-native-routing.test.ts";
-import { type RegisteredControllerTool, reviewContext, reviewRuntime, startStatus, untrackedStopFixture } from "./review-controller-native-routing.z2.test.ts";
+import { bindingOf, correctionPlanInput, repository } from "./review-controller-native-routing.test.ts";
+import { reviewContext, reviewRuntime, startStatus } from "./review-controller-native-routing.z2.test.ts";
 
 test("ordinary START relays native consent without authoring or advancing it", async (t) => {
 	const cwd = repository(t);

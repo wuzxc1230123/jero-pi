@@ -17,7 +17,6 @@ import {
 	readPackageJson, RETIRED_ADVERSARIAL_AGENTS, RETIRED_REFUTER_FILE, REVIEW_RISK_FILE, sha256,
 	V013_MANAGED_ASSETS, V013_REVIEW_RISK_FIXTURE, V014_MANAGED_ASSETS, V014_REVIEW_RISK_FIXTURE
 } from "./package-manifest-shared.ts";
-import { assertManagedAgentUserEditIsPreserved } from "./package-manifest.z2.test.ts";
 
 test("technical reference declares the tested Pi minimum required for agent_settled", () => {
 	const manifest = readPackageJson();

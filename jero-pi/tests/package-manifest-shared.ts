@@ -10,13 +10,6 @@ import { fileURLToPath } from "node:url";
 import { applyModelConfig } from "../extensions/jero-ai.ts";
 import { resolveGentlePiAgentHome } from "../lib/agent-home.ts";
 import { getPackageAssetOwner, installPackageAssets, installSddAssets, type PackageAssetOwner } from "../lib/sdd-preflight.ts";
-import {
-	assertWorkerFallbackRouting, assetFileKeys, COMPANION_EXTENSION_REFS, COMPANION_SKILL_REFS,
-	contractFields, EXPECTED_OWNER_ASSETS, installedAssetManifest, nestedContractFields,
-	readAgentDefinition, readAgentFrontmatter, readMarkdownSection, readTextContract,
-	UNSUPPORTED_CHILD_SESSION_TOOLS, withIsolatedAssetHome
-} from "./package-manifest.test.ts";
-import { assertManagedAgentUserEditIsPreserved } from "./package-manifest.z2.test.ts";
 
 
 export const PACKAGE_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
