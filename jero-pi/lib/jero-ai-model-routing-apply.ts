@@ -12,7 +12,7 @@ import { sanitizeTerminalText } from "./terminal-theme.ts";
 import { agentModelProfileConfigPath, isClearRoutingEntry, isValidJsonObjectFileOrMissing, listDiscoverableAgents, listDiscoverableAgentsAsync, projectSettingsPath, removeLegacyAgentOverridesFromSettings, updateFrontmatterRouting, updateSubagentModelProfile, updateSubagentModelProfileAtPathAsync } from "./jero-ai-model-config.ts";
 import { isRecord, legacyProjectModelConfigPath, modelConfigPath } from "./jero-ai-persona-config.ts";
 import { pathExists } from "./jero-ai-prompts.ts";
-import { AgentSource } from "./jero-ai-sdd-startup.ts";
+import type { AgentSource } from "./jero-ai-sdd-startup.ts";
 
 
 const PROVIDER_REVIEW_ROLES = ["review-refuter", "review-validator"] as const;

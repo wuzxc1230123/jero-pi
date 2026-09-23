@@ -309,7 +309,18 @@ function parseGuardrailsConfigFile(
 // 宿主注入的 processEnv（测试接缝）：在扩展创建时设置，让护栏的
 // 环境变量检查与运行时其余部分读取同一份环境，
 // 而不是绕过接缝去取真实的 process.env。
-export let guardrailsProcessEnv: NodeJS.ProcessEnv = process.env;
+// 用 getter/setter 而非 `export let`：ESM import 绑定是只读的，
+// 扩展侧 `import { guardrailsProcessEnv }` 后无法赋值，只有 setter
+// 才能让宿主注入生效（否则注入被静默忽略，自主模式门可能被绕过）。
+let hostProcessEnv: NodeJS.ProcessEnv = process.env;
+
+export function setGuardrailsProcessEnv(environment: NodeJS.ProcessEnv): void {
+	hostProcessEnv = environment;
+}
+
+export function getGuardrailsProcessEnv(): NodeJS.ProcessEnv {
+	return hostProcessEnv;
+}
 
 
 
@@ -319,7 +330,7 @@ export function loadRuntimeGuardrailsConfig(
 ): RuntimeGuardrailsConfig {
 	try {
 		// 环境变量覆盖：以默认动作强制进入自主模式
-		if ((options.env ?? guardrailsProcessEnv).JERO_PI_AUTONOMOUS_MODE === "1") {
+		if ((options.env ?? hostProcessEnv).JERO_PI_AUTONOMOUS_MODE === "1") {
 			return { autonomousMode: true, guardedCommands: {} };
 		}
 

@@ -7,9 +7,7 @@ import {
 	FEATURE_NAMES,
 	REVIEW_INTEGRATION_CONTRACT
 } from "./wire-contract-enums.mjs";
-import {
 
-} from "./wire-contract-interfaces.mjs";
 
 // ---------------------------------------------------------------------------
 // 原语——逐字移植自 lib/review-integration-v1.ts。exactRecord 的精确

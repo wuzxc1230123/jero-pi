@@ -7,7 +7,7 @@ import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { NATIVE_REVIEW_MODE_OPERATION, NATIVE_REVIEW_MODE_SOURCE, type NativeReviewCli, type NativeReviewModeStatus, type NativeReviewAssessRequest } from "./authority/client-contract.ts";
 import { verificationPlan, resolveWriterProfile, RDD_LINE, VERIFICATION_TIER, NATIVE_REVIEW_OUTCOME, type RddLine, type VerificationTier, type ReviewAssessmentV1, type NativeReviewOutcome } from "./review-risk-assessment.ts";
 
-import { BackgroundSubagentsRendering, DEFAULT_BACKGROUND_SUBAGENTS_RENDERING, loadBackgroundSubagentsPolicy } from "./jero-ai-background-subagents.ts";
+import { DEFAULT_BACKGROUND_SUBAGENTS_RENDERING, loadBackgroundSubagentsPolicy, type BackgroundSubagentsRendering } from "./jero-ai-background-subagents.ts";
 import { ASSETS_DIR } from "./jero-ai-package-assets.ts";
 import { renderBackgroundSubagentsStatusLine, resolveBackgroundSubagentsCapability } from "./jero-ai-writer-scope.ts";
 

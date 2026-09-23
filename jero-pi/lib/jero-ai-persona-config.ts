@@ -5,7 +5,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
-import { PersonaMode } from "./jero-ai-prompts.ts";
+import type { PersonaMode } from "./jero-ai-prompts.ts";
 
 
 export function isRecord(value: unknown): value is Record<string, unknown> {

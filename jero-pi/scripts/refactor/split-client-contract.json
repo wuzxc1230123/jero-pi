@@ -1,0 +1,25 @@
+{
+	"source": "lib/authority/client-contract.ts",
+	"barrel": true,
+	"barrelHeader": "// D7：客户端契约，内化到权威之下（设计 6，native-review-cli -> lib/authority）。\n// 保守失败的桩保留为可测试注入的参考实现与 Q-C 的不可达成表面；\n// 生产默认值是进程内适配器（lib/jero-authority-cli.ts）。\n// 兼容门面：客户端契约三模块统一再导出，消费方 import 路径不变。",
+	"modules": [
+		{
+			"name": "types",
+			"file": "client-contract-types.ts",
+			"header": "// 客户端契约词汇：操作/错误码/模式/锁/权威状态枚举与请求、结果接口。\n// 自 lib/authority/client-contract.ts 拆分（机械平移，语义零改动）。",
+			"ranges": [[35, 607], [1193, 1194]]
+		},
+		{
+			"name": "surface",
+			"file": "client-contract-surface.ts",
+			"header": "// 客户端契约操作面：untracked 选择参数、风险证据短语、NATIVE_CLI_CONTRACTS、\n// 进程诊断与 NativeReviewCliError。\n// 自 lib/authority/client-contract.ts 拆分（机械平移，语义零改动）。",
+			"ranges": [[608, 905]]
+		},
+		{
+			"name": "decode",
+			"file": "client-contract-decode.ts",
+			"header": "// 客户端契约解码与授权：exec 适配器、解码原语、cwd 规范化、事务/SDD/consent/\n// capture 解码、恢复与对账授权串。D7 片段 4：保守失败的桩类已删除。\n// 进程内适配器（lib/jero-authority-cli.ts）是唯一的默认 CLI。\n// 自 lib/authority/client-contract.ts 拆分（机械平移，语义零改动）。",
+			"ranges": [[907, 1192], [1195, 1540]]
+		}
+	]
+}

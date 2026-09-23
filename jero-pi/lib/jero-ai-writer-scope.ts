@@ -6,7 +6,7 @@ import { homedir } from "node:os";
 import { isAbsolute, join } from "node:path";
 import { canonicalHash } from "./review-transaction.ts";
 
-import { BackgroundSubagentsCapability, BackgroundSubagentsRendering } from "./jero-ai-background-subagents.ts";
+import type { BackgroundSubagentsCapability, BackgroundSubagentsRendering } from "./jero-ai-background-subagents.ts";
 import { builtinAgentDirs } from "./jero-ai-model-config.ts";
 import { PACKAGE_ROOT } from "./jero-ai-package-assets.ts";
 import { isRecord } from "./jero-ai-persona-config.ts";

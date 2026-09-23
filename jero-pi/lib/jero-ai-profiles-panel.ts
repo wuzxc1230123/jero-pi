@@ -14,7 +14,7 @@ import { createNativeFullscreenInteraction } from "./native-fullscreen-interacti
 import { sanitizeTerminalText, stripAnsi } from "./terminal-theme.ts";
 
 import { cloneModelConfig, orchestratorSettingsPath, readEffectiveModelConfig, readEffectiveModelConfigAsync, withOmittedAgentsClearedAsync, writeModelConfigAsync } from "./jero-ai-model-config.ts";
-import { OverlayComponent, PANEL_TONE_COLOR, PanelTone } from "./jero-ai-model-panel.ts";
+import { PANEL_TONE_COLOR, type OverlayComponent, type PanelTone } from "./jero-ai-model-panel.ts";
 import { applyModelConfigAsync } from "./jero-ai-model-routing-apply.ts";
 import { gentleAiConfigHome, modelConfigPath } from "./jero-ai-persona-config.ts";
 

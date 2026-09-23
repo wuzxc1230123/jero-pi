@@ -7,7 +7,7 @@ import { access } from "node:fs/promises";
 import { join } from "node:path";
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 
-import { PACKAGE_ROOT } from "./jero-ai-package-assets.ts";
+import { PACKAGE_ROOT } from "./jero-ai-paths.ts";
 import { getOrchestratorPrompt, renderRddStatusLine } from "./jero-ai-rdd-status.ts";
 
 

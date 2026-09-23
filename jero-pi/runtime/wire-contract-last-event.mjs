@@ -4,11 +4,7 @@
 // 随后把一切生命周期含义当作不透明的提供方持有状态。
 // 自 lib/authority/wire-contract.ts 拆分（机械平移，语义零改动）。
 
-import {
 
-
-
-} from "./wire-contract-interfaces.mjs";
 import {
 	array,
 	enumeration,

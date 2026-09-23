@@ -2,18 +2,16 @@
 // 自 extensions/jero-ai.ts 拆分（机械平移，语义零改动）。
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { dirname, join, relative, sep } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join, relative, sep } from "node:path";
 import { resolveGentlePiAgentHome } from "./agent-home.ts";
 import { getPackageAssetOwner, hasPackageAssetOwnerInstallation, type PackageAssetOwner, isPackageManagedSddAsset } from "./sdd-preflight.ts";
 
+import { ASSETS_DIR, PACKAGE_ROOT } from "./jero-ai-paths.ts";
 import { discoverableNonBuiltinAgentRoots, listAgentsFromDir, updateFrontmatterRouting } from "./jero-ai-model-config.ts";
 
+export { ASSETS_DIR, PACKAGE_ROOT } from "./jero-ai-paths.ts";
+
 export const GRAPH_V1_ORDINARY_READ_ONLY = "Graph-v1 ordinary review authority is read-only; use native compact-v2 review operations";
-
-export const PACKAGE_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
-
-export const ASSETS_DIR = join(PACKAGE_ROOT, "assets");
 
 
 

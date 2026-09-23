@@ -130,7 +130,7 @@ function spawnOwnerInstall(agentHome: string, owner: "delegation" | "review", ho
 }
 
 test("managed asset replacements use exclusive same-directory temporary files", () => {
-	const source = readFileSync(join(import.meta.dirname, "..", "lib", "sdd-preflight.ts"), "utf8");
+	const source = readFileSync(join(import.meta.dirname, "..", "lib", "sdd-preflight-assets.ts"), "utf8");
 	assert.match(source, /function replaceManagedAssetFileAtomically\([\s\S]*?flag: "wx"/);
 	assert.match(source, /renameSync\(temporaryPath, path\)/);
 });

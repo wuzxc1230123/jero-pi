@@ -1,15 +1,18 @@
-// 通用机械拆分器：把单个 TS 模块按声明区间切成多个子模块 + 兼容 barrel。
+// 通用机械拆分器：把单个 TS 模块按声明区间切成多个子模块。
 // 用法：node split-module.mjs <config.json>
-// 配置：{ source, barrel: bool, modules: [{ name, file, header, ranges: [[a,b],...] }] }
+// 配置：{ source, modules: [{ name, file, dir, header, ranges }],
+//        barrel: bool | remainder: { header, ranges } }（barrel 与 remainder 二选一）
 // 规则：
 //   - 块按行区间整体平移，语义零改动；
-//   - 自动解析源文件 import 区（外部依赖）与顶层声明（含 export 标记）；
-//   - 每个子模块的 import 由"标识符在正文中出现"推导，纯类型名带 type 前缀
-//     （node strip-types 运行时不允许悬空的纯类型具名导入）；
-//   - 被跨模块引用的内部声明自动补 export。
+//   - 自动解析源文件 import 区（具名/默认/纯类型 re-export）与顶层声明；
+//   - 每个子模块的 import 由"标识符在正文中的出现"推导；使用检测剥离
+//     注释与字符串字面量，`typeof X` 视为类型位置使用；
+//   - 跨模块引用的内部声明自动补 export；
+//   - barrel：源文件替换为纯再导出门面；remainder：源文件保留指定区间
+//     （如默认导出装配函数），追加迁移模块的 import 与 re-export。
 import { readFileSync, writeFileSync } from "node:fs";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
 
 const configPath = process.argv[2];
 if (!configPath) throw new Error("usage: split-module.mjs <config.json>");
@@ -18,13 +21,13 @@ const here = dirname(fileURLToPath(import.meta.url));
 
 const resolvePath = (p) => (p.isAbsolute ? p : join(here, "..", "..", p));
 const sourcePath = resolvePath(config.source);
+const sourceDir = dirname(sourcePath);
 const lines = readFileSync(sourcePath, "utf8").split("\n");
 
 // ---- 解析 import 区与顶层声明 ------------------------------------------------
-const externals = new Map(); // name -> { module, kind }
+const externals = new Map(); // name -> { module, kind: "value"|"type", reexport, default }
 const declRe = /^(export\s+)?(?:async\s+)?(function|class|const|let|interface|type|enum)\s+([A-Za-z_$][\w$]*)/;
 const decls = new Map(); // name -> { kind, exported, line }
-let importEnd = 0;
 let inBlockComment = false;
 for (let i = 0; i < lines.length; i++) {
 	const line = lines[i];
@@ -37,9 +40,7 @@ for (let i = 0; i < lines.length; i++) {
 		inBlockComment = true;
 		continue;
 	}
-	// import 语句（单行或多行）
-	if (trimmed.startsWith("import ") || trimmed.startsWith("export {") || /^export\s+\{/.test(trimmed)) {
-		// 收集到语句结束（分号且括号平衡）
+	if (trimmed.startsWith("import ") || /^export\s+\{/.test(trimmed) || /^export\s+type\s+\{/.test(trimmed)) {
 		let stmt = line;
 		let j = i;
 		while (!/(^|[^{])\}\s*from\s+"[^"]+";?\s*$/.test(stmt) && !/;\s*$/.test(stmt) && j + 1 < lines.length) {
@@ -47,18 +48,24 @@ for (let i = 0; i < lines.length; i++) {
 			stmt += "\n" + lines[j];
 		}
 		const fromMatch = stmt.match(/from\s+"([^"]+)"/);
-		if (fromMatch && stmt.includes("{")) {
-			const specifiers = stmt.slice(stmt.indexOf("{") + 1, stmt.lastIndexOf("}"));
-			for (const raw of specifiers.split(",")) {
-				const spec = raw.trim();
-				if (!spec) continue;
-				const typeMatch = spec.match(/^type\s+([A-Za-z_$][\w$]*)$/);
-				const valueMatch = spec.match(/^([A-Za-z_$][\w$]*)(?:\s+as\s+([A-Za-z_$][\w$]*))?$/);
-				const name = typeMatch ? typeMatch[1] : valueMatch ? (valueMatch[2] || valueMatch[1]) : null;
-				if (name) externals.set(name, { module: fromMatch[1], kind: typeMatch ? "type" : "value", reexport: /^export/.test(trimmed) });
+		if (fromMatch) {
+			const isReexport = /^export/.test(trimmed);
+			const stmtLevelType = /^import\s+type\s+\{/.test(stmt);
+			if (stmt.includes("{")) {
+				const specifiers = stmt.slice(stmt.indexOf("{") + 1, stmt.lastIndexOf("}"));
+				for (const raw of specifiers.split(",")) {
+					const spec = raw.trim();
+					if (!spec) continue;
+					const typeMatch = spec.match(/^type\s+([A-Za-z_$][\w$]*)$/);
+					const valueMatch = spec.match(/^([A-Za-z_$][\w$]*)(?:\s+as\s+([A-Za-z_$][\w$]*))?$/);
+					const name = typeMatch ? typeMatch[1] : valueMatch ? (valueMatch[2] || valueMatch[1]) : null;
+					if (name) externals.set(name, { module: fromMatch[1], kind: typeMatch || stmtLevelType ? "type" : "value", reexport: isReexport, default: false });
+				}
+			} else {
+				const defaultMatch = stmt.match(/^import\s+([A-Za-z_$][\w$]*)\s+from/m);
+				if (defaultMatch) externals.set(defaultMatch[1], { module: fromMatch[1], kind: "value", reexport: false, default: true });
 			}
 		}
-		importEnd = j + 1;
 		i = j;
 		continue;
 	}
@@ -73,71 +80,169 @@ for (let i = 0; i < lines.length; i++) {
 		});
 	}
 }
-if (importEnd === 0) importEnd = 0;
 
-// ---- 切片并推导依赖 ----------------------------------------------------------
+// ---- 切片、模块目标与路径工具 -------------------------------------------------
 const bodies = {};
 const moduleFile = {};
+const moduleDest = {}; // name -> 目标路径（模块可落在源文件之外的同包目录）
 for (const mod of config.modules) {
 	moduleFile[mod.name] = `./${mod.file.replace(/\.ts$/, "")}.ts`;
+	moduleDest[mod.name] = join(sourceDir, mod.dir || ".", mod.file);
 	bodies[mod.name] = mod.ranges
 		.map(([a, b]) => lines.slice(a - 1, b).join("\n"))
 		.join("\n\n");
 }
+// 外部依赖的 import 说明符以源文件位置为基准；落到其他目录的模块需重定根。
+const rerootSpec = (spec, fromDir) => {
+	if (!spec.startsWith(".")) return spec;
+	const absolute = resolve(sourceDir, spec);
+	const rel = relative(fromDir, absolute).split("\\").join("/");
+	return rel.startsWith(".") ? rel : `./${rel}`;
+};
+const importSpecTo = (fromDir, destPath) => {
+	const rel = relative(fromDir, destPath.replace(/\.ts$/, "")).split("\\").join("/");
+	return (rel.startsWith(".") ? rel : `./${rel}`) + ".ts";
+};
 
-const usedIn = (body, name) => new RegExp(`\\b${name}\\b`).test(body);
+// ---- 使用检测：剥离注释与字符串字面量，保留模板插值内容 ----------------------
+const scanBody = (body) =>
+	body
+		.replace(/\/\*[\s\S]*?\*\//g, " ")
+		.replace(/\/\/[^\n]*/g, " ")
+		// 模板先于字符串：模板可内嵌引号，插值内容保留为可执行代码
+		.replace(/`(?:[^`\\]|\\.)*`/g, (tpl) => (tpl.match(/\$\{[^}]*\}/g) || []).map((part) => part.slice(2, -1)).join(" ") || ' "" ')
+		.replace(/"(?:[^"\\\n]|\\.)*"/g, ' "" ')
+		.replace(/'(?:[^'\\\n]|\\.)*'/g, " '' ");
+
+const usedIn = (body, name) => new RegExp(`\\b${name}\\b`).test(scanBody(body));
+const usedAsValueIn = (body, name) => new RegExp(`(?<!typeof\\s)\\b${name}\\b`).test(scanBody(body));
+
 const declHome = new Map();
 for (const mod of config.modules) {
 	for (const [name, info] of decls) {
-		if (info.line >= mod.ranges[0][0] && info.line <= mod.ranges[mod.ranges.length - 1][1]) {
-			if (declHome.has(name) && declHome.get(name) !== mod.name) {
-				throw new Error(`声明 ${name} 的行 ${info.line} 落入多个模块区间`);
-			}
-			declHome.set(name, mod.name);
+		const inModule = mod.ranges.some(([a, b]) => info.line >= a && info.line <= b);
+		if (!inModule) continue;
+		if (declHome.has(name) && declHome.get(name) !== mod.name) {
+			throw new Error(`声明 ${name} 的行 ${info.line} 落入多个模块区间`);
 		}
+		declHome.set(name, mod.name);
 	}
 }
+const remainderRanges = config.remainder ? config.remainder.ranges : [];
+const declInRemainder = (info) => remainderRanges.some(([a, b]) => info.line >= a && info.line <= b);
 
-const promote = new Map();
-const output = {};
-for (const mod of config.modules) {
-	const body = bodies[mod.name];
-	const extByModule = new Map();
-	const crossByModule = new Map();
-	const recordImport = (map, moduleName, entry) => {
-		if (!map.has(moduleName)) map.set(moduleName, []);
-		map.get(moduleName).push(entry);
+// ---- 依赖推导：为一段正文生成 import 语句 ------------------------------------
+const promote = new Map(); // home -> Set<name>（需要补 export 的内部符号）
+const promoteAsType = new Map(); // home -> Set<name>（仅类型使用，type 导入即可）
+const recordPromote = (home, symbol, asType) => {
+	if (!promote.has(home)) promote.set(home, new Set());
+	promote.get(home).add(symbol);
+	if (asType) {
+		if (!promoteAsType.has(home)) promoteAsType.set(home, new Set());
+		promoteAsType.get(home).add(symbol);
+	}
+};
+
+const deriveImports = (body, fromDir, opts) => {
+	const { skipExternals = false, crossFilter = null } = opts || {};
+	const byModule = new Map();
+	const recordImport = (moduleName, entry) => {
+		if (!byModule.has(moduleName)) byModule.set(moduleName, []);
+		byModule.get(moduleName).push(entry);
 	};
-	for (const [symbol, info] of externals) {
-		if (info.reexport) continue;
-		if (usedIn(body, symbol)) recordImport(extByModule, info.module, { name: symbol, kind: info.kind });
+	if (!skipExternals) {
+		for (const [symbol, info] of externals) {
+			if (info.reexport) continue;
+			if (usedIn(body, symbol)) recordImport(rerootSpec(info.module, fromDir), { name: symbol, kind: info.kind, default: info.default });
+		}
 	}
 	for (const [symbol, info] of decls) {
 		const home = declHome.get(symbol);
-		if (!home || home === mod.name) continue;
+		if (!home) continue;
+		if (crossFilter && !crossFilter(home)) continue;
 		if (usedIn(body, symbol)) {
-			recordImport(crossByModule, moduleFile[home], { name: symbol, kind: info.kind });
-			if (!info.exported) {
-				if (!promote.has(home)) promote.set(home, new Set());
-				promote.get(home).add(symbol);
+			const kind = info.kind === "type" || !usedAsValueIn(body, symbol) ? "type" : "value";
+			recordImport(importSpecTo(fromDir, moduleDest[home]), { name: symbol, kind, default: false });
+			if (!info.exported) recordPromote(home, symbol, kind === "type");
+		}
+	}
+	// 紧凑导入格式：短列表单行，长列表按 100 列折行（节省行数预算）
+	const formatGroup = (entries) => {
+		const items = entries
+			.map((e) => (e.default ? `${e.name} as default` : e.kind === "type" ? `type ${e.name}` : e.name))
+			.sort((a, b) => a.replace(/^(type )/, "").localeCompare(b.replace(/^(type )/, "")));
+		const single = items.join(", ");
+		const specifier = `import { ${single} } from`;
+		if (specifier.length <= 120) return single;
+		const out = [];
+		let current = "";
+		for (const item of items) {
+			const candidate = current ? `${current}, ${item}` : item;
+			if (candidate.length > 96 && current) {
+				out.push(current + ",");
+				current = item;
+			} else {
+				current = candidate;
+			}
+		}
+		if (current) out.push(current);
+		return out.join("\n\t");
+	};
+	const defaults = [];
+	const named = [];
+	for (const [moduleName, entries] of byModule) {
+		const group = entries.some((e) => e.default) ? formatGroup(entries.filter((e) => !e.default)) : formatGroup(entries);
+		const stmt = group.includes("\n")
+			? `import {\n\t${group}\n} from "${moduleName}";`
+			: `import { ${group} } from "${moduleName}";`;
+		if (entries.some((e) => e.default)) {
+			const def = entries.find((e) => e.default);
+			defaults.push(`import ${def.name} from "${moduleName}";`);
+			if (entries.some((e) => !e.default)) named.push(stmt);
+		} else {
+			named.push(stmt);
+		}
+	}
+	return [...defaults, ...named].join("\n");
+};
+
+// ---- 生成各模块 ----------------------------------------------------------------
+const output = {};
+for (const mod of config.modules) {
+	const body = bodies[mod.name];
+	const modDir = dirname(moduleDest[mod.name]);
+	const imports = deriveImports(body, modDir, { crossFilter: (home) => home !== mod.name });
+	output[mod.name] = `${mod.header}\n${imports ? `\n${imports}\n` : "\n"}${body}\n`;
+}
+
+// remainder：源文件保留区间 + 新模块 import + re-export -------------------------
+let remainderSource = null;
+if (config.remainder) {
+	const kept = config.remainder.ranges
+		.map(([a, b]) => lines.slice(a - 1, b).join("\n"))
+		.join("\n\n");
+	// 留守区间保留了原 import 块，外部依赖不再重推导（避免重复标识符）；
+	// 只需新增对迁移模块的导入。
+	const imports = deriveImports(kept, sourceDir, { skipExternals: true, crossFilter: () => true });
+	// 迁移模块若引用留守声明，留守侧需要提升导出
+	for (const [symbol, info] of decls) {
+		if (declHome.get(symbol) || !declInRemainder(info)) continue;
+		for (const mod of config.modules) {
+			if (usedIn(bodies[mod.name], symbol) && !info.exported) {
+				recordPromote("__remainder__", symbol, false);
+				break;
 			}
 		}
 	}
-	const formatGroup = (entries) =>
-		entries
-			.map((e) => (e.kind === "type" ? `type ${e.name}` : e.name))
-			.sort((a, b) => a.replace(/^type /, "").localeCompare(b.replace(/^type /, "")))
-			.join(",\n\t");
-	const imports = [];
-	for (const [moduleName, entries] of [...extByModule, ...crossByModule]) {
-		imports.push(`import {\n\t${formatGroup(entries)}\n} from "${moduleName}";`);
-	}
-	output[mod.name] = `${mod.header}\n${imports.length > 0 ? `\n${imports.join("\n")}\n` : "\n"}${body}\n`;
+	const reexports = config.modules.map((mod) => `export * from "${importSpecTo(sourceDir, moduleDest[mod.name])}";`).join("\n");
+	const headerBlock = config.remainder.header ? `${config.remainder.header}\n` : "";
+	remainderSource = `${headerBlock}${kept}\n\n${imports}\n\n${reexports}\n`;
 }
 
-// ---- 内部符号导出提升 ---------------------------------------------------------
-for (const [home, names] of promote) {
-	let body = output[home];
+// ---- 内部符号导出提升（所有正文定稿后统一应用）-------------------------------
+const applyPromote = (body, home) => {
+	const names = promote.get(home);
+	if (!names) return body;
 	for (const symbol of names) {
 		const re = new RegExp(`(^|\\n)(const|function|interface|class|let|type) ${symbol}\\b`);
 		const match = body.match(re);
@@ -145,23 +250,33 @@ for (const [home, names] of promote) {
 		const at = match.index + match[1].length;
 		body = body.slice(0, at) + "export " + body.slice(at);
 	}
-	output[home] = body;
-}
+	return body;
+};
 
 for (const mod of config.modules) {
-	const dest = join(dirname(sourcePath), mod.file);
-	writeFileSync(dest, output[mod.name], "utf8");
-	process.stdout.write(`${mod.file}: ${output[mod.name].split("\n").length} 行\n`);
+	const final = applyPromote(output[mod.name], mod.name);
+	writeFileSync(moduleDest[mod.name], final, "utf8");
+	process.stdout.write(`${mod.dir ? mod.dir + "/" : ""}${mod.file}: ${final.split("\n").length} 行\n`);
+}
+
+if (remainderSource) {
+	const final = applyPromote(remainderSource, "__remainder__");
+	writeFileSync(sourcePath, final, "utf8");
+	process.stdout.write(`${config.source}: remainder ${final.split("\n").length} 行\n`);
 }
 
 if (config.barrel) {
 	const reexports = [];
+	let reexportModule = null;
 	for (const [symbol, info] of externals) {
-		if (info.reexport) reexports.push(`${info.kind === "type" ? "type " : ""}${symbol}`);
+		if (!info.reexport) continue;
+		reexports.push(`${info.kind === "type" ? "type " : ""}${symbol}`);
+		reexportModule = info.module;
 	}
 	const parts = [];
-	if (reexports.length > 0) parts.push(`export { ${reexports.join(", ")} } from "${externals.get([...externals.keys()].find((k) => externals.get(k).reexport))?.module}";`);
-	for (const mod of config.modules) parts.push(`export * from "./${mod.file.replace(/\.ts$/, "")}.ts";`);
+	if (reexports.length > 0) parts.push(`export { ${reexports.join(", ")} } from "${reexportModule}";`);
+	for (const mod of config.modules) parts.push(`export * from "${importSpecTo(sourceDir, moduleDest[mod.name])}";`);
+	for (const extra of config.barrelExtras || []) parts.push(extra);
 	const barrel = `${config.barrelHeader || "// 兼容门面：拆分后统一再导出，消费方 import 路径不变。"}\n${parts.join("\n")}\n`;
 	writeFileSync(sourcePath, barrel, "utf8");
 	process.stdout.write(`${config.source}: barrel ${barrel.split("\n").length} 行\n`);

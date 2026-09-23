@@ -1,0 +1,25 @@
+{
+	"source": "lib/agents-runner.ts",
+	"barrel": true,
+	"barrelHeader": "// 代理运行器兼容门面：AgentRunner 主体 + remediation 计划解析 + 子进程参数/JSON-Lines 编解码。",
+	"modules": [
+		{
+			"name": "remediation",
+			"file": "agents-remediation.ts",
+			"header": "// Remediation 计划：结构、解析与工具观察证据的哈希摘要。\n// 自 lib/agents-runner.ts 拆分（机械平移，语义零改动）。",
+			"ranges": [[107, 181]]
+		},
+		{
+			"name": "child",
+			"file": "agents-runner-child.ts",
+			"header": "// 子进程装配：childArguments、命令行切分、piCommand 探测与 JsonLines 帧编解码。\n// 自 lib/agents-runner.ts 拆分（机械平移，语义零改动）。",
+			"ranges": [[323, 401]]
+		},
+		{
+			"name": "runner",
+			"file": "agents-runner-core.ts",
+			"header": "// 代理运行器主体：AgentRunner——spawn/RPC 问答、观察缓冲、remediation 终态与中止语义。\n// 自 lib/agents-runner.ts 拆分（机械平移，语义零改动）。",
+			"ranges": [[16, 106], [182, 322], [402, 1078]]
+		}
+	]
+}

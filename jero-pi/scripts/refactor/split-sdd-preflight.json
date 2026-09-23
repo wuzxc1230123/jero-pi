@@ -1,0 +1,26 @@
+{
+	"source": "lib/sdd-preflight.ts",
+	"barrel": true,
+	"barrelHeader": "// SDD 预检：资产安装/偏好解析/意图识别的兼容门面，消费方 import 路径不变。",
+	"barrelExtras": ["export type { SddArtifactStore } from \"./sdd-status.ts\";"],
+	"modules": [
+		{
+			"name": "assets",
+			"file": "sdd-preflight-assets.ts",
+			"header": "// SDD 资产安装：受管资产清单与锁、遗留迁移、原子替换、目录复制与安装入口。\n// 自 lib/sdd-preflight.ts 拆分（机械平移，语义零改动）。",
+			"ranges": [[11, 73], [249, 571], [633, 890]]
+		},
+		{
+			"name": "preferences",
+			"file": "sdd-preflight-preferences.ts",
+			"header": "// SDD 预检偏好：执行模式/工件库/链式 PR 策略的类型、默认值、会话缓存与磁盘持久化。\n// 自 lib/sdd-preflight.ts 拆分（机械平移，语义零改动）。",
+			"ranges": [[74, 248], [572, 632]]
+		},
+		{
+			"name": "intent",
+			"file": "sdd-preflight-intent.ts",
+			"header": "// SDD 预检意图：启动触发识别、偏好收集交互、父级确认上下文、提示渲染与会话预检。\n// 自 lib/sdd-preflight.ts 拆分（机械平移，语义零改动）。",
+			"ranges": [[891, 1132]]
+		}
+	]
+}

@@ -12,7 +12,7 @@ import { applyModelConfig, isProviderReviewRole } from "./jero-ai-model-routing-
 import { PACKAGE_ROOT, gentlePiAgentHome, packageAssetAudit } from "./jero-ai-package-assets.ts";
 import { MODEL_EXPORT_KIND, MODEL_EXPORT_VERSION, isRecord, legacyProjectModelConfigPath, modelConfigPath, modelExportPath } from "./jero-ai-persona-config.ts";
 import { pathExists } from "./jero-ai-prompts.ts";
-import { AgentEntry, AgentSource, CORE_MODEL_AGENT_NAMES, CORE_MODEL_AGENT_NAME_SET } from "./jero-ai-sdd-startup.ts";
+import { CORE_MODEL_AGENT_NAMES, CORE_MODEL_AGENT_NAME_SET, type AgentEntry, type AgentSource } from "./jero-ai-sdd-startup.ts";
 
 
 export function readSavedModelConfig(cwd: string): ModelConfigFileResult {
