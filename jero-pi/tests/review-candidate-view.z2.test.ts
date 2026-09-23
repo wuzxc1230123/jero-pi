@@ -527,7 +527,7 @@ test("candidate view compacts an oversized non-ASCII scope losslessly and determ
 		]);
 		assert.ok(Buffer.byteLength(first.task, "utf8") <= Buffer.byteLength("review", "utf8") + 4_096);
 		assert.doesNotMatch(first.task, /Frozen changed scope by mode:/);
-		assert.match(first.task, /Call `gentle_review_scope`/);
+		assert.match(first.task, /Call `jero_review_scope`/);
 		assert.throws(() => decodeCandidateContextManifest(compact.encoded, `${compact.sha256.slice(0, -1)}0`), /integrity/);
 		assert.throws(() => readCandidateContextManifestPage(compact.encoded, compact.sha256, actorEntries.length + 1), /cursor/);
 		const nonCanonicalBytes = Buffer.from(JSON.stringify({ gitlinks: decoded.manifest.gitlinks, scopeByMode: decoded.manifest.scopeByMode, version: 1 }), "utf8");
@@ -634,6 +634,10 @@ test("candidate view accepts internal relative symlink targets and rejects unsaf
 		["backslash", "unsafe\\target"],
 		["empty segment", "unsafe//target"],
 	] as const) {
+		// Windows 的 readlink 把 target 分隔符规范化为反斜杠后再读回，
+		// 含字面反斜杠的 target 无法经文件系统区分——该拒绝分支仅在
+		// 字节保真的平台上可测。
+		if (name === "backslash" && process.platform === "win32") continue;
 		const contributorRoot = repository(t);
 		try {
 			symlinkSync(target, join(contributorRoot, "candidate-link"));

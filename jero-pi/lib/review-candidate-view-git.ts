@@ -339,11 +339,16 @@ function candidateGit(cwd: string, arguments_: readonly string[], env: NodeJS.Pr
 	// 环境变量注入——不改动参数列表，executor 的参数断言不受影响。
 	const canonicalEnv: NodeJS.ProcessEnv = {
 		...env,
-		GIT_CONFIG_COUNT: "2",
+		GIT_CONFIG_COUNT: "3",
 		GIT_CONFIG_KEY_0: "core.autocrlf",
 		GIT_CONFIG_VALUE_0: "false",
 		GIT_CONFIG_KEY_1: "core.eol",
 		GIT_CONFIG_VALUE_1: "lf",
+		// 候选 worktree 位于 .git/jero-review/candidate-views/<uuid> 之下，
+		// 叠加长文件名后轻易超过 Windows MAX_PATH；git 默认 core.longpaths=false
+		// 会在 checkout 阶段拒绝。Node 侧已支持长路径，这里对齐。
+		GIT_CONFIG_KEY_2: "core.longpaths",
+		GIT_CONFIG_VALUE_2: "true",
 	};
 	try {
 		return executor("git", arguments_, {
@@ -424,9 +429,12 @@ function decodeCanonicalPath(value: Buffer): string {
 }
 
 function assertSafeSymlinkTarget(root: string, entryPath: string, value: Buffer): void {
-	const target = value.toString("utf8");
+	const raw = value.toString("utf8");
+	// Windows 的 readlink 会把相对 target 的分隔符规范化为反斜杠；
+	// 安全检查在正斜杠规范形上进行（内容哈希仍取原始字节）。
+	const target = process.platform === "win32" ? raw.replaceAll("\\", "/") : raw;
 	if (
-		!Buffer.from(target, "utf8").equals(value) ||
+		!Buffer.from(raw, "utf8").equals(value) ||
 		target.length === 0 ||
 		isAbsolute(target) ||
 		/^[A-Za-z]:\//.test(target) ||
