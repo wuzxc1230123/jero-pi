@@ -745,15 +745,17 @@ export class AgentsView {
 		if (task && this.canCancel(task)) controls.push({ label: STOP_BUTTON, short: "Stop", region: this.actionRegion("stop", () => this.handleInput("s")), enabled: true });
 		if (this.deps.sessionId !== undefined) controls.push({ label: SCOPE_BUTTON, short: "Scope", region: this.actionRegion("scope", () => this.toggleScope()), enabled: true });
 		for (const control of controls) control.region.setDisabled(!control.enabled);
-		const required = controls.reduce((sum, control) => sum + control.label.length + 1, -1);
+		// 宽度按可见列计算（visibleWidth）：label 含中文/全角时 UTF-16 码元
+		// 数会低估实际占宽，导致指针区域与渲染错位。
+		const required = controls.reduce((sum, control) => sum + visibleWidth(control.label) + 1, -1);
 		const shown = required <= width ? controls : [controls[this.footerPage % controls.length]];
 		const actions: NonNullable<PointerLayout["actions"]> = [];
 		let text = "";
 		for (const control of shown) {
 			const label = required <= width ? control.label : control.short;
 			if (text) text += " ";
-			actions.push({ x: 2 + visibleWidth(text), width: label.length, region: control.region });
-			control.region.render(label.length);
+			actions.push({ x: 2 + visibleWidth(text), width: visibleWidth(label), region: control.region });
+			control.region.render(visibleWidth(label));
 			const hovered = (control.region === this.followRegion && this.hoveredControl === "follow") || (control.region === this.openRegion && this.hoveredControl === "open");
 			text += this.deps.theme.fg(!control.enabled ? ROLE.META : hovered ? ROLE.HOVER : ROLE.KEY, label);
 		}

@@ -288,7 +288,8 @@ export function reviewFinalizeV1(context: JeroAuthorityContextV1, input: JeroRev
 	// “任何”状态出发都是一次 freeze-ledger 尝试——重放检查与状态门都在
 	// 该路径内部，因此已完成冻结的重放仍返回其存储结果，而来自非
 	// reviewing 状态的第二次、有分歧的受理保守失败。
-	if (input.review_result !== undefined && state.state !== "findings_frozen" || (input.review_result !== undefined && input.reviewer_run_acknowledged === true)) {
+	const hasReviewResult = input.review_result !== undefined;
+	if ((hasReviewResult && state.state !== "findings_frozen") || (hasReviewResult && input.reviewer_run_acknowledged === true)) {
 		return finalizeFreezeLedgerV1(context, record, input);
 	}
 	switch (state.state) {

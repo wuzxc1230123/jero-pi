@@ -406,7 +406,14 @@ export class AgentRunner {
 			const entry = this.queue.shift();
 			if (!entry) continue;
 			const { task, request } = entry;
-			this.launch(task.id, request);
+			try {
+				this.launch(task.id, request);
+			} catch (error) {
+				// launch 在 store 写入等环节抛出时不会走到 finish()，
+				// 终结器条目必须在此兜底删除，否则永久泄漏。
+				this.remediationFinalizers.delete(task.id);
+				throw error;
+			}
 		}
 	}
 
@@ -534,6 +541,9 @@ export class AgentRunner {
 	private send(id: string, command: Record<string, unknown>): Promise<Record<string, unknown>> {
 		const live = this.live.get(id);
 		if (!live) return Promise.resolve({ success: false, error: "task is not running" });
+		// 出站命令也是活动信号：静默长任务（无流式输出的长 bash）若只按
+		// 入站复位看门狗，会被误判 stalled 杀掉。
+		this.armStall(id, live);
 		live.nextId += 1;
 		const requestId = `r${live.nextId}`;
 		return new Promise((resolve) => {

@@ -73,6 +73,9 @@ export class JsonLines {
 		this.buffer += chunk;
 		const lines = this.buffer.split("\n");
 		this.buffer = lines.pop() ?? "";
+		// 子进程持续输出不含换行的字节流时，残留缓冲会无界增长；
+		// 超过 1 MiB 即判定协议违规并截断，避免宿主内存被拖垮。
+		if (this.buffer.length > 1024 * 1024) this.buffer = "";
 		for (const raw of lines) {
 			const line = raw.endsWith("\r") ? raw.slice(0, -1) : raw;
 			if (line.length === 0) continue;

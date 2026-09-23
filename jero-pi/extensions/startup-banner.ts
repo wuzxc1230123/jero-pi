@@ -182,7 +182,17 @@ export default function (pi: ExtensionAPI) {
     disposeHeader = cleanup;
     setTimeout(() => {
       ctx.ui.setHeader((tui, theme) => {
+        // 工厂重入防护：旧的 interval 与 resize 监听都必须摘除，
+        // 否则重复进入会累积 stdout 监听器（引用已 dispose 的 tui）。
         if (state.timer) clearInterval(state.timer);
+        if (state.resizeHandler) {
+          process.stdout.off("resize", state.resizeHandler);
+          state.resizeHandler = null;
+        }
+        if (state.resizeDebounceTimer) {
+          clearTimeout(state.resizeDebounceTimer);
+          state.resizeDebounceTimer = null;
+        }
 
         refreshStats = () => tui.requestRender();
         const animStart = Date.now();
