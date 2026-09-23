@@ -8,6 +8,11 @@ import { fileURLToPath } from "node:url";
 const root = fileURLToPath(new URL("..", import.meta.url));
 const sources = [
 	"authority/wire-contract",
+	"authority/wire-contract-enums",
+	"authority/wire-contract-decode-helpers",
+	"authority/wire-contract-decode-start",
+	"authority/wire-contract-decode-status",
+	"authority/wire-contract-last-event",
 	"review-risk-assessment",
 	"authority/client-contract",
 ];

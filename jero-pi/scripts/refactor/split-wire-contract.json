@@ -1,0 +1,43 @@
+{
+	"source": "lib/authority/wire-contract.ts",
+	"barrel": true,
+	"barrelHeader": "// D7：线上契约，内化到权威之下（设计 6，review-integration-v2 -> lib/authority）。\n// 每个 gentle-ai.* schema 字符串在 P5 身份改造之前保持逐字不变；本模块拥有控制器消费、\n// wire.ts 投影其上的线上词汇。\n// 兼容门面：线上契约六模块统一再导出，消费方 import 路径不变。",
+	"modules": [
+		{
+			"name": "enums",
+			"file": "wire-contract-enums.ts",
+			"header": "// 线上契约词汇：操作/适用性/回放性/投影/能力特征等枚举与冻结常量表。\n// 自 lib/authority/wire-contract.ts 拆分（机械平移，语义零改动）。",
+			"ranges": [[4, 256]]
+		},
+		{
+			"name": "interfaces",
+			"file": "wire-contract-interfaces.ts",
+			"header": "// 线上契约数据形状：V2/V3/V4 接口（start/status/consent/failure/repair 等）。\n// 自 lib/authority/wire-contract.ts 拆分（机械平移，语义零改动）。",
+			"ranges": [[258, 856]]
+		},
+		{
+			"name": "helpers",
+			"file": "wire-contract-decode-helpers.ts",
+			"header": "// 线上契约解码原语：exactRecord 的精确键纪律（默认 allowAdditional = false）\n// 是移植时最需要忠实对待的单点风险：失去它意味着 Pi 静默接受畸形的 v2 载荷。\n// 自 lib/authority/wire-contract.ts 拆分（机械平移，语义零改动）。",
+			"ranges": [[857, 991]]
+		},
+		{
+			"name": "decode-start",
+			"file": "wire-contract-decode-start.ts",
+			"header": "// 线上契约解码（能力/start 面）：capabilities、artifact、start v3/v4、投影、修复评估。\n// 自 lib/authority/wire-contract.ts 拆分（机械平移，语义零改动）。",
+			"ranges": [[993, 1588]]
+		},
+		{
+			"name": "decode-status",
+			"file": "wire-contract-decode-status.ts",
+			"header": "// 线上契约解码（status/consent/failure/repair 面）：collect 输入、next transition、\n// status v3、consent v2/v3、failure v2、advisory、repair v2、result artifact。\n// 自 lib/authority/wire-contract.ts 拆分（机械平移，语义零改动）。",
+			"ranges": [[1590, 2394]]
+		},
+		{
+			"name": "last-event",
+			"file": "wire-contract-last-event.ts",
+			"header": "// 线上契约终局捕获：last-event closure v1 的形状、解码与绑定断言。\n// 终局捕获答案由原生提供方直接发出；Pi 校验其封闭形态与身份，\n// 随后把一切生命周期含义当作不透明的提供方持有状态。\n// 自 lib/authority/wire-contract.ts 拆分（机械平移，语义零改动）。",
+			"ranges": [[2396, 2834]]
+		}
+	]
+}

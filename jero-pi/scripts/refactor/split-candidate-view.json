@@ -1,0 +1,31 @@
+{
+	"source": "lib/review-candidate-view.ts",
+	"barrel": true,
+	"barrelHeader": "// 兼容门面：候选视图三模块（git/registry/context）统一再导出，消费方 import 路径不变。",
+	"modules": [
+		{
+			"name": "git",
+			"file": "review-candidate-view-git.ts",
+			"header": "// 候选视图 git 层：git 探测/树解析/变更清单/基解析/检出与安全断言。\n// 自 lib/review-candidate-view.ts 拆分（机械平移，语义零改动）。",
+			"ranges": [[10, 814]]
+		},
+		{
+			"name": "materialize",
+			"file": "review-candidate-view-materialize.ts",
+			"header": "// 候选视图物料化：私有索引播种、worktree 检出与记录安全断言。\n// 自 lib/review-candidate-view.ts 拆分（机械平移，语义零改动）。",
+			"ranges": [[815, 983]]
+		},
+		{
+			"name": "registry",
+			"file": "review-candidate-view-registry.ts",
+			"header": "// 候选视图注册表：CandidateViewRegistry——登记/查询/清理候选视图与权威评审状态。\n// 自 lib/review-candidate-view.ts 拆分（机械平移，语义零改动）。",
+			"ranges": [[984, 1627]]
+		},
+		{
+			"name": "context",
+			"file": "review-candidate-view-context.ts",
+			"header": "// 候选视图上下文：manifest 解码/分页读取/上下文块拼装与评审输入注入。\n// 自 lib/review-candidate-view.ts 拆分（机械平移，语义零改动）。",
+			"ranges": [[1628, 1874]]
+		}
+	]
+}
