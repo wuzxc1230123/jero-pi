@@ -122,9 +122,16 @@ function readManagedAssetsLockOwner(lockPath: string): ManagedAssetsLockOwner | 
 	}
 }
 
-function waitForManagedAssetsLock(milliseconds: number): void {
+// 等待以事件循环友好的 setTimeout 实现：Atomics.wait 会同步阻塞整个
+// 事件循环（TUI 冻结最长 5 秒），仅多进程并发安装资产时触发。
+const sleepMs = (milliseconds: number): Promise<void> =>
+	new Promise((resolve) => {
+		setTimeout(resolve, milliseconds);
+	});
+
+async function waitForManagedAssetsLock(milliseconds: number): Promise<void> {
 	if (milliseconds <= 0) return;
-	Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds);
+	await sleepMs(milliseconds);
 }
 
 function normalizedLockDuration(value: number | undefined, fallback: number): number {
@@ -133,10 +140,10 @@ function normalizedLockDuration(value: number | undefined, fallback: number): nu
 		: fallback;
 }
 
-function acquireManagedAssetsLock(
+async function acquireManagedAssetsLock(
 	agentHome: string,
 	options: PackageAssetInstallLockOptions = {},
-): { path: string; owner: ManagedAssetsLockOwner } {
+): Promise<{ path: string; owner: ManagedAssetsLockOwner }> {
 	const lockParent = join(agentHome, "jero");
 	const lockPath = join(lockParent, MANAGED_ASSETS_LOCK);
 	const timeoutMs = normalizedLockDuration(options.timeoutMs, MANAGED_ASSETS_LOCK_TIMEOUT_MS);
@@ -166,7 +173,7 @@ function acquireManagedAssetsLock(
 			if (Date.now() >= deadline) {
 				throw new Error(`Timed out acquiring managed-assets lock file ${lockPath}. Verify no installer is active before removing this exact lock file.`);
 			}
-			waitForManagedAssetsLock(retryMs);
+			await waitForManagedAssetsLock(retryMs);
 		}
 	}
 }
@@ -180,14 +187,14 @@ function releaseManagedAssetsLock(lock: { path: string; owner: ManagedAssetsLock
 	}
 }
 
-function withManagedAssetsLock<T>(
+async function withManagedAssetsLock<T>(
 	agentHome: string,
 	action: () => T,
 	options: PackageAssetInstallLockOptions | undefined,
-): T {
-	const lock = acquireManagedAssetsLock(agentHome, options);
+): Promise<T> {
+	const lock = await acquireManagedAssetsLock(agentHome, options);
 	try {
-		waitForManagedAssetsLock(normalizedLockDuration(options?.holdLockMs, 0));
+		await waitForManagedAssetsLock(normalizedLockDuration(options?.holdLockMs, 0));
 		return action();
 	} finally {
 		releaseManagedAssetsLock(lock);
@@ -310,12 +317,12 @@ function replaceManagedAssetFileAtomically(path: string, content: string): void 
 	}
 }
 
-export function updatePackageManagedSddAgentOwnership(
+export async function updatePackageManagedSddAgentOwnership(
 	installedPath: string,
 	previousContent: string,
 	nextContent: string,
 	lockOptions?: PackageAssetInstallLockOptions,
-): boolean {
+): Promise<boolean> {
 	const agentHome = gentlePiAgentHome();
 	const relativePath = relative(join(agentHome, "agents"), installedPath);
 	if (
@@ -327,7 +334,7 @@ export function updatePackageManagedSddAgentOwnership(
 		return false;
 	}
 	const ownershipKey = `agents/${relativePath.split(sep).join("/")}`;
-	return withManagedAssetsLock(agentHome, () => {
+	return await withManagedAssetsLock(agentHome, () => {
 		const registryPath = join(agentHome, "jero", MANAGED_ASSETS_MANIFEST);
 		const legacyRegistryPath = join(agentHome, "gentle-ai", MANAGED_ASSETS_MANIFEST);
 		const manifestPath = existsSync(registryPath) ? registryPath : legacyRegistryPath;
@@ -590,19 +597,19 @@ function removeRetiredManagedAssets(
 
 // 为兼容保留的旧全所有者入口。
 // 按所有者的命令与 SDD 预检直接使用 installPackageAssets。
-export function installSddAssets(
+export async function installSddAssets(
 	cwd: string,
 	force: boolean,
-): { agents: number; chains: number; support: number; skipped: number } {
+): Promise<{ agents: number; chains: number; support: number; skipped: number }> {
 	return installPackageAssets(cwd, force);
 }
 
-export function installPackageAssets(
+export async function installPackageAssets(
 	_cwd: string,
 	force: boolean,
 	owners?: readonly PackageAssetOwner[],
 	lockOptions?: PackageAssetInstallLockOptions,
-): { agents: number; chains: number; support: number; skipped: number } {
+): Promise<{ agents: number; chains: number; support: number; skipped: number }> {
 	const agentHome = gentlePiAgentHome();
 	return withManagedAssetsLock(agentHome, () => {
 		const selected = owners === undefined ? undefined : new Set(

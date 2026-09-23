@@ -20,7 +20,7 @@ import {
 } from "./package-manifest-shared.ts";
 import { assertWorkerFallbackRouting, readAgentDefinition, readAgentFrontmatter, readMarkdownSection } from "./package-manifest.test.ts";
 
-test("first forced sync migrates untouched v0.13 assets, preserves routing, and owns new assets", () => {
+test("first forced sync migrates untouched v0.13 assets, preserves routing, and owns new assets", async () => {
 	const temporaryAgentHome = mkdtempSync(join(tmpdir(), "gentle-pi-v013-upgrade-"));
 	const previousAgentHome = process.env.JERO_PI_AGENT_HOME;
 	const installedReviewRisk = join(temporaryAgentHome, "agents", REVIEW_RISK_FILE);
@@ -42,7 +42,7 @@ test("first forced sync migrates untouched v0.13 assets, preserves routing, and 
 		writeFileSync(installedReviewRisk, routedLegacySource);
 		assert.equal(existsSync(managedAssetsManifest), false, "v0.13 had no ownership manifest");
 
-		installSddAssets(PACKAGE_ROOT, true);
+		await installSddAssets(PACKAGE_ROOT, true);
 
 		const migrated = readFileSync(installedReviewRisk, "utf8");
 		const currentPackageSource = readFileSync(
@@ -78,7 +78,7 @@ test("first forced sync migrates untouched v0.13 assets, preserves routing, and 
 		);
 		assert.notEqual(userEditedMigration, migrated, "the fixture must exercise post-migration drift");
 		writeFileSync(installedReviewRisk, userEditedMigration);
-		installSddAssets(PACKAGE_ROOT, true);
+		await installSddAssets(PACKAGE_ROOT, true);
 		assert.deepEqual(
 			readFileSync(installedReviewRisk),
 			Buffer.from(userEditedMigration),
@@ -98,7 +98,7 @@ test("first forced sync migrates untouched v0.13 assets, preserves routing, and 
 	}
 });
 
-test("first forced sync migrates untouched v0.14 review contracts and preserves routing", () => {
+test("first forced sync migrates untouched v0.14 review contracts and preserves routing", async () => {
 	const temporaryAgentHome = mkdtempSync(join(tmpdir(), "gentle-pi-v014-upgrade-"));
 	const previousAgentHome = process.env.JERO_PI_AGENT_HOME;
 	const installedReviewRisk = join(temporaryAgentHome, "agents", REVIEW_RISK_FILE);
@@ -113,7 +113,7 @@ test("first forced sync migrates untouched v0.14 review contracts and preserves 
 		mkdirSync(dirname(installedReviewRisk), { recursive: true });
 		writeFileSync(installedReviewRisk, routedLegacySource);
 
-		installSddAssets(PACKAGE_ROOT, true);
+		await installSddAssets(PACKAGE_ROOT, true);
 
 		const migrated = readFileSync(installedReviewRisk, "utf8");
 		assert.notEqual(migrated, routedLegacySource);
@@ -136,7 +136,7 @@ test("first forced sync migrates untouched v0.14 review contracts and preserves 
 	}
 });
 
-test("first forced sync preserves a body-edited v0.13 asset byte-for-byte", () => {
+test("first forced sync preserves a body-edited v0.13 asset byte-for-byte", async () => {
 	const temporaryAgentHome = mkdtempSync(join(tmpdir(), "gentle-pi-v013-edited-"));
 	const previousAgentHome = process.env.JERO_PI_AGENT_HOME;
 	const installedReviewRisk = join(temporaryAgentHome, "agents", REVIEW_RISK_FILE);
@@ -150,7 +150,7 @@ test("first forced sync preserves a body-edited v0.13 asset byte-for-byte", () =
 		mkdirSync(dirname(installedReviewRisk), { recursive: true });
 		writeFileSync(installedReviewRisk, editedLegacySource);
 
-		installSddAssets(PACKAGE_ROOT, true);
+		await installSddAssets(PACKAGE_ROOT, true);
 
 		assert.deepEqual(readFileSync(installedReviewRisk), Buffer.from(editedLegacySource));
 		const manifest = JSON.parse(
@@ -167,7 +167,7 @@ test("first forced sync preserves a body-edited v0.13 asset byte-for-byte", () =
 	}
 });
 
-test("forced package installation refreshes an asset recorded as package-managed", () => {
+test("forced package installation refreshes an asset recorded as package-managed", async () => {
 	const temporaryAgentHome = mkdtempSync(join(tmpdir(), "gentle-pi-malformed-refuter-"));
 	const previousAgentHome = process.env.JERO_PI_AGENT_HOME;
 	const installedExemplar = join(temporaryAgentHome, "agents", MANAGED_EXEMPLAR_FILE);
@@ -185,7 +185,7 @@ test("forced package installation refreshes an asset recorded as package-managed
 
 	try {
 		process.env.JERO_PI_AGENT_HOME = temporaryAgentHome;
-		installSddAssets(PACKAGE_ROOT, true);
+		await installSddAssets(PACKAGE_ROOT, true);
 		assert.ok(existsSync(installedExemplar), "a missing package asset must install");
 		assert.ok(
 			existsSync(managedAssetsManifest),
@@ -201,7 +201,7 @@ test("forced package installation refreshes an asset recorded as package-managed
 		);
 		writeFileSync(managedAssetsManifest, JSON.stringify(manifest, null, 2));
 
-		installSddAssets(PACKAGE_ROOT, true);
+		await installSddAssets(PACKAGE_ROOT, true);
 
 		const refreshed = readAgentDefinition(installedExemplar);
 		assert.deepEqual(refreshed.tools, MANAGED_EXEMPLAR_TOOLS);
@@ -216,10 +216,10 @@ test("forced package installation refreshes an asset recorded as package-managed
 	}
 });
 
-export function assertManagedAgentUserEditIsPreserved(
+export async function assertManagedAgentUserEditIsPreserved(
 	editLabel: string,
 	editSource: (source: string) => string,
-): void {
+): Promise<void> {
 	const temporaryAgentHome = mkdtempSync(join(tmpdir(), "gentle-pi-managed-edit-"));
 	const previousAgentHome = process.env.JERO_PI_AGENT_HOME;
 	const installedExemplar = join(temporaryAgentHome, "agents", MANAGED_EXEMPLAR_FILE);
@@ -231,13 +231,13 @@ export function assertManagedAgentUserEditIsPreserved(
 
 	try {
 		process.env.JERO_PI_AGENT_HOME = temporaryAgentHome;
-		installSddAssets(PACKAGE_ROOT, true);
+		await installSddAssets(PACKAGE_ROOT, true);
 		const installedSource = readFileSync(installedExemplar, "utf8");
 		const userEditedSource = editSource(installedSource);
 		assert.notEqual(userEditedSource, installedSource, `${editLabel} must alter the asset`);
 		writeFileSync(installedExemplar, userEditedSource);
 
-		installSddAssets(PACKAGE_ROOT, true);
+		await installSddAssets(PACKAGE_ROOT, true);
 
 		assert.deepEqual(
 			readFileSync(installedExemplar),
@@ -262,8 +262,8 @@ export function assertManagedAgentUserEditIsPreserved(
 	}
 }
 
-test("forced package installation preserves a model-only edit to a managed agent", () => {
-	assertManagedAgentUserEditIsPreserved("a model-only user edit", (source) =>
+test("forced package installation preserves a model-only edit to a managed agent", async () => {
+	await assertManagedAgentUserEditIsPreserved("a model-only user edit", (source) =>
 		source.replace(
 			"name: jero-explore\n",
 			"name: jero-explore\nmodel: private/user-model\n",
@@ -271,8 +271,8 @@ test("forced package installation preserves a model-only edit to a managed agent
 	);
 });
 
-test("forced package installation preserves a thinking-only edit to a managed agent", () => {
-	assertManagedAgentUserEditIsPreserved("a thinking-only user edit", (source) =>
+test("forced package installation preserves a thinking-only edit to a managed agent", async () => {
+	await assertManagedAgentUserEditIsPreserved("a thinking-only user edit", (source) =>
 		source.replace(
 			"name: jero-explore\n",
 			"name: jero-explore\nthinking: xhigh\n",
@@ -280,8 +280,8 @@ test("forced package installation preserves a thinking-only edit to a managed ag
 	);
 });
 
-test("forced package installation preserves an ordinary body edit to a managed agent", () => {
-	assertManagedAgentUserEditIsPreserved("an ordinary body edit", (source) =>
+test("forced package installation preserves an ordinary body edit to a managed agent", async () => {
+	await assertManagedAgentUserEditIsPreserved("an ordinary body edit", (source) =>
 		source.replace(
 			"你是通用非 SDD 工作的只读探索者。",
 			"保留这条用户撰写的正文修改。你是通用非 SDD 工作的只读探索者。",
@@ -289,7 +289,7 @@ test("forced package installation preserves an ordinary body edit to a managed a
 	);
 });
 
-test("package model assignment keeps only package-managed agents owned", () => {
+test("package model assignment keeps only package-managed agents owned", async () => {
 	const temporaryAgentHome = mkdtempSync(join(tmpdir(), "gentle-pi-model-ownership-"));
 	const previousAgentHome = process.env.JERO_PI_AGENT_HOME;
 	const installedExemplar = join(temporaryAgentHome, "agents", MANAGED_EXEMPLAR_FILE);
@@ -303,10 +303,10 @@ test("package model assignment keeps only package-managed agents owned", () => {
 
 	try {
 		process.env.JERO_PI_AGENT_HOME = temporaryAgentHome;
-		installSddAssets(PACKAGE_ROOT, true);
+		await installSddAssets(PACKAGE_ROOT, true);
 		writeFileSync(userAgent, userAgentSource);
 
-		applyModelConfig(PACKAGE_ROOT, {
+		await applyModelConfig(PACKAGE_ROOT, {
 			"jero-explore": { model: "package/selected-model", thinking: "high" },
 			"user-router": { model: "user/selected-model", thinking: "low" },
 		});
@@ -332,7 +332,7 @@ test("package model assignment keeps only package-managed agents owned", () => {
 			"routing an arbitrary user agent must not relabel it as package-owned",
 		);
 
-		installSddAssets(PACKAGE_ROOT, true);
+		await installSddAssets(PACKAGE_ROOT, true);
 		assert.equal(
 			readFileSync(installedExemplar, "utf8"),
 			readFileSync(join(PACKAGE_ROOT, "assets", "agents", MANAGED_EXEMPLAR_FILE), "utf8"),
@@ -489,13 +489,13 @@ test("jero-worker packages the exact scoped writer contract", () => {
 	assert.doesNotMatch(testDiscipline, /clearly required by the repository contract/);
 });
 
-test("installSddAssets installs jero-worker with a loader-compatible scoped identity", () => {
+test("installSddAssets installs jero-worker with a loader-compatible scoped identity", async () => {
 	const temporaryAgentHome = mkdtempSync(join(tmpdir(), "gentle-pi-agent-home-"));
 	const previousAgentHome = process.env.JERO_PI_AGENT_HOME;
 
 	try {
 		process.env.JERO_PI_AGENT_HOME = temporaryAgentHome;
-		installSddAssets(PACKAGE_ROOT, true);
+		await installSddAssets(PACKAGE_ROOT, true);
 
 		const installedAgentsDir = join(temporaryAgentHome, "agents");
 		const installedAgentPath = join(installedAgentsDir, "jero-worker.md");
@@ -571,7 +571,7 @@ test("agent home resolver centralizes Gentle and Pi agent-dir precedence", () =>
 	}
 });
 
-test("asset installation uses PI_CODING_AGENT_DIR as the Pi agent home when no explicit Gentle override is set", () => {
+test("asset installation uses PI_CODING_AGENT_DIR as the Pi agent home when no explicit Gentle override is set", async () => {
 	const previousAgentHome = process.env.JERO_PI_AGENT_HOME;
 	const previousPiAgentDir = process.env.PI_CODING_AGENT_DIR;
 	const temporaryPiAgentDir = mkdtempSync(join(tmpdir(), "gentle-pi-agent-dir-"));
@@ -581,7 +581,7 @@ test("asset installation uses PI_CODING_AGENT_DIR as the Pi agent home when no e
 		delete process.env.JERO_PI_AGENT_HOME;
 		process.env.PI_CODING_AGENT_DIR = temporaryPiAgentDir;
 
-		installSddAssets(PACKAGE_ROOT, true);
+		await installSddAssets(PACKAGE_ROOT, true);
 
 		const installedPath = join(temporaryPiAgentDir, "agents", "jero-explore.md");
 		assert.ok(existsSync(installedPath), "managed agents must install where Pi Subagents reads global definitions");
@@ -592,7 +592,7 @@ test("asset installation uses PI_CODING_AGENT_DIR as the Pi agent home when no e
 		);
 
 		process.env.JERO_PI_AGENT_HOME = explicitGentleHome;
-		installSddAssets(PACKAGE_ROOT, true);
+		await installSddAssets(PACKAGE_ROOT, true);
 		assert.ok(
 			existsSync(join(explicitGentleHome, "agents", "jero-explore.md")),
 			"JERO_PI_AGENT_HOME remains the explicit test/operator override",
@@ -607,7 +607,7 @@ test("asset installation uses PI_CODING_AGENT_DIR as the Pi agent home when no e
 	}
 });
 
-test("global model routing uses PI_CODING_AGENT_DIR for package-installed agents", () => {
+test("global model routing uses PI_CODING_AGENT_DIR for package-installed agents", async () => {
 	const previousAgentHome = process.env.JERO_PI_AGENT_HOME;
 	const previousPiAgentDir = process.env.PI_CODING_AGENT_DIR;
 	const temporaryPiAgentDir = mkdtempSync(join(tmpdir(), "gentle-pi-model-agent-dir-"));
@@ -616,9 +616,9 @@ test("global model routing uses PI_CODING_AGENT_DIR for package-installed agents
 	try {
 		delete process.env.JERO_PI_AGENT_HOME;
 		process.env.PI_CODING_AGENT_DIR = temporaryPiAgentDir;
-		installSddAssets(PACKAGE_ROOT, true);
+		await installSddAssets(PACKAGE_ROOT, true);
 
-		const result = applyModelConfig(temporaryProject, {
+		const result = await applyModelConfig(temporaryProject, {
 			"jero-explore": { model: "provider/model", thinking: "high" },
 		});
 
@@ -638,7 +638,7 @@ test("global model routing uses PI_CODING_AGENT_DIR for package-installed agents
 	}
 });
 
-test("normal and forced installation copy generic agents with complete role contracts", () => {
+test("normal and forced installation copy generic agents with complete role contracts", async () => {
 	const previousAgentHome = process.env.JERO_PI_AGENT_HOME;
 	const expectedTools = {
 		"jero-explore": ["read", "grep", "find", "fovea_focus", "fovea_sketch", "fovea_dwell"],
@@ -650,7 +650,7 @@ test("normal and forced installation copy generic agents with complete role cont
 			const temporaryAgentHome = mkdtempSync(join(tmpdir(), "gentle-pi-generic-agents-"));
 			process.env.JERO_PI_AGENT_HOME = temporaryAgentHome;
 			try {
-				installSddAssets(PACKAGE_ROOT, force);
+				await installSddAssets(PACKAGE_ROOT, force);
 
 				for (const [name, tools] of Object.entries(expectedTools)) {
 					const packagedPath = join(PACKAGE_ROOT, "assets", "agents", `${name}.md`);

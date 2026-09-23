@@ -208,7 +208,7 @@ export async function ensureSddPreflight(
 		});
 		const result =
 			(await callbacks.installAssets?.(ctx.cwd)) ??
-			installPackageAssets(ctx.cwd, false, ["sdd"]);
+			(await installPackageAssets(ctx.cwd, false, ["sdd"]));
 		const modelResult = (await callbacks.applyModelConfig?.(ctx.cwd)) ?? {
 			updated: 0,
 			skipped: 0,

@@ -108,10 +108,10 @@ async function updateSubagentModelProfileAsync(
 
 
 
-export function applyModelConfig(
+export async function applyModelConfig(
 	cwd: string,
 	config: AgentModelConfig,
-): { updated: number; skipped: number } {
+): Promise<{ updated: number; skipped: number }> {
 	let updated = 0;
 	let skipped = 0;
 	const seenAgents = new Set<string>();
@@ -136,7 +136,7 @@ export function applyModelConfig(
 			if (next === original) {
 				skipped += 1;
 			} else {
-				if (!updatePackageManagedSddAgentOwnership(agent.filePath, original, next)) {
+				if (!(await updatePackageManagedSddAgentOwnership(agent.filePath, original, next))) {
 					writeFileSync(agent.filePath, next);
 				}
 				updated += 1;
@@ -189,7 +189,7 @@ export async function applyModelConfigAsync(
 			if (next === original) {
 				skipped += 1;
 			} else {
-				if (!updatePackageManagedSddAgentOwnership(agent.filePath, original, next)) {
+				if (!(await updatePackageManagedSddAgentOwnership(agent.filePath, original, next))) {
 					await writeFile(agent.filePath, next);
 				}
 				updated += 1;

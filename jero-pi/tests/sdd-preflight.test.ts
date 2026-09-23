@@ -98,7 +98,7 @@ test("no-callback preflight fallback installs only SDD-owned assets", async () =
 	}
 });
 
-async function waitForFile(path: string, timeoutMs = 2_000): Promise<void> {
+async function waitForFile(path: string, timeoutMs = 5_000): Promise<void> {
 	const deadline = Date.now() + timeoutMs;
 	while (!existsSync(path)) {
 		if (Date.now() >= deadline) throw new Error(`Timed out waiting for ${path}`);
@@ -108,7 +108,7 @@ async function waitForFile(path: string, timeoutMs = 2_000): Promise<void> {
 
 function spawnOwnerInstall(agentHome: string, owner: "delegation" | "review", holdLockMs = 0) {
 	const moduleUrl = pathToFileURL(join(import.meta.dirname, "..", "lib", "sdd-preflight.ts")).href;
-	const script = `import { installPackageAssets } from ${JSON.stringify(moduleUrl)}; installPackageAssets(process.env.JERO_PI_AGENT_HOME, false, [process.env.JERO_PI_TEST_ASSET_OWNER], { holdLockMs: Number(process.env.JERO_PI_TEST_HOLD_LOCK_MS) });`;
+	const script = `import { installPackageAssets } from ${JSON.stringify(moduleUrl)}; await installPackageAssets(process.env.JERO_PI_AGENT_HOME, false, [process.env.JERO_PI_TEST_ASSET_OWNER], { holdLockMs: Number(process.env.JERO_PI_TEST_HOLD_LOCK_MS) });`;
 	const child = spawn(process.execPath, ["--experimental-strip-types", "--input-type=module", "--eval", script], {
 		env: {
 			...process.env,
@@ -140,14 +140,14 @@ test("managed ownership update waits for installer lock and atomically updates t
 	const previousAgentHome = process.env.JERO_PI_AGENT_HOME;
 	try {
 		process.env.JERO_PI_AGENT_HOME = agentHome;
-		installPackageAssets(agentHome, false, ["sdd"]);
+		await installPackageAssets(agentHome, false, ["sdd"]);
 		const target = join(agentHome, "agents", "sdd-apply.md");
 		const previous = readFileSync(target, "utf8");
 		const next = `${previous}\nmanaged routing update\n`;
 		const held = spawnOwnerInstall(agentHome, "delegation", 400);
 		await waitForFile(join(agentHome, "jero", "managed-assets.lock"));
 		const startedAt = Date.now();
-		assert.equal(updatePackageManagedSddAgentOwnership(target, previous, next), true);
+		assert.equal(await updatePackageManagedSddAgentOwnership(target, previous, next), true);
 		assert.ok(Date.now() - startedAt >= 250, "ownership update must not bypass an active installer lock");
 		await held.completion;
 		assert.equal(readFileSync(target, "utf8"), next, "the managed file must be written under the installer lock");
@@ -166,7 +166,7 @@ test("managed ownership update exposes lock timeout without writing a partial ro
 	const previousAgentHome = process.env.JERO_PI_AGENT_HOME;
 	try {
 		process.env.JERO_PI_AGENT_HOME = agentHome;
-		installPackageAssets(agentHome, false, ["sdd"]);
+		await installPackageAssets(agentHome, false, ["sdd"]);
 		const target = join(agentHome, "agents", "sdd-apply.md");
 		const previous = readFileSync(target, "utf8");
 		const next = `${previous}\nmanaged routing update\n`;
@@ -177,8 +177,8 @@ test("managed ownership update exposes lock timeout without writing a partial ro
 			JSON.stringify({ schemaVersion: 1, token: "foreign", pid: process.pid, createdAtMs: Date.now() }),
 		);
 
-		assert.throws(
-			() => updatePackageManagedSddAgentOwnership(target, previous, next, { timeoutMs: 0 }),
+		await assert.rejects(
+			updatePackageManagedSddAgentOwnership(target, previous, next, { timeoutMs: 0 }),
 			/Timed out acquiring managed-assets lock file/i,
 		);
 		assert.equal(readFileSync(target, "utf8"), previous, "a timed-out managed update must not write the agent file");
@@ -224,15 +224,15 @@ test("installer preserves foreign, malformed, and unsafe lock paths", async () =
 		mkdirSync(join(agentHome, "jero"), { recursive: true });
 		for (const contents of ["", "not-json\n", JSON.stringify({ schemaVersion: 1, token: "foreign", pid: process.pid, createdAtMs: Date.now() })]) {
 			writeFileSync(lockPath, contents);
-			assert.throws(() => installPackageAssets(agentHome, false, ["delegation"], { timeoutMs: 0 }), /Timed out acquiring managed-assets lock file .*verify no installer is active/i);
+			await assert.rejects(installPackageAssets(agentHome, false, ["delegation"], { timeoutMs: 0 }), /Timed out acquiring managed-assets lock file .*verify no installer is active/i);
 			assert.equal(readFileSync(lockPath, "utf8"), contents, "a regular lock file must remain untouched without this caller's token");
 			rmSync(lockPath, { force: true });
 		}
 		mkdirSync(lockPath);
-		assert.throws(() => installPackageAssets(agentHome, false, ["review"], { timeoutMs: 0 }), /lock path is unsafe/);
+		await assert.rejects(installPackageAssets(agentHome, false, ["review"], { timeoutMs: 0 }), /lock path is unsafe/);
 		assert.equal(existsSync(lockPath), true, "an unsafe non-regular lock path must remain untouched");
 		rmSync(lockPath, { recursive: true, force: true });
-		installPackageAssets(agentHome, false, ["review"]);
+		await installPackageAssets(agentHome, false, ["review"]);
 		assert.equal(existsSync(lockPath), false, "an installer must release only its own completed lock file");
 	} finally {
 		if (previousAgentHome === undefined) delete process.env.JERO_PI_AGENT_HOME;
@@ -360,7 +360,7 @@ test("writeSddPreflightToDisk is non-fatal when directory is not writable (no th
 	});
 });
 
-test("forced asset refresh migrates the exact v0.10.7 malformed sdd-apply asset and preserves user edits", () => {
+test("forced asset refresh migrates the exact v0.10.7 malformed sdd-apply asset and preserves user edits", async () => {
 	const packageRoot = join(import.meta.dirname, "..");
 	const legacySource = readFileSync(
 		join(
@@ -397,7 +397,7 @@ test("forced asset refresh migrates the exact v0.10.7 malformed sdd-apply asset 
 			JSON.stringify({ schemaVersion: 1, assets: {} }),
 		);
 
-		installSddAssets(packageRoot, true);
+		await installSddAssets(packageRoot, true);
 
 		assert.equal(readFileSync(installed, "utf8"), currentSource);
 		assert.match(readFileSync(installed, "utf8"), /^tools:\n  - read$/m);
@@ -413,7 +413,7 @@ test("forced asset refresh migrates the exact v0.10.7 malformed sdd-apply asset 
 			"the migrated asset must record current package ownership",
 		);
 
-		installSddAssets(packageRoot, true);
+		await installSddAssets(packageRoot, true);
 		assert.equal(
 			readFileSync(installed, "utf8"),
 			currentSource,
@@ -423,7 +423,7 @@ test("forced asset refresh migrates the exact v0.10.7 malformed sdd-apply asset 
 		process.env.JERO_PI_AGENT_HOME = temporaryUserAgentHome;
 		mkdirSync(join(temporaryUserAgentHome, "agents"), { recursive: true });
 		writeFileSync(userInstalled, userEdited);
-		installSddAssets(packageRoot, true);
+		await installSddAssets(packageRoot, true);
 		assert.equal(
 			readFileSync(userInstalled, "utf8"),
 			userEdited,
@@ -437,7 +437,7 @@ test("forced asset refresh migrates the exact v0.10.7 malformed sdd-apply asset 
 	}
 });
 
-test("forced asset refresh migrates only untouched v0.14 package contracts and preserves user edits", () => {
+test("forced asset refresh migrates only untouched v0.14 package contracts and preserves user edits", async () => {
 	const packageRoot = join(import.meta.dirname, "..");
 	const fixture = readFileSync(
 		join(packageRoot, "tests", "fixtures", "v0.14", "assets", "agents", "review-risk.md"),
@@ -453,7 +453,7 @@ test("forced asset refresh migrates only untouched v0.14 package contracts and p
 		writeFileSync(untouched, fixture);
 		writeFileSync(edited, `${fixture}\nuser-owned edit\n`);
 
-		installSddAssets(packageRoot, true);
+		await installSddAssets(packageRoot, true);
 
 		assert.match(readFileSync(untouched, "utf8"), /initial_review_tree/);
 		assert.equal(readFileSync(edited, "utf8"), `${fixture}\nuser-owned edit\n`);

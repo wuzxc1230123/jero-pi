@@ -68,7 +68,6 @@ const GLYPH_ROLE: Record<string, string> = {
 	[TASK_STATUS.CANCELLED]: "dim",
 	[TASK_STATUS.TIMED_OUT]: "error",
 };
-export const SESSION_FINISHED_TTL_MS = 15 * 60_000;
 const SCOPE_LABEL: Record<ViewScope, string> = { [VIEW_SCOPE.SESSION]: "this session", [VIEW_SCOPE.ALL]: "all sessions" };
 const SCOPE_KEY: Record<ViewScope, string> = { [VIEW_SCOPE.SESSION]: "all sessions", [VIEW_SCOPE.ALL]: "this session" };
 const EMPTY_LIST = "no tasks yet";
@@ -378,9 +377,9 @@ export class AgentsView {
 			this.pointerLayout = { ...layout, height: 1, sourceHeight: layout.height, narrowView: this.narrowView, closeButton: { x: 0, width: 1 } };
 			return ["×" + fit(" Close Agents", layout.width - 1)];
 		}
-		// 保留的终端行绝不属于任何一个存活范围。
-		const now = this.deps.now();
-		if (this.tasks.some((task) => !this.inScope(task, now))) this.refreshTasks();
+		// 保留的终端行绝不属于任何一个存活范围；对端线程退出 remoteThreads
+		// 时由这里的失配触发一次即时刷新。
+		if (this.tasks.some((task) => !this.inScope(task))) this.refreshTasks();
 		if (this.pointerLayout && (this.pointerLayout.width !== layout.width || this.pointerLayout.height !== layout.height || this.pointerLayout.mode !== layout.mode || this.pointerLayout.narrowView !== this.narrowView)) this.clearFooterLayout();
 		const theme = this.deps.theme;
 		const inner = layout.width - 2;
@@ -468,7 +467,7 @@ export class AgentsView {
 		this.deps.requestRender();
 	}
 
-	private inScope(task: TaskRecord, _now: number): boolean {
+	private inScope(task: TaskRecord): boolean {
 		return !isFinished(task.status) && (task.parentSessionId === this.deps.sessionId
 			|| (this.scope === VIEW_SCOPE.ALL && this.remoteThreads.has(task.id)));
 	}

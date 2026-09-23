@@ -359,7 +359,7 @@ function createJeroAiExtensionForTesting(
 		if (reason !== "reload") revokeCurrentReviewSessionPermission(ctx);
 		await refreshReviewSessionPermissionStatus(ctx);
 		try {
-			const installResult = installPackageAssets(ctx.cwd, true, ["delegation", "review"]);
+			const installResult = await installPackageAssets(ctx.cwd, true, ["delegation", "review"]);
 			migrateLegacyProjectModelOverrides(ctx.cwd);
 			const modelResult = await applySavedModelConfig(ctx);
 			if (ctx.hasUI && modelResult.invalidPath) {
@@ -624,7 +624,7 @@ function createJeroAiExtensionForTesting(
 			description: `Repair or refresh only global Jero ${label} assets.`,
 			handler: async (args, ctx) => {
 				const force = args.includes("--force");
-				const result = installPackageAssets(ctx.cwd, force, [owner]);
+				const result = await installPackageAssets(ctx.cwd, force, [owner]);
 				ctx.ui.notify(
 					`Global Jero ${label} assets installed: ${result.agents} agent(s), ${result.chains} chain(s), ${result.support} support file(s), ${result.skipped} already present.`,
 					"info",

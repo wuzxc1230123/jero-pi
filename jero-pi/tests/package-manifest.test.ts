@@ -418,12 +418,12 @@ test("packaged agents declare only tool names a Pi child session can resolve", (
 	}
 });
 
-export function withIsolatedAssetHome(run: (agentHome: string) => void): void {
+export async function withIsolatedAssetHome(run: (agentHome: string) => void | Promise<void>): Promise<void> {
 	const temporary = mkdtempSync(join(tmpdir(), "gentle-asset-owners-"));
 	const previous = process.env.JERO_PI_AGENT_HOME;
 	try {
 		process.env.JERO_PI_AGENT_HOME = temporary;
-		run(temporary);
+		await run(temporary);
 	} finally {
 		if (previous === undefined) delete process.env.JERO_PI_AGENT_HOME;
 		else process.env.JERO_PI_AGENT_HOME = previous;
@@ -436,9 +436,9 @@ export function installedAssetManifest(agentHome: string): ManagedAssetsManifest
 	return JSON.parse(readFileSync(existsSync(jero) ? jero : join(agentHome, "jero", "managed-assets.json"), "utf8"));
 }
 
-test("selective delegation installation owns only generic agents", () => {
-	withIsolatedAssetHome((agentHome) => {
-		const result = installPackageAssets(agentHome, false, ["delegation"]);
+test("selective delegation installation owns only generic agents", async () => {
+	await withIsolatedAssetHome(async (agentHome) => {
+		const result = await installPackageAssets(agentHome, false, ["delegation"]);
 		assert.deepEqual(Object.keys(installedAssetManifest(agentHome).assets).sort(), [
 			"agents/jero-explore.md",
 			"agents/jero-verify.md",
@@ -453,9 +453,9 @@ test("selective delegation installation owns only generic agents", () => {
 	});
 });
 
-test("selective installation retires only assets belonging to the selected owner", () => {
-	withIsolatedAssetHome((agentHome) => {
-		installSddAssets(agentHome, false);
+test("selective installation retires only assets belonging to the selected owner", async () => {
+	await withIsolatedAssetHome(async (agentHome) => {
+		await installSddAssets(agentHome, false);
 		const manifestPath = join(agentHome, "jero", "managed-assets.json");
 		const manifest = installedAssetManifest(agentHome);
 		for (const name of RETIRED_ADVERSARIAL_AGENTS) {
@@ -464,14 +464,14 @@ test("selective installation retires only assets belonging to the selected owner
 		}
 		writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
 		for (const owner of ["delegation", "sdd"] as const) {
-			installPackageAssets(agentHome, true, [owner]);
+			await installPackageAssets(agentHome, true, [owner]);
 			assert.deepEqual(installedAssetManifest(agentHome), manifest);
 			for (const name of RETIRED_ADVERSARIAL_AGENTS) {
 				assert.equal(readFileSync(join(agentHome, "agents", name), "utf8"), "Previously managed review agent\n");
 			}
 		}
 		writeFileSync(join(agentHome, "agents", "review-validator.md"), "User-modified retired agent\n");
-		installPackageAssets(agentHome, false, ["review"]);
+		await installPackageAssets(agentHome, false, ["review"]);
 		assert.equal(existsSync(join(agentHome, "agents", "review-refuter.md")), false);
 		assert.equal(readFileSync(join(agentHome, "agents", "review-validator.md"), "utf8"), "User-modified retired agent\n");
 		for (const name of RETIRED_ADVERSARIAL_AGENTS) {
@@ -509,10 +509,10 @@ export function assetFileKeys(root: string, prefix = ""): string[] {
 }
 
 for (const owner of Object.keys(EXPECTED_OWNER_ASSETS) as PackageAssetOwner[]) {
-	test(`selective ${owner} installation covers its catalog without cross-owner files`, () => {
-		withIsolatedAssetHome((agentHome) => {
+	test(`selective ${owner} installation covers its catalog without cross-owner files`, async () => {
+		await withIsolatedAssetHome(async (agentHome) => {
 			const expected = [...EXPECTED_OWNER_ASSETS[owner]].sort();
-			installPackageAssets(agentHome, false, [owner]);
+			await installPackageAssets(agentHome, false, [owner]);
 			assert.deepEqual(Object.keys(installedAssetManifest(agentHome).assets).sort(), expected);
 			assert.deepEqual(assetFileKeys(agentHome), [...expected, "jero/managed-assets.json"].sort());
 			for (const key of expected) {
@@ -520,13 +520,13 @@ for (const owner of Object.keys(EXPECTED_OWNER_ASSETS) as PackageAssetOwner[]) {
 				const source = join(PACKAGE_ROOT, "assets", key.replace(/^jero\//, ""));
 				assert.equal(readFileSync(join(agentHome, key), "utf8"), readFileSync(source, "utf8"));
 			}
-			const counts = installPackageAssets(agentHome, false, [owner, owner]);
+			const counts = await installPackageAssets(agentHome, false, [owner, owner]);
 			assert.deepEqual(counts, { agents: 0, chains: 0, support: 0, skipped: expected.length });
 		});
 	});
 }
 
-test("legacy all-assets installation covers every packaged file with explicit ownership", () => {
+test("legacy all-assets installation covers every packaged file with explicit ownership", async () => {
 	const packaged = ["agents", "chains", "support"].flatMap(group =>
 		assetFileKeys(join(PACKAGE_ROOT, "assets", group), group === "support" ? "jero/support/" : `${group}/`),
 	).sort();
@@ -535,17 +535,17 @@ test("legacy all-assets installation covers every packaged file with explicit ow
 	for (const key of ["agents/sdd-new.md", "jero/support/new.md", "toString", "__proto__"]) {
 		assert.equal(getPackageAssetOwner(key), undefined, "unknown assets must not default to SDD");
 	}
-	withIsolatedAssetHome((agentHome) => {
-		assert.deepEqual(installSddAssets(agentHome, false), { agents: 24, chains: 4, support: 3, skipped: 0 });
+	await withIsolatedAssetHome(async (agentHome) => {
+		assert.deepEqual(await installSddAssets(agentHome, false), { agents: 24, chains: 4, support: 3, skipped: 0 });
 		assert.deepEqual(Object.keys(installedAssetManifest(agentHome).assets).sort(), packaged);
-		assert.deepEqual(installSddAssets(agentHome, false), { agents: 0, chains: 0, support: 0, skipped: 31 });
-		assert.deepEqual(installSddAssets(agentHome, true), { agents: 24, chains: 4, support: 3, skipped: 0 });
+		assert.deepEqual(await installSddAssets(agentHome, false), { agents: 0, chains: 0, support: 0, skipped: 31 });
+		assert.deepEqual(await installSddAssets(agentHome, true), { agents: 24, chains: 4, support: 3, skipped: 0 });
 	});
 });
 
-test("selective refresh preserves unselected ownership and selected user changes after an all-assets install", () => {
-	withIsolatedAssetHome((agentHome) => {
-		installSddAssets(agentHome, false);
+test("selective refresh preserves unselected ownership and selected user changes after an all-assets install", async () => {
+	await withIsolatedAssetHome(async (agentHome) => {
+		await installSddAssets(agentHome, false);
 		const manifest = installedAssetManifest(agentHome);
 		const selectedUserKey = "agents/jero-explore.md";
 		const unselectedUserKey = "agents/sdd-apply.md";
@@ -553,31 +553,31 @@ test("selective refresh preserves unselected ownership and selected user changes
 			writeFileSync(join(agentHome, key), "User-authored instructions\n");
 		}
 		const before = new Map(assetFileKeys(agentHome).map(key => [key, readFileSync(join(agentHome, key), "utf8")]));
-		assert.deepEqual(installPackageAssets(agentHome, true, ["delegation"]), { agents: 2, chains: 0, support: 0, skipped: 1 });
+		assert.deepEqual(await installPackageAssets(agentHome, true, ["delegation"]), { agents: 2, chains: 0, support: 0, skipped: 1 });
 		delete manifest.assets[selectedUserKey];
 		assert.deepEqual(installedAssetManifest(agentHome), manifest);
 		for (const [key, content] of before) {
 			if (key !== "jero/managed-assets.json") assert.equal(readFileSync(join(agentHome, key), "utf8"), content, key);
 		}
 		const manifestBytes = readFileSync(join(agentHome, "jero", "managed-assets.json"), "utf8");
-		assert.deepEqual(installPackageAssets(agentHome, true, []), { agents: 0, chains: 0, support: 0, skipped: 0 });
+		assert.deepEqual(await installPackageAssets(agentHome, true, []), { agents: 0, chains: 0, support: 0, skipped: 0 });
 		assert.equal(readFileSync(join(agentHome, "jero", "managed-assets.json"), "utf8"), manifestBytes);
 	});
 });
 
-test("selective review migration adopts only untouched legacy copies and preserves routing", () => {
+test("selective review migration adopts only untouched legacy copies and preserves routing", async () => {
 	for (const edited of [false, true]) {
-		withIsolatedAssetHome((agentHome) => {
+		await withIsolatedAssetHome(async (agentHome) => {
 			mkdirSync(join(agentHome, "agents"));
 			const legacy = readFileSync(V014_REVIEW_RISK_FIXTURE, "utf8")
 				.replace("name: review-risk\n", "name: review-risk\nmodel: custom/model\nthinking: high\n")
 				+ (edited ? "\nUser review restrictions.\n" : "");
 			const target = join(agentHome, "agents", REVIEW_RISK_FILE);
 			writeFileSync(target, legacy);
-			installPackageAssets(agentHome, true, ["delegation"]);
+			await installPackageAssets(agentHome, true, ["delegation"]);
 			assert.equal(readFileSync(target, "utf8"), legacy);
 			assert.equal(installedAssetManifest(agentHome).assets["agents/review-risk.md"], undefined);
-			const result = installPackageAssets(agentHome, true, ["review"]);
+			const result = await installPackageAssets(agentHome, true, ["review"]);
 			const actual = readFileSync(target, "utf8");
 			const manifest = installedAssetManifest(agentHome);
 			assert.equal(result.skipped, edited ? 1 : 0);
@@ -595,7 +595,7 @@ test("selective review migration adopts only untouched legacy copies and preserv
 	}
 });
 
-test("unowned legacy research migrates by exact normalized hash, preserving routing and user edits", () => {
+test("unowned legacy research migrates by exact normalized hash, preserving routing and user edits", async () => {
 	const packaged = readFileSync(join(PACKAGE_ROOT, "assets", "agents", "sdd-research.md"), "utf8");
 	const oldAdmission = "- Evidence grants for this runtime are `documentation=[]; open-web=[]`. Never infer evidence capability from bash, persistence tools, or any inherited tool; persistence tools are not evidence grants. Unsupported or undeclared classes deny admission and emit no claims.\n- Because this runtime declares no evidence grants, retain the selected request, persist a `blocked` outcome with no claims, and stop.\n";
 	const legacy = packaged
@@ -643,7 +643,7 @@ test("unowned legacy research migrates by exact normalized hash, preserving rout
 			const target = join(agentHome, "agents", "sdd-research.md");
 			const routed = legacy.replace("name: sdd-research\n", "name: sdd-research\nmodel: custom/model\nthinking: high\n") + (edited ? "\nUser research restrictions.\n" : "");
 			writeFileSync(target, routed);
-			installSddAssets(temporary, true);
+			await installSddAssets(temporary, true);
 			const actual = readFileSync(target, "utf8");
 			if (edited) assert.equal(actual, routed);
 			else {
@@ -651,7 +651,7 @@ test("unowned legacy research migrates by exact normalized hash, preserving rout
 				assert.match(actual, /model: custom\/model\nthinking: high/);
 				const ownership = JSON.parse(readFileSync(join(agentHome, "jero", "managed-assets.json"), "utf8"));
 				assert.equal(ownership.assets["agents/sdd-research.md"], sha256(actual));
-				installSddAssets(temporary, true);
+				await installSddAssets(temporary, true);
 				assert.equal(readFileSync(target, "utf8"), actual, "subsequent refresh keeps adopted model routing");
 			}
 		}
@@ -671,7 +671,7 @@ test("the retired Pi adversarial role agents are not packaged", () => {
 	}
 });
 
-test("forced package installation preserves same-path user-authored agents and separate shadows, including on retired asset paths", () => {
+test("forced package installation preserves same-path user-authored agents and separate shadows, including on retired asset paths", async () => {
 	// The user-authored file below sits on the RETIRED review-refuter.md path:
 	// this also pins that gentle-pi#311 P5 asset retirement deletes only
 	// hash-proven package-managed copies, never user content.
@@ -701,7 +701,7 @@ test("forced package installation preserves same-path user-authored agents and s
 		mkdirSync(dirname(samePathUserAgent), { recursive: true });
 		writeFileSync(samePathUserAgent, userAgentSource);
 
-		installSddAssets(temporaryProject, true);
+		await installSddAssets(temporaryProject, true);
 
 		assert.deepEqual(
 			readFileSync(samePathUserAgent),

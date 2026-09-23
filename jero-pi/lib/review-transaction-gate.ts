@@ -310,65 +310,65 @@ export function inspectGateTarget(
 			return inspectPushTarget(target, receipt, repositoryCwd);
 		}
 		if (target.kind === GATE_TARGET_KIND.PULL_REQUEST) {
-		if (
-			!isFullRef(target.base_ref) ||
-			!isObjectId(target.base_commit) ||
-			!isObjectId(target.base_tree) ||
-			!isFullRef(target.head_ref) ||
-			!isObjectId(target.head_commit) ||
-			!isObjectId(target.head_tree)
-		) {
-			return { valid: false, matchesReceipt: false, reason: "Pull request target contains unresolved identity." };
-		}
-		if (resolveGateRef(repositoryCwd, target.base_ref, "pull request base ref") !== target.base_commit) {
-			return { valid: false, matchesReceipt: false, reason: "Pull request base ref does not resolve to its supplied commit." };
-		}
-		if (resolveGateRef(repositoryCwd, target.head_ref, "pull request head ref") !== target.head_commit) {
-			return { valid: false, matchesReceipt: false, reason: "Pull request head ref does not resolve to its supplied commit." };
-		}
-		assertCommitBinding(repositoryCwd, target.base_commit, target.base_commit, target.base_tree, "pull request base");
-		assertCommitBinding(repositoryCwd, target.head_commit, target.head_commit, target.head_tree, "pull request head");
-		const matchesReceipt =
-			target.base_tree === receipt.body.base_tree &&
-			target.head_tree === receipt.body.final_candidate_tree;
-		return {
-			valid: true,
-			matchesReceipt,
-			targetTree: target.head_tree,
-			reason: matchesReceipt
-				? "Pull request base and head match the approved receipt."
-				: "Pull request base or head differs from the approved receipt.",
-		};
+			if (
+				!isFullRef(target.base_ref) ||
+				!isObjectId(target.base_commit) ||
+				!isObjectId(target.base_tree) ||
+				!isFullRef(target.head_ref) ||
+				!isObjectId(target.head_commit) ||
+				!isObjectId(target.head_tree)
+			) {
+				return { valid: false, matchesReceipt: false, reason: "Pull request target contains unresolved identity." };
+			}
+			if (resolveGateRef(repositoryCwd, target.base_ref, "pull request base ref") !== target.base_commit) {
+				return { valid: false, matchesReceipt: false, reason: "Pull request base ref does not resolve to its supplied commit." };
+			}
+			if (resolveGateRef(repositoryCwd, target.head_ref, "pull request head ref") !== target.head_commit) {
+				return { valid: false, matchesReceipt: false, reason: "Pull request head ref does not resolve to its supplied commit." };
+			}
+			assertCommitBinding(repositoryCwd, target.base_commit, target.base_commit, target.base_tree, "pull request base");
+			assertCommitBinding(repositoryCwd, target.head_commit, target.head_commit, target.head_tree, "pull request head");
+			const matchesReceipt =
+				target.base_tree === receipt.body.base_tree &&
+				target.head_tree === receipt.body.final_candidate_tree;
+			return {
+				valid: true,
+				matchesReceipt,
+				targetTree: target.head_tree,
+				reason: matchesReceipt
+					? "Pull request base and head match the approved receipt."
+					: "Pull request base or head differs from the approved receipt.",
+			};
 		}
 		if (target.kind === GATE_TARGET_KIND.RELEASE) {
-		if (
-			!isFullRef(target.tag_ref) ||
-			!target.tag_ref.startsWith("refs/tags/") ||
-			!isObjectId(target.tag_object) ||
-			!isObjectId(target.peeled_commit) ||
-			!isObjectId(target.tree)
-		) {
-			return { valid: false, matchesReceipt: false, reason: "Release target contains unresolved identity." };
-		}
-		if (resolveGateRef(repositoryCwd, target.tag_ref, "release tag ref") !== target.tag_object) {
-			return { valid: false, matchesReceipt: false, reason: "Release tag ref does not resolve to its supplied object." };
-		}
-		assertCommitBinding(
-			repositoryCwd,
-			target.tag_object,
-			target.peeled_commit,
-			target.tree,
-			"release identity",
-		);
-		const matchesReceipt = target.tree === receipt.body.final_candidate_tree;
-		return {
-			valid: true,
-			matchesReceipt,
-			targetTree: target.tree,
-			reason: matchesReceipt
-				? "Release tag and commit tree match the approved receipt."
-				: "Release commit tree differs from the approved receipt.",
-		};
+			if (
+				!isFullRef(target.tag_ref) ||
+				!target.tag_ref.startsWith("refs/tags/") ||
+				!isObjectId(target.tag_object) ||
+				!isObjectId(target.peeled_commit) ||
+				!isObjectId(target.tree)
+			) {
+				return { valid: false, matchesReceipt: false, reason: "Release target contains unresolved identity." };
+			}
+			if (resolveGateRef(repositoryCwd, target.tag_ref, "release tag ref") !== target.tag_object) {
+				return { valid: false, matchesReceipt: false, reason: "Release tag ref does not resolve to its supplied object." };
+			}
+			assertCommitBinding(
+				repositoryCwd,
+				target.tag_object,
+				target.peeled_commit,
+				target.tree,
+				"release identity",
+			);
+			const matchesReceipt = target.tree === receipt.body.final_candidate_tree;
+			return {
+				valid: true,
+				matchesReceipt,
+				targetTree: target.tree,
+				reason: matchesReceipt
+					? "Release tag and commit tree match the approved receipt."
+					: "Release commit tree differs from the approved receipt.",
+			};
 		}
 		return { valid: false, matchesReceipt: false, reason: "Unsupported gate target kind." };
 	} catch (error) {

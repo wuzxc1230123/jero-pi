@@ -567,7 +567,7 @@ test("agent discovery skips skills directories", async (t) => {
 	);
 });
 
-test("managed routing timeout leaves its profile, agent, and manifest unchanged", (t) => {
+test("managed routing timeout leaves its profile, agent, and manifest unchanged", async (t) => {
 	const root = mkdtempSync(join(tmpdir(), "gentle-pi-managed-routing-timeout-"));
 	const agentHome = join(root, "agent-home");
 	const previousAgentHome = process.env.JERO_PI_AGENT_HOME;
@@ -578,7 +578,7 @@ test("managed routing timeout leaves its profile, agent, and manifest unchanged"
 	});
 
 	process.env.JERO_PI_AGENT_HOME = agentHome;
-	installPackageAssets(root, false, ["sdd"]);
+	await installPackageAssets(root, false, ["sdd"]);
 	const agentPath = join(agentHome, "agents", "sdd-apply.md");
 	const manifestPath = join(agentHome, "jero", "managed-assets.json");
 	const profilePath = join(agentHome, "subagents.json");
@@ -591,8 +591,8 @@ test("managed routing timeout leaves its profile, agent, and manifest unchanged"
 		JSON.stringify({ schemaVersion: 1, token: "foreign", pid: process.pid, createdAtMs: Date.now() }),
 	);
 
-	assert.throws(
-		() => applyModelConfig(root, { "sdd-apply": { model: "test/managed", thinking: "high" } }),
+	await assert.rejects(
+		applyModelConfig(root, { "sdd-apply": { model: "test/managed", thinking: "high" } }),
 		/Timed out acquiring managed-assets lock file/i,
 	);
 	assert.equal(readFileSync(profilePath, "utf8"), profileBefore);
@@ -600,7 +600,7 @@ test("managed routing timeout leaves its profile, agent, and manifest unchanged"
 	assert.equal(readFileSync(manifestPath, "utf8"), manifestBefore);
 });
 
-test("a later alias keeps managed-root precedence and manifest ownership", (t) => {
+test("a later alias keeps managed-root precedence and manifest ownership", async (t) => {
 	const root = mkdtempSync(join(tmpdir(), "gentle-pi-agent-root-alias-"));
 	const agentHome = join(root, "agent-home");
 	const home = join(root, "home");
@@ -624,7 +624,7 @@ test("a later alias keeps managed-root precedence and manifest ownership", (t) =
 	process.env.JERO_PI_AGENT_HOME = agentHome;
 	process.env.HOME = home;
 	process.env.USERPROFILE = home;
-	installPackageAssets(cwd, false, ["sdd"]);
+	await installPackageAssets(cwd, false, ["sdd"]);
 	writeMarkdown(join(intervening, "sdd-apply.md"), "---\nname: sdd-apply\n---\nintervening override\n");
 	mkdirSync(home, { recursive: true });
 	try {
@@ -636,7 +636,7 @@ test("a later alias keeps managed-root precedence and manifest ownership", (t) =
 
 	const selected = __testing.listDiscoverableAgents(cwd).find((agent) => agent.name === "sdd-apply");
 	assert.equal(selected?.filePath, join(managed, "sdd-apply.md"));
-	applyModelConfig(cwd, { "sdd-apply": { model: "test/managed", thinking: "high" } });
+	await applyModelConfig(cwd, { "sdd-apply": { model: "test/managed", thinking: "high" } });
 	const manifest = JSON.parse(readFileSync(join(agentHome, "jero", "managed-assets.json"), "utf8")) as { assets: Record<string, string> };
 	const routed = readFileSync(join(managed, "sdd-apply.md"), "utf8");
 	assert.match(routed, /^model: test\/managed$/m);

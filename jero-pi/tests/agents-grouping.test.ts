@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { type TuiMouseEvent } from "@earendil-works/pi-tui";
 import { TASK_STATUS, TaskStore, type TaskRecord } from "../lib/agents-protocol.ts";
-import { AgentsView, SESSION_FINISHED_TTL_MS } from "../lib/agents-view.ts";
+import { AgentsView } from "../lib/agents-view.ts";
 import { stripAnsi } from "../lib/terminal-theme.ts";
 
 const plainTheme = { fg: (_color: string, text: string) => text };
@@ -118,7 +118,8 @@ test("AgentsView removes terminal children immediately without deleting retained
 	store.add(task("other", "other-session", { agent: "excluded" }));
 	store.apply("live", { type: "text", text: "kept thread" }, now);
 	store.update("live", { status: TASK_STATUS.COMPLETED, endedAt: now });
-	for (const elapsed of [0, SESSION_FINISHED_TTL_MS - 1]) {
+	// 完成即移除是既定语义；边界时刻（原 15 分钟 TTL 刻度）也必须保持移除。
+	for (const elapsed of [0, 14 * 60_000, 15 * 60_000 - 1]) {
 		now = 10_000 + elapsed;
 		const output = view.render(100).map(stripAnsi).join("\n");
 		assert.doesNotMatch(output, /Subagent retained|kept thread/);
@@ -126,7 +127,7 @@ test("AgentsView removes terminal children immediately without deleting retained
 		assert.doesNotMatch(output, /excluded/);
 		assert.equal(view.selectedTask(), undefined);
 	}
-	now = 10_000 + SESSION_FINISHED_TTL_MS;
+	now = 10_000 + 15 * 60_000;
 	assert.doesNotMatch(view.render(100).join("\n"), /Subagent retained/);
 	assert.equal(view.selectedTask(), undefined);
 	store.add(task("archive", "current-session-id", { agent: "archived", status: TASK_STATUS.COMPLETED, endedAt: now }));
