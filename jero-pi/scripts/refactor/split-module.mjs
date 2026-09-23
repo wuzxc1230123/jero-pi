@@ -54,6 +54,9 @@ for (let i = 0; i < lines.length; i++) {
 			const isReexport = /^export/.test(trimmed);
 			const stmtLevelType = /^import\s+type\s+\{/.test(stmt);
 			if (stmt.includes("{")) {
+				// 混合形式：import defaultBinding, { named } from "..."
+				const leadingDefault = stmt.match(/^import\s+([A-Za-z_$][\w$]*)\s*,\s*\{/);
+				if (leadingDefault) externals.set(leadingDefault[1], { module: fromMatch[1], kind: "value", reexport: false, default: true });
 				const specifiers = stmt.slice(stmt.indexOf("{") + 1, stmt.lastIndexOf("}"));
 				for (const raw of specifiers.split(",")) {
 					const spec = raw.trim();
@@ -186,7 +189,7 @@ const deriveImports = (body, fromDir, opts) => {
 	const formatGroup = (entries) => {
 		const items = entries
 			.map((e) => {
-				if (e.default) return `${e.name} as default`;
+				if (e.default) return `default as ${e.name}`;
 				const spec = e.orig ? `${e.orig} as ${e.name}` : e.name;
 				return e.kind === "type" ? `type ${spec}` : spec;
 			})
