@@ -761,6 +761,19 @@ function createJeroAiExtensionForTesting(
 		},
 	});
 
+	pi.registerCommand("jero:guard", {
+		description: "Show the effective guardrail configuration (commands, hard denials, background subagents) with a copy-paste template.",
+		handler: async (_args, ctx) => {
+			// 只读总览：呈现三层防护的生效状态与改法，绝不改任何行为。
+			try {
+				const lines = guardReportLines(ctx.cwd, { env: process.env });
+				ctx.ui.notify(lines.join("\n"), lines.some((line) => line.startsWith("warn:")) ? "warning" : "info");
+			} catch (error) {
+				ctx.ui.notify(error instanceof Error ? error.message : String(error), "error");
+			}
+		},
+	});
+
 	pi.registerCommand("jero:review-session-permission", {
 		description: "Show or revoke the process-memory review permission for this exact Pi session and Git repository (status|revoke).",
 		handler: async (args, ctx) => {
@@ -940,6 +953,7 @@ import {
 import { RDD_STATUS_TIMEOUT_MS, resolveRddStatusLine } from "../lib/jero-ai-rdd-status.ts";
 import { buildGentlePrompt, loadReviewContractPromptFragment } from "../lib/jero-ai-prompts.ts";
 import { setGuardrailsProcessEnv } from "../lib/jero-ai-guardrails.ts";
+import { guardReportLines } from "../lib/jero-ai-guard-report.ts";
 import {
 	evaluateSensitivePathTool, hasWritableMemoryTool, isNamedAgentStartEvent, isSddAgentStartEvent,
 	readSddChangeFlag, resolveSelectedNativeSddChangeStartup, SDD_CHANGE_FLAG,

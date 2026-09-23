@@ -61,7 +61,7 @@ interface LoadBackgroundSubagentsOptions {
 
 const BACKGROUND_SUBAGENTS_SCHEMA = "jero.background-subagents/v1";
 
-const BACKGROUND_SUBAGENTS_FILE = "background-subagents.json";
+export const BACKGROUND_SUBAGENTS_FILE = "background-subagents.json";
 
 
 

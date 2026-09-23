@@ -16,7 +16,7 @@ const GIT_PUSH_RE = new RegExp(String.raw`\bgit${GIT_GLOBAL_FLAGS_SRC}(push)\b`)
 
 
 
-const DENIED_BASH_PATTERNS: RegExp[] = [
+export const DENIED_BASH_PATTERNS: RegExp[] = [
 	// 阻止针对 /、~ 或 ~/子目录、$HOME 或 $HOME/子目录、.. 或 . 的 rm -rf
 	/\brm\s+-rf\s+(?:\/(?:\s|$)|~(?:\/|\s|$)|[$]HOME(?:\/|\s|$)|\.\.?(?:\s|$))/,
 	/\bgit\s+reset\s+--hard\b/,
@@ -69,7 +69,7 @@ interface GuardEvaluation {
 
 
 
-const GUARDED_COMMAND_KEY = {
+export const GUARDED_COMMAND_KEY = {
 	GIT_PUSH: "gitPush",
 	GIT_REBASE: "gitRebase",
 	GIT_BRANCH_DELETE_FORCE: "gitBranchDeleteForce",
@@ -103,7 +103,7 @@ interface LoadGuardrailsOptions {
 
 
 
-const GUARDED_KEY_PATTERNS: Record<GuardedCommandKey, RegExp> = {
+export const GUARDED_KEY_PATTERNS: Record<GuardedCommandKey, RegExp> = {
 	gitPush: GIT_PUSH_RE,
 	gitRebase: /\bgit\s+(rebase)\b/,
 	gitBranchDeleteForce: /\bgit\s+(branch)\s+(?:-[a-zA-Z]*D[a-zA-Z]*|-[a-zA-Z]*d[a-zA-Z]*f[a-zA-Z]*|-[a-zA-Z]*f[a-zA-Z]*d[a-zA-Z]*|--delete\b[^\r\n;&|]*--force\b|--force\b[^\r\n;&|]*--delete\b)/,
@@ -113,7 +113,7 @@ const GUARDED_KEY_PATTERNS: Record<GuardedCommandKey, RegExp> = {
 
 
 
-const AUTONOMOUS_DEFAULT_ACTIONS: Record<GuardedCommandKey, GuardAction> = {
+export const AUTONOMOUS_DEFAULT_ACTIONS: Record<GuardedCommandKey, GuardAction> = {
 	gitPush: "allow",
 	gitRebase: "confirm",
 	gitBranchDeleteForce: "confirm",
@@ -123,7 +123,7 @@ const AUTONOMOUS_DEFAULT_ACTIONS: Record<GuardedCommandKey, GuardAction> = {
 
 
 
-const GUARDED_COMMAND_LABELS: Record<GuardedCommandKey, string> = {
+export const GUARDED_COMMAND_LABELS: Record<GuardedCommandKey, string> = {
 	gitPush: "git push",
 	gitRebase: "git rebase",
 	gitBranchDeleteForce: "forced git branch deletion",
@@ -250,7 +250,7 @@ export function guardedCommandTitle(
 
 
 
-function parseGuardrailsConfigFile(
+export function parseGuardrailsConfigFile(
 	raw: string,
 ): RuntimeGuardrailsConfig | undefined {
 	let parsed: unknown;

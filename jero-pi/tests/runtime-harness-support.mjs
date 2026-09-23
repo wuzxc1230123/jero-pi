@@ -41,6 +41,7 @@ export const EXPECTED_COMMANDS = [
 	"jero:persona",
 	"jero:status",
 	"jero:doctor",
+	"jero:guard",
 	"jero-sdd-init",
 	"skill-registry:refresh",
 	...EXPECTED_BANNER_COMMANDS,
