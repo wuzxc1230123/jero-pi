@@ -334,6 +334,8 @@ export function baseTreeOf(cwd: string): string {
 test("deriveChangedPathManifest reports old and new mode, and flags a mode-only change", (t) => {
 	const cwd = repository(t);
 	chmodSync(join(cwd, "tracked.txt"), 0o755);
+	// core.filemode=false 平台（Windows 默认）读不到 chmod，索引层植入执行位。
+	git(cwd, "update-index", "--chmod=+x", "tracked.txt");
 	const candidate = treeOf(cwd);
 
 	const manifest = deriveChangedPathManifest(cwd, baseTreeOf(cwd), candidate);
@@ -376,6 +378,8 @@ test("deriveChangedPathManifest marks an added path and a deleted path", (t) => 
 test("a mode-only divergence is rejected even though the sorted path set matches", (t) => {
 	const cwd = repository(t);
 	chmodSync(join(cwd, "tracked.txt"), 0o755);
+	// core.filemode=false 平台（Windows 默认）读不到 chmod，索引层植入执行位。
+	git(cwd, "update-index", "--chmod=+x", "tracked.txt");
 	const candidate = treeOf(cwd);
 	const base = baseTreeOf(cwd);
 

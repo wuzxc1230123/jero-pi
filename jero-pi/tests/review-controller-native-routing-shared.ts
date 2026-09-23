@@ -1,3 +1,22 @@
+
+// 嵌套检出（包目录位于仓库根之内）会让 process.cwd() ≠ git 顶层；控制器
+// 按 worktree 收敛语义把 cwd 解析到 git 顶层，测试体内联的 process.cwd()
+// 断言随之失败。进入一个"自身即 git 顶层"的 scratch 目录后再跑用例，
+// 语义与常规检出（cwd == 仓库根）完全一致。
+{
+	const scratchRoot = mkdtempSync(join(tmpdir(), "native-routing-cwd-"));
+	execFileSync("git", ["init", "-q", "-b", "main", "."], { cwd: scratchRoot, stdio: "ignore" });
+	process.chdir(scratchRoot);
+	process.on("exit", () => {
+		try {
+			process.chdir(tmpdir());
+			rmSync(scratchRoot, { recursive: true, force: true });
+		} catch {
+			/* 退出路径清理尽力而为 */
+		}
+	});
+}
+
 // review-controller-native-routing 测试共享夹具与助手：自 review-controller-native-routing.test.ts 机械平移（语义零改动）。
 
 import { default as assert } from "node:assert/strict";

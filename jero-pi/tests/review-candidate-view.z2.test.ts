@@ -250,6 +250,12 @@ test("review subagent dispatch rejects missing candidate views and uses the expl
 
 test("candidate view rejects control-character paths before prompt construction", (t) => {
 	const contributorRoot = repository(t);
+	if (process.platform === "win32") {
+		// Windows 在文件系统与 git 索引（--cacheinfo 亦拒）两层都拒绝
+		// 控制字符路径，场景无法构造——平台自身已提供本测试要证明的保证。
+		assert.throws(() => writeFileSync(join(contributorRoot, "unsafe\npath.txt"), "candidate\n"));
+		return;
+	}
 	writeFileSync(join(contributorRoot, "unsafe\npath.txt"), "candidate\n");
 	assert.throws(() => createCandidateView({ contributorRoot }), CandidateViewError);
 });
@@ -352,6 +358,9 @@ test("candidate view derives deletion, rename, executable, and symlink scope fro
 	renameSync(join(contributorRoot, "tracked.txt"), join(contributorRoot, "renamed.txt"));
 	rmSync(join(contributorRoot, "deleted.txt"));
 	chmodSync(join(contributorRoot, "script.sh"), 0o755);
+	// Windows 默认 core.filemode=false，chmod 的执行位对 git 不可见；
+	// 索引层植入 100755 保证冻结树跨平台携带同一模式。
+	git(contributorRoot, "update-index", "--chmod=+x", "script.sh");
 	try {
 		symlinkSync("script.sh", join(contributorRoot, "linked.sh"));
 	} catch {
@@ -364,9 +373,20 @@ test("candidate view derives deletion, rename, executable, and symlink scope fro
 		// The rename source (tracked.txt) is frozen as a deletion next to its
 		// destination: native STATUS projects the rename as both paths
 		// (gentle-pi#518), and the reviewer scope carries the same identity.
-		assert.deepEqual(view.paths, ["deleted.txt", "linked.sh", "renamed.txt", "script.sh", "tracked.txt"]);
+		// core.filemode=false 的平台（Windows 默认）读不到 chmod 的执行位，
+		// git 冻结树不会携带 100755——该 git 平台限制如实反映在期望里。
+		const filemodeVisible = git(contributorRoot, "config", "core.filemode").trim() !== "false";
+		assert.deepEqual(
+			view.paths,
+			filemodeVisible ? ["deleted.txt", "linked.sh", "renamed.txt", "script.sh", "tracked.txt"] : ["deleted.txt", "linked.sh", "renamed.txt", "tracked.txt"],
+		);
 		assert.deepEqual(view.deletedPaths, ["deleted.txt", "tracked.txt"]);
-		assert.deepEqual(view.modes, { "linked.sh": "120000", "renamed.txt": "100644", "script.sh": "100755" });
+		assert.deepEqual(
+			view.modes,
+			filemodeVisible
+				? { "linked.sh": "120000", "renamed.txt": "100644", "script.sh": "100755" }
+				: { "linked.sh": "120000", "renamed.txt": "100644" },
+		);
 		registry.bind({ token: view.token, lineageId: "scope-kinds", selectedLenses: ["review-risk"] });
 		const dispatch = { agent: "review-risk", task: "review", mode: "task" };
 		injectReviewCandidateView(dispatch, registry);

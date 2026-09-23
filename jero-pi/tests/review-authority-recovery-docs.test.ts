@@ -3,7 +3,11 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const TECHNICAL_REFERENCE = readFileSync("docs/jero-reference.md", "utf8");
-const CONTROLLER = readFileSync("extensions/jero-ai.ts", "utf8");
+// 控制器帮助文案经拆分横跨装配区与评审参数模块，两处合并断言。
+const CONTROLLER = [
+	readFileSync("extensions/jero-ai.ts", "utf8"),
+	readFileSync("lib/jero-ai-review-params.ts", "utf8"),
+].join("\n");
 
 test("technical reference documents the narrow published native maintenance contract", () => {
 	assert.match(TECHNICAL_REFERENCE, /Maintenance is explicit, audited[\s\S]*abandon[\s\S]*reconcile-authority/i);

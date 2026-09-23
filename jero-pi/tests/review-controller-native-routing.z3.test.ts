@@ -11,6 +11,7 @@ import { default as fsp } from "node:fs/promises";
 import { default as os, tmpdir } from "node:os";
 import { syncBuiltinESMExports } from "node:module";
 import { dirname, join, resolve, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 import { default as test } from "node:test";
 import { type ExtensionAPI, type ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { __testing, createJeroAiExtension, PendingReviewConsentRegistry } from "../extensions/jero-ai.ts";
@@ -26,7 +27,7 @@ import { reviewContext, reviewRuntime, startStatus } from "./review-controller-n
 
 test("ordinary START relays native consent without authoring or advancing it", async (t) => {
 	const cwd = repository(t);
-	const consent = decodeReviewConsentV3(JSON.parse(readFileSync(join(process.cwd(), "tests", "fixtures", "devbinary", "consent-v3.captured.json"), "utf8")));
+	const consent = decodeReviewConsentV3(JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), "fixtures", "devbinary", "consent-v3.captured.json"), "utf8")));
 	const native = {
 		targetStatus: async () => startStatus(cwd),
 		start: async () => { throw new NativeReviewConsentRequiredError(consent); },
@@ -39,7 +40,7 @@ test("ordinary START relays native consent without authoring or advancing it", a
 
 test("shutdown preserves failed consent candidates without interrupting session teardown", async (t) => {
 	const cwd = repository(t);
-	const consent = decodeReviewConsentV3(JSON.parse(readFileSync(join(process.cwd(), "tests", "fixtures", "devbinary", "consent-v3.captured.json"), "utf8")));
+	const consent = decodeReviewConsentV3(JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), "fixtures", "devbinary", "consent-v3.captured.json"), "utf8")));
 	const native = {
 		targetStatus: async () => startStatus(cwd),
 		start: async () => { throw new NativeReviewConsentRequiredError(consent); },
@@ -482,7 +483,7 @@ test("START and consent ambiguity reconciliation register their returned committ
 	assert.equal((directStart.diagnostics as { error_code?: string }).error_code, NATIVE_REVIEW_ERROR_CODE.NON_ZERO);
 	assert.equal("next_action" in directStart, false);
 	const directCapture = await __testing.executeReviewCaptureOperation({ lineageId, collectBinding: bindingOf(directStart), correctionLines: 1 }, cwd, directNative, undefined, undefined, directRoutes, true);
-	const consent = decodeReviewConsentV3(JSON.parse(readFileSync(join(process.cwd(), "tests", "fixtures", "devbinary", "consent-v3.captured.json"), "utf8")));
+	const consent = decodeReviewConsentV3(JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), "fixtures", "devbinary", "consent-v3.captured.json"), "utf8")));
 	const consentRequests: Array<Record<string, unknown>> = [], consentRoutes = new Map(), registry = new PendingReviewConsentRegistry(), session = Symbol("consent-session");
 	const consentNative = {
 		targetStatus: async (request: Record<string, unknown>) => { consentRequests.push(request); return consentRequests.length === 1 ? startStatus(cwd, baseRef) : status(lineageId, [input]); },
@@ -525,7 +526,7 @@ test("ordinary START refuses a target projection that no longer matches the froz
 // START created them, only by the repository and candidate they are scoped to.
 test("answer-consent resolves a valid binding presented by a different active Pi session", async (t) => {
 	const cwd = repository(t);
-	const consent = decodeReviewConsentV3(JSON.parse(readFileSync(join(process.cwd(), "tests", "fixtures", "devbinary", "consent-v3.captured.json"), "utf8")));
+	const consent = decodeReviewConsentV3(JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), "fixtures", "devbinary", "consent-v3.captured.json"), "utf8")));
 	const registry = new PendingReviewConsentRegistry();
 	const sessionA = Symbol("session-a"), sessionB = Symbol("session-b");
 	let answerCalls = 0;
@@ -550,7 +551,7 @@ test("answer-consent resolves a valid binding presented by a different active Pi
 // whose START created it) may answer it again.
 test("a consumed consent binding cannot be answered a second time from any session", async (t) => {
 	const cwd = repository(t);
-	const consent = decodeReviewConsentV3(JSON.parse(readFileSync(join(process.cwd(), "tests", "fixtures", "devbinary", "consent-v3.captured.json"), "utf8")));
+	const consent = decodeReviewConsentV3(JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), "fixtures", "devbinary", "consent-v3.captured.json"), "utf8")));
 	const registry = new PendingReviewConsentRegistry();
 	const sessionA = Symbol("session-a"), sessionB = Symbol("session-b");
 	let answerCalls = 0;
@@ -580,7 +581,7 @@ test("a consumed consent binding cannot be answered a second time from any sessi
 // consuming the binding -- leaving it answerable from the right repository.
 test("answer-consent refuses a binding presented from a different repository than the one its START minted, and leaves it answerable from the right one", async (t) => {
 	const cwdA = repository(t), cwdB = repository(t);
-	const consent = decodeReviewConsentV3(JSON.parse(readFileSync(join(process.cwd(), "tests", "fixtures", "devbinary", "consent-v3.captured.json"), "utf8")));
+	const consent = decodeReviewConsentV3(JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), "fixtures", "devbinary", "consent-v3.captured.json"), "utf8")));
 	const registry = new PendingReviewConsentRegistry();
 	const sessionA = Symbol("session-a"), sessionB = Symbol("session-b");
 	let answerCalls = 0;
@@ -618,7 +619,7 @@ test("ordinary START mints a fresh candidate view when candidate content changes
 	t.after(() => candidateViews.cleanupAll());
 	const cwd = repository(t);
 	writeFileSync(join(cwd, "extra.md"), "kept\n");
-	const consent = decodeReviewConsentV3(JSON.parse(readFileSync(join(process.cwd(), "tests", "fixtures", "devbinary", "consent-v3.captured.json"), "utf8")));
+	const consent = decodeReviewConsentV3(JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), "fixtures", "devbinary", "consent-v3.captured.json"), "utf8")));
 	const native = {
 		targetStatus: async () => startStatus(cwd, undefined, ["extra.md"]),
 		start: async () => { throw new NativeReviewConsentRequiredError(consent); },
@@ -687,7 +688,12 @@ test("controller forwards AbortSignal and retains typed native diagnostics witho
 		const failed = await __testing.executeReviewControllerOperation({ operation, ...(input === undefined ? {} : { input }) }, cwd, {
 			targetStatus: async () => { throw new NativeReviewCliError(NATIVE_REVIEW_ERROR_CODE.PACKAGE_BINARY_MISSING, "review/status", false, false, "package binary missing"); },
 		} as unknown as NativeReviewCli);
-		assert.equal(failed.outcome, "native-status-package-binary-missing");
+		// 外部二进制已随 D7 退役。inspect（只读）走 nativeStatusFailed 统一为
+		// native-status-unavailable；start/repair（变更）走 nativeOperationFailure。
+		// 两条路径都在 diagnostics 里保留原始错误码。
+		// start 先经 targetStatus 对账失败后落入变更失败路径；
+		// inspect/repair 的 STATUS 读取失败统一为 unavailable。
+		assert.equal(failed.outcome, operation === "start" ? "native-operation-failed" : "native-status-unavailable", `operation=${operation} outcome=${failed.outcome}`);
 		assert.equal(failed.mutation_outcome, "none");
 		assert.equal((failed.diagnostics as { error_code?: string }).error_code, NATIVE_REVIEW_ERROR_CODE.PACKAGE_BINARY_MISSING);
 	}

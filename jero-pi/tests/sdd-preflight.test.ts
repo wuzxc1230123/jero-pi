@@ -145,7 +145,7 @@ test("managed ownership update waits for installer lock and atomically updates t
 		const previous = readFileSync(target, "utf8");
 		const next = `${previous}\nmanaged routing update\n`;
 		const held = spawnOwnerInstall(agentHome, "delegation", 400);
-		await waitForFile(join(agentHome, "jero", "managed-assets.lock"));
+		await waitForFile(join(agentHome, "jero", "managed-assets.lock"), 30_000);
 		const startedAt = Date.now();
 		assert.equal(await updatePackageManagedSddAgentOwnership(target, previous, next), true);
 		assert.ok(Date.now() - startedAt >= 250, "ownership update must not bypass an active installer lock");
@@ -195,7 +195,7 @@ test("cross-process owner installations preserve both managed manifest entries",
 	const lockPath = join(agentHome, "jero", "managed-assets.lock");
 	try {
 		const delegation = spawnOwnerInstall(agentHome, "delegation", 500);
-		await waitForFile(lockPath);
+		await waitForFile(lockPath, 30_000);
 		const review = spawnOwnerInstall(agentHome, "review");
 		await new Promise((resolve) => setTimeout(resolve, 100));
 		assert.equal(review.hasExited(), false, "the second owner must remain blocked while the first owner holds the lock");

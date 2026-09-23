@@ -24,8 +24,10 @@ function assertRetiredEnvelope(details: Record<string, unknown>, operation: stri
 	assert.equal(details.mutation_outcome, "none");
 	assert.match(String(details.reason), /retired/i);
 	assert.match(String(details.reason), /bundle/i);
-	assert.match(String(details.next_action), /gentle-ai review/);
-	assert.match(String(details.next_action), /gentle-ai\/reviews/);
+	// 退彰指引已随外部 CLI 一并改写：状态在进程内权威存储（.git/jero-review/），经 jero_review 操作触达。
+	assert.match(String(details.next_action), /no external CLI/i);
+	assert.match(String(details.next_action), /jero_review operations/);
+	assert.match(String(details.next_action), /\.git\/jero-review\//);
 }
 
 test("EXPORT is retired: returns a structured not-supported envelope without touching disk", async () => {

@@ -333,11 +333,23 @@ function candidateGitFailure(category: CandidateViewGitFailureCategory, argument
 
 function candidateGit(cwd: string, arguments_: readonly string[], env: NodeJS.ProcessEnv, encoding: "utf8" | "buffer", executor: CandidateGitExecutor): string | Buffer {
 	const timeoutMs = resolveCandidateGitTimeoutMs(env);
+	// 候选视图必须字节精确：冻结树进、冻结树出。宿主的全局
+	// core.autocrlf（Windows 常见 autocrlf=true）会在 add 与 checkout
+	// 两侧改写字节，物化读回即与冻结内容不一致。配置经 GIT_CONFIG_*
+	// 环境变量注入——不改动参数列表，executor 的参数断言不受影响。
+	const canonicalEnv: NodeJS.ProcessEnv = {
+		...env,
+		GIT_CONFIG_COUNT: "2",
+		GIT_CONFIG_KEY_0: "core.autocrlf",
+		GIT_CONFIG_VALUE_0: "false",
+		GIT_CONFIG_KEY_1: "core.eol",
+		GIT_CONFIG_VALUE_1: "lf",
+	};
 	try {
 		return executor("git", arguments_, {
 			cwd,
 			encoding,
-			env,
+			env: canonicalEnv,
 			stdio: ["ignore", "pipe", "pipe"],
 			timeout: timeoutMs,
 			maxBuffer: CANDIDATE_GIT_MAX_BUFFER_BYTES,
@@ -798,7 +810,11 @@ export function checkoutMaterializedEntries(root: string, entries: readonly Cand
 	let bytes = 0;
 	const flush = (): void => {
 		if (batch.length === 0) return;
-		git(root, ["checkout-index", "-f", "--", ...batch], process.env, executor);
+		// core.symlinks=true：冻结树里的 120000 条目必须物化为真符号链接。
+		// Windows 默认 core.symlinks=false 会把链接写成"目标文本"普通文件，
+		// 随后的 entryContentHash 一致性校验即失败；平台确实无链接权限时
+		// git 自行报错、视图创建保守失败，语义不变。
+		git(root, ["-c", "core.symlinks=true", "checkout-index", "-f", "--", ...batch], process.env, executor);
 		batch = []; bytes = 0;
 	};
 	for (const entry of entries) {
