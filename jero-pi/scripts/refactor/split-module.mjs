@@ -28,6 +28,8 @@ const lines = readFileSync(sourcePath, "utf8").split("\n");
 const externals = new Map(); // name -> { module, kind: "value"|"type", reexport, default }
 const declRe = /^(export\s+)?(?:async\s+)?(function|class|const|let|interface|type|enum)\s+([A-Za-z_$][\w$]*)/;
 const decls = new Map(); // name -> { kind, exported, line }
+let importEnd = 0; // 头部连续 import 区末行（1-based）
+let sawDecl = false; // 首个顶层声明之后不再扩展 import 区
 let inBlockComment = false;
 for (let i = 0; i < lines.length; i++) {
 	const line = lines[i];
@@ -59,7 +61,15 @@ for (let i = 0; i < lines.length; i++) {
 					const typeMatch = spec.match(/^type\s+([A-Za-z_$][\w$]*)$/);
 					const valueMatch = spec.match(/^([A-Za-z_$][\w$]*)(?:\s+as\s+([A-Za-z_$][\w$]*))?$/);
 					const name = typeMatch ? typeMatch[1] : valueMatch ? (valueMatch[2] || valueMatch[1]) : null;
-					if (name) externals.set(name, { module: fromMatch[1], kind: typeMatch || stmtLevelType ? "type" : "value", reexport: isReexport, default: false });
+					if (name) {
+						const existing = externals.get(name);
+						// 同名既出现在头部 import 又出现在尾部 re-export 时，保留头部
+						// 事实（reexport=false）：装配区仍需按名导入；尾部 re-export
+						// 语句本身随留守区间原样保留，不受此处影响。
+						if (!existing || existing.reexport || !isReexport) {
+							externals.set(name, { module: fromMatch[1], kind: typeMatch || stmtLevelType ? "type" : "value", reexport: isReexport, default: false, orig: valueMatch && valueMatch[2] ? valueMatch[1] : undefined });
+						}
+					}
 				}
 			} else {
 				const defaultMatch = stmt.match(/^import\s+([A-Za-z_$][\w$]*)\s+from/m);
@@ -67,6 +77,9 @@ for (let i = 0; i < lines.length; i++) {
 				if (namespaceMatch) externals.set(namespaceMatch[1], { module: fromMatch[1], kind: "value", reexport: false, default: false, namespace: true });
 				else if (defaultMatch) externals.set(defaultMatch[1], { module: fromMatch[1], kind: "value", reexport: false, default: true });
 			}
+			// import 区 = 文件头部、首个顶层声明之前的连续 import/re-export 语句；
+			// 文件尾部补写的 re-export（如 stage1 的兼容再导出）不属于 import 区。
+			if (!sawDecl) importEnd = j + 1;
 		}
 		i = j;
 		continue;
@@ -74,6 +87,7 @@ for (let i = 0; i < lines.length; i++) {
 	if (trimmed === "" || trimmed.startsWith("//")) continue;
 	const m = line.match(declRe);
 	if (m) {
+		sawDecl = true;
 		const [, exported, keyword, name] = m;
 		decls.set(name, {
 			kind: keyword === "interface" || keyword === "type" ? "type" : "value",
@@ -155,7 +169,7 @@ const deriveImports = (body, fromDir, opts) => {
 	if (!skipExternals) {
 		for (const [symbol, info] of externals) {
 			if (info.reexport) continue;
-			if (usedIn(body, symbol)) recordImport(rerootSpec(info.module, fromDir), { name: symbol, kind: info.kind, default: info.default, namespace: info.namespace });
+			if (usedIn(body, symbol)) recordImport(rerootSpec(info.module, fromDir), { name: symbol, kind: info.kind, default: info.default, namespace: info.namespace, orig: info.orig });
 		}
 	}
 	for (const [symbol, info] of decls) {
@@ -171,7 +185,11 @@ const deriveImports = (body, fromDir, opts) => {
 	// 紧凑导入格式：短列表单行，长列表按 100 列折行（节省行数预算）
 	const formatGroup = (entries) => {
 		const items = entries
-			.map((e) => (e.default ? `${e.name} as default` : e.kind === "type" ? `type ${e.name}` : e.name))
+			.map((e) => {
+				if (e.default) return `${e.name} as default`;
+				const spec = e.orig ? `${e.orig} as ${e.name}` : e.name;
+				return e.kind === "type" ? `type ${spec}` : spec;
+			})
 			.sort((a, b) => a.replace(/^(type )/, "").localeCompare(b.replace(/^(type )/, "")));
 		const single = items.join(", ");
 		const specifier = `import { ${single} } from`;
@@ -228,9 +246,11 @@ if (config.remainder) {
 	const kept = config.remainder.ranges
 		.map(([a, b]) => lines.slice(a - 1, b).join("\n"))
 		.join("\n\n");
-	// 留守区间保留了原 import 块，外部依赖不再重推导（避免重复标识符）；
-	// 只需新增对迁移模块的导入。
-	const imports = deriveImports(kept, sourceDir, { skipExternals: true, crossFilter: () => true });
+	// 留守区间若保留了原 import 块，外部依赖不再重推导（避免重复标识符）；
+	// 若留守区间不含 import 区（如仅保留装配函数），则按使用重推导并压缩。
+	const keepsImportBlock = config.remainder.ranges.some(([a, b]) => a <= importEnd && b >= 1);
+	if (process.env.SPLIT_DEBUG) console.error(`[split] importEnd=${importEnd} keepsImportBlock=${keepsImportBlock} externals=${externals.size}`);
+	const imports = deriveImports(kept, sourceDir, { skipExternals: keepsImportBlock, crossFilter: () => true });
 	// 迁移模块若引用留守声明，留守侧需要提升导出
 	for (const [symbol, info] of decls) {
 		if (declHome.get(symbol) || !declInRemainder(info)) continue;

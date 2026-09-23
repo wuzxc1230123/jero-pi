@@ -1,0 +1,65 @@
+{
+	"source": "extensions/jero-ai.ts",
+	"remainder": {
+		"header": "// jero-ai 扩展装配：createJeroAiExtension 工厂——依赖注入、评审工具注册、\n// SDD 命令与启动流程。评审域实现已拆至 lib/jero-ai-review-*（见 import/re-export）。",
+		"ranges": [[4110, 5008]]
+	},
+	"modules": [
+		{
+			"name": "params",
+			"file": "jero-ai-review-params.ts",
+			"dir": "../lib",
+			"header": "// jero-ai 评审控制器参数域：操作/参数 schema、输入解析、模式门、状态/维护/恢复与原生结果映射。\n// 自 extensions/jero-ai.ts 拆分（机械平移，语义零改动）。",
+			"ranges": [[237, 1144]]
+		},
+		{
+			"name": "consent",
+			"file": "jero-ai-review-consent.ts",
+			"dir": "../lib",
+			"header": "// jero-ai 评审同意域：启动策略校验、untracked 选择、待定同意注册表、留存选择与陈旧绑定诊断。\n// 自 extensions/jero-ai.ts 拆分（机械平移，语义零改动）。",
+			"ranges": [[1145, 1653]]
+		},
+		{
+			"name": "native-ops",
+			"file": "jero-ai-review-native-ops.ts",
+			"dir": "../lib",
+			"header": "// jero-ai 评审原生操作域：START 完成、失败对账、工作区根解析、存储键与留存选择同步。\n// 自 extensions/jero-ai.ts 拆分（机械平移，语义零改动）。",
+			"ranges": [[1655, 2053]]
+		},
+		{
+			"name": "relay",
+			"file": "jero-ai-review-relay.ts",
+			"dir": "../lib",
+			"header": "// jero-ai 评审中继域：宿主中继槽位、提供方角色向量捕获、last-event 闭环映射。\n// 自 extensions/jero-ai.ts 拆分（机械平移，语义零改动）。",
+			"ranges": [[2054, 2503]]
+		},
+		{
+			"name": "transport",
+			"file": "jero-ai-review-transport.ts",
+			"dir": "../lib",
+			"header": "// jero-ai 评审传输域：宿主传输协商、拒绝记忆与会话级协商状态解析。\n// 自 extensions/jero-ai.ts 拆分（机械平移，语义零改动）。",
+			"ranges": [[2504, 2612]]
+		},
+		{
+			"name": "select",
+			"file": "jero-ai-review-select.ts",
+			"dir": "../lib",
+			"header": "// jero-ai 评审捕获选择域：绑定解析、精确捕获/组选择、捕获操作执行与派发水合。\n// 自 extensions/jero-ai.ts 拆分（机械平移，语义零改动）。",
+			"ranges": [[2613, 3077]]
+		},
+		{
+			"name": "controller",
+			"file": "jero-ai-review-controller.ts",
+			"dir": "../lib",
+			"header": "// jero-ai 评审控制器执行域：executeReviewControllerOperation——全部原生评审操作的分派与编排。\n// 自 extensions/jero-ai.ts 拆分（机械平移，语义零改动）。",
+			"ranges": [[3079, 4016]]
+		},
+		{
+			"name": "testing-exports",
+			"file": "jero-ai-testing-exports.ts",
+			"dir": "../lib",
+			"header": "// jero-ai 测试接缝：__testing 再导出表、控制器 SDD 状态解析与 JeroRuntimeDependencies。\n// 自 extensions/jero-ai.ts 拆分（机械平移；剔除指向装配区工厂的死表项\n// createJeroAiExtension: createJeroAiExtensionForTesting——无任何测试消费，且会形成模块环）。",
+			"ranges": [[4017, 4067], [4069, 4108]]
+		}
+	]
+}
