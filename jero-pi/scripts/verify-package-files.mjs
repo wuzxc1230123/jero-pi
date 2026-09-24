@@ -101,6 +101,9 @@ const requiredPaths = [
 
 // jero-pi P1/P4 gate: none of the deleted distribution-chain files may
 // reappear in the package. The list mirrors design §6 rows marked D/R.
+// D6 dual-implementation ban extends here: the retired built-in todo
+// (extension + pure-function card lib) stays deleted — the rpiv-todo
+// companion owns the `todo` tool.
 const forbiddenPaths = [
 	"scripts/install-gentle-ai.mjs",
 	"scripts/gentle-ai-installer.mjs",
@@ -124,6 +127,8 @@ const forbiddenPaths = [
 	"extensions/ask-user-choice.ts",
 	"extensions/codegraph-tools.ts",
 	"extensions/pi-pretty.ts",
+	"extensions/jero-todo.ts",
+	"lib/shell-todo.ts",
 	"contracts",
 ];
 

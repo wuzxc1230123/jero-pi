@@ -53,7 +53,11 @@
 			"./extensions",
 			"node_modules/@heyhuynhgiabuu/pi-pretty/dist/index.js",
 			"node_modules/@juicesharp/rpiv-ask-user-question/index.ts",
+			"node_modules/@juicesharp/rpiv-todo/index.ts",
+			"node_modules/billion-context-pi/dist/index.js",
+			"node_modules/pi-cache-optimizer/index.ts",
 			"node_modules/pi-fovea/src/index.ts",
+			"node_modules/pi-hashline-edit-pro/index.ts",
 			"node_modules/pi-lens/dist/index.js",
 			"node_modules/pi-web-access/index.ts"
 		],
@@ -72,7 +76,11 @@
 	"dependencies": {
 		"@heyhuynhgiabuu/pi-pretty": "0.6.14",
 		"@juicesharp/rpiv-ask-user-question": "2.10.1",
+		"@juicesharp/rpiv-todo": "2.10.1",
+		"billion-context-pi": "0.1.75",
+		"pi-cache-optimizer": "2.8.10",
 		"pi-fovea": "0.27.0",
+		"pi-hashline-edit-pro": "4.3.6",
 		"pi-lens": "4.1.6",
 		"pi-web-access": "0.29.0"
 	},

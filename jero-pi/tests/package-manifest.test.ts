@@ -17,6 +17,7 @@ import {
 	readPackageJson, RETIRED_ADVERSARIAL_AGENTS, RETIRED_REFUTER_FILE, REVIEW_RISK_FILE, sha256,
 	V013_MANAGED_ASSETS, V013_REVIEW_RISK_FIXTURE, V014_MANAGED_ASSETS, V014_REVIEW_RISK_FIXTURE,
 	readAgentFrontmatter, readAgentDefinition, readMarkdownSection,
+	COMPANION_EXTENSION_REFS, COMPANION_SKILL_REFS,
 } from "./package-manifest-shared.ts";
 
 test("technical reference declares the tested Pi minimum required for agent_settled", () => {
@@ -158,22 +159,12 @@ test("package manifest keeps the zero-binary install posture (jero-pi P1)", () =
 	assert.ok(!existsSync(join(PACKAGE_ROOT, "contracts")), "contracts/ tree must stay retired");
 });
 
-// P4 落地（设计 §5.3 集成矩阵）：五个伴生 pi-package 是硬依赖，其资源经
+// P4 落地（设计 §5.3 集成矩阵）：九个伴生 pi-package 是硬依赖，其资源经
 // node_modules 路径进 pi manifest 才会被宿主加载（宿主目录扫描跳过
 // node_modules；packages.md "Dependencies" 契约）。缺路径时宿主静默跳过，
 // 即"依赖存在即用"。禁止 bundledDependencies：pi-pretty/pi-lens 含平台
 // 特定原生依赖，必须由宿主安装时的 npm install 按用户平台解析。
-export const COMPANION_EXTENSION_REFS: Record<string, string> = {
-	"@heyhuynhgiabuu/pi-pretty": "node_modules/@heyhuynhgiabuu/pi-pretty/dist/index.js",
-	"@juicesharp/rpiv-ask-user-question": "node_modules/@juicesharp/rpiv-ask-user-question/index.ts",
-	"pi-fovea": "node_modules/pi-fovea/src/index.ts",
-	"pi-lens": "node_modules/pi-lens/dist/index.js",
-	"pi-web-access": "node_modules/pi-web-access/index.ts",
-};
-export const COMPANION_SKILL_REFS = [
-	"node_modules/pi-fovea/skills",
-	"node_modules/pi-lens/skills",
-];
+// COMPANION_EXTENSION_REFS / COMPANION_SKILL_REFS 定义在 package-manifest-shared.ts。
 
 test("companion pi-packages load through node_modules manifest references without bundling", () => {
 	const packageJson = readPackageJson();

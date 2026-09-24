@@ -12,7 +12,7 @@ Source map: [shell extension](../extensions/gentle-shell.ts), [shell bar](../lib
 The [v2.6.0 release](https://github.com/Gentleman-Programming/gentle-pi/releases/tag/v2.6.0) makes the workspace state more durable and inspectable:
 
 - Registered worktrees survive reloads. `/gentle:changes` groups each dirty root and presents status, line counts, and lazy diffs without conflating identical paths from different worktrees.
-- Fullscreen pointer navigation and the responsive sidebar keep changes, agents, and TODO usable at changing terminal widths; cached frames avoid redrawing inactive sidebar content while live status still updates.
+- Fullscreen pointer navigation and the responsive sidebar keep changes and agents usable at changing terminal widths; cached frames avoid redrawing inactive sidebar content while live status still updates.
 - The Agents List and Details views preserve the orchestrator/session hierarchy and completion, abort, and lost-exit history. Parent-child queries and notifications have an explicit handoff path, while model, effort, and usage stay observable per task.
 - Named `/gentle:profiles` atomically route the orchestrator separately from packaged and review roles; see the [technical reference](readme-reference.md#agent-model-profiles) for the profile model.
 
@@ -22,7 +22,7 @@ The source checkout currently prepares `gentle-pi` `2.7.0` with a package-local 
 
 Gentle Shell is the Pi workspace experience provided by the `gentle-pi` package. It follows the Gentle themes: one border language, champagne titles, rose for whatever is alive.
 
-In fullscreen at 140 columns or wider, the right sidebar scrolls **✿ Gentle-Pi ✿ → Status → Changes → Agents → TODO** together. The one-line heading is horizontally centered within the usable rail width, with pink flowers and normal white text in the Gentleman themes. Colors follow the active theme; no artwork scaling or custom fonts are used. Narrow/mobile terminals and regular mode retain bottom widgets without the sidebar heading. The original rose and text logo remain in the main chat startup intro.
+In fullscreen at 140 columns or wider, the right sidebar scrolls **✿ Gentle-Pi ✿ → Status → Changes → Agents** together. The one-line heading is horizontally centered within the usable rail width, with pink flowers and normal white text in the Gentleman themes. Colors follow the active theme; no artwork scaling or custom fonts are used. Narrow/mobile terminals and regular mode retain bottom widgets without the sidebar heading. The original rose and text logo remain in the main chat startup intro.
 
 The rail reuses its last frame until something it paints changes, so silent frames stay cheap and live session state still lands on the next frame: a model switch, a new thinking level, context growth, session cost, session name and extension statuses all refresh the Status card without a redraw of the rest of the sidebar.
 
@@ -142,25 +142,9 @@ Every subagent is its own `pi --mode rpc` child process, so the terminal never r
 - Finished tasks are written to `~/.pi/agent/gentle-agents/tasks/` (one JSON per task, newest `history_max_tasks` kept, default 200) and come back on demand for `subagent_result` and `subagent_continue`, never as overlay history. Child sessions live under `~/.pi/agent/gentle-agents/sessions/`.
 - `ctrl+shift+a` collapses the card to its first row (`GENTLE_PI_AGENTS_KEY`), `GENTLE_PI_AGENTS_VIEW_KEY` rebinds the overlay, `GENTLE_PI_AGENTS_PI` overrides the pi command used for children, and `GENTLE_PI_AGENTS=0` disables the tools and the card.
 
-### Gentle Todo
+### Todo
 
-The `todo` tool and its card replace the third-party todo extension (remove `npm:@juicesharp/rpiv-todo` from your pi packages; sessions written by it replay into the new card).
-
-```text
-╭─ ❀ Todos · 1 of 3 ──────────────────────────────────────╮
-│ ✓ Add quiet tool rendering                              │
-│ ◐ Fix quiet tools conflict · fixing conflict            │
-│ ○ Show git bash tails                                   │
-╰─────────────────────────────────────────────────────────╯
-```
-
-Three things keep the list current, which a static tool description cannot:
-
-- `write` replaces the whole list in one call, so the model rewrites the plan instead of patching it; `add`, `update`, `clear`, and `list` remain for single moves.
-- Every turn's system prompt carries the open tasks and the rules: in_progress before starting, done right after finishing, update before ending the turn.
-- A list that goes two turns untouched while tasks stay open turns amber with `stale · N turns`, and the prompt says so, so the model brings it up to date.
-
-A finished list stays on screen for the turn it finished in and clears at the next. `ctrl+shift+t` collapses the card to the task in progress (`GENTLE_PI_TODO_KEY` rebinds it, `off` disables it); `GENTLE_PI_TODO=0` disables the tool and the card.
+Task tracking is provided by the mandatory `@juicesharp/rpiv-todo` companion, loaded through the package's pi manifest alongside the other companion pi-packages (`pi-fovea`, `pi-lens`, `pi-hashline-edit-pro`, `billion-context-pi`, `pi-cache-optimizer`, `rpiv-ask-user-question`, `pi-pretty`, `pi-web-access`). jero-pi ships no duplicate built-in todo tool or shell card — the earlier Gentle Todo card was retired in favor of the upstream extension, and the sidebar no longer reserves a TODO section.
 
 Set `GENTLE_PI_SHELL=0` to keep pi's built-in footer and editor.
 

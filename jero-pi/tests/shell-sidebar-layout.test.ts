@@ -5,7 +5,6 @@ import { renderLayoutFrame } from "@earendil-works/pi-tui/dist/layout.js";
 import { installSidebar, invalidateSidebar } from "../lib/shell-sidebar-layout.ts";
 import { sidebarPart, sidebarState } from "../lib/shell-sidebar.ts";
 import { renderShellSidebarBar } from "../lib/shell-bar.ts";
-import { renderTodoCard, type TodoState } from "../lib/shell-todo.ts";
 
 const NODE = Symbol.for("@earendil-works/pi-tui/layout-node");
 const theme = { fg: (_color: string, text: string) => text, bold: (text: string) => text };
@@ -39,15 +38,6 @@ test("grouped Status preserves structured fields and opaque integration text", (
 	}
 	assert.match(text, /opaque integration/);
 	assert.match(text, /Branch.*main/);
-});
-
-test("scrollable TODO keeps every task while bottom and collapsed cards stay bounded", () => {
-	const state: TodoState = { tasks: Array.from({ length: 20 }, (_, i) => ({ id: i + 1, title: `Task-${i + 1}!`, status: "pending" })), nextId: 21, updatedTurn: 0 };
-	const todoTheme = { ...theme, strikethrough: (text: string) => text };
-	const render = (scrollable: boolean, collapsed = false) => renderTodoCard(state, todoTheme, 46, { scrollable, collapsed, staleTurns: 0 }).join("\n");
-	for (const task of state.tasks) assert.ok(render(true).includes(task.title));
-	assert.ok(!render(false).includes("Task-20!"));
-	assert.ok(!render(true, true).includes("Task-20!"));
 });
 
 test("installation on a missing-terminal host is a harmless no-op", () => {
