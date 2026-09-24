@@ -212,3 +212,44 @@ export async function shutdownAndRestoreNativeSpawn(
 		syncBuiltinESMExports();
 	}
 }
+
+// 助手统一住 shared（分片互导会令被导入分片的顶层 test() 注册在导入方
+// 进程里重跑一遍）：被重平衡分片共同使用的 live 实例工厂也在此。
+export function liveInstance(t: test.TestContext, profile: string, sessionId: string) {
+	const h = fakePi();
+	const runtime = deps();
+	const context = fakeContext();
+	Object.assign(context.ctx.sessionManager, {
+		getSessionId: () => sessionId,
+		getSessionName: () => sessionId,
+		getCwd: () => join(realpathSync(root), sessionId),
+	});
+	runtime.deps.schedule = (fn, ms) => {
+		const timer = setTimeout(fn, ms);
+		timer.unref();
+		return () => clearTimeout(timer);
+	};
+	gentleAgents(h.pi, {}, { ...runtime.deps, agentHome: profile });
+	t.after(async () => {
+		for (const overlay of context.overlays) overlay.handleInput("q");
+		await h.fire("session_shutdown", context.ctx, { reason: "quit" });
+	});
+	return { ...h, ...context, ...runtime };
+}
+
+export function liveProfile(name: string): string {
+	const profile = join(realpathSync(root), name);
+	mkdirSync(join(profile, "agents"), { recursive: true });
+	for (const agent of ["local", "peer"]) {
+		writeFileSync(join(profile, "agents", `${agent}.md`), `---\ndescription: ${agent}\n---\nFixture agent.`);
+	}
+	return profile;
+}
+
+export async function liveOverlay(instance: ReturnType<typeof liveInstance>) {
+	const opened = instance.commands.get("jero:agents")!.handler("", instance.ctx);
+	await eventually(() => instance.overlays.length > 0, "overlay must mount without waiting for an unbounded directory scan");
+	const overlay = instance.overlays.at(-1)!;
+	const frame = () => overlay.render(160).map(stripAnsi).join("\n");
+	return { overlay, frame, opened };
+}

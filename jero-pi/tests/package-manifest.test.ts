@@ -158,7 +158,7 @@ test("package manifest keeps the zero-binary install posture (jero-pi P1)", () =
 	assert.ok(!existsSync(join(PACKAGE_ROOT, "contracts")), "contracts/ tree must stay retired");
 });
 
-// P4 落地（设计 §5.3 集成矩阵）：六个伴生 pi-package 是硬依赖，其资源经
+// P4 落地（设计 §5.3 集成矩阵）：五个伴生 pi-package 是硬依赖，其资源经
 // node_modules 路径进 pi manifest 才会被宿主加载（宿主目录扫描跳过
 // node_modules；packages.md "Dependencies" 契约）。缺路径时宿主静默跳过，
 // 即"依赖存在即用"。禁止 bundledDependencies：pi-pretty/pi-lens 含平台
@@ -167,13 +167,11 @@ export const COMPANION_EXTENSION_REFS: Record<string, string> = {
 	"@heyhuynhgiabuu/pi-pretty": "node_modules/@heyhuynhgiabuu/pi-pretty/dist/index.js",
 	"@juicesharp/rpiv-ask-user-question": "node_modules/@juicesharp/rpiv-ask-user-question/index.ts",
 	"pi-fovea": "node_modules/pi-fovea/src/index.ts",
-	"pi-intercom": "node_modules/pi-intercom/index.ts",
 	"pi-lens": "node_modules/pi-lens/dist/index.js",
 	"pi-web-access": "node_modules/pi-web-access/index.ts",
 };
 export const COMPANION_SKILL_REFS = [
 	"node_modules/pi-fovea/skills",
-	"node_modules/pi-intercom/skills",
 	"node_modules/pi-lens/skills",
 ];
 

@@ -17,9 +17,6 @@ importers:
       pi-fovea:
         specifier: 0.27.0
         version: 0.27.0(@earendil-works/pi-coding-agent@0.85.1(ws@8.21.3))(@earendil-works/pi-tui@0.85.1)(typebox@1.3.30)
-      pi-intercom:
-        specifier: 0.13.0
-        version: 0.13.0(@earendil-works/pi-ai@0.85.1(ws@8.21.3))(@earendil-works/pi-coding-agent@0.85.1(ws@8.21.3))(@earendil-works/pi-tui@0.85.1)(typebox@1.3.30)
       pi-lens:
         specifier: 4.1.6
         version: 4.1.6(@earendil-works/pi-coding-agent@0.85.1(ws@8.21.3))(@earendil-works/pi-tui@0.85.1)(typebox@1.3.30)
@@ -1064,11 +1061,6 @@ packages:
     resolution: {integrity: sha512-buewHzMvYL29jdeQTVILecSaZKnt/RJWjoZCF5OW60Z67/GmSLBkOFM7qh1PI3zFNtJbaZL5eQu1vLfazOwj4g==}
     engines: {node: '>=12.20.0'}
 
-  fsevents@2.3.3:
-    resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
-    engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
-    os: [darwin]
-
   function-bind@1.1.2:
     resolution: {integrity: sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==}
 
@@ -1447,14 +1439,6 @@ packages:
       '@earendil-works/pi-tui':
         optional: true
 
-  pi-intercom@0.13.0:
-    resolution: {integrity: sha512-+QjKJRAEhrgQZj4+M9OW/8unRLvCzeCp0K66lZmbS5/me0fsClXRtANBgM6mY+EoX+Fcd+qBE8dTThp8+ND//g==}
-    peerDependencies:
-      '@earendil-works/pi-ai': '*'
-      '@earendil-works/pi-coding-agent': '*'
-      '@earendil-works/pi-tui': '*'
-      typebox: '*'
-
   pi-lens@4.1.6:
     resolution: {integrity: sha512-PnVCEumGiMOUQ6t6zvr2EJl+r6IhALYwuReufQ1FUHKrSNoCsdb/dUws1l2U0nPRKibgJlaJFM4uM46TDrafNA==}
     engines: {node: '>=22.19.0'}
@@ -1625,11 +1609,6 @@ packages:
 
   tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
-
-  tsx@4.23.13:
-    resolution: {integrity: sha512-BL5MGkRln6aDYhb0xbQlEAGw743BaZYWdbWtdJOBriYJboKgUUYCadFp2/FpBBZquBC/ezNBn7wMMPx7FDZUDw==}
-    engines: {node: '>=18.0.0'}
-    hasBin: true
 
   turndown@7.2.4:
     resolution: {integrity: sha512-I8yFsfRzmzK0WV1pNNOA4A7y4RDfFxPRxb3t+e3ui14qSGOxGtiSP6GjeX+Y6CHb7HYaFj7ECUD7VE5kQMZWGQ==}
@@ -2884,9 +2863,6 @@ snapshots:
     dependencies:
       fetch-blob: 3.2.0
 
-  fsevents@2.3.3:
-    optional: true
-
   function-bind@1.1.2: {}
 
   function.prototype.name@1.2.0:
@@ -3325,14 +3301,6 @@ snapshots:
       '@earendil-works/pi-coding-agent': 0.85.1(ws@8.21.3)
       '@earendil-works/pi-tui': 0.85.1
 
-  pi-intercom@0.13.0(@earendil-works/pi-ai@0.85.1(ws@8.21.3))(@earendil-works/pi-coding-agent@0.85.1(ws@8.21.3))(@earendil-works/pi-tui@0.85.1)(typebox@1.3.30):
-    dependencies:
-      '@earendil-works/pi-ai': 0.85.1(ws@8.21.3)
-      '@earendil-works/pi-coding-agent': 0.85.1(ws@8.21.3)
-      '@earendil-works/pi-tui': 0.85.1
-      tsx: 4.23.13
-      typebox: 1.3.30
-
   pi-lens@4.1.6(@earendil-works/pi-coding-agent@0.85.1(ws@8.21.3))(@earendil-works/pi-tui@0.85.1)(typebox@1.3.30):
     dependencies:
       '@ast-grep/cli': 0.45.3
@@ -3579,12 +3547,6 @@ snapshots:
   ts-algebra@2.0.0: {}
 
   tslib@2.8.1: {}
-
-  tsx@4.23.13:
-    dependencies:
-      esbuild: 0.28.1
-    optionalDependencies:
-      fsevents: 2.3.3
 
   turndown@7.2.4:
     dependencies:

@@ -91,7 +91,7 @@ jero-pi 是 [gentle-pi](gentle-pi-main/) 的重构版。gentle-pi 是一个功�
 | D2 | **评审权威进程内化**：新建 `lib/authority/`，保留状态机、CAS、回执、fail-closed 语义，接口从"execFile + JSON 信封"改为"进程内 typed 调用" | 消除跨语言契约税；上游 TS 侧本就拥有 Git 投影、候选视图、锁等全部地基 | 语义漂移风险 → 用 vendored fixtures 作黄金向量锁定行为（§5.1.7） |
 | D3 | **删除外发遥测**：`telemetry-trigger`、`runtime-metrics-native/policy/delivery` 整条 send 路径移除 | 无二进制则无投递通道；自建上报端点违背项目隐私边界（无累积记账原则） | `/jero:telemetry` 命令删除；本地指标保留供 agents 视图用量展示 |
 | D4 | **自实现记忆 `lib/memory/`**，暴露 `mem_save`/`mem_read`/`mem_list` 工具 | 记忆是 SDD 委派契约的一等公民（父检索、子保存），不应是可选件 | 不做向量检索；topic key + 关键词索引即可覆盖 SDD 工件契约 |
-| D5 | **伴生包强制依赖化**：pi-intercom、pi-web-access、pi-lens、pi-fovea、rpiv-ask-user-question 进 dependencies，精确钉版 | "调用而非复刻"；特征探测的降级路径全部收敛为"装了就能用" | 供应链面扩大 → 钉精确版本 + 传递依赖审计进 CI（沿用 P2-B 审计脚本） |
+| D5 | **伴生包强制依赖化**：pi-web-access、pi-lens、pi-fovea、rpiv-ask-user-question 进 dependencies，精确钉版（pi-intercom 经评审移除：单会话使用无对等通信需求，跨会话轴保持不建设） | "调用而非复刻"；特征探测的降级路径全部收敛为"装了就能用" | 供应链面扩大 → 钉精确版本 + 传递依赖审计进 CI（沿用 P2-B 审计脚本） |
 | D6 | **删除自研复刻**：ask-user-choice、codegraph-tools、quiet-tools 重注册、sdd-research-capabilities 通用探测 | D5 的对偶面：有了强制依赖就不留双实现 | quiet-tools 的"gentle-ai 生命周期卡"渲染职责并入 jero 渲染器 |
 | D7 | **契约内化**：`contracts/review-integration/v1+v2`、provider-contract 镜像与锁全部退役；fixtures 收编为内部黄金向量 | 对手方（外部 provider）不存在了，镜像注入系统提示的机制随之失去意义 | 上游"不可扩展信封"约束解除，schema 归我们所有，可演进为 `jero.authority/v1` |
 | D8 | **身份迁移放最后**：命令 `/gentle:*`→`/jero:*`、`GENTLE_PI_*`→`JERO_PI_*`、`~/.pi/gentle-ai/`→`~/.pi/jero/`、schema 前缀、包名，全部在功能改造完成后一次性做 | 避免在持续变动的面上做全局改名（旧 fork 的直接教训） | 中间态文档明确标注"当前仍用 gentle 命名" |
@@ -211,7 +211,6 @@ topic-key 沿用 SDD 记忆契约的稳定键：`sdd/<change>/proposal|spec|desi
 | `pi-fovea` | 仓库代码图/符号地图（每次提示注入 repo map） | `codegraph-tools.ts` | 无需胶水；SDD explore 资产提示词中"如有代码图工具优先用之" | 依赖存在即用 |
 | `pi-web-access` | web_search/source_check/fetch_content/get_search_content | `sdd-research-capabilities.ts` 的通用特征探测 | 研究准入改为：枚举 `pi.getActiveTools()` 中 pi-web-access 注册的四个精确工具名，全活跃才授 `open-web`，仅 `fetch_content` 授 `documentation`；MCP 网关与 Bash 兜底仍然禁止 | 缺工具 → 研究能力不授予，SDD 预检明示 |
 | `pi-lens` | 编辑时语言感知快速反馈 | （无自研对应） | apply 阶段子代理可用；其反馈可作为 review-reliability 透镜的非权威辅证 | 不阻塞流程 |
-| `pi-intercom` | 跨会话 1:1 通信 | **不替代** `subagent_parent_message`（父子轴 vs 对等轴，不同问题）；`orchestrator-presence.ts` 是否改筑于其上 → 开放问题 Q2 | 后台完成交付、对等询问场景可经 intercom 走用户可见消息 | 依赖存在即用 |
 
 **工具注册冲突纪律**（Pi 已知约束）：依赖插件承接 `bash/read/write/edit` 渲染后，jero-pi 自身**不得再注册同名工具**——quiet-tools 的删除同时消解了上游文档记载的 pi-tool-cards 冲突面。
 
@@ -236,7 +235,6 @@ topic-key 沿用 SDD 记忆契约的稳定键：`sdd/<change>/proposal|spec|desi
   "dependencies": {
     "@earendil-works/pi-tui": "0.85.1",
     "@heyhuynhgiabuu/pi-pretty": "0.6.14",
-    "pi-intercom": "<pin>",
     "pi-web-access": "<pin>",
     "pi-lens": "<pin>",
     "pi-fovea": "<pin>",
@@ -349,7 +347,7 @@ topic-key 沿用 SDD 记忆契约的稳定键：`sdd/<change>/proposal|spec|desi
 | R4 | pi-web-access 有偿 API（约 $0.012/请求的社区反馈） | 低 | 研究能力保持 SDD 显式授予制（预检确认），不默认自动调用 |
 | R5 | Windows 环境已知测试挂起（上游同样存在） | 低 | 基线红绿表单列，不算回归；P2 后复评是否顺带修复 |
 | Q1 | gentle-todo 是否也按"调用优先"换回 `@juicesharp/rpiv-todo`？ | — | **建议保留自研**：整表重写+staleness 语义与轮次集成是上游深思熟虑的替换（方向是淘汰第三方件），非重复建设；如你倾向彻底"零自研复刻"再议 |
-| Q2 | `orchestrator-presence`（心跳存在发布）是否改筑于 pi-intercom？ | — | **建议 P4 后评估**：presence 是只读启发式，intercom 是消息通道，语义不同；若 intercom 未来提供 presence API 则迁移 |
+| Q2 | `orchestrator-presence`（心跳存在发布）是否改筑于 pi-intercom？ | 已裁决 | **pi-intercom 已移除**（单会话使用无对等通信需求）；presence 维持只读启发式现状，跨会话轴不建设 |
 | Q3 | 订阅用量面板（chatgpt.com 出口）是否保留？ | — | 默认保留（用户可见功能）；若你要"绝对零外部 HTTP"可 P4 顺手删，`shell-usage*` 独立好删 |
 
 ## 12. 附录

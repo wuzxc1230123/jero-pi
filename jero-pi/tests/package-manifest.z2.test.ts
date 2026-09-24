@@ -738,7 +738,7 @@ test("pre-release package and runtime stop before publication", () => {
 	assert.equal(packageJson.version, "0.1.0", "the pre-release manifest stays pinned until the P5 identity pass");
 	assert.equal(
 		packageJson.scripts?.test,
-		"node --experimental-strip-types --test \"tests/*.test.ts\" \"tests/authority/*.test.ts\" \"tests/authority/conformance/*.test.ts\" && pnpm run test:harness",
+		"node --require ./scripts/test-env.cjs --experimental-strip-types --test --test-concurrency=12 \"tests/*.test.ts\" \"tests/authority/*.test.ts\" \"tests/authority/conformance/*.test.ts\" && pnpm run test:harness",
 	);
 	assert.ok(packageJson.files?.includes("assets/"));
 	assert.ok(!packageJson.files?.includes("contracts/"));
