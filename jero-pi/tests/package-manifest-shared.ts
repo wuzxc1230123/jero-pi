@@ -97,3 +97,115 @@ export function readPackageJson(): PackageJson {
 	}
 }
 
+// 助手统一住 shared：分片互相 import 会令被导入分片的顶层 test() 注册在
+// 导入方进程里重跑一遍，整个家族的用例被成倍执行。
+export function readAgentFrontmatter(file: string): string {
+	const source = readFileSync(file, "utf8");
+	const match = source.match(/^---\n([\s\S]*?)\n---/);
+	assert.ok(match, `${file} must have frontmatter`);
+	return match[1];
+}
+
+export function readAgentDefinition(file: string): {
+	name: string;
+	source: string;
+	tools: string[];
+} {
+	const source = readFileSync(file, "utf8");
+	const frontmatter = readAgentFrontmatter(file);
+	const name = frontmatter.match(/^name:\s*(\S+)$/m)?.[1];
+	assert.ok(name, `${file} must declare a frontmatter name`);
+	const toolsBlock = frontmatter.match(
+		/^tools:\n(?: {2}- "\*": false\n)?((?: {2}- [\w-]+\n?)+)/m,
+	)?.[1];
+	assert.ok(toolsBlock, `${file} must declare a YAML tool list`);
+	const tools = [...toolsBlock.matchAll(/^ {2}- ([\w-]+)$/gm)].map(
+		(match) => match[1],
+	);
+
+	return { name, source, tools };
+}
+
+export function readTextContract(source: string, heading: string): string {
+	const escapedHeading = heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+	const match = source.match(
+		new RegExp(`^## ${escapedHeading}\\n[\\s\\S]*?\\n\\x60\\x60\\x60text\\n([\\s\\S]*?)\\n\\x60\\x60\\x60`, "m"),
+	);
+	assert.ok(match, `${heading} must include a text contract block`);
+	return match[1];
+}
+
+export function contractFields(contract: string, indentation = 0): string[] {
+	const prefix = " ".repeat(indentation);
+	return contract
+		.split("\n")
+		.flatMap((line) => {
+			const match = line.match(new RegExp(`^${prefix}([a-z_]+):`));
+			return match ? [match[1]] : [];
+		});
+}
+
+export function nestedContractFields(contract: string, parent: string): string[] {
+	const lines = contract.split("\n");
+	const parentIndexes = lines.flatMap((line, index) =>
+		line.startsWith(`${parent}:`) ? [index] : [],
+	);
+	assert.equal(parentIndexes.length, 1, `${parent} must appear exactly once at top level`);
+
+	const tail = lines.slice(parentIndexes[0] + 1);
+	const relativeEnd = tail.findIndex((line) => /^\S/.test(line));
+	const nestedBlock = relativeEnd === -1 ? tail : tail.slice(0, relativeEnd);
+
+	return contractFields(nestedBlock.join("\n"), 2);
+}
+
+export function readMarkdownSection(source: string, heading: string): string {
+	const lines = source.split(/\r?\n/);
+	const matches = lines.flatMap((line, index) => {
+		const match = line.match(/^(#{1,6})\s+(.+?)\s*$/);
+		return match?.[2] === heading
+			? [{ index, level: match[1].length }]
+			: [];
+	});
+	assert.equal(matches.length, 1, `Markdown must contain exactly one ${heading} section`);
+
+	const [{ index: start, level }] = matches;
+	const relativeEnd = lines.slice(start + 1).findIndex((line) => {
+		const match = line.match(/^(#{1,6})\s+/);
+		return match !== null && match[1].length <= level;
+	});
+	const end = relativeEnd === -1 ? lines.length : start + 1 + relativeEnd;
+
+	return lines.slice(start + 1, end).join("\n").trim();
+}
+
+export function assertWorkerFallbackRouting(section: string, sectionName: string): void {
+	const boundedWriterPolicy = section.match(
+		/对有界多文件写入，[\s\S]*?(?=\n\n|\n\s*\d+\.|$)/,
+	)?.[0];
+	assert.ok(boundedWriterPolicy, `${sectionName} must define bounded writer routing`);
+
+	const preferred = boundedWriterPolicy.indexOf("`jero-worker`");
+	const configuredFallback = boundedWriterPolicy.indexOf("用户配置的 `worker`");
+	const nativeFallback = boundedWriterPolicy.indexOf("原生 `Agent`");
+
+	assert.ok(preferred >= 0, `${sectionName} must reference exact jero-worker name`);
+	assert.ok(
+		configuredFallback > preferred,
+		`${sectionName} must prefer the package-owned worker before a user-configured worker`,
+	);
+	assert.ok(
+		nativeFallback > configuredFallback,
+		`${sectionName} must place native Agent after both named worker definitions`,
+	);
+	assert.match(
+		boundedWriterPolicy,
+		/若两个写者定义都不存在[^。]*原生 `Agent`[^。]*即使 `subagent_\*` 工具可用。/,
+		`${sectionName} must choose native Agent when neither worker definition exists`,
+	);
+	assert.match(
+		section,
+		/若无(?:任何)?委托机制可用，停止/,
+		`${sectionName} must stop when delegation is impossible`,
+	);
+}

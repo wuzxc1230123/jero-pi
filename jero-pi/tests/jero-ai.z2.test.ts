@@ -23,7 +23,7 @@ import {
 	registeredGentleTools, renderComponent, reviewRepository, type ReviewStartRepository,
 	startedReviewResult, writeMarkdown
 } from "./jero-ai-shared.ts";
-import { routingConsumerFixture, type RoutingConsumerPanel } from "./jero-ai.test.ts";
+import { routingConsumerFixture, type RoutingConsumerPanel } from "./jero-ai-shared.ts";
 
 test("agent model discovery prioritizes SDD and Judgment Day agents", (t) => {
 	const root = mkdtempSync(join(tmpdir(), "gentle-pi-model-agents-"));

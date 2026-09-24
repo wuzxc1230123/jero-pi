@@ -24,7 +24,10 @@ import {
 	setWindowsAclAuthorityForTesting, validatePrivateWindowsDacl, validatePrivateWindowsOwner,
 	WindowsDaclValidationError, WindowsOwnerValidationError
 } from "../lib/review-candidate-view-owner.ts";
-import { git, mockOwnerProbe, mockWindowsAcl, orphanFixture, ownerMarker, repository } from "./review-candidate-view-shared.ts";
+import {
+	git, mockOwnerProbe, mockWindowsAcl, noopWindowsAclAuthority, orphanFixture, ownerMarker,
+	repository, useRealWindowsAclAuthority
+} from "./review-candidate-view-shared.ts";
 
 test("candidate ownership is private and durable before worktree add; ordinary cleanup removes its marker", (t) => {
 	const cwd = repository(t);
@@ -134,7 +137,7 @@ test("private candidate owner rejects a different Windows owner at the ancestor 
 	setWindowsAclAuthorityForTesting((path) => {
 		if (path === control) validatePrivateWindowsOwner("S-1-5-21-4-5-6-1002", "S-1-5-21-1-2-3-1001");
 	});
-	t.after(() => setWindowsAclAuthorityForTesting());
+	t.after(() => setWindowsAclAuthorityForTesting(noopWindowsAclAuthority));
 	assert.throws(() => prepareCandidateOwnerParent(commonDir, "win32"), (error: unknown) => error instanceof WindowsOwnerValidationError && error.owner === "sid");
 });
 
@@ -143,7 +146,7 @@ test("private candidate owner revalidates every Windows ancestor replacement bou
 	mkdirSync(parent, { recursive: true });
 	const checked: string[] = [];
 	setWindowsAclAuthorityForTesting((path) => checked.push(path));
-	t.after(() => setWindowsAclAuthorityForTesting());
+	t.after(() => setWindowsAclAuthorityForTesting(noopWindowsAclAuthority));
 	assert.equal(assertCandidateOwnerParent(commonDir, "win32"), parent);
 	assert.deepEqual(checked, [commonDir, control, parent]);
 });
@@ -162,6 +165,7 @@ test("private candidate owner rejects a controlled foreign Windows owner", { ski
 });
 
 test("private candidate owner reads trusted Windows directory and marker file owners", { skip: process.platform !== "win32" }, (t) => {
+	useRealWindowsAclAuthority(t);
 	const cwd = repository(t), commonDir = join(cwd, ".git"), parent = join(commonDir, "jero-review", "candidate-views");
 	const view = new CandidateViewRegistry().create({ contributorRoot: cwd });
 	try {
@@ -174,6 +178,7 @@ test("private candidate owner reads trusted Windows directory and marker file ow
 });
 
 test("private candidate owner removes unrelated explicit Windows grants during enforcement", { skip: process.platform !== "win32" }, (t) => {
+	useRealWindowsAclAuthority(t);
 	const cwd = repository(t), commonDir = join(cwd, ".git"), parent = join(commonDir, "jero-review", "candidate-views");
 	const initial = new CandidateViewRegistry().create({ contributorRoot: cwd });
 	initial.cleanup();
@@ -216,6 +221,7 @@ test("candidate contributor root accepts canonical Windows Git path spelling", {
 });
 
 test("private candidate owner ignores a spoofed SystemRoot when invoking Windows ACL tools", { skip: process.platform !== "win32" }, (t) => {
+	useRealWindowsAclAuthority(t);
 	const originalSystemRoot = process.env.SystemRoot;
 	const spoofedSystemRoot = join(tmpdir(), "gentle-pi-spoofed-SystemRoot");
 	process.env.SystemRoot = spoofedSystemRoot;
@@ -244,6 +250,7 @@ test("private candidate owner ignores a spoofed SystemRoot when invoking Windows
 });
 
 test("private candidate owner reads back a restrictive Windows DACL before worktree materialization", { skip: process.platform !== "win32" }, (t) => {
+	useRealWindowsAclAuthority(t);
 	const system = process.env.SystemRoot!;
 	const view = new CandidateViewRegistry().create({ contributorRoot: repository(t) });
 	try {
@@ -369,6 +376,9 @@ for (const scenario of ["self", "live", "EPERM", "unknown", "malformed", "foreig
 		if (scenario === "public-marker") {
 			// POSIX：chmod 0o644 即失去属主私有。Windows 的 chmod 不改
 			// DACL——用 icacls 给 Everyone 追加显式授权才构成"公开标记"。
+			// 该场景的真义就是真实 DACL 校验拒绝公开标记，故 win32 上
+			// 用例期间恢复真实 ACL 权威。
+			if (process.platform === "win32") useRealWindowsAclAuthority(t);
 			if (process.platform === "win32") execFileSync("icacls", [marker, "/grant", "*S-1-1-0:(R)"], { windowsHide: true });
 			else chmodSync(marker, 0o644);
 		}
@@ -531,12 +541,6 @@ test("ordinary cleanup never unlinks a replaced sidecar after Git removal", (t) 
 	assert.throws(() => view.cleanup(), /ownership changed/i);
 	assert.equal(existsSync(marker), true);
 });
-
-export function compactCandidateContextManifest(task: string): { encoded: string; sha256: string } {
-	const match = /Frozen changed scope manifest \(gzip\+base64url\): `([A-Za-z0-9_-]+)`\.\nFrozen changed scope manifest SHA-256: `([0-9a-f]{64})`\./.exec(task);
-	assert.ok(match, "expected a compact candidate context manifest");
-	return { encoded: match[1]!, sha256: match[2]! };
-}
 
 test("candidate view Git commands classify bounded timeouts and block materialization before worktree execution", (t) => {
 	const calls: Array<{ arguments: readonly string[]; timeout: number | undefined; maxBuffer: number | undefined }> = [];
@@ -811,27 +815,6 @@ export function commitFileAfterBase(cwd: string): void {
 	writeFileSync(join(cwd, "committed-after-base.txt"), "committed after base\n");
 	git(cwd, "add", "committed-after-base.txt");
 	git(cwd, "-c", "user.name=Candidate Test", "-c", "user.email=candidate@example.invalid", "commit", "-m", "committed after base");
-}
-
-// An unborn repository has a symbolic HEAD pointing at a branch with no
-// commits yet; its review base is Git's repository-native empty tree, not a
-// missing or malformed commit. `mktree` with empty input derives that empty
-// tree object-format-aware (sha1 or sha256) without hardcoding the SHA-1 id.
-export function emptyTreeOf(cwd: string): string {
-	return execFileSync("git", ["-C", cwd, "mktree"], { encoding: "utf8", input: "" }).trim();
-}
-
-export function unbornRepository(t: test.TestContext, stage = true): string {
-	const cwd = mkdtempSync(join(tmpdir(), "gentle-pi-candidate-view-unborn-"));
-	t.after(() => rmSync(cwd, { recursive: true, force: true }));
-	git(cwd, "init", "-b", "main");
-	git(cwd, "config", "user.name", "Candidate Test");
-	git(cwd, "config", "user.email", "candidate@example.invalid");
-	if (stage) {
-		writeFileSync(join(cwd, "staged.txt"), "first staged\n");
-		git(cwd, "add", "staged.txt");
-	}
-	return cwd;
 }
 
 test("candidate view materializes exact tracked and initially-untracked content while contributor diverges", (t) => {

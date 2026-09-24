@@ -284,6 +284,16 @@ function localHost(): string | null {
 	return null;
 }
 
+// 机器身份在进程生命周期内不变，故解析结果按进程记忆：Windows 上每次
+// localHost() 都是一次 reg.exe 子进程，创建/回收热路径不必重复付出。
+const localHostOnce = (() => {
+	let value: string | null | undefined;
+	return (): string | null => {
+		if (value === undefined) value = localHost();
+		return value;
+	};
+})();
+
 export function samePath(path: string, expected: string, platform: NodeJS.Platform): boolean {
 	if (platform !== "win32") return path === expected;
 	const canonical = (value: string): string => {
@@ -383,7 +393,7 @@ export function createCandidateOwner(commonDir: string, root: string, platform: 
 	const parent = assertCandidateOwnerParent(commonDir, platform);
 	const uuid = basename(root);
 	if (!UUID.test(uuid) || root !== join(parent, uuid) || lstatSync(root, { throwIfNoEntry: false })) throw new Error("Unsafe candidate owner root");
-	const owner: CandidateViewOwner = { version: 1, uuid, token: randomUUID(), pid: process.pid, host: localHost(), root, commonDir };
+	const owner: CandidateViewOwner = { version: 1, uuid, token: randomUUID(), pid: process.pid, host: localHostOnce(), root, commonDir };
 	// 任何写入/fsync 失败都会在 Git 注册该视图之前中止创建。
 	const marker = markerPath(root);
 	let markerIdentity: string | undefined;
@@ -410,7 +420,7 @@ function readOwner(commonDir: string, root: string, platform: NodeJS.Platform = 
 }
 
 function dead(owner: CandidateViewOwner): boolean {
-	return owner.host !== null && owner.host === localHost() && conservativeOwnerDeathProofV1({
+	return owner.host !== null && owner.host === localHostOnce() && conservativeOwnerDeathProofV1({
 		pid: owner.pid, token: owner.token, owner_hash: "", repository_id: owner.commonDir, authority_id: owner.uuid,
 	});
 }

@@ -656,8 +656,16 @@ export async function runReviewHostRelayReviewerGroup(
 		throw new TypeError("Pi host relay reviewer group requires at least one provider-bound request");
 	}
 	const settled = await Promise.allSettled(requests.map(async (request) => await prepare(request)));
-	const failed = settled.find((result) => result.status === "rejected");
-	if (failed?.status === "rejected") throw failed.reason;
+	const rejected = settled.filter((result): result is PromiseRejectedResult => result.status === "rejected");
+	if (rejected.length > 0) {
+		// 抛出首个拒绝以保持既有错误形态；其余失败附加在属性上，
+		// 不再静默丢弃（审计 P2-18：正确但难排障）。
+		const [first, ...rest] = rejected.map((result) => result.reason);
+		if (rest.length > 0 && first instanceof Error) {
+			(first as Error & { additionalRejections?: unknown[] }).additionalRejections = rest;
+		}
+		throw first;
+	}
 	return settled.map((result) => (result as PromiseFulfilledResult<ReviewHostRelayPreparedResult>).value);
 }
 

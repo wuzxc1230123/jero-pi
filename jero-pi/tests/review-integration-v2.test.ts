@@ -13,7 +13,8 @@ import {
 } from "../lib/authority/wire-contract.ts";
 import {
 	assertAdditionalProperty, assertNestedRequired, assertRequired, clone, type Decoder, devFixture,
-	devFixtureRoot, digest, executableDigest, fixture, fixtureRoot, type JsonObject
+	devFixtureRoot, digest, executableDigest, fixture, fixtureRoot, type JsonObject,
+	repairAssessment, unachievableSlot,
 } from "./review-integration-v2-shared.ts";
 
 test("current review integration fixtures decode", () => {
@@ -195,36 +196,7 @@ test("net-new decoders: consent, next-transition, and artifact-subject reject ma
 	assertAdditionalProperty(decodeReviewArtifactSubjectV2, artifactSubjectSource);
 });
 
-export function repairAssessment(status: "eligible" | "unsupported" = "unsupported"): JsonObject {
-	if (status === "unsupported") {
-		return {
-			schema: "gentle-ai.review-authority-repair-assessment/v1",
-			status: "unsupported",
-			counts: { lineages: 0, compact_lineages: 0, legacy_lineages: 0, events: 0, bytes: 0, eligible_candidates: 0, unsupported_lineages: 0, conflicts: 0 },
-			supported_operations: ["review/complete-fix", "review/validate-fix"],
-			authorization_schema: "gentle-ai.review-repair-authorization/v1",
-		};
-	}
-	return {
-		schema: "gentle-ai.review-authority-repair-assessment/v1",
-		status: "eligible",
-		class: "legacy_v1_historical_alias",
-		cause: "unsupported_historical_v1_operation_alias",
-		disposition: "quarantine-approved-historical-alias",
-		repository_binding: digest,
-		candidate: {
-			lineage_id: "review-legacy-fixture",
-			revision: digest,
-			chain_identity: digest,
-			event_count: 3,
-			alias_event_count: 1,
-			operations: ["review/complete-fix"],
-		},
-		counts: { lineages: 1, compact_lineages: 0, legacy_lineages: 1, events: 3, bytes: 128, eligible_candidates: 1, unsupported_lineages: 0, conflicts: 0 },
-		supported_operations: ["review/complete-fix", "review/validate-fix"],
-		authorization_schema: "gentle-ai.review-repair-authorization/v1",
-	};
-}
+
 
 test("authority repair assessment decodes eligible and unsupported statuses", () => {
 	assert.equal(decodeAuthorityRepairAssessmentV1(repairAssessment("unsupported")).status, "unsupported");
@@ -445,29 +417,6 @@ test("next_transition stop decodes a managed_assets_outdated continuation and re
 // variant). A restart that never saw the collect offer must still be able to
 // retract the declaration from the stop alone, so the withdraw binding is
 // decoded, never dropped.
-export function unachievableSlot(overrides: Partial<JsonObject> = {}): JsonObject {
-	return {
-		lens: "review-risk",
-		selected_order: 0,
-		subject_hash: digest,
-		reason: "relay_transport_bound_exceeded",
-		withdraw: {
-			operation: "review.capture-unachievable",
-			command: `gentle-ai review capture-unachievable --lineage=review-fixture --expected-revision=${digest} --target=${digest} --repository-context=rctx1_${"e".repeat(64)} --request-hash=${digest} --withdraw=true`,
-			arguments: [
-				{ name: "lineage", value: "review-fixture", token: "--lineage=review-fixture" },
-				{ name: "expected-revision", value: digest, token: `--expected-revision=${digest}` },
-				{ name: "target", value: digest, token: `--target=${digest}` },
-				{ name: "repository-context", value: `rctx1_${"e".repeat(64)}`, token: `--repository-context=rctx1_${"e".repeat(64)}` },
-				{ name: "request-hash", value: digest, token: `--request-hash=${digest}` },
-				{ name: "withdraw", value: "true", token: "--withdraw=true" },
-			],
-			binding: { lineage_id: "review-fixture", revision: digest, target_identity: digest, repository_context: `rctx1_${"e".repeat(64)}` },
-		},
-		...overrides,
-	};
-}
-
 test("next_transition stop decodes unachievable_lens_slots and their withdraw bindings only on that reason code", () => {
 	const stop: JsonObject = { kind: "stop", reason_code: "unachievable_lens_slot", unachievable_lens_slots: [unachievableSlot()] };
 	const decoded = decodeReviewNextTransitionV3(stop);

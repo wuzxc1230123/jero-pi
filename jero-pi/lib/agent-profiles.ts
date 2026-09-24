@@ -11,6 +11,7 @@ import {
 	type AgentModelConfig,
 	type AgentRoutingEntry,
 } from "./model-routing-authority.ts";
+import { isRecord } from "./record-utils.ts";
 
 export const PROFILES_KIND = "jero.agent_model_profiles/v1";
 export const PROFILES_VERSION = 1;
@@ -102,10 +103,6 @@ export interface ProfilesParseDrops {
 export interface NormalizedProfilesFile {
 	file: AgentProfilesFile;
 	drops: ProfilesParseDrops;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function hasOwn(record: Record<string, unknown>, key: string): boolean {

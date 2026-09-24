@@ -18,6 +18,7 @@ import {
 	normalizeModelId,
 	type AgentRoutingEntry,
 } from "./model-routing-authority.ts";
+import { isRecord } from "./record-utils.ts";
 
 /** 档案编排器条目拥有的三个 Pi 设置键。 */
 export const ORCHESTRATOR_SETTINGS_KEYS = [
@@ -45,10 +46,6 @@ export function parseOrchestratorModelRef(modelId: unknown): OrchestratorModelRe
 		provider: normalized.slice(0, separator),
 		model: normalized.slice(separator + 1),
 	};
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 export type OrchestratorSettingsReadResult =

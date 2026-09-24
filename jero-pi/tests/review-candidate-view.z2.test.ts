@@ -25,7 +25,15 @@ import {
 	WindowsDaclValidationError, WindowsOwnerValidationError
 } from "../lib/review-candidate-view-owner.ts";
 import { git, mockOwnerProbe, mockWindowsAcl, orphanFixture, ownerMarker, repository } from "./review-candidate-view-shared.ts";
-import { compactCandidateContextManifest } from "./review-candidate-view.test.ts";
+
+// 机械平移自分片 1：仅本段使用，且分片互相导入会令被导入分片的顶层
+// test() 注册在导入方进程里重跑一遍，故就地本地化而不 import 分片 1。
+function compactCandidateContextManifest(task: string): { encoded: string; sha256: string } {
+	const match = /Frozen changed scope manifest \(gzip\+base64url\): `([A-Za-z0-9_-]+)`.\nFrozen changed scope manifest SHA-256: `([0-9a-f]{64})`./.exec(task);
+	assert.ok(match, "expected a compact candidate context manifest");
+	return { encoded: match[1]!, sha256: match[2]! };
+}
+
 
 test("candidate view skips a shared index that disappears during stat or copy", (t) => {
 	const contributorRoot = repository(t);
@@ -203,7 +211,7 @@ test("candidate registry reuses a replay-keyed view verbatim regardless of live 
 	assert.equal(staleReuse.token, first.token, "a content-independent replay key reuses the stale view");
 	const freshForCurrentContent = registry.create({ contributorRoot });
 	assert.notEqual(staleReuse.candidateTree, freshForCurrentContent.candidateTree, "the stale reused view no longer reflects live candidate content");
-	const contentScopedKey = `${contentIndependentKey} ${freshForCurrentContent.candidateTree}`;
+	const contentScopedKey = `${contentIndependentKey}\u0000${freshForCurrentContent.candidateTree}`;
 	const rekeyed = registry.createOrReuse({ contributorRoot, replayKey: contentScopedKey });
 	assert.notEqual(rekeyed.token, staleReuse.token, "folding candidate content into the replay key mints a fresh view once content changes");
 	assert.equal(rekeyed.candidateTree, freshForCurrentContent.candidateTree);

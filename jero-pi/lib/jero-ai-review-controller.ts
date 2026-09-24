@@ -47,7 +47,7 @@ import {
 	nativeMutationRequiresStatus, nativeOperationFailure, nativePreLineageCandidateIdentity,
 	POST_BURN_CLEANUP, readRetainedNativeUntrackedSelection,
 	readRetainedPreLineageNativeUntrackedSelection, reconcileNativeMutationFailure,
-	requiresExplicitTargetLifecycleRoot, resolveReviewControllerWorkspaceRoot,
+	resolveReviewControllerWorkspaceRoot,
 	retainNativeCaptureRoutes, retainNativeUntrackedSelection, sameNativePreLineageCandidate
 } from "./jero-ai-review-native-ops.ts";
 import { hostTransportUnavailable, negotiatedStatusForHostTransport } from "./jero-ai-review-transport.ts";
@@ -73,7 +73,6 @@ export async function executeReviewControllerOperation(
 	const parameters = parseReviewControllerParameters(parametersValue);
 	const defaultCwd = resolveReviewControllerWorkspaceRoot(parameters.workspaceRoot, sessionCwd, candidateViews, parameters.lineageId);
 	const pendingReviewConsentSession = pendingReviewConsentSessionKey(context, pendingReviewConsentFallbackKey);
-	const _useTargetLifecycleRoot = requiresExplicitTargetLifecycleRoot(parameters.workspaceRoot, sessionCwd, defaultCwd);
 	const includeWorkspaceRoot = parameters.workspaceRoot !== undefined || defaultCwd !== sessionCwd;
 	if (parameters.operation === REVIEW_CONTROLLER_OPERATION.EXPORT || parameters.operation === REVIEW_CONTROLLER_OPERATION.IMPORT) {
 		// 旧式 bundle 传输依附于已退役的集成前 graph/compact
@@ -812,7 +811,7 @@ export async function executeReviewControllerOperation(
 							() => expirePendingReviewConsent(pending, pendingReviewConsentRegistry, pendingReviewConsentSession),
 							PENDING_REVIEW_CONSENT_TTL_MS,
 						);
-						pending.expiry.unref();
+						pending.expiry.unref?.();
 					}
 					return {
 						operation: parameters.operation,

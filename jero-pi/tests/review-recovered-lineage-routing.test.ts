@@ -7,6 +7,10 @@ import test from "node:test";
 import { __testing } from "../extensions/jero-ai.ts";
 import type { NativeReviewCli } from "../lib/authority/client-contract.ts";
 import { CandidateViewRegistry, injectReviewCandidateView } from "../lib/review-candidate-view.ts";
+// 进程加载即打桩 Windows ACL 权威：真实 PowerShell/icacls 栈只归候选视图
+// 专属端到端用例管（见 review-candidate-view-shared.ts）；本文件用例只
+// 验证候选视图之上的业务语义，打桩避免每个创建/清理周期数十次秒级子进程。
+import "./review-candidate-view-shared.ts";
 import type { ReviewCollectInputV3, ReviewStatusV3 } from "../lib/authority/wire-contract.ts";
 
 // Live-confirmed adapter defects (2026-08-16, gentle-ai 2.4.0-main, Engram

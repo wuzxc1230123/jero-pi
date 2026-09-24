@@ -410,10 +410,6 @@ export function syncRetainedNativeStatusSelections(selections: Map<string, Retai
 	retainNativeCaptureRoutes(selections, workspaceRoot, status, baseRef);
 }
 
-export function requiresExplicitTargetLifecycleRoot(requested: string | undefined, sessionCwd: string, workspaceRoot: string): boolean {
-	return requested !== undefined || workspaceRoot !== sessionCwd;
-}
-
 // gentle-pi#311 P4 —— 轻量 Pi 宿主中继。provider 通过在 pi 绑定的
 // `review.capture-result` collect 输入上签发 --materialize token 来决定
 // 宿主满足哪些捕获槽位；从不做任何推断。

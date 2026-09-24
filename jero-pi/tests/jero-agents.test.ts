@@ -32,7 +32,8 @@ import { CHILD_METRICS_EVENT } from "../lib/runtime-metrics-children.ts";
 import { renderSddPreflightPrompt } from "../lib/sdd-preflight.ts";
 import {
 	cwd, deps, fakeContext, fakePi, fakeTui, type Handler, home, mouse, nonGitCwd, type Overlay,
-	PARENT_CONFIRMED_SDD_CONTEXT, plainTheme, type Registered, root
+	PARENT_CONFIRMED_SDD_CONTEXT, plainTheme, type Registered, root,
+	tick, eventually,
 } from "./jero-agents-shared.ts";
 
 test("all ten subagent registrations own their transcript shell", () => {
@@ -174,7 +175,7 @@ test("foreground handoff survives settlement before its original await resumes",
 	assert.equal(sent.filter((entry) => entry.message.customType === "gentle-agents.result").length, 1);
 });
 
-export const tick = () => new Promise((resolve) => setImmediate(resolve));
+
 
 test("child parent-message tooling admits notifications and the active parent preserves raw model text", async () => {
 	const child = fakePi();
@@ -319,13 +320,7 @@ for (const boundary of ["allowed", "env", "session", "replacement", "bus-throws"
 	});
 }
 
-export async function eventually(check: () => boolean, message: string): Promise<void> {
-	for (let attempt = 0; attempt < 120; attempt++) {
-		if (check()) return;
-		await new Promise((resolve) => setTimeout(resolve, 25));
-	}
-	assert.fail(message);
-}
+
 
 export function liveProfile(name: string): string {
 	const profile = join(realpathSync(root), name);
@@ -667,18 +662,7 @@ test("research child rechecks local inventory and blocks gateway calls", async (
 	assert.equal(hooks.get("tool_call")!({ toolName: "read" }).block, true, "missing artifact scope cannot authorize a read");
 });
 
-export async function shutdownAndRestoreNativeSpawn(
-	childProcess: typeof import("node:child_process"),
-	originalSpawn: typeof import("node:child_process").spawn,
-	shutdown: () => Promise<unknown>,
-): Promise<void> {
-	try {
-		await shutdown();
-	} finally {
-		childProcess.spawn = originalSpawn;
-		syncBuiltinESMExports();
-	}
-}
+
 
 for (const matching of [true, false]) {
  test("owned child diff relay validates the exact file independently of review bookkeeping: "+matching, async () => {

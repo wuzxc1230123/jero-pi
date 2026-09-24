@@ -15,7 +15,7 @@ import {
 	assertAdditionalProperty, assertNestedRequired, assertRequired, clone, type Decoder, devFixture,
 	devFixtureRoot, digest, executableDigest, fixture, fixtureRoot, type JsonObject
 } from "./review-integration-v2-shared.ts";
-import { repairAssessment, unachievableSlot } from "./review-integration-v2.test.ts";
+import { repairAssessment, unachievableSlot } from "./review-integration-v2-shared.ts";
 
 test("next_transition stop refuses an unachievable slot whose withdraw arguments disagree with its identity", () => {
 	const stop: JsonObject = { kind: "stop", reason_code: "unachievable_lens_slot", unachievable_lens_slots: [unachievableSlot()] };

@@ -24,8 +24,7 @@ import {
 	setWindowsAclAuthorityForTesting, validatePrivateWindowsDacl, validatePrivateWindowsOwner,
 	WindowsDaclValidationError, WindowsOwnerValidationError
 } from "../lib/review-candidate-view-owner.ts";
-import { git, mockOwnerProbe, mockWindowsAcl, orphanFixture, ownerMarker, repository } from "./review-candidate-view-shared.ts";
-import { emptyTreeOf, unbornRepository } from "./review-candidate-view.test.ts";
+import { emptyTreeOf, git, mockOwnerProbe, mockWindowsAcl, orphanFixture, ownerMarker, repository, unbornRepository } from "./review-candidate-view-shared.ts";
 
 test("fresh registries restore only one exact authoritative reviewing candidate and reject zero or multiple matches", (t) => {
 	const contributorRoot = repository(t);

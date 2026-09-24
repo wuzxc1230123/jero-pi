@@ -808,6 +808,13 @@ export class AgentsView {
 		if (this.closed) return;
 		this.closed = true;
 		this.stopPresenceRefresh();
+		// close 与 dispose 是两条到达路径：不取消订阅的话，已关闭视图
+		// 仍会被 store 更新驱动渲染（审计 P2-15）。取消幂等，dispose 再
+		// 走一遍也安全。
+		this.unsubscribeTask?.();
+		this.unsubscribeTask = undefined;
+		this.subscribedTaskId = undefined;
+		this.unsubscribeSummary();
 		this.pointerScope.invalidate();
 		this.deps.onClose();
 	}

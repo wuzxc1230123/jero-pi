@@ -433,8 +433,8 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 		const details = (message.details as { gentleAgents?: { taskId?: unknown; agent?: unknown } } | undefined)?.gentleAgents;
 		const taskId = typeof details?.taskId === "string" ? details.taskId : "unknown";
 		const agent = typeof details?.agent === "string" ? details.agent : "Subagent";
-		const heading = `${sanitizeTerminalText(agent)} message · Task ${sanitizeTerminalText(taskId)}`;
-		const body = sanitizeTerminalText(messageText(message.content));
+		const heading = `${escapeControlChars(agent)} message · Task ${escapeControlChars(taskId)}`;
+		const body = escapeControlChars(messageText(message.content));
 		return new Text(`${theme.fg("customMessageLabel", heading)}\n${theme.fg("customMessageText", body)}`, options.outputPad, 0);
 	});
 
@@ -463,7 +463,7 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 		const ageSeconds = typeof data.ageSeconds === "number" && Number.isFinite(data.ageSeconds) ? Math.max(0, Math.round(data.ageSeconds)) : 0;
 		const age = ageSeconds < 90 ? `${ageSeconds}s` : ageSeconds < 3600 ? `${Math.round(ageSeconds / 60)}m` : `${Math.round(ageSeconds / 3600)}h`;
 		const body = [
-			`Subagent ${sanitizeTerminalText(agent)} (task ${sanitizeTerminalText(taskId)}, "${sanitizeTerminalText(label)}") ${sanitizeTerminalText(status)} about ${age} ago, while the orchestrator was still busy.`,
+			`Subagent ${escapeControlChars(agent)} (task ${escapeControlChars(taskId)}, "${escapeControlChars(label)}") ${escapeControlChars(status)} about ${age} ago, while the orchestrator was still busy.`,
 			"Marked stale: the result was not replayed into the conversation. It stays available through subagent_status and subagent_result.",
 		];
 		return {
@@ -969,7 +969,7 @@ import {
 	agentsStopKey, agentsViewKey, answerThroughUi, CLOCK_TICK_MS, completionText, defaultDeps,
 	describeTask, expandHint, finishedText, LEGACY_SUBAGENTS_PACKAGE, legacySubagentsInstalledAt,
 	messageText, ownedChildIpc, registerChildMessaging, RENDER_COALESCE_MS, RESEARCH_ARTIFACT_SCHEMA,
-	RESEARCH_SELECTION_SCHEMA, type ResearchArtifactCallObservation, sanitizeTerminalText,
+	RESEARCH_SELECTION_SCHEMA, type ResearchArtifactCallObservation, escapeControlChars,
 	SHIPPED_SDD_AGENT_NAME_SET, taskDetails, text, TOOL_PREFIX, type ToolText
 } from "../lib/jero-agents-helpers.ts";
 import {

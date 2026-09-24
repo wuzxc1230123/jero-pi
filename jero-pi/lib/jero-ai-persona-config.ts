@@ -1,3 +1,6 @@
+import { isRecord } from "./record-utils.ts";
+
+export { isRecord } from "./record-utils.ts";
 // persona 与配置主目录：配置路径解析、persona 文件读写。被提示词构建与 persona 命令共用。
 // 自 extensions/jero-ai.ts 拆分（机械平移，语义零改动）。
 
@@ -7,10 +10,6 @@ import { dirname, join } from "node:path";
 
 import type { PersonaMode } from "./jero-ai-prompts.ts";
 
-
-export function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 
 
 

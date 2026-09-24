@@ -33,6 +33,10 @@ import { default as test } from "node:test";
 import { type ExtensionAPI, type ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { __testing, createJeroAiExtension, PendingReviewConsentRegistry } from "../extensions/jero-ai.ts";
 import { CandidateViewRegistry } from "../lib/review-candidate-view.ts";
+// 进程加载即打桩 Windows ACL 权威：真实 PowerShell/icacls 栈只归候选视图
+// 专属端到端用例管（见 review-candidate-view-shared.ts）；本家族用例只
+// 验证候选视图之上的业务语义，打桩避免每个创建/清理周期数十次秒级子进程。
+import "./review-candidate-view-shared.ts";
 import { NATIVE_REVIEW_ERROR_CODE, type NativeReviewCli, NativeReviewCliError, NativeReviewConsentRequiredError } from "../lib/authority/client-contract.ts";
 import { decodeReviewConsentV3, decodeReviewStatusV3, type ReviewCollectInputV3, type ReviewStatusV3 } from "../lib/authority/wire-contract.ts";
 
@@ -128,5 +132,94 @@ export function managedAssetsOutdatedStatus(lineageId: string): ReviewStatusV3 {
 	const stopped = status(lineageId, [], "approved");
 	stopped.nextTransition = { kind: "stop", reasonCode: "managed_assets_outdated", continuation: { operation: "sync", command: "gentle-ai sync --agent claude-code", agent: "claude-code", staleAssets: ["orchestration/claude-code.md"] } };
 	return stopped;
+}
+
+// 跨分片助手必须住在 shared：分片互为导入时，被导入分片的顶层 test()
+// 注册会在导入方进程里重跑一遍（.test ↔ z2 曾构成循环导入），整个
+// 家族的用例被成倍执行（同见 review-candidate-view-shared.ts 注）。
+
+export interface RegisteredControllerTool {
+	execute: (toolCallId: string, params: unknown, signal: AbortSignal | undefined, onUpdate: undefined, ctx: ExtensionContext) => Promise<{ details?: unknown }>;
+}
+
+export function correctionPlanInput(lineageId: string): ReviewCollectInputV3 {
+	const arguments_ = [{ name: "lineage", value: lineageId, token: `--lineage=${lineageId}` }, { name: "target", value: SHA, token: `--target=${SHA}` }];
+	return { name: "correction_plan", schema: "https://gentle-ai.dev/schema/review/correction-plan/v1", captureOperation: "review.capture-correction-plan", arguments: arguments_, submission: { operationToken: "capture-correction-plan", argumentTokens: [`--lineage=${lineageId}`, "--correction-lines={{value}}"], values: [{ slot: "correction_lines", domain: "integer", substitutionLocation: 1, minimum: 1, maximum: 200 }] } } as unknown as ReviewCollectInputV3;
+}
+
+export function bindingOf(result: Record<string, unknown>): string {
+	return (result.collectBindings as readonly { collectBinding: string }[])[0]!.collectBinding;
+}
+
+export function repository(t: test.TestContext): string {
+	const cwd = realpathSync(mkdtempSync(join(tmpdir(), "gentle-pi-native-routing-")));
+	t.after(() => {
+		execFileSync("chmod", ["-R", "u+rwx", cwd], { stdio: "ignore" });
+		chmodSync(cwd, 0o700);
+		rmSync(cwd, { recursive: true, force: true });
+	});
+	execFileSync("git", ["init", "-b", "main"], { cwd, stdio: "ignore" });
+	writeFileSync(join(cwd, "tracked.txt"), "base\n");
+	execFileSync("git", ["add", "tracked.txt"], { cwd, stdio: "ignore" });
+	execFileSync("git", ["-c", "user.name=Routing Test", "-c", "user.email=routing@example.invalid", "commit", "-m", "base"], { cwd, stdio: "ignore" });
+	writeFileSync(join(cwd, "tracked.txt"), "candidate\n");
+	return cwd;
+}
+
+export function reviewRuntime(nativeReviewCli: NativeReviewCli, candidateViews: CandidateViewRegistry) {
+	const tools = new Map<string, RegisteredControllerTool>();
+	let toolCall: ((event: { toolName: string; input: unknown }, ctx: ExtensionContext) => Promise<unknown>) | undefined;
+	let sessionShutdown: ((event: unknown, ctx: ExtensionContext) => unknown) | undefined;
+	createJeroAiExtension({ nativeReviewCli, candidateViews })({
+		on(name: string, handler: (event: { toolName: string; input: unknown }, ctx: ExtensionContext) => Promise<unknown>) {
+			if (name === "tool_call") toolCall = handler;
+			if (name === "session_shutdown") sessionShutdown = handler as unknown as (event: unknown, ctx: ExtensionContext) => unknown;
+		},
+		registerTool(definition: RegisteredControllerTool & { name: string }) { tools.set(definition.name, definition); },
+		registerCommand() {},
+	} as unknown as ExtensionAPI);
+	const controller = tools.get("jero_review");
+	const capture = tools.get("jero_review_capture");
+	assert.ok(controller);
+	assert.ok(capture);
+	assert.ok(toolCall);
+	assert.ok(sessionShutdown);
+	return { controller, capture, toolCall, sessionShutdown };
+}
+
+export function reviewContext(cwd: string): ExtensionContext {
+	return { cwd, hasUI: false, ui: { confirm: async () => true } } as unknown as ExtensionContext;
+}
+
+export function startStatus(cwd: string, baseRef?: string, intendedUntracked: readonly string[] = []): ReviewStatusV3 {
+	const candidateViews = new CandidateViewRegistry();
+	const view = candidateViews.create({ contributorRoot: cwd, intendedUntracked, ...(baseRef === undefined ? {} : { baseRef, committedOnly: true }) });
+	try {
+		return {
+			contract: "gentle-ai.review-integration/v2",
+			applicability: "unrelated",
+			action: "start",
+			replayability: "not_replayable",
+			targetIdentity: SHA,
+			projection: {
+				schema: "gentle-ai.review-candidate-projection/v1",
+				kind: "current-changes",
+				projection: "workspace",
+				baseTree: view.baseTree,
+				initialReviewTree: view.candidateTree,
+				currentCandidateTree: view.candidateTree,
+				pathsDigest: SHA,
+				paths: [...view.paths],
+				intendedUntracked: [...intendedUntracked],
+				intendedUntrackedProof: SHA,
+				initialSnapshotIdentity: SHA,
+				currentSnapshotIdentity: SHA,
+			},
+			candidates: [],
+			raw: { schema: "gentle-ai.review-integration.status/v5" },
+		} as unknown as ReviewStatusV3;
+	} finally {
+		candidateViews.cleanup(view.token);
+	}
 }
 

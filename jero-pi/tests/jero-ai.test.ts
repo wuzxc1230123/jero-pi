@@ -21,7 +21,8 @@ import { cardBody, cardHint, cardTitle, cardTone } from "./gentle-card-text.ts";
 import {
 	cleanWorkspaceStatus, lifecycleContext, lifecycleTheme, offeredCommittedRangeStatus,
 	registeredGentleTools, renderComponent, reviewRepository, type ReviewStartRepository,
-	startedReviewResult, writeMarkdown
+	startedReviewResult, writeMarkdown,
+	routingConsumerFixture,
 } from "./jero-ai-shared.ts";
 
 test("authority unavailability fails closed without installer recovery or lifecycle-script attribution", async () => {
@@ -164,93 +165,9 @@ test("registered Gentle Review tools preserve result envelopes and redact collap
 	}
 });
 
-export interface RoutingConsumerPanel {
-	render(width: number): string[];
-	handleInput(data: string): void;
-}
 
-export function routingConsumerFixture(t: test.TestContext, agents = ["worker"]) {
-	const root = mkdtempSync(join(tmpdir(), "gentle-pi-routing-consumers-"));
-	const configHome = join(root, "global");
-	const agentHome = join(root, "agent-home");
-	const projectPath = join(root, ".pi", "jero", "models.json");
-	const globalPath = join(configHome, "models.json");
-	const exportPath = join(configHome, "models.export.json");
-	for (const dir of [dirname(projectPath), join(root, "agents"), join(agentHome, "agents"), join(agentHome, "subagents")]) {
-		mkdirSync(dir, { recursive: true });
-	}
-	for (const name of agents) {
-		writeMarkdown(join(root, ".pi", "agents", `${name}.md`), `---\nname: ${name}\ndescription: Worker\n---\nbody\n`);
-	}
-	const previousConfigHome = process.env.JERO_PI_CONFIG_HOME;
-	const previousAgentHome = process.env.JERO_PI_AGENT_HOME;
-	const previousHome = process.env.HOME;
-	const previousUserProfile = process.env.USERPROFILE;
-	const isolatedHome = join(root, "home");
-	mkdirSync(isolatedHome, { recursive: true });
-	// Isolate homedir-based discovery on POSIX and Windows.
-	// Package-sibling legacy agents remain subject to discovery assertions.
-	process.env.HOME = isolatedHome;
-	process.env.USERPROFILE = isolatedHome;
-	process.env.JERO_PI_CONFIG_HOME = configHome;
-	process.env.JERO_PI_AGENT_HOME = agentHome;
-	t.after(() => {
-		if (previousConfigHome === undefined) delete process.env.JERO_PI_CONFIG_HOME;
-		else process.env.JERO_PI_CONFIG_HOME = previousConfigHome;
-		if (previousAgentHome === undefined) delete process.env.JERO_PI_AGENT_HOME;
-		else process.env.JERO_PI_AGENT_HOME = previousAgentHome;
-		if (previousHome === undefined) delete process.env.HOME;
-		else process.env.HOME = previousHome;
-		if (previousUserProfile === undefined) delete process.env.USERPROFILE;
-		else process.env.USERPROFILE = previousUserProfile;
-		rmSync(root, { recursive: true, force: true });
-	});
-	const commands = new Map<string, Parameters<ExtensionAPI["registerCommand"]>[1]>();
-	createJeroAiExtension({ nativeReviewCli: null })({
-		on() {},
-		registerTool() {},
-		registerCommand(name, command) { commands.set(name, command); },
-	} as unknown as ExtensionAPI);
-	const notifications: Array<{ message: string; severity: string }> = [];
-	// The profiles panel reads the terminal rows to size its full-screen frame, so
-	// the fake UI hands every factory a TUI-shaped stand-in with a mutable height.
-	const fixtureTui = { terminal: { rows: 24 }, requestRender() {} };
-	let panelVisits = 0;
-	const panels: string[] = [];
-	let onPanel = () => ({ type: "cancel", config: {} });
-	let onInput: ((panel: RoutingConsumerPanel) => void) | undefined;
-	const ctx = {
-		cwd: root,
-		hasUI: true,
-		modelRegistry: { getAvailable: async () => [
-			{ provider: "openai", id: "alpha" },
-			{ provider: "openai", id: "beta" },
-		] },
-		ui: {
-			notify(message: string, severity: string) { notifications.push({ message, severity }); },
-			custom: async (factory: (tui: unknown, theme: Theme, keybindings: unknown, done: (result: unknown) => void) => RoutingConsumerPanel) => {
-				let result: unknown;
-				const panel = factory(fixtureTui, { fg: (_color: string, text: string) => text } as unknown as Theme, undefined, (value) => { result = value; });
-				panels.push(stripAnsi(renderComponent(panel)));
-				panelVisits += 1;
-				if (onInput) {
-					onInput(panel);
-					assert.notEqual(result, undefined, "panel input must finish the interaction");
-					return result;
-				}
-				return onPanel();
-			},
-		},
-	} as unknown as Parameters<Parameters<ExtensionAPI["registerCommand"]>[1]["handler"]>[1];
-	return {
-		root, agentHome, configHome, projectPath, globalPath, exportPath, notifications, panels,
-		tui: fixtureTui as { terminal: { rows: number } },
-		panelVisits: () => panelVisits,
-		onPanel(action: typeof onPanel) { onPanel = action; },
-		onInput(action: (panel: RoutingConsumerPanel) => void) { onInput = action; },
-		run: (name: string) => commands.get(name)!.handler("", ctx),
-	};
-}
+
+
 
 test("models saves and clears independent provider review roles without local artifacts", async (t) => {
 	const fixture = routingConsumerFixture(t, []);

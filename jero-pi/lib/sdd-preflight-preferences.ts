@@ -221,7 +221,11 @@ export function readSddPreflightFromDisk(cwd: string): SddPreflightPreferences |
 	}
 }
 
-export function writeSddPreflightToDisk(cwd: string, prefs: SddPreflightPreferences): void {
+/**
+ * 持久化偏好到磁盘。失败不抛出（内存会话缓存是主存储），但返回 false
+ * 让调用方可以告知用户"本次会话内生效、未写入磁盘"。
+ */
+export function writeSddPreflightToDisk(cwd: string, prefs: SddPreflightPreferences): boolean {
 	try {
 		const path = sddPreflightDiskPath(cwd);
 		const prompted = prefs.prompted === true;
@@ -237,8 +241,10 @@ export function writeSddPreflightToDisk(cwd: string, prefs: SddPreflightPreferen
 		};
 		mkdirSync(dirname(path), { recursive: true });
 		writeFileSync(path, JSON.stringify(canonical, null, 2));
+		return true;
 	} catch {
 		// 磁盘写入失败非致命；内存缓存是主存储
+		return false;
 	}
 }
 

@@ -1,4 +1,4 @@
-import { contractFields, nestedContractFields, readTextContract } from "./package-manifest.test.ts";
+import { contractFields, nestedContractFields, readTextContract } from "./package-manifest-shared.ts";
 // package-manifest 测试第 2 段（共 2 段；夹具在 package-manifest-shared.ts）。
 // 机械平移自原 package-manifest.test.ts，语义零改动。
 
@@ -18,7 +18,7 @@ import {
 	readPackageJson, RETIRED_ADVERSARIAL_AGENTS, RETIRED_REFUTER_FILE, REVIEW_RISK_FILE, sha256,
 	V013_MANAGED_ASSETS, V013_REVIEW_RISK_FIXTURE, V014_MANAGED_ASSETS, V014_REVIEW_RISK_FIXTURE
 } from "./package-manifest-shared.ts";
-import { assertWorkerFallbackRouting, readAgentDefinition, readAgentFrontmatter, readMarkdownSection } from "./package-manifest.test.ts";
+import { assertWorkerFallbackRouting, readAgentDefinition, readAgentFrontmatter, readMarkdownSection } from "./package-manifest-shared.ts";
 
 test("first forced sync migrates untouched v0.13 assets, preserves routing, and owns new assets", async () => {
 	const temporaryAgentHome = mkdtempSync(join(tmpdir(), "gentle-pi-v013-upgrade-"));

@@ -21,7 +21,7 @@ import {
 	approvedAcknowledgementStatus, burnedAcknowledgementStatus, collectInput,
 	managedAssetsOutdatedStatus, SHA, status, TREE
 } from "./review-controller-native-routing-shared.ts";
-import { reviewContext, reviewRuntime } from "./review-controller-native-routing.z2.test.ts";
+import { bindingOf, correctionPlanInput, repository, reviewContext, reviewRuntime, startStatus } from "./review-controller-native-routing-shared.ts";
 
 test("STATUS renders the managed_assets_outdated continuation command as the actionable next step", async () => {
 	const lineageId = "managed-assets-outdated";
@@ -331,15 +331,6 @@ test("local acknowledgement failure remains pre-launch and does not reconcile ST
 	assert.equal(statusCalls, 1);
 	assert.equal(acknowledgementCalls, 1);
 });
-
-export function correctionPlanInput(lineageId: string): ReviewCollectInputV3 {
-	const arguments_ = [{ name: "lineage", value: lineageId, token: `--lineage=${lineageId}` }, { name: "target", value: SHA, token: `--target=${SHA}` }];
-	return { name: "correction_plan", schema: "https://gentle-ai.dev/schema/review/correction-plan/v1", captureOperation: "review.capture-correction-plan", arguments: arguments_, submission: { operationToken: "capture-correction-plan", argumentTokens: [`--lineage=${lineageId}`, "--correction-lines={{value}}"], values: [{ slot: "correction_lines", domain: "integer", substitutionLocation: 1, minimum: 1, maximum: 200 }] } } as unknown as ReviewCollectInputV3;
-}
-
-export function bindingOf(result: Record<string, unknown>): string {
-	return (result.collectBindings as readonly { collectBinding: string }[])[0]!.collectBinding;
-}
 
 test("public STATUS exposes one opaque current collect binding without advancing authority", async () => {
 	const lineageId = "public-status-lineage";
@@ -689,18 +680,4 @@ test("public INSPECT and STATUS publish the exact pi-bound binding that capture 
 	assert.deepEqual(requests.map((request) => request.lineageId), [lineageId, undefined, undefined, lineageId]);
 });
 
-export function repository(t: test.TestContext): string {
-	const cwd = realpathSync(mkdtempSync(join(tmpdir(), "gentle-pi-native-routing-")));
-	t.after(() => {
-		execFileSync("chmod", ["-R", "u+rwx", cwd], { stdio: "ignore" });
-		chmodSync(cwd, 0o700);
-		rmSync(cwd, { recursive: true, force: true });
-	});
-	execFileSync("git", ["init", "-b", "main"], { cwd, stdio: "ignore" });
-	writeFileSync(join(cwd, "tracked.txt"), "base\n");
-	execFileSync("git", ["add", "tracked.txt"], { cwd, stdio: "ignore" });
-	execFileSync("git", ["-c", "user.name=Routing Test", "-c", "user.email=routing@example.invalid", "commit", "-m", "base"], { cwd, stdio: "ignore" });
-	writeFileSync(join(cwd, "tracked.txt"), "candidate\n");
-	return cwd;
-}
 

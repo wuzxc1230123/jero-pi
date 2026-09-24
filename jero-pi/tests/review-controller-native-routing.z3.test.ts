@@ -19,11 +19,10 @@ import { CandidateViewRegistry } from "../lib/review-candidate-view.ts";
 import { NATIVE_REVIEW_ERROR_CODE, type NativeReviewCli, NativeReviewCliError, NativeReviewConsentRequiredError } from "../lib/authority/client-contract.ts";
 import { decodeReviewConsentV3, decodeReviewStatusV3, type ReviewCollectInputV3, type ReviewStatusV3 } from "../lib/authority/wire-contract.ts";
 import {
-	approvedAcknowledgementStatus, burnedAcknowledgementStatus, collectInput,
-	managedAssetsOutdatedStatus, SHA, status, TREE
+	approvedAcknowledgementStatus, bindingOf, burnedAcknowledgementStatus, collectInput,
+	correctionPlanInput, managedAssetsOutdatedStatus, repository, reviewContext, reviewRuntime,
+	SHA, startStatus, status, TREE
 } from "./review-controller-native-routing-shared.ts";
-import { bindingOf, correctionPlanInput, repository } from "./review-controller-native-routing.test.ts";
-import { reviewContext, reviewRuntime, startStatus } from "./review-controller-native-routing.z2.test.ts";
 
 test("ordinary START relays native consent without authoring or advancing it", async (t) => {
 	const cwd = repository(t);

@@ -1,0 +1,9 @@
+# 换行策略：文本源码一律 LF（工作区与仓库一致），杜绝 Windows
+# core.autocrlf=true 造成的转换警告与历史噪音。二进制资源显式标记。
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary

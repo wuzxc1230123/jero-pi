@@ -338,7 +338,9 @@ async function showChangesOverlay(ctx: ExtensionContext, deps: OverlayDeps): Pro
 		view?.update(deps.worktrees());
 		deps.apply(ctx, latest);
 	};
-	const poll = setInterval(() => void refresh(), deps.pollMs);
+	// 轮询拒绝不得逃逸成 unhandledRejection（Node 15+ 默认致命）；
+	// 保底捕获后保留上次数据，用户可再触发刷新。
+	const poll = setInterval(() => { void refresh().catch(() => {}); }, deps.pollMs);
 	poll.unref();
 	try {
 		const chosen = await ctx.ui.custom<{ root: string; file: ChangedFile } | null>(
@@ -349,7 +351,7 @@ async function showChangesOverlay(ctx: ExtensionContext, deps: OverlayDeps): Pro
 					rows: () => Math.max(OVERLAY_MIN_ROWS, Math.floor(tui.terminal.rows * OVERLAY_HEIGHT_RATIO)),
 					loadDiff: (root, file) => Promise.resolve(deps.loadDiff(root, file)),
 					onOpen: (root, file) => done({ root, file }),
-					onRefresh: () => void refresh(),
+					onRefresh: () => { void refresh().catch(() => {}); },
 					onClose: () => done(null),
 					requestRender: () => tui.requestRender(),
 				});

@@ -78,6 +78,7 @@ const requiredPaths = [
 	"runtime/wire-contract-interfaces.mjs",
 	"runtime/wire-contract-last-event.mjs",
 	"runtime/review-risk-assessment.mjs",
+	"runtime/record-utils.mjs",
 	"tests/fixtures/native-review-cli/v2.1.3/start.json",
 	"prompts/skill-creation.md",
 	"schemas/runtime-aggregate-v1.schema.json",
@@ -95,6 +96,7 @@ const requiredPaths = [
 	"skills/skill-improver/SKILL.md",
 	"skills/skill-registry/SKILL.md",
 	"skills/work-unit-commits/SKILL.md",
+	"scripts/test-packed-runner.mjs",
 ];
 
 // jero-pi P1/P4 gate: none of the deleted distribution-chain files may

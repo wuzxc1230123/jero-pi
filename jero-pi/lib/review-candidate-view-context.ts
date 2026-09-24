@@ -38,6 +38,7 @@ import {
 	type ReviewLens,
 	SUBAGENT_RUN_KEYS
 } from "./review-candidate-view-git.ts";
+import { isRecord } from "./record-utils.ts";
 import {
 	CandidateViewRegistry
 } from "./review-candidate-view-registry.ts";
@@ -48,10 +49,6 @@ interface MutableSubagentRunInput {
 	context?: unknown;
 	mode?: unknown;
 	[key: string]: unknown;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function isReviewLens(value: string): value is ReviewLens {

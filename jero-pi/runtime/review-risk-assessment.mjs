@@ -14,6 +14,8 @@
 // 不带该动词的旧二进制（或任何其他解码/进程失败）以相同方式保守
 // 失败——见下方 `verificationTierForUnassessable`。
 
+import { isRecord } from "./record-utils.mjs";
+
 export const REVIEW_ASSESSMENT_SCHEMA = "gentle-ai.review-assessment/v1"         ;
 
 export const REVIEW_ASSESSMENT_RISK = {
@@ -48,10 +50,6 @@ export const REVIEW_ASSESSMENT_CANDIDATE_KIND = {
 
 
 
-
-function isRecord(value         )                                   {
-	return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 
 function decodeReason(value         )                         {
 	if (!isRecord(value)) throw new TypeError("review assessment reason must be an object");

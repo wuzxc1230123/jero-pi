@@ -21,7 +21,7 @@ import {
 	approvedAcknowledgementStatus, burnedAcknowledgementStatus, collectInput,
 	managedAssetsOutdatedStatus, SHA, status, TREE
 } from "./review-controller-native-routing-shared.ts";
-import { repository } from "./review-controller-native-routing.test.ts";
+import { bindingOf, correctionPlanInput, repository, reviewContext, reviewRuntime, startStatus } from "./review-controller-native-routing-shared.ts";
 
 test("candidate lifecycle sweeps startup and cleans every shutdown including reload", async (t) => {
 	const cwd = repository(t);
@@ -110,67 +110,6 @@ test("candidate lifecycle sweeps startup and cleans every shutdown including rel
 	}
 	assert.deepEqual(calls, ["sweep", ...Array(5).fill("cleanup")]);
 });
-
-export interface RegisteredControllerTool {
-	execute: (toolCallId: string, params: unknown, signal: AbortSignal | undefined, onUpdate: undefined, ctx: ExtensionContext) => Promise<{ details?: unknown }>;
-}
-
-export function reviewRuntime(nativeReviewCli: NativeReviewCli, candidateViews: CandidateViewRegistry) {
-	const tools = new Map<string, RegisteredControllerTool>();
-	let toolCall: ((event: { toolName: string; input: unknown }, ctx: ExtensionContext) => Promise<unknown>) | undefined;
-	let sessionShutdown: ((event: unknown, ctx: ExtensionContext) => unknown) | undefined;
-	createJeroAiExtension({ nativeReviewCli, candidateViews })({
-		on(name: string, handler: (event: { toolName: string; input: unknown }, ctx: ExtensionContext) => Promise<unknown>) {
-			if (name === "tool_call") toolCall = handler;
-			if (name === "session_shutdown") sessionShutdown = handler as unknown as (event: unknown, ctx: ExtensionContext) => unknown;
-		},
-		registerTool(definition: RegisteredControllerTool & { name: string }) { tools.set(definition.name, definition); },
-		registerCommand() {},
-	} as unknown as ExtensionAPI);
-	const controller = tools.get("jero_review");
-	const capture = tools.get("jero_review_capture");
-	assert.ok(controller);
-	assert.ok(capture);
-	assert.ok(toolCall);
-	assert.ok(sessionShutdown);
-	return { controller, capture, toolCall, sessionShutdown };
-}
-
-export function reviewContext(cwd: string): ExtensionContext {
-	return { cwd, hasUI: false, ui: { confirm: async () => true } } as unknown as ExtensionContext;
-}
-
-export function startStatus(cwd: string, baseRef?: string, intendedUntracked: readonly string[] = []): ReviewStatusV3 {
-	const candidateViews = new CandidateViewRegistry();
-	const view = candidateViews.create({ contributorRoot: cwd, intendedUntracked, ...(baseRef === undefined ? {} : { baseRef, committedOnly: true }) });
-	try {
-		return {
-			contract: "gentle-ai.review-integration/v2",
-			applicability: "unrelated",
-			action: "start",
-			replayability: "not_replayable",
-			targetIdentity: SHA,
-			projection: {
-				schema: "gentle-ai.review-candidate-projection/v1",
-				kind: "current-changes",
-				projection: "workspace",
-				baseTree: view.baseTree,
-				initialReviewTree: view.candidateTree,
-				currentCandidateTree: view.candidateTree,
-				pathsDigest: SHA,
-				paths: [...view.paths],
-				intendedUntracked: [...intendedUntracked],
-				intendedUntrackedProof: SHA,
-				initialSnapshotIdentity: SHA,
-				currentSnapshotIdentity: SHA,
-			},
-			candidates: [],
-			raw: { schema: "gentle-ai.review-integration.status/v5" },
-		} as unknown as ReviewStatusV3;
-	} finally {
-		candidateViews.cleanup(view.token);
-	}
-}
 
 test("ordinary START binds the native workspace candidate and returns the native result", async (t) => {
 	const cwd = repository(t);

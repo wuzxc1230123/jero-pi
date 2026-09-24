@@ -7,9 +7,10 @@ import {
 	DEFAULT_SDD_PREFLIGHT, isRecord, normalizedSelections, normalizeSddChainedPrStrategy,
 	readSddPreflightFromDisk, SDD_PREFLIGHT_FIELDS, sddPreflightBySession,
 	type SddPreflightCallbacks, type SddPreflightField, sddPreflightInFlight,
-	type SddPreflightPreferences, type SddPreflightResolutionOptions, writeSddPreflightToDisk
+	type SddPreflightPreferences, type SddPreflightResolutionOptions, sddPreflightDiskPath, writeSddPreflightToDisk
 } from "./sdd-preflight-preferences.ts";
 import { installPackageAssets } from "./sdd-preflight-assets.ts";
+import { hasWritableMemoryTool } from "./jero-ai-sdd-startup.ts";
 function hasAffirmativeSddIntent(text: string): boolean {
 	// 自然语言路由不得依赖封闭的完整短语列表。SDD 提及只有在
 	// 出现祈使、请求或第一人称意图标记时才成为调用；
@@ -46,26 +47,6 @@ export function sddPreflightSessionKey(ctx: ExtensionContext): string {
 		}
 	}
 	return ctx.cwd;
-}
-
-function hasWritableMemoryTool(pi: ExtensionAPI): boolean {
-	try {
-		const getActiveTools = (pi as unknown as { getActiveTools?: () => unknown[] })
-			.getActiveTools;
-		if (typeof getActiveTools !== "function") return false;
-		const tools = getActiveTools.call(pi);
-		return tools.some((tool) => {
-			const name =
-				typeof tool === "string"
-					? tool
-					: isRecord(tool) && typeof tool.name === "string"
-						? tool.name
-						: "";
-			return name === "mem_save" || name.endsWith(".mem_save");
-		});
-	} catch {
-		return false;
-	}
 }
 
 export async function collectSddPreflightPreferences(
@@ -232,7 +213,11 @@ export async function ensureSddPreflight(
 			);
 		}
 		sddPreflightBySession.set(sessionKey, prefs);
-		writeSddPreflightToDisk(ctx.cwd, prefs);
+		// 写盘失败不阻断预检（内存缓存是主存储），但要明确告知用户
+		// 本次选择只在会话内生效，而不是静默丢失（审计 P2-17）。
+		if (!writeSddPreflightToDisk(ctx.cwd, prefs)) {
+			ctx.ui.notify?.(`SDD 预检偏好未写入磁盘（本次会话内仍生效）：${sddPreflightDiskPath(ctx.cwd)}`, "warning");
+		}
 		return prefs;
 	})();
 	sddPreflightInFlight.set(sessionKey, promise);

@@ -188,3 +188,27 @@ export function deps(): { deps: Partial<AgentsDeps>; children: FakeChild[]; spaw
 	};
 }
 
+// 助手统一住 shared：分片互相 import 会令被导入分片的顶层 test() 注册在
+// 导入方进程里重跑一遍，整个家族的用例被成倍执行。
+export const tick = () => new Promise((resolve) => setImmediate(resolve));
+
+export async function eventually(check: () => boolean, message: string): Promise<void> {
+	for (let attempt = 0; attempt < 120; attempt++) {
+		if (check()) return;
+		await new Promise((resolve) => setTimeout(resolve, 25));
+	}
+	assert.fail(message);
+}
+
+export async function shutdownAndRestoreNativeSpawn(
+	childProcess: typeof import("node:child_process"),
+	originalSpawn: typeof import("node:child_process").spawn,
+	shutdown: () => Promise<unknown>,
+): Promise<void> {
+	try {
+		await shutdown();
+	} finally {
+		childProcess.spawn = originalSpawn;
+		syncBuiltinESMExports();
+	}
+}

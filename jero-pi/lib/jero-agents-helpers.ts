@@ -108,7 +108,9 @@ export function agentsStopKey(env: NodeJS.ProcessEnv = process.env): string | un
 	return value === "" || value.toLowerCase() === "off" ? undefined : value;
 }
 
-export function sanitizeTerminalText(value: string): string {
+// 审计 §五：与 lib/terminal-theme.ts 的 sanitizeTerminalText（stripAnsi+
+// 删除）同名异义，按实际语义改名——这里做的是控制字符转义。
+export function escapeControlChars(value: string): string {
 	return value.replace(/[\x00-\x08\x0B-\x1F\x7F-\x9F]/g, (control) => `\\x${control.charCodeAt(0).toString(16).toUpperCase().padStart(2, "0")}`);
 }
 

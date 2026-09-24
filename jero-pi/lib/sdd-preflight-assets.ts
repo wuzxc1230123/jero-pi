@@ -13,8 +13,7 @@ import {
 	isRecord, type LegacyManagedAssetsManifest, type ManagedAssetsLockOwner,
 	type ManagedAssetsManifest, type PackageAssetInstallLockOptions
 } from "./sdd-preflight-preferences.ts";
-const PACKAGE_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
-const ASSETS_DIR = join(PACKAGE_ROOT, "assets");
+import { ASSETS_DIR, PACKAGE_ROOT } from "./jero-ai-paths.ts";
 const MANAGED_ASSETS_MANIFEST = "managed-assets.json";
 const MANAGED_ASSETS_LOCK = "managed-assets.lock";
 const MANAGED_ASSETS_SCHEMA_VERSION = 1;
