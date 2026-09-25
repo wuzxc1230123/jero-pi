@@ -62,6 +62,11 @@ try {
 	for (const file of entry.files) {
 		assert.doesNotMatch(file.path, forbiddenSuffix, `packed package must not ship executable artifacts: ${file.path}`);
 	}
+	// 斜杠指令模板必须随包发布：pi 从安装树的 pi.prompts 目录加载它们。
+	const packedPaths = new Set(entry.files.map((file) => file.path));
+	for (const prompt of ["prompts/agents-init.md", "prompts/skill-creation.md"]) {
+		assert.ok(packedPaths.has(prompt), `packed package must ship the prompt template: ${prompt}`);
+	}
 	const tarball = join(packDirectory, entry.filename);
 	writeFileSync(join(installDirectory, "package.json"), JSON.stringify({ name: "jero-pi-packed-runner-test", private: true }), "utf8");
 	runNpm(["install", "--ignore-scripts=false", "--no-audit", "--no-fund", "--package-lock=false", "--omit=dev", "--legacy-peer-deps", tarball], {

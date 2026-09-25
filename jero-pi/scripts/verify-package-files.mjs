@@ -80,6 +80,7 @@ const requiredPaths = [
 	"runtime/review-risk-assessment.mjs",
 	"runtime/record-utils.mjs",
 	"tests/fixtures/native-review-cli/v2.1.3/start.json",
+	"prompts/agents-init.md",
 	"prompts/skill-creation.md",
 	"schemas/runtime-aggregate-v1.schema.json",
 	"skills/_shared/review-ledger-contract.md",
