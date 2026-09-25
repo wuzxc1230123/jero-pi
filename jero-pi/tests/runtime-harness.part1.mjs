@@ -12,6 +12,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { stripAnsi } from "../lib/terminal-theme.ts";
 import { domainHashV1 } from "../lib/review-canonical.ts";
 import { canonicalHash } from "../lib/review-transaction.ts";
+import { LEAN_MODE_ENTRY_TYPE } from "../lib/jero-ai-lean.ts";
 
 import {
 	EXPECTED_BANNER_COMMANDS,
@@ -32,7 +33,7 @@ import {
 } from "./runtime-harness-support.mjs";
 
 export async function part1(env) {
-	const { globalConfigHome, globalAgentHome, ambientTestAssetsDir, globalModelsPath, globalSubagentsPath, pi, hooks, commands, flags, tools, emittedEvents } = env;
+	const { globalConfigHome, globalAgentHome, ambientTestAssetsDir, globalModelsPath, globalSubagentsPath, pi, hooks, commands, flags, tools, emittedEvents, sessionEntries } = env;
 
 	// gentle-pi#404: a collect binding that returns the native last-event
 	// closure must terminate after one capture. It must not re-enter a public
@@ -277,6 +278,48 @@ export async function part1(env) {
 			'{\n  "mode": "neutral"\n}\n',
 		);
 		assert.match(personaCtx.ui.notifications.at(-1).message, /全局配置：/);
+		// lean discipline：提示词层增强。默认 full 只注入主会话；
+		// jero.lean-mode/v1 会话条目（/jero:lean 写入、"stop lean" 关闭）
+		// 在每次代理启动时重新解析，无需 /reload；off 不注入任何精益文本。
+		const leanCtx = () => {
+			const context = createCtx(promptCwd, true);
+			context.sessionManager.getBranch = () => sessionEntries;
+			return context;
+		};
+		const leanProbe = "停在第一个成立的横档上";
+		const leanDefaultResult = await promptHook({ systemPrompt: "base" }, leanCtx());
+		assert.match(leanDefaultResult.systemPrompt, new RegExp(leanProbe), "default lean mode must inject the ladder into the main session");
+
+		const leanCommand = commands.get("jero:lean");
+		assert.ok(leanCommand, "missing jero:lean command");
+		const leanSetCtx = leanCtx();
+		await leanCommand.handler("ultra", leanSetCtx);
+		assert.deepEqual(
+			sessionEntries.at(-1),
+			{ type: "custom", customType: LEAN_MODE_ENTRY_TYPE, data: { mode: "ultra" } },
+			"/jero:lean <mode> must persist exactly one session entry",
+		);
+		assert.match(leanSetCtx.ui.notifications.at(-1).message, /ultra/);
+		const leanUltraResult = await promptHook({ systemPrompt: "base" }, leanCtx());
+		assert.match(leanUltraResult.systemPrompt, /YAGNI 极端主义/, "session entry must flip the injected level on the next agent start without /reload");
+
+		const leanStatusCtx = leanCtx();
+		await leanCommand.handler("status", leanStatusCtx);
+		assert.match(leanStatusCtx.ui.notifications.at(-1).message, /Lean discipline: ultra/);
+
+		const leanInputCtx = leanCtx();
+		assert.deepEqual(
+			await hooks.get("input")[0]({ text: "STOP LEAN!", source: "interactive" }, leanInputCtx),
+			{ action: "handled" },
+			"the standalone stop-lean phrase must be handled, not forwarded",
+		);
+		assert.equal(sessionEntries.at(-1).data.mode, "off", "stop lean must persist an off entry");
+		const leanOffResult = await promptHook({ systemPrompt: "base" }, leanCtx());
+		assert.doesNotMatch(leanOffResult.systemPrompt, new RegExp(leanProbe), "off must restore the historical prompt");
+		// 具名代理在任何档位下都不接收精益注入：它们经既有的任务上下文
+		// 传输获得纪律，本注入绝不改写委派通道。
+		const leanNamedResult = await promptHook({ agentName: "worker", systemPrompt: "worker base" }, leanCtx());
+		assert.doesNotMatch(leanNamedResult.systemPrompt, new RegExp(leanProbe));
 		const onboardCtx = createCtx(promptCwd, true, "sdd-onboard-session");
 		onboardCtx.ui.select = async (_label, options) => options[0];
 		const onboardPromptResult = await promptHook(

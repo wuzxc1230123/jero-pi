@@ -395,7 +395,24 @@ function createJeroAiExtensionForTesting(
 		}
 	});
 
+	// 精益纪律的模式读取：倒序回放会话分支中的 lean 条目。会话管理器
+	// 缺失或不可读时保守回退到 env/默认档——模式解析绝不能阻塞提示词组装。
+	const readLeanBranch = (context: ExtensionContext): readonly LeanBranchEntry[] => {
+		try {
+			return context.sessionManager.getBranch() as readonly LeanBranchEntry[];
+		} catch {
+			return [];
+		}
+	};
+
 	pi.on("input", async (event, ctx) => {
+		// "stop lean" 是唯一的自然语言停用短语：仅命中独立短语（大小写与
+		// 尾部标点容忍），由 /jero:lean 或新会话恢复开启。
+		if (typeof event.text === "string" && isLeanDeactivationText(event.text)) {
+			pi.appendEntry(LEAN_MODE_ENTRY_TYPE, { mode: "off" });
+			if (ctx.hasUI) ctx.ui.notify("Jero 精益纪律已关闭（本会话）。/jero:lean <mode> 可重新开启。", "info");
+			return { action: "handled" };
+		}
 		if (typeof event.text !== "string" || !isSddPreflightTrigger(event.text)) {
 			return { action: "continue" };
 		}
@@ -484,6 +501,15 @@ function createJeroAiExtensionForTesting(
 					readActiveToolNames(pi),
 					await resolveRddStatusLine(nativeReviewCli, ctx.cwd, AbortSignal.timeout(RDD_STATUS_TIMEOUT_MS), undefined, ctx),
 				)}`;
+		// 精益纪律（lean discipline）与 gentle 提示词同门同条件：只注入
+		// 主会话——具名/SDD 代理经既有的任务上下文与阶段产物获得纪律，
+		// 本注入绝不改写委派传输通道。off 渲染为空串，完全还原历史行为；
+		// 档位按 会话条目 > JERO_PI_LEAN_MODE > full 解析，每次代理启动
+		// 重新解析，因此 /jero:lean 切换即时生效，无需 /reload。
+		const leanInstructions = isNamedAgent || isSddAgent
+			? ""
+			: getLeanInstructions(resolveEffectiveLeanMode(readLeanBranch(ctx), permissionEnvironment));
+		const leanPrompt = leanInstructions.length === 0 ? "" : `\n\n${leanInstructions}`;
 		// gentle-pi#560 / gentle-ai#4056, #4057：仅为主会话注入镜像
 		// provider 契约 bundle 的评审执行契约，且只在
 		// 原生评审 CLI 确实存在时注入。
@@ -495,7 +521,7 @@ function createJeroAiExtensionForTesting(
 				})()
 				: "";
 		return {
-			systemPrompt: `${event.systemPrompt}${gentlePrompt}${sddPrompt}${nativeStatusPrompt}${reviewContractPrompt}${!isNamedAgent && !isSddAgent ? `\n\n${renderResearchCapabilities(resolveResearchCapabilities(pi))}` : ""}`,
+			systemPrompt: `${event.systemPrompt}${gentlePrompt}${leanPrompt}${sddPrompt}${nativeStatusPrompt}${reviewContractPrompt}${!isNamedAgent && !isSddAgent ? `\n\n${renderResearchCapabilities(resolveResearchCapabilities(pi))}` : ""}`,
 		};
 	});
 
@@ -750,6 +776,7 @@ function createJeroAiExtensionForTesting(
 				`${modelConfig.status === "invalid" ? "fail" : "pass"}: Global model config ${modelConfig.status}`,
 				"pass: Sensitive-path guard active for read/write/edit tools",
 				`${engramActive ? "pass" : "warn"}: Engram memory tools ${engramActive ? "active" : "not active in this session"}`,
+				`info: Lean discipline ${resolveEffectiveLeanMode(readLeanBranch(ctx), permissionEnvironment)} (/jero:lean; off restores the historical prompt)`,
 			];
 			if (modelConfig.status === "invalid") {
 				lines.push(`remedy: fix or remove ${modelConfig.path}`);
@@ -868,6 +895,36 @@ function createJeroAiExtensionForTesting(
 		},
 	});
 
+	// 与 jero:review-mode 同一契约：用户所有的开关，绝不是自动开关。
+	// 唯一的写入路径就是本处理器（以及输入侧的独立停用短语）。
+	// 模式经会话条目持久化，并在每次代理启动时倒序回放——切换即时
+	// 生效，无需 /reload；条目不进 LLM 上下文，只影响下次注入。
+	pi.registerCommand("jero:lean", {
+		description: "Show or set the Jero lean-discipline mode for this session (status|off|lite|full|ultra).",
+		handler: async (args, ctx) => {
+			const parsed = parseLeanCommand(args);
+			if (parsed.kind === "invalid") {
+				ctx.ui.notify(parsed.reason, "warning");
+				return;
+			}
+			if (parsed.kind === "set") {
+				pi.appendEntry(LEAN_MODE_ENTRY_TYPE, { mode: parsed.mode });
+				ctx.ui.notify(
+					parsed.mode === "off"
+						? "Jero 精益纪律已关闭（本会话）。/jero:lean <mode> 可重新开启。"
+						: `Jero 精益纪律已设为 ${parsed.mode}（本会话）。切换即时生效，无需 /reload。`,
+					"info",
+				);
+				return;
+			}
+			const effective = resolveEffectiveLeanMode(readLeanBranch(ctx), permissionEnvironment);
+			ctx.ui.notify(
+				`${renderLeanStatusLine(effective)}（会话内生效；用 /jero:lean <off|lite|full|ultra> 切换，说 "stop lean" 关闭）`,
+				"info",
+			);
+		},
+	});
+
 	pi.registerCommand("jero:status", {
 		description: "Show Jero package status for this project.",
 		handler: async (_args, ctx) => {
@@ -883,6 +940,7 @@ function createJeroAiExtensionForTesting(
 				[
 					"el Jero package is active.",
 						`Persona: ${readPersonaMode(ctx.cwd)}`,
+					`Lean discipline: ${resolveEffectiveLeanMode(readLeanBranch(ctx), permissionEnvironment)} (/jero:lean)`,
 					...assetLines,
 					`OpenSpec config: ${openspecConfigured ? "present" : "missing"}`,
 					`Global model config: ${existsSync(modelConfigPath(ctx.cwd)) ? "present" : "missing"}`,
@@ -951,6 +1009,11 @@ import {
 	resolveBackgroundSubagentsCapability, sddDispatchAgentName
 } from "../lib/jero-ai-writer-scope.ts";
 import { RDD_STATUS_TIMEOUT_MS, resolveRddStatusLine } from "../lib/jero-ai-rdd-status.ts";
+import {
+	getLeanInstructions, isLeanDeactivationText,
+	LEAN_MODE_ENTRY_TYPE, parseLeanCommand,
+	resolveEffectiveLeanMode, renderLeanStatusLine, type LeanBranchEntry,
+} from "../lib/jero-ai-lean.ts";
 import { buildGentlePrompt, loadReviewContractPromptFragment } from "../lib/jero-ai-prompts.ts";
 import { setGuardrailsProcessEnv } from "../lib/jero-ai-guardrails.ts";
 import { guardReportLines } from "../lib/jero-ai-guard-report.ts";

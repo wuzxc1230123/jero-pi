@@ -28,9 +28,9 @@ async function run() {
 	process.env.JERO_PI_TEST_ASSETS_DIR = ambientTestAssetsDir;
 	const globalModelsPath = join(globalConfigHome, "models.json");
 	const globalSubagentsPath = join(globalAgentHome, "subagents.json");
-	const { pi, hooks, commands, flags, tools, emittedEvents } = createPi();
+	const { pi, hooks, commands, flags, tools, emittedEvents, sessionEntries } = createPi();
 	await loadExtensions(pi);
-	const env = { globalConfigHome, globalAgentHome, ambientTestAssetsDir, globalModelsPath, globalSubagentsPath, pi, hooks, commands, flags, tools, emittedEvents };
+	const env = { globalConfigHome, globalAgentHome, ambientTestAssetsDir, globalModelsPath, globalSubagentsPath, pi, hooks, commands, flags, tools, emittedEvents, sessionEntries };
 	await part1(env);
 	await part2(env);
 	await part3(env);

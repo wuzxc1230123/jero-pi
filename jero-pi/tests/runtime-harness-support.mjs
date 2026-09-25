@@ -42,6 +42,7 @@ export const EXPECTED_COMMANDS = [
 	"jero:status",
 	"jero:doctor",
 	"jero:guard",
+	"jero:lean",
 	"jero-sdd-init",
 	"skill-registry:refresh",
 	...EXPECTED_BANNER_COMMANDS,
@@ -96,6 +97,7 @@ export function createPi() {
 	const tools = new Map();
 	const eventHandlers = new Map();
 	const emittedEvents = [];
+	const sessionEntries = [];
 	const flagValues = new Map([["no-skill-registry", true]]);
 	const events = {
 		emit(channel, data) {
@@ -154,9 +156,14 @@ export function createPi() {
 				{ name: "mem_save" },
 			];
 		},
+		// 会话条目持久化（不进 LLM 上下文）：精益模式等自定义条目经此
+		// 落入会话分支，与真实宿主的 getBranch 回放形态一致。
+		appendEntry(customType, data) {
+			sessionEntries.push({ type: "custom", customType, data });
+		},
 	};
 
-	return { pi, hooks, commands, flags, tools, emittedEvents };
+	return { pi, hooks, commands, flags, tools, emittedEvents, sessionEntries };
 }
 
 export function createUi() {
