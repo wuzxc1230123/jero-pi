@@ -1,7 +1,7 @@
 import { truncateToWidth } from "@earendil-works/pi-tui";
 import { paintGauge } from "./shell-gauge.ts";
 
-// Gentle Shell 订阅用量：每个已连接提供方上报的限流窗口。Codex 以
+// Jero Shell 订阅用量：每个已连接提供方上报的限流窗口。Codex 以
 // SSE 头及其用量端点发送；两者汇入同一模型。解析是纯函数，且除套餐
 // 名外绝不保留账户细节。
 

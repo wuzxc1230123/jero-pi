@@ -74,7 +74,7 @@ export function installSessionChangeCapture(pi: ExtensionAPI, env: NodeJS.Proces
 			if (item.sessionId !== ctx.sessionManager.getSessionId() || pending.get(event.toolCallId) !== item) return;
 			item.evidence = { id: event.toolCallId, root: item.root, path: item.relativePath, before, after: verified };
 			// 使用既有的 RPC 工具结果封套，而不是新建 IPC 通道或模型消息。
-			if (child) return { details: { ...(event.details && typeof event.details === "object" ? event.details : {}), gentleSessionChange: item.evidence } };
+			if (child) return { details: { ...(event.details && typeof event.details === "object" ? event.details : {}), jeroSessionChange: item.evidence } };
 		} catch { pending.delete(event.toolCallId); }
 	});
 	pi.on("tool_execution_end", (event, ctx) => {

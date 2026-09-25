@@ -159,7 +159,15 @@ function main() {
 		writeFileSync(args.out, `${JSON.stringify(report, null, 2)}\n`);
 		console.log(`results written: ${args.out}`);
 	} else {
-		console.log(JSON.stringify(report, null, 2));
+		// 结果留存闭环：默认不再只打印到 stdout，而是落到 benchmarks/results/
+		//（时间戳全量 + latest.json 指针），让精益纪律的效果主张有据可查。
+		const resultsDir = join(import.meta.dirname, "results");
+		mkdirSync(resultsDir, { recursive: true });
+		const stamp = startedAt.replace(/[:.]/g, "-");
+		const outFile = join(resultsDir, `${stamp}.json`);
+		writeFileSync(outFile, `${JSON.stringify(report, null, 2)}\n`);
+		writeFileSync(join(resultsDir, "latest.json"), `${JSON.stringify(report, null, 2)}\n`);
+		console.log(`results written: ${outFile} (and results/latest.json refreshed)`);
 	}
 }
 

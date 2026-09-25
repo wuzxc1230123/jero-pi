@@ -6,19 +6,19 @@ import { join } from "node:path";
 import test from "node:test";
 import { initTheme, type ExtensionAPI, type ExtensionContext } from "@earendil-works/pi-coding-agent";
 import type { TUI } from "@earendil-works/pi-tui";
-import installGentleShell, { buildShellBarModel, createActiveProfileReader, changesShortcut, devBinaryCard, fetchCodexUsage, loadFileDiff, shellGitRunner, openInExternalEditor, type ExternalEditorHost, type GentlePromptEditor } from "../extensions/jero-shell.ts";
+import installJeroShell, { buildShellBarModel, createActiveProfileReader, changesShortcut, devBinaryCard, fetchCodexUsage, loadFileDiff, shellGitRunner, openInExternalEditor, type ExternalEditorHost, type JeroPromptEditor } from "../extensions/jero-shell.ts";
 import { CHANGE_STATUS } from "../lib/shell-changes.ts";
 import { sidebarState, type SidebarRail } from "../lib/shell-sidebar.ts";
 import { compactModel, type ShellBarModel, type ShellBarTheme } from "../lib/shell-bar.ts";
 import { stripAnsi } from "../lib/terminal-theme.ts";
 
-// The Gentle Shell extension wires the pure bar renderer into pi's footer
+// The Jero Shell extension wires the pure bar renderer into pi's footer
 // slot. These tests drive it with a fake ExtensionAPI and context.
 
 initTheme("dark");
 
 const resolveWorktree = (path: string) => ({ root: path.startsWith("/repo") || path === "." ? "/repo" : path, commonDir: "/clone/git" });
-const gentleShell: typeof installGentleShell = (pi, env, deps) => installGentleShell(pi, env, { resolveWorktree, gitRunner: (cwd) => async (args) => pi.exec("git", ["-C", cwd, ...args], { timeout: 5000 }), ...deps });
+const jeroShell: typeof installJeroShell = (pi, env, deps) => installJeroShell(pi, env, { resolveWorktree, gitRunner: (cwd) => async (args) => pi.exec("git", ["-C", cwd, ...args], { timeout: 5000 }), ...deps });
 
 const plainTheme = {
 	fg(_color: string, value: string) {
@@ -212,9 +212,9 @@ test("buildShellBarModel shortens the home directory and hides effort for non-re
 	assert.equal(built.branch, null);
 });
 
-test("gentleShell installs the footer on session_start when a UI exists", () => {
+test("jeroShell installs the footer on session_start when a UI exists", () => {
 	const { pi, handlers } = fakePi();
-	gentleShell(pi, {});
+	jeroShell(pi, {});
 	const { ctx, ui } = fakeContext();
 	for (const handler of handlers.get("session_start") ?? []) handler({}, ctx);
 	assert.equal(typeof ui.footerFactory, "function");
@@ -233,7 +233,7 @@ test("gentleShell installs the footer on session_start when a UI exists", () => 
 test("the fullscreen Status rail carries a live digest so a model switch refreshes it", async () => {
 	const { pi, handlers } = fakePi();
 	let profile: string | undefined = "team";
-	gentleShell(pi, { JERO_PI_SHELL_CHANGES_WATCH_MS: "off" }, { activeProfile: () => profile });
+	jeroShell(pi, { JERO_PI_SHELL_CHANGES_WATCH_MS: "off" }, { activeProfile: () => profile });
 	const entries: unknown[] = [];
 	const { ctx, ui } = fakeContext({ entries });
 	await fire(handlers, "session_start", ctx);
@@ -315,14 +315,14 @@ test("profile reader follows store changes and rejects missing or invalid active
 	assert.equal(read(), undefined);
 });
 
-test("gentleShell stays out of the way without a UI or when disabled", () => {
+test("jeroShell stays out of the way without a UI or when disabled", () => {
 	const disabled = fakePi();
-	gentleShell(disabled.pi, { JERO_PI_SHELL: "0" });
+	jeroShell(disabled.pi, { JERO_PI_SHELL: "0" });
 	assert.equal(disabled.commands.size, 0);
 	assert.ok(disabled.handlers.has("tool_call"), "capture remains available to headless children");
 
 	const headless = fakePi();
-	gentleShell(headless.pi, {});
+	jeroShell(headless.pi, {});
 	const { ctx, ui } = fakeContext({ hasUI: false });
 	for (const handler of headless.handlers.get("session_start") ?? []) handler({}, ctx);
 	assert.equal(ui.footerFactory, undefined);
@@ -332,15 +332,15 @@ const fakeTui = { terminal: { rows: 40, columns: 120 }, requestRender() {} };
 const editorTheme = { borderColor: (text: string) => text, selectList: {} };
 const fakeKeybindings = { matches: () => false };
 
-function installedPrompt(ctx: ExtensionContext, ui: FakeUi, handlers: Map<string, Array<(event: unknown, ctx: ExtensionContext) => unknown>>): GentlePromptEditor {
+function installedPrompt(ctx: ExtensionContext, ui: FakeUi, handlers: Map<string, Array<(event: unknown, ctx: ExtensionContext) => unknown>>): JeroPromptEditor {
 	for (const handler of handlers.get("session_start") ?? []) handler({}, ctx);
-	const factory = ui.editorFactory as (tui: unknown, theme: unknown, keybindings: unknown) => GentlePromptEditor;
+	const factory = ui.editorFactory as (tui: unknown, theme: unknown, keybindings: unknown) => JeroPromptEditor;
 	return factory(fakeTui, editorTheme, fakeKeybindings);
 }
 
-test("gentleShell frames the editor with the petal prompt and a hint while empty", () => {
+test("jeroShell frames the editor with the petal prompt and a hint while empty", () => {
 	const { pi, handlers } = fakePi();
-	gentleShell(pi, {});
+	jeroShell(pi, {});
 	const { ctx, ui } = fakeContext();
 	const editor = installedPrompt(ctx, ui, handlers);
 	assert.equal(ui.workingVisible, false, "pi's own Working row must be hidden");
@@ -357,7 +357,7 @@ test("gentleShell frames the editor with the petal prompt and a hint while empty
 
 test("registered prompt stays transparent while idle, working, and queued", () => {
 	const { pi, handlers, tools } = fakePi();
-	gentleShell(pi, {});
+	jeroShell(pi, {});
 	const { ctx, ui } = fakeContext();
 	(ctx.ui as { theme: typeof ctx.ui.theme }).theme = { ...plainTheme, getBgAnsi: () => "\x1b[44m" } as unknown as typeof ctx.ui.theme;
 	const editor = installedPrompt(ctx, ui, handlers);
@@ -373,9 +373,9 @@ test("registered prompt stays transparent while idle, working, and queued", () =
 	assert.equal(tools.get("session_worktree_register")?.renderShell, "self");
 });
 
-test("gentleShell shows working while the agent runs and queued when messages wait", () => {
+test("jeroShell shows working while the agent runs and queued when messages wait", () => {
 	const { pi, handlers } = fakePi();
-	gentleShell(pi, {});
+	jeroShell(pi, {});
 	const pending = { value: false };
 	const { ctx, ui } = fakeContext();
 	(ctx as unknown as { hasPendingMessages: () => boolean }).hasPendingMessages = () => pending.value;
@@ -391,9 +391,9 @@ test("gentleShell shows working while the agent runs and queued when messages wa
 	editor.dispose();
 });
 
-test("gentleShell leaves an editor another extension already installed", () => {
+test("jeroShell leaves an editor another extension already installed", () => {
 	const { pi, handlers } = fakePi();
-	gentleShell(pi, {});
+	jeroShell(pi, {});
 	const theirs = () => ({});
 	const { ctx, ui } = fakeContext({ editorFactory: theirs });
 	for (const handler of handlers.get("session_start") ?? []) handler({}, ctx);
@@ -417,15 +417,15 @@ function sessionChange(ctx: ExtensionContext, id: string, root: string, path: st
 
 test("captured changes update the widget and bar without repository scans", async () => {
  const { pi, handlers, git } = fakePi([{numstat:"999\t0\tforeign.ts\n",porcelain:"?? foreign.ts\0"}]);
- gentleShell(pi,{});
+ jeroShell(pi,{});
  const {ctx,ui}=fakeContext();
  await fire(handlers,"session_start",ctx);
  assert.equal(git.length,0);
- assert.equal(ui.widgets.has("gentle-shell-changes"),false);
+ assert.equal(ui.widgets.has("jero-shell-changes"),false);
  sessionChange(ctx,"a","/repo","lib/b.ts","","one\ntwo\n");
- pi.events.emit("gentle-pi:session-change",{sessionId:ctx.sessionManager.getSessionId()});
+ pi.events.emit("jero-pi:session-change",{sessionId:ctx.sessionManager.getSessionId()});
  await new Promise(resolve=>setImmediate(resolve));
- const factory=ui.widgets.get("gentle-shell-changes") as any;
+ const factory=ui.widgets.get("jero-shell-changes") as any;
  assert.match(factory(fakeTui,plainTheme).render(140)[0],/1 file · \+2 −0/);
  assert.match(renderFooter(ui),/main ±1/);
  assert.equal(git.length,0);
@@ -434,7 +434,7 @@ test("captured changes update the widget and bar without repository scans", asyn
 
 test("Changes opens only for captured mutations, not registered dirty roots", async () => {
  const {pi,handlers,commands,tools,git}=fakePi();
- gentleShell(pi,{});
+ jeroShell(pi,{});
  const {ctx,ui,overlayReady}=fakeContext();
  await fire(handlers,"session_start",ctx);
  await tools.get("session_worktree_register")!.execute("r",{path:"/linked"},undefined,undefined,ctx);
@@ -453,7 +453,7 @@ test("Changes opens only for captured mutations, not registered dirty roots", as
 
 test("overlay groups captured roots and refreshes same-count diffs without HEAD or external files", async () => {
  const {pi,handlers,commands,git}=fakePi();
- gentleShell(pi,{JERO_PI_SHELL_CHANGES_POLL_MS:"5"});
+ jeroShell(pi,{JERO_PI_SHELL_CHANGES_POLL_MS:"5"});
  const {ctx,ui,overlayReady}=fakeContext();
  sessionChange(ctx,"a","/repo","same.ts","old\n","first\n");
  sessionChange(ctx,"child:a","/linked","same.ts","old\n","child\n");
@@ -465,7 +465,7 @@ test("overlay groups captured roots and refreshes same-count diffs without HEAD 
   await new Promise(resolve=>setTimeout(resolve,10));
   assert.match(ui.overlayView!.render(140).join("\n"),/first/);
   sessionChange(ctx,"b","/repo","same.ts","first\n","second\n");
-  pi.events.emit("gentle-pi:session-change",{sessionId:ctx.sessionManager.getSessionId()});
+  pi.events.emit("jero-pi:session-change",{sessionId:ctx.sessionManager.getSessionId()});
   await new Promise(resolve=>setTimeout(resolve,20));
   assert.match(ui.overlayView!.render(140).join("\n"),/second/);
   assert.doesNotMatch(ui.overlayView!.render(140).join("\n"),/first/);
@@ -474,7 +474,7 @@ test("overlay groups captured roots and refreshes same-count diffs without HEAD 
 });
 
 test("new sessions ignore inherited captures, while reload restores the same session", async () => {
- const h=fakePi(); gentleShell(h.pi,{});
+ const h=fakePi(); jeroShell(h.pi,{});
  const first=fakeContext();
  sessionChange(first.ctx,"a","/repo","own.ts");
  await fire(h.handlers,"session_start",first.ctx);
@@ -484,7 +484,7 @@ test("new sessions ignore inherited captures, while reload restores the same ses
  const next=fakeContext({entries:[...first.ctx.sessionManager.getEntries()]});
  (next.ctx.sessionManager as any).getSessionId=()=>"new-session";
  await fire(h.handlers,"session_start",next.ctx);
- h.pi.events.emit("gentle-pi:session-change",{sessionId:"shell-session"});
+ h.pi.events.emit("jero-pi:session-change",{sessionId:"shell-session"});
  assert.doesNotMatch(renderFooter(next.ui),/±1/);
  assert.equal(h.git.length,0);
  await fire(h.handlers,"session_shutdown",next.ctx);
@@ -529,10 +529,10 @@ test("registered canonical root governs real Git discovery, status and diff desp
 	const gitSpelled = (value: string) => value.replaceAll(String.fromCharCode(92), "/");
 	assert.ok(discovery.stdout.includes(`worktree ${gitSpelled(selected)}`));
 	assert.ok(!discovery.stdout.includes(`worktree ${gitSpelled(foreign)}`));
-	installGentleShell(h.pi, { JERO_PI_SHELL_CHANGES_WATCH_MS: "off" }, { devBinary: () => undefined, gitRunner: (cwd) => shellGitRunner(cwd, poisoned) });
+	installJeroShell(h.pi, { JERO_PI_SHELL_CHANGES_WATCH_MS: "off" }, { devBinary: () => undefined, gitRunner: (cwd) => shellGitRunner(cwd, poisoned) });
 	await fire(h.handlers, "session_start", ctx);
 	t.after(() => fire(h.handlers, "session_shutdown", ctx));
-	assert.equal(ui.widgets.has("gentle-shell-changes"), false, "preexisting dirty files are not agent changes");
+	assert.equal(ui.widgets.has("jero-shell-changes"), false, "preexisting dirty files are not agent changes");
 	const diff = await loadFileDiff(run, { path: "tracked.txt", added: 1, deleted: 1, status: CHANGE_STATUS.MODIFIED });
 	assert.match(diff, /\+selected change/);
 	assert.doesNotMatch(diff, /foreign change/);
@@ -611,9 +611,9 @@ test("changesShortcut defaults to alt+g and can be overridden or disabled", () =
 	assert.equal(changesShortcut({ JERO_PI_SHELL_CHANGES_KEY: "" }), undefined);
 });
 
-test("gentleShell binds the changes shortcut to the same handler as the command", async () => {
+test("jeroShell binds the changes shortcut to the same handler as the command", async () => {
 	const { pi, handlers, shortcuts } = fakePi();
-	gentleShell(pi, {});
+	jeroShell(pi, {});
 	const { ctx, ui } = fakeContext();
 	await fire(handlers, "session_start", ctx);
 	const shortcut = shortcuts.get("alt+g");
@@ -622,19 +622,19 @@ test("gentleShell binds the changes shortcut to the same handler as the command"
 	assert.match(ui.notices.join("\n"), /No captured agent changes/);
 
 	const silent = fakePi();
-	gentleShell(silent.pi, { JERO_PI_SHELL_CHANGES_KEY: "off" });
+	jeroShell(silent.pi, { JERO_PI_SHELL_CHANGES_KEY: "off" });
 	assert.equal(silent.shortcuts.size, 0);
 });
 
 test("external edits do not pollute Changes or trigger background Git scans", async () => {
  const {pi,handlers,git}=fakePi([{numstat:"4\t2\texternal.ts\n",porcelain:" M external.ts\0"}]);
- gentleShell(pi,{JERO_PI_SHELL_CHANGES_WATCH_MS:"5"});
+ jeroShell(pi,{JERO_PI_SHELL_CHANGES_WATCH_MS:"5"});
  const {ctx,ui}=fakeContext();
  await fire(handlers,"session_start",ctx);
  await new Promise(resolve=>setTimeout(resolve,30));
  await fire(handlers,"agent_end",ctx);
  assert.equal(git.length,0);
- assert.equal(ui.widgets.has("gentle-shell-changes"),false);
+ assert.equal(ui.widgets.has("jero-shell-changes"),false);
  assert.doesNotMatch(renderFooter(ui),/±/);
  await fire(handlers,"session_shutdown",ctx);
 });
@@ -666,10 +666,10 @@ test("fetchCodexUsage sends the token and account id and parses the payload", as
 	assert.equal(await fetchCodexUsage(undefined, plain.fetchFn, 0), undefined);
 });
 
-test("gentleShell fetches Codex usage on session start and shows it in the bar", async () => {
+test("jeroShell fetches Codex usage on session start and shows it in the bar", async () => {
 	const { pi, handlers } = fakePi();
 	const { fetchFn, calls } = fakeFetch();
-	gentleShell(pi, { JERO_PI_SHELL_CHANGES_WATCH_MS: "off" }, { fetch: fetchFn, now: () => 1_788_600_000_000 });
+	jeroShell(pi, { JERO_PI_SHELL_CHANGES_WATCH_MS: "off" }, { fetch: fetchFn, now: () => 1_788_600_000_000 });
 	const { ctx, ui } = fakeContext({ token: JWT });
 	await fire(handlers, "session_start", ctx);
 	await new Promise((resolve) => setTimeout(resolve, 0));
@@ -681,9 +681,9 @@ test("gentleShell fetches Codex usage on session start and shows it in the bar",
 	assert.equal(calls.length, 1, "agent_end must not refetch within the refresh window");
 });
 
-test("gentleShell records SSE rate-limit headers from provider responses", async () => {
+test("jeroShell records SSE rate-limit headers from provider responses", async () => {
 	const { pi, handlers } = fakePi();
-	gentleShell(pi, { JERO_PI_SHELL_CHANGES_WATCH_MS: "off" }, { fetch: fakeFetch({}, false).fetchFn, now: () => 0 });
+	jeroShell(pi, { JERO_PI_SHELL_CHANGES_WATCH_MS: "off" }, { fetch: fakeFetch({}, false).fetchFn, now: () => 0 });
 	const { ctx, ui } = fakeContext();
 	await fire(handlers, "session_start", ctx);
 	for (const handler of handlers.get("after_provider_response") ?? []) {
@@ -699,9 +699,9 @@ test("gentleShell records SSE rate-limit headers from provider responses", async
 	assert.doesNotMatch(renderFooter(ui), /codex/);
 });
 
-test("gentleShell registers /jero:usage and opens the subscriptions overlay", async () => {
+test("jeroShell registers /jero:usage and opens the subscriptions overlay", async () => {
 	const { pi, handlers, commands } = fakePi();
-	gentleShell(pi, { JERO_PI_SHELL_CHANGES_WATCH_MS: "off" }, { fetch: fakeFetch().fetchFn, now: () => 1_788_600_000_000 });
+	jeroShell(pi, { JERO_PI_SHELL_CHANGES_WATCH_MS: "off" }, { fetch: fakeFetch().fetchFn, now: () => 1_788_600_000_000 });
 	const { ctx, ui } = fakeContext({ token: JWT });
 	await fire(handlers, "session_start", ctx);
 	const opened = commands.get("jero:usage")!.handler("", ctx);
@@ -713,9 +713,9 @@ test("gentleShell registers /jero:usage and opens the subscriptions overlay", as
 	await opened;
 });
 
-test("gentleShell draws the review preflight message as a Gentle card", () => {
+test("jeroShell draws the review preflight message as a Gentle card", () => {
 	const { pi } = fakePi();
-	gentleShell(pi, {});
+	jeroShell(pi, {});
 	const renderer = renderers.get("jero.review-preflight");
 	assert.ok(renderer, "renderer not registered");
 	const message = { customType: "jero.review-preflight", content: "Receipt-driven development is enabled.\n\nCall the jero_review tool." };
@@ -731,10 +731,10 @@ test("gentleShell draws the review preflight message as a Gentle card", () => {
 	assert.equal(collapsed.length, 3);
 });
 
-test("gentleShell keeps a dev-binary override visible above the editor for the whole session", async () => {
+test("jeroShell keeps a dev-binary override visible above the editor for the whole session", async () => {
 	const { pi, handlers } = fakePi();
 	const deps = { fetch: fakeFetch({}, false).fetchFn, now: () => 0, devBinary: () => ({ state: "active" as const, path: "/Users/me/go/bin/gentle-ai", sha256: "6e53bfc6305a3949deadbeef" }) };
-	gentleShell(pi, { JERO_PI_SHELL_CHANGES_WATCH_MS: "off" }, deps);
+	jeroShell(pi, { JERO_PI_SHELL_CHANGES_WATCH_MS: "off" }, deps);
 	const { ctx, ui } = fakeContext();
 	await fire(handlers, "session_start", ctx);
 	const factory = ui.widgets.get("gentle-shell-dev-binary") as (tui: unknown, theme: unknown) => { render(width: number): string[] };
@@ -753,7 +753,7 @@ test("gentleShell keeps a dev-binary override visible above the editor for the w
 	assert.equal(ui.widgets.has("gentle-shell-dev-binary"), false, "the startup notice leaves with the first prompt");
 
 	const clean = fakePi();
-	gentleShell(clean.pi, { JERO_PI_SHELL_CHANGES_WATCH_MS: "off" }, { ...deps, devBinary: () => undefined });
+	jeroShell(clean.pi, { JERO_PI_SHELL_CHANGES_WATCH_MS: "off" }, { ...deps, devBinary: () => undefined });
 	const fresh = fakeContext();
 	await fire(clean.handlers, "session_start", fresh.ctx);
 	assert.equal(fresh.ui.widgets.has("gentle-shell-dev-binary"), false);

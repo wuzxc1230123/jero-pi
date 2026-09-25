@@ -13,20 +13,20 @@ import type { PersonaMode } from "./jero-ai-prompts.ts";
 
 
 
-export function gentleAiConfigHome(): string {
+export function jeroConfigHome(): string {
 	return process.env.JERO_PI_CONFIG_HOME ?? join(homedir(), ".pi", "jero");
 }
 
 
 
 export function modelConfigPath(_cwd: string): string {
-	return join(gentleAiConfigHome(), "models.json");
+	return join(jeroConfigHome(), "models.json");
 }
 
 
 
 export function modelExportPath(_cwd: string): string {
-	return join(gentleAiConfigHome(), "models.export.json");
+	return join(jeroConfigHome(), "models.export.json");
 }
 
 
@@ -50,7 +50,7 @@ export function projectPersonaConfigPath(cwd: string): string {
 
 
 export function personaConfigPath(_cwd: string): string {
-	return join(gentleAiConfigHome(), "persona.json");
+	return join(jeroConfigHome(), "persona.json");
 }
 
 

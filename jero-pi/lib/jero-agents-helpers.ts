@@ -151,7 +151,7 @@ export function text(value: string, details: Record<string, unknown> = {}, termi
 }
 
 export function taskDetails(task: TaskRecord): Record<string, unknown> {
-	return { gentleAgents: { taskId: task.id, agent: task.agent, status: task.status, mode: task.mode, cwd: task.cwd } };
+	return { jeroAgents: { taskId: task.id, agent: task.agent, status: task.status, mode: task.mode, cwd: task.cwd } };
 }
 
 export function describeTask(task: TaskRecord): string {

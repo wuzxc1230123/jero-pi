@@ -2,7 +2,7 @@ import type { RemediationObservations, RemediationScope } from "./agents-runner.
 import type { NativeSddAcquireRequest, NativeSddSettleRequest, NativeSddAttemptResult } from "./authority/client-contract.ts";
 import { sanitizeTerminalText } from "./terminal-theme.ts";
 
-// Gentle Agents 协议。子 pi 进程流式输出 RPC 事件；宿主将每个事件变成
+// Jero Agents 协议。子 pi 进程流式输出 RPC 事件；宿主将每个事件变成
 // 一个小型类型化增量，应用到只追加且有界的线程上，并只通知该任务的
 // 监听者。这里不做重建转录、整体快照重校验或全局扇出。
 

@@ -77,7 +77,7 @@ function createRepository(t: test.TestContext): {
 	git("add", ".");
 	git(
 		"-c",
-		"user.name=Gentle Pi Tests",
+		"user.name=Jero Pi Tests",
 		"-c",
 		"user.email=gentle-pi@example.invalid",
 		"commit",

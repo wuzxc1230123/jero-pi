@@ -3,7 +3,7 @@ import { sanitizeTerminalText } from "./terminal-theme.ts";
 import { basename } from "node:path";
 import { CHANGE_STATUS, changesSummary, type ChangedFile, type ChangesModel, type WorktreeChanges } from "./shell-changes.ts";
 
-// Gentle Shell 变更覆盖层：带框架的双栏视图，左栏是工作树的已变更
+// Jero Shell 变更覆盖层：带框架的双栏视图，左栏是工作树的已变更
 // 文件，右栏是所选文件的 diff。Git 访问被注入，使组件无需仓库即可
 // 渲染。
 

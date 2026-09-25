@@ -16,7 +16,7 @@ import { type ExtensionAPI, type ExtensionContext } from "@earendil-works/pi-cod
 import { type TuiMouseEvent, visibleWidth } from "@earendil-works/pi-tui";
 import {
 	agentRuntimePaths, agentsCollapseKey, type AgentsDeps, agentsEnabled, agentsStopKey,
-	agentsViewKey, answerThroughUi, completionText, default as gentleAgents,
+	agentsViewKey, answerThroughUi, completionText, default as jeroAgents,
 	legacySubagentsInstalled
 } from "../extensions/jero-agents.ts";
 import { historyDir, loadHistory, saveTask } from "../lib/agents-history.ts";
@@ -220,7 +220,7 @@ test("research launch transports selected grants and only matching existing exte
 	const selection = { documentation: { tools: ["fetch_content"], extensions: { fetch_content: "/installed/web.ts" } } };
 	const artifact = { store: "openspec", worktree: cwd, changeName: "demo", retainedIntent: "preserve denied documentation questions", locators: [{ artifact: "research", path: join(cwd, "openspec/changes/demo/research.md"), revision: 1, digest: "a".repeat(64) }] };
 	let childEnv: NodeJS.ProcessEnv = {};
-	gentleAgents(fake.pi, {}, { ...runtime.deps, home: fixtureHome, spawn: (command, args, options) => {
+	jeroAgents(fake.pi, {}, { ...runtime.deps, home: fixtureHome, spawn: (command, args, options) => {
 		childEnv = options.env!;
 		return runtime.deps.spawn!(command, args, options);
 	} });
@@ -238,7 +238,7 @@ test("research launch transports selected grants and only matching existing exte
 	assert.match(argv[argv.indexOf("--append-system-prompt") + 1], /open-web: blocked/, "two reachable tools cannot admit open-web");
 	runtime.children[0].emit({ type: "agent_settled" });
 	await tick();
-	const taskId = (result.details.gentleAgents as { taskId: string }).taskId;
+	const taskId = (result.details.jeroAgents as { taskId: string }).taskId;
 	const rejected = await fake.tools.get("subagent_continue")!.execute("broaden", { task_id: taskId, prompt: "Inspect", mode: "background", research_artifact: { ...artifact, store: "none", locators: [] } }, undefined, undefined, ctx);
 	assert.match(rejected.content[0].text, /scope/);
 	assert.equal(runtime.spawned.length, 1);
@@ -258,7 +258,7 @@ test("research launch transports selected grants and only matching existing exte
 	runtime.children[2].emit({ type: "agent_settled" });
 	await tick();
 	fake.pi.getActiveTools = () => ["fetch_content", "web_search"];
-	await fake.tools.get("subagent_continue")!.execute("corrected", { task_id: (denied.details.gentleAgents as { taskId: string }).taskId, prompt: "Retry same scope", mode: "background", research_selection: selection, research_artifact: artifact }, undefined, undefined, ctx);
+	await fake.tools.get("subagent_continue")!.execute("corrected", { task_id: (denied.details.jeroAgents as { taskId: string }).taskId, prompt: "Retry same scope", mode: "background", research_selection: selection, research_artifact: artifact }, undefined, undefined, ctx);
 	await tick();
 	assert.equal(runtime.spawned[3][runtime.spawned[3].indexOf("--extension") + 1], "/installed/web.ts");
 	assert.deepEqual(JSON.parse(childEnv.JERO_PI_RESEARCH_ARTIFACT!), artifact);
@@ -271,7 +271,7 @@ test("research child inventory requires every canonical open-web tool", () => {
 		const hooks = new Map<string, (event: any) => any>();
 		const active = required.filter(name => name !== missing);
 		const pi = { on: (name: string, handler: (event: any) => any) => hooks.set(name, handler), getActiveTools: () => active, getAllTools: () => required.map(name => ({ name, sourceInfo: { source: "extension", path: "/installed/web.ts" } })) } as never;
-		gentleAgents(pi, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(required), JERO_PI_RESEARCH_SELECTION: JSON.stringify({ documentation: { tools: ["fetch_content"], extensions: { fetch_content: "/installed/web.ts" } }, "open-web": { tools: required, extensions: Object.fromEntries(required.map(name => [name, "/installed/web.ts"])) } }) });
+		jeroAgents(pi, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(required), JERO_PI_RESEARCH_SELECTION: JSON.stringify({ documentation: { tools: ["fetch_content"], extensions: { fetch_content: "/installed/web.ts" } }, "open-web": { tools: required, extensions: Object.fromEntries(required.map(name => [name, "/installed/web.ts"])) } }) });
 		const prompt = hooks.get("before_agent_start")!({ systemPrompt: "research" }).systemPrompt;
 		assert.match(prompt, new RegExp(`open-web: ${missing === undefined ? "available" : "blocked"}`));
 		assert.match(prompt, new RegExp(`documentation: ${missing === "fetch_content" ? "blocked" : "available"}`));
@@ -282,7 +282,7 @@ test("research child inventory requires every canonical open-web tool", () => {
 test("research child rechecks local inventory and blocks gateway calls", async () => {
 	const hooks = new Map<string, (event: any) => any>();
 	const pi = { on: (name: string, handler: (event: any) => any) => hooks.set(name, handler), getActiveTools: () => ["read", "mcp"], getAllTools: () => [{ name: "read" }, { name: "mcp" }] } as never;
-	gentleAgents(pi, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: '["read","fetch_content"]' });
+	jeroAgents(pi, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: '["read","fetch_content"]' });
 	assert.match(hooks.get("before_agent_start")!({ systemPrompt: "research" }).systemPrompt, /documentation: blocked/);
 	assert.equal(hooks.get("tool_call")!({ toolName: "mcp" }).block, true);
 	assert.equal(hooks.get("tool_call")!({ toolName: "fetch_content" }).block, true);
@@ -309,14 +309,14 @@ for (const matching of [true, false]) {
    child.on=((event,listener)=>{if(event==="spawn")queueMicrotask(listener);return on(event,listener);}) as any;
    return child;
   };
-  gentleAgents(h.pi,{},d.deps);
+  jeroAgents(h.pi,{},d.deps);
   await h.fire("session_start",ctx);
   await h.tools.get("subagent_run")!.execute("diff",{agent:"explore",task:"Write",mode:"background",workspace_root:target},undefined,undefined,ctx);
   await tick();
   writeFileSync(join(target,"session-diff-test.ts"),"agent\n");
   const evidence={id:"write",root:target,path:matching?"session-diff-test.ts":"different.ts",before:{kind:"text",text:"original\n"},after:{kind:"text",text:"agent\n"}};
   d.children[0].emit({type:"tool_execution_start",toolCallId:"write",toolName:"write",args:{path:"session-diff-test.ts"}});
-  d.children[0].emit({type:"tool_execution_end",toolCallId:"write",isError:false,result:{content:[],details:{gentleSessionChange:evidence}}});
+  d.children[0].emit({type:"tool_execution_end",toolCallId:"write",isError:false,result:{content:[],details:{jeroSessionChange:evidence}}});
   const relays=h.events.filter(event=>event.name==="gentle-pi:child-session-change");
   assert.equal(relays.length,matching?1:0);
   if(matching) assert.match((relays[0].data as any).evidence.id,/:write$/);
@@ -351,7 +351,7 @@ for (const scenario of ["own", "other-root", "escaped", "sibling", "session-swit
 			}) as typeof child.on;
 			return child;
 		};
-		gentleAgents(h.pi, {}, d.deps);
+		jeroAgents(h.pi, {}, d.deps);
 		await h.fire("session_start", ctx);
 		await h.tools.get("subagent_run")!.execute("mutation", { agent: "explore", task: "Write", mode: "background", workspace_root: childRoot }, undefined, undefined, ctx);
 		await tick();

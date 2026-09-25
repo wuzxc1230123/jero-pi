@@ -62,7 +62,7 @@ test("child carries bounded evidence in the existing tool-result details transpo
 	await fire("tool_call",event); await writeFile(join(root,"new"),event.input.content);
 	const result=await fire("tool_result",{...event,isError:false,details:{original:"preserved"}});
 	assert.equal(result.details.original,"preserved");
-	assert.equal(result.details.gentleSessionChange.id,"w");
-	assert.equal(result.details.gentleSessionChange.path,"new");
+	assert.equal(result.details.jeroSessionChange.id,"w");
+	assert.equal(result.details.jeroSessionChange.path,"new");
 	assert.deepEqual(entries,[]);
 },true));

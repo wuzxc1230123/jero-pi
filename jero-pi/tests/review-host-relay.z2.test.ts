@@ -267,7 +267,7 @@ test("only provider-issued pi --materialize capture-result inputs become relay s
 test("relay input validation rejects empty or malformed inputs before any process launches", async () => {
 	await assert.rejects(runReviewHostRelaySlot({ captureArgumentTokens: [], submission: SUBMISSION }), TypeError);
 	await assert.rejects(runReviewHostRelaySlot({ captureArgumentTokens: [""], submission: SUBMISSION }), TypeError);
-	await assert.rejects(runReviewHostRelaySlot({ captureArgumentTokens: CAPTURE_TOKENS, submission: SUBMISSION, gentleAiExecutable: "gentle-ai" }), TypeError);
+	await assert.rejects(runReviewHostRelaySlot({ captureArgumentTokens: CAPTURE_TOKENS, submission: SUBMISSION, providerExecutable: "gentle-ai" }), TypeError);
 });
 
 // ---------------------------------------------------------------------------
@@ -378,7 +378,7 @@ test("jero-pi M3 fail-closed defaults: the exact relay-unavailable messages with
 	// Materialize with NO render seam and NO executable: the default fails
 	// closed with the pinned M3 message and never launches anything.
 	const prepareError = await rejectsWithRelayError(
-		prepareReviewHostRelaySlot(relayRequest(fixture, { gentleAiExecutable: undefined })),
+		prepareReviewHostRelaySlot(relayRequest(fixture, { providerExecutable: undefined })),
 		REVIEW_HOST_RELAY_FAILURE.RELAY_UNAVAILABLE,
 		"materialize",
 	);
@@ -389,7 +389,7 @@ test("jero-pi M3 fail-closed defaults: the exact relay-unavailable messages with
 	// injected render/reviewer seams (no spawn), then the default submit
 	// fails closed with its own pinned message.
 	const prepared = await prepareReviewHostRelaySlot(
-		relayRequest(fixture, { gentleAiExecutable: undefined }),
+		relayRequest(fixture, { providerExecutable: undefined }),
 		async () => ({ stdout: Buffer.from(PI_OUTPUT_BYTES), promptByteLength: PROMPT_BYTES.length, stdoutByteLength: PI_OUTPUT_BYTES.length }),
 		async () => ({ promptBytes: Buffer.from(PROMPT_BYTES) }),
 	);

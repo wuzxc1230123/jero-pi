@@ -51,8 +51,7 @@ yagni-oneliner 臂栽跟头的地方。`tasks/safety-*.md` 把安全需求**隐�
 node benchmarks/run.mjs --list
 node benchmarks/run.mjs --repo /path/to/target-repo \
   --command 'pi -p "{ticket}"' \
-  --arms lean-off,lean-full --tasks loc-01,safety-01 \
-  --out benchmarks/results/manual-$(date +%Y%m%d).json
+  --arms baseline,lean-full --tasks loc-01,safety-01
 ```
 
 `--command` 是必填模板：`{ticket}` 展开为工单文本，`{workspace}` 展开为
@@ -63,7 +62,13 @@ node benchmarks/run.mjs --repo /path/to/target-repo \
 3. 度量 `git diff --numstat` 与墙钟时间；safety 任务追加执行 `check:`；
 4. 汇总写出 JSON（附完整元数据，可离线重算）。
 
-`--dry-run` 只打印将执行的命令矩阵，不运行、不写结果。
+## 结果留存（闭环）
+
+不传 `--out` 时结果**默认落盘**到 `results/`：一次运行写两份——
+`results/<startedAt 时间戳>.json`（全量存档）与 `results/latest.json`
+（最新一次的指针副本）。精益纪律的效果主张以 `results/latest.json`
+为当前证据；README 或讨论引用数字时必须给出对应的时间戳存档文件。
+`--out <path>` 仍可重定向到任意路径。`--dry-run` 不写任何结果。
 
 ## 任务集（tasks/）
 

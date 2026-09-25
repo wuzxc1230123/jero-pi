@@ -11,9 +11,9 @@ Pi 宿主（@earendil-works/pi-coding-agent ≥0.85.1，peer）
 ├─ 扩展层 extensions/（8 个文件，~5k 行）
 │   jero-ai · jero-agents · jero-memory · jero-shell ·
 │   runtime-metrics · sdd-init · skill-registry · startup-banner
-├─ 领域层 lib/（~105 个文件，~32k 行）
-│   authority/（进程内评审权威，~14k 行）· review-* · agents-* ·
-│   shell-* · sdd-* · jero-ai-lean · memory · runtime-metrics*
+├─ 领域层 lib/（162 个文件，~46.8k 行）
+│   authority/（进程内评审权威，43 个文件 ~14k 行）· review-* · agents-* ·
+│   shell-* · sdd-* · jero-ai-lean · jero-ai-context-monitor · jero-ai-bootstrap · jero-ai-sdd-guard · memory · runtime-metrics*
 ├─ 伴生插件（dependencies 精确钉版，经 pi 清单加载）
 │   pi-pretty · rpiv-ask-user-question · rpiv-todo · billion-context-pi ·
 │   pi-cache-optimizer · pi-fovea · pi-hashline-edit-pro · pi-lens · pi-web-access
@@ -35,7 +35,7 @@ Pi 宿主（@earendil-works/pi-coding-agent ≥0.85.1，peer）
 | SDD | `/jero:sdd-preflight` `/jero-sdd-init` `/jero-sdd-status` `/jero-sdd-continue` `/jero:install-{delegation,review,sdd}` |
 | 技能 | `/skill-registry:refresh`；另有 `prompts/agents-init.md`（`/agents-init`）与 `prompts/skill-creation.md` 两个随包 prompt 模板 |
 
-评审生命周期动词（`inspect`/`start`/`answer-consent`/`assess`/`finalize`/`validate`/`select-intended-untracked`/`export`/`import`/`recover` 等）是 `jero_review` 工具操作，不是斜杠命令。
+评审生命周期动词（`inspect`/`start`/`answer-consent`/`assess`/`finalize`/`validate`/`select-intended-untracked`/`export`/`import`/`recover` 等）是 `jero_review` 工具操作，不是斜杠命令。`inspect` 在候选干净就绪（passive 风险且 authored 行数 ≤10）时附加建议性字段 `triviality_hint`：提示可先与用户确认是否值得走完整评审，只读的 `assess` 是轻量替代；该字段不参与任何状态转移。
 
 ## 工具
 
@@ -60,32 +60,36 @@ START → 同意（consent 仪式 v3，host 常任权限按 Git 规范身份授�
 
 ## SDD/OpenSpec 与子代理编排
 
-- `/jero-sdd-init` 探测技术栈（package.json/标记文件，≤2 万文件）→ 写 `openspec/config.yaml` + `specs/` + `changes/archive`；会话预检仪式管理资产安装（哈希可证的 managed-assets + 锁 + legacy 迁移）。
-- 阶段代理 `assets/agents/sdd-*.md`（16 个）+ 链 `assets/chains/sdd-{plan,full,verify}.chain.md`、`4r-review.chain.md`；确定性状态引擎给出 `next_recommended`。
-- 编排纪律（jero 技能）：先澄清；严格 TDD（RED/GREEN/TRIANGULATE/REFACTOR 带证据）；单父编排（子代理不得再派生）；委托触发——4 文件规则、多文件写入规则、事故规则、长会话规则；有界写者需非空 `## Allowed edit surfaces`。
+- `/jero-sdd-init` 探测技术栈（package.json/标记文件，≤2 万文件）→ 写 `openspec/config.yaml` + `specs/` + `changes/archive`；会话预检仪式管理资产安装（哈希可证的 managed-assets + 锁 + legacy 迁移）。每次成功 continue 后记录工件水位台账（`<changeRoot>/.jero-artifact-guard.json`，`jero.sdd-artifact-guard/v1`：sha256+行数+字节）；下次 continue 前对比，工件灾难性截断（行数腰斩且水位≥8 行）或消失时要求显式确认才放行，拒绝则只展示状态、文件不动。
+- 阶段代理 `assets/agents/sdd-*.md`（14 个）+ 链 `assets/chains/sdd-{plan,full,verify}.chain.md`、`4r-review.chain.md`；确定性状态引擎给出 `next_recommended`。
+- 编排纪律（jero 技能）：先澄清；严格 TDD（RED/GREEN/TRIANGULATE/REFACTOR 带证据）；单父编排（子代理不得再派生）；委托触发——4 文件规则、多文件写入规则、事故规则、长会话规则；有界写者需非空 `## Allowed edit surfaces`；裁决与停问（Rulings, not stalls）——歧义默认自行裁决并记台账，仅不可逆/安全敏感/工作区外副作用/计划坏死四类停下问人，同一修复连续 3 次失败视为架构问题。
+- **harness 纪律引导**（`lib/jero-ai-bootstrap.ts`）：`session_start`/`session_compact` 置位、`agent_end`/`session_shutdown` 复位的窗口内，把压缩后仍须存续的核心纪律作为单条 user 消息注入每次 LLM 请求（Pi `context` 事件按请求转换，紧随压缩摘要、marker `jero:harness-bootstrap/v1` 去重，每循环至多一轮）。RPC 子进程与包子进程（`JERO_PI_AGENTS_CHILD=1`）绝不注入。
 - Judgment Day（显式触发）：双盲评审（jd-judge-a/b）→ 冻结发现（SHA-256）→ 至多两轮有界修复（jd-fix-agent）→ 一次终审 `APPROVED|ESCALATED`；`lib/jero-ai-writer-scope.ts` 代码级校验派发块。
 
 ## 记忆 / Shell / 指标
 
 - **记忆**：topic 键 Markdown（`<root>/entries/<topic>.md` + YAML frontmatter），`index.json`（`jero.memory-index/v1`）加速检索；根 `<cwd>/.jero/memory` 优先，否则 `~/.pi/jero/memory`；原子写 + 目录锁；64 KiB 内容上限。`JERO_PI_MEMORY=0` 可禁用。
 - **Shell**：底部状态栏（cwd/git/脏文件/模型/effort/上下文窗口 %/会话成本/订阅用量）、侧栏、变更小部件 + diff 全屏视图（alt+g）、订阅用量窗口（≤5 分钟刷新）、花瓣动画提示框、三套主题（Jero / Jero-Cute / Jero-Sexy）。
+- **上下文余量监控**：`agent_settled` 时按宿主精确 token 计数逐档告警（已用 70%/85%/93% → notice/warning/critical，每档升级通知一次；阈值与 shell 仪表的 80/95 显示色解耦）；`session_compact`（手动/阈值/溢出恢复）复位档位并提示用 `mem_search`/`mem_read` 找回上下文。仅主会话 TUI 生效，绝不自动触发压缩。
 - **运行时指标**：纯内存（无外发），按模型/提供商/effort/代理类聚合 token 与成本；子代理用量经 `CHILD_METRICS_EVENT` 汇聚；Agents 视图显示每任务 tokens+成本。
 
-## 技能（16 个目录，`jero` + `jero-*` 命名）
+## 技能（17 个目录，`jero` + `jero-*` 命名）
 
-`jero`（harness 纪律）· `jero-lean`（梯子参考）· `jero-lean-review`（diff 级精益评审：delete/stdlib/native/yagni/shrink 标签 + `net: -N lines possible`）· `jero-debt`（标记台账）· `jero-judgment-day` · `jero-rdd-defect-workflow` · `jero-branch-pr` · `jero-chained-pr`（400 行预算链式 PR）· `jero-work-unit-commits` · `jero-cognitive-doc-design` · `jero-comment-writer` · `jero-issue-creation` · `jero-skill-creator` · `jero-skill-improver` · `jero-skill-registry` · `jero-release`。
+`jero-skills`（能力路由器：场景 → 技能/命令/工具入口表）· `jero`（harness 纪律）· `jero-lean`（梯子参考）· `jero-lean-review`（diff 级精益评审：delete/stdlib/native/yagni/shrink 标签 + `net: -N lines possible`）· `jero-debt`（标记台账）· `jero-judgment-day` · `jero-rdd-defect-workflow` · `jero-branch-pr` · `jero-chained-pr`（400 行预算链式 PR）· `jero-work-unit-commits` · `jero-cognitive-doc-design` · `jero-comment-writer` · `jero-issue-creation` · `jero-skill-creator` · `jero-skill-improver` · `jero-skill-registry` · `jero-release`。
+
+技能写作/触发措辞/生命周期规范见 `docs/skill-authoring.md`；版本演化见 `CHANGELOG.md`。
 
 ## 契约与环境
 
 | 面 | 值 |
 |---|---|
 | 契约串 | `jero.authority/v1`（协议族）、`jero.authority.review-mode/v1`、`jero.review-assessment-plan/v1`、`jero.lean-mode/v1`、`jero.background-subagents/v1`、`jero.session-change/v1`、`jero.session-worktree/v1`、`jero.child-standing-review-permission/v1`、`jero.agent_model_profiles/v1`、`jero.memory-index/v1`、`jero.remediation-evidence/v1`、`jero.task-reconciliation-lock/v1` |
-| 环境变量 | `JERO_PI_CONFIG_HOME` `JERO_PI_AGENT_HOME`（兼容 `PI_CODING_AGENT_DIR`）`JERO_PI_LEAN_MODE` `JERO_PI_MEMORY` `JERO_PI_AUTONOMOUS_MODE` |
+| 环境变量 | `JERO_PI_CONFIG_HOME` `JERO_PI_AGENT_HOME`（兼容 `PI_CODING_AGENT_DIR`）`JERO_PI_LEAN_MODE` `JERO_PI_MEMORY` `JERO_PI_AUTONOMOUS_MODE` `JERO_PI_CONTEXT_MONITOR`（`0` 关闭上下文余量告警） |
 | 配置路径 | `~/.pi/jero/`（全局：models.json / persona.json / review-mode.json）、`<repo>/.pi/jero/`（项目覆盖）、`<repo>/.jero/policies/`（评审策略）、`.atl/skill-registry.md`（技能索引） |
 
 ## 测试与打包门
 
-- 182 个测试文件（node:test，并发 12）+ runtime harness（真实扩展装配 × 假宿主端到端，三段场景）。
+- 190 个测试文件（node:test，并发 12）+ runtime harness（真实扩展装配 × 假宿主端到端，三段场景）。
 - CI（GitHub Actions）：Ubuntu 全量测试 + 类型诊断棘轮（`scripts/types-baseline.json`）+ runtime 模块一致性（`runtime/*.mjs` 由 lib 再生成）+ 权威边界检查 + 断网测试门（代理黑洞 + `NODE_OFFLINE=1`）；Windows 权威探测与候选视图回归。
-- 打包门 `prepack`/`prepublishOnly`：全量测试 → runtime 一致性 → 权威边界 → `verify-package-files.mjs`（当前钉 148 个必需文件、68 个字节钉住向量、25 条禁带路径）→ packed tarball 分发链校验（`test-packed-runner.mjs`）。
-- 供应链：9 个伴生依赖精确钉版；`pnpm-workspace.yaml` 强制发布龄期 / 信任不降级 / 无非常规子依赖来源；CI 重跑 `pnpm audit --prod --audit-level=high` 与 npm publish provenance。
+- 打包门 `prepack`/`prepublishOnly`：全量测试 → runtime 一致性 → 权威边界 → `verify-package-files.mjs`（当前钉 148 个必需文件 = 80 条直接断言 + 68 个字节钉住向量，另 25 条禁带路径）→ packed tarball 分发链校验（`test-packed-runner.mjs`）。
+- 供应链：9 个伴生依赖精确钉版；`pnpm-workspace.yaml` 强制发布龄期 / 信任不降级 / 无非常规子依赖来源；CI 重跑 `pnpm audit --prod --audit-level=high` 与 npm publish provenance；`/jero:doctor` 内置伴生依赖健康审计（钉版安装 + pi 清单入口解析，处置指引见 `docs/dependency-exit-plan.md`）。

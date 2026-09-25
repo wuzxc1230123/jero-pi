@@ -47,9 +47,9 @@ jero-pi 是 [gentle-pi](gentle-pi-main/) 的重构版。gentle-pi 是一个功�
 ┌─────────────────────────────────────────────────────────────────┐
 │  Pi 宿主（@earendil-works/pi-coding-agent ≥0.85.1，peer 依赖）    │
 ├─────────────────────────────────────────────────────────────────┤
-│  扩展层 extensions/jero-*.ts                                     │
-│    jero.ts(核心harness) · jero-shell · jero-agents · jero-todo  │
-│    jero-sdd-init · skill-registry · startup-banner ·             │
+│  扩展层 extensions/*.ts（8 个文件）                               │
+│    jero-ai(核心harness) · jero-shell · jero-agents               │
+│    sdd-init · skill-registry · startup-banner ·                  │
 │    jero-memory · runtime-metrics                                 │
 │    （删除：ask-user-choice、codegraph-tools、quiet-tools、        │
 │      pi-pretty 包装 → 由强制依赖插件承接）                         │
@@ -286,8 +286,8 @@ topic-key 沿用 SDD 记忆契约的稳定键：`sdd/<change>/proposal|spec|desi
 
 | 层 | gentle-pi v2.7.0 | jero-pi |
 |---|---|---|
-| dependencies | pi-tui、pi-pretty（2） | pi-tui、pi-pretty、pi-intercom、pi-web-access、pi-lens、pi-fovea、rpiv-ask-user-question（7，全钉版） |
-| peerDependencies | pi-coding-agent（optional）、typebox | pi-coding-agent（必需）；typebox 收回 dependencies（ask-user-choice 删除后仅测试用→留 devDeps） |
+| dependencies | pi-tui、pi-pretty（2） | pi-pretty、rpiv-ask-user-question、rpiv-todo、billion-context-pi、pi-cache-optimizer、pi-fovea、pi-hashline-edit-pro、pi-lens、pi-web-access（9，全钉版） |
+| peerDependencies | pi-coding-agent（optional）、typebox | pi-coding-agent（必需，≥0.85.1）、pi-tui（shell/视图所需）；typebox 无需（ask-user-choice 删除后无引用） |
 | 原生二进制 | gentle-ai Go v2.9.1（分发+运行时） | **无** |
 | 系统进程 | gentle-ai、pi、git、gh、codegraph、whoami/powershell/icacls/tar、（Win 构建）go | pi、git、gh、whoami/powershell/icacls |
 | 网络出口 | 安装期 GitHub Releases/GoProxy/SumDB、二进制内遥测、chatgpt.com 用量 | chatgpt.com 用量（可选功能）+ pi-web-access 自身运行时出口 |
@@ -320,7 +320,7 @@ topic-key 沿用 SDD 记忆契约的稳定键：`sdd/<change>/proposal|spec|desi
 2. **模型输出仍是无信托数据**：`evidence_class/causal_disposition/proof` 校验、severe-only 进纠正 ID、malformed→escalated 的全部规则在 authority 内实现，与上游逐条对应（conformance 套件锁定）。
 3. **威胁模型诚实声明**：上游明确"恶意同用户进程"本就非目标（它可替换扩展或本地权威）。进程内实现不改变该声明的真值；失去的仅是"模型侧实现 bug 被二进制挡住"这层意外保险，换取的是整个分发链攻击面的消失（安装期供应链、哈希清单替换、Windows 源码构建工具链）。
 4. **fail-closed 纪律不变**：未知信封字段拒绝、headless 维护路由拒绝、权威存储异常拒绝 START、外源权威数据拒绝（§5.1.6）。
-5. **新增攻击面评估**：7 个强制依赖的供应链。缓解：全部钉精确版本、lockfile 进库、CI 复跑 P2-B 依赖审计（注入防护 + inlineScriptWrite 守卫沿用）、pi-pretty 维持禁 bundle 规则（传递原生可选依赖）。
+5. **新增攻击面评估**：9 个强制伴生依赖的供应链。缓解：全部钉精确版本、lockfile 进库、CI 复跑 P2-B 依赖审计（注入防护 + inlineScriptWrite 守卫沿用）、pi-pretty 维持禁 bundle 规则（传递原生可选依赖）。
 
 ## 10. 实施路线图
 
@@ -343,10 +343,10 @@ topic-key 沿用 SDD 记忆契约的稳定键：`sdd/<change>/proposal|spec|desi
 |---|---|---|---|
 | R1 | 权威语义 reimplement 漂移（上游二进制行为未被 fixtures 完全覆盖的暗角） | 高 | conformance 先行：P2 第一个子里程碑就是把 fixture 覆盖率提上来，缺口用上游文档条款（readme-reference 的 FINALIZE/纠正/JD 规则）转成显式测试 |
 | R2 | 失去独立二进制信任锚 | 中 | §9 纪律重建 + 威胁模型声明；社区评审 conformance 套件 |
-| R3 | 7 个强制依赖的供应链与版本漂移 | 中 | 钉版 + lockfile + CI 审计；升级走单独 PR 全量测试 |
+| R3 | 9 个强制伴生依赖的供应链与版本漂移 | 中 | 钉版 + lockfile + CI 审计 + 发布龄期/信任不降级策略；升级走单独 PR 全量测试 |
 | R4 | pi-web-access 有偿 API（约 $0.012/请求的社区反馈） | 低 | 研究能力保持 SDD 显式授予制（预检确认），不默认自动调用 |
 | R5 | Windows 环境已知测试挂起（上游同样存在） | 低 | 基线红绿表单列，不算回归；P2 后复评是否顺带修复 |
-| Q1 | gentle-todo 是否也按"调用优先"换回 `@juicesharp/rpiv-todo`？ | — | **建议保留自研**：整表重写+staleness 语义与轮次集成是上游深思熟虑的替换（方向是淘汰第三方件），非重复建设；如你倾向彻底"零自研复刻"再议 |
+| Q1 | gentle-todo 是否也按"调用优先"换回 `@juicesharp/rpiv-todo`？ | 已裁决（2026-09 实现更新） | **jero-todo 已退役，切换 `@juicesharp/rpiv-todo`**：与"零自研复刻、生态件强制依赖化"的 G4 方向保持一致，随 P4 生态切换一并执行 |
 | Q2 | `orchestrator-presence`（心跳存在发布）是否改筑于 pi-intercom？ | 已裁决 | **pi-intercom 已移除**（单会话使用无对等通信需求）；presence 维持只读启发式现状，跨会话轴不建设 |
 | Q3 | 订阅用量面板（chatgpt.com 出口）是否保留？ | — | 默认保留（用户可见功能）；若你要"绝对零外部 HTTP"可 P4 顺手删，`shell-usage*` 独立好删 |
 

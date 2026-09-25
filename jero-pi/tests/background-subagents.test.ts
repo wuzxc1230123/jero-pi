@@ -135,7 +135,7 @@ test("default is off with no file and no env", () => {
 	const cwd = makeScratch("gp-bg-none-");
 	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
 	assert.equal(
-		loadBackgroundSubagentsPolicy(cwd, { gentlePiConfigHome: configHome, env: EMPTY_ENV }),
+		loadBackgroundSubagentsPolicy(cwd, { jeroPiConfigHome: configHome, env: EMPTY_ENV }),
 		"off",
 	);
 });
@@ -147,7 +147,7 @@ test("project file overrides global file and env", () => {
 	writePolicyFile(configHome, "off");
 	assert.equal(
 		loadBackgroundSubagentsPolicy(cwd, {
-			gentlePiConfigHome: configHome,
+			jeroPiConfigHome: configHome,
 			env: { JERO_PI_BACKGROUND_SUBAGENTS: "off" },
 		}),
 		"on",
@@ -160,7 +160,7 @@ test("global file overrides env when no project file exists", () => {
 	writePolicyFile(configHome, "on");
 	assert.equal(
 		loadBackgroundSubagentsPolicy(cwd, {
-			gentlePiConfigHome: configHome,
+			jeroPiConfigHome: configHome,
 			env: { JERO_PI_BACKGROUND_SUBAGENTS: "off" },
 		}),
 		"on",
@@ -172,7 +172,7 @@ test("env var applies only when no policy file exists, and only exact on|off", (
 	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
 	assert.equal(
 		loadBackgroundSubagentsPolicy(cwd, {
-			gentlePiConfigHome: configHome,
+			jeroPiConfigHome: configHome,
 			env: { JERO_PI_BACKGROUND_SUBAGENTS: "on" },
 		}),
 		"on",
@@ -180,7 +180,7 @@ test("env var applies only when no policy file exists, and only exact on|off", (
 	for (const invalid of ["1", "true", "ON", "yes", ""]) {
 		assert.equal(
 			loadBackgroundSubagentsPolicy(cwd, {
-				gentlePiConfigHome: configHome,
+				jeroPiConfigHome: configHome,
 				env: { JERO_PI_BACKGROUND_SUBAGENTS: invalid },
 			}),
 			"off",
@@ -198,7 +198,7 @@ test("a malformed higher-priority file fails closed to off instead of falling th
 	writePolicyFile(configHome, "on");
 	assert.equal(
 		loadBackgroundSubagentsPolicy(cwd, {
-			gentlePiConfigHome: configHome,
+			jeroPiConfigHome: configHome,
 			env: { JERO_PI_BACKGROUND_SUBAGENTS: "on" },
 		}),
 		"off",
@@ -383,7 +383,7 @@ test("the resolver attributes the project file, with its path", () => {
 	writePolicyFile(join(cwd, ".pi", "jero"), "on");
 	writePolicyFile(configHome, "off");
 	const resolution = resolveBackgroundSubagentsPolicy(cwd, {
-		gentlePiConfigHome: configHome,
+		jeroPiConfigHome: configHome,
 		env: { JERO_PI_BACKGROUND_SUBAGENTS: "off" },
 	});
 	assert.equal(resolution.policy, "on");
@@ -404,7 +404,7 @@ test("the resolver attributes the global file when no project file exists", () =
 	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
 	writePolicyFile(configHome, "on");
 	const resolution = resolveBackgroundSubagentsPolicy(cwd, {
-		gentlePiConfigHome: configHome,
+		jeroPiConfigHome: configHome,
 		env: { JERO_PI_BACKGROUND_SUBAGENTS: "off" },
 	});
 	assert.equal(resolution.policy, "on");
@@ -417,7 +417,7 @@ test("the resolver attributes the environment variable when no file exists", () 
 	const cwd = makeScratch("gp-bg-src-env-");
 	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
 	const resolution = resolveBackgroundSubagentsPolicy(cwd, {
-		gentlePiConfigHome: configHome,
+		jeroPiConfigHome: configHome,
 		env: { JERO_PI_BACKGROUND_SUBAGENTS: "on" },
 	});
 	assert.equal(resolution.policy, "on");
@@ -429,7 +429,7 @@ test("the resolver attributes the built-in default when nothing else decides", (
 	const cwd = makeScratch("gp-bg-src-default-");
 	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
 	const resolution = resolveBackgroundSubagentsPolicy(cwd, {
-		gentlePiConfigHome: configHome,
+		jeroPiConfigHome: configHome,
 		env: { JERO_PI_BACKGROUND_SUBAGENTS: "yes" },
 	});
 	assert.equal(resolution.policy, "off");
@@ -449,7 +449,7 @@ test("the resolver attributes a malformed file to that file and does not fall th
 	writeFileSync(join(projectDir, "background-subagents.json"), "{malformed");
 	writePolicyFile(configHome, "on");
 	const resolution = resolveBackgroundSubagentsPolicy(cwd, {
-		gentlePiConfigHome: configHome,
+		jeroPiConfigHome: configHome,
 		env: { JERO_PI_BACKGROUND_SUBAGENTS: "on" },
 	});
 	assert.equal(resolution.policy, "off", "a malformed file fails closed");
@@ -479,7 +479,7 @@ test("loadBackgroundSubagentsPolicy delegates to the resolver so the two can nev
 	);
 	scenarios.push({ cwd: malformed, env: { JERO_PI_BACKGROUND_SUBAGENTS: "on" } });
 	for (const scenario of scenarios) {
-		const options = { gentlePiConfigHome: configHome, env: scenario.env };
+		const options = { jeroPiConfigHome: configHome, env: scenario.env };
 		assert.equal(
 			loadBackgroundSubagentsPolicy(scenario.cwd, options),
 			resolveBackgroundSubagentsPolicy(scenario.cwd, options).policy,

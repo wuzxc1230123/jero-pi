@@ -18,9 +18,9 @@ import { installSidebar, invalidateSidebar } from "../lib/shell-sidebar-layout.t
 import { SessionChanges, SESSION_CHANGE_EVENT } from "../lib/session-changes.ts";
 import { installSessionChangeCapture } from "../lib/session-change-capture.ts";
 
-// Gentle Shell：gentle-pi 叠加在 pi 之上的视觉层。它安装
+// Jero Shell：gentle-pi 叠加在 pi 之上的视觉层。它安装
 // 状态栏、花瓣提示符、工作树变更挂件与覆盖层、
-// 订阅用量视图，以及绘制 Gentle 通知所用的卡片。
+// 订阅用量视图，以及绘制 Jero 通知所用的卡片。
 
 export interface ShellFooterData {
 	getGitBranch(): string | null;
@@ -178,7 +178,7 @@ const PROMPT_FRAME_ROLE = "border";
 
 const PETAL_PULSE_MS = 160;
 
-export class GentlePromptEditor extends CustomEditor {
+export class JeroPromptEditor extends CustomEditor {
 	private promptState: PromptState = PROMPT_STATE.IDLE;
 	private tick = 0;
 	private pulse: NodeJS.Timeout | undefined;
@@ -228,10 +228,10 @@ export class GentlePromptEditor extends CustomEditor {
 	}
 }
 
-function installPrompt(ctx: ExtensionContext, onCreated: (prompt: GentlePromptEditor) => void): void {
+function installPrompt(ctx: ExtensionContext, onCreated: (prompt: JeroPromptEditor) => void): void {
 	if (ctx.ui.getEditorComponent()) return;
 	ctx.ui.setEditorComponent((tui, theme, keybindings) => {
-		const prompt = new GentlePromptEditor(tui, theme, keybindings, {
+		const prompt = new JeroPromptEditor(tui, theme, keybindings, {
 			fg: (color, text) => ctx.ui.theme.fg(color as Parameters<typeof ctx.ui.theme.fg>[0], text),
 			bold: (text) => ctx.ui.theme.bold(text),
 			requestRender: () => tui.requestRender(),
@@ -242,7 +242,7 @@ function installPrompt(ctx: ExtensionContext, onCreated: (prompt: GentlePromptEd
 	});
 }
 
-const CHANGES_WIDGET_KEY = "gentle-shell-changes";
+const CHANGES_WIDGET_KEY = "jero-shell-changes";
 const CHANGES_COMMAND_NAME = "jero:changes";
 const CHANGES_SHORTCUT_DEFAULT = "alt+g";
 const CHANGES_POLL_DEFAULT_MS = 2000;
@@ -465,7 +465,7 @@ export async function fetchCodexUsage(token: string | undefined, fetchFn: typeof
 	}
 }
 
-export default function gentleShell(pi: ExtensionAPI, env: NodeJS.ProcessEnv = process.env, overrides: Partial<ShellDeps> = {}): void {
+export default function jeroShell(pi: ExtensionAPI, env: NodeJS.ProcessEnv = process.env, overrides: Partial<ShellDeps> = {}): void {
 	installSessionChangeCapture(pi, env, overrides.resolveWorktree ?? resolveSessionWorktree);
 	if (!shellEnabled(env)) return;
 	const deps: ShellDeps = { ...defaultShellDeps, activeProfile: createActiveProfileReader(env), ...overrides };
@@ -515,7 +515,7 @@ export default function gentleShell(pi: ExtensionAPI, env: NodeJS.ProcessEnv = p
 			);
 		},
 	});
-	let prompt: GentlePromptEditor | undefined;
+	let prompt: JeroPromptEditor | undefined;
 	let changes: SessionChanges | undefined;
 	let registry: SessionWorktreeRegistry | undefined;
 	let currentContext: ExtensionContext | undefined;

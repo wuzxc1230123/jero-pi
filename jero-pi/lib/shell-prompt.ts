@@ -1,7 +1,7 @@
 import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import { stripAnsi } from "./terminal-theme.ts";
 
-// Gentle Shell 提示符框架。pi 的编辑器渲染顶框线、带填充的内容行和
+// Jero Shell 提示符框架。pi 的编辑器渲染顶框线、带填充的内容行和
 // 底框线；本模块把这些行包进圆角框架，并附一枚显示代理正在做什么的
 // 花瓣。这里的一切都是纯函数。
 

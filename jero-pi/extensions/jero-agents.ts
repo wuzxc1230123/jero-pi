@@ -31,17 +31,17 @@ import { createNativeFullscreenInteraction } from "../lib/native-fullscreen-inte
 import { AGENTS_GLYPH, renderAgentsCard, widgetExpiryMs, widgetRows } from "../lib/agents-widget.ts";
 import { CARD_TONE, renderCard } from "../lib/shell-card.ts";
 import { openInExternalEditor } from "./jero-shell.ts";
-import { resolveGentlePiAgentHome } from "../lib/agent-home.ts";
+import { resolveJeroPiAgentHome } from "../lib/agent-home.ts";
 import { assertResearchCheckpoint, parseResearchPersistence, RESEARCH_PERSISTENCE_ENTRY, canonicalArtifactPath, researchAgent, renderResearchCapabilities, RESEARCH_CHILD_TOOLS_ENV, RESEARCH_SELECTION_ENV, RESEARCH_ARTIFACT_ENV, parseResearchArtifactIntent, researchArtifactCall, researchArtifactReadback, type ResearchArtifactIntent, type ResearchWriteIdentity } from "../lib/sdd-research-capabilities.ts";
 import { CHILD_METRICS_EVENT, CHILD_METRICS_REVOKED, childEvent, launchSelection, type LaunchSelection } from "../lib/runtime-metrics-children.ts";
 
-// Gentle Agents：子代理作为隔离的 `pi --mode rpc` 子进程运行，任务
-// 存储逐任务通知，并在编辑器上方显示一张 Gentle Shell 卡片。
+// Jero Agents：子代理作为隔离的 `pi --mode rpc` 子进程运行，任务
+// 存储逐任务通知，并在编辑器上方显示一张 Jero Shell 卡片。
 // 工具名与已退役的 pi-subagents 包保持一致，因此提示词、技能与
 // gentle-ai 的委托规则无需改动即可继续工作。
 
 
-export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = process.env, overrides: Partial<AgentsDeps> = {}): void {
+export default function jeroAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = process.env, overrides: Partial<AgentsDeps> = {}): void {
 	if (env.JERO_PI_AGENTS_CHILD === "1" && env[RESEARCH_CHILD_TOOLS_ENV] !== undefined) {
 		let allowed: string[] = [];
 		try {
@@ -189,7 +189,7 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 	}
 	if (!agentsEnabled(env)) return;
 	const deps: AgentsDeps = { ...defaultDeps(env), ...overrides };
-	const selectedHome = overrides.agentHome ?? (overrides.home === undefined ? resolveGentlePiAgentHome(deps.env) : join(deps.home, ".pi", "agent"));
+	const selectedHome = overrides.agentHome ?? (overrides.home === undefined ? resolveJeroPiAgentHome(deps.env) : join(deps.home, ".pi", "agent"));
 	// 像 Pi 一样展开环境变量里的波浪号，但对显式路径 API 保持字面量。
 	const environmentHome = overrides.agentHome === undefined && overrides.home === undefined;
 	const expandedHome = environmentHome && selectedHome === "~" ? deps.home
@@ -198,7 +198,7 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 	const agentHome = resolve(expandedHome);
 	if (legacySubagentsInstalledAt(agentHome)) {
 		pi.on("session_start", (_event, ctx) => {
-			if (ctx.hasUI) ctx.ui.notify(`${AGENTS_GLYPH} Gentle Agents is waiting: remove the old package first with "pi remove npm:${LEGACY_SUBAGENTS_PACKAGE}"`, "warning");
+			if (ctx.hasUI) ctx.ui.notify(`${AGENTS_GLYPH} Jero Agents is waiting: remove the old package first with "pi remove npm:${LEGACY_SUBAGENTS_PACKAGE}"`, "warning");
 		});
 		return;
 	}
@@ -311,7 +311,7 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 	// 后台结果过去作为 followUp 消息直接交给宿主，但宿主只在父代理
 	// 完全停止调用工具时才清空该队列，因此在长时间编排器运行中，
 	// 通知可能落后父代理拉取同一结果近一个小时才送达（#867）。
-	// 现在 Gentle Agents 自己持有待处理的完成通知：它们在此结算，
+	// 现在 Jero Agents 自己持有待处理的完成通知：它们在此结算，
 	// 在下一个回合边界冲刷，过期结果绝不重新进入
 	// 会话。
 	const completions = createCompletionQueue<TaskRecord>();
@@ -376,7 +376,7 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 		askUser: (_taskId, ask, raw) => answerThroughUi(ui, ask, raw),
 		onNotification: (task, message) => {
 			if (activeSessionId() !== task.parentSessionId) return false;
-			pi.sendMessage({ customType: AGENTS_MESSAGE_TYPE, content: message, display: false, details: { gentleAgents: { taskId: task.id, agent: task.agent, parentSessionId: task.parentSessionId, kind: "notification" } } }, { deliverAs: "followUp", triggerTurn: true });
+			pi.sendMessage({ customType: AGENTS_MESSAGE_TYPE, content: message, display: false, details: { jeroAgents: { taskId: task.id, agent: task.agent, parentSessionId: task.parentSessionId, kind: "notification" } } }, { deliverAs: "followUp", triggerTurn: true });
 			return true;
 		},
 		onQuery: (task, requestId, message) => {
@@ -384,7 +384,7 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 			const hadYield = yieldedTaskIds.has(task.id);
 			if (task.mode === AGENT_MODE.TASK) yieldedTaskIds.add(task.id);
 			try {
-				pi.sendMessage({ customType: AGENTS_MESSAGE_TYPE, content: `Subagent ${task.agent} asks:\nTask ID: ${task.id}\nRequest ID: ${requestId}\nQuestion: ${message}`, display: true, details: { gentleAgents: { taskId: task.id, agent: task.agent, parentSessionId: task.parentSessionId, requestId, kind: "query" } } }, { deliverAs: "followUp", triggerTurn: true });
+				pi.sendMessage({ customType: AGENTS_MESSAGE_TYPE, content: `Subagent ${task.agent} asks:\nTask ID: ${task.id}\nRequest ID: ${requestId}\nQuestion: ${message}`, display: true, details: { jeroAgents: { taskId: task.id, agent: task.agent, parentSessionId: task.parentSessionId, requestId, kind: "query" } } }, { deliverAs: "followUp", triggerTurn: true });
 				return true;
 			} catch (error) {
 				if (task.mode === AGENT_MODE.TASK && !hadYield) yieldedTaskIds.delete(task.id);
@@ -430,7 +430,7 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 	});
 
 	pi.registerMessageRenderer(AGENTS_MESSAGE_TYPE, (message, options, theme) => {
-		const details = (message.details as { gentleAgents?: { taskId?: unknown; agent?: unknown } } | undefined)?.gentleAgents;
+		const details = (message.details as { jeroAgents?: { taskId?: unknown; agent?: unknown } } | undefined)?.jeroAgents;
 		const taskId = typeof details?.taskId === "string" ? details.taskId : "unknown";
 		const agent = typeof details?.agent === "string" ? details.agent : "Subagent";
 		const heading = `${escapeControlChars(agent)} message · Task ${escapeControlChars(taskId)}`;
@@ -439,7 +439,7 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 	});
 
 	pi.registerMessageRenderer(AGENTS_RESULT_TYPE, (message, options, theme) => {
-		const details = (message.details as { gentleAgents?: { agent?: string; status?: string } } | undefined)?.gentleAgents;
+		const details = (message.details as { jeroAgents?: { agent?: string; status?: string } } | undefined)?.jeroAgents;
 		const content = message.content as string | Array<{ type: string; text?: string }>;
 		const body = (typeof content === "string" ? content : content.map((part) => (part.type === "text" ? (part.text ?? "") : "")).join("\n")).split("\n");
 		const tone = details?.status === "completed" ? CARD_TONE.SUCCESS : CARD_TONE.ERROR;
@@ -758,7 +758,7 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 			const query = await runner.waitForQuery(task.id);
 			if (query) {
 				const live = store.get(task.id) ?? task;
-				return text(`Subagent ${live.agent} is waiting for your reply to request ${query.requestId}.`, { gentleAgents: { taskId: live.id, agent: live.agent, status: live.status, mode: live.mode, requestId: query.requestId } }, true);
+				return text(`Subagent ${live.agent} is waiting for your reply to request ${query.requestId}.`, { jeroAgents: { taskId: live.id, agent: live.agent, status: live.status, mode: live.mode, requestId: query.requestId } }, true);
 			}
 			const finished = await runner.waitFor(task.id);
 			completions.consume(finished.id);
@@ -844,7 +844,7 @@ export default function gentleAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = 
 				store.update(current.id, { status: current.status, error: current.error, lastStep: current.lastStep, endedAt: current.endedAt, lastActivityAt: current.lastActivityAt, sddRemediation: current.sddRemediation });
 			};
 			const result = await reconcileManagedRemediation(task, native, persist);
-			return text(`Managed remediation task ${task.id} reconciled; no actor started. Use fresh native status and admission for later work.`, { gentleAgents: { taskId: task.id, agent: task.agent, status: task.status, mode: task.mode }, reconciliation: { ...result, actorStarted: false } });
+			return text(`Managed remediation task ${task.id} reconciled; no actor started. Use fresh native status and admission for later work.`, { jeroAgents: { taskId: task.id, agent: task.agent, status: task.status, mode: task.mode }, reconciliation: { ...result, actorStarted: false } });
 		} finally { lock.release(); }
 	});
 

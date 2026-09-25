@@ -38,6 +38,11 @@ pnpm run check:runtime-modules
 
 基准工具（不随包发布）：`benchmarks/` 以多臂对照度量精益纪律对真实 agent 产出的影响，含安全对抗任务层。
 
-技术参考：[docs/jero-reference.md](docs/jero-reference.md)——由当前代码状态生成的单一合并文档：架构分层、22 个命令、工具清单、评审生命周期、精益纪律、SDD/编排、契约与环境、测试与打包门。
+文档：
+
+- 技术参考：[docs/jero-reference.md](docs/jero-reference.md)——由当前代码状态生成的单一合并文档：架构分层、22 个命令、工具清单、评审生命周期、精益纪律、SDD/编排、契约与环境、测试与打包门。
+- 入门教程：[docs/tutorial-first-review.md](docs/tutorial-first-review.md)——从安装到第一次通过评审的最小闭环。
+- How-to：[docs/how-to-choose-discipline.md](docs/how-to-choose-discipline.md)——评审 / SDD / 精益三根轴怎么选档，以及轻量出口（assess、triviality_hint、RDD 开关）。
+- 供应链：[docs/dependency-exit-plan.md](docs/dependency-exit-plan.md)——9 个伴生依赖逐项的失效信号与退出预案。
 
 > 移植纪律：包身份从出生即 `jero-pi`；上游命名仅存于白名单（wire 金向量词汇、外来存储探测名、legacy 回退读、历史 fixture、上游参考文档）。

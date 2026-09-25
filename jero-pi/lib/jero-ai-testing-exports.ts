@@ -19,7 +19,7 @@ import {
 	recordNativeReviewOutcome, renderOrchestratorPrompt, renderRddStatusLine, resolveRddModeStatus,
 	resolveRddStatusLine
 } from "./jero-ai-rdd-status.ts";
-import { buildGentlePrompt, loadReviewContractPromptFragment, readMirroredReviewContractFragment } from "./jero-ai-prompts.ts";
+import { buildJeroPrompt, loadReviewContractPromptFragment, readMirroredReviewContractFragment } from "./jero-ai-prompts.ts";
 import {
 	classifyGuardedCommand, evaluateGuardedCommand, guardedCommandPreview, guardedCommandTitle,
 	loadRuntimeGuardrailsConfig
@@ -51,7 +51,7 @@ export const __testing = {
 	guardedCommandPreview,
 	guardedCommandTitle,
 	loadRuntimeGuardrailsConfig,
-	buildGentlePrompt,
+	buildJeroPrompt,
 	nativeStatusUnsupported,
 	executeReviewControllerOperation,
 	executeReviewCaptureOperation,

@@ -12,7 +12,7 @@ import {
 import { fakeChild, type FakeChild } from "./agents-fake-child.ts";
 
 
-// Gentle Agents runner: every subagent is a child `pi --mode rpc` process.
+// Jero Agents runner: every subagent is a child `pi --mode rpc` process.
 // The host only parses JSON lines, applies deltas to the store, answers
 // dialogs, and enforces its inactivity watchdog. These tests drive a fake child.
 

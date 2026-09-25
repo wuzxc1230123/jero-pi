@@ -16,7 +16,7 @@ import { sanitizeTerminalText, stripAnsi } from "./terminal-theme.ts";
 import { cloneModelConfig, orchestratorSettingsPath, readEffectiveModelConfig, readEffectiveModelConfigAsync, withOmittedAgentsClearedAsync, writeModelConfigAsync } from "./jero-ai-model-config.ts";
 import { PANEL_TONE_COLOR, type OverlayComponent, type PanelTone } from "./jero-ai-model-panel.ts";
 import { applyModelConfigAsync } from "./jero-ai-model-routing-apply.ts";
-import { gentleAiConfigHome, modelConfigPath } from "./jero-ai-persona-config.ts";
+import { jeroConfigHome, modelConfigPath } from "./jero-ai-persona-config.ts";
 
 
 type ProfilesPanelResult =
@@ -674,7 +674,7 @@ async function runProfilesPanelAction(
 		}
 		case "export": {
 			if (!hasOwnProfile(file.profiles, result.name)) return file;
-			const exportPath = profileExportPath(gentleAiConfigHome());
+			const exportPath = profileExportPath(jeroConfigHome());
 			try {
 				const text = serializeProfileExport(result.name, file.profiles[result.name]);
 				await mkdir(dirname(exportPath), { recursive: true });
@@ -686,7 +686,7 @@ async function runProfilesPanelAction(
 			return file;
 		}
 		case "import": {
-			const importPath = profileExportPath(gentleAiConfigHome());
+			const importPath = profileExportPath(jeroConfigHome());
 			let text: string;
 			try {
 				text = await readFile(importPath, "utf8");
@@ -737,7 +737,7 @@ async function runProfilesPanelAction(
 
 
 export async function handleProfilesCommand(ctx: ExtensionContext): Promise<void> {
-	const path = profilesFilePath(gentleAiConfigHome());
+	const path = profilesFilePath(jeroConfigHome());
 	const read = readProfilesFileResult(path);
 	if (read.status === "invalid") {
 		ctx.ui.notify(

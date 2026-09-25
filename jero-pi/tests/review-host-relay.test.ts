@@ -60,24 +60,24 @@ test("relay happy path moves prompt and result bytes verbatim through a fresh em
 	// Submission --input file bytes are EXACTLY the pi stdout bytes.
 	assert.deepEqual(readFileSync(fixture.submitCapturePath), PI_OUTPUT_BYTES);
 
-	const gentleAiCalls = readLog(fixture.logPath);
-	assert.equal(gentleAiCalls.length, 2);
+	const providerCalls = readLog(fixture.logPath);
+	assert.equal(providerCalls.length, 2);
 	// (a) exact provider tokens, verbatim, in provider order.
-	assert.deepEqual(gentleAiCalls[0]!.argv, ["review", "capture-result", ...CAPTURE_TOKENS]);
+	assert.deepEqual(providerCalls[0]!.argv, ["review", "capture-result", ...CAPTURE_TOKENS]);
 	// (d) the provider-owned submission form, verbatim: its exact operation
 	// and argument tokens with only the artifact path substituted into the
 	// declared {{value}} slot. No agent/materialize, nothing synthesized.
-	assert.deepEqual(gentleAiCalls[1]!.argv.slice(0, 2 + BINDING_TOKENS.length), ["review", SUBMISSION.operationToken, ...BINDING_TOKENS]);
-	const substituted = gentleAiCalls[1]!.argv.at(-1)!;
+	assert.deepEqual(providerCalls[1]!.argv.slice(0, 2 + BINDING_TOKENS.length), ["review", SUBMISSION.operationToken, ...BINDING_TOKENS]);
+	const substituted = providerCalls[1]!.argv.at(-1)!;
 	assert.match(substituted, /^--input=\S+$/);
 	assert.equal(substituted.includes("{{value}}"), false);
 	assert.equal(existsSync(substituted.slice("--input=".length)), false, "the coordinator removes its temporary result file after provider submission");
-	assert.equal(gentleAiCalls[1]!.argv.length, 2 + SUBMISSION.argumentTokens.length);
-	assert.equal(gentleAiCalls[1]!.argv.some((token) => token.includes("--agent") || token.includes("--materialize")), false);
+	assert.equal(providerCalls[1]!.argv.length, 2 + SUBMISSION.argumentTokens.length);
+	assert.equal(providerCalls[1]!.argv.some((token) => token.includes("--agent") || token.includes("--materialize")), false);
 	// No handshake env on either gentle-ai invocation (design 8: the
 	// protocol string is deleted).
-	assert.deepEqual(gentleAiCalls.map((call) => call.contract), [null, null]);
-	assert.deepEqual(gentleAiCalls.map((call) => call.cwd), [fixture.targetCwd, fixture.targetCwd]);
+	assert.deepEqual(providerCalls.map((call) => call.contract), [null, null]);
+	assert.deepEqual(providerCalls.map((call) => call.cwd), [fixture.targetCwd, fixture.targetCwd]);
 
 	const piCalls = readLog(fixture.piLogPath);
 	assert.equal(piCalls.length, 1);
@@ -120,7 +120,7 @@ test("preparation snapshots mutable submission tokens and values before material
 		releaseReviewer = resolve;
 	});
 	let admittedBytes: Buffer | undefined;
-	const request = relayRequest(fixture, { gentleAiExecutable: undefined });
+	const request = relayRequest(fixture, { providerExecutable: undefined });
 	const mutableSubmission: ReviewCaptureSubmissionV1 = {
 		...SUBMISSION,
 		argumentTokens: [...SUBMISSION.argumentTokens],
@@ -155,7 +155,7 @@ test("preparation keeps reviewer bytes private through deferred submission", asy
 	const fixture = harness(t);
 	const reviewerBytes = Buffer.from(PI_OUTPUT_BYTES);
 	const prepared = await prepareReviewHostRelaySlot(
-		relayRequest(fixture, { gentleAiExecutable: undefined }),
+		relayRequest(fixture, { providerExecutable: undefined }),
 		async () => ({
 			stdout: reviewerBytes,
 			promptByteLength: PROMPT_BYTES.length,

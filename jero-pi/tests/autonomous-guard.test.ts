@@ -308,7 +308,7 @@ test("loadRuntimeGuardrailsConfig: returns off config when no file exists", () =
 	const dir = makeTmpDir();
 	try {
 		const config = __testing.loadRuntimeGuardrailsConfig(dir, {
-			gentlePiConfigHome: join(dir, "global-config"),
+			jeroPiConfigHome: join(dir, "global-config"),
 		});
 		assert.equal(config.autonomousMode, false);
 	} finally {
@@ -322,7 +322,7 @@ test("loadRuntimeGuardrailsConfig: env var JERO_PI_AUTONOMOUS_MODE=1 activates m
 	const dir = makeTmpDir();
 	try {
 		const config = __testing.loadRuntimeGuardrailsConfig(dir, {
-			gentlePiConfigHome: join(dir, "global-config"),
+			jeroPiConfigHome: join(dir, "global-config"),
 		});
 		assert.equal(config.autonomousMode, true);
 	} finally {
@@ -341,7 +341,7 @@ test("loadRuntimeGuardrailsConfig: global config file activates autonomous mode"
 			guardedCommands: { gitPush: "allow" },
 		});
 		const config = __testing.loadRuntimeGuardrailsConfig(join(dir, "project"), {
-			gentlePiConfigHome: globalConfigDir,
+			jeroPiConfigHome: globalConfigDir,
 		});
 		assert.equal(config.autonomousMode, true);
 		assert.equal(config.guardedCommands.gitPush, "allow");
@@ -366,7 +366,7 @@ test("loadRuntimeGuardrailsConfig: project config overrides global config", () =
 		});
 
 		const config = __testing.loadRuntimeGuardrailsConfig(projectDir, {
-			gentlePiConfigHome: globalConfigDir,
+			jeroPiConfigHome: globalConfigDir,
 		});
 		assert.equal(config.autonomousMode, true);
 		assert.equal(config.guardedCommands.gitPush, "confirm");
@@ -385,7 +385,7 @@ test("loadRuntimeGuardrailsConfig: invalid JSON in config fails safe (autonomous
 		writeFileSync(configPath, "{ not valid json }");
 
 		const config = __testing.loadRuntimeGuardrailsConfig(join(dir, "project"), {
-			gentlePiConfigHome: globalConfigDir,
+			jeroPiConfigHome: globalConfigDir,
 		});
 		assert.equal(config.autonomousMode, false);
 	} finally {
@@ -400,7 +400,7 @@ test("loadRuntimeGuardrailsConfig: non-object JSON fails safe", () => {
 		writeConfig(globalConfigDir, "runtime-guardrails.json", [1, 2, 3]);
 
 		const config = __testing.loadRuntimeGuardrailsConfig(join(dir, "project"), {
-			gentlePiConfigHome: globalConfigDir,
+			jeroPiConfigHome: globalConfigDir,
 		});
 		assert.equal(config.autonomousMode, false);
 	} finally {
@@ -428,7 +428,7 @@ test("loadRuntimeGuardrailsConfig: invalid project config fails safe (autonomous
 		writeFileSync(projectConfigPath, "{ bad json }");
 
 		const config = __testing.loadRuntimeGuardrailsConfig(projectDir, {
-			gentlePiConfigHome: globalConfigDir,
+			jeroPiConfigHome: globalConfigDir,
 		});
 		assert.equal(config.autonomousMode, false);
 	} finally {
@@ -554,7 +554,7 @@ test("loadRuntimeGuardrailsConfig: JERO_PI_AUTONOMOUS_MODE=0 does NOT activate a
 	const dir = makeTmpDir();
 	try {
 		const config = __testing.loadRuntimeGuardrailsConfig(dir, {
-			gentlePiConfigHome: join(dir, "global-config"),
+			jeroPiConfigHome: join(dir, "global-config"),
 		});
 		assert.equal(config.autonomousMode, false);
 	} finally {
@@ -570,7 +570,7 @@ test("loadRuntimeGuardrailsConfig: JERO_PI_AUTONOMOUS_MODE=true does NOT activat
 	const dir = makeTmpDir();
 	try {
 		const config = __testing.loadRuntimeGuardrailsConfig(dir, {
-			gentlePiConfigHome: join(dir, "global-config"),
+			jeroPiConfigHome: join(dir, "global-config"),
 		});
 		assert.equal(config.autonomousMode, false);
 	} finally {
@@ -586,7 +586,7 @@ test("loadRuntimeGuardrailsConfig: JERO_PI_AUTONOMOUS_MODE='' does NOT activate 
 	const dir = makeTmpDir();
 	try {
 		const config = __testing.loadRuntimeGuardrailsConfig(dir, {
-			gentlePiConfigHome: join(dir, "global-config"),
+			jeroPiConfigHome: join(dir, "global-config"),
 		});
 		assert.equal(config.autonomousMode, false);
 	} finally {
@@ -609,7 +609,7 @@ test("loadRuntimeGuardrailsConfig: autonomousMode:1 (number) in JSON does NOT ac
 			guardedCommands: {},
 		});
 		const config = __testing.loadRuntimeGuardrailsConfig(join(dir, "project"), {
-			gentlePiConfigHome: globalConfigDir,
+			jeroPiConfigHome: globalConfigDir,
 		});
 		assert.equal(config.autonomousMode, false);
 	} finally {
@@ -626,7 +626,7 @@ test('loadRuntimeGuardrailsConfig: autonomousMode:"true" (string) in JSON does N
 			guardedCommands: {},
 		});
 		const config = __testing.loadRuntimeGuardrailsConfig(join(dir, "project"), {
-			gentlePiConfigHome: globalConfigDir,
+			jeroPiConfigHome: globalConfigDir,
 		});
 		assert.equal(config.autonomousMode, false);
 	} finally {
@@ -643,7 +643,7 @@ test("loadRuntimeGuardrailsConfig: autonomousMode:{} (object) in JSON does NOT a
 			guardedCommands: {},
 		});
 		const config = __testing.loadRuntimeGuardrailsConfig(join(dir, "project"), {
-			gentlePiConfigHome: globalConfigDir,
+			jeroPiConfigHome: globalConfigDir,
 		});
 		assert.equal(config.autonomousMode, false);
 	} finally {
@@ -658,7 +658,7 @@ test("loadRuntimeGuardrailsConfig honors the injected env seam for the autonomou
 	// over a clean config home fails safe to the default (non-autonomous).
 	const clean = mkdtempSync(join(tmpdir(), "jero-guardrails-seam-"));
 	try {
-		const fallback = __testing.loadRuntimeGuardrailsConfig(clean, { env: {}, gentlePiConfigHome: join(clean, "config-home") });
+		const fallback = __testing.loadRuntimeGuardrailsConfig(clean, { env: {}, jeroPiConfigHome: join(clean, "config-home") });
 		assert.equal(fallback.autonomousMode, false);
 	} finally {
 		rmSync(clean, { recursive: true, force: true });

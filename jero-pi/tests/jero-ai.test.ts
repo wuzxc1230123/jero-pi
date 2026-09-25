@@ -20,7 +20,7 @@ import { stripAnsi } from "../lib/terminal-theme.ts";
 import { cardBody, cardHint, cardTitle, cardTone } from "./gentle-card-text.ts";
 import {
 	cleanWorkspaceStatus, lifecycleContext, lifecycleTheme, offeredCommittedRangeStatus,
-	registeredGentleTools, renderComponent, reviewRepository, type ReviewStartRepository,
+	registeredJeroTools, renderComponent, reviewRepository, type ReviewStartRepository,
 	startedReviewResult, writeMarkdown,
 	routingConsumerFixture,
 } from "./jero-ai-shared.ts";
@@ -49,8 +49,8 @@ test("authority unavailability fails closed without installer recovery or lifecy
 	assert.doesNotMatch(JSON.stringify(result), /JERO_PI_SKIP_GENTLE_AI_INSTALL/);
 });
 
-test("registered Gentle Review tools render reusable rose lifecycle call rows", () => {
-	const tools = registeredGentleTools();
+test("registered Jero Review tools render reusable rose lifecycle call rows", () => {
+	const tools = registeredJeroTools();
 	const cases = [
 		["jero_review", { operation: "status" }, "review status"],
 		["jero_review", { operation: "future-operation", secret: "/private" }, "review"],
@@ -112,8 +112,8 @@ test("registered Gentle Review tools render reusable rose lifecycle call rows", 
 	}
 });
 
-test("registered Gentle Review tools preserve result envelopes and redact collapsed result rendering", async () => {
-	const tools = registeredGentleTools();
+test("registered Jero Review tools preserve result envelopes and redact collapsed result rendering", async () => {
+	const tools = registeredJeroTools();
 	const scope = tools.get("jero_review_scope");
 	const manifest = { version: 1, scopeByMode: { "100644": ["src/file.ts"] }, gitlinks: {} };
 	const bytes = Buffer.from(JSON.stringify(manifest), "utf8");

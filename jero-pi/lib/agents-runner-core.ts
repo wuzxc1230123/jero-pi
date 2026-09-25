@@ -710,7 +710,7 @@ export class AgentRunner {
 				const task = this.store.get(id);
 				if (mutation && task && raw.isError === false && !event.isError) {
 					try {
-						const evidence = (raw.result as { details?: { gentleSessionChange?: unknown } } | undefined)?.details?.gentleSessionChange;
+						const evidence = (raw.result as { details?: { jeroSessionChange?: unknown } } | undefined)?.details?.jeroSessionChange;
 						const observed = isSessionChangeEvidence(evidence) && evidence.id === mutation.toolCallId ? { ...mutation, evidence: structuredClone(evidence) } : mutation;
 						void Promise.resolve(this.hooks.onSuccessfulMutation?.(task, observed)).catch(() => {});
 					}

@@ -12,7 +12,7 @@ import {
 	type TaskRecord,
 } from "../lib/agents-protocol.ts";
 
-// Gentle Agents protocol: the child pi process streams RPC events; the host
+// Jero Agents protocol: the child pi process streams RPC events; the host
 // normalizes them into small typed deltas, applies them to an append-only
 // thread, and notifies only the listeners of the task that changed.
 

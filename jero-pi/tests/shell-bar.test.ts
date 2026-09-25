@@ -13,7 +13,7 @@ import {
 	type ShellBarTheme,
 } from "../lib/shell-bar.ts";
 
-// The Gentle Shell bar replaces pi's three-line footer with one line of
+// The Jero Shell bar replaces pi's three-line footer with one line of
 // segments. Rendering is pure so it can be verified without a TUI.
 
 const taggedTheme: ShellBarTheme = {
@@ -165,7 +165,7 @@ test("renderShellBar drops the session name, then trailing segments, before trun
 	assert.match(atFifty, /^✿ jero-pi/);
 });
 
-test("shellEnabled stays off inside a Gentle Agents child", () => {
+test("shellEnabled stays off inside a Jero Agents child", () => {
 	assert.equal(shellEnabled({ JERO_PI_AGENTS_CHILD: "1" }), false);
 });
 

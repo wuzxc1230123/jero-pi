@@ -9,7 +9,7 @@ import { dirname, join } from "node:path";
 import { default as test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { applyModelConfig } from "../extensions/jero-ai.ts";
-import { resolveGentlePiAgentHome } from "../lib/agent-home.ts";
+import { resolveJeroPiAgentHome } from "../lib/agent-home.ts";
 import { getPackageAssetOwner, installPackageAssets, installSddAssets, type PackageAssetOwner } from "../lib/sdd-preflight.ts";
 import {
 	type LegacyManagedAssetsManifest, MANAGED_EXEMPLAR_FILE, MANAGED_EXEMPLAR_TOOLS,
@@ -97,7 +97,7 @@ test("npm publication is bound to the exact package tag and triggering commit", 
 		packageJson.repository,
 		{
 			type: "git",
-			url: "git+https://github.com/jero-pi/jero-pi.git",
+			url: "git+https://github.com/wuzxc1230123/jero-pi.git",
 		},
 		"trusted publishing requires the exact case-sensitive npm repository identity",
 	);

@@ -8,7 +8,7 @@ import {
 } from "node:fs";
 import { dirname, isAbsolute, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { resolveGentlePiAgentHome } from "./agent-home.ts";
+import { resolveJeroPiAgentHome } from "./agent-home.ts";
 import {
 	isRecord, type LegacyManagedAssetsManifest, type ManagedAssetsLockOwner,
 	type ManagedAssetsManifest, type PackageAssetInstallLockOptions
@@ -71,8 +71,8 @@ export function getPackageAssetOwner(ownershipKey: string): PackageAssetOwner | 
 		: undefined;
 }
 
-function gentlePiAgentHome(): string {
-	return resolveGentlePiAgentHome();
+function jeroPiAgentHome(): string {
+	return resolveJeroPiAgentHome();
 }
 
 
@@ -322,7 +322,7 @@ export async function updatePackageManagedSddAgentOwnership(
 	nextContent: string,
 	lockOptions?: PackageAssetInstallLockOptions,
 ): Promise<boolean> {
-	const agentHome = gentlePiAgentHome();
+	const agentHome = jeroPiAgentHome();
 	const relativePath = relative(join(agentHome, "agents"), installedPath);
 	if (
 		relativePath.length === 0 ||
@@ -375,7 +375,7 @@ export async function updatePackageManagedSddAgentOwnership(
 }
 
 export function hasPackageAssetOwnerInstallation(owner: PackageAssetOwner): boolean {
-	const agentHome = gentlePiAgentHome();
+	const agentHome = jeroPiAgentHome();
 	const manifest = readManagedAssetsManifest(join(agentHome, "jero", MANAGED_ASSETS_MANIFEST));
 	return Object.keys(manifest.assets).some((key) => getPackageAssetOwner(key) === owner) ||
 		Object.entries(ASSET_OWNER_BY_KEY).some(([key, candidate]) =>
@@ -388,7 +388,7 @@ export function isPackageManagedSddAsset(
 	ownershipKey: string,
 ): boolean {
 	const manifest = readManagedAssetsManifest(
-		join(gentlePiAgentHome(), "jero", MANAGED_ASSETS_MANIFEST),
+		join(jeroPiAgentHome(), "jero", MANAGED_ASSETS_MANIFEST),
 	);
 	const expectedHash = manifest.assets[ownershipKey];
 	if (expectedHash === undefined || !existsSync(installedPath)) return false;
@@ -609,7 +609,7 @@ export async function installPackageAssets(
 	owners?: readonly PackageAssetOwner[],
 	lockOptions?: PackageAssetInstallLockOptions,
 ): Promise<{ agents: number; chains: number; support: number; skipped: number }> {
-	const agentHome = gentlePiAgentHome();
+	const agentHome = jeroPiAgentHome();
 	return withManagedAssetsLock(agentHome, () => {
 		const selected = owners === undefined ? undefined : new Set(
 			Object.entries(ASSET_OWNER_BY_KEY).filter(([, owner]) => owners.includes(owner)).map(([key]) => key),

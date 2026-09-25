@@ -183,7 +183,7 @@ ${bytes}`, `saved 2026-01-01T00:00:00.000Z
 
 
 test("R4 research write crash reload requires durable desired identity and actual backend readback", async t => {
- const { default: gentleAgents } = await import("../extensions/jero-agents.ts");
+ const { default: jeroAgents } = await import("../extensions/jero-agents.ts");
  const { appendFileSync } = await import("node:fs");
  const cwd = mkdtempSync(join(tmpdir(), "research-crash-")); t.after(() => rmSync(cwd, { recursive: true, force: true }));
  for (const store of ["openspec", "engram", "both"] as const) {
@@ -201,7 +201,7 @@ ${body}`;
    const hooks = new Map(), active = ["read", "write", "mem_read", "mem_save"];
    const pi = { on: (name, fn) => hooks.set(name, fn), getAllTools: () => active.map(name => ({ name })), getActiveTools: () => active, appendEntry: (customType, data) => appendFileSync(history, JSON.stringify({ type: "custom", customType, data }) + "\n") };
    const ctx = { cwd, sessionManager: { getEntries: entries, getSessionFile: () => durable ? history : undefined } };
-   gentleAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(active), JERO_PI_RESEARCH_ARTIFACT: JSON.stringify(scope) });
+   jeroAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(active), JERO_PI_RESEARCH_ARTIFACT: JSON.stringify(scope) });
    hooks.get("before_agent_start")({ systemPrompt: "research" }, ctx);
    const call = (toolName, input, toolCallId = "call") => hooks.get("tool_call")({ toolName, input, toolCallId }, ctx);
    const read = toolName => {

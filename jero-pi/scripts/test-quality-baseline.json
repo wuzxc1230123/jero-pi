@@ -1,0 +1,7 @@
+{
+	"total": 3,
+	"byFileAndRule": {
+		"tests/jero-agents.z4.test.ts|no-magic-sleep": 1,
+		"tests/review-host-relay-shared.ts|no-magic-sleep": 2
+	}
+}

@@ -8,7 +8,7 @@ import { dirname, join } from "node:path";
 import { default as test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { applyModelConfig } from "../extensions/jero-ai.ts";
-import { resolveGentlePiAgentHome } from "../lib/agent-home.ts";
+import { resolveJeroPiAgentHome } from "../lib/agent-home.ts";
 import { getPackageAssetOwner, installPackageAssets, installSddAssets, type PackageAssetOwner } from "../lib/sdd-preflight.ts";
 
 

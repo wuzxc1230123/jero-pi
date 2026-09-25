@@ -5,7 +5,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { truncateToWidth } from "@earendil-works/pi-tui";
 
-import { gentleAiConfigHome, isRecord } from "./jero-ai-persona-config.ts";
+import { jeroConfigHome, isRecord } from "./jero-ai-persona-config.ts";
 
 
 // 匹配 `git [全局标志] push` —— 容忍 `git` 与子命令之间的
@@ -96,7 +96,7 @@ interface RuntimeGuardrailsConfig {
 
 interface LoadGuardrailsOptions {
 	/** 覆盖配置主目录（测试中用于避免触碰 ~/.pi）。 */
-	gentlePiConfigHome?: string;
+	jeroPiConfigHome?: string;
 	/** 覆盖自主模式检查所用的环境（注入的 processEnv 接缝）。 */
 	env?: NodeJS.ProcessEnv;
 }
@@ -285,7 +285,7 @@ export function parseGuardrailsConfigFile(
  * 解析顺序（项目覆盖全局）：
  *   1. 检查 JERO_PI_AUTONOMOUS_MODE 环境变量 —— 若为 "1"，强制 autonomousMode=true
  *      并使用默认的受守卫命令动作。
- *   2. 从 ${gentlePiConfigHome}/runtime-guardrails.json 读取全局配置
+ *   2. 从 ${jeroPiConfigHome}/runtime-guardrails.json 读取全局配置
  *   3. 从 ${cwd}/.pi/jero/runtime-guardrails.json 读取项目配置
  *      （项目值合并覆盖在全局之上）
  *   4. 任何位置的解析/读取错误 → 保守回退（返回 SAFE_GUARDRAILS_CONFIG）
@@ -301,7 +301,7 @@ export function parseGuardrailsConfigFile(
  * 解析顺序（项目覆盖全局）：
  *   1. 检查 JERO_PI_AUTONOMOUS_MODE 环境变量 —— 若为 "1"，强制 autonomousMode=true
  *      并使用默认的受守卫命令动作。
- *   2. 从 ${gentlePiConfigHome}/runtime-guardrails.json 读取全局配置
+ *   2. 从 ${jeroPiConfigHome}/runtime-guardrails.json 读取全局配置
  *   3. 从 ${cwd}/.pi/jero/runtime-guardrails.json 读取项目配置
  *      （项目值合并覆盖在全局之上）
  *   4. 任何位置的解析/读取错误 → 保守回退（返回 SAFE_GUARDRAILS_CONFIG）
@@ -334,7 +334,7 @@ export function loadRuntimeGuardrailsConfig(
 			return { autonomousMode: true, guardedCommands: {} };
 		}
 
-		const configHome = options.gentlePiConfigHome ?? gentleAiConfigHome();
+		const configHome = options.jeroPiConfigHome ?? jeroConfigHome();
 		const globalConfigPath = join(configHome, "runtime-guardrails.json");
 		const projectConfigPath = join(cwd, ".pi", "jero", "runtime-guardrails.json");
 

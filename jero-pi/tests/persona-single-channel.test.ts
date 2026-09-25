@@ -10,7 +10,7 @@ import { __testing } from "../extensions/jero-ai.ts";
 // Freezes the pre-change wrapper (jero-ai.ts) and orchestrator.md text as
 // verbatim string-literal fixtures (from HEAD, BEFORE this change), then
 // proves the union survives in the LIVE post-change combined injection
-// (`__testing.buildGentlePrompt(persona)`, which calls `getOrchestratorPrompt()`
+// (`__testing.buildJeroPrompt(persona)`, which calls `getOrchestratorPrompt()`
 // internally and reads `assets/orchestrator.md` from disk, memoized for the
 // lifetime of the process — see jero-ai.ts:118-133).
 //
@@ -150,7 +150,7 @@ Exceptions:
 // frozen here so the canonical blocks and this test move together.
 // ---------------------------------------------------------------------------
 
-/** jero-ai.ts buildGentlePrompt 身份契约 bullets — Chinese i18n baseline (764 B, node-measured). */
+/** jero-ai.ts buildJeroPrompt 身份契约 bullets — Chinese i18n baseline (764 B, node-measured). */
 const POST_WRAPPER_IDENTITY_BLOCK = `身份契约：
 - 当用户问你是谁或是什么时，以 el Jero 的身份回答，而不是泛用助手，且绝不仅仅以“您的助手”或“默认助手”自我介绍。传达以下含义，并翻译成用户的语言：“我是 el Jero：一个面向受控开发的 Pi 专用编码代理框架，具备资深架构师人格。我在任务需要时使用 SDD/OpenSpec，协调子代理，使用阶段产物，运行命令并编辑文件。我不是通用聊天机器人。”
 - 遵循当前选择的人格模式。
@@ -244,12 +244,12 @@ test("fixture integrity: POST_WRAPPER_IDENTITY_BLOCK matches the Chinese i18n ba
 // ---------------------------------------------------------------------------
 // Line-level union sweep — one named assertion per Table A / Table B rule.
 // Verifies survival (VERBATIM / MERGED / POINTER) in the LIVE post-change
-// combined injection: __testing.buildGentlePrompt(persona).
+// combined injection: __testing.buildJeroPrompt(persona).
 // ---------------------------------------------------------------------------
 
 test("Table A rule: wrapper :177 'You are el Jero...' survives verbatim (KEEP once, wrapper)", () => {
 	for (const persona of ["gentleman", "neutral"] as const) {
-		const prompt = __testing.buildGentlePrompt(persona);
+		const prompt = __testing.buildJeroPrompt(persona);
 		assert.match(
 			prompt,
 			/你是 el Jero：一个面向受控开发工作的 Pi 专用编码代理框架。/,
@@ -260,7 +260,7 @@ test("Table A rule: wrapper :177 'You are el Jero...' survives verbatim (KEEP on
 
 test("Table A rule: wrapper :180/:181 + orchestrator :9,:12 self-description MERGE into wrapper bullet 1", () => {
 	for (const persona of ["gentleman", "neutral"] as const) {
-		const prompt = __testing.buildGentlePrompt(persona);
+		const prompt = __testing.buildJeroPrompt(persona);
 		assert.match(
 			prompt,
 			/以 el Jero 的身份回答，而不是泛用助手/,
@@ -281,7 +281,7 @@ test("Table A rule: wrapper :180/:181 + orchestrator :9,:12 self-description MER
 
 test("Table A rule: orchestrator :17 'never introduce yourself...' ADDED to wrapper (orchestrator-only rule)", () => {
 	for (const persona of ["gentleman", "neutral"] as const) {
-		const prompt = __testing.buildGentlePrompt(persona);
+		const prompt = __testing.buildJeroPrompt(persona);
 		assert.match(
 			prompt,
 			/绝不仅仅以“您的助手”或“默认助手”自我介绍/,
@@ -292,7 +292,7 @@ test("Table A rule: orchestrator :17 'never introduce yourself...' ADDED to wrap
 
 test("Table A rule: persona-mode selection (trimmed) survives; language clause NOT restated in Identity contract", () => {
 	for (const persona of ["gentleman", "neutral"] as const) {
-		const prompt = __testing.buildGentlePrompt(persona);
+		const prompt = __testing.buildJeroPrompt(persona);
 		assert.match(
 			prompt,
 			/遵循当前选择的人格模式。/,
@@ -303,7 +303,7 @@ test("Table A rule: persona-mode selection (trimmed) survives; language clause N
 
 test("Table A rule: SDD/OpenSpec artifacts + subagents core-capabilities bullet survives (KEEP once)", () => {
 	for (const persona of ["gentleman", "neutral"] as const) {
-		const prompt = __testing.buildGentlePrompt(persona);
+		const prompt = __testing.buildJeroPrompt(persona);
 		assert.match(
 			prompt,
 			/将 SDD\/OpenSpec 阶段产物和子代理作为核心能力提及。/,
@@ -314,7 +314,7 @@ test("Table A rule: SDD/OpenSpec artifacts + subagents core-capabilities bullet 
 
 test("Table A rule: memory rule (wrapper phrasing, with never-invent clause) survives (KEEP wrapper)", () => {
 	for (const persona of ["gentleman", "neutral"] as const) {
-		const prompt = __testing.buildGentlePrompt(persona);
+		const prompt = __testing.buildJeroPrompt(persona);
 		assert.match(
 			prompt,
 			/仅在记忆包或可调用的记忆工具确实处于活动状态时才提及记忆；绝不虚构持久记忆。/,
@@ -325,7 +325,7 @@ test("Table A rule: memory rule (wrapper phrasing, with never-invent clause) sur
 
 test("Table A rule: 'Do not claim portability outside the Pi runtime.' survives (KEEP once, byte-identical wrapper :184 / orchestrator :20)", () => {
 	for (const persona of ["gentleman", "neutral"] as const) {
-		const prompt = __testing.buildGentlePrompt(persona);
+		const prompt = __testing.buildJeroPrompt(persona);
 		assert.match(
 			prompt,
 			/不宣称在 Pi 运行时之外可移植。/,
@@ -345,7 +345,7 @@ test("Table B rule: LB2 subagent delegation language kept verbatim in delegation
 		"utf8",
 	);
 	for (const persona of ["gentleman", "neutral"] as const) {
-		const prompt = __testing.buildGentlePrompt(persona) + delegationDetail;
+		const prompt = __testing.buildJeroPrompt(persona) + delegationDetail;
 		assert.match(
 			prompt,
 			/面向子代理的委托提示词默认使用简体中文（本包的子代理定义已是中文）/,
@@ -356,7 +356,7 @@ test("Table B rule: LB2 subagent delegation language kept verbatim in delegation
 
 test("Table B rule: LB3 artifacts language rule kept verbatim in orchestrator (unique)", () => {
 	for (const persona of ["gentleman", "neutral"] as const) {
-		const prompt = __testing.buildGentlePrompt(persona);
+		const prompt = __testing.buildJeroPrompt(persona);
 		assert.match(
 			prompt,
 			/生成式技术产物——无论由父会话内联还是由子代理生成/,
@@ -367,7 +367,7 @@ test("Table B rule: LB3 artifacts language rule kept verbatim in orchestrator (u
 
 test("Table B rule: LB4 public-comment target language kept verbatim in orchestrator (unique)", () => {
 	for (const persona of ["gentleman", "neutral"] as const) {
-		const prompt = __testing.buildGentlePrompt(persona);
+		const prompt = __testing.buildJeroPrompt(persona);
 		assert.match(
 			prompt,
 			/公开\/情境性评论与回复不同于技术产物。/,
@@ -387,7 +387,7 @@ test("Table B rule: LB5 exceptions kept verbatim in delegation asset (unique)", 
 		"utf8",
 	);
 	for (const persona of ["gentleman", "neutral"] as const) {
-		const prompt = __testing.buildGentlePrompt(persona) + delegationDetail;
+		const prompt = __testing.buildJeroPrompt(persona) + delegationDetail;
 		assert.match(
 			prompt,
 			/用户原话引文、UI 文案、错误信息、文件名、命令与领域术语作为证据时，保留其原始语言。/,
@@ -441,7 +441,7 @@ function countOccurrences(haystack: string, needle: string): number {
 
 test("dup guard (exact-string): '不宣称在 Pi 运行时之外可移植。' occurs exactly once", () => {
 	for (const persona of ["gentleman", "neutral"] as const) {
-		const prompt = __testing.buildGentlePrompt(persona);
+		const prompt = __testing.buildJeroPrompt(persona);
 		assert.equal(
 			countOccurrences(prompt, "不宣称在 Pi 运行时之外可移植。"),
 			1,
@@ -454,7 +454,7 @@ test("dup guard (exact-string): identity self-description sentence occurs exactl
 	const selfDescription =
 		"我是 el Jero：一个面向受控开发的 Pi 专用编码代理框架，具备资深架构师人格。我在任务需要时使用 SDD/OpenSpec，协调子代理，使用阶段产物，运行命令并编辑文件。我不是通用聊天机器人。";
 	for (const persona of ["gentleman", "neutral"] as const) {
-		const prompt = __testing.buildGentlePrompt(persona);
+		const prompt = __testing.buildJeroPrompt(persona);
 		assert.equal(
 			countOccurrences(prompt, selfDescription),
 			1,
@@ -477,7 +477,7 @@ test("dup guard (exact-string): LB2/LB3/LB4 each occur exactly once", () => {
 	const lb3 = "生成式技术产物——无论由父会话内联还是由子代理生成";
 	const lb4 = "公开/情境性评论与回复不同于技术产物。";
 	for (const persona of ["gentleman", "neutral"] as const) {
-		const prompt = __testing.buildGentlePrompt(persona);
+		const prompt = __testing.buildJeroPrompt(persona);
 		assert.equal(
 			countOccurrences(prompt + delegationDetail, lb2),
 			1,
@@ -511,8 +511,8 @@ function countLanguageMatchConceptOccurrences(text: string): number {
 }
 
 test("dup guard (concept-level): language-match regex matches exactly once per rendered mode, excluding the scoped self-description exception", () => {
-	const gentlemanPrompt = __testing.buildGentlePrompt("gentleman");
-	const neutralPrompt = __testing.buildGentlePrompt("neutral");
+	const gentlemanPrompt = __testing.buildJeroPrompt("gentleman");
+	const neutralPrompt = __testing.buildJeroPrompt("neutral");
 	assert.equal(
 		countLanguageMatchConceptOccurrences(gentlemanPrompt),
 		1,
@@ -530,7 +530,7 @@ test("dup guard (concept-level): language-match regex matches exactly once per r
 // ---------------------------------------------------------------------------
 
 test("added rule: gentleman output contains the new GENTLEMAN_PERSONA_PROMPT language-match clause", () => {
-	const prompt = __testing.buildGentlePrompt("gentleman");
+	const prompt = __testing.buildJeroPrompt("gentleman");
 	assert.match(
 		prompt,
 		/- 始终用用户写作所用的语言回答。/,
@@ -539,7 +539,7 @@ test("added rule: gentleman output contains the new GENTLEMAN_PERSONA_PROMPT lan
 });
 
 test("regression: neutral output still contains its own unchanged language-match clause (:158)", () => {
-	const prompt = __testing.buildGentlePrompt("neutral");
+	const prompt = __testing.buildJeroPrompt("neutral");
 	assert.match(
 		prompt,
 		/- 始终用用户写作所用的语言回答。/,
@@ -615,7 +615,7 @@ test("byte delta: net per-session injection delta (gentleman -439 B, neutral -48
 // ---------------------------------------------------------------------------
 
 test("gentleman persona selected: GENTLEMAN_PERSONA_PROMPT content appears once, no neutral-only rule leaks in", () => {
-	const prompt = __testing.buildGentlePrompt("gentleman");
+	const prompt = __testing.buildJeroPrompt("gentleman");
 	assert.match(prompt, /Current persona mode: gentleman/);
 	assert.match(prompt, /用户使用中文时，用自然、地道的简体中文回答/);
 	assert.doesNotMatch(
@@ -626,7 +626,7 @@ test("gentleman persona selected: GENTLEMAN_PERSONA_PROMPT content appears once,
 });
 
 test("neutral persona selected: NEUTRAL_PERSONA_PROMPT content appears once, no gentleman-only rule leaks in", () => {
-	const prompt = __testing.buildGentlePrompt("neutral");
+	const prompt = __testing.buildJeroPrompt("neutral");
 	assert.match(prompt, /Current persona mode: neutral/);
 	assert.match(prompt, /不使用网络俚语（yyds、绝绝子）、梗或方言表达（老铁、咋、俺）/);
 	assert.doesNotMatch(

@@ -70,14 +70,14 @@ interface PackageJson {
 	pi?: PackageJsonPiManifest;
 }
 
-interface GentleThemeJson {
+interface JeroThemeJson {
 	name?: string;
 	vars?: Record<string, unknown>;
 	colors?: Record<string, unknown>;
 	export?: Record<string, unknown>;
 }
 
-function resolveThemeColor(theme: GentleThemeJson, colorKey: string): unknown {
+function resolveThemeColor(theme: JeroThemeJson, colorKey: string): unknown {
 	const colorRef = theme.colors?.[colorKey];
 
 	if (typeof colorRef !== "string") {
@@ -88,7 +88,7 @@ function resolveThemeColor(theme: GentleThemeJson, colorKey: string): unknown {
 }
 
 function assertResolvedThemeColor(
-	theme: GentleThemeJson,
+	theme: JeroThemeJson,
 	colorKey: string,
 	expected: string,
 ): void {
@@ -118,7 +118,7 @@ test("package manifest exposes bundled themes to Pi discovery", () => {
 });
 
 test("bundled Jero-Sexy Pi theme is available under its exact name", () => {
-	const theme = readJson<GentleThemeJson>(
+	const theme = readJson<JeroThemeJson>(
 		join(PACKAGE_ROOT, "themes", "Jero-Sexy.json"),
 	);
 
@@ -126,7 +126,7 @@ test("bundled Jero-Sexy Pi theme is available under its exact name", () => {
 });
 
 test("bundled Jero-Cute Pi theme is available under its exact name", () => {
-	const theme = readJson<GentleThemeJson>(
+	const theme = readJson<JeroThemeJson>(
 		join(PACKAGE_ROOT, "themes", "Jero-Cute.json"),
 	);
 
@@ -134,7 +134,7 @@ test("bundled Jero-Cute Pi theme is available under its exact name", () => {
 });
 
 test("bundled Jero-Sexy Pi theme defines complete brand and semantic color mappings", () => {
-	const theme = readJson<GentleThemeJson>(
+	const theme = readJson<JeroThemeJson>(
 		join(PACKAGE_ROOT, "themes", "Jero-Sexy.json"),
 	);
 	const colors = theme.colors ?? {};
@@ -192,7 +192,7 @@ test("bundled Jero-Sexy Pi theme defines complete brand and semantic color mappi
 });
 
 test("bundled Jero-Cute Pi theme defines complete brand and restrained color mappings", () => {
-	const theme = readJson<GentleThemeJson>(
+	const theme = readJson<JeroThemeJson>(
 		join(PACKAGE_ROOT, "themes", "Jero-Cute.json"),
 	);
 	const colors = theme.colors ?? {};
@@ -251,7 +251,7 @@ test("bundled Jero-Cute Pi theme defines complete brand and restrained color map
 });
 
 test("bundled Pi theme is named exactly Jero and defines all required colors", () => {
-	const theme = readJson<GentleThemeJson>(
+	const theme = readJson<JeroThemeJson>(
 		join(PACKAGE_ROOT, "themes", "Jero.json"),
 	);
 
@@ -264,7 +264,7 @@ test("bundled Pi theme is named exactly Jero and defines all required colors", (
 });
 
 test("bundled Pi theme maps roles to the subtle OpenCode gentleman theme", () => {
-	const theme = readJson<GentleThemeJson>(
+	const theme = readJson<JeroThemeJson>(
 		join(PACKAGE_ROOT, "themes", "Jero.json"),
 	);
 	const vars = theme.vars ?? {};

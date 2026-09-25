@@ -32,10 +32,10 @@ test("memory topic validation accepts hierarchy and rejects escapes", () => {
 	assert.equal(isValidMemoryTopic("x".repeat(129)), false);
 });
 
-test("save and read roundtrip through frontmatter", () => {
+test("save and read roundtrip through frontmatter", async () => {
 	const root = tempRoot();
 	try {
-		const saved = saveMemory(root, "sdd/change/proposal", "# Proposal\n\nKeep the delta flow.\n", { tags: ["sdd"], agent: "parent" });
+		const saved = await saveMemory(root, "sdd/change/proposal", "# Proposal\n\nKeep the delta flow.\n", { tags: ["sdd"], agent: "parent" });
 		assert.equal(saved.created, true);
 		const record = readMemory(root, "sdd/change/proposal");
 		assert.notEqual(record, undefined);
@@ -50,34 +50,34 @@ test("save and read roundtrip through frontmatter", () => {
 	}
 });
 
-test("save rejects empty and oversized content and bad tags", () => {
+test("save rejects empty and oversized content and bad tags", async () => {
 	const root = tempRoot();
 	try {
-		assert.throws(() => saveMemory(root, "t/empty", ""), /not be empty/);
-		assert.throws(() => saveMemory(root, "t/big", "x".repeat(MAX_MEMORY_CONTENT_BYTES + 1)), /limit is/);
-		assert.throws(() => saveMemory(root, "t/tags", "body", { tags: ["bad tag"] }), /invalid memory tag/);
+		await assert.rejects(() => saveMemory(root, "t/empty", ""), /not be empty/);
+		await assert.rejects(() => saveMemory(root, "t/big", "x".repeat(MAX_MEMORY_CONTENT_BYTES + 1)), /limit is/);
+		await assert.rejects(() => saveMemory(root, "t/tags", "body", { tags: ["bad tag"] }), /invalid memory tag/);
 	} finally {
 		rmSync(root, { recursive: true, force: true });
 	}
 });
 
-test("saving the same topic replaces the entry and reports it", () => {
+test("saving the same topic replaces the entry and reports it", async () => {
 	const root = tempRoot();
 	try {
-		assert.equal(saveMemory(root, "notes/one", "first").created, true);
-		assert.equal(saveMemory(root, "notes/one", "second").created, false);
+		assert.equal((await saveMemory(root, "notes/one", "first")).created, true);
+		assert.equal((await saveMemory(root, "notes/one", "second")).created, false);
 		assert.equal(readMemory(root, "notes/one")!.content, "second");
 	} finally {
 		rmSync(root, { recursive: true, force: true });
 	}
 });
 
-test("list filters by prefix and tag with a deterministic order", () => {
+test("list filters by prefix and tag with a deterministic order", async () => {
 	const root = tempRoot();
 	try {
-		saveMemory(root, "sdd/a/proposal", "alpha proposal", { tags: ["sdd"] });
-		saveMemory(root, "sdd/b/design", "beta design", { tags: ["sdd", "arch"] });
-		saveMemory(root, "decisions/one", "unrelated decision", { tags: ["decision"] });
+		await saveMemory(root, "sdd/a/proposal", "alpha proposal", { tags: ["sdd"] });
+		await saveMemory(root, "sdd/b/design", "beta design", { tags: ["sdd", "arch"] });
+		await saveMemory(root, "decisions/one", "unrelated decision", { tags: ["decision"] });
 		const all = listMemory(root);
 		assert.deepEqual(all.map((entry) => entry.topic), ["decisions/one", "sdd/a/proposal", "sdd/b/design"]);
 		assert.deepEqual(listMemory(root, { prefix: "sdd/" }).map((entry) => entry.topic), ["sdd/a/proposal", "sdd/b/design"]);
@@ -88,11 +88,11 @@ test("list filters by prefix and tag with a deterministic order", () => {
 	}
 });
 
-test("search requires every term and reports the matching line", () => {
+test("search requires every term and reports the matching line", async () => {
 	const root = tempRoot();
 	try {
-		saveMemory(root, "fixes/token-refresh", "The token refresh raced the scheduler.\nFixed by serializing refreshes.");
-		saveMemory(root, "fixes/other", "Unrelated note about logging.");
+		await saveMemory(root, "fixes/token-refresh", "The token refresh raced the scheduler.\nFixed by serializing refreshes.");
+		await saveMemory(root, "fixes/other", "Unrelated note about logging.");
 		const hits = searchMemory(root, "token refresh");
 		assert.equal(hits.length, 1);
 		assert.equal(hits[0]!.topic, "fixes/token-refresh");
@@ -104,11 +104,11 @@ test("search requires every term and reports the matching line", () => {
 	}
 });
 
-test("a missing or corrupt index is rebuilt from the entries directory", () => {
+test("a missing or corrupt index is rebuilt from the entries directory", async () => {
 	const root = tempRoot();
 	try {
-		saveMemory(root, "a/one", "first body");
-		saveMemory(root, "a/two", "second body");
+		await saveMemory(root, "a/one", "first body");
+		await saveMemory(root, "a/two", "second body");
 		rmSync(join(root, "index.json"));
 		assert.deepEqual(listMemory(root).map((entry) => entry.topic), ["a/one", "a/two"]);
 		writeFileSync(join(root, "index.json"), "{ not json", "utf8");
@@ -119,14 +119,14 @@ test("a missing or corrupt index is rebuilt from the entries directory", () => {
 	}
 });
 
-test("delete removes the entry and keeps the index in sync", () => {
+test("delete removes the entry and keeps the index in sync", async () => {
 	const root = tempRoot();
 	try {
-		saveMemory(root, "gone/soon", "temporary");
-		assert.equal(deleteMemory(root, "gone/soon"), true);
+		await saveMemory(root, "gone/soon", "temporary");
+		assert.equal(await deleteMemory(root, "gone/soon"), true);
 		assert.equal(readMemory(root, "gone/soon"), undefined);
 		assert.deepEqual(listMemory(root, { prefix: "gone/" }), []);
-		assert.equal(deleteMemory(root, "gone/soon"), false);
+		assert.equal(await deleteMemory(root, "gone/soon"), false);
 		assert.equal(existsSync(join(root, "entries", "gone")), false);
 	} finally {
 		rmSync(root, { recursive: true, force: true });
@@ -214,26 +214,26 @@ test("mem_save reports invalid arguments without writing", async () => {
 	}
 });
 
-test("listMemory rebuilds the index when an entry file is removed behind its back", () => {
+test("listMemory rebuilds the index when an entry file is removed behind its back", async () => {
 	const root = tempRoot();
 	try {
-		saveMemory(root, "sdd/x/proposal", "kept");
-		saveMemory(root, "sdd/x/tasks", "gone");
+		await saveMemory(root, "sdd/x/proposal", "kept");
+		await saveMemory(root, "sdd/x/tasks", "gone");
 		rmSync(join(root, "entries", "sdd", "x", "tasks.md"));
 		const topics = listMemory(root).map((entry) => entry.topic);
 		assert.deepEqual(topics, ["sdd/x/proposal"]);
 		// A later save keeps the rebuilt index consistent.
-		saveMemory(root, "sdd/x/tasks", "back");
+		await saveMemory(root, "sdd/x/tasks", "back");
 		assert.deepEqual(listMemory(root).map((entry) => entry.topic), ["sdd/x/proposal", "sdd/x/tasks"]);
 	} finally {
 		rmSync(root, { recursive: true, force: true });
 	}
 });
 
-test("listMemory drops index rows whose entry file no longer exists", () => {
+test("listMemory drops index rows whose entry file no longer exists", async () => {
 	const root = tempRoot();
 	try {
-		saveMemory(root, "sdd/x/proposal", "kept");
+		await saveMemory(root, "sdd/x/proposal", "kept");
 		rmSync(join(root, "entries", "sdd", "x", "proposal.md"));
 		// Forge a stale index that still carries the removed topic.
 		const indexPath = join(root, "index.json");
@@ -246,15 +246,15 @@ test("listMemory drops index rows whose entry file no longer exists", () => {
 	}
 });
 
-test("a stale index lock directory is taken over instead of blocking saves", () => {
+test("a stale index lock directory is taken over instead of blocking saves", async () => {
 	const root = tempRoot();
 	try {
-		saveMemory(root, "a/b", "first");
+		await saveMemory(root, "a/b", "first");
 		const lockPath = join(root, ".index-lock");
 		mkdirSync(lockPath);
 		const stale = new Date(Date.now() - 60_000);
 		utimesSync(lockPath, stale, stale);
-		saveMemory(root, "c/d", "second");
+		await saveMemory(root, "c/d", "second");
 		assert.equal(existsSync(lockPath), false);
 		assert.deepEqual(listMemory(root).map((entry) => entry.topic), ["a/b", "c/d"]);
 	} finally {

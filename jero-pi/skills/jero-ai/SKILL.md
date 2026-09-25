@@ -54,6 +54,17 @@ clarify → scout/context-builder when context-heavy → one worker → verify
 - **事故规则**：发生错误 cwd、意外改动工作树/仓库、合并恢复、测试命令混乱或环境绕行后，单独诊断。
 - **长会话规则**：约 20 次工具调用、5 次探索性读取或 2 次非机械编辑且无委托、复杂度累积后，暂停并选择一个非评审子代理，或说明为何不这么做。
 
+## 裁决与停问（Rulings, not stalls）
+
+歧义默认自行裁决，只有四类事必须停下问人：
+
+1. 不可逆或破坏性操作；
+2. 安全敏感操作（凭据、鉴权、数据销毁）；
+3. 工作区外副作用（merge、push、publish、对外发送）；
+4. 计划坏到每条路都是猜测。
+
+其余歧义当场裁决并记入台账：`Ruling: <决定> — <原因> — <错了的代价>`。死在会话里的裁决等于背着人做的决定。同一修复连续 3 次失败即视为架构问题：停下质疑架构，而不是发起第 4 次修复。
+
 ## 评审视角选择（Review Lens Selection）
 
 `review-risk`、`review-reliability`、`review-resilience` 和 `review-readability` 是 Jero 的评审视角（review lens）词汇。本注入技能不选择、调用、排序或重试这些视角；任何适用的运行时只使用其动态提供的指令。

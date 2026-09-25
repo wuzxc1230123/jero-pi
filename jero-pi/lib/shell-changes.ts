@@ -1,6 +1,6 @@
 import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 
-// Gentle Shell 变更：工作树相对 HEAD 的改动，含新文件。Git 是事实源；
+// Jero Shell 变更：工作树相对 HEAD 的改动，含新文件。Git 是事实源；
 // 本模块把原始的 `git diff --numstat` 与 `git status --porcelain -z`
 // 输出变成模型并渲染挂件。
 

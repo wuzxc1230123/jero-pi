@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { THINKING_LEVELS as ROUTING_THINKING_LEVELS, type ThinkingLevel as RoutingThinkingLevel } from "./model-routing-authority.ts";
 
-// Gentle Agents 配置。代理定义是带 YAML frontmatter 的 markdown 文件
+// Jero Agents 配置。代理定义是带 YAML frontmatter 的 markdown 文件
 // （gentle-ai 安装的格式），运行时设置来自全局与项目层级的
 // subagents.json。除发现辅助函数（以根目录作参数）外，这里的一切都是
 // 纯函数。

@@ -6,7 +6,7 @@ import os from "node:os";
 import { dirname, join } from "node:path";
 import { emptyThread, type TaskRecord, type TaskThread } from "./agents-protocol.ts";
 
-// Gentle Agents 历史：每个已完成的任务一个 JSON 文件，由宿主在子进程
+// Jero Agents 历史：每个已完成的任务一个 JSON 文件，由宿主在子进程
 // 消失后写入，并在覆盖层打开或工具请求较早会话的任务时惰性读回。
 // 一切皆为异步，终端绝不等磁盘。
 

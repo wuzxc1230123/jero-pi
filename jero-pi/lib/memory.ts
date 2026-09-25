@@ -146,15 +146,17 @@ function writeIndex(root: string, map: Map<string, MemoryIndexEntry>): void {
 // 每个委托任务各一个 `pi --mode rpc` 子进程）。两次并发保存不得丢失
 // 对方的行，因此变更通过基于 mkdir 的锁目录串行化：在所有平台上都
 // 原子，且无需原生模块。超过过期窗口的锁是崩溃持有者的残留，可被
-// 接管；等待超过同一窗口则高声放弃，而不是永远阻塞事件循环。
+// 接管；等待超过同一窗口则高声放弃。等待以异步轮询进行——保存与
+// 删除因此是 async，但绝不阻塞事件循环。
 const INDEX_LOCK_DIR = ".index-lock";
 const INDEX_LOCK_STALE_MS = 5_000;
+const INDEX_LOCK_POLL_MS = 15;
 
-function sleepSync(ms: number): void {
-	Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+function delay(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function withIndexLock<T>(root: string, action: () => T): T {
+async function withIndexLockAsync<T>(root: string, action: () => T): Promise<T> {
 	mkdirSync(root, { recursive: true });
 	const lockPath = join(root, INDEX_LOCK_DIR);
 	const deadline = Date.now() + INDEX_LOCK_STALE_MS;
@@ -168,7 +170,7 @@ function withIndexLock<T>(root: string, action: () => T): T {
 				continue;
 			}
 			if (Date.now() > deadline) throw new Error("timed out acquiring the memory index lock");
-			sleepSync(15);
+			await delay(INDEX_LOCK_POLL_MS);
 			continue;
 		}
 		try {
@@ -190,7 +192,7 @@ export function rebuildMemoryIndex(root: string): number {
 	return map.size;
 }
 
-export function saveMemory(root: string, topic: string, content: string, meta: Partial<MemoryEntryMeta> = {}): MemorySaveResult {
+export async function saveMemory(root: string, topic: string, content: string, meta: Partial<MemoryEntryMeta> = {}): Promise<MemorySaveResult> {
 	if (!isValidMemoryTopic(topic)) throw new Error(`invalid memory topic "${topic}": use 1-128 chars of letters, digits, ".", "_", "-", with "/" for hierarchy`);
 	const tags = meta.tags ?? [];
 	for (const tag of tags) {
@@ -209,7 +211,7 @@ export function saveMemory(root: string, topic: string, content: string, meta: P
 		tags,
 	})}${content.endsWith("\n") ? content : `${content}\n`}`;
 	atomicWrite(path, rendered);
-	withIndexLock(root, () => {
+	await withIndexLockAsync(root, () => {
 		// 在锁内按磁盘上实际存在的字节建立索引：同一主题的并发保存者可能
 		// 在写入与加锁之间替换了我们的内容，索引必须描述幸存的文件，
 		// 而不是我们自己的副本。
@@ -341,13 +343,13 @@ function occurrences(haystack: string, needle: string): number {
 }
 
 /** 删除一个主题；不存在时返回 false。索引保持同步。 */
-export function deleteMemory(root: string, topic: string): boolean {
+export async function deleteMemory(root: string, topic: string): Promise<boolean> {
 	if (!isValidMemoryTopic(topic)) return false;
 	const path = memoryEntryPath(root, topic);
 	if (!existsSync(path)) return false;
 	rmSync(path, { force: true });
 	pruneEmptyAncestorDirs(dirname(path), join(root, "entries"));
-	withIndexLock(root, () => {
+	await withIndexLockAsync(root, () => {
 		const map = readIndex(root);
 		if (map.delete(topic)) writeIndex(root, map);
 	});

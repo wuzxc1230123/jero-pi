@@ -11,7 +11,7 @@ import {
 	type PromptFrameOptions,
 } from "../lib/shell-prompt.ts";
 
-// The Gentle Shell prompt wraps pi's editor output (a top rule, padded content
+// The Jero Shell prompt wraps pi's editor output (a top rule, padded content
 // lines, a bottom rule) in a rounded frame with a petal that shows the agent
 // state. Framing is pure: it takes the editor's lines and returns new ones.
 

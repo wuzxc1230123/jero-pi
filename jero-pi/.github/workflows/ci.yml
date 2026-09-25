@@ -50,6 +50,11 @@ jobs:
       - name: Authority module boundary
         run: pnpm run check:authority-boundary
 
+      # Test anti-patterns (pass-always asserts, reasonless skips, wall-clock
+      # assertions, magic sleeps) are ratcheted toward zero; see the script header.
+      - name: Test quality ratchet
+        run: pnpm run check:test-quality
+
       - name: Verify package contents
         run: node scripts/verify-package-files.mjs
 

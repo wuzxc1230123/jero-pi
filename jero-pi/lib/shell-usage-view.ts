@@ -1,7 +1,7 @@
 import { Key, matchesKey, truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import { renderUsagePanel, type ActiveProvider, type UsageStore, type UsageTheme } from "./shell-usage.ts";
 
-// Gentle Shell 订阅覆盖层：叠在用量存储之上的带框面板。它在每次
+// Jero Shell 订阅覆盖层：叠在用量存储之上的带框面板。它在每次
 // 渲染时读取存储，因此刷新只需要做记录。
 
 export interface UsageViewDeps {

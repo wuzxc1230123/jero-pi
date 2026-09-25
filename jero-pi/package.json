@@ -29,8 +29,8 @@
 		"runtime/",
 		"skills/",
 		"scripts/",
-		"tests/",
 		"themes/",
+		"CHANGELOG.md",
 		"README.md",
 		"schemas/"
 	],
@@ -43,9 +43,10 @@
 		"build:runtime-modules": "node scripts/build-runtime-modules.mjs --write",
 		"check:runtime-modules": "node scripts/build-runtime-modules.mjs --check",
 		"typecheck": "node scripts/check-types.mjs",
-		"prepack": "pnpm test && pnpm run check:runtime-modules && pnpm run check:authority-boundary && node scripts/verify-package-files.mjs",
-		"prepublishOnly": "pnpm test && pnpm run check:runtime-modules && pnpm run check:authority-boundary && node scripts/verify-package-files.mjs && pnpm run test:packed-package",
-		"check:authority-boundary": "node scripts/check-authority-boundary.mjs"
+		"prepack": "pnpm test && pnpm run check:runtime-modules && pnpm run check:authority-boundary && pnpm run check:test-quality && node scripts/verify-package-files.mjs",
+		"prepublishOnly": "pnpm test && pnpm run check:runtime-modules && pnpm run check:authority-boundary && pnpm run check:test-quality && node scripts/verify-package-files.mjs && pnpm run test:packed-package",
+		"check:authority-boundary": "node scripts/check-authority-boundary.mjs",
+		"check:test-quality": "node scripts/check-test-quality.mjs"
 	},
 	"pi": {
 		"image": "assets/jero-logo.png",
@@ -97,6 +98,6 @@
 	"packageManager": "pnpm@11.1.1",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/jero-pi/jero-pi.git"
+		"url": "git+https://github.com/wuzxc1230123/jero-pi.git"
 	}
 }

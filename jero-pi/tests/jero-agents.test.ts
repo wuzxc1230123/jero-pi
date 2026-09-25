@@ -16,7 +16,7 @@ import { type ExtensionAPI, type ExtensionContext } from "@earendil-works/pi-cod
 import { type TuiMouseEvent, visibleWidth } from "@earendil-works/pi-tui";
 import {
 	agentRuntimePaths, agentsCollapseKey, type AgentsDeps, agentsEnabled, agentsStopKey,
-	agentsViewKey, answerThroughUi, completionText, default as gentleAgents,
+	agentsViewKey, answerThroughUi, completionText, default as jeroAgents,
 	legacySubagentsInstalled
 } from "../extensions/jero-agents.ts";
 import { historyDir, loadHistory, saveTask } from "../lib/agents-history.ts";
@@ -38,7 +38,7 @@ import {
 
 test("all ten subagent registrations own their transcript shell", () => {
 	const { pi, tools } = fakePi();
-	gentleAgents(pi, {}, deps().deps);
+	jeroAgents(pi, {}, deps().deps);
 	assert.equal(tools.size, 10);
 	assert.deepEqual(tools.get("subagent_reconcile")?.parameters, { type: "object", additionalProperties: false, required: ["task_id"], properties: { task_id: { type: "string" } } });
 	for (const tool of tools.values()) assert.equal(tool.renderShell, "self", tool.name);
@@ -47,11 +47,11 @@ test("all ten subagent registrations own their transcript shell", () => {
 test("host query delivery exposes correlation and accepts one current-session reply", async () => {
 	const { pi, tools, fire, sent } = fakePi();
 	const harness = deps();
-	gentleAgents(pi, {}, harness.deps);
+	jeroAgents(pi, {}, harness.deps);
 	const { ctx } = fakeContext();
 	await fire("session_start", ctx);
 	const started = await tools.get("subagent_run")!.execute("query", { agent: "explore", task: "Ask once", mode: "background" }, undefined, undefined, ctx);
-	const taskId = (started.details.gentleAgents as { taskId: string }).taskId;
+	const taskId = (started.details.jeroAgents as { taskId: string }).taskId;
 	await tick();
 	harness.children[0].message({ id: "q1", kind: "query", message: "Which file?" });
 	await tick();
@@ -68,14 +68,14 @@ test("host query delivery exposes correlation and accepts one current-session re
 test("first foreground query yields while its child runs and delivers one completion", async () => {
 	const { pi, tools, fire, sent } = fakePi();
 	const harness = deps();
-	gentleAgents(pi, {}, harness.deps);
+	jeroAgents(pi, {}, harness.deps);
 	const { ctx } = fakeContext();
 	await fire("session_start", ctx);
 	const pending = tools.get("subagent_run")!.execute("foreground", { agent: "explore", task: "Ask then finish" }, undefined, undefined, ctx);
 	await tick();
 	harness.children[0].message({ id: "q1", kind: "query", message: "Which file?" });
 	const yielded = await pending;
-	const taskId = (yielded.details.gentleAgents as { taskId: string }).taskId;
+	const taskId = (yielded.details.jeroAgents as { taskId: string }).taskId;
 	assert.equal((yielded as { terminate?: boolean }).terminate, true);
 	assert.deepEqual(harness.children[0].killed, []);
 	await tools.get("subagent_reply")!.execute("reply", { task_id: taskId, request_id: "q1", message: "src/a.ts" }, undefined, undefined, ctx);
@@ -88,14 +88,14 @@ test("first foreground query yields while its child runs and delivers one comple
 test("cancelling a yielded foreground task prevents completion follow-up", async () => {
 	const { pi, tools, fire, sent } = fakePi();
 	const harness = deps();
-	gentleAgents(pi, {}, harness.deps);
+	jeroAgents(pi, {}, harness.deps);
 	const { ctx } = fakeContext();
 	await fire("session_start", ctx);
 	const pending = tools.get("subagent_run")!.execute("cancel", { agent: "explore", task: "cancel after query" }, undefined, undefined, ctx);
 	await tick();
 	harness.children[0].message({ id: "q1", kind: "query", message: "q" });
 	const yielded = await pending;
-	const taskId = (yielded.details.gentleAgents as { taskId: string }).taskId;
+	const taskId = (yielded.details.jeroAgents as { taskId: string }).taskId;
 	assert.match((await tools.get("subagent_cancel")!.execute("stop", { task_id: taskId }, undefined, undefined, ctx)).content[0].text, /Cancelled task/);
 	await tick();
 	harness.children[0].emit({ type: "agent_end", messages: [{ role: "assistant", content: [{ type: "text", text: "late" }], stopReason: "stop" }] });
@@ -107,14 +107,14 @@ test("cancelling a yielded foreground task prevents completion follow-up", async
 test("yielded foreground completion is suppressed after session replacement or cancellation", async () => {
 	const { pi, tools, fire, sent } = fakePi();
 	const harness = deps();
-	gentleAgents(pi, {}, harness.deps);
+	jeroAgents(pi, {}, harness.deps);
 	const { ctx } = fakeContext();
 	await fire("session_start", ctx);
 	const pending = tools.get("subagent_run")!.execute("switch", { agent: "explore", task: "switch session" }, undefined, undefined, ctx);
 	await tick();
 	harness.children[0].message({ id: "q1", kind: "query", message: "q" });
 	const yielded = await pending;
-	const taskId = (yielded.details.gentleAgents as { taskId: string }).taskId;
+	const taskId = (yielded.details.jeroAgents as { taskId: string }).taskId;
 	(ctx.sessionManager as { getSessionId(): string }).getSessionId = () => "s2";
 	harness.children[0].emit({ type: "agent_end", messages: [{ role: "assistant", content: [{ type: "text", text: "done" }], stopReason: "stop" }] });
 	harness.children[0].emit({ type: "agent_settled" });
@@ -127,7 +127,7 @@ test("yielded foreground completion is suppressed after session replacement or c
 test("first handoff failure keeps ordinary completion, later failure retains yielded completion", async () => {
 	const first = fakePi();
 	const firstHarness = deps();
-	gentleAgents(first.pi, {}, firstHarness.deps);
+	jeroAgents(first.pi, {}, firstHarness.deps);
 	const firstContext = fakeContext();
 	await first.fire("session_start", firstContext.ctx);
 	(first.pi as unknown as { sendMessage(): void }).sendMessage = () => { throw new Error("host unavailable"); };
@@ -140,7 +140,7 @@ test("first handoff failure keeps ordinary completion, later failure retains yie
 
 	const second = fakePi();
 	const secondHarness = deps();
-	gentleAgents(second.pi, {}, secondHarness.deps);
+	jeroAgents(second.pi, {}, secondHarness.deps);
 	const secondContext = fakeContext();
 	await second.fire("session_start", secondContext.ctx);
 	let sends = 0;
@@ -163,7 +163,7 @@ test("first handoff failure keeps ordinary completion, later failure retains yie
 test("foreground handoff survives settlement before its original await resumes", async () => {
 	const { pi, tools, fire, sent } = fakePi();
 	const harness = deps();
-	gentleAgents(pi, {}, harness.deps);
+	jeroAgents(pi, {}, harness.deps);
 	const { ctx } = fakeContext();
 	await fire("session_start", ctx);
 	const pending = tools.get("subagent_run")!.execute("race", { agent: "explore", task: "query then settle" }, undefined, undefined, ctx);
@@ -181,7 +181,7 @@ test("child parent-message tooling admits notifications and the active parent pr
 	const child = fakePi();
 	const listeners = new Map<string, Array<(value: Record<string, unknown>) => void>>();
 	const frames: Array<Record<string, unknown>> = [];
-	gentleAgents(child.pi, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_AGENTS_OWNED_IPC: "fixture" }, {
+	jeroAgents(child.pi, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_AGENTS_OWNED_IPC: "fixture" }, {
 		childIpc: {
 			send: (frame: Record<string, unknown>) => { frames.push(frame); return true; },
 			on: (event: string, listener: (value: Record<string, unknown>) => void) => listeners.set(event, [...(listeners.get(event) ?? []), listener]),
@@ -195,7 +195,7 @@ test("child parent-message tooling admits notifications and the active parent pr
 
 	const parent = fakePi();
 	const runtime = deps();
-	gentleAgents(parent.pi, {}, runtime.deps);
+	jeroAgents(parent.pi, {}, runtime.deps);
 	const { ctx } = fakeContext();
 	await parent.fire("session_start", ctx);
 	await parent.tools.get("subagent_run")!.execute("run", { agent: "explore", task: "notify", mode: "background" }, undefined, undefined, ctx);
@@ -248,7 +248,7 @@ for (const boundary of ["allowed", "env", "session", "replacement", "bus-throws"
 		mkdirSync(join(profile, "agents"), { recursive: true });
 		writeFileSync(join(profile, "agents", "jero-worker.md"), readFileSync(new URL("../assets/agents/jero-worker.md", import.meta.url)));
 		writeFileSync(join(profile, "subagents.json"), JSON.stringify({ model_profiles: { "jero-worker": { model: "openai/gpt-4o", effort: "high" } } }));
-		gentleAgents(h.pi, env, { ...runtime.deps, env, agentHome: profile, metricsNow: () => clock, metricsSchedule });
+		jeroAgents(h.pi, env, { ...runtime.deps, env, agentHome: profile, metricsNow: () => clock, metricsSchedule });
 		const listenerCounts = () => [...h.listeners].map(([name, set]) => [name, set.size]);
 		const initialListeners = listenerCounts();
 		await h.fire("session_start", context.ctx);
@@ -282,7 +282,7 @@ for (const boundary of ["allowed", "env", "session", "replacement", "bus-throws"
 				assert.ok([...h.listeners.values()].every(set => set.size === 0), "old bus subscriptions removed");
 				const fresh = fakePi();
 				Object.assign(fresh.pi, { events: h.pi.events });
-				gentleAgents(fresh.pi, env, { ...runtime.deps, env, metricsSchedule });
+				jeroAgents(fresh.pi, env, { ...runtime.deps, env, metricsSchedule });
 				await fresh.fire("session_start", context.ctx);
 				assert.deepEqual(listenerCounts(), initialListeners, "fresh instance installs one subscription set");
 				await fresh.fire("session_shutdown", context.ctx);
@@ -336,7 +336,7 @@ test("live-only extension instances discover same-profile peers across cwd bound
 	await eventually(() => /peer-live/.test(panel.frame()), "an idle peer with zero children must be discoverable");
 	const run = async (instance: typeof local, agent: string) => {
 		const result = await instance.tools.get("subagent_run")!.execute(agent, { agent, task: agent, mode: "background" }, undefined, undefined, instance.ctx);
-		return (result.details.gentleAgents as { taskId: string }).taskId;
+		return (result.details.jeroAgents as { taskId: string }).taskId;
 	};
 	await run(local, "local");
 	const peerId = await run(peer, "peer");

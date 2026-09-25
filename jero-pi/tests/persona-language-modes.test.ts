@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { __testing } from "../extensions/jero-ai.ts";
 
-// These tests assert that the composed main-agent prompt (built by buildGentlePrompt)
+// These tests assert that the composed main-agent prompt (built by buildJeroPrompt)
 // keeps the two persona language modes single-channel: neutral mode carries the
 // neutral/professional Simplified Chinese register with its explicit
 // slang/meme/dialect prohibition and never the gentleman-only "natural,
@@ -14,7 +14,7 @@ const GENTLEMAN_CLAUSE = /用户使用中文时，用自然、地道的简体中
 const NEUTRAL_PROHIBITION = /不使用网络俚语/;
 
 test("neutral mode composed prompt does not instruct to answer in natural, idiomatic Chinese", () => {
-	const prompt = __testing.buildGentlePrompt("neutral");
+	const prompt = __testing.buildJeroPrompt("neutral");
 	// The neutral prompt must never tell the model to USE the gentleman register
 	assert.doesNotMatch(
 		prompt,
@@ -29,7 +29,7 @@ test("neutral mode composed prompt does not instruct to answer in natural, idiom
 });
 
 test("neutral mode composed prompt has no positive natural-Chinese instruction and includes explicit prohibition", () => {
-	const prompt = __testing.buildGentlePrompt("neutral");
+	const prompt = __testing.buildJeroPrompt("neutral");
 	// Any sentence that affirmatively tells the model to answer in natural,
 	// idiomatic Chinese must be absent. The prohibition line ("不使用网络俚语、梗或方言表达")
 	// is the only allowed register restriction, and it must remain present so
@@ -47,7 +47,7 @@ test("neutral mode composed prompt has no positive natural-Chinese instruction a
 });
 
 test("gentleman mode composed prompt contains the natural-Chinese clause", () => {
-	const prompt = __testing.buildGentlePrompt("gentleman");
+	const prompt = __testing.buildJeroPrompt("gentleman");
 	assert.match(
 		prompt,
 		GENTLEMAN_CLAUSE,
@@ -56,7 +56,7 @@ test("gentleman mode composed prompt contains the natural-Chinese clause", () =>
 });
 
 test("gentleman mode composed prompt does not leak the neutral-only prohibition", () => {
-	const prompt = __testing.buildGentlePrompt("gentleman");
+	const prompt = __testing.buildJeroPrompt("gentleman");
 	assert.doesNotMatch(
 		prompt,
 		NEUTRAL_PROHIBITION,
@@ -65,7 +65,7 @@ test("gentleman mode composed prompt does not leak the neutral-only prohibition"
 });
 
 test("neutral mode composed prompt explicitly states active mode is neutral", () => {
-	const prompt = __testing.buildGentlePrompt("neutral");
+	const prompt = __testing.buildJeroPrompt("neutral");
 	assert.match(
 		prompt,
 		/Current persona mode: neutral/i,
@@ -74,7 +74,7 @@ test("neutral mode composed prompt explicitly states active mode is neutral", ()
 });
 
 test("gentleman mode composed prompt explicitly states active mode is gentleman", () => {
-	const prompt = __testing.buildGentlePrompt("gentleman");
+	const prompt = __testing.buildJeroPrompt("gentleman");
 	assert.match(
 		prompt,
 		/Current persona mode: gentleman/i,
@@ -83,7 +83,7 @@ test("gentleman mode composed prompt explicitly states active mode is gentleman"
 });
 
 test("neutral mode composed prompt explicitly forbids slang, memes, and dialect expressions", () => {
-	const prompt = __testing.buildGentlePrompt("neutral");
+	const prompt = __testing.buildJeroPrompt("neutral");
 	// The neutral persona prompt must explicitly forbid casual-register markers
 	assert.match(
 		prompt,
@@ -93,8 +93,8 @@ test("neutral mode composed prompt explicitly forbids slang, memes, and dialect 
 });
 
 test("neutral and gentleman modes produce different language-boundary text", () => {
-	const neutralPrompt = __testing.buildGentlePrompt("neutral");
-	const gentlemanPrompt = __testing.buildGentlePrompt("gentleman");
+	const neutralPrompt = __testing.buildJeroPrompt("neutral");
+	const gentlemanPrompt = __testing.buildJeroPrompt("gentleman");
 
 	// The language-boundary section must differ between modes
 	assert.notEqual(

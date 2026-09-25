@@ -7,7 +7,7 @@ import { createNativePointerScope, type NativePointerRegion } from "./native-poi
 import { formatTokens } from "./shell-bar.ts";
 import { PresenceCursor, readActivity, type Header, type Target } from "./orchestrator-presence.ts";
 
-// Gentle Agents 覆盖层：左侧为任务，右侧为所选任务的线程。
+// Jero Agents 覆盖层：左侧为任务，右侧为所选任务的线程。
 // 只有所选任务被订阅，线程条目各自只渲染一次（在被替换之前
 // 不可变），视口默认显示尾部，除非用户向上滚动。当前范围只含直接
 // 存活的子任务；全部会话是一个存在感目录，而非历史浏览器。远程活动

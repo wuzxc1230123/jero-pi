@@ -276,11 +276,11 @@ export interface ReviewHostRelayRequest {
 	/** 提供方所有的完成表单；缺失即契约失配。 */
 	readonly submission?: ReviewCaptureSubmissionV1;
 	/** 绝对路径；默认为已验证的包内二进制。 */
-	readonly gentleAiExecutable?: string;
+	readonly providerExecutable?: string;
 	/** 用户所有的 pi 启动器；默认为 PATH 上的 `pi`。 */
 	readonly piExecutable?: string;
 	readonly environment?: NodeJS.ProcessEnv;
-	readonly gentleAiTimeoutMs?: number;
+	readonly providerTimeoutMs?: number;
 	/**
 	 * 完全覆盖评审器上限。生产环境保持未设置，由中继从
 	 * 物化的提示词字节和
@@ -401,7 +401,7 @@ function launchableProcessTarget(file: string): { file: string; argumentPrefix: 
 	return { file, argumentPrefix: [] };
 }
 
-function collectGentleAiProcess(
+function collectProviderProcess(
 	file: string,
 	arguments_: readonly string[],
 	options: { cwd: string; env: NodeJS.ProcessEnv; stdin?: Buffer; timeoutMs: number; signal?: AbortSignal },
@@ -507,8 +507,8 @@ function snapshotReviewHostRelayRequest(request: ReviewHostRelayRequest): Review
 	// （测试用），但没有它时中继在
 	// materialize/submit 阶段保守失败；P2 用进程内
 	// authority.capture 渲染替换这些阶段。
-	const gentleAiExecutable = request.gentleAiExecutable;
-	if (gentleAiExecutable !== undefined && !isAbsolute(gentleAiExecutable)) throw new TypeError("Pi host relay requires an absolute gentle-ai executable path");
+	const providerExecutable = request.providerExecutable;
+	if (providerExecutable !== undefined && !isAbsolute(providerExecutable)) throw new TypeError("Pi host relay requires an absolute gentle-ai executable path");
 	const environment = Object.freeze({ ...(request.environment ?? process.env) }) as NodeJS.ProcessEnv;
 	const submission = request.submission === undefined ? undefined : Object.freeze({
 		operationToken: request.submission.operationToken,
@@ -519,9 +519,9 @@ function snapshotReviewHostRelayRequest(request: ReviewHostRelayRequest): Review
 		...request,
 		captureArgumentTokens: Object.freeze([...request.captureArgumentTokens]),
 		...(submission === undefined ? {} : { submission }),
-		gentleAiExecutable,
+		providerExecutable,
 		environment,
-		gentleAiTimeoutMs: request.gentleAiTimeoutMs ?? DEFAULT_GENTLE_AI_TIMEOUT_MS,
+		providerTimeoutMs: request.providerTimeoutMs ?? DEFAULT_GENTLE_AI_TIMEOUT_MS,
 		targetCwd: request.targetCwd ?? process.cwd(),
 	});
 }
@@ -559,7 +559,7 @@ export async function prepareReviewHostRelaySlot(
 		return await runPreparedReviewerV1(preparedRequest, promptBytes, reviewer);
 	}
 
-	if (preparedRequest.gentleAiExecutable === undefined) {
+	if (preparedRequest.providerExecutable === undefined) {
 		throw new ReviewHostRelayError(REVIEW_HOST_RELAY_FAILURE.RELAY_UNAVAILABLE, "materialize", "authority-unavailable: no in-process renderSlot seam was injected and no binary transport exists (jero-pi M3)");
 	}
 
@@ -567,10 +567,10 @@ export async function prepareReviewHostRelaySlot(
 	// 表面是否可用。不做版本嗅探，也不做提示词重建。
 	let materialized: ProcessCapture;
 	try {
-		materialized = await collectGentleAiProcess(preparedRequest.gentleAiExecutable!, ["review", "capture-result", ...preparedRequest.captureArgumentTokens], {
+		materialized = await collectProviderProcess(preparedRequest.providerExecutable!, ["review", "capture-result", ...preparedRequest.captureArgumentTokens], {
 			cwd: preparedRequest.targetCwd!,
 			env: { ...preparedRequest.environment! },
-			timeoutMs: preparedRequest.gentleAiTimeoutMs!,
+			timeoutMs: preparedRequest.providerTimeoutMs!,
 			...(preparedRequest.signal === undefined ? {} : { signal: preparedRequest.signal }),
 		});
 	} catch (error) {
@@ -579,7 +579,7 @@ export async function prepareReviewHostRelaySlot(
 	if (materialized.exitCode !== 0 || materialized.timedOut) {
 		const stderr = materialized.stderr.toString("utf8");
 		const refusal = classifyReviewHostRelayRefusal(stderr);
-		const timing = { elapsedMs: materialized.elapsedMs, timeoutMs: preparedRequest.gentleAiTimeoutMs! };
+		const timing = { elapsedMs: materialized.elapsedMs, timeoutMs: preparedRequest.providerTimeoutMs! };
 		if (refusal === "unknown-flag") {
 			throw new ReviewHostRelayError(REVIEW_HOST_RELAY_FAILURE.RELAY_UNAVAILABLE, "materialize", REVIEW_HOST_RELAY_UNAVAILABLE_MESSAGE, {
 				exitCode: materialized.exitCode,
@@ -589,7 +589,7 @@ export async function prepareReviewHostRelaySlot(
 			});
 		}
 		throw new ReviewHostRelayError(REVIEW_HOST_RELAY_FAILURE.MATERIALIZE_FAILED, "materialize", materialized.timedOut
-			? `gentle-ai prompt materialization exceeded its ${preparedRequest.gentleAiTimeoutMs!}ms bound after ${materialized.elapsedMs}ms`
+			? `gentle-ai prompt materialization exceeded its ${preparedRequest.providerTimeoutMs!}ms bound after ${materialized.elapsedMs}ms`
 			: "gentle-ai prompt materialization failed", { exitCode: materialized.exitCode, stderr, timedOut: materialized.timedOut, ...timing });
 	}
 	const promptBytes = materialized.stdout;
@@ -598,7 +598,7 @@ export async function prepareReviewHostRelaySlot(
 			exitCode: 0,
 			stderr: materialized.stderr.toString("utf8"),
 			elapsedMs: materialized.elapsedMs,
-			timeoutMs: preparedRequest.gentleAiTimeoutMs!,
+			timeoutMs: preparedRequest.providerTimeoutMs!,
 		}),
 	});
 }
@@ -684,7 +684,7 @@ export async function submitReviewHostRelayPreparedResult(prepared: ReviewHostRe
 	// 没有仅供 fixture 使用的可执行文件）时，中继精确地像
 	// P1 桩那样保守失败。
 	const useInProcessAdmission = admit !== undefined;
-	if (!useInProcessAdmission && request.gentleAiExecutable === undefined) {
+	if (!useInProcessAdmission && request.providerExecutable === undefined) {
 		throw new ReviewHostRelayError(REVIEW_HOST_RELAY_FAILURE.RELAY_UNAVAILABLE, "submit", "authority-unavailable: no in-process admitResult seam was injected and no binary transport exists (jero-pi M3)");
 	}
 	const stagingDirectory = await mkdtemp(join(tmpdir(), "gentle-pi-host-relay-result-"));
@@ -736,10 +736,10 @@ export async function submitReviewHostRelayPreparedResult(prepared: ReviewHostRe
 		}
 		let submission: ProcessCapture;
 		try {
-			submission = await collectGentleAiProcess(request.gentleAiExecutable!, ["review", submissionBinding.operationToken, ...submitTokens], {
+			submission = await collectProviderProcess(request.providerExecutable!, ["review", submissionBinding.operationToken, ...submitTokens], {
 				cwd: request.targetCwd!,
 				env: { ...request.environment! },
-				timeoutMs: request.gentleAiTimeoutMs!,
+				timeoutMs: request.providerTimeoutMs!,
 				...(request.signal === undefined ? {} : { signal: request.signal }),
 			});
 		} catch (error) {
@@ -747,7 +747,7 @@ export async function submitReviewHostRelayPreparedResult(prepared: ReviewHostRe
 		}
 		if (submission.exitCode !== 0 || submission.timedOut || submission.stdout.length === 0) {
 			const stderr = submission.stderr.toString("utf8");
-			const details = { exitCode: submission.exitCode, stderr, timedOut: submission.timedOut, elapsedMs: submission.elapsedMs, timeoutMs: request.gentleAiTimeoutMs! };
+			const details = { exitCode: submission.exitCode, stderr, timedOut: submission.timedOut, elapsedMs: submission.elapsedMs, timeoutMs: request.providerTimeoutMs! };
 			// 类型化准入拒绝证明提供方没有消费任何槽位。
 			// 其余已发起的 submission 保持 unknown，等待新的 STATUS。
 			if (isReviewHostRelayAdmissionRefusal(submission, stderr)) {
@@ -757,7 +757,7 @@ export async function submitReviewHostRelayPreparedResult(prepared: ReviewHostRe
 				});
 			}
 			throw new ReviewHostRelayError(REVIEW_HOST_RELAY_FAILURE.SUBMISSION_REFUSED, "submit", submission.timedOut
-				? `gentle-ai capture submission exceeded its ${request.gentleAiTimeoutMs!}ms bound after ${submission.elapsedMs}ms`
+				? `gentle-ai capture submission exceeded its ${request.providerTimeoutMs!}ms bound after ${submission.elapsedMs}ms`
 				: "gentle-ai refused the relayed capture submission", details);
 		}
 		return {

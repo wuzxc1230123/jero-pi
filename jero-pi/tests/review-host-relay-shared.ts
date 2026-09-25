@@ -137,7 +137,7 @@ process.stdin.on("end", () => {
 
 export interface RelayHarness {
 	directory: string;
-	gentleAi: string;
+	jeroAi: string;
 	pi: string;
 	logPath: string;
 	piLogPath: string;
@@ -162,10 +162,10 @@ export function harness(t: test.TestContext, overrides: Record<string, string> =
 			}
 		}
 	});
-	const gentleAi = join(directory, "gentle-ai");
+	const jeroAi = join(directory, "gentle-ai");
 	const pi = join(directory, "pi");
-	writeFileSync(gentleAi, FAKE_GENTLE_AI);
-	chmodSync(gentleAi, 0o755);
+	writeFileSync(jeroAi, FAKE_GENTLE_AI);
+	chmodSync(jeroAi, 0o755);
 	writeFileSync(pi, FAKE_PI);
 	chmodSync(pi, 0o755);
 	const logPath = join(directory, "gentle-ai.log");
@@ -185,7 +185,7 @@ export function harness(t: test.TestContext, overrides: Record<string, string> =
 	// jero-pi M3 (design 8): the relay handshake env is deleted — the base
 	// environment never carries it and the relay never injects it.
 	delete environment.JERO_PI_REVIEW_RELAY_CONTRACT;
-	return { directory, gentleAi, pi, logPath, piLogPath, stdinCapturePath, submitCapturePath, targetCwd, environment };
+	return { directory, jeroAi, pi, logPath, piLogPath, stdinCapturePath, submitCapturePath, targetCwd, environment };
 }
 
 export function readLog(path: string): Array<{ argv: string[]; contract: string | null; cwd?: string; entries?: string[] }> {
@@ -237,7 +237,7 @@ export function relayRequest(fixture: RelayHarness, overrides: Record<string, un
 	return {
 		captureArgumentTokens: CAPTURE_TOKENS,
 		submission: SUBMISSION,
-		gentleAiExecutable: fixture.gentleAi,
+		providerExecutable: fixture.jeroAi,
 		piExecutable: fixture.pi,
 		targetCwd: fixture.targetCwd,
 		environment: {
@@ -245,7 +245,7 @@ export function relayRequest(fixture: RelayHarness, overrides: Record<string, un
 			RELAY_FAKE_PROMPT_B64: PROMPT_BYTES.toString("base64"),
 			RELAY_FAKE_PI_OUTPUT_B64: PI_OUTPUT_BYTES.toString("base64"),
 		},
-		gentleAiTimeoutMs: 30_000,
+		providerTimeoutMs: 30_000,
 		piTimeoutMs: 30_000,
 		...overrides,
 	};

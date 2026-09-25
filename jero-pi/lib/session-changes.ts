@@ -6,7 +6,7 @@ import { generateUnifiedPatch } from "@earendil-works/pi-coding-agent";
 import { changesModel, type ChangedFile, type WorktreeChanges } from "./shell-changes.ts";
 
 export const SESSION_CHANGE_ENTRY = "jero.session-change/v1";
-export const SESSION_CHANGE_EVENT = "gentle-pi:session-change";
+export const SESSION_CHANGE_EVENT = "jero-pi:session-change";
 export const SESSION_CHANGE_RELAY = "gentle-pi:child-session-change";
 export const MAX_CHANGE_BYTES = 64 * 1024;
 const MAX_RECORDS = 256;

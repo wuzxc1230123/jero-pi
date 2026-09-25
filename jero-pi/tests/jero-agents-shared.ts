@@ -15,7 +15,7 @@ import { type ExtensionAPI, type ExtensionContext } from "@earendil-works/pi-cod
 import { type TuiMouseEvent, visibleWidth } from "@earendil-works/pi-tui";
 import {
 	agentRuntimePaths, agentsCollapseKey, type AgentsDeps, agentsEnabled, agentsStopKey,
-	agentsViewKey, answerThroughUi, completionText, default as gentleAgents,
+	agentsViewKey, answerThroughUi, completionText, default as jeroAgents,
 	legacySubagentsInstalled
 } from "../extensions/jero-agents.ts";
 import { historyDir, loadHistory, saveTask } from "../lib/agents-history.ts";
@@ -31,7 +31,7 @@ import { CHILD_METRICS_EVENT } from "../lib/runtime-metrics-children.ts";
 import { renderSddPreflightPrompt } from "../lib/sdd-preflight.ts";
 
 
-// Gentle Agents extension: the subagent_* tools drive isolated pi children,
+// Jero Agents extension: the subagent_* tools drive isolated pi children,
 // the card above the editor follows the store, and dialogs reach the host UI.
 
 export type Handler = (event: unknown, ctx: ExtensionContext) => unknown;
@@ -229,7 +229,7 @@ export function liveInstance(t: test.TestContext, profile: string, sessionId: st
 		timer.unref();
 		return () => clearTimeout(timer);
 	};
-	gentleAgents(h.pi, {}, { ...runtime.deps, agentHome: profile });
+	jeroAgents(h.pi, {}, { ...runtime.deps, agentHome: profile });
 	t.after(async () => {
 		for (const overlay of context.overlays) overlay.handleInput("q");
 		await h.fire("session_shutdown", context.ctx, { reason: "quit" });

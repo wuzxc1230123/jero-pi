@@ -1,6 +1,6 @@
 import { truncateToWidth, visibleWidth, wrapTextWithAnsi } from "@earendil-works/pi-tui";
 
-// Gentle Shell 卡片：每条 Gentle 通知在转录区和编辑器上方呈现的形态。
+// Jero Shell 卡片：每条 Jero 通知在转录区和编辑器上方呈现的形态。
 // 与提示符及覆盖层相同的圆角框架，标题使用卡片的色调。纯函数：
 // 字符串进，行出。
 

@@ -9,7 +9,7 @@ import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { normalizeModelConfig, normalizeRoutingEntry, readSavedModelConfig as readModelRoutingAuthority, readSavedModelConfigAsync as readModelRoutingAuthorityAsync, type AgentModelConfig, type AgentRoutingEntry, type ModelConfigFileResult } from "./model-routing-authority.ts";
 
 import { applyModelConfig, isProviderReviewRole } from "./jero-ai-model-routing-apply.ts";
-import { PACKAGE_ROOT, gentlePiAgentHome, packageAssetAudit } from "./jero-ai-package-assets.ts";
+import { PACKAGE_ROOT, jeroPiAgentHome, packageAssetAudit } from "./jero-ai-package-assets.ts";
 import { MODEL_EXPORT_KIND, MODEL_EXPORT_VERSION, isRecord, legacyProjectModelConfigPath, modelConfigPath, modelExportPath } from "./jero-ai-persona-config.ts";
 import { pathExists } from "./jero-ai-prompts.ts";
 import { CORE_MODEL_AGENT_NAMES, CORE_MODEL_AGENT_NAME_SET, type AgentEntry, type AgentSource } from "./jero-ai-sdd-startup.ts";
@@ -442,7 +442,7 @@ interface DiscoverableNonBuiltinAgentRoot {
 
 
 export function discoverableNonBuiltinAgentRoots(cwd: string): DiscoverableNonBuiltinAgentRoot[] {
-	const globalAgentHome = gentlePiAgentHome();
+	const globalAgentHome = jeroPiAgentHome();
 	const roots: DiscoverableNonBuiltinAgentRoot[] = [
 		{ dir: join(globalAgentHome, "agents"), source: "user", packageManaged: true },
 		{ dir: join(globalAgentHome, "subagents"), source: "user", packageManaged: false },
@@ -566,7 +566,7 @@ export function isClearRoutingEntry(entry: AgentRoutingEntry): boolean {
 export function agentModelProfileConfigPath(cwd: string, source: AgentSource): string {
 	return source === "project"
 		? join(cwd, ".pi", "subagents.json")
-		: join(gentlePiAgentHome(), "subagents.json");
+		: join(jeroPiAgentHome(), "subagents.json");
 }
 
 
@@ -687,7 +687,7 @@ export function projectSettingsPath(cwd: string): string {
  * 其他代码读写该文件。
  */
 export function orchestratorSettingsPath(): string {
-	return join(gentlePiAgentHome(), "settings.json");
+	return join(jeroPiAgentHome(), "settings.json");
 }
 
 

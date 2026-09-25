@@ -16,7 +16,7 @@ import { type ExtensionAPI, type ExtensionContext } from "@earendil-works/pi-cod
 import { type TuiMouseEvent, visibleWidth } from "@earendil-works/pi-tui";
 import {
 	agentRuntimePaths, agentsCollapseKey, type AgentsDeps, agentsEnabled, agentsStopKey,
-	agentsViewKey, answerThroughUi, completionText, default as gentleAgents,
+	agentsViewKey, answerThroughUi, completionText, default as jeroAgents,
 	legacySubagentsInstalled
 } from "../extensions/jero-agents.ts";
 import { historyDir, loadHistory, saveTask } from "../lib/agents-history.ts";
@@ -45,7 +45,7 @@ test("the overlay confirms a running task once and reports when it finishes duri
 	writeFileSync(join(modalHome, ".pi", "agent", "subagents.json"), JSON.stringify({ max_concurrency: 2 }));
 	harness.deps.home = modalHome;
 	let answerConfirmation: (confirmed: boolean) => void = () => {};
-	gentleAgents(pi, {}, harness.deps);
+	jeroAgents(pi, {}, harness.deps);
 	const { ctx, dialogs, overlays } = fakeContext(fakeTui, () => new Promise((resolve) => {
 		answerConfirmation = resolve;
 	}));
@@ -79,13 +79,13 @@ test("the overlay stops a queued selection immediately without confirmation", as
 	writeFileSync(join(queueHome, ".pi", "agent", "agents", "explore.md"), "---\ndescription: maps things\n---\nYou map things.");
 	writeFileSync(join(queueHome, ".pi", "agent", "subagents.json"), JSON.stringify({ max_concurrency: 1 }));
 	harness.deps.home = queueHome;
-	gentleAgents(pi, {}, harness.deps);
+	jeroAgents(pi, {}, harness.deps);
 	const { ctx, dialogs, overlays } = fakeContext();
 	await fire("session_start", ctx);
 	await tools.get("subagent_run")!.execute("c1", { agent: "explore", task: "First", mode: "background" }, undefined, undefined, ctx);
 	await tick();
 	const queued = await tools.get("subagent_run")!.execute("c2", { agent: "explore", task: "Queued", mode: "background" }, undefined, undefined, ctx);
-	const queuedId = (queued.details.gentleAgents as { taskId: string }).taskId;
+	const queuedId = (queued.details.jeroAgents as { taskId: string }).taskId;
 	const opened = commands.get("jero:agents")!.handler("", ctx);
 	for (let attempt = 0; attempt < 40 && overlays.length === 0; attempt += 1) await new Promise((resolve) => setTimeout(resolve, 25));
 	overlays[0]!.handleInput("s");
@@ -104,7 +104,7 @@ test("the overlay explains that stopping a waiting subagent dismisses its questi
 	writeFileSync(join(waitingHome, ".pi", "agent", "agents", "explore.md"), "---\ndescription: maps things\n---\nYou map things.");
 	harness.deps.home = waitingHome;
 	let answerInput: (value: string | undefined) => void = () => {};
-	gentleAgents(pi, {}, harness.deps);
+	jeroAgents(pi, {}, harness.deps);
 	const { ctx, dialogs, overlays } = fakeContext(fakeTui, async () => true, () => new Promise<string | undefined>((resolve) => {
 		answerInput = resolve;
 	}));
@@ -131,7 +131,7 @@ test("restored task history cannot enter the live panel or execute stop even wit
 	const historical: TaskRecord = { id: "history-running", agent: "explore", mode: "background", prompt: "p", label: "p", cwd, parentSessionId: "s1", status: TASK_STATUS.RUNNING, createdAt: 1, startedAt: 1, endedAt: null, model: "m", thinking: undefined, sessionPath: null, error: null, result: null, lastStep: "working", lastActivityAt: 1, turns: 0, toolCalls: 0, tokens: 0, cost: 0 };
 	await saveTask(historyDir(historyHome), historical, emptyThread());
 	harness.deps.home = historyHome;
-	gentleAgents(pi, {}, harness.deps);
+	jeroAgents(pi, {}, harness.deps);
 	const { ctx, dialogs, overlays } = fakeContext();
 	await fire("session_start", ctx);
 	await tools.get("subagent_status")!.execute("restore", { task_id: historical.id }, undefined, undefined, ctx);
@@ -150,7 +150,7 @@ test("Alt+S confirms a snapshot of active subagents and suppresses their follow-
 	const { pi, tools, fire, shortcuts, sent } = fakePi();
 	const harness = deps();
 	let answerConfirmation: (confirmed: boolean) => void = () => {};
-	gentleAgents(pi, {}, harness.deps);
+	jeroAgents(pi, {}, harness.deps);
 	const { ctx, dialogs } = fakeContext(fakeTui, () => new Promise<boolean>((resolve) => {
 		answerConfirmation = resolve;
 	}));
@@ -180,7 +180,7 @@ test("Alt+S confirms a snapshot of active subagents and suppresses their follow-
 test("the card follows the active session: after /new the earlier session's tasks leave it, and come back on /resume", async () => {
 	const { pi, tools, commands, fire } = fakePi();
 	const harness = deps();
-	gentleAgents(pi, {}, harness.deps);
+	jeroAgents(pi, {}, harness.deps);
 	const { ctx, widget, overlays } = fakeContext();
 	await fire("session_start", ctx);
 	await tools.get("subagent_run")!.execute("c1", { agent: "explore", task: "Long job", mode: "background" }, undefined, undefined, ctx);
@@ -207,7 +207,7 @@ test("the card follows the active session: after /new the earlier session's task
 test("the card caps its rows to the terminal height and says how many tasks are hidden", async () => {
 	const { pi, tools, fire } = fakePi();
 	const harness = deps();
-	gentleAgents(pi, {}, harness.deps);
+	jeroAgents(pi, {}, harness.deps);
 	const { ctx, widget } = fakeContext({ requestRender() {}, terminal: { rows: 20 } } as { requestRender(): void });
 	await fire("session_start", ctx);
 	for (let index = 0; index < 6; index += 1) await tools.get("subagent_run")!.execute(`c${index}`, { agent: "explore", task: `Job ${index}`, label: `job ${index}`, mode: "background" }, undefined, undefined, ctx);
@@ -221,7 +221,7 @@ test("the card caps its rows to the terminal height and says how many tasks are 
 test("the production overlay reads terminal rows at render time without a minimum-height override", async () => {
 	const { pi, fire, commands } = fakePi();
 	const harness = deps();
-	gentleAgents(pi, {}, harness.deps);
+	jeroAgents(pi, {}, harness.deps);
 	let rows = 10;
 	const overlayTui = { terminal: { get rows() { return rows; } }, requestRender() {} };
 	const { ctx, overlays, customOptions } = fakeContext(fakeTui, async () => true, async () => undefined, overlayTui);
@@ -246,11 +246,11 @@ test("the production overlay reads terminal rows at render time without a minimu
 test("a background completion settling while the parent agent runs is delivered exactly once at the next turn end", async () => {
 	const { pi, tools, fire, sent } = fakePi();
 	const harness = deps();
-	gentleAgents(pi, {}, harness.deps);
+	jeroAgents(pi, {}, harness.deps);
 	const { ctx } = fakeContext();
 	await fire("session_start", ctx);
 	const started = await tools.get("subagent_run")!.execute("c1", { agent: "explore", task: "Chained turns", mode: "background" }, undefined, undefined, ctx);
-	const id = (started.details.gentleAgents as { taskId: string }).taskId;
+	const id = (started.details.jeroAgents as { taskId: string }).taskId;
 	await tick();
 	await fire("agent_start", ctx);
 	harness.children[0].emit({ type: "agent_end", messages: [{ role: "assistant", content: [{ type: "text", text: "Chained done." }] }] });
@@ -277,11 +277,11 @@ test("a completion held past the stale window becomes transcript-only content an
 	const harness = deps();
 	let clock = 1000;
 	harness.deps.now = () => clock;
-	gentleAgents(pi, {}, harness.deps);
+	jeroAgents(pi, {}, harness.deps);
 	const { ctx } = fakeContext();
 	await fire("session_start", ctx);
 	const started = await tools.get("subagent_run")!.execute("c1", { agent: "explore", task: "Slow orchestrator", mode: "background" }, undefined, undefined, ctx);
-	const id = (started.details.gentleAgents as { taskId: string }).taskId;
+	const id = (started.details.jeroAgents as { taskId: string }).taskId;
 	await tick();
 	await fire("agent_start", ctx);
 	harness.children[0].emit({ type: "agent_end", messages: [{ role: "assistant", content: [{ type: "text", text: "Late answer." }] }] });
@@ -304,11 +304,11 @@ test("a completion held past the stale window becomes transcript-only content an
 test("a completion the parent already pulled is dropped silently at the next turn end", async () => {
 	const { pi, tools, fire, sent } = fakePi();
 	const harness = deps();
-	gentleAgents(pi, {}, harness.deps);
+	jeroAgents(pi, {}, harness.deps);
 	const { ctx } = fakeContext();
 	await fire("session_start", ctx);
 	const started = await tools.get("subagent_run")!.execute("c1", { agent: "explore", task: "Pulled early", mode: "background" }, undefined, undefined, ctx);
-	const id = (started.details.gentleAgents as { taskId: string }).taskId;
+	const id = (started.details.jeroAgents as { taskId: string }).taskId;
 	await tick();
 	await fire("agent_start", ctx);
 	harness.children[0].emit({ type: "agent_end", messages: [{ role: "assistant", content: [{ type: "text", text: "Pulled answer." }] }] });
@@ -324,7 +324,7 @@ test("a completion the parent already pulled is dropped silently at the next tur
 test("a session restart never replays a completion still pending from before it", async () => {
 	const { pi, tools, fire, sent } = fakePi();
 	const harness = deps();
-	gentleAgents(pi, {}, harness.deps);
+	jeroAgents(pi, {}, harness.deps);
 	const { ctx } = fakeContext();
 	await fire("session_start", ctx);
 	await tools.get("subagent_run")!.execute("c1", { agent: "explore", task: "Restarted", mode: "background" }, undefined, undefined, ctx);
@@ -343,7 +343,7 @@ test("a session restart never replays a completion still pending from before it"
 test("a background completion owned by a prior session is dropped, never delivered into the current session", async () => {
 	const { pi, tools, fire, sent, entries } = fakePi();
 	const harness = deps();
-	gentleAgents(pi, {}, harness.deps);
+	jeroAgents(pi, {}, harness.deps);
 	const { ctx } = fakeContext();
 	await fire("session_start", ctx);
 	await tools.get("subagent_run")!.execute("c1", { agent: "explore", task: "Cross session", mode: "background" }, undefined, undefined, ctx);
@@ -362,7 +362,7 @@ test("a background completion owned by a prior session is dropped, never deliver
 test("aborting the caller's signal cancels the subagent, records it, and says why", async () => {
 	const { pi, tools, fire } = fakePi();
 	const harness = deps();
-	gentleAgents(pi, {}, harness.deps);
+	jeroAgents(pi, {}, harness.deps);
 	const { ctx, dialogs } = fakeContext();
 	await fire("session_start", ctx);
 	const controller = new AbortController();
@@ -371,7 +371,7 @@ test("aborting the caller's signal cancels the subagent, records it, and says wh
 	controller.abort();
 	await tick();
 	const yielded = await pending;
-	const details = (yielded.details as { gentleAgents?: { taskId: string; status: string } }).gentleAgents!;
+	const details = (yielded.details as { jeroAgents?: { taskId: string; status: string } }).jeroAgents!;
 	assert.equal(details.status, "cancelled", "the run is recorded as cancelled");
 	assert.match((yielded as { content: Array<{ text: string }> }).content[0].text, /cancelled/);
 	assert.ok(
@@ -392,7 +392,7 @@ test("selected child routes recheck provenance and keep separately authorized lo
   const registered = names.filter(name => mismatch !== "unregistered" || name !== "fetch_content");
   const pi = { on: (name: string, hook: typeof hooks extends Map<string, infer H> ? H : never) => hooks.set(name, hook), getActiveTools: () => active,
    getAllTools: () => registered.map(name => ({ name, sourceInfo: { source: mismatch === "sdk" && name === "fetch_content" ? "sdk" : "extension", path: mismatch === "path" ? "/other.ts" : "/installed/web.ts" } })) };
-  gentleAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(names.filter(name => mismatch !== "restriction" || name !== "fetch_content")), JERO_PI_RESEARCH_SELECTION: JSON.stringify(selection), JERO_PI_RESEARCH_ARTIFACT: JSON.stringify(scope) });
+  jeroAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(names.filter(name => mismatch !== "restriction" || name !== "fetch_content")), JERO_PI_RESEARCH_SELECTION: JSON.stringify(selection), JERO_PI_RESEARCH_ARTIFACT: JSON.stringify(scope) });
   const call = hooks.get("tool_call")!;
   assert.equal(call({ toolName: "fetch_content" })?.block, mismatch === "none" ? undefined : true, mismatch);
   assert.equal(call({ toolName: "web_search" })?.block, true, "available but unselected");
@@ -411,7 +411,7 @@ test("research child narrows artifact arguments and observes actual dual-store r
  let active = ["read", "write", "mem_read", "mem_save", "subagent_parent_message"];
  const journal = join(cwd, "session.jsonl"); writeFileSync(journal, "");
  const pi = { appendEntry: (customType, data) => appendFileSync(journal, JSON.stringify({ type: "custom", customType, data }) + "\n"), on: (name: string, fn: (...args: unknown[]) => unknown) => hooks.set(name, fn), getActiveTools: () => active, getAllTools: () => active.map(name => ({ name })) };
- gentleAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(active), JERO_PI_RESEARCH_ARTIFACT: JSON.stringify(scope) });
+ jeroAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(active), JERO_PI_RESEARCH_ARTIFACT: JSON.stringify(scope) });
  const ctx = { cwd, sessionManager: { getEntries: () => [], getSessionFile: () => journal } };
  const prompt = hooks.get("before_agent_start")!({ systemPrompt: "research" }, ctx) as { systemPrompt: string };
  assert.match(prompt.systemPrompt, /retainedIntent/);
@@ -465,7 +465,7 @@ test("research child narrows artifact arguments and observes actual dual-store r
  assert.equal(call("write", { path: locator.path })?.block, true);
  assert.equal((hooks.get("tool_call")!({ toolName: "read", input: { path: locator.path } }, { cwd: root }) as { block: boolean }).block, true);
  active.push("write");
- gentleAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(active), JERO_PI_RESEARCH_ARTIFACT: JSON.stringify(scope) });
+ jeroAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(active), JERO_PI_RESEARCH_ARTIFACT: JSON.stringify(scope) });
  call("read", { path: locator.path });
  result("read", { path: locator.path }, bytes);
  call("mem_read", readInput);
@@ -480,7 +480,7 @@ test("research child narrows artifact arguments and observes actual dual-store r
  call("mem_read", readInput);
  assert.equal(result("mem_read", readInput, render(divergent)).isError, true, "individually matching but divergent hybrid writes never converge");
  for (const completion of [[], [{ type: "text", text: "" }], [{ type: "text", text: "denied" }]]) {
-  gentleAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(active), JERO_PI_RESEARCH_ARTIFACT: JSON.stringify({ ...scope, store: "openspec", locators: [{ ...locator, engram: undefined }] }) });
+  jeroAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(active), JERO_PI_RESEARCH_ARTIFACT: JSON.stringify({ ...scope, store: "openspec", locators: [{ ...locator, engram: undefined }] }) });
   call("read", { path: locator.path }); result("read", { path: locator.path }, bytes);
   assert.equal(call("write", { path: locator.path, content: next }), undefined);
   assert.equal(call("write", { path: locator.path, content: next }, "overlap")?.block, true);
@@ -493,7 +493,7 @@ test("research child narrows artifact arguments and observes actual dual-store r
   const memory = tool === "mem_save", readTool = memory ? "mem_read" : "read";
   const input = memory ? readInput : { path: locator.path };
   const mutation = memory ? save(next) : { path: locator.path, content: next };
-  gentleAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(active), JERO_PI_RESEARCH_ARTIFACT: JSON.stringify({ ...scope, store: memory ? "engram" : "openspec", locators: [{ ...locator, path: memory ? undefined : locator.path, engram: memory ? locator.engram : undefined }] }) });
+  jeroAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(active), JERO_PI_RESEARCH_ARTIFACT: JSON.stringify({ ...scope, store: memory ? "engram" : "openspec", locators: [{ ...locator, path: memory ? undefined : locator.path, engram: memory ? locator.engram : undefined }] }) });
   call(readTool, input); result(readTool, input, memory ? render(bytes) : bytes);
   assert.equal(call(tool, mutation), undefined);
   assert.doesNotThrow(() => hooks.get("tool_result")!({ toolName: tool, input: mutation, toolCallId: "c", content: [null], isError: false }, ctx));
@@ -503,7 +503,7 @@ test("research child narrows artifact arguments and observes actual dual-store r
  }
  for (const store of ["openspec", "engram", "both"]) {
   for (const bad of ["missing", "malformed", "revision", "digest", "header", "body", "worktree"]) {
-   gentleAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(active), JERO_PI_RESEARCH_ARTIFACT: JSON.stringify({ ...scope, store, locators: [{ ...locator, path: store === "engram" ? undefined : locator.path, engram: store === "openspec" ? undefined : locator.engram }] }) });
+   jeroAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(active), JERO_PI_RESEARCH_ARTIFACT: JSON.stringify({ ...scope, store, locators: [{ ...locator, path: store === "engram" ? undefined : locator.path, engram: store === "openspec" ? undefined : locator.engram }] }) });
    const memory = store !== "openspec";
    const tool = memory ? "mem_read" : "read";
    const input = memory ? readInput : { path: locator.path };
@@ -542,7 +542,7 @@ test("managed remediation acquires before spawn and finalizes failure without ve
 	writeFileSync(join(fixtureHome, ".pi", "agent", "agents", "sdd-remediate.md"), readFileSync("assets/agents/sdd-remediate.md"));
 	const revision = `sha256:${"a".repeat(64)}`, calls = [];
 	const nativeSdd = { sddStatus: async () => ({ schemaName: "gentle-ai.sdd-status", schemaVersion: 2, changeName: "alpha", artifactStore: "openspec", planningHome: { mode: "repo-local", path: join(cwd, "openspec") }, changeRoot: join(cwd, "openspec/changes/alpha"), actionContext: { mode: "repo-local", workspaceRoot: cwd, allowedEditRoots: [cwd] }, dependencies: Object.fromEntries(["proposal", "specs", "design", "tasks", "apply", "verify", "archive"].map(key => [key, "ready"])), phaseInstructions: { apply: [], verify: [], remediate: ["Correct evidence"], archive: [] }, blockedReasons: [], nextRecommended: "remediate", remediationState: { required: true, complete: false, failedEvidenceRevision: revision } }), sddAttemptAcquire: async input => { assert.equal(runtime.spawned.length, 0); const [saved] = await loadHistory(historyDir(fixtureHome)); retainedId = saved.task.id; assert.deepEqual(saved.task.sddRemediation.acquire, input); assert.equal(saved.task.sddRemediation.token, undefined); calls.push(input); return { state: "proceed", token: "admitted-fixture" }; }, sddAttemptSettle: async input => { calls.push(input); return { state: "proceed" as const }; } } as unknown as NativeReviewCli;
-	gentleAgents(h.pi, {}, { ...runtime.deps, home: fixtureHome, nativeSdd });
+	jeroAgents(h.pi, {}, { ...runtime.deps, home: fixtureHome, nativeSdd });
 	const { ctx } = fakeContext(); await h.fire("session_start", ctx);
 	const result = await h.tools.get("subagent_run").execute("run", { agent: "sdd-remediate", task: "Correct alpha", context: PARENT_CONFIRMED_SDD_CONTEXT, mode: "background", sdd_change: { changeName: "alpha", workspaceRoot: cwd, phase: "remediate", failedEvidenceRevision: revision }, remediation: { attempt: { requestId: "one", workUnit: "correct", evidenceGoal: "Observed correction", maxAttempts: 1, maxChangedLines: 200 }, plan: { cwd, commands: ["pnpm test"], runtimeHarness: { naReason: "Not applicable because this fixture has no runtime boundary." }, rollback: { boundary: "Revert fixture bytes", command: "git diff --check" } } } }, undefined, undefined, ctx);
 	await tick(); assert.equal(runtime.spawned.length, 1, result.content[0].text);
@@ -561,7 +561,7 @@ test("managed remediation acquires before spawn and finalizes failure without ve
 test("only remediation children with the retained exact plan override stock bash", async () => {
 	for (const phase of ["apply", "remediate"]) {
 		const h = fakePi(); h.pi.getFlag = () => JSON.stringify({ phase, workspaceRoot: cwd, changeName: "alpha", ...(phase === "remediate" ? { failedEvidenceRevision: `sha256:${"a".repeat(64)}` } : {}) });
-		gentleAgents(h.pi, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_SDD_REMEDIATION_PLAN: JSON.stringify({ scope: { cwd, commands: ["pnpm test", "git diff --check"], editPaths: [], allowedEditRoots: [cwd] }, plan: { cwd, commands: ["pnpm test"], runtimeHarness: { naReason: "Not applicable because this fixture has no runtime boundary." }, rollback: { boundary: "Revert fixture bytes", command: "git diff --check" } } }) });
+		jeroAgents(h.pi, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_SDD_REMEDIATION_PLAN: JSON.stringify({ scope: { cwd, commands: ["pnpm test", "git diff --check"], editPaths: [], allowedEditRoots: [cwd] }, plan: { cwd, commands: ["pnpm test"], runtimeHarness: { naReason: "Not applicable because this fixture has no runtime boundary." }, rollback: { boundary: "Revert fixture bytes", command: "git diff --check" } } }) });
 		await h.fire("session_start", { ...fakeContext().ctx, cwd });
 		assert.equal(h.tools.has("bash"), phase === "remediate");
 		assert.equal(h.tools.has("subagent_run"), false);
@@ -570,7 +570,7 @@ test("only remediation children with the retained exact plan override stock bash
 
 
 test("managed remediation tools publish the typed exact evidence plan and bracket input", () => {
-	const h = fakePi(); gentleAgents(h.pi, {}, deps().deps);
+	const h = fakePi(); jeroAgents(h.pi, {}, deps().deps);
 	for (const name of ["subagent_run", "subagent_continue"]) {
 		const schema = h.tools.get(name)!.parameters.properties.remediation as unknown as { required: string[]; properties: { plan: { required: string[] }; attempt: { properties: { token: unknown } } } };
 		assert.deepEqual(schema.required, ["plan", "attempt"]);
@@ -583,7 +583,7 @@ test("managed remediation tools publish the typed exact evidence plan and bracke
 test("R1 malformed child grant denies tools even before/after failed session initialization", () => {
 	const hooks = new Map(), registered = [];
 	const pi = { on: (name, fn) => hooks.set(name, fn), registerTool: tool => registered.push(tool), getFlag: () => "{}" };
-	gentleAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_SDD_REMEDIATION_PLAN: "malformed" });
+	jeroAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_SDD_REMEDIATION_PLAN: "malformed" });
 	const denied = () => hooks.get("tool_call")?.({ toolName: "bash", input: { command: "touch outside" } }, { cwd })?.block;
 	assert.equal(denied(), true);
 	assert.doesNotThrow(() => hooks.get("session_start")({}, { cwd }));
@@ -596,7 +596,7 @@ test("public reconciliation replays retained authority, persists closure, and ne
 	const acquire = { workspaceRoot: cwd, changeName: "alpha", requestId: "retained-acquire", workUnit: "correct", evidenceGoal: "Observed correction", remediatesEvidenceRevision: `sha256:${"a".repeat(64)}` };
 	await saveTask(historyDir(fixtureHome), { id: "retained", agent: "sdd-remediate", cwd, status: "failed", createdAt: 1, sddRemediation: { acquire, acquireUncertain: true } } as never, emptyThread());
 	const h = fakePi(), runtime = deps(), calls = [];
-	gentleAgents(h.pi, {}, { ...runtime.deps, home: fixtureHome, nativeSdd: {
+	jeroAgents(h.pi, {}, { ...runtime.deps, home: fixtureHome, nativeSdd: {
 		sddAttemptAcquire: async input => { calls.push(["acquire", structuredClone(input)]); return { state: "proceed", token: "private-token" }; },
 		sddAttemptSettle: async input => { calls.push(["settle", structuredClone(input)]); return { state: "complete" }; },
 	} as unknown as NativeReviewCli });
@@ -620,8 +620,8 @@ test("durable reconciliation locks serialize independent extension instances sha
 	let calls = 0, release!: (result: { state: "blocked" }) => void;
 	const pending = new Promise<{ state: "blocked" }>(resolve => { release = resolve; });
 	const native = { sddAttemptAcquire: async () => { calls++; return calls === 1 ? pending : { state: "blocked" }; } } as unknown as NativeReviewCli;
-	gentleAgents(first.pi, {}, { ...runtime.deps, home: fixtureHome, nativeSdd: native });
-	gentleAgents(second.pi, {}, { ...runtime.deps, home: fixtureHome, nativeSdd: native });
+	jeroAgents(first.pi, {}, { ...runtime.deps, home: fixtureHome, nativeSdd: native });
+	jeroAgents(second.pi, {}, { ...runtime.deps, home: fixtureHome, nativeSdd: native });
 	const firstContext = fakeContext(), secondContext = fakeContext();
 	await first.fire("session_start", firstContext.ctx); await second.fire("session_start", secondContext.ctx);
 	const running = first.tools.get("subagent_reconcile")!.execute("first", { task_id: id }, undefined, undefined, firstContext.ctx);
@@ -639,7 +639,7 @@ test("reconciliation reloads a stale local task and preserves the retained disk 
 	const freshAcquire = { workspaceRoot: cwd, changeName: "alpha", requestId: "fresh", workUnit: "fresh", evidenceGoal: "fresh" };
 	await saveTask(historyDir(fixtureHome), { id, agent: "sdd-remediate", cwd, status: "failed", createdAt: 1, sddRemediation: { acquire: oldAcquire, acquireUncertain: true } } as never, applyTaskEvent(emptyThread(), { type: TASK_EVENT.NOTE, text: "old thread" }));
 	const h = fakePi(), runtime = deps(), seen: unknown[] = [];
-	gentleAgents(h.pi, {}, { ...runtime.deps, home: fixtureHome, nativeSdd: { sddAttemptAcquire: async input => { seen.push(structuredClone(input)); return { state: "blocked" }; } } as unknown as NativeReviewCli });
+	jeroAgents(h.pi, {}, { ...runtime.deps, home: fixtureHome, nativeSdd: { sddAttemptAcquire: async input => { seen.push(structuredClone(input)); return { state: "blocked" }; } } as unknown as NativeReviewCli });
 	const { ctx } = fakeContext(); await h.fire("session_start", ctx);
 	await h.tools.get("subagent_status")!.execute("status", { task_id: id }, undefined, undefined, ctx);
 	const freshThread = applyTaskEvent(emptyThread(), { type: TASK_EVENT.NOTE, text: "fresh thread" });
@@ -657,7 +657,7 @@ test("reconciliation releases the durable lock after native failure", async () =
 	const acquire = { workspaceRoot: cwd, changeName: "alpha", requestId: id, workUnit: "correct", evidenceGoal: "Observed correction" };
 	await saveTask(historyDir(fixtureHome), { id, agent: "sdd-remediate", cwd, status: "failed", createdAt: 1, sddRemediation: { acquire, acquireUncertain: true } } as never, emptyThread());
 	const h = fakePi(), runtime = deps(); let calls = 0;
-	gentleAgents(h.pi, {}, { ...runtime.deps, home: fixtureHome, nativeSdd: { sddAttemptAcquire: async () => { calls++; if (calls === 1) throw new TypeError("native failure"); return { state: "blocked" }; } } as unknown as NativeReviewCli });
+	jeroAgents(h.pi, {}, { ...runtime.deps, home: fixtureHome, nativeSdd: { sddAttemptAcquire: async () => { calls++; if (calls === 1) throw new TypeError("native failure"); return { state: "blocked" }; } } as unknown as NativeReviewCli });
 	const { ctx } = fakeContext(); await h.fire("session_start", ctx);
 	await assert.rejects(h.tools.get("subagent_reconcile")!.execute("failed", { task_id: id }, undefined, undefined, ctx), /native failure/);
 	const recovered = await h.tools.get("subagent_reconcile")!.execute("retry", { task_id: id }, undefined, undefined, ctx);
@@ -676,7 +676,7 @@ test("R3/R4 host reload refuses retained acquire/actor uncertainty without anoth
 		const acquire = { workspaceRoot: cwd, changeName: "alpha", requestId: "retained", workUnit: "correct", evidenceGoal: "Observed correction", remediatesEvidenceRevision: revision };
 		await saveTask(historyDir(fixtureHome), { id: "retained", agent: "sdd-remediate", cwd, status: "failed", createdAt: 1, sddRemediation: { acquire, acquireUncertain: normal ? false : !actorClaimed, actorClaimed: normal ? false : actorClaimed, ...(normal ? { acquireResult: { state: actorClaimed } } : actorClaimed ? { token: "retained-token" } : {}) } } as never, emptyThread());
 		let acquisitions = 0, confirmations = 0;
-		gentleAgents(h.pi, {}, { ...runtime.deps, home: fixtureHome, nativeSdd: { sddStatus: async () => { throw new Error("fresh status reached"); }, sddAttemptSettle: async () => ({ state: "proceed" as const }), sddAttemptAcquire: async () => { acquisitions++; return { state: "proceed", token: "unsafe" }; } } as unknown as NativeReviewCli });
+		jeroAgents(h.pi, {}, { ...runtime.deps, home: fixtureHome, nativeSdd: { sddStatus: async () => { throw new Error("fresh status reached"); }, sddAttemptSettle: async () => ({ state: "proceed" as const }), sddAttemptAcquire: async () => { acquisitions++; return { state: "proceed", token: "unsafe" }; } } as unknown as NativeReviewCli });
 		const { ctx } = fakeContext(fakeTui, async () => { confirmations++; return true; });
 		await h.fire("session_start", ctx);
 		await assert.rejects(h.tools.get("subagent_run").execute("again", { agent: "sdd-remediate", task: "Correct alpha", context: PARENT_CONFIRMED_SDD_CONTEXT, mode: "background", sdd_change: { changeName: "alpha", workspaceRoot: cwd, phase: "remediate", failedEvidenceRevision: revision }, remediation: { attempt: { ...acquire, requestId: "different" }, plan: { cwd, commands: ["pnpm test"], runtimeHarness: { naReason: "Not applicable because this fixture has no runtime boundary." }, rollback: { boundary: "Revert fixture", command: "git diff --check" } } } }, undefined, undefined, ctx), normal ? /fresh status reached/ : /reconcile exact history without actor replay/);
@@ -697,7 +697,7 @@ test("R3/R4 a known native-blocked settlement lets native admission decide the n
 			? { acquire, settlementUncertain: true, settle: { requestId: "exact" } }
 			: { acquire, settlement: { state: "blocked", reason: "maintainer_decision" } } } as never, emptyThread());
 		let acquisitions = 0, confirmations = 0;
-		gentleAgents(h.pi, {}, { ...runtime.deps, home: fixtureHome, nativeSdd: { sddStatus: async () => ({ schemaName: "gentle-ai.sdd-status", schemaVersion: 2, changeName: "alpha", artifactStore: "openspec", planningHome: { mode: "repo-local", path: join(cwd, "openspec") }, changeRoot: join(cwd, "openspec/changes/alpha"), actionContext: { mode: "repo-local", workspaceRoot: cwd, allowedEditRoots: [cwd] }, dependencies: Object.fromEntries(["proposal", "specs", "design", "tasks", "apply", "verify", "archive"].map(key => [key, "ready"])), phaseInstructions: { apply: [], verify: [], remediate: ["Correct evidence"], archive: [] }, blockedReasons: [], nextRecommended: "remediate", remediationState: { required: true, complete: false, failedEvidenceRevision: revision } }), sddAttemptSettle: async () => ({ state: "proceed" as const }), sddAttemptAcquire: async () => { acquisitions++; return { state: "blocked" }; } } as unknown as NativeReviewCli });
+		jeroAgents(h.pi, {}, { ...runtime.deps, home: fixtureHome, nativeSdd: { sddStatus: async () => ({ schemaName: "gentle-ai.sdd-status", schemaVersion: 2, changeName: "alpha", artifactStore: "openspec", planningHome: { mode: "repo-local", path: join(cwd, "openspec") }, changeRoot: join(cwd, "openspec/changes/alpha"), actionContext: { mode: "repo-local", workspaceRoot: cwd, allowedEditRoots: [cwd] }, dependencies: Object.fromEntries(["proposal", "specs", "design", "tasks", "apply", "verify", "archive"].map(key => [key, "ready"])), phaseInstructions: { apply: [], verify: [], remediate: ["Correct evidence"], archive: [] }, blockedReasons: [], nextRecommended: "remediate", remediationState: { required: true, complete: false, failedEvidenceRevision: revision } }), sddAttemptSettle: async () => ({ state: "proceed" as const }), sddAttemptAcquire: async () => { acquisitions++; return { state: "blocked" }; } } as unknown as NativeReviewCli });
 		const { ctx } = fakeContext(fakeTui, async () => { confirmations++; return true; });
 		await h.fire("session_start", ctx);
 		await assert.rejects(h.tools.get("subagent_run").execute("again", { agent: "sdd-remediate", task: "Correct alpha", context: PARENT_CONFIRMED_SDD_CONTEXT, mode: "background", sdd_change: { changeName: "alpha", workspaceRoot: cwd, phase: "remediate", failedEvidenceRevision: revision }, remediation: { attempt: { ...acquire, requestId: "different" }, plan: { cwd, commands: ["pnpm test"], runtimeHarness: { naReason: "Not applicable because this fixture has no runtime boundary." }, rollback: { boundary: "Revert fixture", command: "git diff --check" } } } }, undefined, undefined, ctx), uncertain ? /reconcile exact history without actor replay/ : /no actor started/);
@@ -720,7 +720,7 @@ test("remediation child registers the bash-result forwarder once across session_
 	const selection = { changeName: "fix-auth", workspaceRoot: dir, phase: "remediate", failedEvidenceRevision: `sha256:${"a".repeat(64)}` };
 	const plan = { cwd: dir, commands: ["pytest -q"], rollback: { boundary: "git reset --hard", command: "git reset --hard" }, runtimeHarness: { command: "pytest -q" } };
 	const scope = { commands: ["pytest -q", "pytest -q", "git reset --hard"], editPaths: [] };
-	gentleAgents(pi, {
+	jeroAgents(pi, {
 		JERO_PI_AGENTS_CHILD: "1",
 		JERO_PI_SDD_REMEDIATION_PLAN: JSON.stringify({ selection, plan, scope }),
 	});

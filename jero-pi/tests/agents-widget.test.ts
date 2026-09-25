@@ -5,7 +5,7 @@ import { TASK_STATUS, type TaskRecord } from "../lib/agents-protocol.ts";
 import { formatElapsed, renderAgentsCard, widgetExpiryMs, widgetRows, widgetTasks } from "../lib/agents-widget.ts";
 import { stripAnsi } from "../lib/terminal-theme.ts";
 
-// Gentle Agents widget: the card above the editor that shows what the
+// Jero Agents widget: the card above the editor that shows what the
 // subagents are doing, drawn from task records only (never from threads).
 // Layout: glyph, agent, task summary (wrapped), then model · tokens · cost · time.
 

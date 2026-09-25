@@ -39,7 +39,7 @@ export function renderComponent(component: { render(width: number): string[] }):
 	return component.render(120).map((line) => line.replace(/[ \t]+$/g, "")).join("\n");
 }
 
-export function registeredGentleTools(): Map<string, any> {
+export function registeredJeroTools(): Map<string, any> {
 	const tools = new Map<string, any>();
 	const pi = {
 		on() {},

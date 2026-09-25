@@ -20,7 +20,7 @@ import { stripAnsi } from "../lib/terminal-theme.ts";
 import { cardBody, cardHint, cardTitle, cardTone } from "./gentle-card-text.ts";
 import {
 	cleanWorkspaceStatus, lifecycleContext, lifecycleTheme, offeredCommittedRangeStatus,
-	registeredGentleTools, renderComponent, reviewRepository, type ReviewStartRepository,
+	registeredJeroTools, renderComponent, reviewRepository, type ReviewStartRepository,
 	startedReviewResult, writeMarkdown
 } from "./jero-ai-shared.ts";
 import { routingConsumerFixture, type RoutingConsumerPanel } from "./jero-ai-shared.ts";
@@ -437,8 +437,8 @@ test("permission lifecycle is inactive for unguarded and headless commands", asy
 		rmSync(cwd, { recursive: true, force: true });
 	}
 });
-test("registered Gentle Review capture tools name the lens they run", () => {
-	const tools = registeredGentleTools();
+test("registered Jero Review capture tools name the lens they run", () => {
+	const tools = registeredJeroTools();
 	const binding = (lens: string) => JSON.stringify({ name: "reviewer_result", captureOperation: "review.capture-result", arguments: [], artifactSubject: { lens } });
 	const single = tools.get("jero_review_capture")!.renderCall({ lineageId: "l", collectBinding: binding("review-risk") }, lifecycleTheme, lifecycleContext({ executionStarted: true }));
 	assert.equal(cardTitle(renderComponent(single)), "🌹︎ Jero · running · review capture · risk");

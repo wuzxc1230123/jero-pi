@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   publish:
-    if: github.repository == 'jero-pi/jero-pi'
+    if: github.repository == 'wuzxc1230123/jero-pi'
     environment: npm
     runs-on: ubuntu-latest
     permissions:
@@ -67,14 +67,14 @@ jobs:
 
           const expectedRepository = {
             type: "git",
-            url: "git+https://github.com/jero-pi/jero-pi.git",
+            url: "git+https://github.com/wuzxc1230123/jero-pi.git",
           };
           if (
             packageJson.repository?.type !== expectedRepository.type ||
             packageJson.repository?.url !== expectedRepository.url
           ) {
             throw new Error(
-              "package.json.repository must exactly match jero-pi/jero-pi.",
+              "package.json.repository must exactly match wuzxc1230123/jero-pi.",
             );
           }
           NODE

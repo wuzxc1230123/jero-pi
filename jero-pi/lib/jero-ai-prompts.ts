@@ -121,7 +121,7 @@ const NEUTRAL_PERSONA_PROMPT = `Persona:
 
 
 
-export function buildGentlePrompt(
+export function buildJeroPrompt(
 	persona: PersonaMode,
 	cwd: string = process.cwd(),
 	activeTools?: readonly string[],

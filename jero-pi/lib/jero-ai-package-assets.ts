@@ -3,7 +3,7 @@
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
-import { resolveGentlePiAgentHome } from "./agent-home.ts";
+import { resolveJeroPiAgentHome } from "./agent-home.ts";
 import { getPackageAssetOwner, hasPackageAssetOwnerInstallation, type PackageAssetOwner, isPackageManagedSddAsset } from "./sdd-preflight.ts";
 
 import { ASSETS_DIR, PACKAGE_ROOT } from "./jero-ai-paths.ts";
@@ -15,8 +15,8 @@ export const GRAPH_V1_ORDINARY_READ_ONLY = "Graph-v1 ordinary review authority i
 
 
 
-export function gentlePiAgentHome(): string {
-	return resolveGentlePiAgentHome();
+export function jeroPiAgentHome(): string {
+	return resolveJeroPiAgentHome();
 }
 
 
@@ -33,7 +33,7 @@ export function packageAssetAudit(owner: PackageAssetOwner): { stale: number; ov
 		if (!existsSync(assetDir)) continue;
 		for (const entry of readdirSync(assetDir, { withFileTypes: true })) {
 			if (!entry.isFile() || getPackageAssetOwner(`${ownershipPrefix}/${entry.name}`) !== owner) continue;
-			const installedPath = join(gentlePiAgentHome(), installedSubdir, entry.name);
+			const installedPath = join(jeroPiAgentHome(), installedSubdir, entry.name);
 			try {
 				if (!existsSync(installedPath)) {
 					stale += 1;

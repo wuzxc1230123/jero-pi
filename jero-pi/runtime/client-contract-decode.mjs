@@ -62,7 +62,7 @@ import {
 	NativeReviewCliError,
 
 } from "./client-contract-surface.mjs";
-export function gentleAiProcessEnvironment(base                    = {})                    {
+export function providerProcessEnvironment(base                    = {})                    {
 	return { ...base };
 }
 

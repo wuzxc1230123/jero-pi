@@ -3,7 +3,7 @@ import test from "node:test";
 import { createJeroAiExtension } from "../extensions/jero-ai.ts";
 import type { ExtensionAPI, ToolDefinition } from "@earendil-works/pi-coding-agent";
 import { Box, visibleWidth } from "@earendil-works/pi-tui";
-import { renderJeroResult, GentleAiCallCard } from "../lib/jero-ai-renderer.ts";
+import { renderJeroResult, JeroCallCard } from "../lib/jero-ai-renderer.ts";
 import { stripAnsi } from "../lib/terminal-theme.ts";
 
 // Rose cards: exactly one component closes the frame in every state. While
@@ -13,7 +13,7 @@ import { stripAnsi } from "../lib/terminal-theme.ts";
 const plainTheme = { fg: (_color: string, text: string) => text };
 
 test("a running call card closes its own frame and a completed one leaves that to the result", () => {
-	const card = new GentleAiCallCard();
+	const card = new JeroCallCard();
 	card.update("running", "review capture · reliability", plainTheme);
 	const running = card.render(60).map(stripAnsi);
 	assert.equal(running.length, 2);
@@ -30,7 +30,7 @@ test("a running call card closes its own frame and a completed one leaves that t
 
 test("completed review cards fit Pi's default Box at terminal width 57", () => {
 	for (const operationPath of ["review inspect", "review status", "review capture · reliability", "review acknowledge approved"]) {
-		const card = new GentleAiCallCard();
+		const card = new JeroCallCard();
 		card.update("completed", operationPath, plainTheme, undefined, "ctrl+o to expand");
 		const box = new Box(1, 1);
 		box.addChild(card);
@@ -59,7 +59,7 @@ test("review call and result cards have no passive background fill", () => {
 		{ expanded: true, isPartial: true }, { expanded: false, isPartial: true },
 		{ expanded: true, isError: true }, { expanded: false, isError: true },
 	]) {
-		const call = new GentleAiCallCard();
+		const call = new JeroCallCard();
 		call.update(options.isPartial ? "running" : "completed", "review capture", theme, "$ capture");
 		const lines = [...call.render(40), ...renderJeroResult({ details: {}, content: [{ type: "text", text: "Result" }] }, options, theme).render(40)];
 		for (const [row, line] of lines.entries()) {

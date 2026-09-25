@@ -6,7 +6,7 @@ import { CARD_TONE, cardInnerWidth, renderCard } from "./shell-card.ts";
 
 export { gaugeTone, renderGauge, type GaugeTone };
 
-// Gentle Shell 状态栏：一行分段，替代 pi 内建的三行页脚。这里的一切
+// Jero Shell 状态栏：一行分段，替代 pi 内建的三行页脚。这里的一切
 // 都是纯函数，无需活动 TUI 即可渲染和验证。
 
 export interface ShellBarModel {

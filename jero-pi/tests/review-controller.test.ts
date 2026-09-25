@@ -9,7 +9,7 @@ import type {
 	ExtensionContext,
 	ToolCallEventResult,
 } from "@earendil-works/pi-coding-agent";
-import gentleAi, { __testing, createJeroAiExtension } from "../extensions/jero-ai.ts";
+import jeroAi, { __testing, createJeroAiExtension } from "../extensions/jero-ai.ts";
 import {
 	REVIEW_MODE,
 	REVIEW_TRANSITION,

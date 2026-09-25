@@ -5,8 +5,16 @@
 >
 > **2026-09-21 大清账**：下表多数族已修复（见底部"2026-09-21 清账批次"）。
 > 现存挂起仅剩 PowerShell ACL 三件套。逐文件快照见该节。
+>
+> **2026-09-25 复测清账**：三件套全部**完整跑完、零失败**，"全量永不结束"已不再成立——
+> 单文件实测：review-candidate-view 179s（50 pass/0 fail）、review-controller-native-routing 19s
+> （11 pass/0 fail）、review-controller-workspace-root 54s（11 pass/0 fail）；全量 `pnpm test`
+> （--test-concurrency=12）同机两次完整结束（2292 项 / 0 fail）。仅存风险：candidate-view 的
+> 179s 贴着 180s/文件预算线，冷机仍有翻越可能；根治路径不变（enforce 的精确三 ACE 重建迁
+> icacls 或并行化，owner 读取本就需 PowerShell，无法全迁）。CI 侧已由 Windows job 的名称模
+> 式筛选隔离，不受影响。
 
-## 挂起（剩 3，HANG；原 4）
+## 挂起（2026-09-25 复测：全部可完成；历史记载见下）
 
 | 文件 | 备注 |
 |---|---|
@@ -15,7 +23,7 @@
 | review-controller-workspace-root.test.ts | 同族 |
 | ~~review-recovered-lineage-routing.test.ts~~ | 2026-09-21 转绿（2/2 干净退出） |
 
-全量 `node --test tests/*.test.ts` 仍因上述三件套不结束——只能按文件带预算跑。
+~~全量 `node --test tests/*.test.ts` 仍因上述三件套不结束~~（2026-09-25 复测已可完整结束，见顶部清账附录；candidate-view 单文件 179s 仍建议带预算跑）。
 
 ## 失败（2026-09-21 清账后全部归零；历史记录见 git）
 

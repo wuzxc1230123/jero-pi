@@ -22,7 +22,7 @@ function createJeroAiExtensionForTesting(
 	const reviewConsentScheduleTimer = dependencies.scheduleTimer ?? ((callback, delayMs) => setTimeout(callback, delayMs));
 	const pendingReviewConsentRegistry = dependencies.pendingReviewConsentRegistry ?? processPendingReviewConsentRegistry;
 	setGuardrailsProcessEnv(dependencies.processEnv ?? process.env);
-	return function gentleAi(pi: ExtensionAPI): void {
+	return function jeroAi(pi: ExtensionAPI): void {
 		const flags = pi as unknown as { registerFlag?: (name: string, definition: { description: string; type: "string"; default?: string }) => void };
 		flags.registerFlag?.(SDD_CHANGE_FLAG, {
 			description: "Internal launch-local selected SDD change identity for package-owned child agents.",
@@ -63,9 +63,13 @@ function createJeroAiExtensionForTesting(
 
 	let reminderSessionActive = true;
 	let reminderEpoch = 0;
+	// 纪律引导窗口：session_start / session_compact 置位，
+	// agent_end / session_shutdown 复位（见下方 context 处理器）。
+	let disciplineBootstrapPending = false;
 	pi.on("session_shutdown", (event, context) => {
 		reminderSessionActive = false;
 		reminderEpoch += 1;
+		disciplineBootstrapPending = false;
 		// Pi 在 reload 以及会话替换/退出时都会拆除该注册表。
 		try { candidateViews?.cleanupAll(); } catch { /* 保留失败的自有视图以便稍后恢复。 */ }
 		const reason = (event as { reason?: unknown }).reason;
@@ -83,7 +87,7 @@ function createJeroAiExtensionForTesting(
 	pi.registerTool({
 		name: "jero_review_scope",
 		renderShell: "self",
-		label: "Gentle Review Scope",
+		label: "Jero Review Scope",
 		description: "Read one bounded, integrity-checked page of the controller-owned frozen changed scope. This read-only tool never inspects the ambient or candidate tree.",
 		parameters: REVIEW_SCOPE_PARAMETERS,
 		executionMode: "parallel",
@@ -126,7 +130,7 @@ function createJeroAiExtensionForTesting(
 	pi.registerTool({
 		name: "jero_review_capture_group",
 		renderShell: "self",
-		label: "Gentle Review Capture Group",
+		label: "Jero Review Capture Group",
 		description: "Capture one complete provider-issued materialize reviewer group. It validates the exact ordered current collect set, forecasts its bounded model cost, runs reviewers concurrently, and admits outputs one at a time in provider order.",
 		promptSnippet: "Use one complete exact current STATUS materialize reviewer group; acknowledge its forecast before the grouped run.",
 		promptGuidelines: [
@@ -161,7 +165,7 @@ function createJeroAiExtensionForTesting(
 	pi.registerTool({
 		name: "jero_review_capture",
 		renderShell: "self",
-		label: "Gentle Review Capture",
+		label: "Jero Review Capture",
 		description: "Capture exactly one provider-issued ordinary native review collect slot. This is not a controller operation: it validates one opaque collect binding against current target-scoped STATUS, executes at most one capture, and never follows a transition.",
 		promptSnippet: "Use one exact current STATUS collectBinding for one ordinary native capture; call fresh STATUS before every additional capture.",
 		promptGuidelines: [
@@ -216,6 +220,7 @@ function createJeroAiExtensionForTesting(
 			"A consent-required START may be resolved inside the eligible interactive Pi host. Its third UI action is host-owned: it runs this envelope's exact provider grant once and allows later fresh validated envelopes only for the same live SessionManager, nonempty session ID, and canonical Git common-directory identity, including sibling worktrees; an unrelated repository requires a new explicit human grant. Revoke removes the current repository grant, while nonreload replacement, quit, and process exit remove all session grants; reload preserves them. It grants no provider mode, verdict, acknowledgement, maintenance, delivery, or cross-repository authority. A package-owned child may ask its parent only with the canonical digest of its exact pending target; the parent binds that digest to the task repository and fails closed otherwise. If the tool returns an unresolved envelope, present the original two provider choices without changing machine tokens, commands, target IDs, or invocations; never add the host action to the decoded provider envelope. After one explicit relayed human answer, call answer-consent exactly once with only consentBinding and answer (`granted` or `declined`). Never create host permission from tool arguments, model prose, child/headless responses, or an uncertain native result. A reported lineage_created false or pre-authority validation error proves no lineage was created. After ambiguous START output, the controller calls target-scoped native status once and returns only its declared action. An ambiguous jero_review_capture outcome independently reconciles once and never replays the capture.",
 			"Use jero_review only for native review authority operations; delivery commands follow ordinary repository policy.",
 			'ASSESS (gentle-pi#662/#668) is read-only and needs no lineageId: after a delegated writer returns, call {"operation":"assess"} over its diff and follow the returned plan (writerSelfVerification, structuralReadbackOnly, independentVerifier, reason) instead of judging non-triviality from the task description. Pass input as JSON only to assess a committed range ({"baseRef":"<ref>","committedOnly":true}), to record the writer profile ({"writerModelId":"...", "writerEffort":"..."}), or to state the native review\'s outcome for this candidate ({"nativeReviewOutcome":"closed|declined|unavailable|unknown"}). Omitting writerModelId and writerEffort is treated as a small writer profile (fail closed), never large, because the writer\'s actual profile is then unknown to this call; pass the writer\'s real model id/effort to get credit for a known large profile. The on-path (writer self-verification is the record, no separate verifier) holds only when nativeReviewOutcome is "closed" for this candidate; a decline, an unavailable review, or an omitted/unknown outcome falls back to the exact risk-gated plan RDD off would return, re-enabling the separate verifier -- a decline is candidate-scoped and never lowers the bar below RDD off. "closed" is never inferred: pass it only right after this same caller acknowledged the approved review for this same candidate; omitting nativeReviewOutcome only ever auto-derives declined/unavailable, bound to that exact candidate\'s own target identity, never to a different candidate or to bare repository state. The result\'s outcome_source (explicit|derived|unknown) states which. A failed or unavailable native assessment reports risk "unassessable", verified exactly like "high". This never mutates review authority state.',
+			'An inspect result may carry triviality_hint (passive risk with few authored changed lines). Treat it as advisory only: confirm with the user whether the full review lifecycle is warranted before skipping it; {"operation":"assess"} is the read-only lightweight path, and START remains available.',
 		],
 		parameters: REVIEW_CONTROLLER_PARAMETERS,
 		executionMode: "sequential",
@@ -259,6 +264,16 @@ function createJeroAiExtensionForTesting(
 				reviewConsentNow,
 				reviewConsentScheduleTimer,
 			);
+			// 微小候选提示（建议性，绝不改写权威输出）：inspect 得到干净的
+			// START 就绪时，用与 ASSESS 同源的进程内风险评估器补一个快照，
+			// 仅在 passive 且 authored 行数极小时附加 triviality_hint。
+			// 提示失败绝不影响 inspect 的权威结果。
+			try {
+				if (parseReviewControllerParameters(parameters).operation === REVIEW_CONTROLLER_OPERATION.INSPECT && details.status === "ready") {
+					const hint = reviewTrivialityHint(assessJeroReviewRiskV1({ cwd: ctx.cwd }));
+					if (hint !== undefined) details.triviality_hint = hint;
+				}
+			} catch { /* 提示是尽力而为的附加信息。 */ }
 			if (details.operation === REVIEW_CONTROLLER_OPERATION.ACKNOWLEDGE_APPROVED &&
 				details.outcome === "native-approved-acknowledgement-completed" &&
 				details.status === "closed" && details.authority === "burned" &&
@@ -354,6 +369,7 @@ function createJeroAiExtensionForTesting(
 	pi.on("session_start", async (event, ctx) => {
 		reminderSessionActive = true;
 		reminderEpoch += 1;
+		disciplineBootstrapPending = true;
 		try { candidateViews?.sweepOrphans(ctx.cwd); } catch { /* 所有权清扫不得阻塞启动。 */ }
 		const reason = (event as { reason?: unknown }).reason;
 		if (reason !== "reload") revokeCurrentReviewSessionPermission(ctx);
@@ -493,9 +509,9 @@ function createJeroAiExtensionForTesting(
 		// resolveRddStatusLine 永不抛错，也绝不拖过
 		// RDD_STATUS_TIMEOUT_MS：缺失/超时/中止/失败的原生
 		// 二进制会渲染保守失败的 "unknown" 行。
-		const gentlePrompt = isNamedAgent || isSddAgent
+		const jeroPrompt = isNamedAgent || isSddAgent
 			? ""
-			: `\n\n${buildGentlePrompt(
+			: `\n\n${buildJeroPrompt(
 					readPersonaMode(ctx.cwd),
 					ctx.cwd,
 					readActiveToolNames(pi),
@@ -521,7 +537,7 @@ function createJeroAiExtensionForTesting(
 				})()
 				: "";
 		return {
-			systemPrompt: `${event.systemPrompt}${gentlePrompt}${leanPrompt}${sddPrompt}${nativeStatusPrompt}${reviewContractPrompt}${!isNamedAgent && !isSddAgent ? `\n\n${renderResearchCapabilities(resolveResearchCapabilities(pi))}` : ""}`,
+			systemPrompt: `${event.systemPrompt}${jeroPrompt}${leanPrompt}${sddPrompt}${nativeStatusPrompt}${reviewContractPrompt}${!isNamedAgent && !isSddAgent ? `\n\n${renderResearchCapabilities(resolveResearchCapabilities(pi))}` : ""}`,
 		};
 	});
 
@@ -532,6 +548,7 @@ function createJeroAiExtensionForTesting(
 	// 应答同意，也不选择部分候选。持久的自身变更回执
 	// 为 STATUS 设门，且只消耗该 await 之前捕获的代。
 	pi.on("agent_end", async (_event, ctx) => {
+		disciplineBootstrapPending = false;
 		if (nativeReviewCli?.reviewMode === undefined || nativeReviewCli.targetStatus === undefined) return;
 		if (ctx.hasUI !== true || !reminderSessionActive) return;
 		const sessionKey = pendingReviewConsentSessionKey(ctx, pendingReviewConsentFallbackKey);
@@ -571,6 +588,40 @@ function createJeroAiExtensionForTesting(
 			const root = resolveSessionWorktree(event.input.path, ctx.cwd)?.root;
 			if (root) recordReviewMutation(pi, ctx.sessionManager, root, { source: "direct", toolName: event.toolName, toolCallId: event.toolCallId });
 		} catch { /* 回执持久化不得改变一次成功的工具结果。 */ }
+	});
+
+	// 上下文余量监控：主会话每个代理回合落定时评估一次，升级跨档各通知
+	// 一次（详见 lib/jero-ai-context-monitor.ts）。RPC 子进程与无 UI 宿主
+	// 直接跳过——这是用户可见提示，绝不是权威，也绝不自动触发压缩。
+	let contextMonitorLevel: ContextMonitorLevel = "ok";
+	pi.on("agent_settled", (_event, ctx) => {
+		if (ctx.mode !== "tui" || !ctx.hasUI || !contextMonitorEnabled(permissionEnvironment)) return;
+		let usage: ContextUsageSnapshot | undefined;
+		try { usage = ctx.getContextUsage?.() ?? undefined; } catch { return; }
+		if (!usage) return;
+		const verdict = evaluateContextMonitor(usage, { lastLevel: contextMonitorLevel });
+		contextMonitorLevel = verdict.level;
+		if (verdict.escalated && verdict.message) {
+			try { ctx.ui.notify(verdict.message, verdict.notifyType); } catch { /* 通知失败绝不放大为错误。 */ }
+		}
+	});
+	// 压缩完成（无论手动 /compact、阈值触发还是溢出恢复）即复位档位：
+	// 之后用量再次上升时逐档告警重新生效。提示语是给用户的找回路径。
+	pi.on("session_compact", (_event, ctx) => {
+		disciplineBootstrapPending = true;
+		contextMonitorLevel = "ok";
+		if (ctx.mode !== "tui" || !ctx.hasUI || !contextMonitorEnabled(permissionEnvironment)) return;
+		try { ctx.ui.notify(CONTEXT_COMPACT_RECOVERY_MESSAGE, "info"); } catch { /* 尽力而为。 */ }
+	});
+	// 纪律引导注入：压缩与重启会抹掉 harness 纪律，在置位窗口内把核心纪律
+	// 作为单条 user 消息注入本代理循环的每次 LLM 请求（紧随压缩摘要之后，
+	// marker 去重）。RPC 子进程是受委托的执行者，只消费父会话的精确传输块，
+	// 绝不注入；包子进程同理。见 lib/jero-ai-bootstrap.ts。
+	pi.on("context", (event, ctx) => {
+		if (!disciplineBootstrapPending) return undefined;
+		if (ctx.mode === "rpc" || permissionEnvironment.JERO_PI_AGENTS_CHILD === "1") return undefined;
+		const messages = applyJeroBootstrap(event.messages);
+		return messages === undefined ? undefined : { messages: messages as typeof event.messages };
 	});
 
 	pi.on("tool_call", async (event, ctx) => {
@@ -724,8 +775,20 @@ function createJeroAiExtensionForTesting(
 		}
 		if (realpathSync(ctx.cwd) !== request.workspaceRoot || realpathSync(changeRoot) !== changeRoot) throw new Error("Native SDD continuation workspace changed during confirmation.");
 		checkMarker();
+		// SDD 工件收缩守卫（lib/jero-ai-sdd-guard.ts）：与"最后 seen-good"
+		// 水位对比发现灾难性截断/消失时要求显式确认；拒绝则只展示状态，
+		// 任何文件都不动。确认或无收缩都继续，成功推进后记录新水位。
+		const shrink = evaluateSddArtifactShrink(changeRoot);
+		if (shrink.shrunk.length > 0) {
+			if (await ctx.ui.confirm("SDD artifact shrink detected?", renderSddShrinkReport(shrink.shrunk)) !== true) {
+				showCommandSddStatus(status, parsed.json, ctx);
+				return;
+			}
+		}
 		const selected = { ...request, changeName: status.changeName };
-		showCommandSddStatus(decodeNativeSddStatusV2(await nativeReviewCli.sddContinue(selected), selected), parsed.json, ctx);
+		const continued = decodeNativeSddStatusV2(await nativeReviewCli.sddContinue(selected), selected);
+		try { recordSddArtifactWatermarks(changeRoot); } catch { /* 水位记录失败不掩盖已成功的推进。 */ }
+		showCommandSddStatus(continued, parsed.json, ctx);
 	};
 
 	pi.registerCommand("jero-sdd-continue", {
@@ -768,9 +831,11 @@ function createJeroAiExtensionForTesting(
 			);
 			const modelConfig = await readSavedModelConfigAsync(ctx.cwd);
 			const engramActive = hasWritableMemoryTool(pi);
+			const companionLines = companionDependencyDiagnosticLines();
 			const lines = [
 				"el Jero doctor",
 				...assetLines,
+				...companionLines,
 				`${openspecConfigured ? "pass" : "warn"}: OpenSpec config ${openspecConfigured ? "present" : "missing"}`,
 				`${skillRegistryPresent ? "pass" : "warn"}: Skill registry ${skillRegistryPresent ? "present" : "missing"}`,
 				`${modelConfig.status === "invalid" ? "fail" : "pass"}: Global model config ${modelConfig.status}`,
@@ -783,7 +848,9 @@ function createJeroAiExtensionForTesting(
 			}
 			ctx.ui.notify(
 				lines.join("\n"),
-				lines.some((line) => line.startsWith("fail:")) || assetLines.some((line) => line.startsWith("warn:")) ? "warning" : "info",
+				lines.some((line) => line.startsWith("fail:")) ||
+					assetLines.some((line) => line.startsWith("warn:")) ||
+					companionLines.some((line) => line.startsWith("warn:")) ? "warning" : "info",
 			);
 		},
 	});
@@ -856,7 +923,7 @@ function createJeroAiExtensionForTesting(
 				// 这一点说出来，并指明能解决它的全局记录编辑。
 				const requested = subAction === NATIVE_REVIEW_MODE_OPERATION.ENABLE ? "on" : subAction === NATIVE_REVIEW_MODE_OPERATION.DISABLE ? "off" : result.status.effective;
 				if (result.status.effective !== requested) {
-					ctx.ui.notify(`${report}\n这并未重新开启评审：/jero:review-mode enable 只会清除 clone-local 覆盖，无法压过全局 off。请将 \{"schema":"jero.authority.review-mode/v1","value":"on"\} 写入 ${join(gentleAiConfigHome(), "review-mode.json")} 以重新开启。`, "warning");
+					ctx.ui.notify(`${report}\n这并未重新开启评审：/jero:review-mode enable 只会清除 clone-local 覆盖，无法压过全局 off。请将 \{"schema":"jero.authority.review-mode/v1","value":"on"\} 写入 ${join(jeroConfigHome(), "review-mode.json")} 以重新开启。`, "warning");
 					return;
 				}
 				ctx.ui.notify(report, "info");
@@ -954,7 +1021,7 @@ function createJeroAiExtensionForTesting(
 	};
 }
 
-export default function gentleAi(pi: ExtensionAPI): void {
+export default function jeroAi(pi: ExtensionAPI): void {
 	return createJeroAiExtension()(pi);
 }
 
@@ -1014,7 +1081,14 @@ import {
 	LEAN_MODE_ENTRY_TYPE, parseLeanCommand,
 	resolveEffectiveLeanMode, renderLeanStatusLine, type LeanBranchEntry,
 } from "../lib/jero-ai-lean.ts";
-import { buildGentlePrompt, loadReviewContractPromptFragment } from "../lib/jero-ai-prompts.ts";
+import {
+	CONTEXT_COMPACT_RECOVERY_MESSAGE, contextMonitorEnabled, evaluateContextMonitor,
+	type ContextMonitorLevel, type ContextUsageSnapshot,
+} from "../lib/jero-ai-context-monitor.ts";
+import { applyJeroBootstrap } from "../lib/jero-ai-bootstrap.ts";
+import { companionDependencyDiagnosticLines } from "../lib/jero-ai-companion-deps.ts";
+import { evaluateSddArtifactShrink, recordSddArtifactWatermarks, renderSddShrinkReport } from "../lib/jero-ai-sdd-guard.ts";
+import { buildJeroPrompt, loadReviewContractPromptFragment } from "../lib/jero-ai-prompts.ts";
 import { setGuardrailsProcessEnv } from "../lib/jero-ai-guardrails.ts";
 import { guardReportLines } from "../lib/jero-ai-guard-report.ts";
 import {
@@ -1023,7 +1097,7 @@ import {
 	sddPhaseFromAgentStartEvent
 } from "../lib/jero-ai-sdd-startup.ts";
 import { confirmCommand, createHerdrConfirmationLifecycle } from "../lib/jero-ai-herdr-confirm.ts";
-import { gentleAiConfigHome, isRecord, legacyProjectModelConfigPath, modelConfigPath, readPersonaMode } from "../lib/jero-ai-persona-config.ts";
+import { jeroConfigHome, isRecord, legacyProjectModelConfigPath, modelConfigPath, readPersonaMode } from "../lib/jero-ai-persona-config.ts";
 import { readSavedModelConfigAsync } from "../lib/jero-ai-model-config.ts";
 import { applyModelConfig, applySavedModelConfig, describeModelConfig, migrateLegacyProjectModelOverrides } from "../lib/jero-ai-model-routing-apply.ts";
 import { handleModelsCommand } from "../lib/jero-ai-model-panel.ts";
@@ -1044,6 +1118,8 @@ import {
 	reviewSessionManagerAndId
 } from "../lib/jero-ai-review-consent.ts";
 import { resolveReviewControllerWorkspaceRoot } from "../lib/jero-ai-review-native-ops.ts";
+import { reviewTrivialityHint } from "../lib/jero-ai-review-hint.ts";
+import { assessJeroReviewRiskV1 } from "../lib/authority/risk-assess.ts";
 import { resolveNegotiatedReviewStatusForSession } from "../lib/jero-ai-review-transport.ts";
 import { executeReviewCaptureGroupOperation, executeReviewCaptureOperation, renderAgentEndReviewPreflightMessage } from "../lib/jero-ai-review-select.ts";
 import { executeReviewControllerOperation } from "../lib/jero-ai-review-controller.ts";

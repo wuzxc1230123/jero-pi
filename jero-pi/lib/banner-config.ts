@@ -64,12 +64,12 @@ export function rgb(r: number, g: number, b: number, text: string): string {
   return `\x1b[38;2;${r};${g};${b}m${text}\x1b[39m`;
 }
 
-function gentleAiConfigHome(): string {
+function jeroConfigHome(): string {
   return process.env.JERO_PI_CONFIG_HOME ?? join(os.homedir(), ".pi", "jero");
 }
 
 export function bannerConfigPath(): string {
-  return join(gentleAiConfigHome(), "banner.json");
+  return join(jeroConfigHome(), "banner.json");
 }
 
 function normalizeBannerConfig(value: unknown): BannerConfig {

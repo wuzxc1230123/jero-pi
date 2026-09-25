@@ -3,7 +3,7 @@ import { isFinished, TASK_STATUS, type TaskRecord, type TaskStatus } from "./age
 import { formatTokens } from "./shell-bar.ts";
 import { CARD_TONE, cardInnerWidth, renderCard, type CardTheme, type CardTone } from "./shell-card.ts";
 
-// Gentle Agents 挂件：编辑器上方的卡片。只读取任务记录
+// Jero Agents 挂件：编辑器上方的卡片。只读取任务记录
 // （状态、提示词、计数器、时间戳），因此绘制不随事件产生开销。
 // 每个任务一行：字形、代理、任务摘要，随后右对齐的
 // model · effort · tokens · cost · time。

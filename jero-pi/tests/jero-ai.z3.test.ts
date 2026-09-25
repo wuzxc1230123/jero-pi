@@ -20,7 +20,7 @@ import { stripAnsi } from "../lib/terminal-theme.ts";
 import { cardBody, cardHint, cardTitle, cardTone } from "./gentle-card-text.ts";
 import {
 	cleanWorkspaceStatus, lifecycleContext, lifecycleTheme, offeredCommittedRangeStatus,
-	registeredGentleTools, renderComponent, reviewRepository, type ReviewStartRepository,
+	registeredJeroTools, renderComponent, reviewRepository, type ReviewStartRepository,
 	startedReviewResult, writeMarkdown,
 	routingConsumerFixture,
 } from "./jero-ai-shared.ts";

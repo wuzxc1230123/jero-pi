@@ -1,17 +1,19 @@
 #!/usr/bin/env node
-// Type gate for a project that does not compile cleanly yet.
+// Type gate: holds the diagnostic baseline at its current level.
 //
-// `tsc --noEmit` reports a fixed set of diagnostics on this repository today, so
-// the gate is a ratchet rather than a clean pass: it fails when the number of
-// diagnostics grows for any (file, error code) pair, or when the total grows.
-// Fixing diagnostics and refreshing the baseline is the intended way to shrink
-// it.
+// `tsc --noEmit` is compared against scripts/types-baseline.json by
+// (file, error code) counts: the gate fails when the number of diagnostics
+// grows for any pair, or when the total grows. The baseline is currently zero
+// (the repository compiles cleanly), so the gate's job is to keep it there —
+// any new diagnostic fails the build until it is fixed or the baseline is
+// consciously refreshed with `--update` after review.
 //
 // Known blind spot, stated rather than hidden: keying on (file, code) counts is
 // what keeps the baseline stable while files are edited, because line numbers
 // shift. A single change that removes one diagnostic and introduces another of
-// the same code in the same file therefore passes. The total check catches that
-// whenever the counts differ at all.
+// the same code in the same file therefore passes. With a zero baseline the
+// total check alone already catches everything; the per-pair keying only
+// matters again if the baseline is ever raised above zero.
 //
 // Usage:
 //   node scripts/check-types.mjs            fail on any new diagnostic

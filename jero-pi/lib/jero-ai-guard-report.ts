@@ -14,7 +14,7 @@ import {
 	GUARDED_KEY_PATTERNS,
 	parseGuardrailsConfigFile,
 } from "./jero-ai-guardrails.ts";
-import { gentleAiConfigHome } from "./jero-ai-persona-config.ts";
+import { jeroConfigHome } from "./jero-ai-persona-config.ts";
 import { BACKGROUND_SUBAGENTS_FILE, renderBackgroundSubagentsReport, resolveBackgroundSubagentsPolicy } from "./jero-ai-background-subagents.ts";
 import { resolveBackgroundSubagentsCapability } from "./jero-ai-writer-scope.ts";
 
@@ -42,9 +42,9 @@ export interface GuardrailsStatus {
 /** 解析有效护栏配置及其来源链（与 loadRuntimeGuardrailsConfig 同序，只读旁路）。 */
 export function resolveGuardrailsStatus(
 	cwd: string,
-	options: { env?: NodeJS.ProcessEnv; gentlePiConfigHome?: string } = {},
+	options: { env?: NodeJS.ProcessEnv; jeroPiConfigHome?: string } = {},
 ): GuardrailsStatus {
-	const configHome = options.gentlePiConfigHome ?? gentleAiConfigHome();
+	const configHome = options.jeroPiConfigHome ?? jeroConfigHome();
 	const globalFile = join(configHome, "runtime-guardrails.json");
 	const projectFile = join(cwd, ".pi", "jero", "runtime-guardrails.json");
 	const globalFileExists = existsSync(globalFile);
@@ -127,7 +127,7 @@ const ACTION_LABELS: Record<string, string> = {
 };
 
 /** 傻瓜式报告：状态 + 每条命令的生效动作与来源 + 硬拒绝清单 + 可照抄模板。 */
-export function guardReportLines(cwd: string, options: { env?: NodeJS.ProcessEnv; gentlePiConfigHome?: string } = {}): string[] {
+export function guardReportLines(cwd: string, options: { env?: NodeJS.ProcessEnv; jeroPiConfigHome?: string } = {}): string[] {
 	const status = resolveGuardrailsStatus(cwd, options);
 	const lines: string[] = [
 		"el Jero guard —— 防护配置总览",

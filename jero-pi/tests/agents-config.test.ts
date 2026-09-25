@@ -17,7 +17,7 @@ import {
 } from "../lib/agents-config.ts";
 import { THINKING_LEVELS } from "../lib/model-routing-authority.ts";
 
-// Gentle Agents configuration: markdown agent definitions (the same files
+// Jero Agents configuration: markdown agent definitions (the same files
 // gentle-ai installs) and subagents.json, both parsed without touching pi.
 
 const root = mkdtempSync(join(tmpdir(), "gentle-agents-config-"));

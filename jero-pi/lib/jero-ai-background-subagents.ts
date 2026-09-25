@@ -5,7 +5,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { loadRuntimeGuardrailsConfig } from "./jero-ai-guardrails.ts";
-import { gentleAiConfigHome, isRecord } from "./jero-ai-persona-config.ts";
+import { jeroConfigHome, isRecord } from "./jero-ai-persona-config.ts";
 
 
 // ---------------------------------------------------------------------------
@@ -52,7 +52,7 @@ interface BackgroundSubagentsResolution {
 
 interface LoadBackgroundSubagentsOptions {
 	/** 覆盖配置主目录（测试中用于避免触碰 ~/.pi）。 */
-	gentlePiConfigHome?: string;
+	jeroPiConfigHome?: string;
 	/** 覆盖环境变量查找（测试用）。 */
 	env?: Record<string, string | undefined>;
 }
@@ -143,7 +143,7 @@ export function resolveBackgroundSubagentsPolicy(
 	let projectFile = "";
 	let globalFile = "";
 	try {
-		const configHome = options.gentlePiConfigHome ?? gentleAiConfigHome();
+		const configHome = options.jeroPiConfigHome ?? jeroConfigHome();
 		projectFile = join(cwd, ".pi", "jero", BACKGROUND_SUBAGENTS_FILE);
 		globalFile = join(configHome, BACKGROUND_SUBAGENTS_FILE);
 		const projectFileExists = existsSync(projectFile);
@@ -207,7 +207,7 @@ export function loadBackgroundSubagentsPolicy(
 /** 写入全局策略文件，必要时创建配置主目录。 */
 export function writeGlobalBackgroundSubagentsPolicy(
 	policy: BackgroundSubagentsPolicy,
-	configHome: string = gentleAiConfigHome(),
+	configHome: string = jeroConfigHome(),
 ): string {
 	const path = join(configHome, BACKGROUND_SUBAGENTS_FILE);
 	mkdirSync(configHome, { recursive: true });

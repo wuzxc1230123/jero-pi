@@ -16,7 +16,7 @@ import { type ExtensionAPI, type ExtensionContext } from "@earendil-works/pi-cod
 import { type TuiMouseEvent, visibleWidth } from "@earendil-works/pi-tui";
 import {
 	agentRuntimePaths, agentsCollapseKey, type AgentsDeps, agentsEnabled, agentsStopKey,
-	agentsViewKey, answerThroughUi, completionText, default as gentleAgents,
+	agentsViewKey, answerThroughUi, completionText, default as jeroAgents,
 	legacySubagentsInstalled
 } from "../extensions/jero-agents.ts";
 import { historyDir, loadHistory, saveTask } from "../lib/agents-history.ts";
@@ -81,7 +81,7 @@ test("default Node spawn adapter distinguishes IPC-only and permission-capable c
 	try {
 		const launch = async (mode: "task" | "background", env: NodeJS.ProcessEnv, sessionCwd = nonGitCwd) => {
 			const h = fakePi();
-			gentleAgents(h.pi, env, { home, agentHome: join(home, ".pi", "agent"), env, pi: { command: "/fixture/pi", args: ["--host-flag"] }, resolveWorktree: () => undefined });
+			jeroAgents(h.pi, env, { home, agentHome: join(home, ".pi", "agent"), env, pi: { command: "/fixture/pi", args: ["--host-flag"] }, resolveWorktree: () => undefined });
 			const { ctx } = fakeContext();
 			(ctx.sessionManager as unknown as { getCwd(): string }).getCwd = () => sessionCwd;
 			await h.fire("session_start", ctx);
@@ -146,7 +146,7 @@ test("native spawn interception restores CommonJS and ESM exports after rejected
 				return undefined;
 			};
 		}
-		gentleAgents(h.pi, {}, { home, agentHome: join(home, ".pi", "agent"), env: { PATH: "/bin" }, pi: { command: "/fixture/pi", args: [] }, resolveWorktree: () => undefined });
+		jeroAgents(h.pi, {}, { home, agentHome: join(home, ".pi", "agent"), env: { PATH: "/bin" }, pi: { command: "/fixture/pi", args: [] }, resolveWorktree: () => undefined });
 		const { ctx } = fakeContext();
 		await h.fire("session_start", ctx);
 		await h.tools.get("subagent_run")!.execute("cleanup", { agent: "explore", task: "Keep cleanup live", mode: "background" }, undefined, undefined, ctx);
@@ -209,7 +209,7 @@ test("explicit child roots launch and continue in the actual cwd, persist withou
 		return child;
 	};
 	runtime.deps.resolveWorktree = (path, base) => ({ root: resolve(base, path), commonDir: path === "/other-clone" ? "/other/git" : "/fixture/common" });
-	gentleAgents(h.pi, {}, runtime.deps);
+	jeroAgents(h.pi, {}, runtime.deps);
 	const { ctx } = fakeContext();
 	(ctx.sessionManager as unknown as { getEntries(): unknown[] }).getEntries = () => h.entries;
 	await h.fire("session_start", ctx);
@@ -223,7 +223,7 @@ test("explicit child roots launch and continue in the actual cwd, persist withou
 	spawnEvents[0]();
 	assert.deepEqual(h.entries, [{ type: "custom", customType: SESSION_WORKTREE_ENTRY, data: { sessionId: "s1", root: childRoot, evidence: "subagent:spawn" } }]);
 	assert.deepEqual(h.events.filter(event => event.name === SESSION_WORKTREE_CHANGED), [{ name: SESSION_WORKTREE_CHANGED, data: { sessionId: "s1" } }]);
-	const details = result.details.gentleAgents as { taskId: string; cwd: string };
+	const details = result.details.jeroAgents as { taskId: string; cwd: string };
 	assert.equal(details.cwd, childRoot);
 	runtime.children[0].emit({ type: "agent_end", messages: [{ role: "assistant", content: [{ type: "text", text: "mapped" }] }] });
 	runtime.children[0].emit({ type: "agent_settled" });
@@ -247,7 +247,7 @@ test("SDD phase continuation requires a fresh selection and launches only that s
 	const fixtureHome = join(root, "sdd-selection-home");
 	mkdirSync(join(fixtureHome, ".pi", "agent", "agents"), { recursive: true });
 	writeFileSync(join(fixtureHome, ".pi", "agent", "agents", "sdd-apply.md"), "---\ndescription: apply\ntools: [read]\n---\nSDD apply executor");
-	gentleAgents(h.pi, {}, { ...runtime.deps, home: fixtureHome });
+	jeroAgents(h.pi, {}, { ...runtime.deps, home: fixtureHome });
 	const { ctx } = fakeContext();
 	await h.fire("session_start", ctx);
 	const run = await h.tools.get("subagent_run")!.execute("run", {
@@ -255,7 +255,7 @@ test("SDD phase continuation requires a fresh selection and launches only that s
 		sdd_change: { changeName: "alpha", workspaceRoot: cwd, phase: "apply" },
 	}, undefined, undefined, ctx);
 	await tick();
-	const taskId = (run.details.gentleAgents as { taskId: string }).taskId;
+	const taskId = (run.details.jeroAgents as { taskId: string }).taskId;
 	const first = runtime.spawned[0]!;
 	assert.deepEqual(JSON.parse(first[first.indexOf("--jero-sdd-change") + 1]!), { changeName: "alpha", workspaceRoot: cwd, phase: "apply" });
 	runtime.children[0].emit({ type: "agent_end", messages: [{ role: "assistant", content: [{ type: "text", text: "done" }] }] });
@@ -278,7 +278,7 @@ test("ordinary non-Git tasks still continue in their original cwd without regist
 	const h = fakePi();
 	const runtime = deps();
 	runtime.deps.resolveWorktree = () => undefined;
-	gentleAgents(h.pi, {}, runtime.deps);
+	jeroAgents(h.pi, {}, runtime.deps);
 	const { ctx } = fakeContext();
 	await h.fire("session_start", ctx);
 	const result = await h.tools.get("subagent_run")!.execute("run", { agent: "explore", task: "Map", mode: "background" }, undefined, undefined, ctx);
@@ -286,7 +286,7 @@ test("ordinary non-Git tasks still continue in their original cwd without regist
 	runtime.children[0].emit({ type: "agent_end", messages: [{ role: "assistant", content: [{ type: "text", text: "mapped" }] }] });
 	runtime.children[0].emit({ type: "agent_settled" });
 	await tick();
-	const taskId = (result.details.gentleAgents as { taskId: string }).taskId;
+	const taskId = (result.details.jeroAgents as { taskId: string }).taskId;
 	await h.tools.get("subagent_continue")!.execute("continue", { task_id: taskId, prompt: "Follow up", mode: "background" }, undefined, undefined, ctx);
 	await tick();
 	assert.equal(runtime.children.length, 2);
@@ -310,7 +310,7 @@ test("delayed child spawn retains the originating session and cannot append into
 		}) as typeof child.on;
 		return child;
 	};
-	gentleAgents(h.pi, {}, runtime.deps);
+	jeroAgents(h.pi, {}, runtime.deps);
 	const { ctx } = fakeContext();
 	await h.fire("session_start", ctx);
 	await h.tools.get("subagent_run")!.execute("run", { agent: "explore", task: "Map", workspace_root: join(root, "old-root"), mode: "background" }, undefined, undefined, ctx);
@@ -352,12 +352,12 @@ test("extension resolves each profile environment at setup time without changing
 		return overrides;
 	};
 	const principal = fakePi();
-	gentleAgents(principal.pi, { JERO_PI_AGENT_HOME: principalHome, PI_CODING_AGENT_DIR: labHome }, withoutExplicitHome());
+	jeroAgents(principal.pi, { JERO_PI_AGENT_HOME: principalHome, PI_CODING_AGENT_DIR: labHome }, withoutExplicitHome());
 	const principalContext = fakeContext();
 	await principal.fire("session_start", principalContext.ctx);
 	assert.match((await principal.tools.get("subagent_list_agents")!.execute("p1", {}, undefined, undefined, principalContext.ctx)).content[0].text, /principal/);
 	const lab = fakePi();
-	gentleAgents(lab.pi, { PI_CODING_AGENT_DIR: labHome }, withoutExplicitHome());
+	jeroAgents(lab.pi, { PI_CODING_AGENT_DIR: labHome }, withoutExplicitHome());
 	const labContext = fakeContext();
 	await lab.fire("session_start", labContext.ctx);
 	assert.match((await lab.tools.get("subagent_list_agents")!.execute("l1", {}, undefined, undefined, labContext.ctx)).content[0].text, /lab/);
@@ -373,7 +373,7 @@ for (const [key, tilde] of [["JERO_PI_AGENT_HOME", false], ["PI_CODING_AGENT_DIR
 		const harness = deps();
 		const { home: _home, env: _env, ...overrides } = harness.deps;
 		const { pi, tools, fire } = fakePi();
-		gentleAgents(pi, env, overrides);
+		jeroAgents(pi, env, overrides);
 		const { ctx } = fakeContext();
 		assert.notEqual(ctx.sessionManager.getCwd(), process.cwd());
 		await fire("session_start", ctx);
@@ -406,7 +406,7 @@ test("agentsEnabled and agentsCollapseKey read their flags and stay off inside a
 	assert.equal(agentsStopKey({ JERO_PI_AGENTS_STOP_KEY: "" }), undefined);
 	assert.equal(agentsStopKey({ JERO_PI_AGENTS_STOP_KEY: "off" }), undefined);
 	const off = fakePi();
-	gentleAgents(off.pi, { JERO_PI_AGENTS: "0" });
+	jeroAgents(off.pi, { JERO_PI_AGENTS: "0" });
 	assert.equal(off.tools.size, 0);
 });
 
@@ -418,18 +418,18 @@ test("while pi-subagents-j0k3r is still installed the tools stay unregistered an
 	assert.equal(legacySubagentsInstalled(home), false);
 	assert.equal(legacySubagentsInstalled(join(root, "missing")), false);
 	const { pi, tools, fire } = fakePi();
-	gentleAgents(pi, {}, { ...deps().deps, home: legacyHome });
+	jeroAgents(pi, {}, { ...deps().deps, home: legacyHome });
 	assert.equal(tools.size, 0);
 	const notices: string[] = [];
 	const ctx = { hasUI: true, ui: { notify: (message: string, level: string) => notices.push(`${level}:${message}`) } } as unknown as ExtensionContext;
 	await fire("session_start", ctx);
-	assert.match(notices[0] ?? "", /^warning:❀ Gentle Agents is waiting: remove the old package first with "pi remove npm:pi-subagents-j0k3r"/);
+	assert.match(notices[0] ?? "", /^warning:❀ Jero Agents is waiting: remove the old package first with "pi remove npm:pi-subagents-j0k3r"/);
 });
 
 test("subagent_list_agents and subagent_run in task mode launch a child with the resolved profile and return its answer", async () => {
 	const { pi, tools, fire } = fakePi();
 	const harness = deps();
-	gentleAgents(pi, {}, harness.deps);
+	jeroAgents(pi, {}, harness.deps);
 	const { ctx, widget } = fakeContext();
 	await fire("session_start", ctx);
 	assert.deepEqual([...tools.keys()].sort(), ["subagent_cancel", "subagent_continue", "subagent_list_agents", "subagent_list_tasks", "subagent_reconcile", "subagent_reply", "subagent_result", "subagent_run", "subagent_send_message", "subagent_status"]);
@@ -453,7 +453,7 @@ test("subagent_list_agents and subagent_run in task mode launch a child with the
 	harness.children[0].emit({ type: "agent_settled" });
 	const result = await running;
 	assert.equal(result.content[0].text, "lib has three agent files.");
-	assert.equal((result.details.gentleAgents as { status: string }).status, "completed");
+	assert.equal((result.details.jeroAgents as { status: string }).status, "completed");
 	assert.match(widget()![1], /✓  explore  map lib modules/);
 	const orphan = tools.get("subagent_run")!.execute("c9", { agent: "explore", task: "Orphan", mode: "background" }, undefined, undefined, ctx);
 	await orphan;
@@ -467,11 +467,11 @@ test("subagent_list_agents and subagent_run in task mode launch a child with the
 test("background runs return at once; status, result, send_message, cancel, and continue follow the task", async () => {
 	const { pi, tools, fire, sent, renderers } = fakePi();
 	const harness = deps();
-	gentleAgents(pi, {}, harness.deps);
+	jeroAgents(pi, {}, harness.deps);
 	const { ctx } = fakeContext();
 	await fire("session_start", ctx);
 	const started = await tools.get("subagent_run")!.execute("c1", { agent: "explore", task: "Long job", mode: "background" }, undefined, undefined, ctx);
-	const id = (started.details.gentleAgents as { taskId: string }).taskId;
+	const id = (started.details.jeroAgents as { taskId: string }).taskId;
 	assert.match(started.content[0].text, new RegExp(`background as task ${id}`));
 	await tick();
 	assert.match((await tools.get("subagent_status")!.execute("c2", { task_id: id }, undefined, undefined, ctx)).content[0].text, /running · background/);
@@ -524,7 +524,7 @@ test("once the last task is done the card asks for one frame when its finished r
 			timer.cancelled = true;
 		};
 	};
-	gentleAgents(pi, {}, harness.deps);
+	jeroAgents(pi, {}, harness.deps);
 	let frames = 0;
 	const { ctx, widget } = fakeContext({ requestRender: () => (frames += 1) });
 	await fire("session_start", ctx);
@@ -554,7 +554,7 @@ test("completionText names the outcome before the answer", () => {
 test("a task-mode child's dialog reaches the host UI and the answer goes back to the child", async () => {
 	const { pi, tools, fire } = fakePi();
 	const harness = deps();
-	gentleAgents(pi, {}, harness.deps);
+	jeroAgents(pi, {}, harness.deps);
 	const { ctx, dialogs, widget } = fakeContext();
 	await fire("session_start", ctx);
 	const running = tools.get("subagent_run")!.execute("c1", { agent: "explore", task: "Ask me" }, undefined, undefined, ctx);
@@ -577,7 +577,7 @@ test("a task-mode child's dialog reaches the host UI and the answer goes back to
 test("AgentsView production composition observes each pointer event once and accepts only left clicks", async () => {
 	const { pi, tools, fire, commands } = fakePi();
 	const harness = deps();
-	gentleAgents(pi, {}, harness.deps);
+	jeroAgents(pi, {}, harness.deps);
 	const { ctx, overlays, customCompletions } = fakeContext();
 	await fire("session_start", ctx);
 
@@ -647,7 +647,7 @@ test("AgentsView production footer uses rendered bounds and invalidates them bef
 	writeFileSync(join(home, ".pi", "agent", "agents", "寿司.md"), "---\ndescription: unicode footer target\nmodel: openai-codex/gpt-5.6-terra\n---\nFooter target.");
 	const { pi, tools, fire, commands } = fakePi();
 	const harness = deps();
-	gentleAgents(pi, {}, harness.deps);
+	jeroAgents(pi, {}, harness.deps);
 	const { ctx, overlays, customCompletions } = fakeContext();
 	(ctx as unknown as { sessionManager: { getSessionId(): string; getCwd(): string } }).sessionManager = { getSessionId: () => "footer-session", getCwd: () => cwd };
 	await fire("session_start", ctx);
@@ -722,11 +722,11 @@ test("AgentsView production footer uses rendered bounds and invalidates them bef
 test("finished tasks remain available through resolveTask but never reappear in the live-only overlay", async () => {
 	const { pi, tools, fire, commands, shortcuts } = fakePi();
 	const harness = deps();
-	gentleAgents(pi, {}, harness.deps);
+	jeroAgents(pi, {}, harness.deps);
 	const { ctx, overlays } = fakeContext();
 	await fire("session_start", ctx);
 	const started = await tools.get("subagent_run")!.execute("c1", { agent: "explore", task: "Persist me", mode: "background" }, undefined, undefined, ctx);
-	const id = (started.details.gentleAgents as { taskId: string }).taskId;
+	const id = (started.details.jeroAgents as { taskId: string }).taskId;
 	await tick();
 	harness.children[0].emit({ type: "agent_end", messages: [{ role: "assistant", content: [{ type: "text", text: "Kept." }] }] });
 	harness.children[0].emit({ type: "agent_settled" });
@@ -740,7 +740,7 @@ test("finished tasks remain available through resolveTask but never reappear in 
 	assert.ok(stored.some((entry) => entry.task.id === id && entry.task.result === "Kept."), "the finished task is on disk");
 
 	const fresh = fakePi();
-	gentleAgents(fresh.pi, {}, deps().deps);
+	jeroAgents(fresh.pi, {}, deps().deps);
 	const again = fakeContext();
 	await fresh.fire("session_start", again.ctx);
 	assert.equal((await fresh.tools.get("subagent_result")!.execute("c2", { task_id: id }, undefined, undefined, again.ctx)).content[0].text, "Kept.");

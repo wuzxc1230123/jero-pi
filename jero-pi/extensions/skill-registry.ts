@@ -28,7 +28,7 @@ const LEGACY_PROJECT_REGISTRY_REL_PATH = ".pi/extensions/skill-registry.ts";
 const LEGACY_PROJECT_REGISTRY_DISABLED_REL_PATH =
 	".pi/extensions/skill-registry.ts.disabled";
 const SKILL_REGISTRY_EXTENSION_SOURCE_KEY =
-	"__gentlePiSkillRegistryExtensionSource";
+	"__jeroPiSkillRegistryExtensionSource";
 const activeWatchers = new Set<FSWatcher>();
 
 interface SkillRegistryExtensionGlobal {

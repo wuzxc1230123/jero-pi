@@ -238,9 +238,9 @@ test("child session diff evidence travels only with a paired successful tool out
  const child = h.children[0];
  const evidence = {id:"w",root:"/repo",path:"src/file.ts",before:{kind:"absent"},after:{kind:"text",text:"agent\n"}};
  child.emit({type:"tool_execution_start",toolCallId:"w",toolName:"write",args:{path:"src/file.ts"}});
- child.emit({type:"tool_execution_end",toolCallId:"w",isError:false,result:{content:[],details:{gentleSessionChange:evidence}}});
+ child.emit({type:"tool_execution_end",toolCallId:"w",isError:false,result:{content:[],details:{jeroSessionChange:evidence}}});
  assert.deepEqual(observed[0].evidence,evidence);
- child.emit({type:"tool_execution_end",toolCallId:"w",isError:false,result:{content:[],details:{gentleSessionChange:evidence}}});
+ child.emit({type:"tool_execution_end",toolCallId:"w",isError:false,result:{content:[],details:{jeroSessionChange:evidence}}});
  assert.equal(observed.length,1);
  h.runner.cancel(task.id); await tick();
 });

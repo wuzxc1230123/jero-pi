@@ -23,14 +23,6 @@ const CHAIN = "assets/chains/4r-review.chain.md";
 const SDD_WORKFLOW = "assets/sdd-orchestrator-workflow.md";
 const RELEASE_SKILL = "skills/release/SKILL.md";
 const WORKER = "assets/agents/jero-worker.md";
-const CANONICAL_LIFECYCLE_SPECS = [
-	"openspec/specs/review-orchestration/spec.md",
-	"openspec/specs/review-transaction/spec.md",
-] as const;
-const HISTORICAL_LIFECYCLE_SPECS = [
-	"openspec/changes/complete-native-review-lifecycle/specs/review-orchestration/spec.md",
-	"openspec/changes/complete-native-review-lifecycle/specs/review-transaction/spec.md",
-] as const;
 
 function read(path: string): string {
 	return readFileSync(join(ROOT, path), "utf8");
@@ -239,32 +231,10 @@ test("ordinary lens prompts contain the literal compact-v2 native result envelop
 	}
 });
 
-test("canonical ordinary review specs preserve the negotiated one-correction contract", (t) => {
-	if (!CANONICAL_LIFECYCLE_SPECS.every((path) => existsSync(join(ROOT, path)))) {
-		return t.skip("openspec lifecycle specs are absent from this tree (uncommitted openspec/ retirement)");
-	}
-	for (const path of CANONICAL_LIFECYCLE_SPECS) {
-		const content = read(path);
-		assert.match(content, /one correction transaction/i, path);
-		assert.match(content, /original.*budget|budget.*original/i, path);
-		assert.match(content, /never reruns initial lenses|without rerunning initial (?:lenses|review)/i, path);
-		assert.match(content, /correction_required/, path);
-		assert.match(content, /failure escalates|failed.*escalates|MUST escalate/i, path);
-		assert.match(content, /forecast/i, path);
-		assert.doesNotMatch(content, /up to three failed targeted attempts|third failed attempt/i, path);
-	}
-});
-
-test("historical lifecycle change specs preserve their completed one-attempt design context", (t) => {
-	if (!HISTORICAL_LIFECYCLE_SPECS.every((path) => existsSync(join(ROOT, path)))) {
-		return t.skip("openspec lifecycle specs are absent from this tree (uncommitted openspec/ retirement)");
-	}
-	for (const path of HISTORICAL_LIFECYCLE_SPECS) {
-		const content = read(path);
-		assert.match(content, /at most one correction|one correction batch|After the one correction|GIVEN one exact ordinary correction|one validator and one final verification/i, path);
-		assert.doesNotMatch(content, /up to three failed targeted attempts/i, path);
-	}
-});
+// 注：曾有两个契约测试断言本包自有 openspec/ 树（specs/review-*）保留
+// 一次性纠正措辞；该树已按设计退役出包，契约措辞的权威载体是
+// skills/_shared/review-ledger-contract.md（上方 CANONICAL 测试覆盖），
+// 行为本身由 authority conformance 黄金向量锁定。不再保留空转的 skip。
 
 test("risk lens distinguishes trusted orchestration from concrete boundary bypasses", () => {
 	const content = read("assets/agents/review-risk.md");

@@ -8,7 +8,7 @@ import {
 import { basename, dirname, join, relative } from "node:path";
 import { applySavedModelConfig } from "./jero-ai.ts";
 import { ensureSddPreflight, installPackageAssets } from "../lib/sdd-preflight.ts";
-type ExtensionAPI = any;
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 const CONFIG_REL_PATH = "openspec/config.yaml";
 const MAX_SCAN_FILES = 20_000;

@@ -115,7 +115,7 @@ export default function jeroMemory(pi: ExtensionAPI, env: NodeJS.ProcessEnv = pr
 				return { content: [{ type: "text", text: "mem_save requires a non-empty topic and content." }], details: { error: "invalid-arguments" } };
 			}
 			try {
-				const saved = saveMemory(rootFor(ctx, env), topic, content, {
+				const saved = await saveMemory(rootFor(ctx, env), topic, content, {
 					session: typeof ctx.sessionManager?.getSessionId === "function" ? (ctx.sessionManager.getSessionId() ?? "") : "",
 					tags: asStringArray(args.tags),
 				});

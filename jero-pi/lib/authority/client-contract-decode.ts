@@ -61,7 +61,7 @@ import {
 	NativeReviewCliError,
 	type NativeReviewProcessDiagnostics
 } from "./client-contract-surface.ts";
-export function gentleAiProcessEnvironment(base: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
+export function providerProcessEnvironment(base: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
 	return { ...base };
 }
 

@@ -37,8 +37,8 @@ export function validateNativeStartPolicyPath(cwd: string, value: unknown): Nati
 	const policyRoot = join(repository, ".jero", "policies");
 	const candidate = resolve(repository, value);
 	if (!isStrictDescendantPath(policyRoot, candidate)) return { reason: "policy-path-outside-scope" };
-	const gentleDirectory = join(repository, ".jero");
-	for (const directory of [gentleDirectory, policyRoot]) {
+	const jeroDirectory = join(repository, ".jero");
+	for (const directory of [jeroDirectory, policyRoot]) {
 		try {
 			const metadata = lstatSync(directory);
 			if (metadata.isSymbolicLink()) return { reason: "policy-path-symlink" };
@@ -183,7 +183,7 @@ export function nativeStatusInputRejection(reason: string, field?: string): Reco
 }
 
 export const PENDING_REVIEW_CONSENT_TTL_MS = 10 * 60 * 1000;
-export const REVIEW_SESSION_PERMISSION_STATUS_KEY = "gentle-review-session-permission";
+export const REVIEW_SESSION_PERMISSION_STATUS_KEY = "jero-review-session-permission";
 export const REVIEW_SESSION_PERMISSION_STATUS_TEXT = "reviews allowed for this session";
 
 export type PendingReviewConsentSessionKey = string | symbol;

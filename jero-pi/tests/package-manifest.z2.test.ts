@@ -10,7 +10,7 @@ import { dirname, join } from "node:path";
 import { default as test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { applyModelConfig } from "../extensions/jero-ai.ts";
-import { resolveGentlePiAgentHome } from "../lib/agent-home.ts";
+import { resolveJeroPiAgentHome } from "../lib/agent-home.ts";
 import { getPackageAssetOwner, installPackageAssets, installSddAssets, type PackageAssetOwner } from "../lib/sdd-preflight.ts";
 import {
 	type LegacyManagedAssetsManifest, MANAGED_EXEMPLAR_FILE, MANAGED_EXEMPLAR_TOOLS,
@@ -542,31 +542,31 @@ test("installSddAssets installs jero-worker with a loader-compatible scoped iden
 });
 
 test("agent home resolver centralizes Gentle and Pi agent-dir precedence", () => {
-	const explicitGentleHome = mkdtempSync(join(tmpdir(), "gentle-pi-resolver-explicit-"));
+	const explicitJeroHome = mkdtempSync(join(tmpdir(), "gentle-pi-resolver-explicit-"));
 	const piAgentDir = mkdtempSync(join(tmpdir(), "gentle-pi-resolver-pi-dir-"));
 
 	try {
 		assert.equal(
-			resolveGentlePiAgentHome({
-				JERO_PI_AGENT_HOME: explicitGentleHome,
+			resolveJeroPiAgentHome({
+				JERO_PI_AGENT_HOME: explicitJeroHome,
 				PI_CODING_AGENT_DIR: piAgentDir,
 			}),
-			explicitGentleHome,
+			explicitJeroHome,
 		);
-		assert.equal(resolveGentlePiAgentHome({ PI_CODING_AGENT_DIR: piAgentDir }), piAgentDir);
-		assert.equal(resolveGentlePiAgentHome({}), join(homedir(), ".pi", "agent"));
+		assert.equal(resolveJeroPiAgentHome({ PI_CODING_AGENT_DIR: piAgentDir }), piAgentDir);
+		assert.equal(resolveJeroPiAgentHome({}), join(homedir(), ".pi", "agent"));
 		assert.equal(
-			resolveGentlePiAgentHome({ JERO_PI_AGENT_HOME: "", PI_CODING_AGENT_DIR: piAgentDir }),
+			resolveJeroPiAgentHome({ JERO_PI_AGENT_HOME: "", PI_CODING_AGENT_DIR: piAgentDir }),
 			piAgentDir,
 			"an empty explicit override falls through like Pi Subagents does",
 		);
 		assert.equal(
-			resolveGentlePiAgentHome({ PI_CODING_AGENT_DIR: "" }),
+			resolveJeroPiAgentHome({ PI_CODING_AGENT_DIR: "" }),
 			join(homedir(), ".pi", "agent"),
 			"an empty PI_CODING_AGENT_DIR falls through like Pi Subagents does",
 		);
 	} finally {
-		rmSync(explicitGentleHome, { recursive: true, force: true });
+		rmSync(explicitJeroHome, { recursive: true, force: true });
 		rmSync(piAgentDir, { recursive: true, force: true });
 	}
 });
@@ -575,7 +575,7 @@ test("asset installation uses PI_CODING_AGENT_DIR as the Pi agent home when no e
 	const previousAgentHome = process.env.JERO_PI_AGENT_HOME;
 	const previousPiAgentDir = process.env.PI_CODING_AGENT_DIR;
 	const temporaryPiAgentDir = mkdtempSync(join(tmpdir(), "gentle-pi-agent-dir-"));
-	const explicitGentleHome = mkdtempSync(join(tmpdir(), "gentle-pi-explicit-home-"));
+	const explicitJeroHome = mkdtempSync(join(tmpdir(), "gentle-pi-explicit-home-"));
 
 	try {
 		delete process.env.JERO_PI_AGENT_HOME;
@@ -587,14 +587,14 @@ test("asset installation uses PI_CODING_AGENT_DIR as the Pi agent home when no e
 		assert.ok(existsSync(installedPath), "managed agents must install where Pi Subagents reads global definitions");
 		assert.deepEqual(readAgentDefinition(installedPath).tools, MANAGED_EXEMPLAR_TOOLS);
 		assert.ok(
-			!existsSync(join(explicitGentleHome, "agents", "jero-explore.md")),
+			!existsSync(join(explicitJeroHome, "agents", "jero-explore.md")),
 			"the explicit override fixture must still be untouched before it is selected",
 		);
 
-		process.env.JERO_PI_AGENT_HOME = explicitGentleHome;
+		process.env.JERO_PI_AGENT_HOME = explicitJeroHome;
 		await installSddAssets(PACKAGE_ROOT, true);
 		assert.ok(
-			existsSync(join(explicitGentleHome, "agents", "jero-explore.md")),
+			existsSync(join(explicitJeroHome, "agents", "jero-explore.md")),
 			"JERO_PI_AGENT_HOME remains the explicit test/operator override",
 		);
 	} finally {
@@ -603,7 +603,7 @@ test("asset installation uses PI_CODING_AGENT_DIR as the Pi agent home when no e
 		if (previousPiAgentDir === undefined) delete process.env.PI_CODING_AGENT_DIR;
 		else process.env.PI_CODING_AGENT_DIR = previousPiAgentDir;
 		rmSync(temporaryPiAgentDir, { recursive: true, force: true });
-		rmSync(explicitGentleHome, { recursive: true, force: true });
+		rmSync(explicitJeroHome, { recursive: true, force: true });
 	}
 });
 
