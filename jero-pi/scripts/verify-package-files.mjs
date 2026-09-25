@@ -53,10 +53,6 @@ const requiredPaths = [
 	"assets/support/sdd-status-contract.md",
 	"assets/support/strict-tdd.md",
 	"assets/support/strict-tdd-verify.md",
-	"docs/delegated-verification.md",
-	"docs/native-authority-architecture.md",
-	"docs/skill-style-guide.md",
-	"docs/review-integration.md",
 	"extensions/jero-ai.ts",
 	"extensions/jero-memory.ts",
 	"lib/memory.ts",
@@ -139,7 +135,6 @@ const forbiddenPaths = [
 // conformance at P2.
 const contractHashes = {
 	"schemas/runtime-aggregate-v1.schema.json": "fa76fb931029b2044d575358ac2bc001bcf461ff91ac0e0e2db6ac2e0970b510",
-	"docs/review-integration.md": "95a3df92785bc4d9f3b99e702aaf817ae0440bd16c83218d2c3f2aca67c280fb",
 	"tests/fixtures/review-integration/v1/fixtures/binding-revision-conflict.fixture.json": "c2e294843cee5185324cb7a41702574ef94852517239d99e7493a1414a60b363",
 	"tests/fixtures/review-integration/v1/fixtures/capabilities-v1.1.fixture.json": "1b3dc40dce7bfb5d3ecc7e92af68d66e71b733ba0b0f71ba94d3c633adc48bcf",
 	"tests/fixtures/review-integration/v1/fixtures/capabilities-v1.2.fixture.json": "2970d21cd95a7fcaea6547c47a591a5151046e7ede658b3e8c5b9a9c5d106b65",
@@ -221,9 +216,9 @@ function listFilesRecursively(directory) {
 
 // Walks the relocated golden-vector tree on disk and reconciles it against
 // `contractHashes` (restricted to `tests/fixtures/review-integration/**` keys
-// — `docs/review-integration.md` is a byte-pinned contract artifact but lives
-// outside this walk root). Reports the two drift directions separately so a
-// new unlisted file and a stale hash-map entry are both visible.
+// — other hash entries, e.g. the runtime aggregate schema, live outside this
+// walk root). Reports the two drift directions separately so a new unlisted
+// file and a stale hash-map entry are both visible.
 export function reconcileContractsOnDisk(packageRoot, hashes) {
 	const contractsRoot = join(packageRoot, "tests", "fixtures", "review-integration");
 	const listed = Object.keys(hashes).filter((relativePath) => relativePath.startsWith("tests/fixtures/review-integration/"));

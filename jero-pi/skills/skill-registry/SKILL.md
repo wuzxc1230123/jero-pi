@@ -47,5 +47,4 @@ metadata:
 
 ## 参考
 
-- `docs/skill-style-guide.md` —— 索引之前，技能应如何撰写。
 - `skills/_shared/skill-resolver.md` —— 委托者如何使用该索引。

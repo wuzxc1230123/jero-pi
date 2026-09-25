@@ -4,7 +4,7 @@ argument-hint: "<技能想法或名称>"
 ---
 为以下目标创建或更新 LLM 优先的技能：$ARGUMENTS
 
-如果 `jero-skill-creator` 技能可用则使用它。若该技能未被自动加载，编辑前先阅读 `skills/skill-creator/SKILL.md`，以及存在时的 `docs/skill-style-guide.md`。
+如果 `jero-skill-creator` 技能可用则使用它。若该技能未被自动加载，编辑前先阅读 `skills/skill-creator/SKILL.md`。
 
 ## 流程
 

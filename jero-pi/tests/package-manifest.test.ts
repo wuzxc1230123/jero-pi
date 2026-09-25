@@ -20,14 +20,10 @@ import {
 	COMPANION_EXTENSION_REFS, COMPANION_SKILL_REFS,
 } from "./package-manifest-shared.ts";
 
-test("technical reference declares the tested Pi minimum required for agent_settled", () => {
+test("package manifest declares the tested Pi minimum required for agent_settled", () => {
 	const manifest = readPackageJson();
 	assert.equal(manifest.peerDependencies?.["@earendil-works/pi-coding-agent"], ">=0.85.1");
 	assert.equal(manifest.devDependencies?.["@earendil-works/pi-coding-agent"], "0.85.1");
-	const reference = readFileSync(join(PACKAGE_ROOT, "docs", "jero-reference.md"), "utf8");
-	assert.match(reference, /Pi 0\.85\.1 or newer/);
-	assert.match(reference, /agent_settled/);
-	assert.match(readFileSync(join(PACKAGE_ROOT, "README.md"), "utf8"), /\]\(docs\/jero-reference\.md(?:#[^)]+)?\)/);
 });
 
 test("package manifest has no obsolete native activation build surface", () => {
@@ -229,7 +225,6 @@ test("package verification pins the relocated golden vectors as the behavioral s
 	// conformance is graded against at P2.
 	assert.match(verifier, /tests\/fixtures\/review-integration\/v1\/fixtures\/status\.fixture\.json/);
 	assert.match(verifier, /tests\/fixtures\/review-integration\/v2\/fixtures\/status\.fixture\.json/);
-	assert.match(verifier, /docs\/review-integration\.md/);
 });
 
 

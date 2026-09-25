@@ -13,7 +13,7 @@ metadata:
 
 ## 硬性规则
 
-- 先读 `docs/skill-style-guide.md`，并把它当作规范风格契约。
+- 把既有 `jero-*` 技能的共同结构当作规范风格契约。
 - 把 `SKILL.md` 当作事实来源；保留作者意图、关键规则、激活语义与输出要求。
 - 可用时，把 `.atl/skill-registry.md` 当作技能名、触发词、范围与精确路径的索引。
 - 默认只审计。仅当用户明确要求应用改进时才修改文件。
@@ -32,7 +32,7 @@ metadata:
 
 ## 执行步骤
 
-1. 读 `docs/skill-style-guide.md`。
+1. 对照既有 `jero-*` 技能校准结构与语气基准。
 2. 读 `.atl/skill-registry.md`；用列出的路径选择技能。若缺失，扫描已知技能目录中的 `*/SKILL.md`。
 3. 对每个选中的技能，审计元数据、触发清晰度、小节顺序、正文预算、可执行性、决策门、输出契约与本地参考。
 4. 返回按技能分组、带严重度与精确修改建议的审计报告。
@@ -49,5 +49,4 @@ metadata:
 
 ## 参考
 
-- `docs/skill-style-guide.md` —— 规范的 LLM 优先技能风格指南。
 - `skills/skill-registry/SKILL.md` —— 注册表刷新与索引契约。

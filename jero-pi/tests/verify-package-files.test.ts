@@ -53,20 +53,18 @@ test("golden-vector walk fails on a contractHashes entry that is missing from di
 });
 
 // Byte-pinned artifacts that live outside the relocated golden-vector tree
-// (docs/review-integration.md, the relocated telemetry schema) are hash-checked
-// directly by the main script; the walk must not demand they appear on disk
-// under tests/fixtures/review-integration/.
+// (e.g. the relocated telemetry schema) are hash-checked directly by the main
+// script; the walk must not demand they appear on disk under
+// tests/fixtures/review-integration/.
 test("golden-vector walk ignores hash entries rooted outside tests/fixtures/review-integration", () => {
 	const fixtureRoot = makeFixtureRoot();
 	try {
 		mkdirSync(join(fixtureRoot, WALK_ROOT, "v2/schemas"), { recursive: true });
-		mkdirSync(join(fixtureRoot, "docs"), { recursive: true });
 		writeFileSync(join(fixtureRoot, `${WALK_ROOT}/v2/schemas/status.schema.json`), "{}\n");
-		writeFileSync(join(fixtureRoot, "docs/review-integration.md"), "# contract doc\n");
 
 		const { unlistedOnDisk, listedButMissing } = reconcileContractsOnDisk(fixtureRoot, {
 			[`${WALK_ROOT}/v2/schemas/status.schema.json`]: "irrelevant-for-this-walk",
-			"docs/review-integration.md": "pinned-elsewhere",
+			"schemas/runtime-aggregate-v1.schema.json": "pinned-elsewhere",
 		});
 
 		assert.deepEqual(unlistedOnDisk, []);

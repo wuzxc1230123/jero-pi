@@ -19,7 +19,6 @@ const JD_SKILL = "skills/judgment-day/SKILL.md";
 const JD_PROMPTS = "skills/judgment-day/references/prompts-and-formats.md";
 const GENTLE_SKILL = "skills/jero-ai/SKILL.md";
 const README = "README.md";
-const TECHNICAL_REFERENCE = "docs/jero-reference.md";
 const CHAIN = "assets/chains/4r-review.chain.md";
 const SDD_WORKFLOW = "assets/sdd-orchestrator-workflow.md";
 const RELEASE_SKILL = "skills/release/SKILL.md";
@@ -133,8 +132,7 @@ test("canonical contract defines compact risk, causal admission, correction, CAS
 		/untrusted repository content.*malformed inputs.*stale authority.*path drift.*external callers/i,
 		...JUDGMENT_DAY_DISCOVERY_PATTERNS,
 	]);
-	assert.match(read(TECHNICAL_REFERENCE), /Review outcomes and receipt state are informational; commit, push, pull-request, and release delivery follow ordinary repository policy\./);
-	assert.match(read(README), /\]\(docs\/jero-reference\.md(?:#[^)]+)?\)/);
+	assert.match(read(README), /评审结果与回执状态只作信息展示|Review outcomes and receipt state are informational/);
 	assert.doesNotMatch(read(README), /one one-shot authorization for the exact command/i);
 	assert.doesNotMatch(read(README), /review-publication-gate/i);
 });
@@ -202,7 +200,7 @@ test("packaged ordinary review lenses resolve their Markdown file dependencies",
 
 test("ordinary review dependencies allow packaged files and reject unresolved paths", () => {
 	const packageRoots = packagePaths();
-	assertMarkdownFileDependenciesResolve("assets/agents/review-risk.md", "Sources: docs/native-authority-architecture.md", packageRoots);
+	assertMarkdownFileDependenciesResolve("assets/agents/review-risk.md", "Sources: assets/support/strict-tdd.md", packageRoots);
 	assert.throws(
 		() => assertMarkdownFileDependenciesResolve("assets/agents/review-risk.md", "Sources: docs/nonexistent/security.md", packageRoots),
 		/unavailable Markdown dependencies: docs\/nonexistent\/security\.md/,
@@ -373,14 +371,13 @@ test("Judgment Day fix routing has one canonical shape and never falls back to g
 	assert.match(read(SDD_WORKFLOW), /\| default\s+\| balanced\s+\| SDD 阶段回退；绝不是 Judgment Day 角色\s+\|/);
 });
 
-test("orchestrator, injected skill, and technical reference defer RDD lifecycle ownership to Jero", () => {
+test("orchestrator and injected skill defer RDD lifecycle ownership to Jero", () => {
 	const boundary = "本包启动时把镜像的提供方捆绑评审执行契约注入本会话系统提示；Jero 不向 Pi 系统提示写入任何内容，本包拥有此处其余一切。缺少该镜像契约时，本包不发明生命周期指令。";
 	const orchestrator = union(ORCHESTRATOR);
 	assert.ok(orchestrator.includes(boundary), "orchestrator must carry the sole static ownership boundary");
 
 	for (const [label, content] of [
 		[GENTLE_SKILL, read(GENTLE_SKILL)],
-		[TECHNICAL_REFERENCE, read(TECHNICAL_REFERENCE)],
 	] as const) {
 		assertMatches(label, content, [
 			/jero-pi dynamically supplies runtime-specific RDD instructions/i,
@@ -394,15 +391,6 @@ test("orchestrator, injected skill, and technical reference defer RDD lifecycle 
 	] as const) {
 		assert.doesNotMatch(content, /start -> finalize -> validate|INSPECT before START|next_transition|review\.capture-result/i, label);
 	}
-});
-
-test("technical reference documents the dynamic runtime authority boundary without an old package route", () => {
-	const content = read(TECHNICAL_REFERENCE);
-	assert.match(content, /jero-pi dynamically supplies runtime-specific RDD instructions/i);
-	assert.match(content, /does not define an RDD lifecycle/i);
-	assert.doesNotMatch(content, /New ordinary review uses compact `gentle_review` `start -> finalize -> validate`\./);
-	assert.match(content, /Dangerous-command safety remains independent and authoritative/);
-	assert.match(content, /Project and user overrides may shadow a package asset/);
 });
 
 test("managed contracts retain no fresh lifecycle review directive", () => {

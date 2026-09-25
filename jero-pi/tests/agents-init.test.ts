@@ -69,12 +69,6 @@ test("evidence gathering stays local, budgeted, and layered", () => {
 	assert.match(prompt, /就近原则生效/);
 });
 
-test("technical reference documents the current command without stale rows", () => {
-	const reference = readPackageFile("docs/readme-reference.md");
-	assert.match(reference, /`\/agents-init`/);
-	assert.doesNotMatch(reference, /`\/agents-md/);
-});
-
 test("prompts directory stays pinned to the two registered templates", () => {
 	const promptsDir = join(PACKAGE_ROOT, "prompts");
 	const names = readdirSync(promptsDir).sort();
@@ -153,11 +147,4 @@ test("prose cross-references resolve to template sections", () => {
 	for (const referenced of ["注意事项", "常见错误对照", "指针"]) {
 		assert.match(template, new RegExp(`## ${referenced}`), `template must define the referenced section: ${referenced}`);
 	}
-});
-
-test("technical reference row keeps the two-column command table shape", () => {
-	const reference = readPackageFile("docs/readme-reference.md");
-	const row = reference.split("\n").find((line) => line.startsWith("| `/agents-init`"))?.replace(/\r$/, "");
-	assert.ok(row, "the command table must have an /agents-init row");
-	assert.match(row, /^\| `\/agents-init`\s+\| .+ \|$/, "the row must keep the command-description two-column shape");
 });

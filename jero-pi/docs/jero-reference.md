@@ -1,76 +1,91 @@
 # jero-pi 技术参考
 
-jero-pi 是一个 Pi coding-agent 扩展包：评审权威、SDD/OpenSpec 编排、子代理、持久记忆与 shell 层——全部进程内 Node 实现，零原生二进制、零安装期网络。
+本文档由当前代码状态生成（2026-09，对应 `refactor/jero-ai-split` 分支）。jero-pi 是面向 Pi coding-agent 的扩展包：评审权威、SDD/OpenSpec 编排、子代理、持久记忆、精益纪律与 shell 层——全部进程内 Node 实现，零原生二进制、零安装期网络。
 
-Requires Pi 0.85.1 or newer (the tested minimum for `agent_settled`).（要求 Pi ≥ 0.85.1，即经测试验证的 `agent_settled` 最低支持版本。）
+要求 Pi ≥ 0.85.1（`peerDependencies` 钉定；0.85.1 为 `agent_settled` 事件经测试验证的最低版本）。
 
-> 标注为 **契约锚点** 的英文句子被测试逐字钉住（`tests/package-manifest*.test.ts`、`tests/review-authority-recovery-docs.test.ts`、`tests/skill-collision-prefixes.test.ts`、`tests/jero-ai.z3.test.ts`），改动它们必须同步改测试。
+## 架构分层
 
-## 架构
+```text
+Pi 宿主（@earendil-works/pi-coding-agent ≥0.85.1，peer）
+├─ 扩展层 extensions/（8 个文件，~5k 行）
+│   jero-ai · jero-agents · jero-memory · jero-shell ·
+│   runtime-metrics · sdd-init · skill-registry · startup-banner
+├─ 领域层 lib/（~105 个文件，~32k 行）
+│   authority/（进程内评审权威，~14k 行）· review-* · agents-* ·
+│   shell-* · sdd-* · jero-ai-lean · memory · runtime-metrics*
+├─ 伴生插件（dependencies 精确钉版，经 pi 清单加载）
+│   pi-pretty · rpiv-ask-user-question · rpiv-todo · billion-context-pi ·
+│   pi-cache-optimizer · pi-fovea · pi-hashline-edit-pro · pi-lens · pi-web-access
+└─ 系统边界（仅 git / gh(可选) / pi 自身三类外部进程）
+```
 
-- **进程内评审权威**（`lib/authority/`）：START → 同意 → relay 评审视角 → 冻结/分类 → 纠正（计划 + 派生的有界编辑）→ 定向校验 → 确认销毁 → 维护。状态存于 `.git/jero-review/`（CAS 对象、lineage 记录、候选视图），随仓库走。
-- **Pi 宿主 relay**（`lib/review-host-relay.ts`）：渲染权威方的审查员/角色提示并运行锁定的 pi 子进程；准入始终在进程内。跨进程握手 `gentle-pi.review-relay/v1` 已按设计删除。
-- **客户端契约**（`lib/authority/client-contract.ts` + `wire-contract.ts`）：wire 词汇由迁移后的黄金向量（`tests/fixtures/review-integration/`）字节钉住；这些 schema 字符串有意在身份迁移中保留。
-- **持久记忆**（`lib/memory.ts` + `mem_save`/`mem_read`/`mem_list`/`mem_search`）：topic 键文件，存于记忆根目录。
-- **精益纪律**（`lib/jero-ai-lean.ts` + `skills/jero-lean*`、`jero-debt`）：借自 ponytail 的提示词层代码极简梯子，按会话模式只注入主会话。绝不接触评审权威、委派传输或任何生命周期状态；`off` 逐字节还原历史行为。
-- **Agents 编排**（`lib/agents-*.ts` + `extensions/jero-agents.ts`）：pi RPC 子代理，单父编排，每任务 token/成本核算，全屏视图。
-- **Shell 层**（`lib/shell-*.ts` + `extensions/jero-shell.ts`）：状态栏、侧栏、变更小部件与 diff 视图、订阅用量窗口。
-- **运行时指标**（`lib/runtime-metrics*.ts`）：纯内存、无外发；按模型/提供商/档位/代理类聚合 token 与成本。
+- **进程内评审权威** `lib/authority/`：13 个持久状态，15 个 wire 状态投影；不变量——透镜只跑一次、冻结发现与创世范围不变、恰一次有界纠正（预算 `min(200, ceil(原始变更行/2))`）、actor 产物（模型输出）永远是无信托数据。存储在 `.git/jero-review/`（CAS 对象 + lineage 记录 + 候选视图），随仓库走。`scripts/check-authority-boundary.mjs` 结构性强制 authority 不 import 扩展层、不做 IO/env 读取。
+- **宿主 relay** `lib/review-host-relay.ts`：渲染权威方审查员提示 → `--agent pi --materialize` → 锁定 print-mode pi 子进程在只读工作树评审 → 原始字节经 provider 提交令牌回交；任何失败都是 typed transport error，不重试、不合成。
+- **黄金向量** `tests/fixtures/review-integration/`：68 个字节钉住向量（SHA-256 由 `scripts/verify-package-files.mjs` 校验），是 authority 一致性测试的行为规范。
 
-## 身份（jero 命名空间）
+## 命令（22 个斜杠命令）
+
+| 组 | 命令 |
+|---|---|
+| 状态与诊断 | `/jero:status` `/jero:doctor` `/jero:guard` `/jero:banner` `/jero:banner-color` `/jero:toggle-rose` `/jero:toggle-text-logo` |
+| 精益纪律 | `/jero:lean`（status\|off\|lite\|full\|ultra；输入 "stop lean" 亦可关闭） |
+| 评审 | `/jero:review-mode`（RDD 开关）`/jero:review-session-permission`（status\|revoke）`/jero:changes` `/jero:usage` |
+| 子代理与模型 | `/jero:agents` `/jero:models` `/jero:profiles` `/jero:persona` `/jero:background-subagents` |
+| SDD | `/jero:sdd-preflight` `/jero-sdd-init` `/jero-sdd-status` `/jero-sdd-continue` `/jero:install-{delegation,review,sdd}` |
+| 技能 | `/skill-registry:refresh`；另有 `prompts/agents-init.md`（`/agents-init`）与 `prompts/skill-creation.md` 两个随包 prompt 模板 |
+
+评审生命周期动词（`inspect`/`start`/`answer-consent`/`assess`/`finalize`/`validate`/`select-intended-untracked`/`export`/`import`/`recover` 等）是 `jero_review` 工具操作，不是斜杠命令。
+
+## 工具
+
+- `jero_review`（控制器）、`jero_review_capture`（单捕获槽）、`jero_review_capture_group`（有序并发审查组）、`jero_review_scope`（冻结范围只读分页）
+- `mem_save` / `mem_read` / `mem_list` / `mem_search`（持久记忆）
+- `subagent_list_agents` / `subagent_run` / `subagent_status` / `subagent_reconcile` / `subagent_result` / `subagent_list_tasks` / `subagent_reply` / `subagent_cancel` / `subagent_send_message`
+- `session_worktree_register`（会话工作树注册）
+
+## 评审生命周期
+
+START → 同意（consent 仪式 v3，host 常任权限按 Git 规范身份授予、可撤销）→ relay 评审视角（risk / reliability / resilience / readability，只跑一次）→ 冻结/分类 → 纠正（计划 + 恰一次有界编辑，diff 行计量：一行替换 = 一删一加）→ 定向校验（passed / verification_failed / procedural_tooling_failed）→ 确认销毁 → 维护（abandon / reclaim / recover / reconcile-authority，全部派生授权绑定 + 交互式批准，无头保守失败）。发布门 `review-publication-gate` 独立于交付：commit/push/PR 遵循普通仓库策略。
+
+## 精益纪律（lean discipline）
+
+借自 ponytail 的七级梯子（需要存在吗 → 代码库已有吗 → stdlib → 平台原生 → 已装依赖 → 一行 → 最小可用），提示词层增强、零状态机：
+
+- 档位 `off / lite / full / ultra`，解析顺序：会话条目 `jero.lean-mode/v1`（倒序回放）> 环境变量 `JERO_PI_LEAN_MODE` > 默认 `full`。
+- 每次代理启动重新解析，切换即时生效；只注入主会话，具名/SDD 代理经既有任务上下文获得纪律；`off` 逐字节还原历史行为。
+- 懒惰边界（绝不简化掉）：信任边界输入校验、防数据丢失的错误处理、安全措施、可访问性基础、用户明确要求的内容；非平凡逻辑必须留一个可运行检查。
+- 有意的妥协留 `jero:` 注释标记（`ceiling:` 天花板 + `upgrade:` 重启条件）；`jero-debt` 技能收割台账，缺 upgrade 的记 no-trigger。
+- 与 400 行评审切片预算正交：预算管工作切片，梯子管必要性，绝不是代码高尔夫。
+
+## SDD/OpenSpec 与子代理编排
+
+- `/jero-sdd-init` 探测技术栈（package.json/标记文件，≤2 万文件）→ 写 `openspec/config.yaml` + `specs/` + `changes/archive`；会话预检仪式管理资产安装（哈希可证的 managed-assets + 锁 + legacy 迁移）。
+- 阶段代理 `assets/agents/sdd-*.md`（16 个）+ 链 `assets/chains/sdd-{plan,full,verify}.chain.md`、`4r-review.chain.md`；确定性状态引擎给出 `next_recommended`。
+- 编排纪律（jero 技能）：先澄清；严格 TDD（RED/GREEN/TRIANGULATE/REFACTOR 带证据）；单父编排（子代理不得再派生）；委托触发——4 文件规则、多文件写入规则、事故规则、长会话规则；有界写者需非空 `## Allowed edit surfaces`。
+- Judgment Day（显式触发）：双盲评审（jd-judge-a/b）→ 冻结发现（SHA-256）→ 至多两轮有界修复（jd-fix-agent）→ 一次终审 `APPROVED|ESCALATED`；`lib/jero-ai-writer-scope.ts` 代码级校验派发块。
+
+## 记忆 / Shell / 指标
+
+- **记忆**：topic 键 Markdown（`<root>/entries/<topic>.md` + YAML frontmatter），`index.json`（`jero.memory-index/v1`）加速检索；根 `<cwd>/.jero/memory` 优先，否则 `~/.pi/jero/memory`；原子写 + 目录锁；64 KiB 内容上限。`JERO_PI_MEMORY=0` 可禁用。
+- **Shell**：底部状态栏（cwd/git/脏文件/模型/effort/上下文窗口 %/会话成本/订阅用量）、侧栏、变更小部件 + diff 全屏视图（alt+g）、订阅用量窗口（≤5 分钟刷新）、花瓣动画提示框、三套主题（Jero / Jero-Cute / Jero-Sexy）。
+- **运行时指标**：纯内存（无外发），按模型/提供商/effort/代理类聚合 token 与成本；子代理用量经 `CHILD_METRICS_EVENT` 汇聚；Agents 视图显示每任务 tokens+成本。
+
+## 技能（16 个目录，`jero` + `jero-*` 命名）
+
+`jero`（harness 纪律）· `jero-lean`（梯子参考）· `jero-lean-review`（diff 级精益评审：delete/stdlib/native/yagni/shrink 标签 + `net: -N lines possible`）· `jero-debt`（标记台账）· `jero-judgment-day` · `jero-rdd-defect-workflow` · `jero-branch-pr` · `jero-chained-pr`（400 行预算链式 PR）· `jero-work-unit-commits` · `jero-cognitive-doc-design` · `jero-comment-writer` · `jero-issue-creation` · `jero-skill-creator` · `jero-skill-improver` · `jero-skill-registry` · `jero-release`。
+
+## 契约与环境
 
 | 面 | 值 |
 |---|---|
-| 命令 | `/jero:*`（status/review-mode/persona/profiles/models/usage/doctor/agents/changes/background-subagents/review-session-permission/lean/sdd-preflight/banner*/toggle*/install-*）、`/jero-sdd-*` 流程。评审生命周期动词（`inspect`/`start`/`answer-consent`/`assess`/`finalize`/`validate`）是 `jero_review` 工具操作，不是斜杠命令 |
-| 环境变量 | `JERO_PI_*`（AGENT_HOME 兼容 `PI_CODING_AGENT_DIR`；`JERO_PI_LEAN_MODE` 为会话精益档位提供初始值） |
-| 配置主目录 | `~/.pi/jero/`（全局）、`<repo>/.pi/jero/`（项目）、`<repo>/.jero/policies/`（评审策略） |
-| 契约 | `jero.session-change/v1`、`jero.session-worktree/v1`、`jero.child-standing-review-permission/v1`、`jero.background-subagents/v1`、`jero.agent_model_profiles/v1`、`jero.verify-result/v1`、`jero.authority/v1`、`jero.lean-mode/v1`（会话条目 `{mode}`） |
-| 技能 / 资产 | `jero` + `jero-*` 技能名；`agents/jero-{explore,verify,worker}.md`；`jero/support/*` |
+| 契约串 | `jero.authority/v1`（协议族）、`jero.authority.review-mode/v1`、`jero.review-assessment-plan/v1`、`jero.lean-mode/v1`、`jero.background-subagents/v1`、`jero.session-change/v1`、`jero.session-worktree/v1`、`jero.child-standing-review-permission/v1`、`jero.agent_model_profiles/v1`、`jero.memory-index/v1`、`jero.remediation-evidence/v1`、`jero.task-reconciliation-lock/v1` |
+| 环境变量 | `JERO_PI_CONFIG_HOME` `JERO_PI_AGENT_HOME`（兼容 `PI_CODING_AGENT_DIR`）`JERO_PI_LEAN_MODE` `JERO_PI_MEMORY` `JERO_PI_AUTONOMOUS_MODE` |
+| 配置路径 | `~/.pi/jero/`（全局：models.json / persona.json / review-mode.json）、`<repo>/.pi/jero/`（项目覆盖）、`<repo>/.jero/policies/`（评审策略）、`.atl/skill-registry.md`（技能索引） |
 
-## 评审视角选择（Review Lens Selection）
+## 测试与打包门
 
-`review-risk`、`review-reliability`、`review-resilience`、`review-readability` 是评审视角（review lens）词汇。静态编排器与本参考从不选择、调用、排序或重试这些视角；任何适用的运行时只使用其动态提供的指令。
-
-## 评审权威操作
-
-评审控制器工具（`jero_review`)拥有生命周期；捕获槽位经 `jero_review_capture` 以恰好一个当前 collect binding 运行。Review outcomes and receipt state are informational; commit, push, pull-request, and release delivery follow ordinary repository policy.（评审结果与回执状态只作信息展示；commit、push、PR、发布等交付遵循普通仓库策略。）
-
-Maintenance is explicit, audited, and fail-closed headless: RESET and RECOVER stay destructive, audited last resorts; every refusal answers in typed envelopes.（维护是显式、经审计、无头时保守失败的：RESET 与 RECOVER 仍是破坏性的、经审计的最后手段；每次拒绝都以 typed envelopes 应答。）
-
-- **abandon** — 需要 lineage、expectedRevision、snapshotIdentity、capturedLensResults、findingsPresent、actor、reason；派生并展示精确的八字节授权绑定，供全新的交互式 UI 批准。
-- **reclaim** — 以破坏性方式隔离卡死的权威目录（带隔离名的审计记录）。
-- **recover** — 恰好六个输入：predecessorLineage、expectedPredecessorRevision、successorLineage、disposition、actor、reason；绝不吃 reset challenge，绝不吃 maintainerAuthorization。
-- **reconcile-authority** — predecessor lineage and revision, plus successor lineage and revision（前驱 lineage 与 revision，加上后继 lineage 与 revision）；the exact seven-line binding with optional `anomalies=unchanged_target,malformed_recovery_authorization` in that exact order（精确七行绑定，可选 anomalies 按此精确顺序）。It may quarantine only the bound invalid compact-v2 recovery successor; the predecessor stays untouched.（只可隔离绑定的那个非法 compact-v2 恢复后继；前驱保持原样。）The model supplies only lineage, actor, and reason（模型只提供 lineage、actor、reason）——每个绑定都是派生的，展示给 fresh interactive approval（全新的交互式批准），无头时拒绝。
-
-`review dispose-result` is unsupported pending design（尚无设计，不支持）。The legacy quarantine-legacy and alias-repair routes are retired（legacy quarantine-legacy 与 alias-repair 路由已退役）：jero-pi 存储绝不携带 legacy 权威（外来的 `gentle-ai/reviews` 与 `gentle-ai/review-transactions` 存储会被探测并拒绝）。
-
-## 动态 RDD 归属
-
-**契约锚点**：jero-pi dynamically supplies runtime-specific RDD instructions; the static orchestrator prompt does not define an RDD lifecycle.（jero-pi 在运行时动态提供运行时专属的 RDD 指令；静态编排器提示词不定义 RDD 生命周期。）Dangerous-command safety remains independent and authoritative.（危险命令安全保持独立且权威。）
-
-托管代理经包管理的隔离安装（package-managed isolated installation，`<agent-home>/jero/managed-assets.json`，哈希可证）安装；Project and user overrides may shadow a package asset（项目与用户覆盖可遮蔽包资产），上游命名空间的改名只迁移未被触碰的包自有副本，始终保留用户编辑与路由。
-
-## 精益纪律（Lean discipline)
-
-精益模式（`/jero:lean status|off|lite|full|ultra`，或独立输入短语 "stop lean"）控制代码极简梯子注入主会话系统提示的强度。每次代理启动的解析顺序：会话条目（`jero.lean-mode/v1`，最近一条合法者获胜）> `JERO_PI_LEAN_MODE` > `full`。注入发生在 `before_agent_start`，与 persona/编排器提示词并列，绝不触达具名/SDD 代理——worker 经既有的任务上下文传输获得纪律，本特性不改写该通道。梯子管代码必要性，与 400 行评审切片预算正交（预算绝不是代码高尔夫）。`skills/jero-lean-review`（diff 级精益评审）与 `skills/jero-debt`（`jero:` 标记台账，含 `ceiling:`/`upgrade:` 与 no-trigger 标注）是只读伴随物，独立于 `jero_review` 权威。`benchmarks/`（不随包发布）经 `JERO_PI_LEAN_MODE` 度量各臂表现。
-
-## 技能名（Skill names）
-
-**契约锚点**：Treat former package names such as `branch-pr`, `judgment-day`, and `skill-creator` as legacy aliases in prose only; runtime skill selection should use the prefixed `jero-branch-pr`, `jero-judgment-day`, `jero-skill-creator`, and sibling `jero-*` names.（旧包名如 `branch-pr`、`judgment-day`、`skill-creator` 仅在行文中作为 legacy 别名；运行时技能选择应使用带前缀的 `jero-branch-pr`、`jero-judgment-day`、`jero-skill-creator` 及同族 `jero-*` 名。）
-
-| 目录 | 技能名 | 用途 |
-|---|---|---|
-| `jero-ai` | `jero` | harness 纪律：澄清、OpenSpec、严格 TDD、委派触发、评审负载 |
-| `jero-lean` | `jero-lean` | 七级梯子、懒惰边界、`jero:` 标记、模式参考 |
-| `jero-lean-review` | `jero-lean-review` | diff 级精益评审（delete/stdlib/native/yagni/shrink 标签） |
-| `jero-debt` | `jero-debt` | `jero:` 标记债务台账（no-trigger 标注） |
-| `judgment-day` | `jero-judgment-day` | 对抗式盲双评审（显式触发） |
-| `rdd-defect-workflow` | `jero-rdd-defect-workflow` | 回执驱动开发缺陷流程 |
-| `branch-pr` / `chained-pr` | `jero-branch-pr` / `jero-chained-pr` | PR 创建 / 400 行预算链式 PR |
-| `work-unit-commits` | `jero-work-unit-commits` | 工作单元提交规划（预算不是代码高尔夫） |
-| `skill-creator` / `skill-improver` / `skill-registry` | `jero-skill-creator` / `jero-skill-improver` / `jero-skill-registry` | 技能创建/改进/注册表维护 |
-| `cognitive-doc-design`、`comment-writer`、`issue-creation`、`release` | 同名加 `jero-` 前缀 | 文档、评论、issue、发布 |
-
-## 供应链
-
-六个伴生依赖全部精确钉版；`@earendil-works/pi-tui` 是 `"*"` peer（宿主捆绑 pi-tui/pi-ai/pi-agent-core 核心族；测试向经测试的宿主钉 0.85.1）。伴生经 `pi` 清单中的 `node_modules/` 资源引用加载——这是宿主文档化的 pi-package 依赖契约；缺失路径静默跳过，因此"安装即可用"成立且无需包装层。任何东西都不打包捆绑：pi-pretty 与 pi-lens 携带平台专属原生依赖，必须经宿主的 `npm install` 按平台解析；`dependencies` 中的精确钉版管最终解析版本。伴生级关闭开关是 Pi 设置层的包/资源过滤（外加 pi-pretty 自身的 `PRETTY_DISABLE_TOOLS`）。`pnpm-workspace.yaml` 强制发布龄期、信任不降级、无非常规子依赖来源；lockfile 入库；CI 重跑依赖审计与打包工件断言（`scripts/verify-package-files.mjs`）。
+- 182 个测试文件（node:test，并发 12）+ runtime harness（真实扩展装配 × 假宿主端到端，三段场景）。
+- CI（GitHub Actions）：Ubuntu 全量测试 + 类型诊断棘轮（`scripts/types-baseline.json`）+ runtime 模块一致性（`runtime/*.mjs` 由 lib 再生成）+ 权威边界检查 + 断网测试门（代理黑洞 + `NODE_OFFLINE=1`）；Windows 权威探测与候选视图回归。
+- 打包门 `prepack`/`prepublishOnly`：全量测试 → runtime 一致性 → 权威边界 → `verify-package-files.mjs`（当前钉 148 个必需文件、68 个字节钉住向量、25 条禁带路径）→ packed tarball 分发链校验（`test-packed-runner.mjs`）。
+- 供应链：9 个伴生依赖精确钉版；`pnpm-workspace.yaml` 强制发布龄期 / 信任不降级 / 无非常规子依赖来源；CI 重跑 `pnpm audit --prod --audit-level=high` 与 npm publish provenance。

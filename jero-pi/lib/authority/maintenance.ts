@@ -14,7 +14,7 @@ import type { JeroReviewStateName } from "./protocol.ts";
 // quarantine-legacy / repair-legacy-alias——带新存储命名空间的新包没有
 // 需要迁移的历史血脉。
 //
-// 纪律（readme-reference.md:182-196）：每个破坏性转移都经由一个“精确”
+// 纪律：每个破坏性转移都经由一个“精确”
 // 授权绑定，维护者重新推导它，权威在接受前“再次”重新推导——请求的
 // 绑定必须逐字段等于新计算出的那个。新的交互式批准是扩展层的职责
 // （P4）；权威侧在必需绑定缺失或漂移时保守失败。恢复不授予新预算。

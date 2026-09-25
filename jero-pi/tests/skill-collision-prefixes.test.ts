@@ -33,18 +33,6 @@ for (const [dir, expectedName] of Object.entries(PREFIXED_NAMES)) {
 	});
 }
 
-test("technical reference documents legacy skill-name compatibility aliases", () => {
-	const readme = readFileSync(join(repoRoot, "docs", "jero-reference.md"), "utf8");
-	for (const [legacyName, prefixedName] of [
-		["branch-pr", "jero-branch-pr"],
-		["judgment-day", "jero-judgment-day"],
-		["skill-creator", "jero-skill-creator"],
-	] as const) {
-		assert.match(readme, new RegExp(`former package names such as[\\s\\S]*${legacyName}`));
-		assert.match(readme, new RegExp("runtime skill selection should use[\\s\\S]*" + prefixedName));
-	}
-});
-
 for (const dir of UNPREFIXED_DIRS) {
 	test(`skills/${dir}/SKILL.md frontmatter name carries no jero- prefix`, () => {
 		const name = readSkillName(dir);

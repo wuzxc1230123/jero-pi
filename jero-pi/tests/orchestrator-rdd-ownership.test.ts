@@ -96,17 +96,3 @@ test("always-on parent prompt requires a narrow writer edit surface before launc
 	assert.match(core, /不要让人类撰写路径或 glob/);
 });
 
-test("review integration documents the opaque Pi adapter and Go-owned authority boundary", () => {
-	const docs = read("docs/review-integration.md");
-	for (const marker of [
-		"Buffer → Buffer/error",
-		"exact Go-issued materialize/submission tokens",
-		"typed Pi transport refusal fails closed",
-		"Go owns worktree, lineage, candidate freeze, lens selection, correction, validator, approval burn, and review semantics",
-		"Delivery commands remain ordinary repository-policy operations.",
-		"package has no durable receipt or policy authority",
-		"static assets intentionally omit lifecycle instructions",
-	]) {
-		assert.ok(docs.includes(marker), `review integration doc is missing: ${marker}`);
-	}
-});

@@ -126,9 +126,8 @@ test("a later alias keeps managed-root precedence and manifest ownership", async
 	assert.equal(manifest.assets["agents/sdd-apply.md"], createHash("sha256").update(routed).digest("hex"));
 });
 
-test("runtime guidance keeps review policy out of the static orchestrator and technical reference", () => {
-	const staticReferences = ["docs/jero-reference.md", "skills/jero-ai/SKILL.md"];
-	assert.match(readFileSync("README.md", "utf8"), /\]\(docs\/jero-reference\.md(?:#[^)]+)?\)/);
+test("runtime guidance keeps review policy out of the static orchestrator and injected skill", () => {
+	const staticReferences = ["skills/jero-ai/SKILL.md"];
 	const forbiddenGenericRoutes = [
 		/fresh-context `reviewer`/,
 		/fresh reviewer audits/,

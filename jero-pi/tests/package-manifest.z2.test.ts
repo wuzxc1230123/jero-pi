@@ -765,21 +765,6 @@ test("bounded review keeps the Judgment Day skill contract at canon metadata ver
 	assert.doesNotMatch(frontmatter, /^  version: "1\.4"$/m);
 });
 
-test("technical reference documents dynamic Gentle AI RDD ownership and the installed permission boundary", () => {
-	const reference = readFileSync(join(PACKAGE_ROOT, "docs", "jero-reference.md"), "utf8");
-	for (const clause of [
-		"jero-pi dynamically supplies runtime-specific RDD instructions",
-		"does not define an RDD lifecycle",
-		"Dangerous-command safety remains independent and authoritative.",
-		"package-managed isolated installation",
-		"Project and user overrides may shadow a package asset",
-	]) {
-		assert.ok(reference.includes(clause), `technical reference missing dynamic RDD clause: ${clause}`);
-	}
-	assert.doesNotMatch(reference, /New ordinary review uses compact `gentle_review` `start -> finalize -> validate`\./);
-});
-
-
 test("package verification explicitly requires the managed remediation actor", () => {
 	assert.match(readFileSync(join(PACKAGE_ROOT, "scripts/verify-package-files.mjs"), "utf8"), /assets\/agents\/sdd-remediate\.md/);
 });

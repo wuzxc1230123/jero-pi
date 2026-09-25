@@ -21,7 +21,7 @@ metadata:
 
 ## 硬性规则
 
-- 遵循 `docs/skill-style-guide.md`，把它作为技能结构与风格的规范来源。
+- 结构与风格以本文件和既有 `jero-*` 技能为规范来源。
 - 技能是 LLM 运行时契约，不是面向人的文档。
 - 保持 `SKILL.md` 简洁：目标 180–450 token，上限 1000。
 - 使用祈使句指令与具体的门控；避免教程式与背景散文。
@@ -43,7 +43,7 @@ metadata:
 
 ## 执行步骤
 
-1. 创建或更新技能前，先读 `docs/skill-style-guide.md`。
+1. 创建或更新技能前，先读一两个相邻的既有 `jero-*` 技能，对齐结构与语气。
 2. 检视既有技能，确认新技能不与之重复。
 3. 选择与用户面触发词匹配的 kebab-case 技能名。
 4. 创建或更新此结构：
@@ -82,5 +82,4 @@ metadata:
 
 ## 参考
 
-- `docs/skill-style-guide.md` —— 规范的 LLM 优先技能风格指南。
 - `skills/skill-registry/SKILL.md` —— 注册表刷新与索引契约。
