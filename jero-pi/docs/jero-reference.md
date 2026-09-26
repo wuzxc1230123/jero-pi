@@ -11,9 +11,10 @@ Pi 宿主（@earendil-works/pi-coding-agent ≥0.85.1，peer）
 ├─ 扩展层 extensions/（8 个文件，~5k 行）
 │   jero-ai · jero-agents · jero-memory · jero-shell ·
 │   runtime-metrics · sdd-init · skill-registry · startup-banner
-├─ 领域层 lib/（162 个文件，~46.8k 行）
+├─ 领域层 lib/（166 个文件，~47k 行）
 │   authority/（进程内评审权威，43 个文件 ~14k 行）· review-* · agents-* ·
-│   shell-* · sdd-* · jero-ai-lean · jero-ai-context-monitor · jero-ai-bootstrap · jero-ai-sdd-guard · memory · runtime-metrics*
+│   shell-* · sdd-* · jero-ai-lean · jero-ai-context-monitor · jero-ai-bootstrap · jero-ai-sdd-guard ·
+│   jero-ai-sdd-breadcrumb · jero-ai-spec-index · memory · runtime-metrics*
 ├─ 伴生插件（dependencies 精确钉版，经 pi 清单加载）
 │   pi-pretty · rpiv-ask-user-question · rpiv-todo · billion-context-pi ·
 │   pi-cache-optimizer · pi-fovea · pi-hashline-edit-pro · pi-lens · pi-web-access
@@ -21,10 +22,11 @@ Pi 宿主（@earendil-works/pi-coding-agent ≥0.85.1，peer）
 ```
 
 - **进程内评审权威** `lib/authority/`：13 个持久状态，15 个 wire 状态投影；不变量——透镜只跑一次、冻结发现与创世范围不变、恰一次有界纠正（预算 `min(200, ceil(原始变更行/2))`）、actor 产物（模型输出）永远是无信托数据。存储在 `.git/jero-review/`（CAS 对象 + lineage 记录 + 候选视图），随仓库走。`scripts/check-authority-boundary.mjs` 结构性强制 authority 不 import 扩展层、不做 IO/env 读取。
+- **评审域命名棘轮**（`scripts/check-review-naming.mjs` + `scripts/review-naming-baseline.json`）：评审域的三前缀是分阶段移植的化石——`authority/`（43，信任边界核心，**收敛目的地**）· `review-*`（33）· `jero-ai-review-*`（8）；两个外围前缀钉在基线最大值只降不升（`--update` 棘轮下移），新评审域代码进 `authority/` 或显式记录决策。`jero-authority-cli.ts` 的 SDD 投影已改为逐字段结构化重投影（不再 `as unknown as` 双盲强转）。
 - **宿主 relay** `lib/review-host-relay.ts`：渲染权威方审查员提示 → `--agent pi --materialize` → 锁定 print-mode pi 子进程在只读工作树评审 → 原始字节经 provider 提交令牌回交；任何失败都是 typed transport error，不重试、不合成。
 - **黄金向量** `tests/fixtures/review-integration/`：68 个字节钉住向量（SHA-256 由 `scripts/verify-package-files.mjs` 校验），是 authority 一致性测试的行为规范。
 
-## 命令（22 个斜杠命令）
+## 命令（25 个斜杠命令）
 
 | 组 | 命令 |
 |---|---|
@@ -41,7 +43,7 @@ Pi 宿主（@earendil-works/pi-coding-agent ≥0.85.1，peer）
 
 - `jero_review`（控制器）、`jero_review_capture`（单捕获槽）、`jero_review_capture_group`（有序并发审查组）、`jero_review_scope`（冻结范围只读分页）
 - `mem_save` / `mem_read` / `mem_list` / `mem_search`（持久记忆）
-- `subagent_list_agents` / `subagent_run` / `subagent_status` / `subagent_reconcile` / `subagent_result` / `subagent_list_tasks` / `subagent_reply` / `subagent_cancel` / `subagent_send_message`
+- `subagent_list_agents` / `subagent_run` / `subagent_status` / `subagent_reconcile` / `subagent_result` / `subagent_list_tasks` / `subagent_reply` / `subagent_cancel` / `subagent_send_message` / `subagent_continue`
 - `session_worktree_register`（会话工作树注册）
 
 ## 评审生命周期
@@ -61,9 +63,12 @@ START → 同意（consent 仪式 v3，host 常任权限按 Git 规范身份授�
 ## SDD/OpenSpec 与子代理编排
 
 - `/jero-sdd-init` 探测技术栈（package.json/标记文件，≤2 万文件）→ 写 `openspec/config.yaml` + `specs/` + `changes/archive`；会话预检仪式管理资产安装（哈希可证的 managed-assets + 锁 + legacy 迁移）。每次成功 continue 后记录工件水位台账（`<changeRoot>/.jero-artifact-guard.json`，`jero.sdd-artifact-guard/v1`：sha256+行数+字节）；下次 continue 前对比，工件灾难性截断（行数腰斩且水位≥8 行）或消失时要求显式确认才放行，拒绝则只展示状态、文件不动。
+- **轻量 change**（P1.1）：changeRoot 下的规范常规文件 `.jero-lightweight` 声明显式豁免——proposal + tasks 即可 apply-ready（specs/design 不再阻塞，在场时仍作上下文与 sync 对象）；无 delta specs 时 sync `not_applicable`、archive 不要求 sync-report；写了 specs 则走正常 sync。规划推荐链跳过 spec/design 横档直达 tasks；目录等非规范形状保守视为未声明。引擎字段 `lightweight?: true`（`gentle-pi.sdd-status@1` 向后兼容扩展）经权威投影稀疏携带（wire `gentle-ai.sdd-status@2` 同名字段，解码器校验布尔型）。
 - 阶段代理 `assets/agents/sdd-*.md`（14 个）+ 链 `assets/chains/sdd-{plan,full,verify}.chain.md`、`4r-review.chain.md`；确定性状态引擎给出 `next_recommended`。
 - 编排纪律（jero 技能）：先澄清；严格 TDD（RED/GREEN/TRIANGULATE/REFACTOR 带证据）；单父编排（子代理不得再派生）；委托触发——4 文件规则、多文件写入规则、事故规则、长会话规则；有界写者需非空 `## Allowed edit surfaces`；裁决与停问（Rulings, not stalls）——歧义默认自行裁决并记台账，仅不可逆/安全敏感/工作区外副作用/计划坏死四类停下问人，同一修复连续 3 次失败视为架构问题。
 - **harness 纪律引导**（`lib/jero-ai-bootstrap.ts`）：`session_start`/`session_compact` 置位、`agent_end`/`session_shutdown` 复位的窗口内，把压缩后仍须存续的核心纪律作为单条 user 消息注入每次 LLM 请求（Pi `context` 事件按请求转换，紧随压缩摘要、marker `jero:harness-bootstrap/v1` 去重，每循环至多一轮）。RPC 子进程与包子进程（`JERO_PI_AGENTS_CHILD=1`）绝不注入。
+- **SDD 状态面包屑**（`lib/jero-ai-sdd-breadcrumb.ts`）：bootstrap 注入的是不变纪律，面包屑注入的是活状态——磁盘状态引擎（`resolveSddStatus`，native `sddStatus` 背后的同一实现）解析的当前变更、`next_recommended`、任务进度与首个阻塞，在每次 LLM 请求刷新（marker `jero:sdd-breadcrumb/v1` + 16 位状态指纹去重，陈旧面包屑先剔除再插新）。不变量借自 Trellis："必需步骤不在每回合可见，就会被模型静默跳过"。无活跃变更/已归档/非权威存储不注入；状态解析失败保守跳过绝不阻塞请求。`JERO_PI_SDD_BREADCRUMB=0|false|off` 关闭。
+- **已确立规范索引**（`lib/jero-ai-spec-index.ts`，知识飞轮读取侧）：SDD sync 把增量 spec 回写 `openspec/specs/` 后，后续会话在 bootstrap 同一注入窗口收到域索引（域路径 + Purpose 首行摘要，marker `jero:spec-index/v1`，≤40 域、摘要 ≤160 字符）——沉淀下来的规范会被看见，同一教训不再每会话重学。写入侧归 SDD sync 既有机制；索引只是发现入口，内容以 spec.md 为准。`JERO_PI_SPEC_INDEX=0|false|off` 关闭。
 - Judgment Day（显式触发）：双盲评审（jd-judge-a/b）→ 冻结发现（SHA-256）→ 至多两轮有界修复（jd-fix-agent）→ 一次终审 `APPROVED|ESCALATED`；`lib/jero-ai-writer-scope.ts` 代码级校验派发块。
 
 ## 记忆 / Shell / 指标
@@ -84,12 +89,30 @@ START → 同意（consent 仪式 v3，host 常任权限按 Git 规范身份授�
 | 面 | 值 |
 |---|---|
 | 契约串 | `jero.authority/v1`（协议族）、`jero.authority.review-mode/v1`、`jero.review-assessment-plan/v1`、`jero.lean-mode/v1`、`jero.background-subagents/v1`、`jero.session-change/v1`、`jero.session-worktree/v1`、`jero.child-standing-review-permission/v1`、`jero.agent_model_profiles/v1`、`jero.memory-index/v1`、`jero.remediation-evidence/v1`、`jero.task-reconciliation-lock/v1` |
-| 环境变量 | `JERO_PI_CONFIG_HOME` `JERO_PI_AGENT_HOME`（兼容 `PI_CODING_AGENT_DIR`）`JERO_PI_LEAN_MODE` `JERO_PI_MEMORY` `JERO_PI_AUTONOMOUS_MODE` `JERO_PI_CONTEXT_MONITOR`（`0` 关闭上下文余量告警） |
+| 环境变量 | `JERO_PI_CONFIG_HOME` `JERO_PI_AGENT_HOME`（兼容 `PI_CODING_AGENT_DIR`）`JERO_PI_LEAN_MODE` `JERO_PI_MEMORY` `JERO_PI_AUTONOMOUS_MODE` `JERO_PI_CONTEXT_MONITOR`（`0` 关闭上下文余量告警）`JERO_PI_SDD_BREADCRUMB`（`0` 关闭 SDD 状态面包屑）`JERO_PI_SPEC_INDEX`（`0` 关闭已确立规范索引注入） |
 | 配置路径 | `~/.pi/jero/`（全局：models.json / persona.json / review-mode.json）、`<repo>/.pi/jero/`（项目覆盖）、`<repo>/.jero/policies/`（评审策略）、`.atl/skill-registry.md`（技能索引） |
+
+### 兼容白名单（gentle- 残留审计，2026-09-26）
+
+身份清理后的约 555+ 处 `gentle-` 残留分五类，每类有明确移除条件——这是分批清退的依据，也是"绝不顺手清理"的边界（与 `docs/dependency-exit-plan.md` 白名单提醒同源）：
+
+| 类别 | 规模 | 移除条件 |
+|---|---|---|
+| `gentle-ai.*` wire schema 串（`review-integration.consent/v3`、`sdd-status` 等 20+ 个） | 369 处 / 55 文件 | 68 个黄金向量字节钉住 + 下游解码器字面匹配——只能随 wire 契约版本迁移逐 schema 进行（向量再生成 + 解码器同步 + conformance 全绿） |
+| `gentle-pi#NNN` 历史工单引用（注释） | 145 处 / 28 文件 | 纯历史记录，无兼容面；相关代码段重写时顺手清，不开专项 |
+| `gentleman` persona 档位值 | 18 处 / 15 文件 | 用户配置里已持久化的枚举值；改名需 legacy 回退读取迁移，单独变更 |
+| `gentle-agents` 自定义消息类型与存储目录 | 8 处 / 4 文件 | 磁盘用户数据；改名需"新名读 + 旧名回退"的探测迁移 |
+| `gentle-pi.*` 配置/契约串（引擎 schemaName、relay/回执/侧栏缓存键） | 15 处 / 10 文件 | 各随其契约串大版本；`gentle-pi.sdd-status@1` 刚承载轻量 change 扩展，语义稳定优先 |
+
+<!-- jero:manifest:begin (generated by scripts/check-docs-manifest.mjs) -->
+斜杠命令（25）：`/jero-sdd-continue` `/jero-sdd-init` `/jero-sdd-status` `/jero:agents` `/jero:background-subagents` `/jero:banner` `/jero:banner-color` `/jero:changes` `/jero:doctor` `/jero:guard` `/jero:install-delegation` `/jero:install-review` `/jero:install-sdd` `/jero:lean` `/jero:models` `/jero:persona` `/jero:profiles` `/jero:review-mode` `/jero:review-session-permission` `/jero:sdd-preflight` `/jero:status` `/jero:toggle-rose` `/jero:toggle-text-logo` `/jero:usage` `/skill-registry:refresh`
+工具（19）：`jero_review` `jero_review_capture` `jero_review_capture_group` `jero_review_scope` `mem_list` `mem_read` `mem_save` `mem_search` `session_worktree_register` `subagent_cancel` `subagent_continue` `subagent_list_agents` `subagent_list_tasks` `subagent_reconcile` `subagent_reply` `subagent_result` `subagent_run` `subagent_send_message` `subagent_status`
+技能（17）：`branch-pr` `chained-pr` `cognitive-doc-design` `comment-writer` `issue-creation` `jero-ai` `jero-debt` `jero-lean` `jero-lean-review` `jero-skills` `judgment-day` `rdd-defect-workflow` `release` `skill-creator` `skill-improver` `skill-registry` `work-unit-commits`
+<!-- jero:manifest:end -->
 
 ## 测试与打包门
 
-- 190 个测试文件（node:test，并发 12）+ runtime harness（真实扩展装配 × 假宿主端到端，三段场景）。
-- CI（GitHub Actions）：Ubuntu 全量测试 + 类型诊断棘轮（`scripts/types-baseline.json`）+ runtime 模块一致性（`runtime/*.mjs` 由 lib 再生成）+ 权威边界检查 + 断网测试门（代理黑洞 + `NODE_OFFLINE=1`）；Windows 权威探测与候选视图回归。
-- 打包门 `prepack`/`prepublishOnly`：全量测试 → runtime 一致性 → 权威边界 → `verify-package-files.mjs`（当前钉 148 个必需文件 = 80 条直接断言 + 68 个字节钉住向量，另 25 条禁带路径）→ packed tarball 分发链校验（`test-packed-runner.mjs`）。
+- 195 个测试文件（node:test，并发 12）+ runtime harness（真实扩展装配 × 假宿主端到端，三段场景）。
+- CI（GitHub Actions）：Ubuntu 全量测试 + 类型诊断棘轮（`scripts/types-baseline.json`）+ runtime 模块一致性（`runtime/*.mjs` 由 lib 再生成）+ 权威边界检查 + 文档清单同步门（`scripts/check-docs-manifest.mjs`，从注册点派生命令/工具/技能清单并钉住本文件的生成块）+ 评审域命名棘轮（`scripts/check-review-naming.mjs`，外围前缀只降不升）+ 断网测试门（代理黑洞 + `NODE_OFFLINE=1`）；Windows 权威探测与候选视图回归。
+- 打包门 `prepack`/`prepublishOnly`：全量测试 → runtime 一致性 → 权威边界 → `verify-package-files.mjs`（当前钉 148 个必需文件 = 80 条直接断言 + 68 个字节钉住向量，另 25 条禁带路径）→ 文档清单同步门 → 评审域命名棘轮 → packed tarball 分发链校验（`test-packed-runner.mjs`，仅 publish 链）。
 - 供应链：9 个伴生依赖精确钉版；`pnpm-workspace.yaml` 强制发布龄期 / 信任不降级 / 无非常规子依赖来源；CI 重跑 `pnpm audit --prod --audit-level=high` 与 npm publish provenance；`/jero:doctor` 内置伴生依赖健康审计（钉版安装 + pi 清单入口解析，处置指引见 `docs/dependency-exit-plan.md`）。

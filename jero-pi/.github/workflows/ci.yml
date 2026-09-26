@@ -58,6 +58,17 @@ jobs:
       - name: Verify package contents
         run: node scripts/verify-package-files.mjs
 
+      # The reference doc's command/tool/skill counts are derived from the
+      # registration points; this gate stops doc drift at CI time.
+      - name: Docs manifest sync
+        run: pnpm run check:docs-manifest
+
+      # The review domain's two peripheral naming prefixes (review-*,
+      # jero-ai-review-*) are frozen at recorded maxima until the rename
+      # convergence lands; new review domain logic belongs in lib/authority/.
+      - name: Review naming ratchet
+        run: pnpm run check:review-naming
+
       # Design §5.5: the packed artifact itself must carry no distribution-chain
       # residue. verify-package-files.mjs asserts the worktree; this gate
       # asserts the tarball file list (files-array mistakes would only show here).

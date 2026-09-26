@@ -29,6 +29,8 @@ export interface JeroSddStatusV2 {
 	schemaVersion: 2;
 	changeName: string | null;
 	artifactStore: SddArtifactStore;
+	/** 轻量 change 投影（P1.1）：仅当磁盘标记在场时携带；见 lib/sdd-status.ts 的 SddStatus.lightweight。 */
+	readonly lightweight?: boolean;
 	planningHome: { mode: "repo-local"; path: string };
 	changeRoot: string | null;
 	actionContext: { mode: "repo-local"; workspaceRoot: string; allowedEditRoots: readonly string[] };
@@ -116,6 +118,7 @@ export function jeroSddStatusV1(_context: JeroAuthorityContextV1, request: { cha
 		schemaVersion: 2,
 		changeName: resolved.changeName,
 		artifactStore: resolved.artifactStore,
+		...(resolved.lightweight ? { lightweight: true } : {}),
 		planningHome: { mode: "repo-local", path: planningHomePath },
 		changeRoot: resolved.changeRoot,
 		actionContext: { mode: "repo-local", workspaceRoot: resolved.actionContext.workspaceRoot, allowedEditRoots: [...resolved.actionContext.allowedEditRoots] },

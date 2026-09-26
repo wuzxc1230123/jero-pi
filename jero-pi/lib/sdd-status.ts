@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, lstatSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { basename, join, relative, resolve } from "node:path";
 import type { NativeSddStatusV2 } from "./authority/client-contract.ts";
 import {
@@ -93,6 +93,14 @@ export interface SddStatus {
 	artifactStore: SddArtifactStore;
 	planningHome: { root: string; changesDir: string };
 	changeRoot: string | null;
+	/**
+	 * 轻量 change（P1.1）：changeRoot 下存在规范常规文件 `.jero-lightweight`
+	 * 时为 true——proposal + tasks 即可 apply-ready，specs/design 显式豁免；
+	 * 无 delta specs 时 sync 阶段 not_applicable（archive 不再要求
+	 * sync-report）。可选字段：仅权威解析且标记在场时携带，既有消费者
+	 * 不受影响（gentle-pi.sdd-status@1 的向后兼容扩展）。
+	 */
+	lightweight?: boolean;
 	artifactPaths: SddArtifactPaths;
 	contextFiles: SddArtifactPaths;
 	artifacts: Record<keyof SddArtifactPaths, ArtifactState>;
@@ -264,13 +272,24 @@ function reportIsClearlyPassing(path: string | undefined): boolean {
 	return hasPassSignal && !hasBlocker;
 }
 
-// 规划路由修复第一个未完成的前置条件；诊断保持独立。
-function planningRecommendation(artifacts: SddStatus["artifacts"], taskTotal: number): SddNextRecommended {
+// 规划路由修复第一个未完成的前置条件；诊断保持独立。轻量 change 跳过
+// specs/design 横档——它们已被显式豁免，推荐链直达 tasks。
+function planningRecommendation(artifacts: SddStatus["artifacts"], taskTotal: number, lightweight: boolean): SddNextRecommended {
 	if (artifacts.proposal !== "done") return "sdd-propose";
-	if (artifacts.specs !== "done") return "sdd-spec";
-	if (artifacts.design !== "done") return "sdd-design";
+	if (!lightweight && artifacts.specs !== "done") return "sdd-spec";
+	if (!lightweight && artifacts.design !== "done") return "sdd-design";
 	if (artifacts.tasks !== "done" || taskTotal === 0) return "sdd-tasks";
 	return "blocked";
+}
+
+// 轻量声明是 changeRoot 下的一个规范常规文件（与 .jero-instance 同形纪律：
+// 目录、符号链接等非规范形状保守视为未声明）。存在即显式豁免，绝不猜测。
+function hasLightweightMarker(changeRoot: string): boolean {
+	try {
+		return lstatSync(join(changeRoot, ".jero-lightweight")).isFile();
+	} catch {
+		return false;
+	}
 }
 
 function emptyStatus(cwd: string, changeName: string | null, blockedReasons: string[], artifactStore: SddArtifactStore = "openspec", isNonAuthoritative = false): SddStatus {
@@ -519,6 +538,7 @@ export function resolveSddStatus(options: ResolveSddStatusOptions): SddStatus {
 	}
 
 	const changeRoot = join(changesDir, changeName);
+	const lightweight = hasLightweightMarker(changeRoot);
 	const proposal = join(changeRoot, "proposal.md");
 	const design = join(changeRoot, "design.md");
 	const tasks = join(changeRoot, "tasks.md");
@@ -569,20 +589,23 @@ export function resolveSddStatus(options: ResolveSddStatusOptions): SddStatus {
 
 	if (artifacts.proposal === "missing") blockedReasons.push("proposal.md is missing.");
 	if (artifacts.proposal === "partial") blockedReasons.push("proposal.md is empty or partial.");
-	if (artifacts.specs !== "done") blockedReasons.push("domain specs are missing or partial.");
-	if (artifacts.design === "missing") blockedReasons.push("design.md is missing.");
-	if (artifacts.design === "partial") blockedReasons.push("design.md is empty or partial.");
+	if (!lightweight && artifacts.specs !== "done") blockedReasons.push("domain specs are missing or partial.");
+	if (!lightweight && artifacts.design === "missing") blockedReasons.push("design.md is missing.");
+	if (!lightweight && artifacts.design === "partial") blockedReasons.push("design.md is empty or partial.");
 	if (artifacts.tasks === "missing") blockedReasons.push("tasks.md is missing.");
 	if (artifacts.tasks === "partial") blockedReasons.push("tasks.md is empty or partial.");
 	if (artifacts.tasks === "done" && taskProgress.total === 0) {
 		blockedReasons.push("tasks.md has no implementation task checkboxes.");
 	}
 	blockedReasons.push(...taskAccounting.errors);
-	if (flatOnly && legacyFlatSpec) {
+	if (!lightweight && flatOnly && legacyFlatSpec) {
 		blockedReasons.push(`Legacy flat spec is present without domain specs: ${legacyFlatSpec.path}.`);
 	}
 
-	const coreArtifactsReady = artifacts.proposal === "done" && artifacts.specs === "done" && artifacts.design === "done" && artifacts.tasks === "done" && taskProgress.total > 0 && !flatOnly;
+	// 轻量 change 的就绪门：proposal + tasks 即可；specs/design 被标记
+	// 显式豁免（在场时仍作为上下文与 sync 对象，绝不当作阻塞）。
+	const coreArtifactsReady = artifacts.proposal === "done" && artifacts.tasks === "done" && taskProgress.total > 0
+		&& (lightweight || (artifacts.specs === "done" && artifacts.design === "done" && !flatOnly));
 	const taskArtifactBlocked = taskAccounting.errors.length > 0;
 	const applyState: ApplyState = !coreArtifactsReady || taskArtifactBlocked
 		? "blocked"
@@ -591,12 +614,17 @@ export function resolveSddStatus(options: ResolveSddStatusOptions): SddStatus {
 			: "ready";
 	const verifyClean = reportIsClearlyPassing(artifactPaths.verifyReport[0]);
 	const syncClean = reportIsClearlyPassing(artifactPaths.syncReport[0]);
-	const syncPrerequisitesReady = coreArtifactsReady && verifyClean && collisions.length === 0 && !flatOnly;
-	const syncState: DependencyState = syncPrerequisitesReady
-		? syncClean
-			? "all_done"
-			: "ready"
-		: "blocked";
+	// 轻量且零 delta specs：sync 无对象，阶段 not_applicable（archive 相应
+	// 不要求 sync-report）；轻量但写了 specs 的 change 走正常 sync。
+	const noSpecsToSync = lightweight && specFiles.length === 0;
+	const syncPrerequisitesReady = coreArtifactsReady && verifyClean && collisions.length === 0 && (lightweight || !flatOnly);
+	const syncState: DependencyState = noSpecsToSync
+		? "not_applicable"
+		: syncPrerequisitesReady
+			? syncClean
+				? "all_done"
+				: "ready"
+			: "blocked";
 	const verifyState: DependencyState = verifyClean
 		? "all_done"
 		: artifacts.tasks === "done" && taskProgress.total > 0 && (artifacts.applyProgress === "done" || applyState === "all_done")
@@ -606,7 +634,7 @@ export function resolveSddStatus(options: ResolveSddStatusOptions): SddStatus {
 		apply: applyState === "blocked" ? "blocked" : applyState,
 		verify: verifyState,
 		sync: syncState,
-		archive: coreArtifactsReady && verifyClean && syncClean && taskProgress.remaining === 0 && !taskArtifactBlocked ? "ready" : "blocked",
+		archive: coreArtifactsReady && verifyClean && (noSpecsToSync || syncClean) && taskProgress.remaining === 0 && !taskArtifactBlocked ? "ready" : "blocked",
 	};
 	const archiveReady = dependencies.archive === "ready";
 	const nextRecommended: SddNextRecommended = taskArtifactBlocked
@@ -619,13 +647,14 @@ export function resolveSddStatus(options: ResolveSddStatusOptions): SddStatus {
 					? "sdd-sync"
 					: archiveReady
 						? "sdd-archive"
-						: planningRecommendation(artifacts, taskProgress.total);
+						: planningRecommendation(artifacts, taskProgress.total, lightweight);
 
 	const status: SddStatus = {
 		schemaName: "gentle-pi.sdd-status",
 		schemaVersion: 1,
 		changeName,
 		artifactStore: store,
+		...(lightweight ? { lightweight: true } : {}),
 		planningHome: { root, changesDir },
 		changeRoot,
 		artifactPaths,

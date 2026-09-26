@@ -613,14 +613,30 @@ function createJeroAiExtensionForTesting(
 		if (ctx.mode !== "tui" || !ctx.hasUI || !contextMonitorEnabled(permissionEnvironment)) return;
 		try { ctx.ui.notify(CONTEXT_COMPACT_RECOVERY_MESSAGE, "info"); } catch { /* 尽力而为。 */ }
 	});
-	// 纪律引导注入：压缩与重启会抹掉 harness 纪律，在置位窗口内把核心纪律
-	// 作为单条 user 消息注入本代理循环的每次 LLM 请求（紧随压缩摘要之后，
-	// marker 去重）。RPC 子进程是受委托的执行者，只消费父会话的精确传输块，
-	// 绝不注入；包子进程同理。见 lib/jero-ai-bootstrap.ts。
+	// 纪律引导 + 规范索引注入：压缩与重启会抹掉 harness 纪律与已确立规范
+	// 的可见性，在置位窗口内把两者作为 user 消息注入本代理循环的每次 LLM
+	// 请求（紧随压缩摘要之后，marker 去重）。RPC 子进程是受委托的执行者，
+	// 只消费父会话的精确传输块，绝不注入；包子进程同理。见
+	// lib/jero-ai-bootstrap.ts 与 lib/jero-ai-spec-index.ts。
+	// SDD 面包屑（lib/jero-ai-sdd-breadcrumb.ts）不受该窗口约束：只要有活跃
+	// SDD 变更，每次 LLM 请求都刷新当前阶段状态——磁盘状态引擎的读取失败
+	// 保守跳过，绝不阻塞请求。
 	pi.on("context", (event, ctx) => {
-		if (!disciplineBootstrapPending) return undefined;
 		if (ctx.mode === "rpc" || permissionEnvironment.JERO_PI_AGENTS_CHILD === "1") return undefined;
-		const messages = applyJeroBootstrap(event.messages);
+		let messages: readonly unknown[] | undefined;
+		if (disciplineBootstrapPending) {
+			messages = applyJeroBootstrap(event.messages);
+			if (specIndexEnabled(permissionEnvironment)) {
+				try {
+					messages = applySpecIndex(messages ?? event.messages, renderSpecIndexText(buildSpecIndex(ctx.cwd))) ?? messages;
+				} catch { /* 索引读取失败绝不阻塞请求。 */ }
+			}
+		}
+		if (sddBreadcrumbEnabled(permissionEnvironment)) {
+			try {
+				messages = applySddBreadcrumb(messages ?? event.messages, renderSddBreadcrumb(resolveSddStatus({ cwd: ctx.cwd }))) ?? messages;
+			} catch { /* 面包屑状态解析失败绝不阻塞请求。 */ }
+		}
 		return messages === undefined ? undefined : { messages: messages as typeof event.messages };
 	});
 
@@ -1050,7 +1066,7 @@ import {
 	SDD_PREFLIGHT_FIELDS, type SddPreflightField, type SddPreflightPreferences
 } from "../lib/sdd-preflight.ts";
 import { readSavedModelConfigAsync as readModelRoutingAuthorityAsync } from "../lib/model-routing-authority.ts";
-import { parseSddStatusCommandArgs, renderNativeSddPhasePrompt } from "../lib/sdd-status.ts";
+import { parseSddStatusCommandArgs, renderNativeSddPhasePrompt, resolveSddStatus } from "../lib/sdd-status.ts";
 import { type JeroRenderContext, renderJeroLifecycleCall, renderJeroResult } from "../lib/jero-ai-renderer.ts";
 import { CandidateViewRegistry, injectReviewCandidateView, readCandidateContextManifestPage } from "../lib/review-candidate-view.ts";
 import {
@@ -1086,6 +1102,8 @@ import {
 	type ContextMonitorLevel, type ContextUsageSnapshot,
 } from "../lib/jero-ai-context-monitor.ts";
 import { applyJeroBootstrap } from "../lib/jero-ai-bootstrap.ts";
+import { applySddBreadcrumb, renderSddBreadcrumb, sddBreadcrumbEnabled } from "../lib/jero-ai-sdd-breadcrumb.ts";
+import { applySpecIndex, buildSpecIndex, renderSpecIndexText, specIndexEnabled } from "../lib/jero-ai-spec-index.ts";
 import { companionDependencyDiagnosticLines } from "../lib/jero-ai-companion-deps.ts";
 import { evaluateSddArtifactShrink, recordSddArtifactWatermarks, renderSddShrinkReport } from "../lib/jero-ai-sdd-guard.ts";
 import { buildJeroPrompt, loadReviewContractPromptFragment } from "../lib/jero-ai-prompts.ts";

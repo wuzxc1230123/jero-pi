@@ -185,6 +185,8 @@ export interface NativeSddStatusV2 extends Readonly<Record<string, unknown>> {
 	schemaVersion: 2;
 	changeName: string | null;
 	artifactStore: "openspec" | "engram" | "hybrid" | "none";
+	/** 轻量 change 标记（P1.1）：可选，仅当 changeRoot 带 .jero-lightweight 时携带。 */
+	readonly lightweight?: boolean;
 	planningHome: Readonly<Record<string, unknown>> & { mode: "repo-local"; path: string };
 	changeRoot: string | null;
 	actionContext: Readonly<Record<string, unknown>> & { mode: "repo-local"; workspaceRoot: string; allowedEditRoots: readonly string[] };

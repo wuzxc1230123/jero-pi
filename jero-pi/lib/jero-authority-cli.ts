@@ -36,8 +36,17 @@ import { buildJeroLastEventClosureV1 } from "./authority/closures.ts";
 // 都是类型化联合进、wire 记录出，权威拒绝以
 // 携带类型化代码的错误浮出。
 
+// 结构化重投影替代旧的双盲强转：JeroSddStatusV2 与 NativeSddStatusV2 的
+// 差异只在索引签名的严格度上（wire 类型以 Record<string, unknown> 放宽），
+// 逐字段展开让编译器持续检查这两个形状不再悄悄漂移。
 function projectV2(status: JeroSddStatusV2): NativeSddStatusV2 {
-	return status as unknown as NativeSddStatusV2;
+	return {
+		...status,
+		planningHome: { ...status.planningHome },
+		actionContext: { ...status.actionContext, allowedEditRoots: [...status.actionContext.allowedEditRoots] },
+		dependencies: { ...status.dependencies },
+		blockedReasons: [...status.blockedReasons],
+	};
 }
 
 function contextOrThrow(cwd: string): JeroAuthorityContextV1 {

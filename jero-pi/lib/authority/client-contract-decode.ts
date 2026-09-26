@@ -357,6 +357,7 @@ export function decodeNativeSddStatusV2(value: unknown, request: Pick<NativeSddS
 	if (status.schemaName !== "gentle-ai.sdd-status" || status.schemaVersion !== 2) throw new Error("wrong native SDD status schema");
 	if ((request.changeName !== undefined && status.changeName !== request.changeName) || (status.changeName !== null && !isCanonicalProcessString(status.changeName))) throw new Error("native SDD status change identity mismatch");
 	const artifactStore = enumString(status.artifactStore, ["openspec", "engram", "hybrid", "none"]);
+	if (status.lightweight !== undefined && typeof status.lightweight !== "boolean") throw new Error("native SDD lightweight flag must be a boolean");
 	const planningHome = object(status.planningHome);
 	if (planningHome.mode !== "repo-local" || !isCanonicalProcessString(planningHome.path)) throw new Error("invalid native SDD planning home");
 	const expectedOpenSpecHome = join(request.workspaceRoot, "openspec");

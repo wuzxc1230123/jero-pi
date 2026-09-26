@@ -43,10 +43,12 @@
 		"build:runtime-modules": "node scripts/build-runtime-modules.mjs --write",
 		"check:runtime-modules": "node scripts/build-runtime-modules.mjs --check",
 		"typecheck": "node scripts/check-types.mjs",
-		"prepack": "pnpm test && pnpm run check:runtime-modules && pnpm run check:authority-boundary && pnpm run check:test-quality && node scripts/verify-package-files.mjs",
-		"prepublishOnly": "pnpm test && pnpm run check:runtime-modules && pnpm run check:authority-boundary && pnpm run check:test-quality && node scripts/verify-package-files.mjs && pnpm run test:packed-package",
+		"prepack": "pnpm test && pnpm run check:runtime-modules && pnpm run check:authority-boundary && pnpm run check:test-quality && node scripts/verify-package-files.mjs && pnpm run check:docs-manifest && pnpm run check:review-naming",
+		"prepublishOnly": "pnpm test && pnpm run check:runtime-modules && pnpm run check:authority-boundary && pnpm run check:test-quality && node scripts/verify-package-files.mjs && pnpm run test:packed-package && pnpm run check:docs-manifest && pnpm run check:review-naming",
 		"check:authority-boundary": "node scripts/check-authority-boundary.mjs",
-		"check:test-quality": "node scripts/check-test-quality.mjs"
+		"check:test-quality": "node scripts/check-test-quality.mjs",
+		"check:docs-manifest": "node scripts/check-docs-manifest.mjs",
+		"check:review-naming": "node scripts/check-review-naming.mjs"
 	},
 	"pi": {
 		"image": "assets/jero-logo.png",
