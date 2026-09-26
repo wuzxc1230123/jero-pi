@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { __testing } from "../extensions/jero-ai.ts";
+import { __testing } from "../lib/jero-ai-testing-exports.ts";
 import type { NativeReviewCli } from "../lib/authority/client-contract.ts";
 import { CandidateViewRegistry, injectReviewCandidateView } from "../lib/review-candidate-view.ts";
 // 进程加载即打桩 Windows ACL 权威：真实 PowerShell/icacls 栈只归候选视图

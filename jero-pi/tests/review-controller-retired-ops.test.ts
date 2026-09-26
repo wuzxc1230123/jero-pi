@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { __testing } from "../extensions/jero-ai.ts";
+import { __testing } from "../lib/jero-ai-testing-exports.ts";
 
 function scratchDir(prefix: string): string {
 	const dir = mkdtempSync(join(tmpdir(), prefix));

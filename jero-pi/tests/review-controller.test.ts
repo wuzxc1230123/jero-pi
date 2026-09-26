@@ -9,7 +9,8 @@ import type {
 	ExtensionContext,
 	ToolCallEventResult,
 } from "@earendil-works/pi-coding-agent";
-import jeroAi, { __testing, createJeroAiExtension } from "../extensions/jero-ai.ts";
+import jeroAi, { createJeroAiExtension } from "../extensions/jero-ai.ts";
+import { __testing } from "../lib/jero-ai-testing-exports.ts";
 import {
 	REVIEW_MODE,
 	REVIEW_TRANSITION,

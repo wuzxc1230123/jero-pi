@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { __testing } from "../extensions/jero-ai.ts";
+import { __testing } from "../lib/jero-ai-testing-exports.ts";
 import {
 	NATIVE_REVIEW_MODE_OPERATION,
 	NATIVE_REVIEW_MODE_SOURCE,

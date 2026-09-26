@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, existsSync, utimesSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync, existsSync, utimesSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -11,6 +11,7 @@ import {
 	listMemory,
 	MAX_MEMORY_CONTENT_BYTES,
 	readMemory,
+	releaseIndexLockIfOwned,
 	resolveMemoryRoot,
 	rebuildMemoryIndex,
 	saveMemory,
@@ -161,6 +162,61 @@ test("project memory root wins when it exists, otherwise the config home", () =>
 		assert.equal(resolveMemoryRoot(bare, env), join(configHome, "memory"));
 	} finally {
 		rmSync(base, { recursive: true, force: true });
+	}
+});
+
+test("an explicit JERO_PI_MEMORY_ROOT overrides project and config-home resolution", () => {
+	const base = tempRoot();
+	const project = join(base, "proj");
+	const configHome = join(base, "config");
+	mkdirSync(join(project, ".jero", "memory"), { recursive: true });
+	try {
+		const explicit = join(base, "explicit", "memory");
+		const env = { JERO_PI_CONFIG_HOME: configHome, JERO_PI_MEMORY_ROOT: explicit };
+		assert.equal(resolveMemoryRoot(project, env), explicit, "the explicit root wins over the project root");
+		assert.equal(resolveMemoryRoot(base, { ...env, JERO_PI_MEMORY_ROOT: "  " }), join(configHome, "memory"), "a blank override falls through to the normal resolution");
+	} finally {
+		rmSync(base, { recursive: true, force: true });
+	}
+});
+
+test("lock release refuses to delete a taken-over lock", () => {
+	const root = tempRoot();
+	try {
+		const lockPath = join(root, ".index-lock");
+		// 原持有者 A 赢得锁并落令牌。
+		mkdirSync(lockPath);
+		writeFileSync(join(lockPath, "holder"), "token-a", "utf8");
+		// 陈旧接管：B rename 走 A 的锁（含令牌）并创建自己的新锁。
+		const quarantine = `${lockPath}.stale-9999-0`;
+		renameSync(lockPath, quarantine);
+		rmSync(quarantine, { recursive: true, force: true });
+		mkdirSync(lockPath);
+		writeFileSync(join(lockPath, "holder"), "token-b", "utf8");
+		// A 迟到的释放不得误删 B 的新锁。
+		releaseIndexLockIfOwned(lockPath, "token-a");
+		assert.equal(existsSync(lockPath), true, "the taken-over lock survives the stale holder's release");
+		// 令牌不可读时同样保守失败。
+		rmSync(join(lockPath, "holder"));
+		releaseIndexLockIfOwned(lockPath, "token-a");
+		assert.equal(existsSync(lockPath), true, "a missing holder marker is treated as not-ours");
+		// B 自己的释放正常工作。
+		writeFileSync(join(lockPath, "holder"), "token-b", "utf8");
+		releaseIndexLockIfOwned(lockPath, "token-b");
+		assert.equal(existsSync(lockPath), false);
+	} finally {
+		rmSync(root, { recursive: true, force: true });
+	}
+});
+
+test("saved entries and the index are created owner-only", { skip: process.platform === "win32" }, async () => {
+	const root = tempRoot();
+	try {
+		await saveMemory(root, "secret/key", "sensitive body");
+		assert.equal(statSync(join(root, "entries", "secret", "key.md")).mode & 0o777, 0o600);
+		assert.equal(statSync(join(root, "index.json")).mode & 0o777, 0o600);
+	} finally {
+		rmSync(root, { recursive: true, force: true });
 	}
 });
 

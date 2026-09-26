@@ -5,6 +5,49 @@ jero-pi 尚未发布到 npm（版本停在 0.1.0 基线），本文件自重构�
 
 ## [Unreleased]
 
+### jero-ai 评审工具段外抽（2026-09-27：refactor/jero-ai-split 主件落地）
+
+- **四个 `jero_review*` 工具注册外抽**至 `lib/jero-ai-review-tools.ts`（`registerJeroReviewTools`）：jero-ai.ts 从 ~1120 行降至 864 行，评审工具定义、lens 标签助手与同意子状态机全部迁出，闭包依赖（nativeReviewCli、候选视图注册表、同意注册表与回退键、同意时钟、子进程常任权限、会话权限助手）经 `JeroReviewToolContext` 显式传入。
+- **可变提醒状态对象化**：`reminderSessionActive`/`reminderEpoch` 两个 let 收敛为 `reminderState` 持有对象，评审工具与 jero-ai 的事件处理器（session_shutdown/session_start/agent_end/tool_result 五处读写）共享同一引用——外抽后语义逐字保持。
+- **命名棘轮记录决策**（jeroAiReview 8→9）：新文件是宿主侧工具注册（与既有 8 个 `jero-ai-review-*` adapter 同类），依赖 ExtensionAPI，不属可进 `lib/authority/` 的纯评审域。
+- **docs manifest 门扩展**：`collectTools` 的工具名派生范围显式包含 lib/jero-ai-review-tools.ts（与 jero-agents `tool()` 前缀特例同理），19 工具清单不变。
+
+### 扩展层"只注册不实现"第二批（2026-09-27）
+
+- **jero-ai 兼容再导出块删除**：`extensions/jero-ai.ts` 不再充当 lib 的公共面（原 8 个 `export *`/具名再导出全部移除）；30 个测试文件 + `tests/fixtures/measure-orchestrator-prompt.mjs` 夹具改指各自的 lib 源（`jero-ai-testing-exports` / `jero-ai-model-routing-apply` / `jero-ai-model-config` / `jero-ai-review-consent`），扩展公开面收敛为 `jeroAi`/`createJeroAiExtension`。
+- **skill-registry 引擎下沉**：`extensions/skill-registry.ts` 624 → 96 行，只剩生命周期装配与命令注册；扫描/frontmatter 解析/去重/指纹缓存/渲染/fs 监视/legacy 项目本副本隔离整体迁至 `lib/skill-registry-engine.ts`（机械平移）。两处刻意偏差：去重守卫的 `import.meta.url` 改由扩展显式传入（下沉后默认参数会在 lib 模块内求值，指向 lib 文件将使"项目本副本胜出"判定失效）；缓存指纹 SHA-1 → SHA-256（Mimosa 门建议；仅缓存变更检测用途，schema 版本 7→8 让旧缓存一次性 miss 自愈）。测试 `__testing` 导入同步改指 lib。
+- 评审工具注册段（4 个 `jero_review*` 工具）的外抽经评估**暂缓**：与同意子状态机、候选视图注册表、会话权限助手的闭包交织重，需要通读全部交织点的独立会话，避免为拆而拆引入行为风险。
+
+### 扩展层"只注册不实现"第一批（2026-09-26：结构化第二批）
+
+- **sdd-init 探测引擎下沉**：`extensions/sdd-init.ts` 821 → 66 行，仅剩命令注册与预检/写盘编排；`walkProject` + 六族探测器 + config.yaml 渲染整体迁至 `lib/sdd-project-detect.ts`（机械平移，语义零改动），并首次获得直接测试覆盖（`tests/sdd-project-detect.test.ts`：Node/空目录/清单+Makefile 三族）。同时 sdd-init 改为直接 import `lib/jero-ai-model-routing-apply.ts` 的 `applySavedModelConfig`，不再经 jero-ai 扩展的兼容再导出。
+- **jero-shell 业务函数下沉**：`shellGitRunner`/`loadFileDiff` → `lib/shell-changes.ts`（与 GitRunner 类型同址）；`fetchCodexUsage` → `lib/shell-usage.ts`（与解析函数同址）。`openInExternalEditor` 经评估**保留在扩展层**——其 win32 `shell: true` 是 .cmd 编辑器垫片（如 VS Code 的 code.cmd）的必要路径，属既有信任边界（与 git 的 EDITOR 集成同级），不为此重构真实行为。
+- **子代理问答直通**（`extensions/jero-agents.ts`）：父会话收到的提问消息在 Task ID/Request ID 行之外追加免抄写的回复调用模板（`task_id="<id>" and request_id="<rid>"`），父模型不再需要从自由文本转写两个关联 ID——转写错一位即断链。测试同步钉住该模板。
+
+### AI 协作友好化第一批（2026-09-26：评审报告 P0 + memory 缺陷修复）
+
+#### 悬空指针与漂移清理（P0）
+
+- **活提示里的幽灵命令**：`assets/orchestrator.md` 与 `assets/orchestrator-delegation.md` 引用的 `/jero-sdd-new`、`/jero-sdd-ff` 全仓无注册（实际为 `/jero-sdd-init`/`/jero-sdd-continue`）——这两份文档注入每个父会话，修正为真实命令名。
+- skills：`skill-registry` 的 Engram 残留措辞改为自有 `mem_save`（`topic: skill-registry`）、删除死链 `_shared/skill-resolver.md`；`work-unit-commits` 移除全仓无实现的会话键 `review_budget_lines`。
+- README 命令计数 22 → 25（与 docs manifest 对齐）。
+- 新增仓库根 `AGENTS.md`：布局地图、三条铁律（新评审代码进 `lib/authority/`、夹具进 `-shared.ts` 且分片禁互导、`runtime/` 生成物纪律）、按域验证回路、`_tools/*.md` 相对仓库根解析的层级说明——补齐 AI 代理入口自述的缺位。
+
+#### 死代码删除（P0）
+
+- `lib/review-consent-latch.ts` 整文件 + 其测试：生产零引用（唯一 importer 是自己的测试）。评审域命名棘轮随之下移（review 33 → 32）。
+- `lib/authority/client-contract-decode.ts` 移除 exec 时代零引用解码链约 300 行：`decodeReviewStartResponse`、`decodeNativeMaintenanceResult`、`decodeLegacyReconcileAudit`、`decodeReviewTransaction`（及 `decodeSnapshot`/`decodeFinding`/`decodeLensResult`/`decodeFindingEvidence`/`decodeValidationCheck`/`decodeReleaseEvidence` 整条辅助链）、`decodeDeclinedConsentStart`、`decodeNativeAdmittedResultManifest`、`decodeNativeProviderRoleCaptureArtifact`、`decodeNativeUnachievableLensCaptureArtifact`、`parseJson`、`decode` 包装器、`assertSupportedNextTransitionOperation`、`nativeError`/`nativeProcessDiagnostics`、`canonicalNativeReviewCwd`/`repositoryPathIdentity`/`repositoriesMatch`、`providerProcessEnvironment`、`sha256Identity`、`decodeSelectedLenses`、`hasCanonicalSelectedLenses`/`hasValidLensesRequired`、`NativeJsonExecution`/`NegotiatedExecution`/`NativeReviewAdmittedResultManifest`，`normalizeNativeReviewCwd` 取消导出（仅内部使用）。runtime 生成物同步再生成。
+
+#### 增量验证回路（P0）
+
+- package.json 新增域脚本：`test:authority`（+ 复合 `test:authority:full`：runtime 再生成 → 域测试 → 一致性 → 边界检查）、`test:agents`、`test:review`、`test:sdd`、`fix:docs-manifest`（`--write` 别名）。
+
+#### memory 缺陷修复（P1）
+
+- **索引锁释放加所有权校验**（`lib/memory.ts`）：锁目录内新增持有者令牌文件；释放前比对，令牌缺失或已易主（陈旧接管后）绝不删除——堵住"原持有者迟到的 `rmSync` 误删接管者新锁、打开第二个双持有窗口"的竞态。`rebuildMemoryIndexIfLockable` 的 EEXIST 分支同步收敛为保守跳过（对齐其文档注释"锁被占用时跳过重建"，读路径绝不抛错）。
+- **条目与索引 0600**：`atomicWrite` 创建即收紧权限（Windows 忽略 mode）；记忆正文可能含敏感内容，对齐 agent-profiles/presence 的既有纪律。
+- **父子记忆根统一**：新增 `JERO_PI_MEMORY_ROOT` 显式覆盖（优先级：显式 env > 项目 `.jero/memory` > 全局），`buildRequest` 把父会话解析出的记忆根下传给每个子代理——子代理在 worktree 中按 cwd 解析会与父会话静默分叉，违背"子保存、父检索"委派契约；显式设置时不覆盖。`tests/jero-agents.z2` 的 spawn env 断言同步为"子进程继承父根"。
+
 ### 全量代码审查修复（2026-09-26：七条 P1 + 权威收口 + 机械重构 + 性能探测）
 
 #### 正确性与安全（P1）

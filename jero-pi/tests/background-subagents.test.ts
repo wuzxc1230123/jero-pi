@@ -14,7 +14,8 @@ import type {
 	ExtensionAPI,
 	ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
-import { __testing, createJeroAiExtension } from "../extensions/jero-ai.ts";
+import { __testing } from "../lib/jero-ai-testing-exports.ts";
+import { createJeroAiExtension } from "../extensions/jero-ai.ts";
 
 // ---------------------------------------------------------------------------
 // Background subagents policy (issue #256).

@@ -45,14 +45,21 @@ export function isValidMemoryTag(tag: string): boolean {
 	return tag.length > 0 && tag.length <= MAX_TAG_LENGTH && /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(tag);
 }
 
+/** 显式记忆根覆盖：子代理进程经它继承父会话的记忆根。 */
+export const MEMORY_ROOT_ENV = "JERO_PI_MEMORY_ROOT";
+
 /** 全局记忆配置主目录：`JERO_PI_CONFIG_HOME` 覆盖 `~/.pi/jero`。 */
 export function memoryConfigHome(env: NodeJS.ProcessEnv = process.env): string {
 	const override = env.JERO_PI_CONFIG_HOME?.trim();
 	return override && override !== "" ? override : join(homedir(), ".pi", "jero");
 }
 
-/** `<cwd>/.jero/memory` 存在时项目记忆优先；否则使用全局根目录。 */
+/** `JERO_PI_MEMORY_ROOT` 显式覆盖优先；其次 `<cwd>/.jero/memory` 存在时
+ * 项目记忆优先；否则使用全局根目录。委派契约要求"子代理保存、父会话
+ * 检索"落在同一存储，因此编排器把父会话解析出的根经该变量下传。 */
 export function resolveMemoryRoot(cwd: string, env: NodeJS.ProcessEnv = process.env): string {
+	const override = env[MEMORY_ROOT_ENV]?.trim();
+	if (override && override !== "") return override;
 	const projectRoot = join(cwd, ".jero", "memory");
 	if (existsSync(projectRoot)) return projectRoot;
 	return join(memoryConfigHome(env), "memory");
@@ -65,7 +72,9 @@ export function memoryEntryPath(root: string, topic: string): string {
 function atomicWrite(path: string, content: string): void {
 	mkdirSync(dirname(path), { recursive: true });
 	const staging = join(dirname(path), `.${basenameOf(path)}.tmp-${randomUUID()}`);
-	writeFileSync(staging, content, "utf8");
+	// 记忆正文与索引可能携带敏感内容，创建即收紧到 0600（Windows 平台
+	// 忽略 mode，权限由继承的 ACL 决定）。
+	writeFileSync(staging, content, { encoding: "utf8", mode: 0o600 });
 	try {
 		renameSync(staging, path);
 	} catch (error) {
@@ -145,10 +154,13 @@ function writeIndex(root: string, map: Map<string, MemoryIndexEntry>): void {
 // 索引是被所有持有 mem_* 工具的进程共享的读改写文件（父编排器加上
 // 每个委托任务各一个 `pi --mode rpc` 子进程）。两次并发保存不得丢失
 // 对方的行，因此变更通过基于 mkdir 的锁目录串行化：在所有平台上都
-// 原子，且无需原生模块。超过过期窗口的锁是崩溃持有者的残留，可被
-// 接管；等待超过同一窗口则高声放弃。等待以异步轮询进行——保存与
+// 原子，且无需原生模块。锁目录内写持有者令牌：接管（rename 走陈旧锁）
+// 之后，原持有者的释放必须能识别"锁已经不是我的"，否则会误删接管者
+// 的新锁、打开第二个双持有窗口。超过过期窗口的锁是崩溃持有者的残留，
+// 可被接管；等待超过同一窗口则高声放弃。等待以异步轮询进行——保存与
 // 删除因此是 async，但绝不阻塞事件循环。
 const INDEX_LOCK_DIR = ".index-lock";
+const INDEX_LOCK_HOLDER = "holder";
 const INDEX_LOCK_STALE_MS = 5_000;
 const INDEX_LOCK_POLL_MS = 15;
 
@@ -156,13 +168,40 @@ function delay(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/** 在刚赢得的锁目录里落持有者令牌；失败返回 undefined（此时释放端
+ * 仍按"无标记即自己"处理，锁不会泄漏）。 */
+function markIndexLockHolder(lockPath: string): string | undefined {
+	const token = `${process.pid}-${randomUUID()}`;
+	try {
+		writeFileSync(join(lockPath, INDEX_LOCK_HOLDER), token, "utf8");
+		return token;
+	} catch {
+		return undefined;
+	}
+}
+
+/** 只删除仍由本令牌持有的锁。标记缺失或已换成他人的令牌（被接管）
+ * 时绝不删除——fail-closed，宁可让残留锁走陈旧接管路径。 */
+export function releaseIndexLockIfOwned(lockPath: string, token: string | undefined): void {
+	if (token !== undefined) {
+		try {
+			if (readFileSync(join(lockPath, INDEX_LOCK_HOLDER), "utf8") !== token) return;
+		} catch {
+			return;
+		}
+	}
+	rmSync(lockPath, { recursive: true, force: true });
+}
+
 async function withIndexLockAsync<T>(root: string, action: () => T): Promise<T> {
 	mkdirSync(root, { recursive: true });
 	const lockPath = join(root, INDEX_LOCK_DIR);
 	const deadline = Date.now() + INDEX_LOCK_STALE_MS;
 	for (;;) {
+		let holderToken: string | undefined;
 		try {
 			mkdirSync(lockPath);
+			holderToken = markIndexLockHolder(lockPath);
 		} catch (error) {
 			if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
 			// EEXIST 与 stat 之间锁可能已被释放（ENOENT）：按"可立即重试"
@@ -195,7 +234,7 @@ async function withIndexLockAsync<T>(root: string, action: () => T): Promise<T> 
 		try {
 			return action();
 		} finally {
-			rmSync(lockPath, { recursive: true, force: true });
+			releaseIndexLockIfOwned(lockPath, holderToken);
 		}
 	}
 }
@@ -205,16 +244,19 @@ async function withIndexLockAsync<T>(root: string, action: () => T): Promise<T> 
  * 索引（否则会把持锁者刚写入的行用旧快照覆盖掉）。 */
 function rebuildMemoryIndexIfLockable(root: string): void {
 	const lockPath = join(root, INDEX_LOCK_DIR);
+	let holderToken: string | undefined;
 	try {
 		mkdirSync(lockPath);
-	} catch (error) {
-		if ((error as NodeJS.ErrnoException).code === "EEXIST") return;
-		throw error;
+		holderToken = markIndexLockHolder(lockPath);
+	} catch {
+		// 锁被并发持有者占用（EEXIST）或根暂不可用：跳过重建，读取方
+		// 下次再对账——绝不无锁改写共享索引，也绝不让读路径抛错。
+		return;
 	}
 	try {
 		rebuildMemoryIndex(root);
 	} finally {
-		rmSync(lockPath, { recursive: true, force: true });
+		releaseIndexLockIfOwned(lockPath, holderToken);
 	}
 }
 

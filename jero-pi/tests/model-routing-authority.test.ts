@@ -3,7 +3,8 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync }
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { applySavedModelConfig, readModelConfig, readModelConfigAsync } from "../extensions/jero-ai.ts";
+import { applySavedModelConfig } from "../lib/jero-ai-model-routing-apply.ts";
+import { readModelConfig, readModelConfigAsync } from "../lib/jero-ai-model-config.ts";
 
 test("model routing authority normalizes and preserves sync/async source status", async (t) => {
 	const loaded = await import("../lib/model-routing-authority.ts").then(

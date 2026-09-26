@@ -8,10 +8,10 @@
 
 ```text
 Pi 宿主（@earendil-works/pi-coding-agent ≥0.85.1，peer）
-├─ 扩展层 extensions/（8 个文件，~5k 行）
+├─ 扩展层 extensions/（8 个文件，~3.5k 行；只做注册与编排，业务实现下沉 lib）
 │   jero-ai · jero-agents · jero-memory · jero-shell ·
 │   runtime-metrics · sdd-init · skill-registry · startup-banner
-├─ 领域层 lib/（166 个文件，~47k 行）
+├─ 领域层 lib/（169 个文件，~48k 行）
 │   authority/（进程内评审权威，43 个文件 ~14k 行）· review-* · agents-* ·
 │   shell-* · sdd-* · jero-ai-lean · jero-ai-context-monitor · jero-ai-bootstrap · jero-ai-sdd-guard ·
 │   jero-ai-sdd-breadcrumb · jero-ai-spec-index · memory · runtime-metrics*
@@ -22,7 +22,7 @@ Pi 宿主（@earendil-works/pi-coding-agent ≥0.85.1，peer）
 ```
 
 - **进程内评审权威** `lib/authority/`：13 个持久状态，15 个 wire 状态投影；不变量——透镜只跑一次、冻结发现与创世范围不变、恰一次有界纠正（预算 `min(200, ceil(原始变更行/2))`）、actor 产物（模型输出）永远是无信托数据。存储在 `.git/jero-review/`（CAS 对象 + lineage 记录 + 候选视图），随仓库走。`scripts/check-authority-boundary.mjs` 结构性强制 authority 不 import 扩展层、不做 IO/env 读取。
-- **评审域命名棘轮**（`scripts/check-review-naming.mjs` + `scripts/review-naming-baseline.json`）：评审域的三前缀是分阶段移植的化石——`authority/`（43，信任边界核心，**收敛目的地**）· `review-*`（33）· `jero-ai-review-*`（8）；两个外围前缀钉在基线最大值只降不升（`--update` 棘轮下移），新评审域代码进 `authority/` 或显式记录决策。`jero-authority-cli.ts` 的 SDD 投影已改为逐字段结构化重投影（不再 `as unknown as` 双盲强转）。
+- **评审域命名棘轮**（`scripts/check-review-naming.mjs` + `scripts/review-naming-baseline.json`）：评审域的三前缀是分阶段移植的化石——`authority/`（43，信任边界核心，**收敛目的地**）· `review-*`（32）· `jero-ai-review-*`（9，含 2026-09-27 记录决策的宿主侧工具注册 jero-ai-review-tools.ts）；两个外围前缀钉在基线最大值只降不升（`--update` 棘轮下移），新评审域代码进 `authority/` 或显式记录决策。`jero-authority-cli.ts` 的 SDD 投影已改为逐字段结构化重投影（不再 `as unknown as` 双盲强转）。
 - **宿主 relay** `lib/review-host-relay.ts`：渲染权威方审查员提示 → `--agent pi --materialize` → 锁定 print-mode pi 子进程在只读工作树评审 → 原始字节经 provider 提交令牌回交；任何失败都是 typed transport error，不重试、不合成。
 - **黄金向量** `tests/fixtures/review-integration/`：68 个字节钉住向量（SHA-256 由 `scripts/verify-package-files.mjs` 校验），是 authority 一致性测试的行为规范。
 
@@ -89,7 +89,7 @@ START → 同意（consent 仪式 v3，host 常任权限按 Git 规范身份授�
 | 面 | 值 |
 |---|---|
 | 契约串 | `jero.authority/v1`（协议族）、`jero.authority.review-mode/v1`、`jero.review-assessment-plan/v1`、`jero.lean-mode/v1`、`jero.background-subagents/v1`、`jero.session-change/v1`、`jero.session-worktree/v1`、`jero.child-standing-review-permission/v1`、`jero.agent_model_profiles/v1`、`jero.memory-index/v1`、`jero.remediation-evidence/v1`、`jero.task-reconciliation-lock/v1` |
-| 环境变量 | `JERO_PI_CONFIG_HOME` `JERO_PI_AGENT_HOME`（兼容 `PI_CODING_AGENT_DIR`）`JERO_PI_LEAN_MODE` `JERO_PI_MEMORY` `JERO_PI_AUTONOMOUS_MODE` `JERO_PI_CONTEXT_MONITOR`（`0` 关闭上下文余量告警）`JERO_PI_SDD_BREADCRUMB`（`0` 关闭 SDD 状态面包屑）`JERO_PI_SPEC_INDEX`（`0` 关闭已确立规范索引注入） |
+| 环境变量 | `JERO_PI_CONFIG_HOME` `JERO_PI_AGENT_HOME`（兼容 `PI_CODING_AGENT_DIR`）`JERO_PI_LEAN_MODE` `JERO_PI_MEMORY` `JERO_PI_MEMORY_ROOT`（显式记忆根覆盖；编排器经它把父会话解析的记忆根下传给子代理，保证"子保存、父检索"同一存储）`JERO_PI_AUTONOMOUS_MODE` `JERO_PI_CONTEXT_MONITOR`（`0` 关闭上下文余量告警）`JERO_PI_SDD_BREADCRUMB`（`0` 关闭 SDD 状态面包屑）`JERO_PI_SPEC_INDEX`（`0` 关闭已确立规范索引注入） |
 | 配置路径 | `~/.pi/jero/`（全局：models.json / persona.json / review-mode.json）、`<repo>/.pi/jero/`（项目覆盖）、`<repo>/.jero/policies/`（评审策略）、`.atl/skill-registry.md`（技能索引） |
 
 ### 兼容白名单（gentle- 残留审计，2026-09-26）

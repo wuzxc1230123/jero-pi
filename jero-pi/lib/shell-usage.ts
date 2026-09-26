@@ -185,6 +185,24 @@ export function accountIdFromToken(token: string): string | undefined {
 	}
 }
 
+// Codex 用量端点正是 Codex CLI 自己读取的那个。pi 已持有的
+// OAuth 令牌携带账号 id；不发送其他任何东西。
+// 自 extensions/jero-shell.ts 下沉（机械平移，语义零改动）。
+export async function fetchCodexUsage(token: string | undefined, fetchFn: typeof fetch, now: number): Promise<ProviderUsage | undefined> {
+	if (!token) return undefined;
+	const accountId = accountIdFromToken(token);
+	if (!accountId) return undefined;
+	try {
+		const response = await fetchFn(CODEX_USAGE_URL, {
+			headers: { Authorization: `Bearer ${token}`, "chatgpt-account-id": accountId, originator: "pi", "User-Agent": "jero-pi" },
+		});
+		if (!response.ok) return undefined;
+		return parseCodexUsage(await response.json(), now);
+	} catch {
+		return undefined;
+	}
+}
+
 function paintMeter(percent: number, cells: number, theme: UsageTheme): string {
 	return paintGauge(percent, theme, cells);
 }

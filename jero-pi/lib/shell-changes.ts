@@ -1,5 +1,7 @@
 import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
+import { execFile } from "node:child_process";
 import { join } from "node:path";
+import { worktreeGitEnvironment } from "./session-worktree-registry.ts";
 
 // Jero Shell 变更：工作树相对 HEAD 的改动，含新文件。Git 是事实源；
 // 本模块把原始的 `git diff --numstat` 与 `git status --porcelain -z`
@@ -291,4 +293,34 @@ export class ChangesTracker {
 		}
 		return files;
 	}
+}
+
+const GIT_TIMEOUT_MS = 5000;
+
+/** 构造净化环境的 git 运行器；argv 直传（绝不经 shell）。
+ * 自 extensions/jero-shell.ts 下沉（机械平移，语义零改动）。 */
+export function shellGitRunner(cwd: string, env: NodeJS.ProcessEnv = process.env, run: typeof execFile = execFile): GitRunner {
+	// Pi exec 无法替换继承的环境变量。直接使用 argv，并为
+	// 发现、状态与惰性 diff 提供完整净化过的环境。
+	const childEnv = worktreeGitEnvironment(env);
+	return (args) => new Promise((resolve) => {
+		run("git", ["-C", cwd, ...args], {
+			env: childEnv,
+			encoding: "utf8",
+			shell: false,
+			windowsHide: true,
+			timeout: GIT_TIMEOUT_MS,
+			// Pi exec 累积输出而不设 maxBuffer 上限。尤其是，
+			// 大的 porcelain 清单绝不能变成残缺的成功扫描。
+			maxBuffer: Infinity,
+		}, (error, stdout) => {
+			resolve({ stdout, code: error ? typeof error.code === "number" ? error.code : 1 : 0 });
+		});
+	});
+}
+
+export async function loadFileDiff(git: GitRunner, file: ChangedFile): Promise<string> {
+	const args = file.status === CHANGE_STATUS.UNTRACKED ? ["diff", "--no-index", "--", "/dev/null", file.path] : ["diff", "HEAD", "--", file.path];
+	const result = await git(args);
+	return result.code === 0 || result.code === 1 ? result.stdout : "";
 }

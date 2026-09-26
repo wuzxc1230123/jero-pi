@@ -9,7 +9,7 @@ import { homedir, tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { default as test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { applyModelConfig } from "../extensions/jero-ai.ts";
+import { applyModelConfig } from "../lib/jero-ai-model-routing-apply.ts";
 import { resolveJeroPiAgentHome } from "../lib/agent-home.ts";
 import { getPackageAssetOwner, installPackageAssets, installSddAssets, type PackageAssetOwner } from "../lib/sdd-preflight.ts";
 import {

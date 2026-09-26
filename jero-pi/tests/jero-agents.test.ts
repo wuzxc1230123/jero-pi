@@ -56,6 +56,7 @@ test("host query delivery exposes correlation and accepts one current-session re
 	harness.children[0].message({ id: "q1", kind: "query", message: "Which file?" });
 	await tick();
 	assert.match(String(sent.at(-1)?.message.content), new RegExp(`Task ID: ${taskId}\\nRequest ID: q1`));
+	assert.match(String(sent.at(-1)?.message.content), new RegExp(`task_id="${taskId}" and request_id="q1"`), "the query carries a transcription-free reply invocation for the parent model");
 	assert.equal(sent.at(-1)?.message.display, true, "an explicit child query remains visible");
 	(ctx.sessionManager as { getSessionId(): string }).getSessionId = () => "s2";
 	assert.match((await tools.get("subagent_reply")!.execute("stale", { task_id: taskId, request_id: "q1", message: "wrong" }, undefined, undefined, ctx)).content[0].text, /unavailable/);

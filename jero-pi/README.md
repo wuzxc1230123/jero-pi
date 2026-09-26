@@ -40,7 +40,7 @@ pnpm run check:runtime-modules
 
 文档：
 
-- 技术参考：[docs/jero-reference.md](docs/jero-reference.md)——由当前代码状态生成的单一合并文档：架构分层、22 个命令、工具清单、评审生命周期、精益纪律、SDD/编排、契约与环境、测试与打包门。
+- 技术参考：[docs/jero-reference.md](docs/jero-reference.md)——由当前代码状态生成的单一合并文档：架构分层、25 个命令、工具清单、评审生命周期、精益纪律、SDD/编排、契约与环境、测试与打包门。
 - 入门教程：[docs/tutorial-first-review.md](docs/tutorial-first-review.md)——从安装到第一次通过评审的最小闭环。
 - How-to：[docs/how-to-choose-discipline.md](docs/how-to-choose-discipline.md)——评审 / SDD / 精益三根轴怎么选档，以及轻量出口（assess、triviality_hint、RDD 开关）。
 - 供应链：[docs/dependency-exit-plan.md](docs/dependency-exit-plan.md)——9 个伴生依赖逐项的失效信号与退出预案。

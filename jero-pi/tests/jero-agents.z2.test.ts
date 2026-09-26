@@ -27,6 +27,7 @@ import { listPresence, PresenceCursor, PresencePublisher, readActivity } from ".
 import { stripAnsi } from "../lib/terminal-theme.ts";
 import { fakeChild, type FakeChild } from "./agents-fake-child.ts";
 import { AgentRunner } from "../lib/agents-runner.ts";
+import { resolveMemoryRoot } from "../lib/memory.ts";
 import { type NativeReviewCli } from "../lib/authority/client-contract.ts";
 import { CHILD_METRICS_EVENT } from "../lib/runtime-metrics-children.ts";
 import { renderSddPreflightPrompt } from "../lib/sdd-preflight.ts";
@@ -111,7 +112,7 @@ test("default Node spawn adapter distinguishes IPC-only and permission-capable c
 			assert.equal(captured[index]?.command, "/fixture/pi");
 			assert.deepEqual(captured[index]?.args, args);
 			assert.equal(captured[index]?.options.cwd, permissionChannel ? canonicalGitCwd : nonGitCwd);
-			assert.deepEqual(captured[index]?.options.env, { PATH: "/bin", FIXTURE: fixture, JERO_PI_AGENTS_CHILD: "1", JERO_PI_AGENTS_OWNED_IPC: ownedIpc, ...(permissionChannel ? { JERO_PI_AGENTS_PARENT_PERMISSION_FD: "3" } : {}) });
+			assert.deepEqual(captured[index]?.options.env, { PATH: "/bin", FIXTURE: fixture, JERO_PI_AGENTS_CHILD: "1", JERO_PI_AGENTS_OWNED_IPC: ownedIpc, JERO_PI_MEMORY_ROOT: resolveMemoryRoot(permissionChannel ? canonicalGitCwd : nonGitCwd, { PATH: "/bin", FIXTURE: fixture }), ...(permissionChannel ? { JERO_PI_AGENTS_PARENT_PERMISSION_FD: "3" } : {}) });
 			assert.equal(captured[index]?.options.shell, undefined, "the adapter does not invoke a shell");
 			assert.equal(captured[index]?.options.windowsHide, true, "the adapter always hides a Windows console");
 			assert.equal(captured[index]?.options.detached, process.platform !== "win32", "the adapter forwards the runner's platform selection");

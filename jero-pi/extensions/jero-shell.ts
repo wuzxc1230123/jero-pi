@@ -1,17 +1,17 @@
 import { CustomEditor, keyHint, type ExtensionAPI, type ExtensionContext, type KeybindingsManager } from "@earendil-works/pi-coding-agent";
 import type { EditorTheme, TUI } from "@earendil-works/pi-tui";
-import { execFile, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { statSync } from "node:fs";
 import { profilesFilePath, readProfilesFileResult } from "../lib/agent-profiles.ts";
 import * as os from "node:os";
 import { join } from "node:path";
 import { renderShellBar, renderShellSidebarBar, shellEnabled, type ShellBarModel, type ShellBarTheme } from "../lib/shell-bar.ts";
-import { CHANGE_STATUS, renderChangesWidget, type ChangedFile, type ChangesModel, type GitRunner, type WorktreeChanges } from "../lib/shell-changes.ts";
+import { loadFileDiff, renderChangesWidget, shellGitRunner, type ChangedFile, type ChangesModel, type GitRunner, type WorktreeChanges } from "../lib/shell-changes.ts";
 import { WorktreeChangesView } from "../lib/shell-changes-view.ts";
-import { SessionWorktreeRegistry, resolveSessionWorktree, worktreeGitEnvironment, type WorktreeResolver } from "../lib/session-worktree-registry.ts";
+import { SessionWorktreeRegistry, resolveSessionWorktree, type WorktreeResolver } from "../lib/session-worktree-registry.ts";
 import { CARD_TONE, renderCard, type Card, type CardTheme } from "../lib/shell-card.ts";
 import { framePromptLines, PROMPT_HINT, PROMPT_STATE, withPromptHint, type PromptState } from "../lib/shell-prompt.ts";
-import { accountIdFromToken, CODEX_PROVIDER, CODEX_USAGE_URL, parseCodexUsage, parseUsageHeaders, UsageStore, type ProviderUsage } from "../lib/shell-usage.ts";
+import { CODEX_PROVIDER, fetchCodexUsage, parseUsageHeaders, UsageStore, type ProviderUsage } from "../lib/shell-usage.ts";
 import { UsageView } from "../lib/shell-usage-view.ts";
 import { sidebarPart } from "../lib/shell-sidebar.ts";
 import { installSidebar, invalidateSidebar } from "../lib/shell-sidebar-layout.ts";
@@ -246,35 +246,8 @@ const CHANGES_WIDGET_KEY = "jero-shell-changes";
 const CHANGES_COMMAND_NAME = "jero:changes";
 const CHANGES_SHORTCUT_DEFAULT = "alt+g";
 const CHANGES_POLL_DEFAULT_MS = 2000;
-const GIT_TIMEOUT_MS = 5000;
 const OVERLAY_HEIGHT_RATIO = 0.8;
 const OVERLAY_MIN_ROWS = 8;
-
-export function shellGitRunner(cwd: string, env: NodeJS.ProcessEnv = process.env, run: typeof execFile = execFile): GitRunner {
-	// Pi exec 无法替换继承的环境变量。直接使用 argv，并为
-	// 发现、状态与惰性 diff 提供完整净化过的环境。
-	const childEnv = worktreeGitEnvironment(env);
-	return (args) => new Promise((resolve) => {
-		run("git", ["-C", cwd, ...args], {
-			env: childEnv,
-			encoding: "utf8",
-			shell: false,
-			windowsHide: true,
-			timeout: GIT_TIMEOUT_MS,
-			// Pi exec 累积输出而不设 maxBuffer 上限。尤其是，
-			// 大的 porcelain 清单绝不能变成残缺的成功扫描。
-			maxBuffer: Infinity,
-		}, (error, stdout) => {
-			resolve({ stdout, code: error ? typeof error.code === "number" ? error.code : 1 : 0 });
-		});
-	});
-}
-
-export async function loadFileDiff(git: GitRunner, file: ChangedFile): Promise<string> {
-	const args = file.status === CHANGE_STATUS.UNTRACKED ? ["diff", "--no-index", "--", "/dev/null", file.path] : ["diff", "HEAD", "--", file.path];
-	const result = await git(args);
-	return result.code === 0 || result.code === 1 ? result.stdout : "";
-}
 
 export interface ExternalEditorHost {
 	stop(): void;
@@ -447,23 +420,6 @@ export function devBinaryCard(notice: DevBinaryNotice): Card {
 }
 
 const USAGE_REFRESH_MS = 5 * 60_000;
-
-// Codex 用量端点正是 Codex CLI 自己读取的那个。pi 已持有的
-// OAuth 令牌携带账号 id；不发送其他任何东西。
-export async function fetchCodexUsage(token: string | undefined, fetchFn: typeof fetch, now: number): Promise<ProviderUsage | undefined> {
-	if (!token) return undefined;
-	const accountId = accountIdFromToken(token);
-	if (!accountId) return undefined;
-	try {
-		const response = await fetchFn(CODEX_USAGE_URL, {
-			headers: { Authorization: `Bearer ${token}`, "chatgpt-account-id": accountId, originator: "pi", "User-Agent": "jero-pi" },
-		});
-		if (!response.ok) return undefined;
-		return parseCodexUsage(await response.json(), now);
-	} catch {
-		return undefined;
-	}
-}
 
 export default function jeroShell(pi: ExtensionAPI, env: NodeJS.ProcessEnv = process.env, overrides: Partial<ShellDeps> = {}): void {
 	installSessionChangeCapture(pi, env, overrides.resolveWorktree ?? resolveSessionWorktree);

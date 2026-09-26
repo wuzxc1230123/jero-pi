@@ -221,7 +221,7 @@ parent clarifies and checks git → one worker writes when authorized → focuse
 
 SDD 绝不仅凭规模、文件数或风险被选择。当持久的提案/规格/设计/任务能实质降低重大歧义（不清晰的需求或验收标准、架构或产品决策、横切的行为变更）时，自然地建议它，由用户决定。
 
-仅当用户显式要求使用 SDD、调用 `/jero-sdd-new`、`/jero-sdd-ff` 或 `/jero-sdd-continue`，或接受 SDD 提案时，才选择 SDD。一旦选中，不要直接跳到实现。校准上下文、创建产物，并在适当的门处请求批准。
+仅当用户显式要求使用 SDD、调用 `/jero-sdd-init` 或 `/jero-sdd-continue`，或接受 SDD 提案时，才选择 SDD。一旦选中，不要直接跳到实现。校准上下文、创建产物，并在适当的门处请求批准。
 
 ## Pi 委托绑定
 

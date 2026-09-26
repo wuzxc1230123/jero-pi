@@ -142,7 +142,7 @@ function repository(t) {
 }
 
 function restartWorkerSource() {
-	const extensionUrl = pathToFileURL(join(import.meta.dirname, "..", "extensions", "jero-ai.ts")).href;
+	const extensionUrl = pathToFileURL(join(import.meta.dirname, "..", "lib", "jero-ai-testing-exports.ts")).href;
 	const relayUrl = pathToFileURL(join(import.meta.dirname, "..", "lib", "review-host-relay.ts")).href;
 	const terminalSubmission = JSON.stringify({
 		schema: "gentle-ai.review-last-event-closure/v1",

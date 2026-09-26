@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { __testing } from "../extensions/jero-ai.ts";
+import { __testing } from "../lib/jero-ai-testing-exports.ts";
 
 // These tests assert that the composed main-agent prompt (built by buildJeroPrompt)
 // keeps the two persona language modes single-channel: neutral mode carries the

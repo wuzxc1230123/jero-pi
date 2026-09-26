@@ -34,6 +34,7 @@ import { openInExternalEditor } from "./jero-shell.ts";
 import { resolveJeroPiAgentHome } from "../lib/agent-home.ts";
 import { assertResearchCheckpoint, parseResearchPersistence, RESEARCH_PERSISTENCE_ENTRY, canonicalArtifactPath, researchAgent, renderResearchCapabilities, RESEARCH_CHILD_TOOLS_ENV, RESEARCH_SELECTION_ENV, RESEARCH_ARTIFACT_ENV, parseResearchArtifactIntent, researchArtifactCall, researchArtifactReadback, type ResearchArtifactIntent, type ResearchWriteIdentity } from "../lib/sdd-research-capabilities.ts";
 import { CHILD_METRICS_EVENT, CHILD_METRICS_REVOKED, childEvent, launchSelection, type LaunchSelection } from "../lib/runtime-metrics-children.ts";
+import { MEMORY_ROOT_ENV, resolveMemoryRoot } from "../lib/memory.ts";
 
 // Jero Agents：子代理作为隔离的 `pi --mode rpc` 子进程运行，任务
 // 存储逐任务通知，并在编辑器上方显示一张 Jero Shell 卡片。
@@ -388,7 +389,7 @@ export default function jeroAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = pr
 			const hadYield = yieldedTaskIds.has(task.id);
 			if (task.mode === AGENT_MODE.TASK) yieldedTaskIds.add(task.id);
 			try {
-				pi.sendMessage({ customType: AGENTS_MESSAGE_TYPE, content: `Subagent ${task.agent} asks:\nTask ID: ${task.id}\nRequest ID: ${requestId}\nQuestion: ${message}`, display: true, details: { jeroAgents: { taskId: task.id, agent: task.agent, parentSessionId: task.parentSessionId, requestId, kind: "query" } } }, { deliverAs: "followUp", triggerTurn: true });
+				pi.sendMessage({ customType: AGENTS_MESSAGE_TYPE, content: `Subagent ${task.agent} asks:\nTask ID: ${task.id}\nRequest ID: ${requestId}\nQuestion: ${message}\n\nAnswer with the subagent_reply tool using exactly task_id="${task.id}" and request_id="${requestId}".`, display: true, details: { jeroAgents: { taskId: task.id, agent: task.agent, parentSessionId: task.parentSessionId, requestId, kind: "query" } } }, { deliverAs: "followUp", triggerTurn: true });
 				return true;
 			} catch (error) {
 				if (task.mode === AGENT_MODE.TASK && !hadYield) yieldedTaskIds.delete(task.id);
@@ -663,6 +664,12 @@ export default function jeroAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = pr
 		const sddPreflightContext = SHIPPED_SDD_AGENT_NAME_SET.has(agent.name)
 			? extractParentConfirmedSddPreflightContext(context)
 			: undefined;
+		// 委派契约要求"子代理保存、父会话检索"落在同一记忆存储：把父会话
+		// 解析出的记忆根下传给每个子进程（子代理在 worktree 中运行时按
+		// cwd 解析会静默分叉）。显式 JERO_PI_MEMORY_ROOT 已存在时不覆盖。
+		const childEnv = deps.env[MEMORY_ROOT_ENV] === undefined
+			? { ...deps.env, [MEMORY_ROOT_ENV]: resolveMemoryRoot(parentWorktreeRoot, deps.env) }
+			: deps.env;
 		return {
 			agent: research?.agent ?? agent,
 			remediationIntent,
@@ -678,7 +685,7 @@ export default function jeroAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = pr
 			thinking: profile.thinking,
 			sessionDir,
 			resumeSessionPath: resume,
-			env: research ? { ...deps.env, [RESEARCH_CHILD_TOOLS_ENV]: JSON.stringify([...research.agent.tools, "subagent_parent_message"]) } : deps.env,
+			env: research ? { ...childEnv, [RESEARCH_CHILD_TOOLS_ENV]: JSON.stringify([...research.agent.tools, "subagent_parent_message"]) } : childEnv,
 			...(research ? { researchSelection, extensionPaths: research.extensionPaths, researchArtifact: researchArtifact === undefined ? undefined : parseResearchArtifactIntent(researchArtifact, target ?? parentCwd) } : {}),
 			...(launchSddChange === undefined ? {} : { sddChange: launchSddChange }),
 			...(parentRepositoryIdentity === undefined ? {} : {

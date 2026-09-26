@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { execFileSync } from "node:child_process";
-import { __testing } from "../../extensions/jero-ai.ts";
+import { __testing } from "../../lib/jero-ai-testing-exports.ts";
 import { createJeroAuthorityReviewCli } from "../../lib/jero-authority-cli.ts";
 import { tempRoot } from "./fixtures.ts";
 

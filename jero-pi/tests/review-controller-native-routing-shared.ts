@@ -31,7 +31,9 @@ import { syncBuiltinESMExports } from "node:module";
 import { dirname, join, resolve, sep } from "node:path";
 import { default as test } from "node:test";
 import { type ExtensionAPI, type ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { __testing, createJeroAiExtension, PendingReviewConsentRegistry } from "../extensions/jero-ai.ts";
+import { __testing } from "../lib/jero-ai-testing-exports.ts";
+import { PendingReviewConsentRegistry } from "../lib/jero-ai-review-consent.ts";
+import { createJeroAiExtension } from "../extensions/jero-ai.ts";
 import { CandidateViewRegistry } from "../lib/review-candidate-view.ts";
 // 进程加载即打桩 Windows ACL 权威：真实 PowerShell/icacls 栈只归候选视图
 // 专属端到端用例管（见 review-candidate-view-shared.ts）；本家族用例只

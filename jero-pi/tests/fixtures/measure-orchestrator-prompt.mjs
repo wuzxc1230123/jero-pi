@@ -8,15 +8,15 @@
 // on ambient environment variables or a second dynamic import of the same
 // module specifier in an already-imported test process.
 //
-// Reads the fixture assets path from argv[2], imports extensions/jero-ai.ts
-// fresh, and prints the rendered prompt's UTF-8 byte length to stdout.
+// Reads the fixture assets path from argv[2], imports the orchestrator
+// prompt source fresh, and prints the rendered prompt's UTF-8 byte length to stdout.
 
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
 // Windows absolute paths are not valid ESM specifiers (the default loader
 // rejects the bare drive-letter protocol); always import through file URLs.
-const { __testing } = await import(pathToFileURL(join(import.meta.dirname, "..", "..", "extensions", "jero-ai.ts")).href);
+const { __testing } = await import(pathToFileURL(join(import.meta.dirname, "..", "..", "lib", "jero-ai-testing-exports.ts")).href);
 const assetsDir = process.argv[2];
 if (!assetsDir) {
 	throw new Error("usage: measure-orchestrator-prompt.mjs <assets-dir>");

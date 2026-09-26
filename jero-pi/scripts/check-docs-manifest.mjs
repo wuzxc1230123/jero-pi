@@ -90,7 +90,10 @@ function collectCommands() {
 
 function collectTools() {
 	const tools = new Set();
-	for (const path of extensionFiles()) {
+	// 评审工具注册自 jero-ai 外抽至 lib（2026-09-27），工具名派生范围
+	// 显式包含该文件——与下方 jero-agents 的 tool() 前缀特例同理。
+	const toolNameFiles = [...extensionFiles(), join(root, "lib", "jero-ai-review-tools.ts")];
+	for (const path of toolNameFiles) {
 		const text = readFileSync(path, "utf8");
 		for (const match of text.matchAll(/\bname:\s*["']((?:jero_|mem_|session_worktree_register)[a-z_]*)["']/g)) {
 			tools.add(match[1]);

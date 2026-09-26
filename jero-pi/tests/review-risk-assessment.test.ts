@@ -3,7 +3,8 @@ import test from "node:test";
 import { execFileSync } from "node:child_process";
 import { realpathSync } from "node:fs";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { createJeroAiExtension, __testing } from "../extensions/jero-ai.ts";
+import { __testing } from "../lib/jero-ai-testing-exports.ts";
+import { createJeroAiExtension } from "../extensions/jero-ai.ts";
 import {
 	NATIVE_REVIEW_ERROR_CODE,
 	NATIVE_REVIEW_MODE_SOURCE,

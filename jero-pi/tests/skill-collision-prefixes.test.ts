@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
-import { __testing } from "../extensions/skill-registry.ts";
+import { __testing } from "../lib/skill-registry-engine.ts";
 
 const repoRoot = join(import.meta.dirname, "..");
 

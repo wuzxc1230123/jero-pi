@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test from "node:test";
 import { pathToFileURL } from "node:url";
-import { __testing } from "../extensions/skill-registry.ts";
+import { __testing } from "../lib/skill-registry-engine.ts";
 
 test("project skill dirs include supported workspace roots", () => {
 	const cwd = "/repo";
