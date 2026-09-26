@@ -17,6 +17,7 @@ import { sidebarPart } from "../lib/shell-sidebar.ts";
 import { installSidebar, invalidateSidebar } from "../lib/shell-sidebar-layout.ts";
 import { SessionChanges, SESSION_CHANGE_EVENT } from "../lib/session-changes.ts";
 import { installSessionChangeCapture } from "../lib/session-change-capture.ts";
+import { REVIEW_PREFLIGHT_TYPE } from "../lib/jero-ai-review-select.ts";
 
 // Jero Shell：gentle-pi 叠加在 pi 之上的视觉层。它安装
 // 状态栏、花瓣提示符、工作树变更挂件与覆盖层、
@@ -373,7 +374,6 @@ function showChanges(ctx: ExtensionContext, model: ChangesModel): void {
 }
 
 const USAGE_COMMAND_NAME = "jero:usage";
-const REVIEW_PREFLIGHT_TYPE = "jero.review-preflight";
 const DEV_BINARY_WIDGET_KEY = "gentle-shell-dev-binary";
 const SHA_PREFIX_LENGTH = 16;
 

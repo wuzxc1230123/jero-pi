@@ -24,6 +24,10 @@ import {
 	REVIEW_HOST_RELAY_REFUSED_ACTION, REVIEW_HOST_RELAY_RETRY_ACTION, reviewHostRelayFailureReport
 } from "./jero-ai-review-relay.ts";
 import { hostTransportUnavailable, negotiatedStatusForHostTransport, REVIEW_HOST_AGENT } from "./jero-ai-review-transport.ts";
+// agent_end 预检提醒的消息类型契约：jero-ai 发送、jero-shell 渲染，
+// 两侧共用的单一事实源（与消息渲染器同址）。
+export const REVIEW_PREFLIGHT_TYPE = "jero.review-preflight";
+
 // 受支持的 continuation（jero_review inspect），并把由此产生的
 // 同意封套交还给人类。
 export function renderAgentEndReviewPreflightMessage(targetIdentity: string): string {

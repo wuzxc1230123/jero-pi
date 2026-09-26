@@ -4,12 +4,17 @@ import { join } from "node:path";
 import test from "node:test";
 
 const repoRoot = join(import.meta.dirname, "..");
-const skill = readFileSync(join(repoRoot, "skills", "issue-creation", "SKILL.md"), "utf8");
+// 技能正文按渐进披露拆分后，契约的承载面是 SKILL.md 与 references/ 的并集。
+const skill = [
+	readFileSync(join(repoRoot, "skills", "issue-creation", "SKILL.md"), "utf8"),
+	readFileSync(join(repoRoot, "skills", "issue-creation", "references", "yaml-forms.md"), "utf8"),
+	readFileSync(join(repoRoot, "skills", "issue-creation", "references", "private-body-files.md"), "utf8"),
+].join("\n\n");
 
 test("preserves the prefixed skill identity and complete Issue Form metadata", () => {
 	assert.match(skill, /^name: jero-issue-creation$/m);
 	assert.match(skill, /^description: ".+"$/m);
-	assert.match(skill, /^  version: "1\.3"$/m);
+	assert.match(skill, /^  version: "1\.4"$/m);
 });
 
 test("makes YAML Issue Forms the deterministic automated format authority", () => {

@@ -24,17 +24,7 @@ jero-pi 的技能由 pi 宿主按 frontmatter `description` **自主触发**，�
 - SKILL.md 正文保持短（参考：`jero-lean` 的完整梯子也只占一屏）；细则、模板、大表格放技能目录内的平铺参考文件或 `references/`，正文里写明"需要时读取"。
 - 跨技能共享的契约文档放 `skills/_shared/`（注册表扫描会排除它）。
 
-## 4. 生命周期三档
-
-在 frontmatter `metadata.tier` 标注（缺省为 `core`）：
-
-| 档 | 含义 | 约束 |
-|---|---|---|
-| `core` | 随包正式能力 | 进 `docs/jero-reference.md` 技能清单与 `jero-skills` 路由表 |
-| `experimental` | 公开收集反馈，可能随时废弃 | `metadata.tier: experimental`；description 注明实验性 |
-| 已淘汰 | 直接删除 | CHANGELOG 必须点名替代品，不留空目录 |
-
-## 5. 行为验证：写技能 = 对流程文档做 TDD
+## 4. 行为验证：写技能 = 对流程文档做 TDD
 
 技能是塑造 agent 行为的代码，不是散文。**没有观察到的失败，就没有技能改动**——新增与编辑同等适用。iron rule：先有失败基线，再有最小修法，再重测。
 
@@ -51,17 +41,16 @@ jero-pi 的技能由 pi 宿主按 frontmatter `description` **自主触发**，�
 5. **红线**：获胜配方**不加 nuance 子句**（加一条就从稳定变噪）；不写叙事式长示例；不批量改技能不逐个测。
 6. **证据落盘**：加压场景与 before/after 记录放技能目录 `pressure/` 子目录（注册表只认 `*/SKILL.md`，不扫描子目录）；跨技能行为回归用 `benchmarks/` 多臂对照（安全校验臂防"砍守卫赢指标"）。
 
-## 6. 跨技能调用措辞
+## 5. 跨技能调用措辞
 
 技能内引用其他技能时，写"调用 Skill 工具并点名 `<name>`"或"使用 `/命令`"——**禁止**写 `../other-skill/SKILL.md` 之类的相对路径链接（宿主不是按路径发现技能的）。
 
-## 7. 新增/修改技能检查清单
+## 6. 新增/修改技能检查清单
 
 1. frontmatter：`name` 与目录名满足 §2 🔒；`description` 是触发语（§1）。
-2. 正文短，细则外置（§3）；需要共享契约的放 `_shared/`。
-3. 标注 `metadata.tier`（§4）。
-4. 行为验证（§5）：失败基线 → 最小修法 → 重测证据放 `pressure/`；措辞修改附微测结论。
-5. **更新 `skills/jero-skills/SKILL.md` 路由表**——不更新就是让路由器撒谎。
-6. 更新 `docs/jero-reference.md` 的技能清单与数量。
-7. 若技能文件是包完整性的一部分，把路径加进 `scripts/verify-package-files.mjs` 的 requiredPaths。
-8. 跑 `/skill-registry:refresh` 或依赖扩展的自动重扫，确认 `.atl/skill-registry.md` 收录。
+2. 正文短，细则外置（§3）；需要共享契约的放 `_shared/`。淘汰的技能直接删除，CHANGELOG 点名替代品，不留空目录。
+3. 行为验证（§4）：失败基线 → 最小修法 → 重测证据放 `pressure/`；措辞修改附微测结论。
+4. **更新 `skills/jero-skills/SKILL.md` 路由表**——不更新就是让路由器撒谎。
+5. 更新 `docs/jero-reference.md` 的技能清单与数量。
+6. 若技能文件是包完整性的一部分，把路径加进 `scripts/verify-package-files.mjs` 的 requiredPaths。
+7. 跑 `/skill-registry:refresh` 或依赖扩展的自动重扫，确认 `.atl/skill-registry.md` 收录。

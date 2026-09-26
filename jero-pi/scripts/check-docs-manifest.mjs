@@ -101,10 +101,12 @@ function collectTools() {
 	}
 	const agentsPath = join(root, "extensions", "jero-agents.ts");
 	const agentsText = readFileSync(agentsPath, "utf8");
+	// TOOL_PREFIX 的单一事实源在 lib/agents-protocol.ts（2026-09-27 自
+	// helpers 迁入；helpers 仅再导出保持既有导入路径）。
 	const prefixMatch = /\bexport\s+const\s+TOOL_PREFIX\s*=\s*["']([^"']+)["']/.exec(
-		readFileSync(join(root, "lib", "jero-agents-helpers.ts"), "utf8"),
+		readFileSync(join(root, "lib", "agents-protocol.ts"), "utf8"),
 	);
-	if (!prefixMatch) throw new Error("TOOL_PREFIX declaration not found in lib/jero-agents-helpers.ts");
+	if (!prefixMatch) throw new Error("TOOL_PREFIX declaration not found in lib/agents-protocol.ts");
 	for (const match of agentsText.matchAll(/\btool\(\s*["']([a-z_]+)["']/g)) {
 		tools.add(`${prefixMatch[1]}${match[1]}`);
 	}

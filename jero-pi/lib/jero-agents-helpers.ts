@@ -10,7 +10,7 @@ import { resolveSessionWorktree, type WorktreeResolver } from "./session-worktre
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { type ExtensionAPI, type ExtensionContext, keyHint } from "@earendil-works/pi-coding-agent";
-import { type AskRequest, type TaskRecord } from "./agents-protocol.ts";
+import { type AskRequest, AGENTS_CHILD_ENV, AGENTS_OWNED_IPC_ENV, type TaskRecord } from "./agents-protocol.ts";
 import { type AskAnswer, piCommand, type RunnerDeps } from "./agents-runner.ts";
 import { ChildMessenger, type IpcEndpoint } from "./agents-messaging.ts";
 import { AGENTS_GLYPH } from "./agents-widget.ts";
@@ -25,7 +25,9 @@ const VIEW_KEY_DEFAULT = "alt+a";
 const STOP_KEY_DEFAULT = "alt+s";
 export const RENDER_COALESCE_MS = 400;
 export const CLOCK_TICK_MS = 1000;
-export const TOOL_PREFIX = "subagent_";
+// TOOL_PREFIX/身份环境标记定义在 agents-protocol（单一事实源），这里再导出
+// 仅为保持既有导入路径稳定。
+export { TOOL_PREFIX } from "./agents-protocol.ts";
 export const SHIPPED_SDD_AGENT_NAME_SET = new Set(SHIPPED_SDD_AGENT_NAMES);
 
 
@@ -66,7 +68,7 @@ export const defaultDeps = (env: NodeJS.ProcessEnv): AgentsDeps => ({
 });
 
 export function agentsEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
-	if (env.JERO_PI_AGENTS_CHILD === "1") return false;
+	if (env[AGENTS_CHILD_ENV] === "1") return false;
 	const value = env.JERO_PI_AGENTS?.trim().toLowerCase();
 	return !(value === "0" || value === "false" || value === "off");
 }
@@ -121,7 +123,7 @@ export function messageText(content: unknown): string {
 }
 
 export function ownedChildIpc(env: NodeJS.ProcessEnv, candidate: IpcEndpoint | undefined): IpcEndpoint | undefined {
-	if (env.JERO_PI_AGENTS_CHILD !== "1" || !env.JERO_PI_AGENTS_OWNED_IPC || !candidate || typeof candidate.send !== "function" || typeof candidate.on !== "function") return undefined;
+	if (env[AGENTS_CHILD_ENV] !== "1" || !env[AGENTS_OWNED_IPC_ENV] || !candidate || typeof candidate.send !== "function" || typeof candidate.on !== "function") return undefined;
 	return candidate;
 }
 

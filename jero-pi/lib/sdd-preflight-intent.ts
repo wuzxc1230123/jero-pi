@@ -125,6 +125,13 @@ export function isParentConfirmedSddPreflightContext(context: unknown): context 
 	return /^## SDD Session Preflight\n(?:These SDD preferences are explicit current-session choices\. Reuse them unless the user explicitly changes them\.|These SDD preferences are canonical defaults or persisted choices\. Treat them as authoritative; do not revisit dependent decisions unless a genuine human-control gate is reached\.)\n- Execution mode: (?:interactive|auto)\n- Artifact store: (?:openspec|engram|hybrid|none)(?: \(Engram unavailable in this session\))?\n- Delivery strategy: (?:ask-on-risk|auto-chain|single-pr|exception-ok)\n- Delivery strategy domain: `ask-on-risk` \| `auto-chain` \| `single-pr` \| `exception-ok`\n- Review budget: [1-9]\d* changed lines \(400 is the canonical threshold unless explicitly changed\)\n- Chain strategy: deferred until chaining is selected\./.test(context);
 }
 
+/** 探测文本是否含预检块头部行（含仿制品）。派发门用它拒绝调用方
+ * 拼写的任何预flight载荷——头部格式必须与上方权威正则同步演进，
+ * 因此钉在同一个文件里。 */
+export function containsSddPreflightBlockHeader(text: string): boolean {
+	return /^## SDD Session Preflight[ \t]*$/m.test(text);
+}
+
 export function extractParentConfirmedSddPreflightContext(context: unknown): string | undefined {
 	if (!isParentConfirmedSddPreflightContext(context)) return undefined;
 	return context.split("\n\n", 1)[0];

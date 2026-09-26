@@ -19,7 +19,7 @@ import { sidebarPart } from "../lib/shell-sidebar.ts";
 import { invalidateSidebar } from "../lib/shell-sidebar-layout.ts";
 import { createCompletionQueue } from "../lib/agents-completion-delivery.ts";
 import { AGENT_MODE, discoverAgents, parseAgentDefinition, loadAgentsConfig, resolveAgentProfile, type AgentDefinition, type AgentMode } from "../lib/agents-config.ts";
-import { isFinished, TASK_STATUS, TaskStore, type AskRequest, type TaskRecord } from "../lib/agents-protocol.ts";
+import { isFinished, TASK_STATUS, TaskStore, type AskRequest, type TaskRecord, AGENTS_CHILD_ENV, PARENT_NOTIFICATION_TOOL } from "../lib/agents-protocol.ts";
 import { AgentRunner, piCommand, abortReasonText, plannedCommands, type RemediationPlan, type RemediationScope, REMEDIATION_PLAN_ENV, parseRemediationPlan, remediationEvidence, type AskAnswer, type RunnerDeps, type SddChangeSelection, type TaskRequest, type RemediationTerminalFacts } from "../lib/agents-runner.ts";
 import { ChildMessenger, type IpcEndpoint } from "../lib/agents-messaging.ts";
 import { hasReviewSessionPermission, resolveCanonicalGitRepositoryIdentitySync, type ReviewSessionManager } from "../lib/review-session-standing-permission.ts";
@@ -43,7 +43,7 @@ import { MEMORY_ROOT_ENV, resolveMemoryRoot } from "../lib/memory.ts";
 
 
 export default function jeroAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = process.env, overrides: Partial<AgentsDeps> = {}): void {
-	if (env.JERO_PI_AGENTS_CHILD === "1" && env[RESEARCH_CHILD_TOOLS_ENV] !== undefined) {
+	if (env[AGENTS_CHILD_ENV] === "1" && env[RESEARCH_CHILD_TOOLS_ENV] !== undefined) {
 		let allowed: string[] = [];
 		try {
 			const parsed: unknown = JSON.parse(env[RESEARCH_CHILD_TOOLS_ENV]!);
@@ -82,11 +82,11 @@ export default function jeroAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = pr
 		};
 		pi.on("tool_call", (event, ctx) => {
 			const registered = pi.getAllTools().some(tool => tool.name === event.toolName && tool.sourceInfo?.source !== "sdk");
-			const selected = current().agent.tools.includes(event.toolName) || event.toolName === "subagent_parent_message";
+			const selected = current().agent.tools.includes(event.toolName) || event.toolName === PARENT_NOTIFICATION_TOOL;
 			if (!registered || !selected || !allowed.includes(event.toolName) || !pi.getActiveTools().includes(event.toolName)) {
 				return { block: true, reason: "Tool is outside the research child's active launch allowlist." };
 			}
-			if (event.toolName === "subagent_parent_message" || ["fetch_content", "web_search", "source_check", "get_search_content"].includes(event.toolName)) return;
+			if (event.toolName === PARENT_NOTIFICATION_TOOL || ["fetch_content", "web_search", "source_check", "get_search_content"].includes(event.toolName)) return;
 			try {
 				const scope = artifactScope(ctx.cwd);
 				const index = researchArtifactCall(scope, ctx.cwd, event.toolName, event.input);
@@ -159,7 +159,7 @@ export default function jeroAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = pr
 		});
 	}
 	const childIpc = ownedChildIpc(env, overrides.childIpc ?? (process.send ? process as unknown as IpcEndpoint : undefined));
-	if (env.JERO_PI_AGENTS_CHILD === "1") {
+	if (env[AGENTS_CHILD_ENV] === "1") {
 		if (env[REMEDIATION_PLAN_ENV] !== undefined) {
 			let granted: RemediationScope | undefined;
 			// bash 结果转发器只注册一次：session_start 可能

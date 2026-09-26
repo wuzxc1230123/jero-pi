@@ -3,6 +3,7 @@
 
 import { fileURLToPath } from "node:url";
 import { getPackageAssetOwner } from "./sdd-preflight.ts";
+import { PARENT_NOTIFICATION_TOOL } from "./agents-protocol.ts";
 import {
 	decodeNativeSddStatusV2, type NativeReviewCli, NativeReviewCliError,
 	type NativeSddAcquireRequest, type NativeSddAttemptResult, type NativeSddSettleRequest
@@ -94,7 +95,7 @@ export function remediationToolAllowed(scope: RemediationScope | undefined, cwd:
 			const path = resolve(cwd, input.path);
 			return canonicalArtifactPath(path) === path && (path === cwd || path.startsWith(`${cwd}${sep}`));
 		}
-		return tool === "subagent_parent_message";
+		return tool === PARENT_NOTIFICATION_TOOL;
 	} catch { return false; }
 }
 

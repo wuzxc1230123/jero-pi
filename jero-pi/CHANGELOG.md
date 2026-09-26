@@ -5,6 +5,13 @@ jero-pi 尚未发布到 npm（版本停在 0.1.0 基线），本文件自重构�
 
 ## [Unreleased]
 
+### 编排契约收编与 P2 清偿（2026-09-27：第五批）
+
+- **共享字面量单一事实源**（`lib/agents-protocol.ts`）：`TOOL_PREFIX`/`PARENT_NOTIFICATION_TOOL`/`SUBAGENT_RUN_TOOL`、子进程身份环境标记 `AGENTS_CHILD_ENV`/`AGENTS_OWNED_IPC_ENV`、`TASK_STEP` 状态机词汇全部钉在 protocol（helpers 与 runner 的共同叶子层）。runner-core 内联的 thinking 级别表改用 `model-routing-authority.THINKING_LEVELS`；`jero.review-preflight` 消息类型常量与渲染器同址（`lib/jero-ai-review-select.ts`），jero-ai/jero-shell 两侧共用。七个文件的字面量引用全部改指常量。
+- **SDD 预检头部探测收编**：jero-ai 派发门的防伪造检查改用 `sdd-preflight-intent.containsSddPreflightBlockHeader`（与权威正则同文件演进），删除弱化副本正则。
+- **契约一致性巡检**（`tests/contract-consistency.test.ts`）：JD 双盲契约三处措辞（技能/_shared 正典/法官代理）、委托触发规则四处数值（jero 技能/orchestrator 提示）、`parseChildFrame` 拒绝原因与 `QUERY_REJECTION_ERRORS` 白名单的行为级 membership 全部钉住——改一处漏一处先在这里失败。`QUERY_REJECTION_ERRORS` 为此从 runner-core 导出。
+- **P2 清偿**：删除文档先行未落地的 `metadata.tier` 制度（skill-authoring §4，清单项同步重编号）；`prompts/skill-creation.md` 收敛为指向 `jero-skill-creator` 技能与 skill-authoring 规范的薄入口（不再复述流程步骤，消除 1:1 双源）；三个超预算技能按渐进披露拆分——issue-creation（7.9KB→3.6KB，控件细则与私有文件脚本外置 references/）、branch-pr（5.6KB→2.2KB，分支/提交映射与 PR 模板外置）、release（4.9KB→2.4KB，命令序列外置为 runbook）。
+
 ### jero-ai 评审工具段外抽（2026-09-27：refactor/jero-ai-split 主件落地）
 
 - **四个 `jero_review*` 工具注册外抽**至 `lib/jero-ai-review-tools.ts`（`registerJeroReviewTools`）：jero-ai.ts 从 ~1120 行降至 864 行，评审工具定义、lens 标签助手与同意子状态机全部迁出，闭包依赖（nativeReviewCli、候选视图注册表、同意注册表与回退键、同意时钟、子进程常任权限、会话权限助手）经 `JeroReviewToolContext` 显式传入。

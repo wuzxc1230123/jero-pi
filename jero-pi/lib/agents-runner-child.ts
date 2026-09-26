@@ -2,8 +2,9 @@
 // 自 lib/agents-runner.ts 拆分（机械平移，语义零改动）。
 
 import { formatModelRef } from "./agents-config.ts";
+import { PARENT_NOTIFICATION_TOOL } from "./agents-protocol.ts";
 import {
-	DEFAULT_TOOLS, PARENT_NOTIFICATION_TOOL, type PiCommand, type ProcessLike, SDD_CHANGE_FLAG,
+	DEFAULT_TOOLS, type PiCommand, type ProcessLike, SDD_CHANGE_FLAG,
 	type TaskRequest
 } from "./agents-runner-core.ts";
 export function childArguments(request: TaskRequest): string[] {

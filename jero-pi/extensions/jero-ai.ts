@@ -9,7 +9,7 @@ import { join, resolve } from "node:path";
 import { type ExtensionAPI, type ExtensionContext } from "@earendil-works/pi-coding-agent";
 import {
 	ensureSddPreflight, getSddPreflightPreferences, installPackageAssets,
-	isParentConfirmedSddPreflightContext, isSddPreflightTrigger, renderSddPreflightPrompt,
+	containsSddPreflightBlockHeader, isParentConfirmedSddPreflightContext, isSddPreflightTrigger, renderSddPreflightPrompt,
 	SDD_PREFLIGHT_FIELDS, type SddPreflightField, type SddPreflightPreferences
 } from "../lib/sdd-preflight.ts";
 import { readSavedModelConfigAsync as readModelRoutingAuthorityAsync } from "../lib/model-routing-authority.ts";
@@ -78,7 +78,8 @@ import {
 	reviewSessionManagerAndId
 } from "../lib/jero-ai-review-consent.ts";
 import { resolveNegotiatedReviewStatusForSession } from "../lib/jero-ai-review-transport.ts";
-import { renderAgentEndReviewPreflightMessage } from "../lib/jero-ai-review-select.ts";
+import { PARENT_NOTIFICATION_TOOL, SUBAGENT_RUN_TOOL } from "../lib/agents-protocol.ts";
+import { renderAgentEndReviewPreflightMessage, REVIEW_PREFLIGHT_TYPE } from "../lib/jero-ai-review-select.ts";
 import { type JeroRuntimeDependencies, resolveControllerSddStatus, resolveStartupControllerSddStatus } from "../lib/jero-ai-testing-exports.ts";
 
 export function createJeroAiExtension(dependencies: JeroRuntimeDependencies = {}): (pi: ExtensionAPI) => void {
@@ -390,7 +391,7 @@ function createJeroAiExtensionForTesting(
 			const targetIdentity = status.targetIdentity;
 			pi.sendMessage(
 				{
-					customType: "jero.review-preflight",
+					customType: REVIEW_PREFLIGHT_TYPE,
 					content: renderAgentEndReviewPreflightMessage(targetIdentity),
 					display: true,
 				},
@@ -462,13 +463,13 @@ function createJeroAiExtensionForTesting(
 		});
 
 		pi.on("tool_call", async (event, ctx) => {
-			if (nativeSddStartupBlock && event.toolName !== "subagent_parent_message") return { block: true, reason: `SDD selection blocked: ${nativeSddStartupBlock}` };
+			if (nativeSddStartupBlock && event.toolName !== PARENT_NOTIFICATION_TOOL) return { block: true, reason: `SDD selection blocked: ${nativeSddStartupBlock}` };
 			const sensitivePathDenied = evaluateSensitivePathTool(
 				event.toolName,
 				event.input,
 			);
 			if (sensitivePathDenied) return sensitivePathDenied;
-			if (event.toolName === "subagent_run") {
+			if (event.toolName === SUBAGENT_RUN_TOOL) {
 				const sddAgent = sddDispatchAgentName(event.input);
 				if (sddAgent === "invalid") {
 					return { block: true, reason: "SDD dispatch requires exactly one shipped SDD agent name." };
@@ -494,8 +495,8 @@ function createJeroAiExtensionForTesting(
 						// 既有的 context 载荷是唯一的父到子传输通道。
 						// 拒绝调用方拼写的仿制品，使子进程收到一个精确的、
 						// 由父会话渲染的权威块，而不是含糊的混合物。
-						const context = typeof event.input.context === "string" ? event.input.context.trim() : "";
-						if (/^## SDD Session Preflight[ \t]*$/m.test(context)) {
+					const context = typeof event.input.context === "string" ? event.input.context.trim() : "";
+					if (containsSddPreflightBlockHeader(context)) {
 							return { block: true, reason: "SDD dispatch refused: child context already contains an untrusted preflight block." };
 						}
 						event.input.context = context.length === 0

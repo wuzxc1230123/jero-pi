@@ -56,7 +56,11 @@ test("package verification names the native review runtime boundary and packaged
 
 test("npm publication is bound to the exact package tag and triggering commit", () => {
 	const workflow = readFileSync(join(PACKAGE_ROOT, ".github", "workflows", "publish.yml"), "utf8");
-	const releaseSkill = readFileSync(join(PACKAGE_ROOT, "skills", "release", "SKILL.md"), "utf8");
+	// 发布命令序列按渐进披露移入 references/runbook.md；契约承载面为并集。
+	const releaseSkill = [
+		readFileSync(join(PACKAGE_ROOT, "skills", "release", "SKILL.md"), "utf8"),
+		readFileSync(join(PACKAGE_ROOT, "skills", "release", "references", "runbook.md"), "utf8"),
+	].join("\n\n");
 	const packageJson = readPackageJson();
 	const dispatchBlock = workflow.match(
 		/^ {2}workflow_dispatch:\n([\s\S]*?)^\npermissions:/m,

@@ -18,6 +18,24 @@ export const TASK_STATUS = {
 
 export type TaskStatus = (typeof TASK_STATUS)[keyof typeof TASK_STATUS];
 
+// 跨 runner/helpers/扩展三层共享的字面量单一事实源：工具名、子进程
+// 身份环境标记与 lastStep 状态机词汇。任何一侧漂移都是静默断链
+// （门禁按名字放行/拒绝、状态机按字符串推进），因此钉在这里。
+export const TOOL_PREFIX = "subagent_";
+export const PARENT_NOTIFICATION_TOOL = "subagent_parent_message";
+export const SUBAGENT_RUN_TOOL = "subagent_run";
+export const AGENTS_CHILD_ENV = "JERO_PI_AGENTS_CHILD";
+export const AGENTS_OWNED_IPC_ENV = "JERO_PI_AGENTS_OWNED_IPC";
+
+export const TASK_STEP = {
+	QUEUED: "queued",
+	STARTING: "starting",
+	PI_READY: "pi ready",
+	PROMPT_ACCEPTED: "prompt accepted",
+	WRITING: "writing",
+	RESPONDED: "responded",
+} as const;
+
 export const FINISHED_STATUSES: readonly TaskStatus[] = [TASK_STATUS.COMPLETED, TASK_STATUS.FAILED, TASK_STATUS.CANCELLED, TASK_STATUS.TIMED_OUT];
 
 export const TASK_EVENT = {
@@ -379,14 +397,14 @@ function recordPatch(task: TaskRecord, event: TaskEvent): Partial<TaskRecord> {
 			return { ...resumed, turns: task.turns + 1 };
 		case TASK_EVENT.AGENT_END:
 			return event.outcome === "success"
-				? { ...resumed, result: event.text, error: null, lastStep: "responded" }
+				? { ...resumed, result: event.text, error: null, lastStep: TASK_STEP.RESPONDED }
 				: { ...resumed, result: null, error: event.diagnostic ?? "assistant did not produce a final report", lastStep: event.diagnostic ?? "assistant failed" };
 		case TASK_EVENT.ERROR:
 			return { ...resumed, lastStep: `error: ${event.message}` };
 		case TASK_EVENT.ASK:
 			return { status: TASK_STATUS.WAITING, lastStep: askNote(event.request) };
 		case TASK_EVENT.TEXT:
-			return { ...resumed, lastStep: task.lastStep === "queued" || task.lastStep === "starting" ? "writing" : task.lastStep };
+			return { ...resumed, lastStep: task.lastStep === TASK_STEP.QUEUED || task.lastStep === TASK_STEP.STARTING ? TASK_STEP.WRITING : task.lastStep };
 		case TASK_EVENT.USAGE:
 			return { ...resumed, tokens: task.tokens + event.tokens, cost: task.cost + event.cost };
 		default:

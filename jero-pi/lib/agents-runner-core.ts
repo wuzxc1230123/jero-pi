@@ -10,11 +10,12 @@ import { AGENT_MODE, type AgentDefinition, type AgentMode, formatModelRef, type 
 import { CHILD_QUERY_MAX_INFLIGHT, CHILD_QUERY_TIMEOUT_MS, parseChildFrame, validChildMessage, validChildQueryId } from "./agents-messaging.ts";
 import { ParentStandingReviewPermissionBroker } from "./review-session-standing-permission-ipc.ts";
 import {
-	type AskRequest, type ChildResponseObservation, isFinished, normalizeRpcEvent,
-	type RemediationTaskState, TASK_EVENT, TASK_STATUS, taskLabel, type TaskRecord, type TaskStore
+	AGENTS_CHILD_ENV, AGENTS_OWNED_IPC_ENV, type AskRequest, type ChildResponseObservation, isFinished, normalizeRpcEvent,
+	PARENT_NOTIFICATION_TOOL, type RemediationTaskState, TASK_EVENT, TASK_STATUS, TASK_STEP, taskLabel, type TaskRecord, type TaskStore
 } from "./agents-protocol.ts";
 import { observeRemediationTool } from "./agents-remediation.ts";
 import { childArguments, JsonLines } from "./agents-runner-child.ts";
+import { THINKING_LEVELS } from "./model-routing-authority.ts";
 export interface ChildLike {
 	pid?: number | undefined;
 	stdin: Writable;
@@ -217,14 +218,14 @@ interface LiveTask {
 }
 
 const STDERR_TAIL_MAX = 512;
-const CHILD_MARKER = "JERO_PI_AGENTS_CHILD";
-const IPC_MARKER = "JERO_PI_AGENTS_OWNED_IPC";
-export const PARENT_NOTIFICATION_TOOL = "subagent_parent_message";
 export const DEFAULT_TOOLS: readonly string[] = [];
 const TERMINATION_GRACE_MS = 250;
 const GROUP_CONFIRM_MS = 25;
 const GROUP_CONFIRM_DEADLINE_MS = 1_000;
-const QUERY_REJECTION_ERRORS = new Set([
+// 子进程身份标记与父通知工具名定义在 agents-protocol（单一事实源）。
+/** 拒绝原因的归一白名单：与 parseChildFrame/runner 的拒绝路径逐字吻合，
+ * 由 contract-consistency 测试行为级钉住。 */
+export const QUERY_REJECTION_ERRORS: ReadonlySet<string> = new Set([
 	"invalid child IPC frame",
 	"invalid child IPC correlation",
 	"unsupported child IPC kind",
@@ -322,7 +323,7 @@ export class AgentRunner {
 			sessionPath: request.resumeSessionPath ?? null,
 			error: null,
 			result: null,
-			lastStep: "queued",
+			lastStep: TASK_STEP.QUEUED,
 			lastActivityAt: now,
 			turns: 0,
 			toolCalls: 0,
@@ -443,8 +444,8 @@ export class AgentRunner {
 		const env = {
 			...request.env,
 			...(request.extensionPaths ? { [RESEARCH_SELECTION_ENV]: JSON.stringify(request.researchSelection ?? null), [RESEARCH_ARTIFACT_ENV]: JSON.stringify(request.researchArtifact ?? null) } : {}),
-			[CHILD_MARKER]: "1",
-			[IPC_MARKER]: `${this.deps.now()}-${Math.random().toString(36).slice(2)}`,
+			[AGENTS_CHILD_ENV]: "1",
+			[AGENTS_OWNED_IPC_ENV]: `${this.deps.now()}-${Math.random().toString(36).slice(2)}`,
 			...(hasParentPermissionChannel ? { JERO_PI_AGENTS_PARENT_PERMISSION_FD: "3" } : {}),
 		};
 		delete env[REMEDIATION_PLAN_ENV];
@@ -458,7 +459,7 @@ export class AgentRunner {
 				stdio: hasParentPermissionChannel ? ["pipe", "pipe", "pipe", "pipe", "ipc"] : ["pipe", "pipe", "pipe", "ipc"],
 			});
 		} catch (error) {
-			this.store.update(id, { status: TASK_STATUS.RUNNING, startedAt: this.deps.now(), lastStep: "starting" });
+			this.store.update(id, { status: TASK_STATUS.RUNNING, startedAt: this.deps.now(), lastStep: TASK_STEP.STARTING });
 			this.finish(id, TASK_STATUS.FAILED, `could not start pi: ${error instanceof Error ? error.message : String(error)}`);
 			return;
 		}
@@ -484,7 +485,7 @@ export class AgentRunner {
 				(repositoryIdentity) => this.live.get(id) === live && !live.terminal && request.authorizeParentStandingReviewPermission?.(repositoryIdentity) === true,
 			);
 		}
-		this.store.update(id, { status: TASK_STATUS.RUNNING, startedAt: this.deps.now(), lastStep: "starting" });
+		this.store.update(id, { status: TASK_STATUS.RUNNING, startedAt: this.deps.now(), lastStep: TASK_STEP.STARTING });
 		child.channel?.unref?.();
 		child.on("error", (error) => this.childError(id, error));
 		child.on("message", (value) => this.receiveChildMessage(id, value));
@@ -515,13 +516,13 @@ export class AgentRunner {
 			const data = response.data as { sessionFile?: unknown; model?: { provider?: unknown; id?: unknown } | null; thinkingLevel?: unknown } | undefined;
 			if (response.success !== true || live.terminal || this.live.get(id) !== live || !data) return;
 			const resolved: Partial<TaskRecord> = {};
-			if (this.canAdvanceLastStep(id, ["starting"])) resolved.lastStep = "pi ready";
+			if (this.canAdvanceLastStep(id, [TASK_STEP.STARTING])) resolved.lastStep = TASK_STEP.PI_READY;
 			if (typeof data.sessionFile === "string" && data.sessionFile) resolved.sessionPath = data.sessionFile;
 			if (data.model === null) resolved.model = "default";
 			else if (typeof data.model?.provider === "string" && data.model.provider && typeof data.model.id === "string" && data.model.id) {
 				resolved.model = formatModelRef({ provider: data.model.provider, id: data.model.id });
 			}
-			if (typeof data.thinkingLevel === "string" && ["off", "minimal", "low", "medium", "high", "xhigh", "max"].includes(data.thinkingLevel)) resolved.thinking = data.thinkingLevel;
+			if (typeof data.thinkingLevel === "string" && (THINKING_LEVELS as readonly string[]).includes(data.thinkingLevel)) resolved.thinking = data.thinkingLevel;
 			this.store.update(id, resolved);
 		});
 		void this.send(id, { type: "prompt", message: promptText(request) }).then((response) => {
@@ -529,7 +530,7 @@ export class AgentRunner {
 				this.requestStop(id, TASK_STATUS.FAILED, String(response.error ?? "prompt rejected"));
 				return;
 			}
-			if (!live.terminal && this.live.get(id) === live && this.canAdvanceLastStep(id, ["starting", "pi ready"])) this.store.update(id, { lastStep: "prompt accepted" });
+			if (!live.terminal && this.live.get(id) === live && this.canAdvanceLastStep(id, [TASK_STEP.STARTING, TASK_STEP.PI_READY])) this.store.update(id, { lastStep: TASK_STEP.PROMPT_ACCEPTED });
 		});
 	}
 
@@ -550,7 +551,7 @@ export class AgentRunner {
 	private armStall(id: string, live: LiveTask): void {
 		live.cancelStall();
 		live.cancelStall = this.deps.schedule(() => {
-			const lastStep = this.store.get(id)?.lastStep ?? "starting";
+			const lastStep = this.store.get(id)?.lastStep ?? TASK_STEP.STARTING;
 			const minutes = Math.round(this.limits.stallTimeoutMs / 60_000);
 			this.requestStop(id, TASK_STATUS.TIMED_OUT, `stalled for ${minutes} min after: ${lastStep}${this.stderrSuffix(live)}`);
 		}, this.limits.stallTimeoutMs);
