@@ -20,8 +20,8 @@ import { __testing, createJeroAiExtension } from "../extensions/jero-ai.ts";
 // Background subagents policy (issue #256).
 //
 // The policy loader mirrors loadRuntimeGuardrailsConfig: project file >
-// global file > env var > default off, strict schema decode, fail-closed to
-// "off" on any malformed input.
+// global file > env var > default on, strict schema decode, fail-closed to
+// "off" on any malformed input (a broken file or an unrecognized env value).
 //
 // Capability answers one question: is `subagent_run` callable? The live pi
 // tool registry answers it directly and wins when it carries any signal. With
@@ -128,15 +128,15 @@ test("strict decode rejects malformed shapes", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Cascade: project > global > env > default off
+// Cascade: project > global > env > default on
 // ---------------------------------------------------------------------------
 
-test("default is off with no file and no env", () => {
+test("default is on with no file and no env", () => {
 	const cwd = makeScratch("gp-bg-none-");
 	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
 	assert.equal(
 		loadBackgroundSubagentsPolicy(cwd, { jeroPiConfigHome: configHome, env: EMPTY_ENV }),
-		"off",
+		"on",
 	);
 });
 
@@ -330,10 +330,10 @@ test("renderOrchestratorPrompt substitutes the background policy token", () => {
 	assert.doesNotMatch(rendered, /\{\{JERO_PI_BACKGROUND_POLICY\}\}/);
 });
 
-test("renderOrchestratorPrompt defaults to the fail-closed off/absent rendering", () => {
+test("renderOrchestratorPrompt defaults to the built-in on/absent rendering", () => {
 	const assetsDir = join(process.cwd(), "assets");
 	const rendered = renderOrchestratorPrompt(assetsDir);
-	assert.match(rendered, /Background subagent policy: off \(capability: absent\)/);
+	assert.match(rendered, /Background subagent policy: on \(capability: absent\)/);
 });
 
 // The project policy file pins the policy half of the status line so these
@@ -430,10 +430,22 @@ test("the resolver attributes the built-in default when nothing else decides", (
 	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
 	const resolution = resolveBackgroundSubagentsPolicy(cwd, {
 		jeroPiConfigHome: configHome,
+		env: EMPTY_ENV,
+	});
+	assert.equal(resolution.policy, "on");
+	assert.equal(resolution.source, "default");
+	assert.equal(resolution.envValue, undefined);
+});
+
+test("an unrecognized env value fails closed to off instead of sliding to the default on", () => {
+	const cwd = makeScratch("gp-bg-src-env-bad-");
+	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
+	const resolution = resolveBackgroundSubagentsPolicy(cwd, {
+		jeroPiConfigHome: configHome,
 		env: { JERO_PI_BACKGROUND_SUBAGENTS: "yes" },
 	});
 	assert.equal(resolution.policy, "off");
-	assert.equal(resolution.source, "default");
+	assert.equal(resolution.source, "environment");
 	assert.equal(
 		resolution.envValue,
 		"yes",
@@ -584,8 +596,8 @@ test("no argument reports the effective policy, the deciding default, and the ca
 	assert.equal(
 		notice.message,
 		[
-			"background subagents: off (decided by built-in default; capability: absent)",
-			"Resolution order (first hit wins): project file, global file, JERO_PI_BACKGROUND_SUBAGENTS, built-in default off.",
+			"background subagents: on (decided by built-in default; capability: absent)",
+			"Resolution order (first hit wins): project file, global file, JERO_PI_BACKGROUND_SUBAGENTS, built-in default on.",
 		].join("\n"),
 	);
 });
@@ -603,7 +615,7 @@ test("status names the project file that decided and the global file it shadows"
 		[
 			`background subagents: on (decided by project file ${join(cwd, ".pi", "jero", "background-subagents.json")}; capability: ready)`,
 			`The global file ${join(configHome, "background-subagents.json")} exists but is outranked by that project file.`,
-			"Resolution order (first hit wins): project file, global file, JERO_PI_BACKGROUND_SUBAGENTS, built-in default off.",
+			"Resolution order (first hit wins): project file, global file, JERO_PI_BACKGROUND_SUBAGENTS, built-in default on.",
 		].join("\n"),
 	);
 });
@@ -640,11 +652,11 @@ test("status calls an unrecognized environment value inert instead of silently i
 	});
 	assert.equal(
 		notice.message.split("\n")[0],
-		"background subagents: off (decided by built-in default; capability: absent)",
+		"background subagents: off (decided by JERO_PI_BACKGROUND_SUBAGENTS; capability: absent)",
 	);
 	assert.ok(
 		notice.message.includes(
-			'JERO_PI_BACKGROUND_SUBAGENTS="true" is not a recognized value ("on" or "off"), so it is ignored.',
+			'JERO_PI_BACKGROUND_SUBAGENTS="true" is not a recognized value ("on" or "off"), so the policy fails closed to off.',
 		),
 		notice.message,
 	);
@@ -686,7 +698,7 @@ test("enable writes the global file and reports that it decides", async (t) => {
 		[
 			`background subagents: on (decided by global file ${globalFile}; capability: absent)`,
 			`Wrote on to the global file ${globalFile}.`,
-			"Resolution order (first hit wins): project file, global file, JERO_PI_BACKGROUND_SUBAGENTS, built-in default off.",
+			"Resolution order (first hit wins): project file, global file, JERO_PI_BACKGROUND_SUBAGENTS, built-in default on.",
 		].join("\n"),
 	);
 });
@@ -730,7 +742,7 @@ test("enable under an outranking project file writes the global file and says it
 			`background subagents: off (decided by project file ${projectFile}; capability: absent)`,
 			`Wrote on to the global file ${globalFile}.`,
 			`That global write does not take effect here: the project file ${projectFile} outranks it. Edit or remove that project file to let the global setting decide.`,
-			"Resolution order (first hit wins): project file, global file, JERO_PI_BACKGROUND_SUBAGENTS, built-in default off.",
+			"Resolution order (first hit wins): project file, global file, JERO_PI_BACKGROUND_SUBAGENTS, built-in default on.",
 		].join("\n"),
 	);
 });

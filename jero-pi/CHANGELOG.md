@@ -40,6 +40,10 @@ jero-pi 尚未发布到 npm（版本停在 0.1.0 基线），本文件自重构�
 - 权威边界门（`check-authority-boundary.mjs`）：先剥行内块注释再过滤（堵住 `/* note */ code` 整行隐藏）、动态 `import()` 纳入 extensions/ 规则；`build-runtime-modules.mjs` 生成后校验改写出的相对 import 必须存在于 runtime/（未来 lib 根值导入漂移立即报错而非消费端 ERR_MODULE_NOT_FOUND）；`check-docs-manifest.mjs` 的 `main()` 不再复制 `checkDocsManifest()` 判定体。
 - 快胜一批：sdd-init 命令 handler 去掉全仓唯一 `ctx: any` 并补 hasUI 门；模型搜索框 j/k 仅在搜索词为空时充当导航（含 j/k 的模型 id 可正常键入）；capture-relay 死导入删除；`.(exe|cmd|bat)` 点号转义；shell/session-changes 显示路径改 `join`（消除 Windows 混合分隔符）；review-consent-latch 改临时文件+rename 原子写；onAbort 通知补 hasUI。
 
+#### 行为变更（默认值）
+
+- **后台子代理策略默认改为 on**：`resolveBackgroundSubagentsPolicy` 的内置默认从 "off" 翻转为 "on"——并行后台委托成为常规形态，想收敛经项目/全局配置文件、`JERO_PI_BACKGROUND_SUBAGENTS=off` 或 `/jero:background-subagents disable` 关掉（四级解析顺序不变：项目文件 > 全局文件 > 环境变量 > 内置默认）。保守方向同步收紧：**存在但畸形的文件**与**设置了但无法识别的环境变量值**都保守失败为 "off"（此前无效 env 只是"被忽略"并滑向默认——默认翻转为 on 后这不再安全，显式输入坏了绝不静默落到 on）。`DEFAULT_BACKGROUND_SUBAGENTS_RENDERING` 对齐为 on；状态行/命令报告文案同步；`/jero:guard` 与编排器提示词状态行动态反映。验证姿态不受影响：写者验证规则跟随的是 RDD 线（review-mode 开关），该策略线只门控后台派发。顺带清除本模块六处机械拆分残留的重复注释块。
+
 ### 流程层补强（对照 Trellis-main 差距评审的落地）
 
 - **SDD 状态面包屑**（新 `lib/jero-ai-sdd-breadcrumb.ts` + jero-ai 接线）：bootstrap 注入的是不变纪律，面包屑注入的是活状态——磁盘状态引擎解析的当前变更、`next_recommended`、任务进度与首个阻塞，在有活跃 SDD 变更期间的**每次 LLM 请求**刷新（marker `jero:sdd-breadcrumb/v1` + 16 位状态指纹去重；陈旧面包屑先剔除再插新，同指纹在场不重复注入）。不变量借自 Trellis 的每回合面包屑："必需步骤不在每回合可见，就会被模型静默跳过"。无活跃变更/已归档/变更歧义/非权威存储不注入；状态解析失败保守跳过，绝不阻塞请求。RPC 子进程与包子进程同 bootstrap 门拒绝；`JERO_PI_SDD_BREADCRUMB=0|false|off` 关闭。

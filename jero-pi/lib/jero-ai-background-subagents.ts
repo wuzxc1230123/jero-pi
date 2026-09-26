@@ -9,7 +9,7 @@ import { jeroConfigHome, isRecord } from "./jero-ai-persona-config.ts";
 
 
 // ---------------------------------------------------------------------------
-// 后台子代理策略 —— 项目 > 全局 > 环境变量 > 默认关闭
+// 后台子代理策略 —— 项目 > 全局 > 环境变量 > 默认开启
 // ---------------------------------------------------------------------------
 
 export type BackgroundSubagentsPolicy = "on" | "off";
@@ -22,9 +22,6 @@ export interface BackgroundSubagentsRendering {
 	policy: BackgroundSubagentsPolicy;
 	capability: BackgroundSubagentsCapability;
 }
-
-/** 四个来源中哪一个决定了生效策略。 */
-
 
 /** 四个来源中哪一个决定了生效策略。 */
 type BackgroundSubagentsSource =
@@ -65,17 +62,11 @@ export const BACKGROUND_SUBAGENTS_FILE = "background-subagents.json";
 
 
 
+/** 与解析器的内置默认一致（无任何信号时 on）；capability 保守为 absent。 */
 export const DEFAULT_BACKGROUND_SUBAGENTS_RENDERING: BackgroundSubagentsRendering = {
-	policy: "off",
+	policy: "on",
 	capability: "absent",
 };
-
-/**
- * 对 {"schema":"jero.background-subagents/v1","policy":"on"|"off"} 的严格解码。
- * 任何畸形形态（JSON 损坏、schema 不符、未知键、非法 policy）
- * 都返回 undefined，让调用方保守失败为 "off"。
- */
-
 
 /**
  * 对 {"schema":"jero.background-subagents/v1","policy":"on"|"off"} 的严格解码。
@@ -106,30 +97,12 @@ export function parseBackgroundSubagentsPolicyFile(
  *   2. 全局文件 `${configHome}/background-subagents.json`
  *      （configHome 遵循 JERO_PI_CONFIG_HOME，默认 ~/.pi/jero）
  *   3. 环境变量 JERO_PI_BACKGROUND_SUBAGENTS（"on" | "off"）
- *   4. 默认 "off"
+ *   4. 内置默认 "on"（并行后台委托是常规形态；想收敛经上面任一来源关掉）
  *
- * 存在但畸形的文件会保守失败为 "off"，而不是继续落到较低优先级的来源，
- * 并且仍然归属于该文件：“由一个损坏的项目文件决定为 off”与“默认 off”
- * 是两种不同情况，只有前者才是需要修复的错误。
- *
- * 四个来源且先命中优先，正是那种会让一次编辑看起来毫无效果的结构，
- * 因此决定来源被纳入返回结果，而不是让调用方自行重新推导。
- */
-
-
-/**
- * 解析后台子代理策略，以及决定该策略的来源。
- *
- * 解析顺序（先命中者优先，与 loadRuntimeGuardrailsConfig 一致）：
- *   1. 项目文件 `${cwd}/.pi/jero/background-subagents.json`
- *   2. 全局文件 `${configHome}/background-subagents.json`
- *      （configHome 遵循 JERO_PI_CONFIG_HOME，默认 ~/.pi/jero）
- *   3. 环境变量 JERO_PI_BACKGROUND_SUBAGENTS（"on" | "off"）
- *   4. 默认 "off"
- *
- * 存在但畸形的文件会保守失败为 "off"，而不是继续落到较低优先级的来源，
- * 并且仍然归属于该文件：“由一个损坏的项目文件决定为 off”与“默认 off”
- * 是两种不同情况，只有前者才是需要修复的错误。
+ * 两类显式输入保守失败为 "off"，而不是继续落到较低优先级的来源：
+ * 存在但畸形的文件（归属于该文件），以及设置了但无法识别的环境变量值
+ * （归属于环境变量）——"用户想控制但输入坏了"与"用户没有表态"是两种
+ * 不同情况，前者绝不静默滑向默认 on。
  *
  * 四个来源且先命中优先，正是那种会让一次编辑看起来毫无效果的结构，
  * 因此决定来源被纳入返回结果，而不是让调用方自行重新推导。
@@ -169,10 +142,14 @@ export function resolveBackgroundSubagentsPolicy(
 		if (envValue === "on" || envValue === "off") {
 			return { policy: envValue, source: "environment", malformed: false, ...locations };
 		}
-		return { policy: "off", source: "default", malformed: false, ...locations };
+		if (envValue !== undefined) {
+			// 显式设置了却无法识别：保守失败为 off，绝不静默落到默认 on。
+			return { policy: "off", source: "environment", malformed: false, ...locations };
+		}
+		return { policy: "on", source: "default", malformed: false, ...locations };
 	} catch {
 		return {
-			policy: "off",
+			policy: "on",
 			source: "default",
 			malformed: false,
 			projectFile,
@@ -188,21 +165,12 @@ export function resolveBackgroundSubagentsPolicy(
  * 仅返回生效策略，供不上报来源的调用方使用。
  * 通过委托实现，加载器与解析器永远不会各执一词。
  */
-
-
-/**
- * 仅返回生效策略，供不上报来源的调用方使用。
- * 通过委托实现，加载器与解析器永远不会各执一词。
- */
 export function loadBackgroundSubagentsPolicy(
 	cwd: string,
 	options: LoadBackgroundSubagentsOptions = {},
 ): BackgroundSubagentsPolicy {
 	return resolveBackgroundSubagentsPolicy(cwd, options).policy;
 }
-
-/** 写入全局策略文件，必要时创建配置主目录。 */
-
 
 /** 写入全局策略文件，必要时创建配置主目录。 */
 export function writeGlobalBackgroundSubagentsPolicy(
@@ -234,14 +202,6 @@ function describeBackgroundSubagentsSource(
 			return "built-in default";
 	}
 }
-
-/**
- * 上报生效策略、决定它的来源、已解析的能力，以及用户需要了解的
- * 关于“未”起决定作用的来源的信息。`wrote` 表示本次调用刚写入全局
- * 文件的策略；被更高优先级文件压过的写入，绝不能被报告成
- * 已经生效。
- */
-
 
 /**
  * 上报生效策略、决定它的来源、已解析的能力，以及用户需要了解的
@@ -281,15 +241,21 @@ export function renderBackgroundSubagentsReport(
 			`The global file ${resolution.globalFile} exists but is outranked by that project file.`,
 		);
 	}
-	if (resolution.envValue !== undefined && resolution.source !== "environment") {
-		lines.push(
-			resolution.envValue === "on" || resolution.envValue === "off"
-				? `JERO_PI_BACKGROUND_SUBAGENTS=${resolution.envValue} is set, but both files outrank it and it outranks the built-in default; it decides only when neither file exists.`
-				: `JERO_PI_BACKGROUND_SUBAGENTS="${resolution.envValue}" is not a recognized value ("on" or "off"), so it is ignored.`,
-		);
+	if (resolution.envValue !== undefined) {
+		if (resolution.envValue === "on" || resolution.envValue === "off") {
+			if (resolution.source !== "environment") {
+				lines.push(
+					`JERO_PI_BACKGROUND_SUBAGENTS=${resolution.envValue} is set, but both files outrank it and it outranks the built-in default; it decides only when neither file exists.`,
+				);
+			}
+		} else {
+			lines.push(
+				`JERO_PI_BACKGROUND_SUBAGENTS="${resolution.envValue}" is not a recognized value ("on" or "off"), so the policy fails closed to off.`,
+			);
+		}
 	}
 	lines.push(
-		"Resolution order (first hit wins): project file, global file, JERO_PI_BACKGROUND_SUBAGENTS, built-in default off.",
+		"Resolution order (first hit wins): project file, global file, JERO_PI_BACKGROUND_SUBAGENTS, built-in default on.",
 	);
 	return {
 		message: lines.join("\n"),
