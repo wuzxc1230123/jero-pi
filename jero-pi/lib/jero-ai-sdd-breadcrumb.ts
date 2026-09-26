@@ -8,6 +8,8 @@
 // 引擎无真相可宣告）时不注入。RPC 子进程与包子进程由接线处与 bootstrap
 // 同门拒绝。`JERO_PI_SDD_BREADCRUMB=0|false|off` 关闭。
 import { createHash } from "node:crypto";
+import { readdirSync, statSync } from "node:fs";
+import { join, resolve } from "node:path";
 import type { SddStatus } from "./sdd-status.ts";
 
 export const JERO_SDD_BREADCRUMB_MARKER = "jero:sdd-breadcrumb/v1";
@@ -21,6 +23,58 @@ export function sddBreadcrumbEnabled(env: NodeJS.ProcessEnv = process.env): bool
 export interface SddBreadcrumb {
 	readonly fingerprint: string;
 	readonly text: string;
+}
+
+// ---------------------------------------------------------------------------
+// 面包屑专用的状态缓存。context 事件每次 LLM 请求都会解析状态，而
+// resolveSddStatus 是全量磁盘扫描（changes 目录 + 每变更多文件）。指纹是
+// openspec/ 树的 stat-only 深度遍历（目录与文件的 mtime/size）：tasks.md
+// 勾选、spec 回写、变更增删都必然改变其中至少一项，stat 远廉于整读。
+// 控制器与命令路径不经此缓存——它们要的是即席权威读数。
+// ---------------------------------------------------------------------------
+
+type SddStatusResolver = (options: { cwd: string }) => SddStatus;
+
+const CACHE_LIMIT = 16;
+const statusCache = new Map<string, { fingerprint: string; status: SddStatus }>();
+
+function openspecFingerprint(cwd: string): string {
+	const parts: string[] = [];
+	const walk = (dir: string): void => {
+		let entries: string[];
+		try {
+			entries = readdirSync(dir).sort();
+		} catch {
+			parts.push("!");
+			return;
+		}
+		for (const entry of entries) {
+			const path = join(dir, entry);
+			try {
+				const stat = statSync(path);
+				if (stat.isDirectory()) {
+					parts.push(`d:${entry}:${stat.mtimeMs}`);
+					walk(path);
+				} else {
+					parts.push(`f:${entry}:${stat.mtimeMs}:${stat.size}`);
+				}
+			} catch {
+				parts.push(`x:${entry}`);
+			}
+		}
+	};
+	walk(join(resolve(cwd), "openspec"));
+	return parts.join("|");
+}
+
+export function cachedResolveSddStatus(cwd: string, resolveStatus: SddStatusResolver): SddStatus {
+	const fingerprint = openspecFingerprint(cwd);
+	const cached = statusCache.get(cwd);
+	if (cached !== undefined && cached.fingerprint === fingerprint) return cached.status;
+	const status = resolveStatus({ cwd });
+	if (statusCache.size >= CACHE_LIMIT) statusCache.clear();
+	statusCache.set(cwd, { fingerprint, status });
+	return status;
 }
 
 export function shouldRenderSddBreadcrumb(status: SddStatus): boolean {

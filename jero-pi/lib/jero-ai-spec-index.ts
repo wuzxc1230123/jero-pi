@@ -54,18 +54,26 @@ function safeRead(path: string): string {
 	}
 }
 
-function walkSpecFiles(specsRoot: string): string[] {
-	const files: string[] = [];
+interface SpecFile {
+	readonly path: string;
+	readonly text: string;
+}
+
+function walkSpecFiles(specsRoot: string): SpecFile[] {
+	const files: SpecFile[] = [];
 	function walk(dir: string): void {
 		for (const entry of safeDirectories(dir)) {
 			const path = join(dir, entry);
 			const specPath = join(path, "spec.md");
-			if (safeRead(specPath).trim().length > 0) files.push(specPath);
+			// 单次读盘同时服务"非空判定"与 Purpose 提取——索引在 bootstrap
+			// 窗口内的每次 LLM 请求都会求值，同一文件绝不读两遍。
+			const text = safeRead(specPath);
+			if (text.trim().length > 0) files.push({ path: specPath, text });
 			walk(path);
 		}
 	}
 	walk(specsRoot);
-	return files.sort();
+	return files.sort((left, right) => left.path.localeCompare(right.path));
 }
 
 // Purpose 首个非空行是 OpenSpec spec.md 的规范摘要位置；没有该节（或该节
@@ -92,8 +100,8 @@ export function buildSpecIndex(cwd: string): SpecIndex {
 	const specsRoot = join(resolve(cwd), "openspec", "specs");
 	const entries = walkSpecFiles(specsRoot)
 		.map((file) => ({
-			domain: relative(specsRoot, file).split(/[\\/]/).slice(0, -1).join("/"),
-			purpose: extractPurpose(safeRead(file)),
+			domain: relative(specsRoot, file.path).split(/[\\/]/).slice(0, -1).join("/"),
+			purpose: extractPurpose(file.text),
 		}))
 		.sort((a, b) => a.domain.localeCompare(b.domain));
 	const truncated = entries.length > MAX_ENTRIES;
@@ -126,6 +134,13 @@ export function messageContainsSpecIndex(message: unknown): boolean {
 		typeof (part as { text?: unknown }).text === "string" &&
 		(part as { text: string }).text.includes(JERO_SPEC_INDEX_MARKER),
 	);
+}
+
+/** 便宜的在场预检 + 昂贵求值：索引消息已在上下文中时绝不重扫 specs/ 树
+ * （context 事件每次 LLM 请求都会走到这里，marker 去重必须发生在求值前）。 */
+export function specIndexTextFor(messages: readonly unknown[], cwd: string): string | undefined {
+	if (messages.some(messageContainsSpecIndex)) return undefined;
+	return renderSpecIndexText(buildSpecIndex(cwd));
 }
 
 function firstNonCompactionSummaryIndex(messages: readonly unknown[]): number {

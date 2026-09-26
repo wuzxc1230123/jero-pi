@@ -664,3 +664,53 @@ test("loadRuntimeGuardrailsConfig honors the injected env seam for the autonomou
 		rmSync(clean, { recursive: true, force: true });
 	}
 });
+
+// ---------------------------------------------------------------------------
+// 硬拒绝归一化二遍：旗标换序 / 引号 / 大小写 / $HOME 展开 / 盘符根
+// ---------------------------------------------------------------------------
+
+test("hard deny survives flag order, quoting, case, and $HOME expansion variants", () => {
+	const config = { autonomousMode: true, guardedCommands: {} } as const;
+	for (const command of [
+		"rm -rf /",
+		"rm -fr /",
+		"rm -rvf /",
+		"rm -r -f /",
+		"rm --recursive --force /",
+		"rm -rf '/'",
+		'rm -rf "/"',
+		"RM -RF /",
+		"Rm -Fr ~",
+		"rm -rf ~",
+		'rm -rf "${HOME}"',
+		"rm -rf $HOME",
+		"rm -rf \"${HOME}\"/src",
+		"rm -rf C:/",
+		"rm -rf c:\\",
+		"rm -rf 'C:\\'",
+		"rm -rf ..",
+		"rm -rf .",
+		"chmod -R 777 /etc",
+		"CHMOD -r 777 /etc",
+		"Chown -R root /",
+		"GIT RESET --HARD",
+		"git push --force origin main",
+	]) {
+		assert.equal(classifyGuardedCommand(command, config), "block", command);
+	}
+});
+
+test("hard deny does not over-block ordinary recursive removals", () => {
+	const config = { autonomousMode: true, guardedCommands: {} } as const;
+	for (const command of [
+		"rm -rf build/",
+		"rm -rf node_modules",
+		"rm -rf /tmp/build",
+		"rm -rf ./dist",
+		"rm -r src",
+		"rm file.txt",
+		"git rm -r --cached .",
+	]) {
+		assert.notEqual(classifyGuardedCommand(command, config), "block", command);
+	}
+});

@@ -8,6 +8,7 @@ import test from "node:test";
 import { createJeroAiExtension } from "../extensions/jero-ai.ts";
 import {
 	applySddBreadcrumb,
+	cachedResolveSddStatus,
 	JERO_SDD_BREADCRUMB_MARKER,
 	messageContainsSddBreadcrumb,
 	renderSddBreadcrumb,
@@ -30,6 +31,32 @@ function seedActiveChange(root: string, name = "demo"): void {
 	writeFileSync(join(root, "openspec", "changes", name, "design.md"), "## Context\nsmall change\n");
 	writeFileSync(join(root, "openspec", "changes", name, "tasks.md"), "- [ ] implement core\n");
 }
+
+test("cachedResolveSddStatus reuses the resolved status until the openspec tree changes", () => {
+	const root = tempRepo();
+	try {
+		seedActiveChange(root);
+		let resolutions = 0;
+		const counting: (options: { cwd: string }) => ReturnType<typeof resolveSddStatus> = (options) => {
+			resolutions += 1;
+			return resolveSddStatus(options);
+		};
+		const before = cachedResolveSddStatus(root, counting);
+		assert.equal(resolutions, 1);
+		assert.equal(cachedResolveSddStatus(root, counting), before, "unchanged tree returns the same resolved object");
+		assert.equal(cachedResolveSddStatus(root, counting), before);
+		assert.equal(resolutions, 1, "no re-resolution while the fingerprint is unchanged");
+		writeFileSync(join(root, "openspec", "changes", "demo", "tasks.md"), "- [x] implement core\n");
+		const after = cachedResolveSddStatus(root, counting);
+		assert.equal(resolutions, 2, "an openspec edit invalidates the cache");
+		assert.notEqual(after, before);
+		assert.equal(after.taskProgress.complete, 1);
+		// 其他调用方（控制器/命令）仍拿即席读数，不经缓存。
+		assert.equal(resolveSddStatus({ cwd: root }).taskProgress.complete, 1);
+	} finally {
+		rmSync(root, { recursive: true, force: true });
+	}
+});
 
 test("no breadcrumb without an openspec store or an active change", () => {
 	const root = tempRepo();

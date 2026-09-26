@@ -28,6 +28,31 @@ export const DENIED_BASH_PATTERNS: RegExp[] = [
 	/\bchown\s+-R\b/,
 ];
 
+// 硬拒绝的归一化视图：小写化、剥引号、把 $HOME/${HOME} 折叠成 ~，再跑
+// 一遍等价模式集。归一化只扩大检测面（旗标换序 rm -fr、引号包裹、大小写
+// 变体、Windows 盘符根），绝不用于放行——原始命令上的模式集原样保留。
+// rm 的旗标匹配用双前瞻表达"同一命令行里同时出现 r 与 f"（含 -rf/-fr/
+// -rvf/-r -f/--recursive --force），目标是根类路径：裸 /、~（含子目录）、
+// .. 与 .、以及任意盘符根（c:/、C:\）。
+function hardDenyNormalizedCommand(command: string): string {
+	return command
+		.replace(/[$]\{?HOME\}?/gi, "~")
+		.replace(/["']/g, "")
+		.toLowerCase();
+}
+
+const RM_DESTRUCTIVE_FLAGS_SRC = String.raw`(?=(?:--?[a-z]*\s+|[^-\s]\S*\s+)*--?[a-z]*r)(?=(?:--?[a-z]*\s+|[^-\s]\S*\s+)*--?[a-z]*f)(?:--?[a-z]*\s+|[^-\s]\S*\s+)+`;
+
+export const DENIED_BASH_NORMALIZED_PATTERNS: RegExp[] = [
+	new RegExp(String.raw`\brm\s+${RM_DESTRUCTIVE_FLAGS_SRC}(?:\/(?:\s|$)|~(?:\/|\s|$)|\.\.?(?:\s|$)|[a-z]:[\/\\]?)`),
+	/\bgit\s+reset\s+--hard\b/,
+	/\bgit\s+clean\b(?=[^\n]*(?:-[^\n]*f|--force))(?=[^\n]*(?:-[^\n]*d|--directories))/,
+	new RegExp(String.raw`\bgit${GIT_GLOBAL_FLAGS_SRC}push\b(?=[^\n]*\s--force(?:-with-lease)?\b)`),
+	new RegExp(String.raw`\bgit${GIT_GLOBAL_FLAGS_SRC}push\b(?=[^\n]*\s-[^\s-]*f)`),
+	/\bchmod\s+-r\s+777\b/,
+	/\bchown\s+-r\b/,
+];
+
 // ---------------------------------------------------------------------------
 // 自主守卫 —— 运行时护栏配置
 // ---------------------------------------------------------------------------
@@ -148,18 +173,6 @@ const SAFE_GUARDRAILS_CONFIG: RuntimeGuardrailsConfig = {
  *      （对 guardedCommands 中未设置的键应用 AUTONOMOUS_DEFAULT_ACTIONS）
  *   4. 无命中 → "not-guarded"
  */
-
-
-/**
- * 按运行时守卫策略对一条 shell 命令分类。
- *
- * 顺序（不可协商）：
- *   1. 硬拒绝模式 → "block"（永远生效，不能被配置覆盖）
- *   2. 若 autonomousMode 为 false → 镜像旧版 CONFIRM_BASH_PATTERNS 的结果
- *   3. 若 autonomousMode 为 true → 对命中的键使用配置的 GuardAction
- *      （对 guardedCommands 中未设置的键应用 AUTONOMOUS_DEFAULT_ACTIONS）
- *   4. 无命中 → "not-guarded"
- */
 function collectGuardedMatches(
 	command: string,
 	config: RuntimeGuardrailsConfig,
@@ -207,6 +220,15 @@ export function evaluateGuardedCommand(
 		};
 	}
 
+	// 归一化副本上的第二遍硬拒绝（旗标换序/引号/大小写/盘符根变体）。
+	// 归一化会改变偏移，preview 从命令开头截取，绝不给用户看错位的截断点。
+	const normalized = hardDenyNormalizedCommand(command);
+	for (const pattern of DENIED_BASH_NORMALIZED_PATTERNS) {
+		if (pattern.test(normalized)) {
+			return { action: "block", key: undefined, triggerIndex: 0, matches };
+		}
+	}
+
 	// 在所有命中中，先取配置的 block，其次 confirm，最后 allow。
 	const selected = matches.find((match) => match.action === "block")
 		?? matches.find((match) => match.action === "confirm")
@@ -231,9 +253,6 @@ export function guardedCommandPreview(command: string, triggerIndex: number): st
 	const prefix = start > 0 ? "…" : "";
 	return `${prefix}${truncateToWidth(command.slice(start).replace(/\s+/g, " ").trim(), 180 - prefix.length, "…")}`;
 }
-
-/** 所有受守卫动作的确认标题；没有键命中时使用通用文案。 */
-
 
 /** 所有受守卫动作的确认标题；没有键命中时使用通用文案。 */
 export function guardedCommandTitle(
@@ -278,22 +297,6 @@ export function parseGuardrailsConfigFile(
 
 	return { autonomousMode, guardedCommands };
 }
-
-/**
- * 加载运行时护栏配置。
- *
- * 解析顺序（项目覆盖全局）：
- *   1. 检查 JERO_PI_AUTONOMOUS_MODE 环境变量 —— 若为 "1"，强制 autonomousMode=true
- *      并使用默认的受守卫命令动作。
- *   2. 从 ${jeroPiConfigHome}/runtime-guardrails.json 读取全局配置
- *   3. 从 ${cwd}/.pi/jero/runtime-guardrails.json 读取项目配置
- *      （项目值合并覆盖在全局之上）
- *   4. 任何位置的解析/读取错误 → 保守回退（返回 SAFE_GUARDRAILS_CONFIG）
- */
-// 宿主注入的 processEnv（测试接缝）：在扩展创建时设置，让护栏的
-// 环境变量检查与运行时其余部分读取同一份环境，
-// 而不是绕过接缝去取真实的 process.env。
-
 
 /**
  * 加载运行时护栏配置。
