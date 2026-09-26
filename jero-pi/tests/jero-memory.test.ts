@@ -119,6 +119,21 @@ test("a missing or corrupt index is rebuilt from the entries directory", async (
 	}
 });
 
+test("list never rebuilds the shared index while a concurrent writer holds the lock", async () => {
+	const root = tempRoot();
+	try {
+		await saveMemory(root, "a/one", "first body");
+		rmSync(join(root, "index.json"));
+		// 模拟并发保存者持锁：无锁重建会用旧快照覆盖持锁者刚写的行。
+		mkdirSync(join(root, ".index-lock"));
+		assert.deepEqual(listMemory(root), [], "locked: the stale on-disk index is served as-is");
+		rmSync(join(root, ".index-lock"), { recursive: true, force: true });
+		assert.deepEqual(listMemory(root).map((entry) => entry.topic), ["a/one"], "unlocked: the index is rebuilt from the files");
+	} finally {
+		rmSync(root, { recursive: true, force: true });
+	}
+});
+
 test("delete removes the entry and keeps the index in sync", async () => {
 	const root = tempRoot();
 	try {

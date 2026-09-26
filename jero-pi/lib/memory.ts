@@ -1,6 +1,6 @@
-import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, rmdirSync, writeFileSync, statSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, join, normalize, sep } from "node:path";
+import { dirname, join, sep } from "node:path";
 import { randomUUID } from "node:crypto";
 
 // jero 记忆：文件承载的持久记忆存储，替代可选的 gentle-engram 伴生件。
@@ -165,8 +165,27 @@ async function withIndexLockAsync<T>(root: string, action: () => T): Promise<T> 
 			mkdirSync(lockPath);
 		} catch (error) {
 			if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
-			if (Date.now() - statSync(lockPath).mtimeMs > INDEX_LOCK_STALE_MS) {
-				rmSync(lockPath, { recursive: true, force: true });
+			// EEXIST 与 stat 之间锁可能已被释放（ENOENT）：按"可立即重试"
+			// 处理，绝不让并发窗口把整个保存炸掉。
+			let heldSinceMs: number;
+			try {
+				heldSinceMs = statSync(lockPath).mtimeMs;
+			} catch (statError) {
+				if ((statError as NodeJS.ErrnoException).code === "ENOENT") continue;
+				throw statError;
+			}
+			if (Date.now() - heldSinceMs > INDEX_LOCK_STALE_MS) {
+				// 原子接管：把陈旧锁 rename 走，只有一个赢家；输家重试。
+				// 直接 rmSync 有竞态——可能删掉第三方刚赢得的新锁，造成
+				// 双持有者各自写索引。
+				const quarantine = `${lockPath}.stale-${process.pid}-${Date.now()}`;
+				try {
+					renameSync(lockPath, quarantine);
+				} catch (renameError) {
+					if ((renameError as NodeJS.ErrnoException).code !== "ENOENT") throw renameError;
+					continue;
+				}
+				rmSync(quarantine, { recursive: true, force: true });
 				continue;
 			}
 			if (Date.now() > deadline) throw new Error("timed out acquiring the memory index lock");
@@ -178,6 +197,24 @@ async function withIndexLockAsync<T>(root: string, action: () => T): Promise<T> 
 		} finally {
 			rmSync(lockPath, { recursive: true, force: true });
 		}
+	}
+}
+
+/** 同步的"锁可用才重建"：listMemory 保持同步签名。锁被并发持有者占用
+ * 时跳过重建——对方正在维护索引，读取方下次再对账；绝不无锁改写共享
+ * 索引（否则会把持锁者刚写入的行用旧快照覆盖掉）。 */
+function rebuildMemoryIndexIfLockable(root: string): void {
+	const lockPath = join(root, INDEX_LOCK_DIR);
+	try {
+		mkdirSync(lockPath);
+	} catch (error) {
+		if ((error as NodeJS.ErrnoException).code === "EEXIST") return;
+		throw error;
+	}
+	try {
+		rebuildMemoryIndex(root);
+	} finally {
+		rmSync(lockPath, { recursive: true, force: true });
 	}
 }
 
@@ -247,8 +284,8 @@ export function listMemory(root: string, options: MemoryListOptions = {}): Memor
 	let entries = readIndex(root);
 	if (existsSync(join(root, "entries")) && indexIsStale(root, entries)) {
 		// 索引与条目目录不一致（并发更新丢失后缺失，或带有已删除文件的
-		// 行）：从文件重建，文件永远是事实源。
-		rebuildMemoryIndex(root);
+		// 行）：从文件重建，文件永远是事实源——但只在锁可用时重建。
+		rebuildMemoryIndexIfLockable(root);
 		entries = readIndex(root);
 	}
 	let listed = [...entries.values()].sort((a, b) => a.topic.localeCompare(b.topic));
@@ -348,7 +385,7 @@ export async function deleteMemory(root: string, topic: string): Promise<boolean
 	const path = memoryEntryPath(root, topic);
 	if (!existsSync(path)) return false;
 	rmSync(path, { force: true });
-	pruneEmptyAncestorDirs(dirname(path), join(root, "entries"));
+	await pruneEmptyAncestorDirs(dirname(path), join(root, "entries"), basenameOf(path));
 	await withIndexLockAsync(root, () => {
 		const map = readIndex(root);
 		if (map.delete(topic)) writeIndex(root, map);
@@ -356,21 +393,28 @@ export async function deleteMemory(root: string, topic: string): Promise<boolean
 	return true;
 }
 
-/** 分层删除不得留下悬空的空目录。 */
-function pruneEmptyAncestorDirs(directory: string, stop: string): void {
+/** 分层删除不得留下悬空的空目录。用非递归 rmdir，且只把"除刚删除
+ * 文件名以外的条目"视为真实内容：Windows 的 delete-pending 残留会让
+ * 已 rmSync 的文件在目录里短暂可见、并让 rmdir 报 ENOTEMPTY——两者都
+ * 用有界异步重试消化；并发保存者新落进目录的文件则让修剪立即止步
+ * （recursive rm 的 TOCTOU 在此被排除）。 */
+async function pruneEmptyAncestorDirs(directory: string, stop: string, removedName: string): Promise<void> {
 	let current = directory;
 	while (current.startsWith(`${stop}${sep}`) || current.startsWith(`${stop}/`)) {
-		try {
-			if (readdirSync(current).length > 0) return;
-			rmSync(current, { recursive: true, force: true });
-		} catch {
-			return;
+		let removed = false;
+		for (let attempt = 0; !removed && attempt < 8; attempt++) {
+			try {
+				if (readdirSync(current).some((name) => name !== removedName)) return;
+				rmdirSync(current);
+				removed = true;
+			} catch (error) {
+				const code = (error as NodeJS.ErrnoException).code;
+				if (code !== "ENOTEMPTY" && code !== "EPERM" && code !== "EACCES") return;
+				await delay(INDEX_LOCK_POLL_MS);
+			}
 		}
+		if (!removed) return;
 		current = dirname(current);
+		removedName = "";
 	}
-}
-
-/** 规范化主题，使 SDD 产物键保持稳定，例如 `sdd/<change>/proposal`。 */
-export function normalizeMemoryTopic(topic: string): string {
-	return normalize(topic).split(sep).join("/").replace(/\/+$/, "");
 }

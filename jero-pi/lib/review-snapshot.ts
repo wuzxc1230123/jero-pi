@@ -172,6 +172,10 @@ function runGit(
 		encoding: "utf8",
 		stdio: ["ignore", "pipe", "pipe"],
 		env,
+		// 快照冻结可能跑 git add -A + write-tree（大仓库毫秒到秒级）：
+		// 有界超时防孤儿挂起，缓冲与 candidate-git 层同纪律。
+		timeout: 60_000,
+		maxBuffer: 64 * 1024 * 1024,
 	}).trim();
 }
 

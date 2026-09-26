@@ -38,6 +38,7 @@ import {
 import {
 	ReviewTransactionStore
 } from "./review-transaction-store.ts";
+import { reviewGitEnvironment } from "./review-repository.ts";
 
 export interface ValidateReviewGateOptions {
 	store: ReviewTransactionStore;
@@ -83,6 +84,11 @@ function runGateGit(cwd: string, args: readonly string[]): string {
 		cwd,
 		encoding: "utf8",
 		stdio: ["ignore", "pipe", "pipe"],
+		// 与本层 UNSAFE_GIT_ENVIRONMENT 防线及 publication-gate 同纪律：
+		// 剥离继承的 Git 路由/配置覆盖，且同步探测绝不无超时挂起。
+		env: reviewGitEnvironment(),
+		timeout: 10_000,
+		maxBuffer: 64 * 1024 * 1024,
 	}).trim();
 }
 

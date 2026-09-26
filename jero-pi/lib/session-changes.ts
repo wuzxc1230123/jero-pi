@@ -1,7 +1,7 @@
 import { constants } from "node:fs";
 import { createHash } from "node:crypto";
 import { open } from "node:fs/promises";
-import { isAbsolute } from "node:path";
+import { isAbsolute, join } from "node:path";
 import { generateUnifiedPatch } from "@earendil-works/pi-coding-agent";
 import { changesModel, type ChangedFile, type WorktreeChanges } from "./shell-changes.ts";
 
@@ -130,7 +130,7 @@ export class SessionChanges {
 	}
 	get model() {
 		const trees = this.worktrees;
-		return changesModel(trees.flatMap(tree => tree.model.files.map(file => ({ ...file, path: trees.length === 1 ? file.path : tree.root + "/" + file.path }))));
+		return changesModel(trees.flatMap(tree => tree.model.files.map(file => ({ ...file, path: trees.length === 1 ? file.path : join(tree.root, file.path) }))));
 	}
 	async refresh() { return this.model; }
 	loadDiff(root: string, file: ChangedFile): string {

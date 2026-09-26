@@ -11,6 +11,7 @@ import {
 import {
 	ReviewGraphObjectStoreV1
 } from "./review-object-store.ts";
+import { reviewGitEnvironment } from "./review-repository.ts";
 import {
 	REVIEW_MODE
 } from "./review-snapshot.ts";
@@ -421,12 +422,12 @@ export function reviewStoreRootForRepository(cwd: string): string {
 	const repositoryRoot = execFileSync(
 		"git",
 		["rev-parse", "--show-toplevel"],
-		{ cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+		{ cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env: reviewGitEnvironment(), timeout: 10_000, maxBuffer: 64 * 1024 * 1024 },
 	).trim();
 	const gitPath = execFileSync(
 		"git",
 		["rev-parse", "--git-path", "gentle-ai/reviews"],
-		{ cwd: repositoryRoot, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+		{ cwd: repositoryRoot, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env: reviewGitEnvironment(), timeout: 10_000, maxBuffer: 64 * 1024 * 1024 },
 	).trim();
 	return isAbsolute(gitPath) ? gitPath : resolve(repositoryRoot, gitPath);
 }
@@ -436,6 +437,9 @@ export function repositoryRootForGate(cwd: string): string {
 		cwd,
 		encoding: "utf8",
 		stdio: ["ignore", "pipe", "pipe"],
+		env: reviewGitEnvironment(),
+		timeout: 10_000,
+		maxBuffer: 64 * 1024 * 1024,
 	}).trim();
 }
 

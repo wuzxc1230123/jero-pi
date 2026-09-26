@@ -1,4 +1,5 @@
 import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
+import { join } from "node:path";
 
 // Jero Shell 变更：工作树相对 HEAD 的改动，含新文件。Git 是事实源；
 // 本模块把原始的 `git diff --numstat` 与 `git status --porcelain -z`
@@ -180,7 +181,9 @@ export class WorktreeChangesTracker {
 	get model(): ChangesModel {
 		return changesModel(this.worktrees.flatMap((tree) => tree.model.files.map((file) => ({
 			...file,
-			path: this.worktrees.length === 1 ? file.path : `${tree.root}/${file.path}`,
+			// join 产生宿主平台分隔符：硬编码 "/" 在 Windows 上会得到
+			// D:\root/lib/a.ts 这样的混合分隔符路径。
+			path: this.worktrees.length === 1 ? file.path : join(tree.root, file.path),
 		}))));
 	}
 

@@ -1,5 +1,6 @@
-import { chmodSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { chmodSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { randomUUID } from "node:crypto";
+import { basename, dirname, join } from "node:path";
 import { assertManagedStorePathV1, resolveRepositoryAuthorityV1 } from "./review-repository.ts";
 
 // Pi 持有、克隆局部（Git common dir）的闩锁，记录“现在就运行评审？”
@@ -42,6 +43,15 @@ export function readReviewConsentLatch(cwd: string): boolean {
 export function recordReviewConsentLatch(cwd: string): void {
 	const path = reviewConsentLatchPath(cwd);
 	mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
-	writeFileSync(path, REVIEW_CONSENT_LATCH_PAYLOAD, { mode: 0o600 });
+	// 与本层普遍纪律一致：临时文件 + rename 原子替换，崩溃窗口内绝不
+	// 留下半写状态（读取是严格全等比较，空文件只会引发重复询问）。
+	const staging = join(dirname(path), `.${basename(path)}.tmp-${randomUUID()}`);
+	writeFileSync(staging, REVIEW_CONSENT_LATCH_PAYLOAD, { mode: 0o600 });
+	try {
+		renameSync(staging, path);
+	} catch (error) {
+		rmSync(staging, { force: true });
+		throw error;
+	}
 	chmodSync(path, 0o600);
 }

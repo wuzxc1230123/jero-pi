@@ -112,7 +112,7 @@ export function resolvePiLaunch(
 		// 带 shebang 的 Node 脚本在 Windows 上无法以无扩展名方式启动
 		// （CreateProcess 只解析 *.exe）；让它经由当前 Node 可执行文件
 		// 运行，POSIX 风格的垫片才能在所有平台继续工作。
-		if (process.platform === "win32" && !/.(exe|cmd|bat)$/i.test(piExecutable)) {
+		if (process.platform === "win32" && !/\.(exe|cmd|bat)$/i.test(piExecutable)) {
 			try {
 				const fd = openSync(piExecutable, "r");
 				try {

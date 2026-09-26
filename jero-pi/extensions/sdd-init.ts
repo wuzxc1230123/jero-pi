@@ -8,7 +8,7 @@ import {
 import { basename, dirname, join, relative } from "node:path";
 import { applySavedModelConfig } from "./jero-ai.ts";
 import { ensureSddPreflight, installPackageAssets } from "../lib/sdd-preflight.ts";
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 
 const CONFIG_REL_PATH = "openspec/config.yaml";
 const MAX_SCAN_FILES = 20_000;
@@ -774,7 +774,12 @@ export default function (pi: ExtensionAPI) {
 	pi.registerCommand("jero-sdd-init", {
 		description:
 			"Auto-detect project stack and bootstrap openspec/config.yaml for SDD.",
-		handler: async (_args: unknown, ctx: any) => {
+		handler: async (_args: string, ctx: ExtensionContext) => {
+			// 命令可在 RPC/headless 宿主中运行：无 UI 时只做检测与写盘，
+			// 绝不对 noOp ui 上下文发通知。
+			const notify = (message: string, level: "info" | "warning"): void => {
+				if (ctx.hasUI) ctx.ui.notify(message, level);
+			};
 			const prefs = await ensureSddPreflight(ctx, { pi, installAssets: (cwd) => installPackageAssets(cwd, true, ["sdd"]), applyModelConfig: () => applySavedModelConfig(ctx) }, { promptFields: [] });
 
 			const detection = detectProject(ctx.cwd);
@@ -787,7 +792,7 @@ export default function (pi: ExtensionAPI) {
 				prefs.artifactStore === "openspec" ||
 				prefs.artifactStore === "hybrid";
 			if (!shouldCreateOpenSpec) {
-				ctx.ui.notify(
+				notify(
 					`SDD initialized for ${prefs.artifactStore}: detected ${detection.stack.join(", ") || "project"}; ${testSummary}; tests found: ${layerSummary}.`,
 					"info",
 				);
@@ -796,7 +801,7 @@ export default function (pi: ExtensionAPI) {
 
 			const configPath = join(ctx.cwd, CONFIG_REL_PATH);
 			if (existsSync(configPath)) {
-				ctx.ui.notify(
+				notify(
 					`${CONFIG_REL_PATH} already exists. Edit it manually or remove it before re-running /jero-sdd-init.`,
 					"warning",
 				);
@@ -807,7 +812,7 @@ export default function (pi: ExtensionAPI) {
 			mkdirSync(dirname(configPath), { recursive: true });
 			writeFileSync(configPath, renderConfig(detection));
 
-			ctx.ui.notify(
+			notify(
 				`Wrote ${CONFIG_REL_PATH}: detected ${detection.stack.join(", ") || "project"}; ${testSummary}; tests found: ${layerSummary}.`,
 				"info",
 			);

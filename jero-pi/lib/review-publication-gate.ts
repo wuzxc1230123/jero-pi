@@ -105,6 +105,13 @@ export interface ConfiguredPushDestinationV1 {
 const OBJECT_ID = /^[0-9a-f]{40,64}$/;
 const FULL_REF = /^refs\/[A-Za-z0-9][A-Za-z0-9._\/-]*$/;
 const CONFIGURED_REMOTE_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+// 所有 gate 探测都是同步 spawn，且可能发生在跨进程 authority.lock 的持有
+// 期内：无超时的网络调用（ls-remote / gh api）一旦挂起会冻结宿主进程并
+// 令锁对所有进程失效。本地 git 操作 10s、网络操作 30s；输出缓冲与
+// candidate-git 层同纪律（64MB）。
+const LOCAL_GIT_TIMEOUT_MS = 10_000;
+const REMOTE_GIT_TIMEOUT_MS = 30_000;
+const GATE_MAX_BUFFER_BYTES = 64 * 1024 * 1024;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -136,6 +143,8 @@ function runGateGit(cwd: string, args: readonly string[]): string {
 		encoding: "utf8",
 		stdio: ["ignore", "pipe", "pipe"],
 		env: reviewGitEnvironment(),
+		timeout: LOCAL_GIT_TIMEOUT_MS,
+		maxBuffer: GATE_MAX_BUFFER_BYTES,
 	});
 	if (result.error || result.status !== 0) throw publicationError(`Git publication identity could not be resolved: ${args.join(" ")}`);
 	return result.stdout.trim();
@@ -150,6 +159,8 @@ function listConfiguredRemotes(cwd: string): string[] {
 		encoding: "utf8",
 		stdio: ["ignore", "pipe", "pipe"],
 		env: reviewGitEnvironment(),
+		timeout: LOCAL_GIT_TIMEOUT_MS,
+		maxBuffer: GATE_MAX_BUFFER_BYTES,
 	});
 	if (result.error || result.status !== 0) throw publicationError("Configured Git remotes could not be listed");
 	return result.stdout.split(/\r?\n/).filter(Boolean);
@@ -160,6 +171,8 @@ function configuredRemoteValues(cwd: string, key: string): string[] {
 		encoding: "utf8",
 		stdio: ["ignore", "pipe", "pipe"],
 		env: publicationProbeGitEnvironment(),
+		timeout: LOCAL_GIT_TIMEOUT_MS,
+		maxBuffer: GATE_MAX_BUFFER_BYTES,
 	});
 	if (result.error || (result.status !== 0 && result.status !== 1)) {
 		throw publicationError(`Configured Git remote value "${key}" could not be resolved`);
@@ -178,6 +191,8 @@ export function resolveConfiguredPushDestinationV1(cwd: string, remote: string):
 		encoding: "utf8",
 		stdio: ["ignore", "pipe", "pipe"],
 		env: publicationProbeGitEnvironment(),
+		timeout: LOCAL_GIT_TIMEOUT_MS,
+		maxBuffer: GATE_MAX_BUFFER_BYTES,
 	});
 	if (result.error || result.status !== 0) throw publicationError(`Configured remote "${remote}" push destination could not be resolved`);
 	const urls = result.stdout.split(/\r?\n/).filter(Boolean);
@@ -205,6 +220,8 @@ export function resolvePushRemoteRefV1(
 		encoding: "utf8",
 		stdio: ["ignore", "pipe", "pipe"],
 		env: publicationProbeGitEnvironment(),
+		timeout: REMOTE_GIT_TIMEOUT_MS,
+		maxBuffer: GATE_MAX_BUFFER_BYTES,
 	});
 	if (result.error || result.status !== 0) throw publicationError(`${label} could not be resolved`);
 	if (result.stdout.length === 0) return { destination, object_id: null };
@@ -232,6 +249,7 @@ export function resolvePushDestinationRefV1(
 		cwd,
 		stdio: "ignore",
 		env: reviewGitEnvironment(),
+		timeout: LOCAL_GIT_TIMEOUT_MS,
 	});
 	if (formatCheck.error || formatCheck.status !== 0) throw publicationError(`${label} is malformed`);
 	const destination = resolveConfiguredPushDestinationV1(cwd, remote);
@@ -240,6 +258,8 @@ export function resolvePushDestinationRefV1(
 		encoding: "utf8",
 		stdio: ["ignore", "pipe", "pipe"],
 		env: publicationProbeGitEnvironment(),
+		timeout: REMOTE_GIT_TIMEOUT_MS,
+		maxBuffer: GATE_MAX_BUFFER_BYTES,
 	});
 	if (result.error || result.status !== 0) throw publicationError(`${label} could not be resolved`);
 	const rows = result.stdout.split(/\r?\n/).filter(Boolean);
@@ -271,6 +291,8 @@ export function pushRemoteAdvertisesObjectV1(
 		encoding: "utf8",
 		stdio: ["ignore", "pipe", "pipe"],
 		env: publicationProbeGitEnvironment(),
+		timeout: REMOTE_GIT_TIMEOUT_MS,
+		maxBuffer: GATE_MAX_BUFFER_BYTES,
 	});
 	if (result.error || result.status !== 0) throw publicationError("Push parent advertisement could not be resolved");
 	const rows = result.stdout.split(/\r?\n/).filter(Boolean);
@@ -357,7 +379,7 @@ function defaultGhCommandRunner(
 	args: readonly string[],
 	options: { cwd: string; env: NodeJS.ProcessEnv },
 ): { status: number | null; stdout: string; error?: Error } {
-	const result = spawnSync("gh", args, { ...options, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+	const result = spawnSync("gh", args, { ...options, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: REMOTE_GIT_TIMEOUT_MS, maxBuffer: GATE_MAX_BUFFER_BYTES });
 	return { status: result.status, stdout: result.stdout ?? "", error: result.error };
 }
 
@@ -424,6 +446,8 @@ function resolveConfiguredRemoteUrl(cwd: string, remote: string): string {
 		encoding: "utf8",
 		stdio: ["ignore", "pipe", "pipe"],
 		env: reviewGitEnvironment(),
+		timeout: LOCAL_GIT_TIMEOUT_MS,
+		maxBuffer: GATE_MAX_BUFFER_BYTES,
 	});
 	if (result.error || result.status !== 0) throw publicationError(`Configured remote "${remote}" URL could not be resolved`);
 	const url = result.stdout.trim();
@@ -438,6 +462,8 @@ function resolveRemoteGateRef(cwd: string, remote: string, ref: string, label: s
 		encoding: "utf8",
 		stdio: ["ignore", "pipe", "pipe"],
 		env: reviewGitEnvironment(),
+		timeout: REMOTE_GIT_TIMEOUT_MS,
+		maxBuffer: GATE_MAX_BUFFER_BYTES,
 	});
 	if (result.error || result.status !== 0) throw publicationError(`${label} could not be resolved`);
 	const matches = result.stdout.split(/\r?\n/).filter(Boolean).flatMap((line) => {

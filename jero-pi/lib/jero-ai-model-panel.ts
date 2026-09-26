@@ -251,14 +251,17 @@ class SddModelPanel implements OverlayComponent {
 			);
 			return;
 		}
-		if (matchesKey(data, "down") || matchesKey(data, "j")) {
+		// j/k 只在搜索框为空时充当导航：搜索词含 j/k 的模型 id（如
+		// kimi-k2）必须可以正常键入，而不是被导航键吞掉。
+		const vimNavigation = this.query.length === 0;
+		if (matchesKey(data, "down") || (vimNavigation && matchesKey(data, "j"))) {
 			this.modelCursor = Math.min(
 				Math.max(0, options.length - 1),
 				this.modelCursor + 1,
 			);
 			return;
 		}
-		if (matchesKey(data, "up") || matchesKey(data, "k")) {
+		if (matchesKey(data, "up") || (vimNavigation && matchesKey(data, "k"))) {
 			this.modelCursor = Math.max(0, this.modelCursor - 1);
 			return;
 		}
