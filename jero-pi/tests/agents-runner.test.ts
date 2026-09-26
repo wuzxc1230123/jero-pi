@@ -521,8 +521,42 @@ test("piCommand reuses the running pi entry point and honors the override", () =
 test("JsonLines splits on LF only, tolerates CRLF, and skips lines that are not JSON", () => {
 	const seen: unknown[] = [];
 	const lines = new JsonLines((value) => seen.push(value));
-	lines.push('{"a":1}\r\n{"b":"x y"}\nnot json\n{"c":');
+	lines.push('{"a":1}\r\n{"b":"x y"}\nnot json\n{"c":');
 	lines.push("3}\n");
-	assert.deepEqual(seen, [{ a: 1 }, { b: "x y" }, { c: 3 }]);
+	assert.deepEqual(seen, [{ a: 1 }, { b: "x y" }, { c: 3 }]);
+});
+
+test("win32 cancellation terminates the process tree; POSIX uses the process group", async () => {
+	const runOnce = async (platform: NodeJS.Platform) => {
+		const children: FakeChild[] = [];
+		const treeKills: number[] = [];
+		const groupKills: number[] = [];
+		const store = new TaskStore();
+		const runner = new AgentRunner(store, { maxConcurrency: 1, stallTimeoutMs: 10_000 }, {
+			spawn: () => {
+				const fake = fakeChild({ pid: 4242, exitOnKill: false });
+				children.push(fake);
+				return fake.child;
+			},
+			now: () => 1000,
+			schedule: () => () => {},
+			pi: { command: "pi", args: [] },
+			process: {
+				platform,
+				kill: (pid) => { groupKills.push(pid); },
+				killTree: (pid) => { treeKills.push(pid); return true; },
+			},
+		}, { askUser: async () => ({ value: "yes" }) });
+		const task = runner.run(request());
+		await tick();
+		assert.equal(runner.cancel(task.id), true, "the task must be live before cancellation");
+		return { children, treeKills, groupKills };
+	};
+	const windows = await runOnce("win32");
+	assert.deepEqual(windows.treeKills, [4242], "cancellation must taskkill the tree rooted at the direct child pid");
+	assert.deepEqual(windows.groupKills, [], "win32 never falls back to process-group signaling");
+	const posix = await runOnce("linux");
+	assert.deepEqual(posix.groupKills, [-4242], "POSIX cancels the detached process group");
+	assert.deepEqual(posix.treeKills, [], "POSIX never uses the Windows tree kill");
 });
 

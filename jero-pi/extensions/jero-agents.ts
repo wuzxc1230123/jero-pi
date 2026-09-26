@@ -254,9 +254,13 @@ export default function jeroAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = pr
 		metricTasks.clear();
 	};
 	pi.on("session_start", clearTaskMetrics);
-	pi.on("session_shutdown", () => {
+	pi.on("session_shutdown", (event) => {
 		clearTaskMetrics();
-		unsubscribeMetrics();
+		// 指标订阅是 setup 期的一次性注册，而 pi 在 /new、/resume、/fork
+		// 时同样发出 session_shutdown 且不重跑扩展 setup：会话替换不得
+		// 退订，否则复用的扩展实例从此永久丢失子代理指标。
+		const reason = (event as { reason?: unknown }).reason;
+		if (reason !== "new" && reason !== "resume" && reason !== "fork") unsubscribeMetrics();
 	});
 	let stopAllConfirmation: Promise<void> | undefined;
 
@@ -746,10 +750,12 @@ export default function jeroAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = pr
 		// 记录，同时告知用户原因。
 		const onAbort = (): void => {
 			if (runner.cancel(task.id, `cancelled: the tool call was aborted${abortReasonText(signal?.reason)}`)) {
-				ctx.ui.notify(
-					`Subagent ${task.agent} cancelled: the tool call was aborted${abortReasonText(signal?.reason)}. The run is recorded as cancelled.`,
-					"warning",
-				);
+				if (ctx.hasUI) {
+					ctx.ui.notify(
+						`Subagent ${task.agent} cancelled: the tool call was aborted${abortReasonText(signal?.reason)}. The run is recorded as cancelled.`,
+						"warning",
+					);
+				}
 			}
 		};
 		if (signal?.aborted) onAbort();
@@ -947,7 +953,7 @@ export default function jeroAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = pr
 			publishActivity();
 		} catch { presence = undefined; }
 	});
-	pi.on("session_shutdown", () => {
+	pi.on("session_shutdown", (event) => {
 		completions.dropAll();
 		activeAgentRuns = 0;
 		presence?.dispose();
@@ -959,7 +965,13 @@ export default function jeroAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = pr
 		sidebarTui = undefined;
 		worktrees?.close();
 		worktrees = undefined;
-		runner.cancelAll("cancelled: parent session shut down");
+		// 会话替换（/new、/resume、/fork）不得杀死任务：上方注释承诺
+		// 任务留在存储中并随其会话一起回来。只有进程退出、/reload 或
+		// 未来的未知 reason 才清场（保守方向与既有取消语义一致）。
+		const reason = (event as { reason?: unknown }).reason;
+		if (reason !== "new" && reason !== "resume" && reason !== "fork") {
+			runner.cancelAll("cancelled: parent session shut down");
+		}
 	});
 }
 

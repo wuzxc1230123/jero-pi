@@ -369,3 +369,23 @@ test("live-only extension instances discover same-profile peers across cwd bound
 	peerPanel.overlay.handleInput("q");
 	await Promise.all([panel.opened, peerPanel.opened]);
 });
+
+test("session replacement (new/resume/fork) keeps one-shot registrations and live tasks; quit tears down", async () => {
+	const h = fakePi();
+	const runtime = deps();
+	jeroAgents(h.pi, {}, runtime.deps);
+	const { ctx } = fakeContext();
+	await h.fire("session_start", ctx);
+	await h.tools.get("subagent_run")!.execute("run", { agent: "explore", task: "survive replacement", mode: "background" }, undefined, undefined, ctx);
+	await tick();
+	assert.equal(runtime.children.length, 1);
+	for (const reason of ["new", "resume", "fork"] as const) {
+		await h.fire("session_shutdown", ctx, { reason });
+		assert.deepEqual(runtime.children[0].killed, [], `session replacement (${reason}) must not kill tasks that survive with their session`);
+	}
+	assert.ok([...h.listeners.values()].every((set) => set.size > 0), "one-shot bus subscriptions survive session replacement");
+	await h.fire("session_shutdown", ctx, { reason: "quit" });
+	assert.ok(runtime.children[0].killed.length > 0, "quit still tears down live tasks");
+	assert.ok([...h.listeners.values()].every((set) => set.size === 0), "quit still removes one-shot subscriptions");
+	await tick();
+});

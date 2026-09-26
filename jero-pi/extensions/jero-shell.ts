@@ -593,12 +593,16 @@ export default function jeroShell(pi: ExtensionAPI, env: NodeJS.ProcessEnv = pro
 		shown = "";
 		applyChanges(ctx, tracker.model);
 	});
-	pi.on("session_shutdown", () => {
+	pi.on("session_shutdown", (event) => {
 		registry?.close();
 		registry = undefined;
 		changes = undefined;
 		currentContext = undefined;
-		unsubscribeWorktrees();
+		// SESSION_CHANGE_EVENT 订阅是 setup 期的一次性注册：pi 在 /new、
+		// /resume、/fork 复用扩展实例且不重跑 setup，会话替换不得退订，
+		// 否则子代理变更中继在此后永久失效。
+		const reason = (event as { reason?: unknown }).reason;
+		if (reason !== "new" && reason !== "resume" && reason !== "fork") unsubscribeWorktrees();
 	});
 	const openChanges = async (ctx: ExtensionContext) => {
 		if (!changes) return;

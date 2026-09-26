@@ -1,6 +1,7 @@
 // 代理运行器主体：AgentRunner——spawn/RPC 问答、观察缓冲、remediation 终态与中止语义。
 // 自 lib/agents-runner.ts 拆分（机械平移，语义零改动）。
 
+import { spawnSync } from "node:child_process";
 import { isSessionChangeEvidence, type SessionChangeEvidence } from "./session-changes.ts";
 import { type Duplex, type Readable, type Writable } from "node:stream";
 import { stripVTControlCharacters } from "node:util";
@@ -41,6 +42,11 @@ export type Spawn = (command: string, args: string[], options: SpawnOptions) => 
 export interface ProcessControl {
 	platform: NodeJS.Platform;
 	kill(pid: number, signal: NodeJS.Signals | 0): void;
+	/** Windows 树终止（taskkill /PID <pid> /T /F）：win32 没有进程组，
+	 * 直接子进程的 kill 会遗漏孙进程（pi 子进程里的 bash 等），使其成为
+	 * 孤儿。返回 false 表示树终止未成立（如 PID 已消失），调用方回退到
+	 * 直接子进程 kill。可选字段，测试替身可不提供。 */
+	killTree?: (pid: number) => boolean;
 }
 
 export interface PiCommand {
@@ -245,7 +251,19 @@ function queryRejection(error: unknown): string {
 	return "parent rejected query";
 }
 
-const hostProcess: ProcessControl = { platform: process.platform, kill: (pid, signal) => process.kill(pid, signal) };
+const hostProcess: ProcessControl = {
+	platform: process.platform,
+	kill: (pid, signal) => process.kill(pid, signal),
+	killTree: (pid) => {
+		// 尽力而为的树终止：失败时调用方回退到直接子进程 kill，
+		// 退出事件仍由 ChildProcess 句柄观察。
+		try {
+			return spawnSync("taskkill", ["/PID", String(pid), "/T", "/F"], { stdio: "ignore", timeout: 10_000 }).status === 0;
+		} catch {
+			return false;
+		}
+	},
+};
 
 
 export function promptText(request: TaskRequest): string {
@@ -746,7 +764,8 @@ export class AgentRunner {
 	}
 
 	// POSIX 子进程以 detached 启动，因此其 PID 即所属进程组 ID。
-	// Windows 只用 ChildProcess.kill：Node 没有等价的进程树保证。
+	// Windows 没有进程组：taskkill /T 终止以直接子进程为根的整棵树，
+	// 否则孙进程（pi 子进程里的 bash 等）会在取消/超时后成为孤儿。
 	private signal(live: LiveTask, signal: NodeJS.Signals): void {
 		if (live.processGroup !== undefined) {
 			try {
@@ -755,6 +774,10 @@ export class AgentRunner {
 			} catch {
 				// 所属进程组已消失；子句柄可能仍会观察到退出。
 			}
+		}
+		if (this.processControl.platform === "win32" && typeof live.child.pid === "number" && this.processControl.killTree !== undefined) {
+			if (this.processControl.killTree(live.child.pid)) return;
+			// 树终止未成立（PID 已消失等）：回退直接子进程 kill。
 		}
 		try {
 			live.child.kill(signal);

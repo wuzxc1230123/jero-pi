@@ -59,7 +59,14 @@ export default function runtimeMetrics(pi: ExtensionAPI, env = process.env, now:
 		live = { id: ctx.sessionManager.getSessionId(), ctx, started: now(),
 			metrics: new RuntimeMetrics(), seen: new WeakSet<object>(), children: new Set(), recorded: 0 };
 	});
-	pi.on("session_shutdown", () => { dispose(); offChild(); offRevoke(); });
+	pi.on("session_shutdown", (event) => {
+		dispose();
+		// 与 jero-agents 同因：pi 在 /new、/resume、/fork 复用扩展实例且
+		// 不重跑 setup，一次性事件订阅只随进程退出、/reload 或未知
+		// reason 拆除；会话替换后子代理指标必须继续聚合。
+		const reason = (event as { reason?: unknown }).reason;
+		if (reason !== "new" && reason !== "resume" && reason !== "fork") { offChild(); offRevoke(); }
+	});
 	pi.on("turn_start", () => { ambiguous = active; active = true; requestSeen = false; selection = undefined; });
 	pi.on("turn_end", () => { active = false; invalidate(); });
 	pi.on("agent_end", () => { active = false; invalidate(); });
