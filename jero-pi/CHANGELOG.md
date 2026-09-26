@@ -5,6 +5,18 @@ jero-pi 尚未发布到 npm（版本停在 0.1.0 基线），本文件自重构�
 
 ## [Unreleased]
 
+### 流程层补强（对照 Trellis-main 差距评审的落地）
+
+- **SDD 状态面包屑**（新 `lib/jero-ai-sdd-breadcrumb.ts` + jero-ai 接线）：bootstrap 注入的是不变纪律，面包屑注入的是活状态——磁盘状态引擎解析的当前变更、`next_recommended`、任务进度与首个阻塞，在有活跃 SDD 变更期间的**每次 LLM 请求**刷新（marker `jero:sdd-breadcrumb/v1` + 16 位状态指纹去重；陈旧面包屑先剔除再插新，同指纹在场不重复注入）。不变量借自 Trellis 的每回合面包屑："必需步骤不在每回合可见，就会被模型静默跳过"。无活跃变更/已归档/变更歧义/非权威存储不注入；状态解析失败保守跳过，绝不阻塞请求。RPC 子进程与包子进程同 bootstrap 门拒绝；`JERO_PI_SDD_BREADCRUMB=0|false|off` 关闭。
+- **已确立规范索引注入**（新 `lib/jero-ai-spec-index.ts` + jero-ai 接线，知识飞轮读取侧）：SDD sync 回写 `openspec/specs/` 之后，后续会话在 bootstrap 同一注入窗口（`session_start`/`session_compact` 置位）收到域索引——域路径 + Purpose 首行摘要（≤40 域、摘要 ≤160 字符、超限明示截断；无 Purpose 段退回首个非标题非列表行，再退占位说明）。修复"沉淀有了、回注没有"的结构缺口：同一教训不再每会话重学。写入侧零新机制（SDD sync 拥有回写）；索引只是发现入口，内容以 spec.md 为准；`JERO_PI_SPEC_INDEX=0|false|off` 关闭。
+- **文档清单同步门**（新 `scripts/check-docs-manifest.mjs` + `docs/jero-reference.md` 生成块 + `tests/docs-manifest.test.ts`）：从注册点（`register*Command` 字面量/常量/模板展开、`name:` 工具字面量、`tool(` 前缀展开、`skills/*/SKILL.md`）派生命令/工具/技能三张清单，钉进 reference 文档的 `jero:manifest` 生成块并核对标题计数；`--write` 再生成。本次即抓到真实漂移：命令 22→25（install 三命令按循环模板注册、计数口径不一）、工具清单漏 `subagent_continue`。接入 `prepack`/`prepublishOnly` 与 CI（`check:docs-manifest`），漂移在本地 `pnpm test` 即失败。
+- **轻量 change**（P1.1，走完整设计→测试→实现）：changeRoot 下的规范常规文件 `.jero-lightweight` 声明显式豁免——`lib/sdd-status.ts` 的就绪门变为 proposal+tasks（specs/design 不再阻塞、规划推荐链跳过两横档）；无 delta specs 时 sync `not_applicable`、archive 不要求 sync-report，写了 specs 走正常 sync；目录等非规范标记形状保守视为未声明。契约同步：引擎 `SddStatus.lightweight?: true`（`gentle-pi.sdd-status@1` 向后兼容扩展）→ 权威投影 `JeroSddStatusV2`/wire `NativeSddStatusV2` 稀疏携带同名字段 → `decodeNativeSddStatusV2` 校验布尔型（`jeroSddContinueV1` 的转移即投影，轻量 change 天然可续）；`runtime/*.mjs` 再生成。新测试 `tests/authority/authority-sdd-lightweight.test.ts` 三层覆盖（引擎语义 6 例 + 投影/续跑 2 例 + 解码器 1 例）。
+- **评审域命名收敛启动**（P2）：`jero-authority-cli.ts` 的 SDD 投影 `projectV2` 从 `as unknown as` 双盲强转改为逐字段结构化重投影（编译器持续检查两个形状不再悄悄漂移）；新 `scripts/check-review-naming.mjs` + `scripts/review-naming-baseline.json` 把两个外围前缀（`review-*` 33、`jero-ai-review-*` 8）钉在最大值只降不升（authority/ 43 是收敛目的地不设上限，`--update` 棘轮下移），新评审域代码进 `authority/` 或显式记录决策。接入 `prepack`/`prepublishOnly` 与 CI，`tests/review-naming.test.ts` 钉住基线与打包链。整体改名迁移（约 41 个外围文件归位）留待专项 SDD 变更，此门保证迁移前不再发散。
+- **未落地：570 处 gentle- 白名单清理与伴生依赖退出**——均为多会话专项（前者按白名单文档分批清退，后者按 `docs/dependency-exit-plan.md` 行动顺序启动），不顺手改。
+- **benchmarks 实跑前置核查**（2026-09-26，本机）：两条硬阻塞写入 `benchmarks/results/README.md`——宿主 `pi` 0.84.1 低于包最低要求 0.85.1；环境无任何提供商 API 凭据（只从环境变量/密钥服务读取，绝不入仓）。附最小起步命令建议；两条件满足前 P0 保持"未验证主张"定性。
+- **伴生依赖季度例行评审（首次执行）**：联网核查 9 个依赖（`npm view` × 9 + 本地 `pnpm audit --prod`）——全部近两周内有发布、零失效信号、零已知漏洞，不触发退出；钉版全部落后 latest 但按纪律升级走单独 PR。记录落 `docs/dependency-exit-plan.md` 新增"评审记录"节，下次 2026-12。
+- **gentle- 白名单残留审计**：约 555+ 处分五类逐一点数（wire schema 串 369/55 文件、历史工单引用 145/28、`gentleman` 档位值 18/15、`gentle-agents` 存储 8/4、`gentle-pi.*` 契约串 15/10），每类标注移除条件（黄金向量迁移 / 顺手清 / legacy 回退 / 探测迁移 / 契约大版本），落 `docs/jero-reference.md` 兼容白名单节——清退从"感觉有 570 处"变成有分批依据的表。
+
 ### 纪律存续与技能行为验证（对照 superpowers-main 差距评审的落地）
 
 - **harness 纪律引导注入**（新 `lib/jero-ai-bootstrap.ts` + jero-ai 接线）：`session_start`/`session_compact` 置位、`agent_end`/`session_shutdown` 复位的窗口内，把压缩后仍须存续的核心纪律（澄清、路由、严格 TDD、单父编排、评审工作量、精益梯子、裁决与停问白名单、无信托数据）作为单条 user 消息注入本代理循环的每次 LLM 请求——紧随压缩摘要之后、marker（`jero:harness-bootstrap/v1`）去重、每循环至多一轮不逐轮唠叨。RPC 子进程与包子进程（`JERO_PI_AGENTS_CHILD=1`）绝不注入。修复"压缩后 harness 纪律随历史蒸发、技能描述触发从不保证第一轮就位"的结构缺口。
