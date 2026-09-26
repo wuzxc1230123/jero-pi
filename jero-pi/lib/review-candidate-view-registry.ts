@@ -605,6 +605,15 @@ export class CandidateViewRegistry {
 	}
 
 	private assertCurrentBindingMatchesLiveCandidate(record: CandidateViewRecord): void {
+		// 内容级廉价探测：HEAD tree + tracked 补丁字节（--binary 覆盖内容、
+		// 模式位与二进制哈希）+ 选中未跟踪文件的 blob 哈希 + 冻结绑定字段。
+		// 与上次完整验证的指纹一致时跳过全量物化对账——每次评审 subagent
+		// 派发原本都要 worktree add + 全量 checkout + 逐文件 sha256 再销毁。
+		// 任何漂移必然改变指纹（内容级，非路径级）；探测不可用（如 unborn
+		// HEAD 的孤儿仓库）返回 undefined，保守落回全量对账。
+		const fingerprint = this.liveCandidateFingerprint(record);
+		const fingerprintKey = this.lineageKey(record.contributorRoot, record.lineageId);
+		if (fingerprint !== undefined && this.liveCandidateFingerprints.get(fingerprintKey) === fingerprint) return;
 		const live = materializeCandidateView({ contributorRoot: record.contributorRoot, baseRef: record.baseCommit, committedOnly: record.committedOnly, ...(record.intendedUntracked === undefined ? {} : { intendedUntracked: record.intendedUntracked }) }, this.gitExecutor, this.platform);
 		try {
 			if (
@@ -620,6 +629,25 @@ export class CandidateViewRegistry {
 		} finally {
 			this.remove(live);
 		}
+		if (fingerprint !== undefined) this.liveCandidateFingerprints.set(fingerprintKey, fingerprint);
+	}
+
+	// 单槽指纹会随 lineage 绑定更替而失配（键含 lineageId），不会跨绑定复用。
+	private liveCandidateFingerprints = new Map<string, string>();
+
+	private liveCandidateFingerprint(record: CandidateViewRecord): string | undefined {
+		const root = record.contributorRoot;
+		let headTree: string;
+		try {
+			headTree = git(root, ["rev-parse", "--verify", "--quiet", "HEAD^{tree}"], process.env, this.gitExecutor);
+		} catch {
+			// unborn HEAD（孤儿 worktree 主路径）或仓库不可读：绝不缓存。
+			return undefined;
+		}
+		const patch = git(root, ["diff", "HEAD", "--no-renames", "--binary"], process.env, this.gitExecutor);
+		const untracked = (record.intendedUntracked ?? []).map((path) =>
+			git(root, ["hash-object", "--", path], process.env, this.gitExecutor));
+		return JSON.stringify([record.token, record.baseCommit, record.baseTree, record.candidateTree, record.committedOnly, headTree, patch, untracked]);
 	}
 
 	resolveForFinalize(lineageId: string, contributorRoot?: string): CandidateView {
@@ -656,6 +684,7 @@ export class CandidateViewRegistry {
 		if (record.lineageId) {
 			const key = this.lineageKey(record.contributorRoot, record.lineageId);
 			if (this.lineages.get(key) === record.token) this.lineages.delete(key);
+			this.liveCandidateFingerprints.delete(key);
 		}
 		if (this.current.get(record.contributorRoot)?.token === record.token) this.current.delete(record.contributorRoot);
 		for (const [replayKey, pendingToken] of this.replays) if (pendingToken === record.token) this.replays.delete(replayKey);

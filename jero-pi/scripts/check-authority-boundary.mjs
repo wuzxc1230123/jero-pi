@@ -19,7 +19,9 @@ const root = join(fileURLToPath(new URL("..", import.meta.url)), "lib", "authori
 const files = readdirSync(root).filter((name) => name.endsWith(".ts")).sort();
 
 const rules = [
-	{ pattern: /from\s+"(?:\.\.\/)*extensions\//, message: "imports extensions/ (presentation layer)" },
+	// Static and dynamic imports both count: a presentation-layer dependency
+	// smuggled through `await import("../extensions/x")` is the same breach.
+	{ pattern: /(?:from\s+"(?:\.\.\/)*extensions\/|import\(\s*["'](?:\.\.\/)*extensions\/)/, message: "imports extensions/ (presentation layer)" },
 	{ pattern: /\bprocess\.env\b/, message: "reads process.env" },
 	{ pattern: /\bdomainHashV1\b/, message: "uses upstream domainHashV1 (gentle-ai identity namespace)" },
 ];
@@ -27,10 +29,13 @@ const rules = [
 const violations = [];
 for (const file of files) {
 	// Comment-only lines are documentation ("never use domainHashV1"), not
-	// usage; every executable form lands on a code line.
+	// usage. Inline block comments are stripped BEFORE the line filter so the
+	// same-line form `/* note */ const v = process.env.X;` is still checked —
+	// the line no longer hides behind a `/*` prefix.
 	const code = readFileSync(join(root, file), "utf8")
+		.replace(/\/\*[\s\S]*?\*\//g, " ")
 		.split("\n")
-		.filter((line) => !/^\s*(?:\/\/|\*|\/\*)/.test(line))
+		.filter((line) => !/^\s*(?:\/\/|\*)/.test(line))
 		.join("\n");
 	for (const rule of rules) {
 		if (rule.pattern.test(code)) violations.push(`${file}: ${rule.message}`);

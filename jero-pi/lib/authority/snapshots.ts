@@ -206,8 +206,18 @@ function identityBody(record: Omit<JeroReviewSnapshotRecordV1, "object_store">):
  * 路由/评审视角计划、genesis 路径、未跟踪清单、变更路径清单，以及
  * jero 域目标身份。工作区捕获通过临时索引 + 隔离对象目录暂存候选树，
  * 调用方可保留（捕获）或丢弃（状态）。
+ *
+ * 注意：不要在此处加"HEAD + porcelain 未变 ⇒ 派生可复用"的 memo——
+ * porcelain 是路径级指纹（同路径不同内容的两次未提交修改产生完全相同
+ * 的输出），会把漂移前的冻结身份错误地当作缓存命中（F7 回归已证实）；
+ * 而内容级指纹（逐脏文件 hash-object）的代价恰好等于被优化的全量冻结
+ * 本身。STATUS 的每次全量派生是语义要求，不是实现浪费。
  */
 export function deriveJeroReviewSnapshotV1(options: JeroSnapshotDeriveOptionsV1 & { readonly keepIsolatedStore?: string }): JeroSnapshotDerivationV1 {
+	return deriveJeroReviewSnapshotUncachedV1(options);
+}
+
+function deriveJeroReviewSnapshotUncachedV1(options: JeroSnapshotDeriveOptionsV1 & { readonly keepIsolatedStore?: string }): JeroSnapshotDerivationV1 {
 	if (options.mode !== "ordinary" && options.mode !== "judgment-day") throw new JeroSnapshotError("Unsupported review mode");
 	if (!/^[0-9a-f]{64}$/.test(options.policyHash)) throw new JeroSnapshotError("Review policy hash must be a SHA-256 digest");
 	const root = repositoryRoot(options.cwd);

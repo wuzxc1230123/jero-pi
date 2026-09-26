@@ -5,6 +5,41 @@ jero-pi 尚未发布到 npm（版本停在 0.1.0 基线），本文件自重构�
 
 ## [Unreleased]
 
+### 全量代码审查修复（2026-09-26：七条 P1 + 权威收口 + 机械重构 + 性能探测）
+
+#### 正确性与安全（P1）
+
+- **pi 会话生命周期**：`session_shutdown` 处理按 `event.reason` 区分——pi 在 /new、/resume、/fork 时同样发出该事件且复用扩展实例、不重跑 setup，此前无差别清场会**杀掉所有会话的存活子代理任务**并永久退订一次性事件总线注册（jero-agents 的指标订阅、jero-shell 的变更中继、runtime-metrics 的指标聚合三条 P1 同根）。现仅 quit/reload/未知 reason 清场，会话替换保留注册与任务；回归测试钉住三种替换 reason 与 quit。
+- **硬拒绝正则加固**（`lib/jero-ai-guardrails.ts`）：新增归一化第二遍（小写化、剥引号、`$HOME`/`${HOME}` 折叠为 `~`），rm 旗标改双前瞻表达"同一命令行同时含 r 与 f"（覆盖 -rf/-fr/-rvf/-r -f/--recursive --force）；24 个对抗向量（旗标换序、引号包裹、大小写、变量展开、Windows 盘符根 `rm -rf C:/`）全部拦截，7 个常规递归删除不误伤。
+- **VALIDATE 拒绝不再持久化**（`lib/authority/validate.ts`）：对齐 finalize 的 `JeroApplyRefusalError` 模式——apply 返回 refused 即抛出中止保存，被污染的草稿被丢弃、拒绝原样返回，杜绝"精确重放永远返回拒绝而记录状态已漂移"。
+- **win32 进程树终止**（`lib/agents-runner-core.ts`）：取消/超时改 `taskkill /PID <pid> /T /F`（失败回退直接子进程 kill），孙进程（pi 子进程里的 bash 等）不再成孤儿；POSIX 进程组路径不变。
+- **memory 索引锁协议**（`lib/memory.ts`）：`listMemory` 的索引重建改为"锁可用才重建"（绝不无锁覆盖持锁者刚写入的行）；锁等待处理 ENOENT 竞态；陈旧锁接管改原子 rename（消除双持有者）；空目录修剪改非递归 rmdir + 忽略刚删文件名的有界重试（既排除 recursive rm 的 TOCTOU，又消化 Windows delete-pending 残留）；删除无调用方的 `normalizeMemoryTopic`。
+- **发布门禁超时与环境剥离**：review-publication-gate 全部 11 处同步 `spawnSync` 加 timeout（本地 git 10s、ls-remote/gh 30s）与 64MB 缓冲——网络挂起不再冻结宿主并令跨进程 authority.lock 失效；transaction-gate/reducer/snapshot 的 git 探测补 `reviewGitEnvironment()` 剥离，对齐本层 UNSAFE_GIT_ENVIRONMENT 防线。
+- **热路径缓存**：SDD 面包屑新增 openspec/ 树 stat 指纹缓存（`cachedResolveSddStatus`，控制器/命令路径仍取即席读数）；spec-index 改"先查 marker 再扫盘"且每个 spec.md 只读一次——context 事件每次 LLM 请求的磁盘开销从全量文件读取降为 stat 遍历。
+
+#### 权威层信任边界收口
+
+- **acknowledge 焚毁锁内复检**：apply 内复检 approved/revision/identity/already-consumed（此前唯一不做锁内复检的操作，外层读数与 runOperation 之间的并发维护可造成 TOCTOU），被拒归约绝不进日志。
+- **sdd-attempt R4 逐字重放**：settle 声明必须与 acquire 冻结的未跟踪三元组完全一致，漂移以新类型化拒绝 `untracked-scope-drift` 暴露（原实现静默采纳 settle 输入，违反模块自己的"acquire 冻结、settle 逐字重放"契约）；`settled_untracked` 改从冻结值重放；intendedUntracked 校验补反斜杠/空段/`.` 段，与 start.ts 对齐。
+- **回执先日志后落盘**：`issueJeroReviewReceiptV1` 拆为纯派生（`derive`，哈希进终局结果）与原子落盘（`persist`，临时文件+rename）两段；finalize/validate 的终局回执在日志保存成功后从已保存状态内容派生并写入（哈希与结果核对）——磁盘上不再可能出现先于日志的孤儿回执，落盘失败不回滚日志（canonical_result 已携带 receipt_hash），崩溃窗口由 start.ts 的 F8 内容派生治愈路径闭环，精确重放幂等重签。
+- **wire 投影 proof 修正**：`intendedUntrackedProof` 从误用 changed_path_manifest 摘要改为与 start.ts 同源的 `jeroUntrackedInventoryDigestV1`（可从随行 intendedUntracked 名称表重算，此前下游校验必败）；`currentCandidateTree` 经论证**保留**新鲜派生的 initial_review_tree（workspace 投影下与 complete_snapshot_tree 恒等、staged 投影下正确指向被冻结的暂存树，换值会破坏 staged 候选绑定），注释说明。
+
+#### 机械重构
+
+- `executeReviewControllerOperation` 的 9 个尾随位置参数收进 `ReviewControllerDependencies` 对象（内部 13 参递归与扩展调用点迁移，~55 个测试调用点同步，3 参调用形态不变；显式 `null` 语义保留——默认值仅 `undefined` 触发，`??` 会吞掉合法的 null）。
+- `applyModelConfig`/`applyModelConfigAsync` 约 100 行逐行复制收敛为 IO 接缝单实现，同步外壳改为诚实的非 async 函数；IO 对象全部经箭头包装在**调用时**读取 ESM 活绑定（把函数值捕获进模块级对象会冻结 `syncBuiltinESMExports` 后置替换之前的实现——被边界测试当场抓住）。
+- startup-banner.ts 全文 2 空格→tab（487 行）；jero-ai.ts 函数体整体归位一层缩进（986 行）+ 两处历史错位行修正 + 47 条 import 语句归顶（先验证无多行模板续行才动）。
+
+#### 性能与边界论证
+
+- **候选视图内容级漂移探测**（`lib/review-candidate-view-registry.ts`）：每次评审 subagent 派发原需 worktree add + 全量 checkout + 逐文件校验再销毁；现以内容级指纹（HEAD tree + `git diff HEAD --no-renames --binary` 补丁字节 + 选中未跟踪文件的 blob 哈希 + 冻结绑定字段）与上次完整验证比对，一致即跳过物化；任何内容/模式/二进制变化必然改变指纹；unborn HEAD（孤儿仓库主路径）或探测不可用一律旁路回全量对账。
+- **STATUS 快照复用论证不成立并文档化**（`lib/authority/snapshots.ts`）：porcelain 指纹 memo 被 F7 回归当场证伪——porcelain 是**路径级**指纹，同路径不同内容的两次未提交修改产生完全相同输出，会把漂移前的冻结身份当缓存命中；内容级指纹（逐脏文件 hash）的代价恰等于被优化的全量冻结本身。结论以注释留在 `deriveJeroReviewSnapshotV1` 头部，防止重蹈。
+
+#### 工具链门硬化与快胜
+
+- 权威边界门（`check-authority-boundary.mjs`）：先剥行内块注释再过滤（堵住 `/* note */ code` 整行隐藏）、动态 `import()` 纳入 extensions/ 规则；`build-runtime-modules.mjs` 生成后校验改写出的相对 import 必须存在于 runtime/（未来 lib 根值导入漂移立即报错而非消费端 ERR_MODULE_NOT_FOUND）；`check-docs-manifest.mjs` 的 `main()` 不再复制 `checkDocsManifest()` 判定体。
+- 快胜一批：sdd-init 命令 handler 去掉全仓唯一 `ctx: any` 并补 hasUI 门；模型搜索框 j/k 仅在搜索词为空时充当导航（含 j/k 的模型 id 可正常键入）；capture-relay 死导入删除；`.(exe|cmd|bat)` 点号转义；shell/session-changes 显示路径改 `join`（消除 Windows 混合分隔符）；review-consent-latch 改临时文件+rename 原子写；onAbort 通知补 hasUI。
+
 ### 流程层补强（对照 Trellis-main 差距评审的落地）
 
 - **SDD 状态面包屑**（新 `lib/jero-ai-sdd-breadcrumb.ts` + jero-ai 接线）：bootstrap 注入的是不变纪律，面包屑注入的是活状态——磁盘状态引擎解析的当前变更、`next_recommended`、任务进度与首个阻塞，在有活跃 SDD 变更期间的**每次 LLM 请求**刷新（marker `jero:sdd-breadcrumb/v1` + 16 位状态指纹去重；陈旧面包屑先剔除再插新，同指纹在场不重复注入）。不变量借自 Trellis 的每回合面包屑："必需步骤不在每回合可见，就会被模型静默跳过"。无活跃变更/已归档/变更歧义/非权威存储不注入；状态解析失败保守跳过，绝不阻塞请求。RPC 子进程与包子进程同 bootstrap 门拒绝；`JERO_PI_SDD_BREADCRUMB=0|false|off` 关闭。

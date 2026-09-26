@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { existsSync } from "node:fs";
 import { readFile, mkdir, writeFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
 import { dirname, join } from "node:path";
@@ -80,6 +81,19 @@ async function main() {
 	}
 	if (drift.length > 0) {
 		throw new Error(`generated runtime is stale: ${drift.join(", ")}`);
+	}
+	// 生成后校验：import 改写（.ts→.mjs、拍平 authority/ 前缀）产出的每
+	// 个相对 import 必须真实落在 runtime/ 内。未来有人引入指向 lib 根的
+	// 值导入时，这里立即报错，而不是让消费者在 import 时收到
+	// ERR_MODULE_NOT_FOUND——字节比较与打包对账都拦不住这类漂移。
+	for (const name of sources) {
+		const base = name.split("/").pop();
+		const generated = await readFile(join(root, "runtime", `${base}.mjs`), "utf8");
+		for (const specifier of generated.matchAll(/(?:from\s*|import\(\s*)"(\.[^"]+)"/g)) {
+			if (!existsSync(join(root, "runtime", specifier[1]))) {
+				throw new Error(`runtime/${base}.mjs imports "${specifier[1]}" which does not exist in runtime/`);
+			}
+		}
 	}
 	process.stdout.write(`runtime ${mode === "--write" ? "generated" : "matches TypeScript sources"} (${sources.length} generated modules; one-shot metrics sources validated)\n`);
 }

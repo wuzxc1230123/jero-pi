@@ -166,47 +166,35 @@ export function checkDocsManifest() {
 
 function main() {
 	const write = process.argv.includes("--write");
-	const { commands, problems } = collectCommands();
-	if (problems.length > 0) {
+	// 判定体只在 checkDocsManifest 里维护一份；CLI 入口只负责 --write
+	// 与退出码（此前这里的整段复制曾与导出函数漂移）。
+	const result = checkDocsManifest();
+	if (result.problems.length > 0) {
 		console.error("jero-pi docs manifest extraction failed:");
-		for (const problem of problems) console.error(`- ${problem}`);
+		for (const problem of result.problems) console.error(`- ${problem}`);
 		process.exit(1);
 	}
-	const tools = collectTools();
-	const skills = collectSkills();
-	const block = renderManifestBlock(commands, tools, skills);
-	const doc = readFileSync(DOC_PATH, "utf8");
-	const existing = currentBlock(doc);
-	const failures = [];
-	if (existing === undefined) failures.push("docs/jero-reference.md is missing the generated jero:manifest block (run with --write)");
-	else if (existing !== block) failures.push("the generated jero:manifest block drifted from the registration points");
-
-	const counts = headingCounts(doc);
-	if (counts.command !== undefined && counts.command !== String(commands.length)) {
-		failures.push(`heading says ${counts.command} commands, code registers ${commands.length}`);
-	}
-	if (counts.skill !== undefined && counts.skill !== String(skills.length)) {
-		failures.push(`heading says ${counts.skill} skills, disk has ${skills.length}`);
-	}
+	const { block, doc, existing } = result;
+	const { commands: commandCount, tools: toolCount, skills: skillCount } = result.counts;
 
 	if (write) {
 		let updated = doc;
 		if (existing !== undefined) updated = updated.replace(existing, block);
 		else updated = updated.replace("## 测试与打包门", `${block}\n\n## 测试与打包门`);
-		updated = updated.replace(/(##\s*命令（)\d+(\s*个斜杠命令）)/, `$1${commands.length}$2`);
-		updated = updated.replace(/(##\s*技能（)\d+(\s*个目录)/, `$1${skills.length}$2`);
+		updated = updated.replace(/(##\s*命令（)\d+(\s*个斜杠命令）)/, `$1${commandCount}$2`);
+		updated = updated.replace(/(##\s*技能（)\d+(\s*个目录)/, `$1${skillCount}$2`);
 		writeFileSync(DOC_PATH, updated, "utf8");
-		console.log(`jero-pi docs manifest written: ${commands.length} commands, ${tools.length} tools, ${skills.length} skills.`);
+		console.log(`jero-pi docs manifest written: ${commandCount} commands, ${toolCount} tools, ${skillCount} skills.`);
 		return;
 	}
 
-	if (failures.length > 0) {
+	if (result.failures.length > 0) {
 		console.error("jero-pi docs manifest drift detected:");
-		for (const failure of failures) console.error(`- ${failure}`);
+		for (const failure of result.failures) console.error(`- ${failure}`);
 		console.error("\nRegenerate with: node scripts/check-docs-manifest.mjs --write");
 		process.exit(1);
 	}
-	console.log(`jero-pi docs manifest in sync (${commands.length} commands, ${tools.length} tools, ${skills.length} skills).`);
+	console.log(`jero-pi docs manifest in sync (${commandCount} commands, ${toolCount} tools, ${skillCount} skills).`);
 }
 
 const isMainModule = process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href;
