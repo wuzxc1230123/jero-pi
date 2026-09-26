@@ -143,8 +143,7 @@ async function runController(
 		parameters,
 		cwd,
 		native,
-		undefined,
-		candidateViews,
+		{ candidateViews },
 	) as Record<string, unknown>;
 }
 

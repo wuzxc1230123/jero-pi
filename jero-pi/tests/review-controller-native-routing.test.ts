@@ -98,29 +98,20 @@ test("approved acknowledgement reuses an explicit STATUS excluded-untracked sele
 		{ operation: "status", lineageId, input: JSON.stringify(selection) },
 		cwd,
 		native,
-		undefined,
-		undefined,
-		undefined,
-		selections,
+		{ retainedUntrackedSelections: selections },
 	);
 	const acknowledged = await __testing.executeReviewControllerOperation(
 		{ operation: "acknowledge-approved", lineageId },
 		cwd,
 		native,
-		undefined,
-		undefined,
-		undefined,
-		selections,
+		{ retainedUntrackedSelections: selections },
 	);
 	assert.equal(acknowledged.outcome, "native-approved-acknowledgement-completed");
 	await __testing.executeReviewControllerOperation(
 		{ operation: "status", lineageId },
 		cwd,
 		native,
-		undefined,
-		undefined,
-		undefined,
-		selections,
+		{ retainedUntrackedSelections: selections },
 	);
 	assert.deepEqual(requests, [
 		{ cwd, lineageId, agent: "pi", ...selection },
@@ -204,12 +195,12 @@ test("approved acknowledgement burn tears down the retained candidate view and k
 		acknowledgeApproved: async () => {},
 	} as unknown as NativeReviewCli;
 
-	const blocked = await __testing.executeReviewControllerOperation({ operation: "acknowledge-approved", lineageId }, contributorRoot, native, undefined, registry);
+	const blocked = await __testing.executeReviewControllerOperation({ operation: "acknowledge-approved", lineageId }, contributorRoot, native, { candidateViews: registry });
 	assert.equal(blocked.outcome, "native-approved-acknowledgement-not-current");
 	assert.ok(existsSync(view.root), "a refused acknowledgement proves no burn; the view must survive");
 
 	approved = true;
-	const completed = await __testing.executeReviewControllerOperation({ operation: "acknowledge-approved", lineageId }, contributorRoot, native, undefined, registry);
+	const completed = await __testing.executeReviewControllerOperation({ operation: "acknowledge-approved", lineageId }, contributorRoot, native, { candidateViews: registry });
 	assert.equal(completed.outcome, "native-approved-acknowledgement-completed");
 	assert.equal(existsSync(view.root), false, "the burn must tear down the immutable candidate view worktree");
 	assert.ok(registry.hasProjection(lineageId, contributorRoot), "terminal approved cleanup keeps the lineage projection");
@@ -240,7 +231,7 @@ test("approved acknowledgement reports the burn truthfully when candidate-view c
 		acknowledgeApproved: async () => { acknowledgements += 1; },
 	} as unknown as NativeReviewCli;
 
-	const completed = await __testing.executeReviewControllerOperation({ operation: "acknowledge-approved", lineageId }, contributorRoot, native, undefined, registry);
+	const completed = await __testing.executeReviewControllerOperation({ operation: "acknowledge-approved", lineageId }, contributorRoot, native, { candidateViews: registry });
 
 	assert.equal(acknowledgements, 1, "exactly one native burn");
 	assert.equal(statusRequests.length, 1, "no STATUS reconciliation after a cleanup-only failure");

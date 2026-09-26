@@ -322,8 +322,7 @@ test("ordinary START reports candidate-owner preparation failure as pre-native n
 		{ operation: "start", input: JSON.stringify({ mode: "ordinary" }) },
 		process.cwd(),
 		native,
-		undefined,
-		candidateViews,
+		{ candidateViews },
 	);
 	assert.equal(nativeStarts, 0);
 	assert.equal(result.outcome, "native-operation-failed");
@@ -341,8 +340,7 @@ test("ordinary START reports candidate-owner preparation failure as pre-native n
 			targetStatus: async () => { materializationStatusCalls += 1; return target; },
 			start: async () => { nativeStarts += 1; throw new Error("native START must not run"); },
 		} as unknown as NativeReviewCli,
-		undefined,
-		{ createOrReuse: () => { throw new Error("candidate materialization failed"); } } as unknown as CandidateViewRegistry,
+		{ candidateViews: { createOrReuse: () => { throw new Error("candidate materialization failed"); } } as unknown as CandidateViewRegistry },
 	);
 	assert.equal(nativeStarts, 0);
 	assert.equal(materializationStatusCalls, 1, "a pre-START materialization failure never triggers reconciliation STATUS");
@@ -368,8 +366,7 @@ test("ordinary START reports candidate-owner preparation failure as pre-native n
 				});
 			},
 		} as unknown as NativeReviewCli,
-		undefined,
-		null,
+		{ candidateViews: null },
 	);
 	assert.equal(nativeStarts, 1);
 	assert.equal(statusCalls, 2, "a post-native diagnostic must reconcile STATUS");

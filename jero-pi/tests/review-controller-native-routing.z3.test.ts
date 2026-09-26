@@ -478,7 +478,7 @@ test("START and consent ambiguity reconciliation register their returned committ
 		start: () => { directStartCalls += 1; return unknown(); },
 		captureCorrectionPlan: async () => ({ schema: "gentle-ai.review-last-event-closure/v1", operation: "review.capture-correction-plan", lineageId, state: "correction_required", storeRevision: SHA }),
 	} as unknown as NativeReviewCli;
-	const directStart = await __testing.executeReviewControllerOperation({ operation: "start", input: JSON.stringify({ mode: "ordinary", baseRef, committedOnly: true }) }, cwd, directNative, undefined, undefined, undefined, directRoutes);
+	const directStart = await __testing.executeReviewControllerOperation({ operation: "start", input: JSON.stringify({ mode: "ordinary", baseRef, committedOnly: true }) }, cwd, directNative, { retainedUntrackedSelections: directRoutes });
 	assert.deepEqual({ outcome: directStart.outcome, status: directStart.status, mutationOutcome: directStart.mutation_outcome, startCalls: directStartCalls, statusCalls: directRequests.length }, { outcome: "native-mutation-status-reconciled", status: "blocked", mutationOutcome: "unknown", startCalls: 1, statusCalls: 2 });
 	assert.equal((directStart.diagnostics as { error_code?: string }).error_code, NATIVE_REVIEW_ERROR_CODE.NON_ZERO);
 	assert.equal("next_action" in directStart, false);
@@ -491,7 +491,7 @@ test("START and consent ambiguity reconciliation register their returned committ
 		answerConsent: unknown,
 		captureCorrectionPlan: directNative.captureCorrectionPlan,
 	} as unknown as NativeReviewCli;
-	const run = (parameters: Record<string, unknown>) => __testing.executeReviewControllerOperation(parameters, cwd, consentNative, undefined, undefined, undefined, consentRoutes, registry, session);
+	const run = (parameters: Record<string, unknown>) => __testing.executeReviewControllerOperation(parameters, cwd, consentNative, { retainedUntrackedSelections: consentRoutes, pendingReviewConsentRegistry: registry, pendingReviewConsentFallbackKey: session });
 	const pending = await run({ operation: "start", input: JSON.stringify({ mode: "ordinary", baseRef, committedOnly: true }) });
 	await run({ operation: "answer-consent", input: JSON.stringify({ consentBinding: pending.consent_binding, answer: "granted" }) });
 	const consentCapture = await __testing.executeReviewCaptureOperation({ lineageId, collectBinding: JSON.stringify(input), correctionLines: 1 }, cwd, consentNative, undefined, undefined, consentRoutes, true);
@@ -538,9 +538,9 @@ test("answer-consent resolves a valid binding presented by a different active Pi
 			return { kind: "granted", start: { lineageId: "cross-session", state: "reviewing", riskLevel: "low", selectedLenses: [], changedFiles: 1, changedLines: 1, correctionBudget: 1, action: "created", lensesRequired: false, riskReasons: [] } };
 		},
 	} as unknown as NativeReviewCli;
-	const started = await __testing.executeReviewControllerOperation({ operation: "start", input: JSON.stringify({ mode: "ordinary" }) }, cwd, native, undefined, undefined, undefined, undefined, registry, sessionA);
+	const started = await __testing.executeReviewControllerOperation({ operation: "start", input: JSON.stringify({ mode: "ordinary" }) }, cwd, native, { retainedUntrackedSelections: undefined, pendingReviewConsentRegistry: registry, pendingReviewConsentFallbackKey: sessionA });
 	assert.equal(typeof started.consent_binding, "string", JSON.stringify(started));
-	const answered = await __testing.executeReviewControllerOperation({ operation: "answer-consent", input: JSON.stringify({ consentBinding: started.consent_binding, answer: "granted" }) }, cwd, native, undefined, undefined, undefined, undefined, registry, sessionB);
+	const answered = await __testing.executeReviewControllerOperation({ operation: "answer-consent", input: JSON.stringify({ consentBinding: started.consent_binding, answer: "granted" }) }, cwd, native, { retainedUntrackedSelections: undefined, pendingReviewConsentRegistry: registry, pendingReviewConsentFallbackKey: sessionB });
 	assert.equal(answerCalls, 1, JSON.stringify(answered));
 	assert.equal((answered.result as { lineage_id?: string } | undefined)?.lineage_id, "cross-session", JSON.stringify(answered));
 	assert.notEqual(answered.status, "blocked", JSON.stringify(answered));
@@ -563,11 +563,11 @@ test("a consumed consent binding cannot be answered a second time from any sessi
 			return { kind: "granted", start: { lineageId: "single-use", state: "reviewing", riskLevel: "low", selectedLenses: [], changedFiles: 1, changedLines: 1, correctionBudget: 1, action: "created", lensesRequired: false, riskReasons: [] } };
 		},
 	} as unknown as NativeReviewCli;
-	const started = await __testing.executeReviewControllerOperation({ operation: "start", input: JSON.stringify({ mode: "ordinary" }) }, cwd, native, undefined, undefined, undefined, undefined, registry, sessionA);
+	const started = await __testing.executeReviewControllerOperation({ operation: "start", input: JSON.stringify({ mode: "ordinary" }) }, cwd, native, { retainedUntrackedSelections: undefined, pendingReviewConsentRegistry: registry, pendingReviewConsentFallbackKey: sessionA });
 	const binding = started.consent_binding as string;
-	const first = await __testing.executeReviewControllerOperation({ operation: "answer-consent", input: JSON.stringify({ consentBinding: binding, answer: "granted" }) }, cwd, native, undefined, undefined, undefined, undefined, registry, sessionB);
+	const first = await __testing.executeReviewControllerOperation({ operation: "answer-consent", input: JSON.stringify({ consentBinding: binding, answer: "granted" }) }, cwd, native, { retainedUntrackedSelections: undefined, pendingReviewConsentRegistry: registry, pendingReviewConsentFallbackKey: sessionB });
 	assert.equal(answerCalls, 1, JSON.stringify(first));
-	const replay = await __testing.executeReviewControllerOperation({ operation: "answer-consent", input: JSON.stringify({ consentBinding: binding, answer: "granted" }) }, cwd, native, undefined, undefined, undefined, undefined, registry, sessionA);
+	const replay = await __testing.executeReviewControllerOperation({ operation: "answer-consent", input: JSON.stringify({ consentBinding: binding, answer: "granted" }) }, cwd, native, { retainedUntrackedSelections: undefined, pendingReviewConsentRegistry: registry, pendingReviewConsentFallbackKey: sessionA });
 	assert.equal(answerCalls, 1, JSON.stringify(replay));
 	assert.equal(replay.status, "blocked", JSON.stringify(replay));
 	assert.equal(replay.outcome, "consent-binding-stale", JSON.stringify(replay));
@@ -593,15 +593,15 @@ test("answer-consent refuses a binding presented from a different repository tha
 			return { kind: "granted", start: { lineageId: "right-repo", state: "reviewing", riskLevel: "low", selectedLenses: [], changedFiles: 1, changedLines: 1, correctionBudget: 1, action: "created", lensesRequired: false, riskReasons: [] } };
 		},
 	} as unknown as NativeReviewCli;
-	const started = await __testing.executeReviewControllerOperation({ operation: "start", input: JSON.stringify({ mode: "ordinary" }) }, cwdA, native, undefined, undefined, undefined, undefined, registry, sessionA);
+	const started = await __testing.executeReviewControllerOperation({ operation: "start", input: JSON.stringify({ mode: "ordinary" }) }, cwdA, native, { retainedUntrackedSelections: undefined, pendingReviewConsentRegistry: registry, pendingReviewConsentFallbackKey: sessionA });
 	const binding = started.consent_binding as string;
-	const wrongRepo = await __testing.executeReviewControllerOperation({ operation: "answer-consent", input: JSON.stringify({ consentBinding: binding, answer: "granted" }) }, cwdB, native, undefined, undefined, undefined, undefined, registry, sessionB);
+	const wrongRepo = await __testing.executeReviewControllerOperation({ operation: "answer-consent", input: JSON.stringify({ consentBinding: binding, answer: "granted" }) }, cwdB, native, { retainedUntrackedSelections: undefined, pendingReviewConsentRegistry: registry, pendingReviewConsentFallbackKey: sessionB });
 	assert.equal(answerCalls, 0, JSON.stringify(wrongRepo));
 	assert.equal(wrongRepo.status, "blocked", JSON.stringify(wrongRepo));
 	assert.equal(wrongRepo.outcome, "consent-binding-repository-mismatch", JSON.stringify(wrongRepo));
 	assert.equal((wrongRepo.diagnostics as { code?: string } | undefined)?.code, "consent-binding-repository-mismatch", JSON.stringify(wrongRepo));
 	assert.equal(wrongRepo.mutation_performed, false, JSON.stringify(wrongRepo));
-	const rightRepo = await __testing.executeReviewControllerOperation({ operation: "answer-consent", input: JSON.stringify({ consentBinding: binding, answer: "granted" }) }, cwdA, native, undefined, undefined, undefined, undefined, registry, sessionA);
+	const rightRepo = await __testing.executeReviewControllerOperation({ operation: "answer-consent", input: JSON.stringify({ consentBinding: binding, answer: "granted" }) }, cwdA, native, { retainedUntrackedSelections: undefined, pendingReviewConsentRegistry: registry, pendingReviewConsentFallbackKey: sessionA });
 	assert.equal(answerCalls, 1, JSON.stringify(rightRepo));
 	assert.equal((rightRepo.result as { lineage_id?: string } | undefined)?.lineage_id, "right-repo", JSON.stringify(rightRepo));
 });
@@ -624,10 +624,10 @@ test("ordinary START mints a fresh candidate view when candidate content changes
 		targetStatus: async () => startStatus(cwd, undefined, ["extra.md"]),
 		start: async () => { throw new NativeReviewConsentRequiredError(consent); },
 	} as unknown as NativeReviewCli;
-	const first = await __testing.executeReviewControllerOperation({ operation: "start", input: JSON.stringify({ mode: "ordinary" }) }, cwd, native, undefined, candidateViews);
+	const first = await __testing.executeReviewControllerOperation({ operation: "start", input: JSON.stringify({ mode: "ordinary" }) }, cwd, native, { candidateViews: candidateViews });
 	assert.equal(first.outcome, "native-review-consent-required", JSON.stringify(first));
 	writeFileSync(join(cwd, "tracked.txt"), "candidate two\n");
-	const second = await __testing.executeReviewControllerOperation({ operation: "start", input: JSON.stringify({ mode: "ordinary" }) }, cwd, native, undefined, candidateViews);
+	const second = await __testing.executeReviewControllerOperation({ operation: "start", input: JSON.stringify({ mode: "ordinary" }) }, cwd, native, { candidateViews: candidateViews });
 	assert.notEqual(second.outcome, "native-operation-failed", JSON.stringify(second));
 	assert.equal(second.outcome, "native-review-consent-required", JSON.stringify(second));
 	assert.notEqual(second.consent_binding, first.consent_binding, JSON.stringify(second));
@@ -678,7 +678,7 @@ test("controller forwards AbortSignal and retains typed native diagnostics witho
 			return { lineageId: "signal-lineage", state: "reviewing", riskLevel: "medium", selectedLenses: ["review-reliability"], changedFiles: 1, changedLines: 1, correctionBudget: 1, action: "created", lensesRequired: true, riskReasons: [] };
 		},
 	} as unknown as NativeReviewCli;
-	const started = await __testing.executeReviewControllerOperation({ operation: "start", input: JSON.stringify({ mode: "ordinary" }) }, cwd, native, controller.signal);
+	const started = await __testing.executeReviewControllerOperation({ operation: "start", input: JSON.stringify({ mode: "ordinary" }) }, cwd, native, { signal: controller.signal });
 	assert.equal(started.operation, "start");
 	assert.equal(targetSignal, controller.signal);
 	assert.equal(startSignal, controller.signal);

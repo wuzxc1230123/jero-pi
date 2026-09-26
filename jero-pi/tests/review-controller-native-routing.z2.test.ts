@@ -226,10 +226,10 @@ for (const statusSchema of ["gentle-ai.review-integration.status/v6", "gentle-ai
 		targetStatus: async (request: Record<string, unknown>) => { requests.push(request); return "intendedUntrackedSelection" in request ? target : initial; },
 		start: async (request: Record<string, unknown>) => { assert.equal(retained.size, 0); starts.push(request); return { lineageId: "selected", state: "reviewing", riskLevel: "low", selectedLenses: [], changedFiles: 1, changedLines: 1, correctionBudget: 1, action: "created", lensesRequired: false, riskReasons: [], raw: {} }; },
 	} as unknown as NativeReviewCli;
-	const listed = await __testing.executeReviewControllerOperation({ operation: "status", workspaceRoot: cwd }, sessionCwd, native, undefined, undefined, undefined, retained);
+	const listed = await __testing.executeReviewControllerOperation({ operation: "status", workspaceRoot: cwd }, sessionCwd, native, { retainedUntrackedSelections: retained });
 	const selectionBinding = listed.selectionBinding as string;
 	assert.equal(typeof selectionBinding, "string");
-	const selectedResult = await __testing.executeReviewControllerOperation({ operation: "select-intended-untracked", selectionBinding, intendedUntracked: [eligible], workspaceRoot: cwd } as never, sessionCwd, native, undefined, undefined, undefined, retained);
+	const selectedResult = await __testing.executeReviewControllerOperation({ operation: "select-intended-untracked", selectionBinding, intendedUntracked: [eligible], workspaceRoot: cwd } as never, sessionCwd, native, { retainedUntrackedSelections: retained });
 	assert.equal(starts.length, 1, JSON.stringify(selectedResult));
 	assert.deepEqual(requests.map((request) => request.cwd), [cwd, cwd, cwd]);
 	assert.equal(starts[0]!.cwd, cwd);
@@ -238,13 +238,13 @@ for (const statusSchema of ["gentle-ai.review-integration.status/v6", "gentle-ai
 		{ selectionBinding: selectionBinding.replace(eligible, "docs/stale.md"), intendedUntracked: [eligible] },
 		{ selectionBinding, intendedUntracked: [eligible, eligible] }, { selectionBinding, intendedUntracked: ["docs/unknown.md"] },
 	]) {
-		const rejection = await __testing.executeReviewControllerOperation({ operation: "select-intended-untracked", ...invalid } as never, cwd, native, undefined, undefined, undefined, retained);
+		const rejection = await __testing.executeReviewControllerOperation({ operation: "select-intended-untracked", ...invalid } as never, cwd, native, { retainedUntrackedSelections: retained });
 		assert.equal(rejection.status, "blocked", JSON.stringify(invalid));
 		assert.equal(rejection.outcome, "intended-untracked-selection-binding-rejected", JSON.stringify(invalid));
 		assert.equal(rejection.mutation_performed, false, JSON.stringify(invalid));
 		assert.equal(rejection.mutation_outcome, "none", JSON.stringify(invalid));
 	}
-	await assert.rejects(() => __testing.executeReviewControllerOperation({ operation: "select-intended-untracked", selectionBinding, intendedUntracked: [eligible], input: "{}" } as never, cwd, native, undefined, undefined, undefined, retained), /exactly selectionBinding/);
+	await assert.rejects(() => __testing.executeReviewControllerOperation({ operation: "select-intended-untracked", selectionBinding, intendedUntracked: [eligible], input: "{}" } as never, cwd, native, { retainedUntrackedSelections: retained }), /exactly selectionBinding/);
 	assert.equal(starts.length, 1);
 	assert.equal(requests.every((request) => !("lineageId" in request)), true);
 });
@@ -358,10 +358,7 @@ test("inspect with untrackedScope exclude resolves the intended-untracked stop i
 		{ operation: "inspect", untrackedScope: "exclude" },
 		cwd,
 		native,
-		undefined,
-		undefined,
-		undefined,
-		retained,
+		{ retainedUntrackedSelections: retained },
 	);
 	assert.equal(result.status, "ready");
 	assert.equal("selectionBinding" in result, false);
@@ -531,20 +528,14 @@ test("plain START adopts the pre-lineage selection retained by inspect and delet
 		},
 		cwd,
 		native,
-		undefined,
-		undefined,
-		undefined,
-		retained,
+		{ retainedUntrackedSelections: retained },
 	);
 	assert.equal(resolved.status, "ready");
 	const started = await __testing.executeReviewControllerOperation(
 		{ operation: "start", input: JSON.stringify({ mode: "ordinary" }) },
 		cwd,
 		native,
-		undefined,
-		undefined,
-		undefined,
-		retained,
+		{ retainedUntrackedSelections: retained },
 	);
 	assert.equal(started.operation, "start");
 	assert.equal((started.result as Record<string, unknown>).lineage_id, "review-started");
@@ -631,12 +622,12 @@ test("a fresh unsuccessful inspect invalidates its prior pre-lineage selection",
 		} as unknown as NativeReviewCli;
 		await __testing.executeReviewControllerOperation(
 			{ operation: "inspect", untrackedScope: "select", intendedUntracked: [eligible] },
-			cwd, native, undefined, undefined, undefined, retained,
+			cwd, native, { retainedUntrackedSelections: retained },
 		);
 		assert.equal(retained.has(`${cwd}\u0000`), true);
 		failInspect = true;
 		const failed = await __testing.executeReviewControllerOperation(
-			{ operation: "inspect" }, cwd, native, undefined, undefined, undefined, retained,
+			{ operation: "inspect" }, cwd, native, { retainedUntrackedSelections: retained },
 		);
 		assert.equal(failed.outcome, "native-status-unavailable");
 		assert.equal(retained.has(`${cwd}\u0000`), false);
@@ -670,11 +661,11 @@ test("START rejects a retained pre-lineage selection when fresh STATUS identifie
 		} as unknown as NativeReviewCli;
 		await __testing.executeReviewControllerOperation(
 			{ operation: "inspect", untrackedScope: "select", intendedUntracked: [eligible] },
-			cwd, native, undefined, null, undefined, retained,
+			cwd, native, { candidateViews: null, retainedUntrackedSelections: retained },
 		);
 		const rejected = await __testing.executeReviewControllerOperation(
 			{ operation: "start", input: JSON.stringify({ mode: "ordinary" }) },
-			cwd, native, undefined, null, undefined, retained,
+			cwd, native, { candidateViews: null, retainedUntrackedSelections: retained },
 		);
 		assert.equal(rejected.outcome, "native-start-retained-selection-candidate-mismatch");
 		assert.equal(starts, 0);
@@ -696,17 +687,17 @@ test("a failed START retains a pre-lineage selection for a same-candidate retry"
 		} as unknown as NativeReviewCli;
 		await __testing.executeReviewControllerOperation(
 			{ operation: "inspect", untrackedScope: "select", intendedUntracked: [eligible] },
-			cwd, native, undefined, null, undefined, retained,
+			cwd, native, { candidateViews: null, retainedUntrackedSelections: retained },
 		);
 		const failed = await __testing.executeReviewControllerOperation(
 			{ operation: "start", input: JSON.stringify({ mode: "ordinary" }) },
-			cwd, native, undefined, null, undefined, retained,
+			cwd, native, { candidateViews: null, retainedUntrackedSelections: retained },
 		);
 		assert.equal(failed.mutation_outcome, "none");
 		assert.equal(retained.has(`${cwd}\u0000`), true);
 		const retried = await __testing.executeReviewControllerOperation(
 			{ operation: "start", input: JSON.stringify({ mode: "ordinary" }) },
-			cwd, native, undefined, null, undefined, retained,
+			cwd, native, { candidateViews: null, retainedUntrackedSelections: retained },
 		);
 		assert.equal((retried.result as Record<string, unknown>).lineage_id, "retried");
 		assert.equal(starts, 2);

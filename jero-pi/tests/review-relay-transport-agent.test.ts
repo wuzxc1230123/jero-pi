@@ -163,7 +163,7 @@ async function runCapture(cwd: string, native: NativeReviewCli, lineageId: strin
 async function runStatus(cwd: string, native: NativeReviewCli, lineageId: string): Promise<Record<string, unknown>> {
 	return await __testing.executeReviewControllerOperation(
 		{ operation: "status", lineageId },
-		cwd, native, undefined, new CandidateViewRegistry(),
+		cwd, native, { candidateViews: new CandidateViewRegistry() },
 	) as Record<string, unknown>;
 }
 

@@ -12,7 +12,7 @@ import { sanitizeTerminalText } from "./terminal-theme.ts";
 import { agentModelProfileConfigPath, isClearRoutingEntry, isValidJsonObjectFileOrMissing, listDiscoverableAgents, listDiscoverableAgentsAsync, projectSettingsPath, removeLegacyAgentOverridesFromSettings, updateFrontmatterRouting, updateSubagentModelProfile, updateSubagentModelProfileAtPathAsync } from "./jero-ai-model-config.ts";
 import { isRecord, legacyProjectModelConfigPath, modelConfigPath } from "./jero-ai-persona-config.ts";
 import { pathExists } from "./jero-ai-prompts.ts";
-import type { AgentSource } from "./jero-ai-sdd-startup.ts";
+import type { AgentEntry, AgentSource } from "./jero-ai-sdd-startup.ts";
 
 
 const PROVIDER_REVIEW_ROLES = ["review-refuter", "review-validator"] as const;
@@ -108,14 +108,48 @@ async function updateSubagentModelProfileAsync(
 
 
 
-export async function applyModelConfig(
+// apply 的 IO 接缝：同步/异步两个外壳共享同一份应用逻辑，消灭此前
+// ~100 行的逐行复制（两份必然漂移）。同步外壳内部是真正的全同步 IO。
+interface ApplyModelConfigIo {
+	listDiscoverableAgents(cwd: string): Promise<AgentEntry[]>;
+	pathExists(path: string): Promise<boolean>;
+	readFile(path: string): Promise<string>;
+	writeFile(path: string, content: string): Promise<void>;
+	updateSubagentModelProfile(cwd: string, source: AgentSource, name: string, entry: AgentRoutingEntry | undefined): Promise<boolean>;
+}
+
+// 全部经箭头包装、在调用时读取 ESM 活绑定：测试经 syncBuiltinESMExports
+// 后置替换内置模块导出时，直接引用函数值会冻结替换前的实现。
+const applyModelConfigSyncIo: ApplyModelConfigIo = {
+	listDiscoverableAgents: (cwd) => Promise.resolve(listDiscoverableAgents(cwd)),
+	pathExists: (path) => Promise.resolve(existsSync(path)),
+	readFile: (path) => Promise.resolve(readFileSync(path, "utf8")),
+	writeFile: (path, content) => {
+		writeFileSync(path, content);
+		return Promise.resolve();
+	},
+	updateSubagentModelProfile: (cwd, source, name, entry) =>
+		Promise.resolve(updateSubagentModelProfile(cwd, source, name, entry)),
+};
+
+const applyModelConfigAsyncIo: ApplyModelConfigIo = {
+	listDiscoverableAgents: (cwd) => listDiscoverableAgentsAsync(cwd),
+	pathExists: (path) => pathExists(path),
+	readFile: (path) => readFile(path, "utf8"),
+	writeFile: (path, content) => writeFile(path, content),
+	updateSubagentModelProfile: (cwd, source, name, entry) =>
+		updateSubagentModelProfileAsync(cwd, source, name, entry),
+};
+
+async function applyModelConfigWith(
+	io: ApplyModelConfigIo,
 	cwd: string,
 	config: AgentModelConfig,
 ): Promise<{ updated: number; skipped: number }> {
 	let updated = 0;
 	let skipped = 0;
 	const seenAgents = new Set<string>();
-	for (const agent of listDiscoverableAgents(cwd)) {
+	for (const agent of await io.listDiscoverableAgents(cwd)) {
 		if (isProviderReviewRole(agent.name)) continue;
 		seenAgents.add(agent.name);
 		const entry = config[agent.name];
@@ -124,25 +158,25 @@ export async function applyModelConfig(
 			continue;
 		}
 		if (agent.source === "builtin") {
-			if (updateSubagentModelProfile(cwd, agent.source, agent.name, entry)) updated += 1;
+			if (await io.updateSubagentModelProfile(cwd, agent.source, agent.name, entry)) updated += 1;
 			else skipped += 1;
 			continue;
 		}
-		if (!agent.filePath || !existsSync(agent.filePath)) {
+		if (!agent.filePath || !(await io.pathExists(agent.filePath))) {
 			skipped += 1;
 		} else {
-			const original = readFileSync(agent.filePath, "utf8");
+			const original = await io.readFile(agent.filePath);
 			const next = updateFrontmatterRouting(original, entry);
 			if (next === original) {
 				skipped += 1;
 			} else {
 				if (!(await updatePackageManagedSddAgentOwnership(agent.filePath, original, next))) {
-					writeFileSync(agent.filePath, next);
+					await io.writeFile(agent.filePath, next);
 				}
 				updated += 1;
 			}
 		}
-		if (updateSubagentModelProfile(cwd, agent.source, agent.name, entry)) updated += 1;
+		if (await io.updateSubagentModelProfile(cwd, agent.source, agent.name, entry)) updated += 1;
 		else skipped += 1;
 	}
 	for (const [name, entry] of Object.entries(config)) {
@@ -151,64 +185,27 @@ export async function applyModelConfig(
 		// settings.json 中，绝不能进入 subagents.json。
 		if (isProfileOrchestratorKey(name)) continue;
 		if (!seenAgents.has(name) && isClearRoutingEntry(entry)) {
-			if (updateSubagentModelProfile(cwd, "user", name, entry)) updated += 1;
+			if (await io.updateSubagentModelProfile(cwd, "user", name, entry)) updated += 1;
 			else skipped += 1;
 		}
 	}
 	return { updated, skipped };
 }
 
-
-
-export async function applyModelConfigAsync(
+/** 同步外壳：内部全同步 IO（阻塞事件循环），签名保持返回 Promise 以
+ * 兼容既有调用方；新代码优先用 applyModelConfigAsync。 */
+export function applyModelConfig(
 	cwd: string,
 	config: AgentModelConfig,
 ): Promise<{ updated: number; skipped: number }> {
-	let updated = 0;
-	let skipped = 0;
-	const seenAgents = new Set<string>();
-	for (const agent of await listDiscoverableAgentsAsync(cwd)) {
-		if (isProviderReviewRole(agent.name)) continue;
-		seenAgents.add(agent.name);
-		const entry = config[agent.name];
-		if (entry === undefined) {
-			skipped += 1;
-			continue;
-		}
-		if (agent.source === "builtin") {
-			if (await updateSubagentModelProfileAsync(cwd, agent.source, agent.name, entry))
-				updated += 1;
-			else skipped += 1;
-			continue;
-		}
-		if (!agent.filePath || !(await pathExists(agent.filePath))) {
-			skipped += 1;
-		} else {
-			const original = await readFile(agent.filePath, "utf8");
-			const next = updateFrontmatterRouting(original, entry);
-			if (next === original) {
-				skipped += 1;
-			} else {
-				if (!(await updatePackageManagedSddAgentOwnership(agent.filePath, original, next))) {
-					await writeFile(agent.filePath, next);
-				}
-				updated += 1;
-			}
-		}
-		if (await updateSubagentModelProfileAsync(cwd, agent.source, agent.name, entry))
-			updated += 1;
-		else skipped += 1;
-	}
-	for (const [name, entry] of Object.entries(config)) {
-		if (isProviderReviewRole(name)) continue;
-		if (isProfileOrchestratorKey(name)) continue;
-		if (!seenAgents.has(name) && isClearRoutingEntry(entry)) {
-			if (await updateSubagentModelProfileAsync(cwd, "user", name, entry))
-				updated += 1;
-			else skipped += 1;
-		}
-	}
-	return { updated, skipped };
+	return applyModelConfigWith(applyModelConfigSyncIo, cwd, config);
+}
+
+export function applyModelConfigAsync(
+	cwd: string,
+	config: AgentModelConfig,
+): Promise<{ updated: number; skipped: number }> {
+	return applyModelConfigWith(applyModelConfigAsyncIo, cwd, config);
 }
 
 

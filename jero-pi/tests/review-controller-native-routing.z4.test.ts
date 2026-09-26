@@ -72,10 +72,10 @@ test("REPAIR retains frozen committed collect selectors and leaves workspace rou
 		targetStatus: async (request: Record<string, unknown>) => { requests.push(request); return requests.length === 3 ? status(lineageId, [], "approved") : status(lineageId, [input]); },
 		captureCorrectionPlan: async () => { throw Object.assign(new Error("lost response"), { mutationOutcome: "unknown", nextAction: "review.status" }); },
 	} as unknown as NativeReviewCli;
-	await __testing.executeReviewControllerOperation({ operation: "repair", lineageId }, cwd, native, undefined, candidateViews, undefined, selections);
+	await __testing.executeReviewControllerOperation({ operation: "repair", lineageId }, cwd, native, { candidateViews, retainedUntrackedSelections: selections });
 	const result = await __testing.executeReviewCaptureOperation({ lineageId, collectBinding: JSON.stringify(input), correctionLines: 1 }, cwd, native, undefined, candidateViews, selections, true);
 	const workspaceLineage = "repair-workspace", workspaceRequests: Array<Record<string, unknown>> = [];
-	await __testing.executeReviewControllerOperation({ operation: "repair", lineageId: workspaceLineage }, cwd, { targetStatus: async (request: Record<string, unknown>) => { workspaceRequests.push(request); return status(workspaceLineage); } } as unknown as NativeReviewCli, undefined, candidateViews);
+	await __testing.executeReviewControllerOperation({ operation: "repair", lineageId: workspaceLineage }, cwd, { targetStatus: async (request: Record<string, unknown>) => { workspaceRequests.push(request); return status(workspaceLineage); } } as unknown as NativeReviewCli, { candidateViews: candidateViews });
 	assert.deepEqual({ outcome: result.outcome, routes: selections.size, selectors: requests.map(({ cwd: requestCwd, lineageId: id, baseRef, committedOnly }) => ({ cwd: requestCwd, lineageId: id, baseRef, committedOnly })) }, { outcome: "native-capture-outcome-unknown", routes: 0, selectors: Array.from({ length: 3 }, () => ({ cwd, lineageId, baseRef: frozenTarget.baseCommit, committedOnly: true })) });
 	assert.deepEqual(workspaceRequests, [{ cwd, lineageId: workspaceLineage }]);
 });
@@ -106,7 +106,7 @@ test("selectorless STATUS resumes a retained committed correction lineage", asyn
 		},
 	} as unknown as NativeReviewCli;
 
-	const listed = await __testing.executeReviewControllerOperation({ operation: "status", lineageId }, cwd, native, undefined, candidateViews, undefined, selections);
+	const listed = await __testing.executeReviewControllerOperation({ operation: "status", lineageId }, cwd, native, { candidateViews, retainedUntrackedSelections: selections });
 	const captured = await __testing.executeReviewCaptureOperation({ lineageId, collectBinding: bindingOf(listed), correctionLines: 1 }, cwd, native, undefined, candidateViews, selections, true);
 
 	assert.equal(captured.outcome, "native-last-event-closure");
@@ -135,9 +135,9 @@ test("selectorless STATUS uses a retained committed selector only at its retaine
 		},
 	} as unknown as NativeReviewCli;
 
-	await __testing.executeReviewControllerOperation({ operation: "status", lineageId, input: JSON.stringify({ baseRef: "explicit-base", committedOnly: true }) }, retainedRoot, native, undefined, candidateViews);
-	await __testing.executeReviewControllerOperation({ operation: "status", lineageId: "unretained" }, retainedRoot, native, undefined, candidateViews);
-	await __testing.executeReviewControllerOperation({ operation: "status", lineageId }, otherRoot, native, undefined, candidateViews);
+	await __testing.executeReviewControllerOperation({ operation: "status", lineageId, input: JSON.stringify({ baseRef: "explicit-base", committedOnly: true }) }, retainedRoot, native, { candidateViews: candidateViews });
+	await __testing.executeReviewControllerOperation({ operation: "status", lineageId: "unretained" }, retainedRoot, native, { candidateViews: candidateViews });
+	await __testing.executeReviewControllerOperation({ operation: "status", lineageId }, otherRoot, native, { candidateViews: candidateViews });
 
 	assert.deepEqual(requests, [
 		{ cwd: retainedRoot, lineageId, agent: "pi", baseRef: "explicit-base", committedOnly: true },
@@ -183,20 +183,14 @@ test("STATUS preserves retained intended-untracked selection through selectorles
 		{ operation: "status", lineageId, input: JSON.stringify(selectedUntracked) },
 		cwd,
 		native,
-		undefined,
-		undefined,
-		undefined,
-		selections,
+		{ retainedUntrackedSelections: selections },
 	);
 	assert.equal(selections.size, 2);
 	await __testing.executeReviewControllerOperation(
 		{ operation: "status", lineageId, input: JSON.stringify({ baseRef: "main", committedOnly: true }) },
 		cwd,
 		native,
-		undefined,
-		undefined,
-		undefined,
-		selections,
+		{ retainedUntrackedSelections: selections },
 	);
 	assert.deepEqual(requests[1], { cwd, lineageId, agent: "pi", baseRef: "main", committedOnly: true });
 	assert.equal(selections.size, 1);
@@ -204,10 +198,7 @@ test("STATUS preserves retained intended-untracked selection through selectorles
 		{ operation: "status", lineageId },
 		cwd,
 		native,
-		undefined,
-		undefined,
-		undefined,
-		selections,
+		{ retainedUntrackedSelections: selections },
 	);
 	assert.equal(selections.size, 2);
 	const bindingA = bindingOf(initialStatus);
@@ -244,23 +235,23 @@ test("STATUS preserves retained intended-untracked selection through selectorles
 	assert.equal(captures, 1);
 
 	const override = { ...selectedUntracked, expectedUntrackedInventory: "override-inventory", intendedUntracked: ["generated/override.json"] };
-	await __testing.executeReviewControllerOperation({ operation: "status", lineageId, input: JSON.stringify(override) }, cwd, native, undefined, undefined, undefined, selections);
-	await __testing.executeReviewControllerOperation({ operation: "status", lineageId }, cwd, native, undefined, undefined, undefined, selections);
+	await __testing.executeReviewControllerOperation({ operation: "status", lineageId, input: JSON.stringify(override) }, cwd, native, { retainedUntrackedSelections: selections });
+	await __testing.executeReviewControllerOperation({ operation: "status", lineageId }, cwd, native, { retainedUntrackedSelections: selections });
 	assert.deepEqual(requests.slice(-2), Array.from({ length: 2 }, () => ({ cwd, lineageId, agent: "pi", ...override })));
 });
 
 test("route retention caps, rejects collisions and invalid selectors, and clears every terminal state", async () => {
 	const native = { targetStatus: async (request: Record<string, unknown>) => status(String(request.lineageId)) } as unknown as NativeReviewCli;
 	const selections = new Map();
-	for (let index = 0; index <= 64; index += 1) await __testing.executeReviewControllerOperation({ operation: "status", lineageId: `bounded-${index}`, input: JSON.stringify({ baseRef: `base-${index}`, committedOnly: true }) }, process.cwd(), native, undefined, undefined, undefined, selections);
+	for (let index = 0; index <= 64; index += 1) await __testing.executeReviewControllerOperation({ operation: "status", lineageId: `bounded-${index}`, input: JSON.stringify({ baseRef: `base-${index}`, committedOnly: true }) }, process.cwd(), native, { retainedUntrackedSelections: selections });
 	const evicted = await __testing.executeReviewCaptureOperation({ lineageId: "bounded-0", collectBinding: JSON.stringify(collectInput("bounded-0")) }, process.cwd(), native, undefined, undefined, selections, true);
 	const collision = new Map(), lineageId = "route-collision", input = correctionPlanInput(lineageId);
-	await __testing.executeReviewControllerOperation({ operation: "status", lineageId, input: JSON.stringify({ baseRef: "base-a", committedOnly: true }) }, process.cwd(), { targetStatus: async () => status(lineageId, [input]) } as unknown as NativeReviewCli, undefined, undefined, undefined, collision);
-	const rejected = await __testing.executeReviewControllerOperation({ operation: "status", lineageId, input: JSON.stringify({ baseRef: "base-b", committedOnly: true }) }, process.cwd(), { targetStatus: async () => status(lineageId, [input]) } as unknown as NativeReviewCli, undefined, undefined, undefined, collision);
+	await __testing.executeReviewControllerOperation({ operation: "status", lineageId, input: JSON.stringify({ baseRef: "base-a", committedOnly: true }) }, process.cwd(), { targetStatus: async () => status(lineageId, [input]) } as unknown as NativeReviewCli, { retainedUntrackedSelections: collision });
+	const rejected = await __testing.executeReviewControllerOperation({ operation: "status", lineageId, input: JSON.stringify({ baseRef: "base-b", committedOnly: true }) }, process.cwd(), { targetStatus: async () => status(lineageId, [input]) } as unknown as NativeReviewCli, { retainedUntrackedSelections: collision });
 	for (const state of ["invalidated", "approved", "escalated"]) {
 		const routes = new Map(), id = `terminal-${state}`;
-		await __testing.executeReviewControllerOperation({ operation: "status", lineageId: id, input: JSON.stringify({ baseRef: "base", committedOnly: true }) }, process.cwd(), { targetStatus: async () => status(id, [input]) } as unknown as NativeReviewCli, undefined, undefined, undefined, routes);
-		await __testing.executeReviewControllerOperation({ operation: "status", lineageId: id }, process.cwd(), { targetStatus: async () => status(id, [], state) } as unknown as NativeReviewCli, undefined, undefined, undefined, routes);
+		await __testing.executeReviewControllerOperation({ operation: "status", lineageId: id, input: JSON.stringify({ baseRef: "base", committedOnly: true }) }, process.cwd(), { targetStatus: async () => status(id, [input]) } as unknown as NativeReviewCli, { retainedUntrackedSelections: routes });
+		await __testing.executeReviewControllerOperation({ operation: "status", lineageId: id }, process.cwd(), { targetStatus: async () => status(id, [], state) } as unknown as NativeReviewCli, { retainedUntrackedSelections: routes });
 		assert.equal(routes.size, 0, state);
 	}
 	let calls = 0;

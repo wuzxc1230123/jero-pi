@@ -56,20 +56,34 @@ import {
 	INSPECT_UNTRACKED_SELECTION_NEXT_STEP, parseCanonicalReviewCaptureBinding,
 	reviewIntendedUntrackedInput
 } from "./jero-ai-review-select.ts";
+/** 控制器依赖：此前是 9 个尾随位置参数（递归自调用时错位风险高），
+ * 现收进一个可选对象——测试的 3 参调用形态保持不变。 */
+export interface ReviewControllerDependencies {
+	readonly signal?: AbortSignal;
+	readonly candidateViews?: CandidateViewRegistry | null;
+	readonly context?: ExtensionContext;
+	readonly retainedUntrackedSelections?: Map<string, RetainedNativeStatusSelection>;
+	readonly pendingReviewConsentRegistry?: PendingReviewConsentRegistry;
+	readonly pendingReviewConsentFallbackKey?: symbol;
+	readonly reviewConsentNow?: () => number;
+	readonly reviewConsentScheduleTimer?: (callback: () => void, delayMs: number) => ReturnType<typeof setTimeout>;
+	readonly intendedUntrackedSelection?: NativeIntendedUntrackedSelectionSubmission;
+}
+
 export async function executeReviewControllerOperation(
 	parametersValue: unknown,
 	sessionCwd: string,
 	nativeReviewCli: NativeReviewCli | null,
-	signal?: AbortSignal,
-	candidateViews: CandidateViewRegistry | null = new CandidateViewRegistry(),
-	context?: ExtensionContext,
-	retainedUntrackedSelections: Map<string, RetainedNativeStatusSelection> = new Map(),
-	pendingReviewConsentRegistry: PendingReviewConsentRegistry = processPendingReviewConsentRegistry,
-	pendingReviewConsentFallbackKey: symbol = Symbol("pending-review-consent-fallback"),
-	reviewConsentNow: () => number = Date.now,
-	reviewConsentScheduleTimer: (callback: () => void, delayMs: number) => ReturnType<typeof setTimeout> = setTimeout,
-	intendedUntrackedSelection?: NativeIntendedUntrackedSelectionSubmission,
+	dependencies: ReviewControllerDependencies = {},
 ): Promise<Record<string, unknown>> {
+	const { signal, context, intendedUntrackedSelection } = dependencies;
+	// 显式 null 是合法值（跳过候选视图物化），只有 undefined 才取默认。
+	const candidateViews = dependencies.candidateViews !== undefined ? dependencies.candidateViews : new CandidateViewRegistry();
+	const retainedUntrackedSelections = dependencies.retainedUntrackedSelections ?? new Map<string, RetainedNativeStatusSelection>();
+	const pendingReviewConsentRegistry = dependencies.pendingReviewConsentRegistry ?? processPendingReviewConsentRegistry;
+	const pendingReviewConsentFallbackKey = dependencies.pendingReviewConsentFallbackKey ?? Symbol("pending-review-consent-fallback");
+	const reviewConsentNow = dependencies.reviewConsentNow ?? (() => Date.now());
+	const reviewConsentScheduleTimer = dependencies.reviewConsentScheduleTimer ?? ((callback: () => void, delayMs: number) => setTimeout(callback, delayMs));
 	const parameters = parseReviewControllerParameters(parametersValue);
 	const defaultCwd = resolveReviewControllerWorkspaceRoot(parameters.workspaceRoot, sessionCwd, candidateViews, parameters.lineageId);
 	const pendingReviewConsentSession = pendingReviewConsentSessionKey(context, pendingReviewConsentFallbackKey);
@@ -604,7 +618,7 @@ export async function executeReviewControllerOperation(
 		const rejected = input === undefined || canonicalReviewCaptureBinding(input) !== canonicalBinding || exactCollectArgument(input, "target_identity") !== status.targetIdentity || exactCollectArgument(input, "projection") !== status.projection.projection || exactCollectArgument(input, "base_tree") !== status.projection.baseTree || exactCollectArgument(input, "candidate_tree") !== status.projection.currentCandidateTree || !Array.isArray(eligible) || selected.reason !== undefined || selected.intendedUntracked!.some((path) => !eligible.includes(path));
 		if (rejected) return { operation: parameters.operation, status: "blocked", outcome: "intended-untracked-selection-binding-rejected", mutation_performed: false, mutation_outcome: "none" };
 		const submission = { argumentTokens: input.submission!.argumentTokens, value: JSON.stringify({ schema: "gentle-ai.review-intended-untracked-selection/v1", untracked_scope: scope, expected_untracked_inventory: inventory, intended_untracked: selected.intendedUntracked }) };
-		const result = await executeReviewControllerOperation({ operation: REVIEW_CONTROLLER_OPERATION.START, ...(parameters.workspaceRoot === undefined ? {} : { workspaceRoot: parameters.workspaceRoot }), input: JSON.stringify({ mode: REVIEW_MODE.ORDINARY, untrackedScope: scope, expectedUntrackedInventory: inventory, intendedUntracked: selected.intendedUntracked }) }, sessionCwd, nativeReviewCli, signal, candidateViews, context, retainedUntrackedSelections, pendingReviewConsentRegistry, pendingReviewConsentFallbackKey, reviewConsentNow, reviewConsentScheduleTimer, submission);
+		const result = await executeReviewControllerOperation({ operation: REVIEW_CONTROLLER_OPERATION.START, ...(parameters.workspaceRoot === undefined ? {} : { workspaceRoot: parameters.workspaceRoot }), input: JSON.stringify({ mode: REVIEW_MODE.ORDINARY, untrackedScope: scope, expectedUntrackedInventory: inventory, intendedUntracked: selected.intendedUntracked }) }, sessionCwd, nativeReviewCli, { signal, candidateViews, context, retainedUntrackedSelections, pendingReviewConsentRegistry, pendingReviewConsentFallbackKey, reviewConsentNow, reviewConsentScheduleTimer, intendedUntrackedSelection: submission });
 		return { ...result, operation: parameters.operation };
 	}
 	if (parameters.operation === REVIEW_CONTROLLER_OPERATION.START) {
