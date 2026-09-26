@@ -38,7 +38,8 @@ export type JeroSddAttemptRefusalCode =
 	| "token-mismatch"
 	| "no-live-attempt"
 	| "stale-expected-revision"
-	| "ledger-corrupted";
+	| "ledger-corrupted"
+	| "untracked-scope-drift";
 
 export type JeroSddAttemptResultV1 =
 	| { readonly kind: "result"; readonly state: JeroSddAttemptState; readonly token?: string; readonly reason?: string; readonly existing?: { readonly requestId: string; readonly workUnit: string } }
@@ -99,7 +100,7 @@ function optionalRevision(value: string | undefined, label: string): string | un
 function validateSelection(selection: JeroSddAttemptSelectionV1): void {
 	const paths = selection.intendedUntracked ?? [];
 	if (selection.untrackedScope === "exclude" && paths.length > 0) throw new Error("untrackedScope exclude cannot carry untracked paths");
-	if (paths.some((path) => typeof path !== "string" || path.length === 0 || path.includes("\0") || path.startsWith("/") || path.split("/").includes(".."))) throw new Error("intendedUntracked must be unique non-empty repo-relative POSIX paths");
+	if (paths.some((path) => typeof path !== "string" || path.length === 0 || path.includes("\0") || path.startsWith("/") || path.includes("\\") || path.split("/").some((part) => part === "" || part === "." || part === ".."))) throw new Error("intendedUntracked must be unique non-empty repo-relative POSIX paths");
 	if (new Set(paths).size !== paths.length) throw new Error("intendedUntracked must not contain duplicates");
 	if (selection.expectedUntrackedInventory !== undefined && !/^sha256:[0-9a-f]{64}$/.test(selection.expectedUntrackedInventory)) throw new Error("expectedUntrackedInventory must be a canonical sha256 identity when present");
 }
@@ -274,6 +275,17 @@ export function settleJeroSddAttemptV1(context: JeroAuthorityContextV1, input: J
 			return { kind: "refused", code: "no-live-attempt", detail: "the recorded attempt is already settled" } as const;
 		}
 		if (live.token_hash !== sha256Hex(input.token)) return { kind: "refused", code: "token-mismatch", detail: "token does not admit the live attempt" } as const;
+		// R4：settle 声明的未跟踪选择必须逐字重放 acquire 冻结的三元组。
+		// 漂移（含"select 尝试在 settle 时省略声明"）以类型化拒绝暴露，
+		// 绝不静默采纳 settle 时的替代清单。
+		const declaredScope = input.untrackedScope ?? "exclude";
+		const declaredPaths = input.intendedUntracked ?? [];
+		if (declaredScope !== live.untracked_scope
+			|| (declaredScope === "select"
+				&& (declaredPaths.length !== live.intended_untracked.length
+					|| declaredPaths.some((path, index) => path !== live.intended_untracked[index])))) {
+			return { kind: "refused", code: "untracked-scope-drift", detail: "settle must replay the untracked scope frozen at acquire verbatim" } as const;
+		}
 		const settledAttempt: JeroSddAttemptRecordV1 = {
 			...live,
 			settlement: {
@@ -285,7 +297,9 @@ export function settleJeroSddAttemptV1(context: JeroAuthorityContextV1, input: J
 				harness_disposition: input.harnessDisposition,
 				cleanup_evidence: input.cleanupEvidence,
 				process_evidence: input.processEvidence,
-				settled_untracked: [...(input.intendedUntracked ?? [])],
+				// R4：终局结算逐字重放 acquire 时冻结的未跟踪范围——
+				// settle 输入绝不改写台账里的权威审计记录。
+				settled_untracked: live.untracked_scope === "select" ? [...live.intended_untracked] : [],
 			},
 		};
 		const attempts = [...read.ledger.attempts];

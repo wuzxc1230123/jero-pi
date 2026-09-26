@@ -7,7 +7,7 @@ import type { JeroLensName } from "./protocol.ts";
 import type { JeroFindingClassificationSubmissionV1, JeroLensResultSubmissionV1 } from "./finalize.ts";
 import { admitJeroReviewerResultV1 } from "./result-artifacts.ts";
 import { capturedJeroArtifactsCompleteV1, jeroReviewerResultsDirectoryV1 } from "./result-artifacts.ts";
-import { decodeJeroRefuterResolutionsV1, decodeJeroReviewerResultEnvelopeV1 as _unusedEnvelope } from "./capture.ts";
+import { decodeJeroRefuterResolutionsV1 } from "./capture.ts";
 import { pendingRefuterRequestHashV1, type JeroReviewFinalizeInputV1 } from "./finalize.ts";
 import { reviewFinalizeV1 } from "./finalize.ts";
 import { reviewValidateV1 } from "./validate.ts";

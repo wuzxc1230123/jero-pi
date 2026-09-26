@@ -80,7 +80,10 @@ test("expectedRevision pins the ledger revision fail-closed", (t) => {
 
 test("settle enforces the upstream evidence pairing and single finalization, retaining untracked scope verbatim", (t) => {
 	const { repo, context } = harness(t);
-	const acquired = acquireJeroSddAttemptV1(context, { workspaceRoot: repo, ...acquireBase, requestId: "acq-1", expectedRevision: "" });
+	const acquired = acquireJeroSddAttemptV1(context, {
+		workspaceRoot: repo, ...acquireBase, requestId: "acq-1", expectedRevision: "",
+		untrackedScope: "select", intendedUntracked: ["notes/draft.md", "tmp/scratch.txt"],
+	});
 	if (acquired.kind !== "result" || acquired.state !== "proceed") throw new Error("acquire did not proceed");
 	const token = acquired.token!;
 	const pairing: Array<[string, Record<string, unknown>]> = [
@@ -91,19 +94,24 @@ test("settle enforces the upstream evidence pairing and single finalization, ret
 		["bad harness disposition", { outcome: "failed", evidenceRevision: EVIDENCE, harnessDisposition: "lost" }],
 	];
 	for (const [label, override] of pairing) {
-		const refused = settleJeroSddAttemptV1(context, { workspaceRoot: repo, ...settleBase, requestId: "s-0", token, ...override } as never);
+		const refused = settleJeroSddAttemptV1(context, { workspaceRoot: repo, ...settleBase, requestId: "s-0", token, untrackedScope: "select", intendedUntracked: ["notes/draft.md", "tmp/scratch.txt"], ...override } as never);
 		assert.equal(refused.kind, "refused", label);
 		if (refused.kind === "refused") assert.equal(refused.code, "invalid-request", label);
 	}
-	const wrongToken = settleJeroSddAttemptV1(context, { workspaceRoot: repo, ...settleBase, requestId: "s-2", token: "bogus", outcome: "interrupted" });
+	const wrongToken = settleJeroSddAttemptV1(context, { workspaceRoot: repo, ...settleBase, requestId: "s-2", token: "bogus", outcome: "interrupted", untrackedScope: "select", intendedUntracked: ["notes/draft.md", "tmp/scratch.txt"] });
 	assert.equal(wrongToken.kind === "refused" && wrongToken.code, "token-mismatch");
+	// R4 漂移：settle 声明必须逐字重放 acquire 冻结的三元组。
+	const drifted = settleJeroSddAttemptV1(context, { workspaceRoot: repo, ...settleBase, requestId: "s-3", token, outcome: "failed", evidenceRevision: EVIDENCE, untrackedScope: "select", intendedUntracked: ["other/path.md"] });
+	assert.equal(drifted.kind === "refused" && drifted.code, "untracked-scope-drift");
+	const omitted = settleJeroSddAttemptV1(context, { workspaceRoot: repo, ...settleBase, requestId: "s-4", token, outcome: "failed", evidenceRevision: EVIDENCE });
+	assert.equal(omitted.kind === "refused" && omitted.code, "untracked-scope-drift");
 	const settled = settleJeroSddAttemptV1(context, {
 		workspaceRoot: repo, ...settleBase, requestId: "s-1", token,
 		outcome: "failed", evidenceRevision: EVIDENCE,
 		untrackedScope: "select", intendedUntracked: ["notes/draft.md", "tmp/scratch.txt"],
 	});
 	assert.equal(settled.kind === "result" && settled.state, "proceed");
-	const replay = settleJeroSddAttemptV1(context, { workspaceRoot: repo, ...settleBase, requestId: "s-1", token, outcome: "failed", evidenceRevision: EVIDENCE });
+	const replay = settleJeroSddAttemptV1(context, { workspaceRoot: repo, ...settleBase, requestId: "s-1", token, outcome: "failed", evidenceRevision: EVIDENCE, untrackedScope: "select", intendedUntracked: ["notes/draft.md", "tmp/scratch.txt"] });
 	assert.deepEqual(replay.kind === "result" ? { state: replay.state, reason: replay.reason } : replay, { state: "complete", reason: "attempt already settled failed" });
 	// R4 + R2 on disk: verbatim scope, no plaintext token.
 	const attemptsDir = join(repo, ".git", "jero-review", "sdd-attempts");

@@ -104,11 +104,23 @@ export function reviewAcknowledgeV1(context: JeroAuthorityContextV1, input: Jero
 			operation: "acknowledge",
 			idempotencyKey,
 			requestHash,
-			apply: (current) => ({
+			apply: (current) => {
+				// 锁内复检（对齐 finalize/validate 的纪律）：外层读数与本次
+				// runOperation 之间，并发维护操作可能已把记录变为
+				// invalidated 或推进修订号——焚毁绝不落在过期的前置条件上，
+				// 且被拒的归约绝不进入日志。
+				if (current.state.state !== "approved") {
+					throw new JeroAcknowledgeRefusalError({ kind: "refused", code: "acknowledge-requires-approved", detail: `acknowledge requires state=approved (lineage is in ${current.state.state})` });
+				}
+				if (current.state.snapshot.identity !== input.targetIdentity || current.revision !== input.expectedRevision) {
+					throw new JeroAcknowledgeRefusalError({ kind: "refused", code: "binding-mismatch", detail: "authority binding drifted before the burn was journaled" });
+				}
+				if (current.request_journal.some((entry) => entry.operation === "acknowledge" && entry.status === "completed")) {
+					throw new JeroAcknowledgeRefusalError({ kind: "refused", code: "already-consumed", detail: "this approved authority was already consumed by acknowledgement" });
+				}
 				// 状态保持 `approved`（终局）；日志条目即焚毁。
-				draft: { state: current.state, request_journal: current.request_journal },
-				result,
-			}),
+				return { draft: { state: current.state, request_journal: current.request_journal }, result };
+			},
 		});
 		// 权威结果必须原样通过权威 JSON 的往返校验。
 		if (canonicalJsonV1(outcome.result) !== canonicalJsonV1(result)) {
@@ -116,6 +128,16 @@ export function reviewAcknowledgeV1(context: JeroAuthorityContextV1, input: Jero
 		}
 		return { kind: "acknowledged", result, replayed: false };
 	} catch (error) {
+		if (error instanceof JeroAcknowledgeRefusalError) return error.refusal;
 		return { kind: "refused", code: "authority-unavailable", detail: error instanceof Error ? error.message : String(error) };
+	}
+}
+
+class JeroAcknowledgeRefusalError extends Error {
+	readonly refusal: JeroReviewAcknowledgeResultV1;
+	constructor(refusal: JeroReviewAcknowledgeResultV1) {
+		super("apply-refused");
+		this.name = "JeroAcknowledgeRefusalError";
+		this.refusal = refusal;
 	}
 }

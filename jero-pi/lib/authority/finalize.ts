@@ -17,7 +17,9 @@ import { jeroReceiptPathV1, createJeroReceiptEnvelopeV1 } from "./receipts.ts";
 import { projectJeroReviewStateV1, checkJeroReviewTransitionV1, isJeroOrdinaryModeV1, isJeroTerminalReviewStateV1, type JeroEscalationCause, type JeroWireReviewState } from "./transitions.ts";
 import { parseNativeCompactFinalizeInput, CompactReviewContractError, type CompactFinalizeContractInput } from "../review-compact-contract.ts";
 import type { CorrectionOutcome } from "../review-correction-lifecycle.ts";
-import { writeFileSync, mkdirSync } from "node:fs";
+import { writeFileSync, mkdirSync, renameSync, rmSync } from "node:fs";
+import { randomUUID } from "node:crypto";
+import { basename, dirname, join } from "node:path";
 import { canonicalJsonV1 } from "../review-canonical.ts";
 import { capturedJeroArtifactsCompleteV1 } from "./result-artifacts.ts";
 
@@ -188,8 +190,8 @@ function decodeFinalizeExtensionsV1(input: JeroReviewFinalizeInputV1): string | 
 	return undefined;
 }
 
-/** §D.8 回执签发：封套 + `lineages/<id>/review-receipt.json` + 正文的 CAS 安装。 */
-export function issueJeroReviewReceiptV1(context: JeroAuthorityContextV1, state: JeroReviewTransactionStateV1): { ok: true; envelope: JeroReceiptEnvelopeV1 } | { ok: false; detail: string } {
+/** §D.8 回执派生：纯内容派生的封套（哈希进终局结果），不含任何写盘。 */
+export function deriveJeroReviewReceiptV1(state: JeroReviewTransactionStateV1): { ok: true; envelope: JeroReceiptEnvelopeV1 } | { ok: false; detail: string } {
 	const body: JeroReceiptBodyV1 = {
 		schema: JERO_RECEIPT_BODY_SCHEMA,
 		lineage_id: state.lineage_id,
@@ -206,23 +208,44 @@ export function issueJeroReviewReceiptV1(context: JeroAuthorityContextV1, state:
 		evidence_hash: state.evidence_hash,
 		counters: state.counters,
 	};
-	let envelope: JeroReceiptEnvelopeV1;
 	try {
-		envelope = createJeroReceiptEnvelopeV1(body);
+		return { ok: true, envelope: createJeroReceiptEnvelopeV1(body) };
 	} catch (error) {
 		return { ok: false, detail: error instanceof Error ? error.message : String(error) };
 	}
+}
+
+/** §D.8 回执落盘：`lineages/<id>/review-receipt.json` 临时文件+rename 原子替换
+ * （崩溃窗口内绝不留半写回执），随后做正文的 CAS 安装。内容派生因此幂等。 */
+export function persistJeroReviewReceiptV1(context: JeroAuthorityContextV1, envelope: JeroReceiptEnvelopeV1): { ok: true } | { ok: false; detail: string } {
 	try {
-		const receiptPath = jeroReceiptPathV1(context.store.store_root, state.lineage_id);
-		mkdirSync(context.store.store_root, { recursive: true });
+		const receiptPath = jeroReceiptPathV1(context.store.store_root, envelope.body.lineage_id);
+		mkdirSync(dirname(receiptPath), { recursive: true });
+		const staging = join(dirname(receiptPath), `.${basename(receiptPath)}.tmp-${randomUUID()}`);
 		// 权威 JSON“不带”尾随换行：parseCanonicalJsonV1 会重新序列化并
 		// 比较，因此该文件必须是字节权威的。
-		writeFileSync(receiptPath, canonicalJsonV1(envelope), { mode: 0o600 });
+		writeFileSync(staging, canonicalJsonV1(envelope), { mode: 0o600 });
+		try {
+			renameSync(staging, receiptPath);
+		} catch (error) {
+			rmSync(staging, { force: true });
+			throw error;
+		}
 		context.cas.put(envelope.body, { schema: JERO_RECEIPT_BODY_SCHEMA });
 	} catch (error) {
 		return { ok: false, detail: error instanceof Error ? error.message : String(error) };
 	}
-	return { ok: true, envelope };
+	return { ok: true };
+}
+
+/** §D.8 回执签发：派生 + 落盘（非记日志路径使用；记日志路径在终局日志
+ * 落盘成功后调用，见 runJournaledV1 / runValidateOperationV1）。 */
+export function issueJeroReviewReceiptV1(context: JeroAuthorityContextV1, state: JeroReviewTransactionStateV1): { ok: true; envelope: JeroReceiptEnvelopeV1 } | { ok: false; detail: string } {
+	const derived = deriveJeroReviewReceiptV1(state);
+	if (derived.ok === false) return derived;
+	const persisted = persistJeroReviewReceiptV1(context, derived.envelope);
+	if (persisted.ok === false) return persisted;
+	return { ok: true, envelope: derived.envelope };
 }
 
 interface JeroEscalationMarkerV1 {
@@ -332,6 +355,25 @@ function runJournaledV1(context: JeroAuthorityContextV1, record: JeroLineageStat
 			},
 		});
 		const result = outcome.result;
+		// F8 顺序（对齐 start.ts 的"先日志后回执"）：终局结果的回执在
+		// 日志落盘成功之后，从已保存状态内容派生并原子写入。apply 内只
+		// 做纯派生（receipt_hash 进结果）——磁盘上不再可能出现先于日志
+		// 的孤儿回执；落盘失败不回滚日志（canonical_result 已携带
+		// receipt_hash，崩溃窗口由 start.ts 的内容派生治愈路径闭环，精确
+		// 重放也会在此幂等重签）。
+		if (result.kind === "terminal") {
+			const reloaded = context.lineages.load(record.lineage_id);
+			if (reloaded.kind !== "ok") {
+				return { kind: "refused", code: "authority-unavailable", detail: "terminal state was journaled, but its lineage could not be reloaded for receipt issuance" };
+			}
+			const issued = issueJeroReviewReceiptV1(context, reloaded.record.state);
+			if (issued.ok === false) {
+				return { kind: "refused", code: "authority-unavailable", detail: `terminal state was journaled, but its receipt could not be persisted: ${issued.detail}` };
+			}
+			if (issued.envelope.receipt_hash !== result.receipt_hash) {
+				return { kind: "refused", code: "authority-unavailable", detail: "terminal state was journaled, but its receipt derivation drifted from the recorded result" };
+			}
+		}
 		// 存储的权威结果省略保存修订号（它派生自存储它的日志）；把修订号
 		// 补进现场回复。
 		if (result.kind === "frozen" || result.kind === "refuter_required" || result.kind === "evidence_resolved" || result.kind === "fix_authorized" || result.kind === "fix_applied") {
@@ -593,7 +635,7 @@ function finalizeResolveEvidenceV1(context: JeroAuthorityContextV1, record: Jero
 			next.follow_ups = followUps;
 			next.fix_finding_ids = [];
 			escalateStateV1(next, { cause, finding_ids: [...new Set(escalationIds)].toSorted() });
-			const receipt = issueJeroReviewReceiptV1(context, next);
+			const receipt = deriveJeroReviewReceiptV1(next);
 			if (receipt.ok === false) return { kind: "refused", code: "authority-unavailable", detail: receipt.detail };
 			return {
 				kind: "terminal",
@@ -620,7 +662,7 @@ function finalizeResolveEvidenceV1(context: JeroAuthorityContextV1, record: Jero
 function escalateNowV1(context: JeroAuthorityContextV1, record: JeroLineageStateFileV1, input: JeroReviewFinalizeInputV1, operation: "resolve-evidence", marker: JeroEscalationMarkerV1): JeroReviewFinalizeResultV1 {
 	return runJournaledV1(context, record, operation, input, (next) => {
 		escalateStateV1(next, marker);
-		const receipt = issueJeroReviewReceiptV1(context, next);
+		const receipt = deriveJeroReviewReceiptV1(next);
 		if (receipt.ok === false) return { kind: "refused", code: "authority-unavailable", detail: receipt.detail };
 		return {
 			kind: "terminal",
@@ -720,7 +762,7 @@ function finalizeApplyFixV1(context: JeroAuthorityContextV1, record: JeroLineage
 			if (!transition.legal) return { kind: "refused", code: "invalid-state", detail: transition.reason };
 			next.actual_correction_lines = actualLines;
 			escalateStateV1(next, { cause: "correction_budget_exceeded", finding_ids: [...next.fix_finding_ids] });
-			const receipt = issueJeroReviewReceiptV1(context, next);
+			const receipt = deriveJeroReviewReceiptV1(next);
 			if (receipt.ok === false) return { kind: "refused", code: "authority-unavailable", detail: receipt.detail };
 			return {
 				kind: "terminal",
@@ -781,7 +823,7 @@ function finalizeVerifyV1(context: JeroAuthorityContextV1, record: JeroLineageSt
 		if (next.state === "escalated") {
 			const cause: JeroEscalationCause = (next.fix_caused_findings ?? []).length > 0 ? "targeted_validator_rejected" : "unresolved_severe_findings";
 			escalateStateV1(next, { cause, finding_ids: next.fix_caused_findings.map(({ id }) => id) });
-			const receipt = issueJeroReviewReceiptV1(context, next);
+			const receipt = deriveJeroReviewReceiptV1(next);
 			if (receipt.ok === false) return { kind: "refused", code: "authority-unavailable", detail: receipt.detail };
 			return {
 				kind: "terminal",
@@ -791,7 +833,7 @@ function finalizeVerifyV1(context: JeroAuthorityContextV1, record: JeroLineageSt
 				receipt_hash: receipt.envelope.receipt_hash,
 			};
 		}
-		const receipt = issueJeroReviewReceiptV1(context, next);
+		const receipt = deriveJeroReviewReceiptV1(next);
 		if (receipt.ok === false) return { kind: "refused", code: "authority-unavailable", detail: receipt.detail };
 		return {
 			kind: "terminal",

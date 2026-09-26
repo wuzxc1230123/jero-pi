@@ -11,7 +11,7 @@ import {
 	type CorrectionOutcome,
 	type CorrectionStatus,
 } from "../review-correction-lifecycle.ts";
-import { issueJeroReviewReceiptV1, type JeroFindingSubmissionRowV1 } from "./finalize.ts";
+import { deriveJeroReviewReceiptV1, issueJeroReviewReceiptV1, type JeroFindingSubmissionRowV1 } from "./finalize.ts";
 import { isJeroLineageId } from "./store-root.ts";
 import { canonicalJsonV1 } from "../review-canonical.ts";
 
@@ -183,7 +183,7 @@ export function reviewValidateV1(context: JeroAuthorityContextV1, input: JeroRev
 			};
 			next.state = "escalated";
 			next.invalidation_reason = "escalation cause targeted_validator_rejected: procedural tooling failed while capturing verification evidence";
-			const receipt = issueJeroReviewReceiptV1(context, next);
+			const receipt = deriveJeroReviewReceiptV1(next);
 			if (receipt.ok === false) return { kind: "refused", code: "authority-unavailable", detail: receipt.detail };
 			return {
 				kind: "terminal",
@@ -215,7 +215,7 @@ export function reviewValidateV1(context: JeroAuthorityContextV1, input: JeroRev
 		const escalate = (cause: JeroEscalationCause, detail: string): JeroReviewValidateResultV1 => {
 			next.state = "escalated";
 			next.invalidation_reason = `escalation cause ${cause}: ${detail}`;
-			const receipt = issueJeroReviewReceiptV1(context, next);
+			const receipt = deriveJeroReviewReceiptV1(next);
 			if (receipt.ok === false) return { kind: "refused", code: "authority-unavailable", detail: receipt.detail };
 			return {
 				kind: "terminal",
@@ -283,13 +283,47 @@ function runValidateOperationV1(context: JeroAuthorityContextV1, record: JeroLin
 			apply: (current) => {
 				const next = clone(current.state);
 				const result = apply(next);
+				// 被拒绝的归约绝不能进入日志（对齐 finalize 的 F14 纪律）：
+				// apply 可能在返回 refused 前已改动草稿（correction_evidence、
+				// escalated、fix_caused_findings），抛出以中止保存——已改动的
+				// 草稿被丢弃，拒绝以类型化结果原样返回，绝不作为
+				// canonical_result 持久化（否则精确重放会永远返回该拒绝，
+				// 而记录状态已经漂移）。
+				if (result.kind === "refused") throw new JeroValidateApplyRefusalError(result);
 				return { draft: { state: next, request_journal: current.request_journal }, result };
 			},
 		});
 		const result = outcome.result;
+		// F8 顺序（对齐 finalize 的 runJournaledV1）：终局（escalated）结果
+		// 的回执在日志落盘成功之后从已保存状态内容派生并原子写入；apply
+		// 内只做纯派生（receipt_hash 进结果），磁盘上不再有先于日志的孤儿
+		// 回执，精确重放在此幂等重签。
+		if (result.kind === "terminal") {
+			const reloaded = context.lineages.load(record.lineage_id);
+			if (reloaded.kind !== "ok") {
+				return { kind: "refused", code: "authority-unavailable", detail: "terminal state was journaled, but its lineage could not be reloaded for receipt issuance" };
+			}
+			const issued = issueJeroReviewReceiptV1(context, reloaded.record.state);
+			if (issued.ok === false) {
+				return { kind: "refused", code: "authority-unavailable", detail: `terminal state was journaled, but its receipt could not be persisted: ${issued.detail}` };
+			}
+			if (issued.envelope.receipt_hash !== result.receipt_hash) {
+				return { kind: "refused", code: "authority-unavailable", detail: "terminal state was journaled, but its receipt derivation drifted from the recorded result" };
+			}
+		}
 		if (result.kind === "validated" || result.kind === "recapture_required") return { ...result, revision: outcome.revision };
 		return result;
 	} catch (error) {
+		if (error instanceof JeroValidateApplyRefusalError) return error.refusal;
 		return { kind: "refused", code: "authority-unavailable", detail: error instanceof Error ? error.message : String(error) };
+	}
+}
+
+class JeroValidateApplyRefusalError extends Error {
+	readonly refusal: JeroReviewValidateResultV1;
+	constructor(refusal: JeroReviewValidateResultV1) {
+		super("apply-refused");
+		this.name = "JeroValidateApplyRefusalError";
+		this.refusal = refusal;
 	}
 }

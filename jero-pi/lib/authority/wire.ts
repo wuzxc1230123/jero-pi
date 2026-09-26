@@ -1,7 +1,7 @@
 import type { ReviewConsentChoiceV2, ReviewConsentV3, ReviewStatusV3 } from "./wire-contract.ts";
 import type { JeroReviewStatusResultV1 } from "./status.ts";
 import type { JeroReviewStartResultV1 } from "./start.ts";
-import type { JeroSnapshotDerivationV1 } from "./snapshots.ts";
+import { type JeroSnapshotDerivationV1, jeroUntrackedInventoryDigestV1 } from "./snapshots.ts";
 
 // P4d：jero→线上投影层。扩展的评审控制器机制
 // （negotiatedStatusForHostTransport、mapNativeTargetStatus、collect 绑定
@@ -107,11 +107,18 @@ export function projectJeroStatusToWireV1(status: Extract<JeroReviewStatusResult
 			projection: status.projection,
 			baseTree: record.base_tree,
 			initialReviewTree: record.initial_review_tree,
+			// currentCandidateTree 刻意取"本次新鲜派生"的 initial_review_tree：
+			// workspace 投影下它与 complete_snapshot_tree 恒等；staged 投影下
+			// 它指向被冻结的暂存树（候选正是那棵树），换成 complete_snapshot_tree
+			// 会让 staged 评审的候选绑定失配。
 			currentCandidateTree: record.initial_review_tree,
 			pathsDigest: `sha256:${derivation.changed_path_manifest_sha256}`,
 			paths: derivation.changed_path_manifest.map((entry) => entry.path),
 			intendedUntracked: [...record.intended_untracked],
-			intendedUntrackedProof: `sha256:${derivation.changed_path_manifest_sha256}`,
+			// 与 start.ts 的 intended_untracked_proof 同源（spec §B.2 的
+			// 清单摘要）：证明必须能从随行的 intendedUntracked 名称表重算，
+			// 复用 changed_path_manifest 摘要会让下游校验必败。
+			intendedUntrackedProof: jeroUntrackedInventoryDigestV1(record.intended_untracked),
 			initialSnapshotIdentity: `sha256:${derivation.snapshot_id}`,
 			currentSnapshotIdentity: `sha256:${derivation.snapshot_id}`,
 		},
