@@ -1,4 +1,4 @@
-// jero-agents 测试第 2 段（共 3 段；夹具在 jero-agents-shared.ts）。
+// jero-agents 测试第 2 段（共 4 段；夹具在 jero-agents-shared.ts）。
 // 机械平移自原 jero-agents.test.ts，语义零改动。
 
 import { default as assert } from "node:assert/strict";
@@ -400,7 +400,7 @@ test("agentsEnabled and agentsCollapseKey read their flags and stay off inside a
 	assert.equal(agentsEnabled({ JERO_PI_AGENTS: "off" }), false);
 	assert.equal(agentsEnabled({ JERO_PI_AGENTS_CHILD: "1" }), false);
 	assert.equal(agentsCollapseKey({}), "ctrl+shift+a");
-	assert.equal(agentsCollapseKey({ JERO_PI_AGENTS_KEY: "off" }), undefined);
+	assert.equal(agentsCollapseKey({ JERO_PI_AGENTS_COLLAPSE_KEY: "off" }), undefined);
 	assert.equal(agentsViewKey({}), "alt+a");
 	assert.equal(agentsViewKey({ JERO_PI_AGENTS_VIEW_KEY: "off" }), undefined);
 	assert.equal(agentsStopKey({}), "alt+s");

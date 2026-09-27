@@ -353,22 +353,22 @@ function runJudgmentDayOperationV1(context: JeroAuthorityContextV1, record: Jero
 			apply: (current) => {
 				const next = cloneStateV1(current.state);
 				const result = apply(next);
-				if (result.kind === "refused") throw new JeroJudgmentDayApplyRefusal(result);
+				if (result.kind === "refused") throw new JeroJudgmentDayApplyRefusalError(result);
 				return { draft: { state: next, request_journal: current.request_journal }, result };
 			},
 		});
 		return outcome.result;
 	} catch (error) {
-		if (error instanceof JeroJudgmentDayApplyRefusal) return error.refusal;
+		if (error instanceof JeroJudgmentDayApplyRefusalError) return error.refusal;
 		return { kind: "refused", code: "authority-unavailable", detail: error instanceof Error ? error.message : String(error) };
 	}
 }
 
-class JeroJudgmentDayApplyRefusal extends Error {
+class JeroJudgmentDayApplyRefusalError extends Error {
 	readonly refusal: JeroJudgmentDayResultV1;
 	constructor(refusal: JeroJudgmentDayResultV1) {
 		super("judgment-day-apply-refused");
-		this.name = "JeroJudgmentDayApplyRefusal";
+		this.name = "JeroJudgmentDayApplyRefusalError";
 		this.refusal = refusal;
 	}
 }

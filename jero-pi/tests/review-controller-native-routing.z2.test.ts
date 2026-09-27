@@ -1,4 +1,4 @@
-// review-controller-native-routing 测试第 2 段（共 3 段；夹具在 review-controller-native-routing-shared.ts）。
+// review-controller-native-routing 测试第 2 段（共 4 段；夹具在 review-controller-native-routing-shared.ts）。
 // 机械平移自原 review-controller-native-routing.test.ts，语义零改动。
 
 import { default as assert } from "node:assert/strict";

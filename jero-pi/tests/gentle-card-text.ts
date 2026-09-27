@@ -1,8 +1,7 @@
 import { stripAnsi } from "../lib/terminal-theme.ts";
 
-// Test-only readers for Gentle AI cards: the title text in the top rule,
-// the tone tag around it (with tagged fake themes), and the body between
-// the rules with the frame removed. They accept both plain and tagged output.
+// 仅测试用的卡片读取器：顶栏内的标题文本、其两侧的语气标签（配合带标签
+// 的假主题），以及去掉边框后两栏之间的正文。同时接受纯文本与带标签输出。
 
 const TAG = /<\/?[a-zA-Z]+>/g;
 const EDGE_LEFT = /^(?:<[a-zA-Z]+>)?│(?:<\/[a-zA-Z]+>)? ?/;

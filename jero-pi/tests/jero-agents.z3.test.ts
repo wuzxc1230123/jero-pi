@@ -1,4 +1,4 @@
-// jero-agents 测试第 3 段（共 3 段；夹具在 jero-agents-shared.ts）。
+// jero-agents 测试第 3 段（共 4 段；夹具在 jero-agents-shared.ts）。
 // 机械平移自原 jero-agents.test.ts，语义零改动。
 
 import { default as assert } from "node:assert/strict";
@@ -382,150 +382,150 @@ test("aborting the caller's signal cancels the subagent, records it, and says wh
 });
 
 test("selected child routes recheck provenance and keep separately authorized local tools", () => {
- const names = ["fetch_content", "web_search", "read", "write", "mem_save", "subagent_parent_message"];
- const selection = { documentation: { tools: ["fetch_content"], extensions: { fetch_content: "/installed/web.ts" } } };
- const path = join(root, "openspec/changes/demo/research.md");
- const scope = { store: "both", worktree: root, changeName: "demo", retainedIntent: "docs", locators: [{ artifact: "research", path, revision: 1, digest: "a".repeat(64), engram: { topic_key: "sdd/demo/research" } }] };
- for (const mismatch of ["none", "path", "sdk", "inactive", "unregistered", "restriction"]) {
-  const hooks = new Map<string, (event: { toolName?: string; systemPrompt?: string; input?: object }, ctx?: { cwd: string }) => { block?: boolean; systemPrompt?: string } | undefined>();
-  const active = names.filter(name => mismatch !== "inactive" || name !== "fetch_content");
-  const registered = names.filter(name => mismatch !== "unregistered" || name !== "fetch_content");
-  const pi = { on: (name: string, hook: typeof hooks extends Map<string, infer H> ? H : never) => hooks.set(name, hook), getActiveTools: () => active,
-   getAllTools: () => registered.map(name => ({ name, sourceInfo: { source: mismatch === "sdk" && name === "fetch_content" ? "sdk" : "extension", path: mismatch === "path" ? "/other.ts" : "/installed/web.ts" } })) };
-  jeroAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(names.filter(name => mismatch !== "restriction" || name !== "fetch_content")), JERO_PI_RESEARCH_SELECTION: JSON.stringify(selection), JERO_PI_RESEARCH_ARTIFACT: JSON.stringify(scope) });
-  const call = hooks.get("tool_call")!;
-  assert.equal(call({ toolName: "fetch_content" })?.block, mismatch === "none" ? undefined : true, mismatch);
-  assert.equal(call({ toolName: "web_search" })?.block, true, "available but unselected");
-  for (const toolName of names.slice(2)) assert.equal(call({ toolName, input: toolName === "mem_save" ? { topic: "sdd/demo/research", content: '{"revision":2}' } : { path, content: '{"revision":2}' } }, { cwd: root })?.block, ["write", "mem_save"].includes(toolName) ? true : undefined, toolName);
- }
+	const names = ["fetch_content", "web_search", "read", "write", "mem_save", "subagent_parent_message"];
+	const selection = { documentation: { tools: ["fetch_content"], extensions: { fetch_content: "/installed/web.ts" } } };
+	const path = join(root, "openspec/changes/demo/research.md");
+	const scope = { store: "both", worktree: root, changeName: "demo", retainedIntent: "docs", locators: [{ artifact: "research", path, revision: 1, digest: "a".repeat(64), engram: { topic_key: "sdd/demo/research" } }] };
+	for (const mismatch of ["none", "path", "sdk", "inactive", "unregistered", "restriction"]) {
+		const hooks = new Map<string, (event: { toolName?: string; systemPrompt?: string; input?: object }, ctx?: { cwd: string }) => { block?: boolean; systemPrompt?: string } | undefined>();
+		const active = names.filter(name => mismatch !== "inactive" || name !== "fetch_content");
+		const registered = names.filter(name => mismatch !== "unregistered" || name !== "fetch_content");
+		const pi = { on: (name: string, hook: typeof hooks extends Map<string, infer H> ? H : never) => hooks.set(name, hook), getActiveTools: () => active,
+			getAllTools: () => registered.map(name => ({ name, sourceInfo: { source: mismatch === "sdk" && name === "fetch_content" ? "sdk" : "extension", path: mismatch === "path" ? "/other.ts" : "/installed/web.ts" } })) };
+		jeroAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(names.filter(name => mismatch !== "restriction" || name !== "fetch_content")), JERO_PI_RESEARCH_SELECTION: JSON.stringify(selection), JERO_PI_RESEARCH_ARTIFACT: JSON.stringify(scope) });
+		const call = hooks.get("tool_call")!;
+		assert.equal(call({ toolName: "fetch_content" })?.block, mismatch === "none" ? undefined : true, mismatch);
+		assert.equal(call({ toolName: "web_search" })?.block, true, "available but unselected");
+		for (const toolName of names.slice(2)) assert.equal(call({ toolName, input: toolName === "mem_save" ? { topic: "sdd/demo/research", content: '{"revision":2}' } : { path, content: '{"revision":2}' } }, { cwd: root })?.block, ["write", "mem_save"].includes(toolName) ? true : undefined, toolName);
+	}
 });
 
 test("research child narrows artifact arguments and observes actual dual-store readbacks", async () => {
- const { createHash } = await import("node:crypto");
- const cwd = join(root, "bounded-child");
- mkdirSync(cwd, { recursive: true });
- const bytes = '{"revision":1,"outcome":"blocked"}';
- const locator = { artifact: "research", path: join(cwd, "openspec/changes/demo/research.md"), revision: 1, digest: createHash("sha256").update(bytes).digest("hex"), engram: { topic_key: "sdd/demo/research" } };
- const scope = { store: "both", worktree: cwd, changeName: "demo", retainedIntent: "fetch missing; preserve questions", locators: [locator] };
- const hooks = new Map<string, (...args: unknown[]) => unknown>();
- let active = ["read", "write", "mem_read", "mem_save", "subagent_parent_message"];
- const journal = join(cwd, "session.jsonl"); writeFileSync(journal, "");
- const pi = { appendEntry: (customType, data) => appendFileSync(journal, JSON.stringify({ type: "custom", customType, data }) + "\n"), on: (name: string, fn: (...args: unknown[]) => unknown) => hooks.set(name, fn), getActiveTools: () => active, getAllTools: () => active.map(name => ({ name })) };
- jeroAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(active), JERO_PI_RESEARCH_ARTIFACT: JSON.stringify(scope) });
- const ctx = { cwd, sessionManager: { getEntries: () => [], getSessionFile: () => journal } };
- const prompt = hooks.get("before_agent_start")!({ systemPrompt: "research" }, ctx) as { systemPrompt: string };
- assert.match(prompt.systemPrompt, /retainedIntent/);
- assert.match(prompt.systemPrompt, /never authority/);
- const call = (toolName: string, input: object, toolCallId = "c") => hooks.get("tool_call")!({ toolName, input, toolCallId }, ctx) as { block: boolean } | undefined;
- const result = (toolName: string, input: object, content: string, isError = false) => hooks.get("tool_result")!({ toolName, input, toolCallId: "c", content: [{ type: "text", text: content }], isError }, ctx) as { content: { text: string }[]; isError?: boolean };
- const render = (body: string) => "saved 2026-01-01T00:00:00.000Z" + String.fromCharCode(10) + String.fromCharCode(10) + body;
- const readInput = { topic: locator.engram.topic_key };
- const save = (content: string) => ({ topic: locator.engram.topic_key, content });
- assert.equal(call("write", { path: locator.path, content: '{"revision":2,"outcome":"blocked"}' })?.block, true, "initial readback must precede mutation");
- assert.equal(call("write", { path: join(cwd, "outside.md") })?.block, true);
- assert.equal(call("mem_read", { topic: "sdd/other/research" })?.block, true);
- assert.equal(call("mem_save", { topic: "sdd/other/research" })?.block, true);
- assert.equal(call("read", { path: locator.path }), undefined);
- assert.match(result("read", { path: locator.path }, bytes).content.at(-1)!.text, /incomplete/);
- assert.equal(call("mem_read", readInput), undefined);
- assert.match(result("mem_read", readInput, render(bytes)).content.at(-1)!.text, /all selected stores/);
- hooks.get("before_agent_start")!({ systemPrompt: "fresh generation" }, ctx);
- assert.equal(call("write", { path: locator.path, content: '{"revision":5}' })?.block, true, "new generation cannot reuse initial authorization");
- call("read", { path: locator.path }); result("read", { path: locator.path }, bytes);
- call("mem_read", readInput); result("mem_read", readInput, render(bytes));
- const next = '{"revision":5,"outcome":"partial"}';
- assert.equal(call("write", { path: locator.path, content: next }), undefined);
- call("read", { path: locator.path }, "pending-read");
- const pendingRead = hooks.get("tool_result")!({ toolName: "read", input: { path: locator.path }, toolCallId: "pending-read", content: [{ type: "text", text: bytes }], isError: false }, ctx) as { content: { text: string }[] };
- assert.match(pendingRead.content.at(-1)!.text, /incomplete/, "old bytes cannot complete a pending mutation");
- result("write", { path: locator.path, content: next }, "written");
- call("read", { path: locator.path });
- assert.match(result("read", { path: locator.path }, next).content.at(-1)!.text, /incomplete/);
- assert.equal(call("mem_save", save(next)), undefined);
- result("mem_save", save(next), "saved");
- call("read", { path: locator.path });
- result("read", { path: locator.path }, next);
- call("mem_read", readInput);
- assert.match(result("mem_read", readInput, render(next)).content.at(-1)!.text, /all selected stores/);
- assert.equal(call("write", { path: locator.path, content: '{"revision":2}' })?.block, true, "revision 1 to 5 to 2 is refused");
- const newer = '{"revision":6}';
- assert.equal(call("mem_save", save(newer)), undefined);
- result("mem_save", save(newer), "saved");
- call("mem_read", readInput);
- assert.equal(result("mem_read", readInput, render(next)).isError, true, "a save supersedes the accepted body; only the written digest converges");
- call("write", { path: locator.path, content: '{"revision":3,"outcome":"partial"}' });
- result("write", { path: locator.path }, "permission denied", true);
- call("mem_read", readInput);
- assert.match(result("mem_read", readInput, render(next)).content.at(-1)!.text, /proposal_ready=false/, "write attempt invalidates prior readback even when denied");
- call("mem_read", readInput);
- assert.equal(result("mem_read", readInput, render(bytes)).isError, true);
- assert.equal(call("write", { path: locator.path, content: '{"revision":4}' })?.block, true, "stale/divergent readback must refuse recovery writes");
- assert.equal(call("mem_save", save('{"revision":4}'))?.block, true);
- active = active.filter(name => name !== "write");
- assert.equal(call("write", { path: locator.path })?.block, true);
- assert.equal((hooks.get("tool_call")!({ toolName: "read", input: { path: locator.path } }, { cwd: root }) as { block: boolean }).block, true);
- active.push("write");
- jeroAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(active), JERO_PI_RESEARCH_ARTIFACT: JSON.stringify(scope) });
- call("read", { path: locator.path });
- result("read", { path: locator.path }, bytes);
- call("mem_read", readInput);
- result("mem_read", readInput, render(bytes));
- call("write", { path: locator.path, content: next });
- result("write", { path: locator.path, content: next }, "written");
- const divergent = '{"revision":2,"outcome":"done"}';
- call("mem_save", save(divergent));
- result("mem_save", save(divergent), "saved");
- call("read", { path: locator.path });
- result("read", { path: locator.path }, next);
- call("mem_read", readInput);
- assert.equal(result("mem_read", readInput, render(divergent)).isError, true, "individually matching but divergent hybrid writes never converge");
- for (const completion of [[], [{ type: "text", text: "" }], [{ type: "text", text: "denied" }]]) {
-  jeroAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(active), JERO_PI_RESEARCH_ARTIFACT: JSON.stringify({ ...scope, store: "openspec", locators: [{ ...locator, engram: undefined }] }) });
-  call("read", { path: locator.path }); result("read", { path: locator.path }, bytes);
-  assert.equal(call("write", { path: locator.path, content: next }), undefined);
-  assert.equal(call("write", { path: locator.path, content: next }, "overlap")?.block, true);
-  hooks.get("tool_result")!({ toolName: "write", input: { path: locator.path, content: next }, toolCallId: "c", content: completion, isError: completion.length > 0 && completion[0].text === "denied" }, ctx);
-  call("read", { path: locator.path });
-  assert.match(result("read", { path: locator.path }, next).content.at(-1)!.text, /proposal_ready=false/, "failed or malformed write cannot establish completion");
-  assert.equal(call("write", { path: locator.path, content: '{"revision":6}' })?.block, true);
- }
- for (const tool of ["write", "mem_save"]) {
-  const memory = tool === "mem_save", readTool = memory ? "mem_read" : "read";
-  const input = memory ? readInput : { path: locator.path };
-  const mutation = memory ? save(next) : { path: locator.path, content: next };
-  jeroAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(active), JERO_PI_RESEARCH_ARTIFACT: JSON.stringify({ ...scope, store: memory ? "engram" : "openspec", locators: [{ ...locator, path: memory ? undefined : locator.path, engram: memory ? locator.engram : undefined }] }) });
-  call(readTool, input); result(readTool, input, memory ? render(bytes) : bytes);
-  assert.equal(call(tool, mutation), undefined);
-  assert.doesNotThrow(() => hooks.get("tool_result")!({ toolName: tool, input: mutation, toolCallId: "c", content: [null], isError: false }, ctx));
-  call(readTool, input);
-  assert.match(result(readTool, input, memory ? render(next) : next).content.at(-1)!.text, /proposal_ready=false/);
-  assert.equal(call(tool, { ...mutation, content: '{"revision":6}' })?.block, true);
- }
- for (const store of ["openspec", "engram", "both"]) {
-  for (const bad of ["missing", "malformed", "revision", "digest", "header", "body", "worktree"]) {
-   jeroAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(active), JERO_PI_RESEARCH_ARTIFACT: JSON.stringify({ ...scope, store, locators: [{ ...locator, path: store === "engram" ? undefined : locator.path, engram: store === "openspec" ? undefined : locator.engram }] }) });
-   const memory = store !== "openspec";
-   const tool = memory ? "mem_read" : "read";
-   const input = memory ? readInput : { path: locator.path };
-   if (store === "both") {
-    call("read", { path: locator.path });
-    result("read", { path: locator.path }, bytes);
-    assert.equal(call("write", { path: locator.path, content: next })?.block, true, "both initial stores must match before either mutation");
-   }
-   if (bad !== "missing") {
-    const body = bad === "revision" ? '{"revision":0}' : bad === "digest" ? '{"revision":1,"different":true}' : bytes;
-    const content = bad === "header" ? "loaded 2026-01-01T00:00:00.000Z" + String.fromCharCode(10) + String.fromCharCode(10) + bytes : bad === "body" ? render(bytes) + " " : memory ? render(body) : body;
-    if (bad === "worktree") {
-     assert.equal((hooks.get("tool_call")!({ toolName: tool, input, toolCallId: "c" }, { cwd: root }) as { block: boolean }).block, true);
-    } else {
-     call(tool, input);
-     assert.equal(result(tool, input, bad === "malformed" ? "{" : content).isError, true);
-    }
-   }
-   if (store !== "engram") assert.equal(call("write", { path: locator.path, content: next })?.block, true, store + "/" + bad + ": zero writes");
-   if (memory) assert.equal(call("mem_save", save(next))?.block, true, store + "/" + bad + ": zero saves");
-  }
- }
+	const { createHash } = await import("node:crypto");
+	const cwd = join(root, "bounded-child");
+	mkdirSync(cwd, { recursive: true });
+	const bytes = '{"revision":1,"outcome":"blocked"}';
+	const locator = { artifact: "research", path: join(cwd, "openspec/changes/demo/research.md"), revision: 1, digest: createHash("sha256").update(bytes).digest("hex"), engram: { topic_key: "sdd/demo/research" } };
+	const scope = { store: "both", worktree: cwd, changeName: "demo", retainedIntent: "fetch missing; preserve questions", locators: [locator] };
+	const hooks = new Map<string, (...args: unknown[]) => unknown>();
+	let active = ["read", "write", "mem_read", "mem_save", "subagent_parent_message"];
+	const journal = join(cwd, "session.jsonl"); writeFileSync(journal, "");
+	const pi = { appendEntry: (customType, data) => appendFileSync(journal, JSON.stringify({ type: "custom", customType, data }) + "\n"), on: (name: string, fn: (...args: unknown[]) => unknown) => hooks.set(name, fn), getActiveTools: () => active, getAllTools: () => active.map(name => ({ name })) };
+	jeroAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(active), JERO_PI_RESEARCH_ARTIFACT: JSON.stringify(scope) });
+	const ctx = { cwd, sessionManager: { getEntries: () => [], getSessionFile: () => journal } };
+	const prompt = hooks.get("before_agent_start")!({ systemPrompt: "research" }, ctx) as { systemPrompt: string };
+	assert.match(prompt.systemPrompt, /retainedIntent/);
+	assert.match(prompt.systemPrompt, /never authority/);
+	const call = (toolName: string, input: object, toolCallId = "c") => hooks.get("tool_call")!({ toolName, input, toolCallId }, ctx) as { block: boolean } | undefined;
+	const result = (toolName: string, input: object, content: string, isError = false) => hooks.get("tool_result")!({ toolName, input, toolCallId: "c", content: [{ type: "text", text: content }], isError }, ctx) as { content: { text: string }[]; isError?: boolean };
+	const render = (body: string) => "saved 2026-01-01T00:00:00.000Z" + String.fromCharCode(10) + String.fromCharCode(10) + body;
+	const readInput = { topic: locator.engram.topic_key };
+	const save = (content: string) => ({ topic: locator.engram.topic_key, content });
+	assert.equal(call("write", { path: locator.path, content: '{"revision":2,"outcome":"blocked"}' })?.block, true, "initial readback must precede mutation");
+	assert.equal(call("write", { path: join(cwd, "outside.md") })?.block, true);
+	assert.equal(call("mem_read", { topic: "sdd/other/research" })?.block, true);
+	assert.equal(call("mem_save", { topic: "sdd/other/research" })?.block, true);
+	assert.equal(call("read", { path: locator.path }), undefined);
+	assert.match(result("read", { path: locator.path }, bytes).content.at(-1)!.text, /incomplete/);
+	assert.equal(call("mem_read", readInput), undefined);
+	assert.match(result("mem_read", readInput, render(bytes)).content.at(-1)!.text, /all selected stores/);
+	hooks.get("before_agent_start")!({ systemPrompt: "fresh generation" }, ctx);
+	assert.equal(call("write", { path: locator.path, content: '{"revision":5}' })?.block, true, "new generation cannot reuse initial authorization");
+	call("read", { path: locator.path }); result("read", { path: locator.path }, bytes);
+	call("mem_read", readInput); result("mem_read", readInput, render(bytes));
+	const next = '{"revision":5,"outcome":"partial"}';
+	assert.equal(call("write", { path: locator.path, content: next }), undefined);
+	call("read", { path: locator.path }, "pending-read");
+	const pendingRead = hooks.get("tool_result")!({ toolName: "read", input: { path: locator.path }, toolCallId: "pending-read", content: [{ type: "text", text: bytes }], isError: false }, ctx) as { content: { text: string }[] };
+	assert.match(pendingRead.content.at(-1)!.text, /incomplete/, "old bytes cannot complete a pending mutation");
+	result("write", { path: locator.path, content: next }, "written");
+	call("read", { path: locator.path });
+	assert.match(result("read", { path: locator.path }, next).content.at(-1)!.text, /incomplete/);
+	assert.equal(call("mem_save", save(next)), undefined);
+	result("mem_save", save(next), "saved");
+	call("read", { path: locator.path });
+	result("read", { path: locator.path }, next);
+	call("mem_read", readInput);
+	assert.match(result("mem_read", readInput, render(next)).content.at(-1)!.text, /all selected stores/);
+	assert.equal(call("write", { path: locator.path, content: '{"revision":2}' })?.block, true, "revision 1 to 5 to 2 is refused");
+	const newer = '{"revision":6}';
+	assert.equal(call("mem_save", save(newer)), undefined);
+	result("mem_save", save(newer), "saved");
+	call("mem_read", readInput);
+	assert.equal(result("mem_read", readInput, render(next)).isError, true, "a save supersedes the accepted body; only the written digest converges");
+	call("write", { path: locator.path, content: '{"revision":3,"outcome":"partial"}' });
+	result("write", { path: locator.path }, "permission denied", true);
+	call("mem_read", readInput);
+	assert.match(result("mem_read", readInput, render(next)).content.at(-1)!.text, /proposal_ready=false/, "write attempt invalidates prior readback even when denied");
+	call("mem_read", readInput);
+	assert.equal(result("mem_read", readInput, render(bytes)).isError, true);
+	assert.equal(call("write", { path: locator.path, content: '{"revision":4}' })?.block, true, "stale/divergent readback must refuse recovery writes");
+	assert.equal(call("mem_save", save('{"revision":4}'))?.block, true);
+	active = active.filter(name => name !== "write");
+	assert.equal(call("write", { path: locator.path })?.block, true);
+	assert.equal((hooks.get("tool_call")!({ toolName: "read", input: { path: locator.path } }, { cwd: root }) as { block: boolean }).block, true);
+	active.push("write");
+	jeroAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(active), JERO_PI_RESEARCH_ARTIFACT: JSON.stringify(scope) });
+	call("read", { path: locator.path });
+	result("read", { path: locator.path }, bytes);
+	call("mem_read", readInput);
+	result("mem_read", readInput, render(bytes));
+	call("write", { path: locator.path, content: next });
+	result("write", { path: locator.path, content: next }, "written");
+	const divergent = '{"revision":2,"outcome":"done"}';
+	call("mem_save", save(divergent));
+	result("mem_save", save(divergent), "saved");
+	call("read", { path: locator.path });
+	result("read", { path: locator.path }, next);
+	call("mem_read", readInput);
+	assert.equal(result("mem_read", readInput, render(divergent)).isError, true, "individually matching but divergent hybrid writes never converge");
+	for (const completion of [[], [{ type: "text", text: "" }], [{ type: "text", text: "denied" }]]) {
+		jeroAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(active), JERO_PI_RESEARCH_ARTIFACT: JSON.stringify({ ...scope, store: "openspec", locators: [{ ...locator, engram: undefined }] }) });
+		call("read", { path: locator.path }); result("read", { path: locator.path }, bytes);
+		assert.equal(call("write", { path: locator.path, content: next }), undefined);
+		assert.equal(call("write", { path: locator.path, content: next }, "overlap")?.block, true);
+		hooks.get("tool_result")!({ toolName: "write", input: { path: locator.path, content: next }, toolCallId: "c", content: completion, isError: completion.length > 0 && completion[0].text === "denied" }, ctx);
+		call("read", { path: locator.path });
+		assert.match(result("read", { path: locator.path }, next).content.at(-1)!.text, /proposal_ready=false/, "failed or malformed write cannot establish completion");
+		assert.equal(call("write", { path: locator.path, content: '{"revision":6}' })?.block, true);
+	}
+	for (const tool of ["write", "mem_save"]) {
+		const memory = tool === "mem_save", readTool = memory ? "mem_read" : "read";
+		const input = memory ? readInput : { path: locator.path };
+		const mutation = memory ? save(next) : { path: locator.path, content: next };
+		jeroAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(active), JERO_PI_RESEARCH_ARTIFACT: JSON.stringify({ ...scope, store: memory ? "engram" : "openspec", locators: [{ ...locator, path: memory ? undefined : locator.path, engram: memory ? locator.engram : undefined }] }) });
+		call(readTool, input); result(readTool, input, memory ? render(bytes) : bytes);
+		assert.equal(call(tool, mutation), undefined);
+		assert.doesNotThrow(() => hooks.get("tool_result")!({ toolName: tool, input: mutation, toolCallId: "c", content: [null], isError: false }, ctx));
+		call(readTool, input);
+		assert.match(result(readTool, input, memory ? render(next) : next).content.at(-1)!.text, /proposal_ready=false/);
+		assert.equal(call(tool, { ...mutation, content: '{"revision":6}' })?.block, true);
+	}
+	for (const store of ["openspec", "engram", "both"]) {
+		for (const bad of ["missing", "malformed", "revision", "digest", "header", "body", "worktree"]) {
+			jeroAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(active), JERO_PI_RESEARCH_ARTIFACT: JSON.stringify({ ...scope, store, locators: [{ ...locator, path: store === "engram" ? undefined : locator.path, engram: store === "openspec" ? undefined : locator.engram }] }) });
+			const memory = store !== "openspec";
+			const tool = memory ? "mem_read" : "read";
+			const input = memory ? readInput : { path: locator.path };
+			if (store === "both") {
+				call("read", { path: locator.path });
+				result("read", { path: locator.path }, bytes);
+				assert.equal(call("write", { path: locator.path, content: next })?.block, true, "both initial stores must match before either mutation");
+			}
+			if (bad !== "missing") {
+				const body = bad === "revision" ? '{"revision":0}' : bad === "digest" ? '{"revision":1,"different":true}' : bytes;
+				const content = bad === "header" ? "loaded 2026-01-01T00:00:00.000Z" + String.fromCharCode(10) + String.fromCharCode(10) + bytes : bad === "body" ? render(bytes) + " " : memory ? render(body) : body;
+				if (bad === "worktree") {
+					assert.equal((hooks.get("tool_call")!({ toolName: tool, input, toolCallId: "c" }, { cwd: root }) as { block: boolean }).block, true);
+				} else {
+					call(tool, input);
+					assert.equal(result(tool, input, bad === "malformed" ? "{" : content).isError, true);
+				}
+			}
+			if (store !== "engram") assert.equal(call("write", { path: locator.path, content: next })?.block, true, store + "/" + bad + ": zero writes");
+			if (memory) assert.equal(call("mem_save", save(next))?.block, true, store + "/" + bad + ": zero saves");
+		}
+	}
 });
 
 

@@ -1,16 +1,14 @@
 #!/usr/bin/env node
-// jero-pi authority module-boundary gate (design §9.1): lib/authority/ is the
-// in-process review authority — its trust boundary is enforced structurally,
-// not by convention. This replaces the per-review manual greps with a CI gate:
-//   1. no import reaches extensions/ (authority must not depend on the
-//      presentation layer, in either direction of control);
-//   2. no process.env read (authority takes typed inputs only — environment
-//      is the caller's business);
-//   3. no domainHashV1 (upstream gentle-ai identity namespace — jero
-//      identities use jeroDomainHash in canonical.ts exclusively).
-// Plain regexes over source text: the modules are TypeScript, but the
-// forbidden patterns are simple enough that a parser would add a dependency
-// for no additional safety.
+// jero-pi authority 模块边界门（设计 §9.1）：lib/authority/ 是进程内评审
+// 权威——其信任边界靠结构强制，而非约定。本脚本以 CI 门取代逐次评审的
+// 人工 grep：
+//   1. 任何 import 不得触及 extensions/（权威不得依赖展示层，控制流的
+//      两个方向都不行）；
+//   2. 不得读 process.env（权威只收 typed 入参——环境是调用方的事）；
+//   3. 不得用 domainHashV1（上游 gentle-ai 身份命名空间——jero 身份
+//      一律用 canonical.ts 的 jeroDomainHash）。
+// 对源文本直接用朴素正则：模块虽是 TypeScript，但被禁模式足够简单，
+// 引入解析器只会多一个依赖而不增加安全性。
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -19,8 +17,8 @@ const root = join(fileURLToPath(new URL("..", import.meta.url)), "lib", "authori
 const files = readdirSync(root).filter((name) => name.endsWith(".ts")).sort();
 
 const rules = [
-	// Static and dynamic imports both count: a presentation-layer dependency
-	// smuggled through `await import("../extensions/x")` is the same breach.
+	// 静态与动态 import 都算：经 `await import("../extensions/x")` 夹带的
+	// 展示层依赖是同一种越界。
 	{ pattern: /(?:from\s+"(?:\.\.\/)*extensions\/|import\(\s*["'](?:\.\.\/)*extensions\/)/, message: "imports extensions/ (presentation layer)" },
 	{ pattern: /\bprocess\.env\b/, message: "reads process.env" },
 	{ pattern: /\bdomainHashV1\b/, message: "uses upstream domainHashV1 (gentle-ai identity namespace)" },
@@ -28,10 +26,9 @@ const rules = [
 
 const violations = [];
 for (const file of files) {
-	// Comment-only lines are documentation ("never use domainHashV1"), not
-	// usage. Inline block comments are stripped BEFORE the line filter so the
-	// same-line form `/* note */ const v = process.env.X;` is still checked —
-	// the line no longer hides behind a `/*` prefix.
+	// 纯注释行是文档（"不要用 domainHashV1"），不是使用。行内块注释在行
+	// 过滤之前就被剥除，因此同行形式 `/* note */ const v = process.env.X;`
+	// 仍会被检查——该行不能再躲在 `/*` 前缀后面。
 	const code = readFileSync(join(root, file), "utf8")
 		.replace(/\/\*[\s\S]*?\*\//g, " ")
 		.split("\n")

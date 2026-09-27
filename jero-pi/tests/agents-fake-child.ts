@@ -2,8 +2,8 @@ import { EventEmitter } from "node:events";
 import { PassThrough } from "node:stream";
 import type { ChildLike } from "../lib/agents-runner.ts";
 
-// A fake `pi --mode rpc` child: answers every command with a success
-// response, records what the host wrote, and lets tests emit events.
+// 假的 `pi --mode rpc` 子进程：对所有命令一律返回成功响应，记录宿主
+// 写入的内容，并允许测试注入事件。
 
 export interface FakeChild {
 	child: ChildLike;

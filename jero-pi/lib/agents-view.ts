@@ -195,7 +195,7 @@ export class AgentsView {
 								status: summary.status as TaskRecord["status"], mode: "background", prompt: "", cwd: "",
 								thinking: undefined, sessionPath: null, error: null, result: null, lastStep: "", turns: 0, toolCalls: 0, tokens: 0, cost: 0 };
 							threads.set(task.id, { ...emptyThread(), ...thread,
-								items: thread.items.map((item) => item.kind === "tool" ? { ...item, args: {} } : item) as ThreadItem[] });
+								items: thread.items.map((item) => item.kind === "tool" ? { ...item, args: {} } : item) as unknown as ThreadItem[] });
 							return task;
 						});
 						groups.push({ id, sessionId: id, label: `${header.label}${unavailable ? " · unavailable" : ""}`, tasks });

@@ -90,7 +90,7 @@ function ambientDevBinary(): DevBinaryNotice | undefined {
 	return undefined;
 }
 
-const defaultShellDeps: Omit<ShellDeps, "activeProfile"> = { fetch: (input, init) => globalThis.fetch(input, init), now: () => Date.now(), devBinary: ambientDevBinary, resolveWorktree: resolveSessionWorktree, gitRunner: shellGitRunner };
+const DEFAULT_SHELL_DEPS: Omit<ShellDeps, "activeProfile"> = { fetch: (input, init) => globalThis.fetch(input, init), now: () => Date.now(), devBinary: ambientDevBinary, resolveWorktree: resolveSessionWorktree, gitRunner: shellGitRunner };
 
 interface AssistantUsageEntry {
 	type: string;
@@ -425,7 +425,7 @@ const USAGE_REFRESH_MS = 5 * 60_000;
 export default function jeroShell(pi: ExtensionAPI, env: NodeJS.ProcessEnv = process.env, overrides: Partial<ShellDeps> = {}): void {
 	installSessionChangeCapture(pi, env, overrides.resolveWorktree ?? resolveSessionWorktree);
 	if (!shellEnabled(env)) return;
-	const deps: ShellDeps = { ...defaultShellDeps, activeProfile: createActiveProfileReader(env), ...overrides };
+	const deps: ShellDeps = { ...DEFAULT_SHELL_DEPS, activeProfile: createActiveProfileReader(env), ...overrides };
 	const usage = new UsageStore();
 	let renderHost: ShellRenderHost | undefined;
 	let usageFetchedAt = 0;

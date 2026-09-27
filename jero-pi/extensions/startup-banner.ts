@@ -1,6 +1,6 @@
 // 启动横幅扩展主体：默认导出的动画编排、渲染循环与命令注册。
 // 配置/调色板、logo 模型与统计探测已拆至 lib/banner-*。
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { VERSION } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth } from "@earendil-works/pi-tui";
 import * as os from "node:os";
@@ -11,7 +11,7 @@ import { join } from "node:path";
 export default function (pi: ExtensionAPI) {
 	let disposeHeader = () => {};
 	pi.on("session_shutdown", () => disposeHeader());
-	const notifyBannerConfig = (ctx: any, config: BannerConfig) => {
+	const notifyBannerConfig = (ctx: ExtensionContext, config: BannerConfig) => {
 		ctx.ui.notify(
 			[
 				`Startup banner: rose=${config.showRose ? "on" : "off"}, text logo=${config.showTextLogo ? "on" : "off"}, color=${config.color}`,

@@ -11,7 +11,7 @@ const HEADER_LIMIT = 16 * 1024;
 const HASH = /^[a-f0-9]{64}$/;
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;
 const STATUSES = ["running", "queued", "waiting", "completed", "failed", "cancelled", "timed_out"];
-type ObjectValue = Record<string, any>;
+type ObjectValue = Record<string, unknown>;
 /** 远端记录属于独立的只读存储，绝不进入本地 TaskStore。
  * 以 (header.sessionHash, header.incarnation, summary.id) 作键，而非裸任务 ID。
  * 头部提供父会话身份；调用方只投影该会话的任务。 */
@@ -41,7 +41,7 @@ function label(text: string) {
 	const clean = stripVTControlCharacters(text).replace(/[\p{Cc}\p{Cf}]/gu, " ").replace(/\s+/g, " ").trim();
 	return Array.from(clean).slice(0, 120).join("").trimEnd();
 }
-const pick = (v: ObjectValue, names: string[]) => Object.fromEntries(names.map((k) => [k, v[k]]));
+const pick = (v: object, names: string[]): ObjectValue => Object.fromEntries(names.map((k) => [k, (v as ObjectValue)[k]]));
 const summaryTextKeys = ["id", "agent", "label", "status", "model"];
 const summaryKeys = [...summaryTextKeys, "createdAt", "startedAt", "endedAt", "lastActivityAt"];
 const toolKeys = ["kind", "callId", "name", "output", "running", "isError"];
@@ -51,7 +51,7 @@ const toolKeys = ["kind", "callId", "name", "output", "running", "isError"];
  * 这是字段白名单，不是内容脱敏：保留的文本可能包含机密。 */
 export function projectActivity(input: readonly ActivityInput[]): Activity {
 	const activity = { tasks: input.map(({ task, thread }) => ({
-		summary: pick(task, summaryKeys) as ActivityInput["task"],
+		summary: pick(task, summaryKeys) as unknown as ActivityInput["task"],
 		thread: { version: thread.version, dropped: thread.dropped,
 			items: thread.items.map((item) => pick(item, (item as ObjectValue).kind === "tool" ? toolKeys : ["kind", "text"])) },
 	})) };
@@ -63,14 +63,14 @@ function validActivity(value: unknown): value is Activity {
 	return object(value) && keys(value, ["tasks"]) && Array.isArray(value.tasks) && value.tasks.every((row: unknown) => {
 		if (!object(row) || !keys(row, ["summary", "thread"])) return false;
 		const { summary: s, thread: t } = row;
-		return object(s) && keys(s, summaryKeys) && summaryTextKeys.every((k) => typeof s[k] === "string") && STATUSES.includes(s.status)
+		return object(s) && keys(s, summaryKeys) && summaryTextKeys.every((k) => typeof s[k] === "string") && STATUSES.includes(s.status as string)
 			&& integer(s.createdAt) && integer(s.lastActivityAt)
 			&& [s.startedAt, s.endedAt].every((time) => time === null || integer(time))
 			&& object(t) && keys(t, ["version", "dropped", "items"]) && integer(t.version) && integer(t.dropped)
 			&& Array.isArray(t.items) && t.items.every((item: unknown) => object(item) && (item.kind === "tool"
 				? keys(item, toolKeys) && ["callId", "name", "output"].every((k) => typeof item[k] === "string")
 					&& typeof item.running === "boolean" && typeof item.isError === "boolean"
-				: ["text", "thinking", "note"].includes(item.kind) && keys(item, ["kind", "text"]) && typeof item.text === "string"));
+				: ["text", "thinking", "note"].includes(item.kind as string) && keys(item, ["kind", "text"]) && typeof item.text === "string"));
 	});
 }
 
@@ -80,11 +80,13 @@ function validTarget(value: Target) {
 }
 function validHeader(h: unknown): h is Header {
 	if (!object(h) || !keys(h, ["schema", "sessionHash", "incarnation", "label", "heartbeat", "generation", "counts", "digest", "unavailable"])) return false;
-	return validTarget(h as Header) && h.schema === 1 && typeof h.label === "string" && h.label === label(h.label)
-		&& integer(h.heartbeat) && integer(h.generation) && h.generation > 0
-		&& object(h.counts) && keys(h.counts, ["running", "queued", "waiting", "finished"]) && Object.values(h.counts).every(integer)
-		&& ((h.unavailable === null && typeof h.digest === "string" && HASH.test(h.digest))
-			|| (h.unavailable === "activity-too-large" && h.digest === null));
+	// 字段集合已被 keys 钉死，收窄为 Header 仅为后续属性访问定型。
+	const header = h as unknown as Header;
+	return validTarget(header) && header.schema === 1 && typeof header.label === "string" && header.label === label(header.label)
+		&& integer(header.heartbeat) && integer(header.generation) && header.generation > 0
+		&& object(header.counts) && keys(header.counts, ["running", "queued", "waiting", "finished"]) && Object.values(header.counts).every(integer)
+		&& ((header.unavailable === null && typeof header.digest === "string" && HASH.test(header.digest))
+			|| (header.unavailable === "activity-too-large" && header.digest === null));
 }
 function filename(target: Target, kind: "header" | "activity") {
 	if (!validTarget(target)) throw new Error("malformed");
@@ -232,7 +234,7 @@ export function readActivity(profile: string, selection: Header): { activity?: A
 		if (!object(value) || !keys(value, ["schema", "sessionHash", "incarnation", "generation", "activity"])
 			|| value.schema !== 1 || value.generation !== h.generation || value.sessionHash !== h.sessionHash
 			|| value.incarnation !== h.incarnation || !validActivity(value.activity)) throw new Error("malformed");
-		return { activity: value.activity };
+		return { activity: value.activity as Activity };
 	} catch (error) { return { unavailable: reason(error) }; }
 }
 

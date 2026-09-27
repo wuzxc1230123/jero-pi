@@ -28,7 +28,7 @@ license: MIT
 | 创建 / 改进技能 | `jero-skill-creator` · `jero-skill-improver`；写作规范见 `docs/skill-authoring.md` |
 | 创建领域模块（语言/引擎整套扩展）/ 单个子代理 | `/module-creation` · `/agent-creation`（自主触发走 `jero-module-creator` · `jero-agent-creator`）；放置与机制见 `docs/extension-guide.md` |
 | 技能增删后刷新索引 | `/skill-registry:refresh`（或自动重扫）；机器索引在 `.atl/skill-registry.md` |
-| 发布 | `jero-release` |
+| 发布 | `release` |
 | 体检 / 状态诊断 | `/jero:doctor` `/jero:status` `/jero:guard` |
 | 跨会话记忆 | `mem_save/mem_read/mem_list/mem_search` 工具 |
 | 评审会话常任权限 / RDD 开关 | `/jero:review-session-permission` `/jero:review-mode` |

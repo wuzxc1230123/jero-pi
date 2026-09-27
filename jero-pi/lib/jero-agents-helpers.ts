@@ -99,7 +99,7 @@ export function agentsViewKey(env: NodeJS.ProcessEnv = process.env): string | un
 }
 
 export function agentsCollapseKey(env: NodeJS.ProcessEnv = process.env): string | undefined {
-	const value = env.JERO_PI_AGENTS_KEY?.trim();
+	const value = env.JERO_PI_AGENTS_COLLAPSE_KEY?.trim();
 	if (value === undefined) return COLLAPSE_KEY_DEFAULT;
 	return value === "" || value.toLowerCase() === "off" ? undefined : value;
 }

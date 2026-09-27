@@ -16,7 +16,7 @@ export function git(cwd: string, ...args: string[]): string {
 	return execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
 }
 
-/** Mirrors the repository fixture from tests/review-repository.test.ts. */
+/** 镜像 tests/review-repository.test.ts 的仓库夹具。 */
 export function repository(t: { after: (callback: () => void) => void }, prefix = "jero-authority-repo-"): string {
 	const parent = mkdtempSync(join(tmpdir(), prefix));
 	const root = join(parent, "repo");
@@ -33,7 +33,7 @@ export function repository(t: { after: (callback: () => void) => void }, prefix 
 
 export const LINEAGE_ID = "review-0123456789abcdef";
 
-/** Full valid lineage state record matching the analysis report section C field model. */
+/** 与分析报告 §C 字段模型一致的完整合法谱系状态记录。 */
 export function testTransactionState(lineageId = LINEAGE_ID): JeroReviewTransactionStateV1 {
 	return {
 		schema: JERO_REVIEW_TRANSACTION_SCHEMA,
@@ -111,9 +111,8 @@ export function initialDraft(lineageId = LINEAGE_ID): JeroLineageDraftV1 {
 }
 
 // ---------------------------------------------------------------------------
-// M2 state-machine helpers: one fixture repository per test file, reused
-// across tests (each capture is pure Git — no candidate-view registry, so no
-// PowerShell SID/DACL cost).
+// M2 状态机助手：每个测试文件一个夹具仓库，跨用例复用（每次捕获都是
+// 纯 Git——不经过候选视图注册表，因此没有 PowerShell SID/DACL 开销）。
 // ---------------------------------------------------------------------------
 
 import assert from "node:assert/strict";
@@ -129,7 +128,7 @@ import { delimiter } from "node:path";
 
 export type FixtureRisk = "low" | "medium" | "high";
 
-/** Applies a workspace change of the requested risk class to a committed fixture repo. */
+/** 向已提交的夹具仓库施加指定风险档的工作区改动。 */
 export function applyRiskChange(repo: string, risk: FixtureRisk, lines = 4): void {
 	if (risk === "low") {
 		writeFileSync(join(repo, "README.md"), `base\n${"documentation line\n".repeat(lines)}`);
@@ -158,11 +157,11 @@ export function reviewHarness(t: { after: (callback: () => void) => void }, risk
 	return { repo, context: resolution.context, git: (...args: string[]) => git(repo, ...args) };
 }
 
-/** Starts an ordinary review and asserts the created/closed variant; fails the test on any refusal. */
+/** 启动一次普通评审并断言 created/closed 变体；出现任何拒绝即测试失败。 */
 export function startCreatedReview(t: { after: (callback: () => void) => void }, risk: FixtureRisk = "medium", lines = 4, selection: JeroReviewStartSelectionV1 = {}): ReviewHarnessV1 & { start: Extract<JeroReviewStartResultV1, { kind: "created" | "closed" }> } {
 	const harness = reviewHarness(t, risk, lines);
-	// Reviews default ON (F4), so a medium/high creation start answers the
-	// §B.5 consent question granted unless the test overrides the answer.
+	// 评审默认开启（F4），因此 medium/high 的创建启动除非测试覆盖应答，
+	// 否则 §B.5 同意问题按 granted 应答。
 	const start = reviewStartV1(harness.context, { cwd: harness.repo }, { consent: "granted", ...selection });
 	assert.ok(start.kind === "created" || start.kind === "closed", `expected created/closed, got ${JSON.stringify(start)}`);
 	return { ...harness, start: start as Extract<JeroReviewStartResultV1, { kind: "created" | "closed" }> };
@@ -175,7 +174,7 @@ export interface FixtureFixApplicationV1 {
 	actual_correction_lines: number;
 }
 
-/** Captures the worktree byte state (minus .git) so a fixture fix can restore it after tree staging. */
+/** 捕获工作区字节状态（不含 .git），使夹具修复能在树暂存后还原工作区。 */
 function snapshotWorktree(repo: string): Map<string, Buffer> {
 	const files = new Map<string, Buffer>();
 	const walk = (directory: string): void => {
@@ -214,13 +213,11 @@ function restoreWorktree(repo: string, files: Map<string, Buffer>): void {
 }
 
 /**
- * Applies a REAL workspace edit as the correction and derives a verifiable
- * `fix_application` (F5 fixtures): the fixed candidate tree is written into
- * the lineage's isolated snapshot object store (the same GIT_* discipline as
- * the snapshot capture), and the declared line count is the actual
- * `git diff --numstat` derivation over the changed paths — never a lie.
- * The fix API is tree-based, so after staging the tree the worktree is
- * restored to the reviewed candidate (STATUS identity stays frozen).
+ * 以一次真实的工作区编辑作为修复，并派生可验证的 `fix_application`（F5 夹具）：
+ * 修复后的候选树写入谱系隔离的快照对象存储（与快照捕获同一套 GIT_* 纪律），
+ * 声明的行数就是对变更路径实际运行 `git diff --numstat` 的派生值——绝不撒谎。
+ * 修复 API 以树为单位，因此暂存树之后工作区会被还原为受评审的候选态
+ * （STATUS 身份保持冻结）。
  */
 export function applyFixtureFix(harness: ReviewHarnessV1, lineageId: string, mutate: (repo: string) => void): FixtureFixApplicationV1 {
 	const store = JeroLineageStoreV1.forStore(harness.context.store.store_root);
@@ -233,8 +230,7 @@ export function applyFixtureFix(harness: ReviewHarnessV1, lineageId: string, mut
 		execFileSync("git", args, { cwd: harness.repo, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env: { ...reviewGitEnvironment(), ...environment } }).trim();
 	const worktree = snapshotWorktree(harness.repo);
 	try {
-		// The correction is authored against the ORIGINAL review tree: the fix
-		// tree's budget is charged relative to the reviewed candidate (F5).
+		// 修复是对最初评审树的改动：修复树的预算相对受评审候选扣减（F5）。
 		const indexEnvironment = {
 			GIT_INDEX_FILE: join(staging, "index"),
 			GIT_OBJECT_DIRECTORY: record.object_store.object_directory,
@@ -261,11 +257,10 @@ export function applyFixtureFix(harness: ReviewHarnessV1, lineageId: string, mut
 }
 
 /**
- * MA4 (review): freeze-ledger requires the captured reviewer artifacts to be
- * complete on disk, so every fixture that freezes via a hand-built
- * review_result first admits one artifact per selected lens through the real
- * admission path (result-artifacts.ts) — mapping the finalize submission rows
- * onto full compact-v2 envelope rows with the evidence vocabulary filled in.
+ * MA4（评审）：冻结台账要求被捕获的评审者工件在磁盘上完整，因此每个以
+ * 手工构造 review_result 冻结的夹具，先经真实受理路径（result-artifacts.ts）
+ * 为每个选中镜头受理一份工件——把 finalize 提交行映射为填好证据词表的
+ * 完整 compact-v2 封套行。
  */
 export function admitFixtureReviewerResults(
 	harness: ReviewHarnessV1,

@@ -80,7 +80,7 @@ START → 同意（consent 仪式 v3，host 常任权限按 Git 规范身份授�
 
 ## 技能（19 个目录，`jero` + `jero-*` 命名）
 
-`jero-skills`（能力路由器：场景 → 技能/命令/工具入口表）· `jero`（harness 纪律）· `jero-lean`（梯子参考）· `jero-lean-review`（diff 级精益评审：delete/stdlib/native/yagni/shrink 标签 + `net: -N lines possible`）· `jero-debt`（标记台账）· `jero-judgment-day` · `jero-rdd-defect-workflow` · `jero-branch-pr` · `jero-chained-pr`（400 行预算链式 PR）· `jero-work-unit-commits` · `jero-cognitive-doc-design` · `jero-comment-writer` · `jero-issue-creation` · `jero-skill-creator` · `jero-skill-improver` · `jero-skill-registry` · `jero-module-creator`（领域模块脚手架：技能 + 子代理 + 命令钉住）· `jero-agent-creator`（单个项目级子代理）· `jero-release`。
+`jero-skills`（能力路由器：场景 → 技能/命令/工具入口表）· `jero`（harness 纪律）· `jero-lean`（梯子参考）· `jero-lean-review`（diff 级精益评审：delete/stdlib/native/yagni/shrink 标签 + `net: -N lines possible`）· `jero-debt`（标记台账）· `jero-judgment-day` · `jero-rdd-defect-workflow` · `jero-branch-pr` · `jero-chained-pr`（400 行预算链式 PR）· `jero-work-unit-commits` · `jero-cognitive-doc-design` · `jero-comment-writer` · `jero-issue-creation` · `jero-skill-creator` · `jero-skill-improver` · `jero-skill-registry` · `jero-module-creator`（领域模块脚手架：技能 + 子代理 + 命令钉住）· `jero-agent-creator`（单个项目级子代理）· `release`。
 
 技能写作/触发措辞/生命周期规范见 `docs/skill-authoring.md`；零代码扩展（目标项目技能/子代理/语言包）见 `docs/extension-guide.md`；版本演化见 `CHANGELOG.md`。
 

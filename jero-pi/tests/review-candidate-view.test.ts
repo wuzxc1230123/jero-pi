@@ -1,4 +1,4 @@
-// review-candidate-view 测试第 1 段（留守原文件名）（共 3 段；夹具在 review-candidate-view-shared.ts）。
+// review-candidate-view 测试第 1 段（留守原文件名）（共 4 段；夹具在 review-candidate-view-shared.ts）。
 // 机械平移自原 review-candidate-view.test.ts，语义零改动。
 
 import { default as assert } from "node:assert/strict";

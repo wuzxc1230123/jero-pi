@@ -12,9 +12,9 @@ import {
 import { fakeChild, type FakeChild } from "./agents-fake-child.ts";
 
 
-// Jero Agents runner: every subagent is a child `pi --mode rpc` process.
-// The host only parses JSON lines, applies deltas to the store, answers
-// dialogs, and enforces its inactivity watchdog. These tests drive a fake child.
+// Jero Agents runner：每个子代理都是一个 `pi --mode rpc` 子进程。宿主只
+// 解析 JSON 行、把增量应用到存储、应答对话框并执行不活跃看门狗。这些
+// 测试驱动假子进程。
 
 export const explorer: AgentDefinition = { name: "explore", description: "maps", filePath: "/a/explore.md", scope: "global", instructions: "You map things.", model: undefined, thinking: undefined, mode: undefined, tools: ["read", "grep"] };
 

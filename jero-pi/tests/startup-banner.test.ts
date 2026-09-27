@@ -18,7 +18,7 @@ test("startup branch lookup uses direct git argv and hides its Windows child", a
 		command: "git",
 		args: ["-C", "/repo with spaces & metacharacters", "branch", "--show-current"],
 		options: { encoding: "utf8", shell: false, windowsHide: true },
-    }]);
+	}]);
 });
 
 test("startup banner keeps animating after invalidate and cleans up on dispose", async (t) => {

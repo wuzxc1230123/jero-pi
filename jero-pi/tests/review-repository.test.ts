@@ -66,6 +66,9 @@ test("review Git environment runs a real Git authority probe", (t) => {
 });
 
 test("review Git environment rejects inherited unsafe Git overrides", () => {
+	// 全仓唯一一处测试进程内设置 GIT_*（AGENTS.md 纪律的豁免点）：被测守卫
+	// reviewGitEnvironment() 无 env 注入接缝、直读 process.env，验证
+	// "继承的不安全 GIT_* 必须被拒绝" 只能经此注入。finally 精确恢复。
 	const prior = process.env.GIT_DIR;
 	try {
 		process.env.GIT_DIR = "/unsafe";

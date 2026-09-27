@@ -418,20 +418,6 @@ export function assertReceiptIntegrity(envelope: ReceiptEnvelopeV1): void {
 	}
 }
 
-export function reviewStoreRootForRepository(cwd: string): string {
-	const repositoryRoot = execFileSync(
-		"git",
-		["rev-parse", "--show-toplevel"],
-		{ cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env: reviewGitEnvironment(), timeout: 10_000, maxBuffer: 64 * 1024 * 1024 },
-	).trim();
-	const gitPath = execFileSync(
-		"git",
-		["rev-parse", "--git-path", "gentle-ai/reviews"],
-		{ cwd: repositoryRoot, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env: reviewGitEnvironment(), timeout: 10_000, maxBuffer: 64 * 1024 * 1024 },
-	).trim();
-	return isAbsolute(gitPath) ? gitPath : resolve(repositoryRoot, gitPath);
-}
-
 export function repositoryRootForGate(cwd: string): string {
 	return execFileSync("git", ["rev-parse", "--show-toplevel"], {
 		cwd,

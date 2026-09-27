@@ -13,8 +13,8 @@ import type { PersonaMode } from "./jero-ai-prompts.ts";
 
 
 
-export function jeroConfigHome(): string {
-	return process.env.JERO_PI_CONFIG_HOME ?? join(homedir(), ".pi", "jero");
+export function jeroConfigHome(env: NodeJS.ProcessEnv = process.env): string {
+	return env.JERO_PI_CONFIG_HOME ?? join(homedir(), ".pi", "jero");
 }
 
 

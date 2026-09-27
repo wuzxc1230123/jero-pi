@@ -5,6 +5,19 @@ jero-pi 尚未发布到 npm（版本停在 0.1.0 基线），本文件自重构�
 
 ## [Unreleased]
 
+### 审计清偿批（2026-09-27：第九批）
+
+全库编码规范与命名一致性审计（extensions/lib/lib·authority/tests/scripts/skills·docs 五区深读 + 机械扫描）后的定向清偿；风格分叉类（Error 前缀多式、判别字段 kind/type、assert 导入两式等）按约定留待成文后再统一，本批只动有明确依据的项。
+
+- **文档拨正**：`jero-skills` 路由表与 `jero-reference.md` 手写正文的 `jero-release` 拨正为 `release`——`skill-authoring.md` 明文规定 release 保持裸名，两处手写文本系改名漏改（生成 manifest 块一直正确）。
+- **缩进纪律**：`lib/banner-config.ts`、`banner-stats.ts`、`banner-logo-model.ts` 三文件整片空格缩进转 tab（TS 编译器 AST 识别模板串跨度，`git diff -w` 为空证语义零改动）；`tests/jero-agents.z3.test.ts` 与 `tests/sdd-research-capabilities.test.ts` 的逐级单空格缩进同法转 tab；`extensions/jero-ai.ts` 两处缩进层级错乱矫正（纯空白）。
+- **authority 命名**：`JeroJudgmentDayApplyRefusal` 补 `Error` 后缀——全目录 16 个 Error 子类中唯一缺后缀者（同类均为 `*RefusalError`）；模块私有类，4 处文件内引用同步。
+- **显式 any 清零**：`lib/orchestrator-presence.ts` 的 `Record<string, any>` 改 `unknown`（配套 `pick` 参数放宽为 `object`、`validHeader` 经 keys 钉死后定型、两处既定收敛经 `unknown` 中转）；`extensions/startup-banner.ts` 的 `ctx: any` 改 `ExtensionContext`。
+- **env 接缝与契约**：`banner-config.ts` 与 `jero-ai-persona-config.ts` 的 `jeroConfigHome` 补 `env = process.env` 注入接缝（与 `memory.ts` 同族同型）；`JERO_PI_AGENTS_KEY` 更名 `JERO_PI_AGENTS_COLLAPSE_KEY`——未发布包、无文档记载、单一测试引用，与 `AGENTS_VIEW_KEY`/`AGENTS_STOP_KEY` 命名族对齐。
+- **死代码清偿**：删除 `review-transaction-reducer.ts` 的 `reviewStoreRootForRepository`——全库零引用，且与 `review-repository.ts` 的 `reviewStoreRootForRepositoryV1` 同名同职责双实现（非 V1 版自带 git 调用与硬编码存储路径）。
+- **测试与脚本注释**：`reviewGitEnvironment` 守卫自测的 `GIT_DIR` 注入补全仓唯一豁免注释（说明为何必须经 `process.env` 及恢复纪律）；英文注释清零——`tests/authority/fixtures.ts`、`scripts/check-authority-boundary.mjs`、三个 agents 测试夹具头注释、`sdd-research-capabilities` 一处行内注释；三个 4 文件分片家族的 base/z2/z3 头注释"共 3 段"更新为"共 4 段"（追加 z4 后漏改，共 9 文件）。
+- **其余**：`extensions/jero-shell.ts` 模块常量 `defaultShellDeps` 改 `DEFAULT_SHELL_DEPS`（全目录 UPPER_SNAKE 海洋中唯一 camelCase 例外）。
+
 ### 扩展机制批（2026-09-27：第八批）
 
 - **零代码扩展指南与模块/子代理创建器**：新增 `docs/extension-guide.md`（目标项目 `.pi/` 扩展的放置机制、错误避免与升级路径单一事实源）与 `skills/jero-module-creator`、`skills/jero-agent-creator` 技能（领域访谈 → 领域词元命名 → 技能/代理生成 → `openspec/config.yaml` 命令钉住 → 冒烟五步）；`prompts/` 补 `/module-creation`、`/agent-creation` 薄转交入口（目录钉住断言 2→4），`skill-creator` 决策门补转交行防路由落错。命名统一为"一个模块一个领域词元"（技能名 = 词元，代理名 = `词元-角色`）。

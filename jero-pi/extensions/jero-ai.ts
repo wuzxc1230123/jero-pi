@@ -106,7 +106,7 @@ function createJeroAiExtensionForTesting(
 	const pendingReviewConsentRegistry = dependencies.pendingReviewConsentRegistry ?? processPendingReviewConsentRegistry;
 	setGuardrailsProcessEnv(dependencies.processEnv ?? process.env);
 	return function jeroAi(pi: ExtensionAPI): void {
-			const flags = pi as unknown as { registerFlag?: (name: string, definition: { description: string; type: "string"; default?: string }) => void };
+		const flags = pi as unknown as { registerFlag?: (name: string, definition: { description: string; type: "string"; default?: string }) => void };
 			flags.registerFlag?.(SDD_CHANGE_FLAG, {
 				description: "Internal launch-local selected SDD change identity for package-owned child agents.",
 				type: "string",
@@ -504,8 +504,8 @@ function createJeroAiExtensionForTesting(
 						// 既有的 context 载荷是唯一的父到子传输通道。
 						// 拒绝调用方拼写的仿制品，使子进程收到一个精确的、
 						// 由父会话渲染的权威块，而不是含糊的混合物。
-					const context = typeof event.input.context === "string" ? event.input.context.trim() : "";
-					if (containsSddPreflightBlockHeader(context)) {
+						const context = typeof event.input.context === "string" ? event.input.context.trim() : "";
+						if (containsSddPreflightBlockHeader(context)) {
 							return { block: true, reason: "SDD dispatch refused: child context already contains an untrusted preflight block." };
 						}
 						event.input.context = context.length === 0
