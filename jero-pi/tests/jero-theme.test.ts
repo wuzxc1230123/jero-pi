@@ -263,7 +263,7 @@ test("bundled Pi theme is named exactly Jero and defines all required colors", (
 	);
 });
 
-test("bundled Pi theme maps roles to the subtle OpenCode gentleman theme", () => {
+test("bundled Pi theme maps roles to the subtle OpenCode-lineage theme", () => {
 	const theme = readJson<JeroThemeJson>(
 		join(PACKAGE_ROOT, "themes", "Jero.json"),
 	);

@@ -14,9 +14,9 @@ import "./review-candidate-view-shared.ts";
 import type { ReviewCollectInputV3, ReviewStatusV3 } from "../lib/authority/wire-contract.ts";
 import type { ReviewHostRelayRequest } from "../lib/review-host-relay.ts";
 
-// Third field failure on the recovered-lineage defect (2026-08-16, gentle-pi
-// main 402f9f77 + gentle-ai 2.4.0-main.20278905): STATUS recognises the
-// lineage, the Pi RELAY never runs, no lens is launched, zero mutations.
+// recovered-lineage 缺陷的第三字段失败复现锚点（2026-08-16，jero-pi
+// main 402f9f77 + gentle-ai 2.4.0-main.20278905）：STATUS 识别该
+// lineage，Pi 侧 RELAY 从不运行，不启动任何 lens，零变更。
 //
 // Measured against the live binary on a faithful reproduction (linked
 // worktree, uncommitted tracked files, externally recovered successor):

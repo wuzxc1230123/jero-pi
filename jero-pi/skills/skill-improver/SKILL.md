@@ -3,7 +3,7 @@ name: jero-skill-improver
 description: "触发词：改进技能、审计技能、重构技能、技能质量。审计并升级既有 LLM 优先技能。"
 license: Apache-2.0
 metadata:
-  author: gentleman-programming
+  author: jero-pi
   version: "1.0"
 ---
 

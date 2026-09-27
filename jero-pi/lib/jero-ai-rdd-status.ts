@@ -31,7 +31,7 @@ export function isValidRddModeStatus(
 
 /**
  * 渲染回执驱动开发（RDD）状态行，显示在
- * `Background subagent policy` 旁边（gentle-pi#661）。只要 `status`
+ * `Background subagent policy` 旁边。只要 `status`
  * 不是经过校验的 on/off 状态且来源可识别——`undefined`（原生读取器
  * 无法应答：二进制缺失、超时、中止，或原生 CLI 失败）或任何
  * 畸形/不完整的对象——就渲染保守失败的 "unknown" 行。这是纯渲染，
@@ -41,7 +41,7 @@ export function isValidRddModeStatus(
 
 /**
  * 渲染回执驱动开发（RDD）状态行，显示在
- * `Background subagent policy` 旁边（gentle-pi#661）。只要 `status`
+ * `Background subagent policy` 旁边。只要 `status`
  * 不是经过校验的 on/off 状态且来源可识别——`undefined`（原生读取器
  * 无法应答：二进制缺失、超时、中止，或原生 CLI 失败）或任何
  * 畸形/不完整的对象——就渲染保守失败的 "unknown" 行。这是纯渲染，
@@ -57,7 +57,7 @@ export function renderRddStatusLine(
 
 // 主会话提示词在每次非 SDD、非具名代理启动时都要等待它完成，
 // 因此一次无界的原生读取会让会话启动卡在一个挂起的
-// `gentle-ai` 子进程后面（gentle-pi#661 原生评审升级）。
+// `gentle-ai` 子进程后面（原生评审升级）。
 // 生产调用点（before_agent_start）传入
 // `AbortSignal.timeout(RDD_STATUS_TIMEOUT_MS)`；resolveRddModeStatus
 // 自身也让调用与同一个信号竞速（而不只依赖 CLI 自己的信号处理），
@@ -67,7 +67,7 @@ export function renderRddStatusLine(
 
 // 主会话提示词在每次非 SDD、非具名代理启动时都要等待它完成，
 // 因此一次无界的原生读取会让会话启动卡在一个挂起的
-// `gentle-ai` 子进程后面（gentle-pi#661 原生评审升级）。
+// `gentle-ai` 子进程后面（原生评审升级）。
 // 生产调用点（before_agent_start）传入
 // `AbortSignal.timeout(RDD_STATUS_TIMEOUT_MS)`；resolveRddModeStatus
 // 自身也让调用与同一个信号竞速（而不只依赖 CLI 自己的信号处理），
@@ -95,14 +95,14 @@ export function clearRddStatusMemoForTesting(): void {
 	rddStatusMemo.clear();
 }
 
-// gentle-pi#668（修正版）：单个候选的最近已知结果，按仓库 realpath
+// 单个候选的最近已知结果，按仓库 realpath
 // 加 targetIdentity 作为键——绝不仅按仓库，否则一个候选的结果会泄漏进
 // 其他每个候选的 `assess` 调用。只会写入 declined/unavailable
 // （来自 ANSWER_CONSENT）；`closed` 永不写入/派生——需显式传入。
 // 缺失的条目读回 `undefined`，按 `unknown` 处理（保守失败，同 `off`）。
 
 
-// gentle-pi#668（修正版）：单个候选的最近已知结果，按仓库 realpath
+// 单个候选的最近已知结果，按仓库 realpath
 // 加 targetIdentity 作为键——绝不仅按仓库，否则一个候选的结果会泄漏进
 // 其他每个候选的 `assess` 调用。只会写入 declined/unavailable
 // （来自 ANSWER_CONSENT）；`closed` 永不写入/派生——需显式传入。
@@ -141,11 +141,11 @@ export function clearNativeReviewOutcomeMemoForTesting(): void {
 	nativeReviewOutcomeByCandidate.clear();
 }
 
-// 为 `assess` 尽力获取当前候选的 target identity（gentle-pi#668）：
+// 为 `assess` 尽力获取当前候选的 target identity：
 // 复用 `targetStatus`，一个本工具已在别处发起的原生调用。
 
 
-// 为 `assess` 尽力获取当前候选的 target identity（gentle-pi#668）：
+// 为 `assess` 尽力获取当前候选的 target identity：
 // 复用 `targetStatus`，一个本工具已在别处发起的原生调用。
 async function readCurrentTargetIdentityBestEffort(
 	nativeReviewCli: Pick<NativeReviewCli, "targetStatus"> | null | undefined,
@@ -190,20 +190,20 @@ async function readRddModeStatusOnce(
 	}
 }
 
-// gentle-pi#662：只读的组合式原生风险评估加上计算出的验证计划
+// 只读的组合式原生风险评估加上计算出的验证计划
 // （`lib/review-risk-assessment.ts`），供 `jero_review` 工具的
 // `assess` 操作使用。永不抛错：不可用/失败的原生 assess 调用
 // （缺少该动词的旧版二进制、超时、畸形响应）解析为
 // `unassessable` 档位，`verificationPlan` 对其与 `high` 一视同仁
-// ——即 gentle-pi#662 的保守失败规则。
+// ——即 的保守失败规则。
 
 
-// gentle-pi#662：只读的组合式原生风险评估加上计算出的验证计划
+// 只读的组合式原生风险评估加上计算出的验证计划
 // （`lib/review-risk-assessment.ts`），供 `jero_review` 工具的
 // `assess` 操作使用。永不抛错：不可用/失败的原生 assess 调用
 // （缺少该动词的旧版二进制、超时、畸形响应）解析为
 // `unassessable` 档位，`verificationPlan` 对其与 `high` 一视同仁
-// ——即 gentle-pi#662 的保守失败规则。
+// ——即 的保守失败规则。
 interface ReviewAssessmentPlanDetails {
 	schema: "jero.review-assessment-plan/v1";
 	risk: VerificationTier;
@@ -213,7 +213,7 @@ interface ReviewAssessmentPlanDetails {
 	candidate: { kind: string; baseRef: string | undefined } | null;
 	rddLine: RddLine;
 	nativeReviewOutcome: NativeReviewOutcome;
-	// gentle-pi#668：nativeReviewOutcome 的来源——explicit（调用方
+	// nativeReviewOutcome 的来源——explicit（调用方
 	// 显式传入）、derived（匹配到该候选本身）或 unknown。
 	outcome_source: "explicit" | "derived" | "unknown";
 	writerProfile: "small" | "large";
@@ -227,7 +227,7 @@ interface ReviewAssessmentPlanDetails {
 
 
 
-// gentle-pi#662：只读原生风险评估，在渲染的
+// 只读原生风险评估，在渲染的
 // `Receipt-driven development:` 行为 `off` 或 `unknown` 时，用原生风险
 // 而非任务描述判断来给独立验证者设门。以 `jero_review` 的
 // `assess` 操作暴露（不是独立工具），其可选字段经由控制器既有的
@@ -238,7 +238,7 @@ export interface ReviewAssessInput {
 	committedOnly?: boolean;
 	writerModelId?: string;
 	writerEffort?: string;
-	// gentle-pi#668：调用方自己掌握的该候选结果。
+	// 调用方自己掌握的该候选结果。
 	// 省略时会尝试为本候选本身的 target identity 自动派生
 	// declined/unavailable（绝不是别的候选）；`closed`
 	// 永不自动派生——需显式传入。
@@ -279,7 +279,7 @@ export async function resolveReviewAssessmentPlan(
 	}
 
 	const risk: VerificationTier = assessment?.risk ?? VERIFICATION_TIER.UNASSESSABLE;
-	// gentle-pi#668：显式传入永远优先；否则只针对本候选自己的
+	// 显式传入永远优先；否则只针对本候选自己的
 	// target identity 派生，绝不只按仓库。`closed`
 	// 永不被派生。
 	const targetIdentity = input.nativeReviewOutcome === undefined ? await readCurrentTargetIdentityBestEffort(nativeReviewCli, cwd, signal) : undefined;
@@ -412,7 +412,7 @@ export function renderOrchestratorPrompt(
 		.trim();
 }
 
-// gentle-pi#560 / gentle-ai#4056, #4057：2026-08-01 起，Jero 不再向
+// gentle-ai#4056, #4057：2026-08-01 起，Jero 不再向
 // Pi 生成的 APPEND_SYSTEM 组合写入运行时专属的评审执行契约。本包改为
 // 注入镜像 provider 契约 bundle 自带的 `orchestration/pi.md` 文本，
 // 从包内镜像（contracts/review-provider-contract-mirror/）读取一次，

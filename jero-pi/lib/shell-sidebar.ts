@@ -2,7 +2,7 @@ import type { Component, TUI } from "@earendil-works/pi-tui";
 
 // 存储挂在终端上而非模块单例：扩展加载器可能隔离模块，而 Pi 在普通/
 // 全屏切换之间保留同一终端。
-const STATE = Symbol.for("gentle-pi.experimental-sidebar.state");
+const STATE = Symbol.for("jero-pi.experimental-sidebar.state");
 export interface SidebarState {
 	active: boolean;
 	ownsHost?: () => boolean;

@@ -104,7 +104,7 @@ export async function executeReviewControllerOperation(
 		};
 	}
 	if (parameters.operation === REVIEW_CONTROLLER_OPERATION.ASSESS) {
-		// 只读原生风险评估（gentle-ai#4295，gentle-pi#662）。从不
+		// 只读原生风险评估（gentle-ai#4295）。从不
 		// 变更，从不要求 lineageId，也从不经过
 		// authorizeDestructiveReviewOperation（它对任何既非
 		// RESET 也非维护操作的 operation 都提前返回）。
@@ -149,7 +149,7 @@ export async function executeReviewControllerOperation(
 					undefined,
 				);
 				if (parameters.untrackedScope === undefined) {
-					// gentle-pi#706：stop 本身从不告诉调用方下一步做什么。
+					// stop 本身从不告诉调用方下一步做什么。
 					return {
 						...plainMapped,
 						...("selectionBinding" in plainMapped
@@ -479,7 +479,7 @@ export async function executeReviewControllerOperation(
 		// 注册表负责在移除前恢复其 0555 视图的
 		// 可写性；终态 approved 清理会保留 lineage 投影。
 		const candidateViewCleanup = deferredPostBurnCleanup(POST_BURN_CLEANUP.candidateView, () => candidateViews?.cleanupTerminal(parameters.lineageId, "approved", defaultCwd));
-		// gentle-pi#668：`closed` 在此从不自动派生或记录——
+		// `closed` 在此从不自动派生或记录——
 		// 想要走上该路径的父会话，会在其对这一候选的下一次
 		// assess 调用中显式传入 nativeReviewOutcome: "closed"。
 		return {
@@ -503,7 +503,7 @@ export async function executeReviewControllerOperation(
 		if (Object.keys(input).some((key) => key !== "consentBinding" && key !== "answer") || Object.keys(input).length !== 2) throw new Error("Review controller answer-consent input must contain exactly consentBinding and answer");
 		if (typeof input.consentBinding !== "string" || input.consentBinding.length === 0) throw new Error("Review controller answer-consent requires an opaque consentBinding");
 		if (input.answer !== "granted" && input.answer !== "declined") throw new Error("Review controller answer-consent answer must be granted or declined");
-		// gentle-pi#455：仅凭不透明 id 解析绑定，这样
+		// 仅凭不透明 id 解析绑定，这样
 		// 由某个活跃 Pi 会话的 START 创建的绑定，可由任何
 		// 出示它的活跃会话应答——而不只是创建它的会话。
 		const resolved = pendingReviewConsentRegistry.resolve(input.consentBinding);
@@ -552,7 +552,7 @@ export async function executeReviewControllerOperation(
 		try {
 			const gated = await resolveReviewModeGate(nativeReviewCli, parameters.operation, defaultCwd, signal);
 			if (gated !== undefined) {
-				// gentle-pi#668：模式对该确切候选禁用——按其
+				// 模式对该确切候选禁用——按其
 				// targetIdentity 键控，绝不仅按仓库。
 				recordNativeReviewOutcome(pending.authorityCwd, pending.consent.targetIdentity, NATIVE_REVIEW_OUTCOME.UNAVAILABLE);
 				cleanupPendingReviewConsent(pending, pendingReviewConsentRegistry, owningSession);
@@ -573,7 +573,7 @@ export async function executeReviewControllerOperation(
 				...(signal === undefined ? {} : { signal }),
 			});
 			if (answered.kind === "declined") {
-				// gentle-pi#668：候选范围的拒绝，按该确切
+				// 候选范围的拒绝，按该确切
 				// 候选的 targetIdentity 键控，绝不仅按仓库。
 				recordNativeReviewOutcome(pending.authorityCwd, pending.consent.targetIdentity, NATIVE_REVIEW_OUTCOME.DECLINED);
 				pending.cleanupCandidate();
@@ -586,7 +586,7 @@ export async function executeReviewControllerOperation(
 				};
 			}
 			retainNativeUntrackedSelection(retainedUntrackedSelections, pending.authorityCwd, answered.start.lineageId, pending.untrackedSelection);
-			// gentle-pi#706：经 answer-consent 完成的 START 也消耗了
+			// 经 answer-consent 完成的 START 也消耗了
 			// 所采纳的 pre-lineage 选择；像直接路径一样清除它。
 			clearRetainedNativeUntrackedSelection(retainedUntrackedSelections, pending.authorityCwd, "");
 			completed = completeNativeStart(parameters.operation, answered.start, pending.repositoryCwd, pending.candidateView, pending.candidateViews);
@@ -644,7 +644,7 @@ export async function executeReviewControllerOperation(
 				validateNativeStartUntrackedSelection(rawStart);
 			if (explicitUntrackedSelection.reason !== undefined)
 				return nativeStartRejection(explicitUntrackedSelection.reason);
-			// gentle-pi#706：普通 START 采纳由 inspect
+			// 普通 START 采纳由 inspect
 			// untrackedScope 往返在 pre-lineage 保留的选择；显式输入或
 			// 携带的提交永远优先于保留条目。
 			const retainedPreLineageSelection =
@@ -698,7 +698,7 @@ export async function executeReviewControllerOperation(
 				}, retainedUntrackedSelections, defaultCwd);
 				if (negotiated.transport !== undefined) return hostTransportUnavailable(parameters.operation, negotiated.transport);
 				target = negotiated.status!;
-				// gentle-pi#874：本 START 已获取的 STATUS 自身就可以
+				// 本 START 已获取的 STATUS 自身就可以
 				// 为空工作区候选提供 committed-range START。
 				// 就在*这里*采纳其 base commit，在候选视图与原生
 				// START 解析之前，并为该范围重新推导目标，
@@ -741,7 +741,7 @@ export async function executeReviewControllerOperation(
 			} catch (error) {
 				return nativeOperationFailure(parameters.operation, error);
 			}
-			// gentle-pi#323：重放键必须折入当前候选的
+			// 重放键必须折入当前候选的
 			// 内容身份。没有它，第二次携带相同
 			// {cwd, lineageId, input, inputPath} 的 START 会在同意
 			// TTL 窗口内复用一个仍存活（从未绑定
@@ -837,7 +837,7 @@ export async function executeReviewControllerOperation(
 					};
 				}
 				retainNativeUntrackedSelection(retainedUntrackedSelections, defaultCwd, result.lineageId, retainedUntrackedSelection);
-				// gentle-pi#706：被采纳的 pre-lineage 选择随消耗它的
+				// 被采纳的 pre-lineage 选择随消耗它的
 				// START 一同消亡；绝不能泄漏给下一个候选。
 				clearRetainedNativeUntrackedSelection(retainedUntrackedSelections, defaultCwd, "");
 				return completeNativeStart(parameters.operation, result, defaultCwd, candidateView, candidateViews);

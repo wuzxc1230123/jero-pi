@@ -496,7 +496,7 @@ function copyDirectoryFiles(
 	return { copied, skipped };
 }
 
-// 由 gentle-pi#311 P5 退役的资产：Pi 拥有的对抗性评审角色。
+// 由 P5 退役的资产：Pi 拥有的对抗性评审角色。
 // refuter 与 validator 的裁决现在经由提供方渲染的自包含向量
 // 通过 Go 拥有的 pi 进程执行，因此这些角色
 // 定义已没有运行时消费者。assets/migrations 下的迁移

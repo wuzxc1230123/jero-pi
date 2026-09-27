@@ -435,16 +435,20 @@ export default function jeroAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = pr
 		},
 	});
 
-	pi.registerMessageRenderer(AGENTS_MESSAGE_TYPE, (message, options, theme) => {
+	// 旧会话 JSONL 里可能仍以迁移前的旧品牌 customType 持久化：渲染侧
+	// 一律兼容读取（发送侧只写新名）。
+	const renderAgentsMessage = (message: Parameters<Parameters<typeof pi.registerMessageRenderer>[1]>[0], options: Parameters<Parameters<typeof pi.registerMessageRenderer>[1]>[1], theme: Parameters<Parameters<typeof pi.registerMessageRenderer>[1]>[2]) => {
 		const details = (message.details as { jeroAgents?: { taskId?: unknown; agent?: unknown } } | undefined)?.jeroAgents;
 		const taskId = typeof details?.taskId === "string" ? details.taskId : "unknown";
 		const agent = typeof details?.agent === "string" ? details.agent : "Subagent";
 		const heading = `${escapeControlChars(agent)} message · Task ${escapeControlChars(taskId)}`;
 		const body = escapeControlChars(messageText(message.content));
 		return new Text(`${theme.fg("customMessageLabel", heading)}\n${theme.fg("customMessageText", body)}`, options.outputPad, 0);
-	});
+	};
+	pi.registerMessageRenderer(AGENTS_MESSAGE_TYPE, renderAgentsMessage);
+	pi.registerMessageRenderer(AGENTS_MESSAGE_TYPE_LEGACY, renderAgentsMessage);
 
-	pi.registerMessageRenderer(AGENTS_RESULT_TYPE, (message, options, theme) => {
+	const renderAgentsResult = (message: Parameters<Parameters<typeof pi.registerMessageRenderer>[1]>[0], options: Parameters<Parameters<typeof pi.registerMessageRenderer>[1]>[1], theme: Parameters<Parameters<typeof pi.registerMessageRenderer>[1]>[2]) => {
 		const details = (message.details as { jeroAgents?: { agent?: string; status?: string } } | undefined)?.jeroAgents;
 		const content = message.content as string | Array<{ type: string; text?: string }>;
 		const body = (typeof content === "string" ? content : content.map((part) => (part.type === "text" ? (part.text ?? "") : "")).join("\n")).split("\n");
@@ -456,7 +460,9 @@ export default function jeroAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = pr
 			},
 			invalidate() {},
 		};
-	});
+	};
+	pi.registerMessageRenderer(AGENTS_RESULT_TYPE, renderAgentsResult);
+	pi.registerMessageRenderer(AGENTS_RESULT_TYPE_LEGACY, renderAgentsResult);
 
 	// 过期的完成通知作为自定义条目追加：面向人类的持久转录
 	// 内容，从不参与 LLM 上下文。
@@ -984,8 +990,8 @@ export default function jeroAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = pr
 }
 
 import {
-	agentRuntimePaths, AGENTS_COMMAND_NAME, AGENTS_MESSAGE_TYPE, AGENTS_RESULT_TYPE,
-	AGENTS_STALE_RESULT_TYPE, AGENTS_WIDGET_KEY, agentsCollapseKey, type AgentsDeps, agentsEnabled,
+	agentRuntimePaths, AGENTS_COMMAND_NAME, AGENTS_MESSAGE_TYPE, AGENTS_MESSAGE_TYPE_LEGACY, AGENTS_RESULT_TYPE,
+	AGENTS_RESULT_TYPE_LEGACY, AGENTS_STALE_RESULT_TYPE, AGENTS_WIDGET_KEY, agentsCollapseKey, type AgentsDeps, agentsEnabled,
 	agentsStopKey, agentsViewKey, answerThroughUi, CLOCK_TICK_MS, completionText, defaultDeps,
 	describeTask, expandHint, finishedText, LEGACY_SUBAGENTS_PACKAGE, legacySubagentsInstalledAt,
 	messageText, ownedChildIpc, registerChildMessaging, RENDER_COALESCE_MS, RESEARCH_ARTIFACT_SCHEMA,

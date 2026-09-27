@@ -9,9 +9,9 @@ const REQUEST_TYPE = "standing-review-permission-request";
 const RESPONSE_TYPE = "standing-review-permission-response";
 const MAX_LINE_BYTES = 4096;
 const DEFAULT_MAX_REQUESTS = 16;
-export const CHILD_STANDING_REVIEW_PERMISSION_REGISTRY_SCHEMA = "gentle-pi.child-standing-review-permission/v1";
+export const CHILD_STANDING_REVIEW_PERMISSION_REGISTRY_SCHEMA = "jero-pi.child-standing-review-permission/v1";
 export const CHILD_STANDING_REVIEW_PERMISSION_REGISTRY_SYMBOL = Symbol.for(CHILD_STANDING_REVIEW_PERMISSION_REGISTRY_SCHEMA);
-export const CHILD_STANDING_REVIEW_PERMISSION_CLIENT_SCHEMA = "gentle-pi.child-standing-review-permission-client/v1";
+export const CHILD_STANDING_REVIEW_PERMISSION_CLIENT_SCHEMA = "jero-pi.child-standing-review-permission-client/v1";
 
 export interface ChildStandingReviewPermissionClientHandle {
 	readonly schema: typeof CHILD_STANDING_REVIEW_PERMISSION_CLIENT_SCHEMA;

@@ -32,7 +32,7 @@ test("next_transition stop refuses an unachievable slot whose withdraw arguments
 	assert.doesNotThrow(() => decodeReviewNextTransitionV3(stop));
 });
 
-// gentle-pi#822: identity arguments appear exactly once, and the rendered
+// identity arguments appear exactly once, and the rendered
 // command is an exact, ordered rendering of every validated provider token.
 // Substring checks would accept a missing non-identity token, repeated command,
 // suffix, or shell payload despite the command no longer naming this slot alone.
@@ -57,7 +57,7 @@ test("next_transition stop refuses duplicate identities and non-exact withdraw c
 	assert.doesNotThrow(() => decodeReviewNextTransitionV3(stop));
 });
 
-// gentle-pi#822 (CodeRabbit finding): withdrawal is a narrowly scoped, runnable
+// (CodeRabbit finding): withdrawal is a narrowly scoped, runnable
 // retraction. Its one affirmative flag is part of the exact native vector, not
 // just another provider-defined argument that a malformed STATUS can omit or
 // negate while still rendering a plausible command.
@@ -97,7 +97,7 @@ test("next_transition stop requires exactly one canonical --withdraw=true argume
 	assert.throws(() => decodeReviewNextTransitionV3({ ...stop, unachievable_lens_slots: [duplicate] }), /withdraw must appear exactly once/);
 });
 
-// gentle-pi#822 (CodeRabbit finding): Go bounds the CAPTURE_UNACHIEVABLE detail at 512 UTF-8 bytes (native-review-cli.ts enforces the same limit when declaring), so the transition decoder mirrors that bound — measured in bytes, not UTF-16 code units — and a STATUS stop can never carry a detail this client would have refused to declare.
+// (CodeRabbit finding): Go bounds the CAPTURE_UNACHIEVABLE detail at 512 UTF-8 bytes (native-review-cli.ts enforces the same limit when declaring), so the transition decoder mirrors that bound — measured in bytes, not UTF-16 code units — and a STATUS stop can never carry a detail this client would have refused to declare.
 test("next_transition stop bounds an unachievable slot detail at 512 UTF-8 bytes", () => {
 	const stop: JsonObject = { kind: "stop", reason_code: "unachievable_lens_slot", unachievable_lens_slots: [unachievableSlot()] };
 	// exactly 512 one-byte characters still decodes
@@ -253,7 +253,7 @@ test("next_transition.execute accepts the optional selector_arguments and artifa
 	assert.doesNotThrow(() => decodeReviewNextTransitionV3({ ...base, execute: { ...base.execute, selector_arguments: [{ name: "projection", value: "workspace", token: "--projection=workspace" }] } }));
 });
 
-// gentle-pi#311 P4-roles: the two Go-owned non-lens provider role capture
+// P4-roles: the two Go-owned non-lens provider role capture
 // operations render SELF-CONTAINED vectors (binding tokens + --agent=pi
 // --execute=true). Their schemas are pinned, and a submission descriptor on
 // either one is a contract violation because it would hand the caller a way

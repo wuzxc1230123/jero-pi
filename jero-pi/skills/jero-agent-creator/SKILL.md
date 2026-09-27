@@ -3,7 +3,7 @@ name: jero-agent-creator
 description: "触发词：子代理创建、创建代理、agent creator、create subagent、新建子代理。在目标项目 .pi/agents/ 下创建单个领域子代理：frontmatter 契约、权限面选择、命名防撞、委派接线。"
 license: Apache-2.0
 metadata:
-  author: gentleman-programming
+  author: jero-pi
   version: "1.0"
 ---
 

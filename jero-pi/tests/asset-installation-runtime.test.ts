@@ -83,7 +83,7 @@ if (process.env.JERO_PI_ASSET_PROOF_CHILD === "1") {
 	await proveLazyDiscovery();
 } else {
 	test("actual SDK discovers SDD only after explicit activation in the same session", () => {
-		const root = mkdtempSync(join(tmpdir(), "gentle-pi-assets-sdk-"));
+		const root = mkdtempSync(join(tmpdir(), "jero-pi-assets-sdk-"));
 		try {
 			const home = join(root, "home");
 			const cwd = join(root, "project");

@@ -70,7 +70,7 @@ export function mouse(
 ): TuiMouseEvent {
 	return { type, button, x, y, screenX: x, screenY: y, width, height, shift: false, alt: false, ctrl: false };
 }
-export const root = mkdtempSync(join(tmpdir(), "gentle-agents-ext-"));
+export const root = mkdtempSync(join(tmpdir(), "jero-agents-ext-"));
 after(() => rmSync(root, { recursive: true, force: true }));
 export const home = join(root, "home");
 export const cwd = join(root, "project");
@@ -158,7 +158,7 @@ export function fakeContext(tui: { requestRender(): void } = fakeTui, confirmRes
 		},
 	} as unknown as ExtensionContext;
 	const widget = () => {
-		const factory = widgets.get("gentle-agents");
+		const factory = widgets.get("jero-agents");
 		return factory ? factory(tui, plainTheme).render(72).map(stripAnsi) : undefined;
 	};
 	return { ctx, widget, dialogs, overlays, customCompletions, customOptions };

@@ -3,7 +3,7 @@ name: jero-rdd-defect-workflow
 description: "触发词：RDD、receipt-driven development、评审权威、回执/谱系、纠正/恢复、交付门控/熔断、有界评审缺陷。指导工作。"
 license: Apache-2.0
 metadata:
-  author: gentleman-programming
+  author: jero-pi
   version: "1.0"
 ---
 

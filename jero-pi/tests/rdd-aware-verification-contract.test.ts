@@ -4,7 +4,7 @@ import { join } from "node:path";
 import test from "node:test";
 
 // ---------------------------------------------------------------------------
-// gentle-pi#661/#662: RDD-aware verification rule for delegated work.
+//  RDD-aware verification rule for delegated work.
 //
 // The bounded writer always self-verifies: it runs the parent-authorized
 // `## Verification` commands itself and reports observed output. Whether a
@@ -15,7 +15,7 @@ import test from "node:test";
 //   - `on`             -> the writer's own report is the verification of
 //                         record; `jero-verify` is on-demand, except
 //                         passive risk, which gets a structural readback.
-//   - `off`/`unknown`  -> gentle-pi#662: the parent calls `jero_review` with
+//   - `off`/`unknown`  -> the parent calls `jero_review` with
 //                         `{"operation":"assess"}` over the writer's diff and
 //                         follows the returned plan by native risk tier
 //                         (passive/medium/high/unassessable), instead of a
@@ -55,12 +55,12 @@ const SMALL_MODEL_BIAS_SENTENCE =
 	"小模型偏差使验证用途的层级上调一级（medium 变 high）；未知的 `Receipt-driven development:` 行绝不让层级比 `off` 更宽松。";
 const SPOT_CHECK_SENTENCE =
 	"父会话抽查（交付前重跑一条已报告的命令）在每个层级都保持必需。";
-// gentle-pi#668: the `on` branch of trigger 5 holds only while the native
+// the `on` branch of trigger 5 holds only while the native
 // review actually reaches a terminal outcome for this candidate -- a decline,
 // a clone-local disable, or a refused START/STATUS all fall back to the exact
 // same risk-gated path as `off`.
 const ON_BRANCH_FALLBACK_SENTENCE =
-	'该 `on` 分支仅当原生评审确实对该候选到达终局结果时成立（gentle-pi#668）：该候选的同意封套被人类拒绝（候选范围，绝不是 RDD 总开关）、流程中发现 clone 本地的 RDD 已禁用，或 START/STATUS 被拒绝，都完全像 `off` 一样回落到风险分级路径——调用 `jero_review` 并传入 `{"operation":"assess"}`（父会话已知时传入 `nativeReviewOutcome`；否则工具从它自己对该候选的观察推导，无法推导时保守失败为 `unknown`）并遵循返回的计划。';
+	'该 `on` 分支仅当原生评审确实对该候选到达终局结果时成立：该候选的同意封套被人类拒绝（候选范围，绝不是 RDD 总开关）、流程中发现 clone 本地的 RDD 已禁用，或 START/STATUS 被拒绝，都完全像 `off` 一样回落到风险分级路径——调用 `jero_review` 并传入 `{"operation":"assess"}`（父会话已知时传入 `nativeReviewOutcome`；否则工具从它自己对该候选的观察推导，无法推导时保守失败为 `unknown`）并遵循返回的计划。';
 
 test("trigger 5 (Verification rule) states the exact on-line routing: writer report is the verification of record", () => {
 	assert.ok(delegation.includes(ON_SENTENCE), "trigger 5 is missing the exact on-line sentence");
@@ -84,7 +84,7 @@ test("trigger 5 keeps the parent spot check requirement in every tier", () => {
 	assert.ok(delegation.includes(SPOT_CHECK_SENTENCE), "trigger 5 is missing the parent spot check sentence");
 });
 
-test("trigger 5 states that the on branch holds only while the native review closes for this candidate, falling back to the off path exactly once (gentle-pi#668)", () => {
+test("trigger 5 states that the on branch holds only while the native review closes for this candidate, falling back to the off path exactly once ()", () => {
 	assert.equal(countOccurrences(delegation, ON_BRANCH_FALLBACK_SENTENCE), 1, "trigger 5 is missing (or duplicates) the on-branch fallback sentence");
 });
 
@@ -111,7 +111,7 @@ test("trigger 5 never restates the retired #661 off/unknown non-trivial judgment
 test("the Simple Delegation paragraph references trigger 5 instead of restating the on/off/unknown routing", () => {
 	assert.match(
 		delegation,
-		/按感知 RDD 的验证规则（强制委托触发条件下的触发 5，gentle-pi#661）/,
+		/按感知 RDD 的验证规则（强制委托触发条件下的触发 5）/,
 	);
 	assert.match(delegation, /规范性的 on\/off\/unknown 路由在那里，不在此/);
 });

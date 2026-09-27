@@ -245,7 +245,7 @@ test("risk lens distinguishes trusted orchestration from concrete boundary bypas
 });
 
 test("the Pi-owned adversarial role agents are retired: roles execute through Go-owned pi processes", () => {
-	// gentle-pi#311 P5: the refuter and targeted validator are no longer
+	// P5: the refuter and targeted validator are no longer
 	// Pi-authored actors. The provider renders self-contained
 	// review.capture-refuter / review.capture-validation vectors; executing
 	// them makes Go materialize the role prompt, spawn its own locked-down pi

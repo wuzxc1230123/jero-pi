@@ -287,7 +287,7 @@ function createJeroAiExtensionForTesting(
 			}
 			const prefs = getSddPreflightPreferences(ctx);
 			// RPC 子进程从不解析或持久化默认值。父会话派发门
-			// 在既有的任务上下文中传输渲染出的块，且 Gentle
+			// 在既有的任务上下文中传输渲染出的块，且 Agents
 			// Agents 会在生成子进程之前拒绝缺失/畸形的载荷。
 			const sddPrompt =
 				prefs && (!isNamedAgent || isSddAgent)
@@ -327,7 +327,7 @@ function createJeroAiExtensionForTesting(
 				: launchSddChange === undefined
 					? ""
 					: "\n\n## Native SDD Status Engine\nSDD selection blocked: the receiving agent has no recognized SDD phase.\nDo not run phase work; return this blocker to the parent.";
-			// gentle-pi#661：RDD 状态行（以及 gentle 提示词的其余部分）
+			// RDD 状态行（以及 persona 提示词的其余部分）
 			// 只为主会话构建，与下方 reviewContractPrompt 的条件
 			// 互为镜像——具名/SDD 代理永远不会走到这个
 			// 分支，因此不会为它们解析或计算任何行。
@@ -342,7 +342,7 @@ function createJeroAiExtensionForTesting(
 						readActiveToolNames(pi),
 						await resolveRddStatusLine(nativeReviewCli, ctx.cwd, AbortSignal.timeout(RDD_STATUS_TIMEOUT_MS), undefined, ctx),
 					)}`;
-			// 精益纪律（lean discipline）与 gentle 提示词同门同条件：只注入
+			// 精益纪律（lean discipline）与 persona 提示词同门同条件：只注入
 			// 主会话——具名/SDD 代理经既有的任务上下文与阶段产物获得纪律，
 			// 本注入绝不改写委派传输通道。off 渲染为空串，完全还原历史行为；
 			// 档位按 会话条目 > JERO_PI_LEAN_MODE > full 解析，每次代理启动
@@ -351,7 +351,7 @@ function createJeroAiExtensionForTesting(
 				? ""
 				: getLeanInstructions(resolveEffectiveLeanMode(readLeanBranch(ctx), permissionEnvironment));
 			const leanPrompt = leanInstructions.length === 0 ? "" : `\n\n${leanInstructions}`;
-			// gentle-pi#560 / gentle-ai#4056, #4057：仅为主会话注入镜像
+			// gentle-ai#4056, #4057：仅为主会话注入镜像
 			// provider 契约 bundle 的评审执行契约，且只在
 			// 原生评审 CLI 确实存在时注入。
 			const reviewContractPrompt =
@@ -366,7 +366,7 @@ function createJeroAiExtensionForTesting(
 			};
 		});
 
-		// gentle-pi#556 / gentle-ai#4051：RDD 开启时，代理可能完成
+		// gentle-ai#4051：RDD 开启时，代理可能完成
 		// 一次已授权的实现并报告完成，却从未运行
 		// 评审 STATUS 预检或提出同意问题。该
 		// 处理器是只读且幂等的：它从不运行 START，从不
@@ -660,7 +660,7 @@ function createJeroAiExtensionForTesting(
 		});
 
 		pi.registerCommand("jero:persona", {
-			description: "Switch el Jero persona between gentleman and neutral.",
+			description: "Switch el Jero persona between direct and neutral.",
 			handler: async (_args, ctx) => {
 				await handlePersonaCommand(ctx);
 			},

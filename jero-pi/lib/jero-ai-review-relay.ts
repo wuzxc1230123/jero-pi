@@ -52,7 +52,7 @@ export function setReviewHostRelayGroupRunnersForTesting(reviewerGroup?: typeof 
 export const REVIEW_HOST_RELAY_RETRY_ACTION =
 	"Call fresh STATUS and submit only an exact reoffered one-slot binding; never replay this capture from transcript inference.";
 
-// gentle-pi#522 / #524：gentle-ai 在准入处拒绝了提交，并
+// gentle-ai 在准入处拒绝了提交，并
 // 声明镜头槽位未被消耗。被拒绝的字节才是
 // 问题所在，所以 continuation 是在重新提供的槽位上跑一次全新的评审者，
 // 既不是重放，也不是未知结果对账。
@@ -60,12 +60,12 @@ export const REVIEW_HOST_RELAY_REFUSED_ACTION =
 	"gentle-ai refused this submission at admission and did not consume the lens slot; the reason is in failure.stderr. "
 	+ "Call fresh STATUS and run only the exact slot it reoffers so the reviewer produces a new result that satisfies that refusal; never resubmit the refused bytes.";
 
-// gentle-pi#638：声明已记录，因此全新 STATUS 会以每个声明槽位一个 withdraw 绑定停止评审，而不是重新提供评审者。withdraw 命令是回到同一槽位的唯一途径；其他一切都需要更小的候选和一次新评审。
+// 声明已记录，因此全新 STATUS 会以每个声明槽位一个 withdraw 绑定停止评审，而不是重新提供评审者。withdraw 命令是回到同一槽位的唯一途径；其他一切都需要更小的候选和一次新评审。
 const REVIEW_HOST_RELAY_UNACHIEVABLE_ACTION =
 	"A deterministic relay failure was declared unachievable for this bound slot, and fresh STATUS now stops this review instead of reoffering the reviewer. "
 	+ "If the failure was transient, run the withdraw command in unachievable_lens_slots with the same binding so the review re-offers this exact reviewer; otherwise reduce the candidate scope and start a new review.";
 
-// gentle-pi#638：中继失败是确定性的，但 gentle-ai 拒绝了该声明，因此槽位状态未变，评审仍需要一个 provider 绑定的 continuation。
+// 中继失败是确定性的，但 gentle-ai 拒绝了该声明，因此槽位状态未变，评审仍需要一个 provider 绑定的 continuation。
 const REVIEW_HOST_RELAY_DECLARATION_FAILED_ACTION =
 	"The relay failure was deterministic for this slot, but gentle-ai refused the unachievable declaration, so no slot state changed. "
 	+ "Call fresh STATUS and follow only its declared action; never replay this capture from transcript inference.";
@@ -88,7 +88,7 @@ export function reviewHostRelayFailureReport(error: ReviewHostRelayError): Recor
 		...(error.elapsedMs === null ? {} : { elapsed_ms: error.elapsedMs }),
 		...(error.timeoutMs === null ? {} : { timeout_ms: error.timeoutMs }),
 		// 捕获的原生 stderr 是 provider 确切
-		// 拒绝原因的唯一所在（gentle-pi#524）；丢弃它会把每个准入
+		// 拒绝原因的唯一所在；丢弃它会把每个准入
 		// 拒绝都藏进 "submission-refused" 背后。
 		...(error.stderr.length === 0 ? {} : { stderr: error.stderr }),
 	};
@@ -258,7 +258,7 @@ export async function executeReviewHostRelayCapture(
 				mutation_outcome: "none",
 			};
 		}
-		// gentle-pi#638：两类确定性中继失败终结的是槽位而非传输。通过原生动词声明槽位不可达成，会记录 provider 所拥有的事实——该评审者在当前条件下无法完成——随后恰好一次绑定 STATUS 重查渲染带 withdraw 绑定的带类型 stop，而不是重新提供同一槽位。声明绑定从该槽位自己的 provider 签发 `--name=value` token 重新派生，绝不来自 transcript 状态。
+		// 两类确定性中继失败终结的是槽位而非传输。通过原生动词声明槽位不可达成，会记录 provider 所拥有的事实——该评审者在当前条件下无法完成——随后恰好一次绑定 STATUS 重查渲染带 withdraw 绑定的带类型 stop，而不是重新提供同一槽位。声明绑定从该槽位自己的 provider 签发 `--name=value` token 重新派生，绝不来自 transcript 状态。
 		const unachievableReason = reviewHostRelayUnachievableReason(error);
 		const declarationBinding = unachievableSlotDeclarationBinding(slot);
 		if (unachievableReason !== undefined && declarationBinding !== undefined && nativeReviewCli.captureUnachievableLens !== undefined) {
@@ -268,7 +268,7 @@ export async function executeReviewHostRelayCapture(
 			} catch (declarationError) {
 				// 仅对未知动词的能力拒绝才放行：没有 `capture-unachievable` 的旧二进制保持下方今日的传输失败行为。其余所有声明失败都浮出，绝不藏在其所跟随的中继失败背后。
 				if (!isNativeReviewUnachievableVerbRefused(declarationError)) {
-					// gentle-pi#822（diff 之外）：声明失败自己的封套携带变更真相——进程可能在失败前已记录声明——因此变更字段从它派生而非硬编码 none，未知结果由一次绑定 STATUS 重查证明或证伪，且从不改变失败结果。
+					// （diff 之外）：声明失败自己的封套携带变更真相——进程可能在失败前已记录声明——因此变更字段从它派生而非硬编码 none，未知结果由一次绑定 STATUS 重查证明或证伪，且从不改变失败结果。
 					const declarationFailureReport = nativeOperationFailure("jero_review_capture", declarationError);
 					let declarationMutationPerformed = declarationFailureReport.mutation_performed === true;
 					let declarationMutationOutcome: "none" | "unknown" | "committed" = declarationFailureReport.mutation_outcome === "committed" ? "committed" : declarationFailureReport.mutation_outcome === "unknown" ? "unknown" : "none";
@@ -305,9 +305,9 @@ export async function executeReviewHostRelayCapture(
 					const status = await reconcileUnknownReviewLastEventCapture(nativeReviewCli, cwd, binding, route === undefined ? { agent: REVIEW_HOST_AGENT } : { ...route, agent: REVIEW_HOST_AGENT });
 					syncRetainedNativeStatusSelections(selections, cwd, status, route?.baseRef);
 					const stop = status.nextTransition?.kind === "stop" && status.nextTransition.reasonCode === "unachievable_lens_slot" ? status.nextTransition : undefined;
-					// gentle-pi#822：stop 也可能携带其他运行声明的槽位，因此只暴露与本会话刚声明的身份匹配的条目。有槽位但无匹配条目的 stop 是对账失败，绝不是渲染别人 withdraw 命令的成功。
+					// stop 也可能携带其他运行声明的槽位，因此只暴露与本会话刚声明的身份匹配的条目。有槽位但无匹配条目的 stop 是对账失败，绝不是渲染别人 withdraw 命令的成功。
 					const declaredSlot = stop?.unachievableLensSlots?.find((slot) => slot.lens === declaration.lens && slot.selectedOrder === declaration.selected_order && slot.subjectHash === declaration.subject_hash && slot.withdraw.binding.targetIdentity === declarationBinding.targetIdentity && slot.withdraw.binding.lineageId === declarationBinding.lineageId && slot.withdraw.binding.revision === declarationBinding.expectedRevision);
-					// gentle-pi#822：成功是被证明的，绝非假设——一个完全没有 unachievable_lens_slot stop 的 STATUS（无 transition、别的 reason code，或 collect 重新提供）与条目不匹配声明身份的 stop 一样，都是对账失败。
+					// 成功是被证明的，绝非假设——一个完全没有 unachievable_lens_slot stop 的 STATUS（无 transition、别的 reason code，或 collect 重新提供）与条目不匹配声明身份的 stop 一样，都是对账失败。
 					if (declaredSlot === undefined) {
 						return {
 							tool: "jero_review_capture",
@@ -373,7 +373,7 @@ export async function executeReviewHostRelayCapture(
 const REVIEW_PROVIDER_ROLE_RETRY_ACTION =
 	"Call fresh STATUS and execute only the exact one-slot role vector it reoffers; never relaunch from transcript inference.";
 
-// gentle-pi#638：从一个 materialize 槽位自己的 provider 签发 token 重新派生 capture-unachievable 声明绑定。provider 将这些 token 渲染为 `--name=value` 对（review-host-relay.ts 的 renderToken），Go 在记录前用冻结权威校验每个值，因此缺失必需值或 subject hash 就意味着该槽位无法声明，调用方保持其回退行为。
+// 从一个 materialize 槽位自己的 provider 签发 token 重新派生 capture-unachievable 声明绑定。provider 将这些 token 渲染为 `--name=value` 对（review-host-relay.ts 的 renderToken），Go 在记录前用冻结权威校验每个值，因此缺失必需值或 subject hash 就意味着该槽位无法声明，调用方保持其回退行为。
 function unachievableSlotDeclarationBinding(slot: ReviewHostRelaySlot): { lineageId: string; targetIdentity: string; expectedRevision: string; requestHash: string; repositoryContext?: string } | undefined {
 	const tokenValue = (name: string): string | undefined => {
 		const prefix = `--${name}=`;

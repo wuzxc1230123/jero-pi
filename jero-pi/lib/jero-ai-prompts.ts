@@ -1,4 +1,4 @@
-// 提示词构建：persona 模板、评审执行契约镜像片段装载、gentle 提示词组装。
+// 提示词构建：persona 模板、评审执行契约镜像片段装载、persona 提示词组装。
 // 自 extensions/jero-ai.ts 拆分（机械平移，语义零改动）。
 
 import { createHash, timingSafeEqual } from "node:crypto";
@@ -11,7 +11,7 @@ import { PACKAGE_ROOT } from "./jero-ai-paths.ts";
 import { getOrchestratorPrompt, renderRddStatusLine } from "./jero-ai-rdd-status.ts";
 
 
-// gentle-pi#560 / gentle-ai#4056, #4057：2026-08-01 起，Jero 不再向
+// gentle-ai#4056, #4057：2026-08-01 起，Jero 不再向
 // Pi 生成的 APPEND_SYSTEM 组合写入运行时专属的评审执行契约。本包改为
 // 注入镜像 provider 契约 bundle 自带的 `orchestration/pi.md` 文本，
 // 从包内镜像（contracts/review-provider-contract-mirror/）读取一次，
@@ -90,15 +90,15 @@ export async function pathExists(path: string): Promise<boolean> {
 
 
 
-export type PersonaMode = "gentleman" | "neutral";
+export type PersonaMode = "direct" | "neutral";
 
 
 
-export const PERSONA_OPTIONS = ["gentleman", "neutral"] as const;
+export const PERSONA_OPTIONS = ["direct", "neutral"] as const;
 
 
 
-const GENTLEMAN_PERSONA_PROMPT = `Persona:
+const DIRECT_PERSONA_PROMPT = `Persona:
 - 直接、技术性、简洁。
 - 始终用用户写作所用的语言回答。
 - 用户使用中文时，用自然、地道的简体中文回答。
@@ -128,7 +128,7 @@ export function buildJeroPrompt(
 	rddStatusLine: string = renderRddStatusLine(undefined),
 ): string {
 	const personaPrompt =
-		persona === "neutral" ? NEUTRAL_PERSONA_PROMPT : GENTLEMAN_PERSONA_PROMPT;
+		persona === "neutral" ? NEUTRAL_PERSONA_PROMPT : DIRECT_PERSONA_PROMPT;
 	const languageBoundary =
 		persona === "neutral"
 			? "语言：用户使用中文时，用中性、专业的简体中文；不使用网络俚语、梗或方言表达。"

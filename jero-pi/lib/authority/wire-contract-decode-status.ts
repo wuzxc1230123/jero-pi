@@ -142,7 +142,7 @@ function decodeCollectInput(value: unknown, label: string, v5: boolean, v6: bool
 		sha256(argumentsList[5]!.value, `${label}.arguments[5].value`);
 	}
 
-	// gentle-pi#311 P4-roles：两个 Go 持有的非评审视角提供方角色捕获
+	// P4-roles：两个 Go 持有的非评审视角提供方角色捕获
 	// 操作渲染“自包含”的权威推进向量。逐字执行渲染出的令牌会让 Go
 	// 物化角色提示词、运行自己锁定的 pi 子进程并受理原始裁决——因此
 	// 这些输入之一上的提交描述符（宿主中介的完成表单）会让调用方
@@ -219,7 +219,7 @@ function decodeCollectInput(value: unknown, label: string, v5: boolean, v6: bool
 	};
 }
 
-// gentle-pi#627：gentle-ai 的受管资产续跑（STATUS next_transition 的
+// gentle-ai 的受管资产续跑（STATUS next_transition 的
 // stop reason_code=managed_assets_outdated，以及 START 的预检失败封套）
 // 点名在不放弃冻结候选的前提下解析过期受管资产集的确切
 // `gentle-ai sync` 调用。逐字解码自
@@ -241,13 +241,13 @@ export function decodeReviewNextTransitionV3(value: unknown, options: { v5?: boo
 	const kind = enumeration(transition.kind, ["execute", "collect", "stop"] as const, "next_transition.kind");
 	const reasonCode = text(transition.reason_code, "next_transition.reason_code", { minimum: 1, pattern: /^[a-z0-9_]+$/ });
 	const continuation = transition.continuation === undefined ? undefined : decodeReviewManagedAssetsContinuationV1(transition.continuation, "next_transition.continuation");
-	// gentle-pi#627：continuation 在每个状态版本上都是可选的——较旧的
+	// continuation 在每个状态版本上都是可选的——较旧的
 	// gentle-ai 可能在 managed_assets_outdated stop 上完全不带
 	// continuation，解码绝不能因此拒绝整个封套。存在时它只在带这个
 	// 确切 reason_code 的 stop 上有效。
 	if (continuation !== undefined && !(kind === "stop" && reasonCode === "managed_assets_outdated")) throw new TypeError("next_transition.continuation is only valid for a stop transition with reason_code managed_assets_outdated");
 
-	// gentle-pi#638：不可达 stop 按每个已声明槽位列出一条，各自携带完整的 withdraw 命令（schemas/status-v7.schema.json 的 stop 变体）。与 continuation 一样，该字段只在其专属的确切 stop 原因码上有效，且提供方漂移时条目被拒绝而非被静默丢弃。
+	// 不可达 stop 按每个已声明槽位列出一条，各自携带完整的 withdraw 命令（schemas/status-v7.schema.json 的 stop 变体）。与 continuation 一样，该字段只在其专属的确切 stop 原因码上有效，且提供方漂移时条目被拒绝而非被静默丢弃。
 	let unachievableLensSlots: readonly ReviewUnachievableLensSlotV3[] | undefined;
 	if (transition.unachievable_lens_slots !== undefined) {
 		if (!(kind === "stop" && reasonCode === "unachievable_lens_slot")) throw new TypeError("next_transition.unachievable_lens_slots is only valid for a stop transition with reason_code unachievable_lens_slot");
@@ -314,7 +314,7 @@ function decodeUnachievableLensSlot(value: unknown, label: string): ReviewUnachi
 	const subjectHash = sha256(body.subject_hash, `${label}.subject_hash`);
 	const reason = nonempty(body.reason, `${label}.reason`);
 	const detail = body.detail === undefined ? undefined : nonempty(body.detail, `${label}.detail`);
-	// gentle-pi#822：Go 拒绝超过 512 UTF-8 字节的 CAPTURE_UNACHIEVABLE detail，因此 stop 解码器镜像同一上限——按字节而非 UTF-16 码元计量——STATUS 的 stop 就绝不可能携带本客户端会拒绝声明的 detail。
+	// Go 拒绝超过 512 UTF-8 字节的 CAPTURE_UNACHIEVABLE detail，因此 stop 解码器镜像同一上限——按字节而非 UTF-16 码元计量——STATUS 的 stop 就绝不可能携带本客户端会拒绝声明的 detail。
 	if (detail !== undefined && Buffer.byteLength(detail, "utf8") > REVIEW_INTEGRATION_UNACHIEVABLE_LENS_DETAIL_LIMIT) throw new TypeError(`${label}.detail exceeds ${REVIEW_INTEGRATION_UNACHIEVABLE_LENS_DETAIL_LIMIT} bytes`);
 	const withdraw = exactRecord(body.withdraw, `${label}.withdraw`, ["operation", "command", "arguments", "binding"]);
 	const operation = enumeration(withdraw.operation, ["review.capture-unachievable"] as const, `${label}.withdraw.operation`);
@@ -331,7 +331,7 @@ function decodeUnachievableLensSlot(value: unknown, label: string): ReviewUnachi
 	const targetIdentity = sha256(binding.target_identity, `${label}.withdraw.binding.target_identity`);
 	const lineageId = binding.lineage_id === undefined ? undefined : lineage(binding.lineage_id, `${label}.withdraw.binding.lineage_id`);
 	const revision = binding.revision === undefined ? undefined : sha256(binding.revision, `${label}.withdraw.binding.revision`);
-	// gentle-pi#822：withdraw 形态把槽位身份点名两次——一次作为命名参数、一次作为绑定对象——两种渲染必须在槽位解码前一致。严格相等还要求可选的 lineage 与 revision 字段要么都在、要么都不在，因此部分渲染的绑定绝不会蒙混过关，重启也无法撤回另一个槽位。每个身份参数必须“恰好”出现一次：首次匹配查找曾让重复的 {name} 条目把第二个值偷运过身份检查。
+	// withdraw 形态把槽位身份点名两次——一次作为命名参数、一次作为绑定对象——两种渲染必须在槽位解码前一致。严格相等还要求可选的 lineage 与 revision 字段要么都在、要么都不在，因此部分渲染的绑定绝不会蒙混过关，重启也无法撤回另一个槽位。每个身份参数必须“恰好”出现一次：首次匹配查找曾让重复的 {name} 条目把第二个值偷运过身份检查。
 	const withdrawIdentityArgument = (name: string): ReviewTransitionArgumentV3 | undefined => {
 		const matches = arguments_.filter((argument) => argument.name === name);
 		if (matches.length > 1) throw new TypeError(`${label}.withdraw.arguments ${name} must appear exactly once`);
@@ -345,7 +345,7 @@ function decodeUnachievableLensSlot(value: unknown, label: string): ReviewUnachi
 	if (withdrawLineage?.value !== lineageId) throw new TypeError(`${label}.withdraw.arguments lineage does not match the withdraw binding lineage_id`);
 	const withdrawExpectedRevision = withdrawIdentityArgument("expected-revision");
 	if (withdrawExpectedRevision?.value !== revision) throw new TypeError(`${label}.withdraw.arguments expected-revision does not match the withdraw binding revision`);
-	// gentle-pi#822：command 是可执行的权威，不是显示提示。每个提供方
+	// command 是可执行的权威，不是显示提示。每个提供方
 	// 签发的参数令牌都必须是权威的 --name=value 渲染，且 command 必须
 	// 按确切顺序渲染权威操作加这些令牌。这样会拒绝遗漏的令牌、第二条
 	// 命令、后缀与 shell 载荷，而不是仅查找身份令牌子串。
@@ -710,7 +710,7 @@ export function decodeReviewFailureV2(value: unknown): ReviewFailureV2 {
 	if (body.request_digest !== undefined && operation === REVIEW_INTEGRATION_OPERATION.REPAIR && body.progress_identity === undefined) {
 		throw new TypeError("failure.request_digest with review.repair requires progress_identity");
 	}
-	// gentle-pi#627：continuation 在每个版本上都是可选的——较旧的
+	// continuation 在每个版本上都是可选的——较旧的
 	// gentle-ai 可能在 managed_assets_outdated 上完全不带 continuation，
 	// 解码绝不能因此拒绝整个封套。存在时它只在这个确切 code 上有效。
 	if (body.continuation !== undefined && code !== "managed_assets_outdated") throw new TypeError("failure.continuation is only valid for code managed_assets_outdated");

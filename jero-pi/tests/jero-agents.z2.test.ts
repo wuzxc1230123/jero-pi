@@ -103,7 +103,7 @@ test("default Node spawn adapter distinguishes IPC-only and permission-capable c
 		children[2]!.emit({ type: "agent_settled" });
 		await permission.result;
 
-		const args = ["--host-flag", "--mode", "rpc", "--session-dir", join(home, ".pi", "agent", "gentle-agents", "sessions"), "--model", "openai-codex/gpt-5.6-terra:low", "--tools", "read,grep,subagent_parent_message", "--append-system-prompt", "You map things."];
+		const args = ["--host-flag", "--mode", "rpc", "--session-dir", join(home, ".pi", "agent", "jero-agents", "sessions"), "--model", "openai-codex/gpt-5.6-terra:low", "--tools", "read,grep,subagent_parent_message", "--append-system-prompt", "You map things."];
 		assert.equal(captured.length, 3, "the extension reaches Node's spawn boundary for IPC-only and permission-channel launches");
 		for (const [index, fixture] of ["task", "background", "permission"].entries()) {
 			const permissionChannel = index === 2;
@@ -327,16 +327,16 @@ test("delayed child spawn retains the originating session and cannot append into
 
 test("agentRuntimePaths isolates sessions and transcripts by profile and retains the explicit-home fallback", () => {
 	assert.deepEqual(agentRuntimePaths("/home/x", "/profiles/pi-principal/agent"), {
-		sessions: join("/profiles/pi-principal/agent", "gentle-agents", "sessions"),
-		transcripts: join("/profiles/pi-principal/agent", "gentle-agents", "transcripts"),
+		sessions: join("/profiles/pi-principal/agent", "jero-agents", "sessions"),
+		transcripts: join("/profiles/pi-principal/agent", "jero-agents", "transcripts"),
 	});
 	assert.deepEqual(agentRuntimePaths("/home/x", "/profiles/pi-lab/agent"), {
-		sessions: join("/profiles/pi-lab/agent", "gentle-agents", "sessions"),
-		transcripts: join("/profiles/pi-lab/agent", "gentle-agents", "transcripts"),
+		sessions: join("/profiles/pi-lab/agent", "jero-agents", "sessions"),
+		transcripts: join("/profiles/pi-lab/agent", "jero-agents", "transcripts"),
 	});
 	assert.deepEqual(agentRuntimePaths("/home/x"), {
-		sessions: join("/home/x", ".pi", "agent", "gentle-agents", "sessions"),
-		transcripts: join("/home/x", ".pi", "agent", "gentle-agents", "transcripts"),
+		sessions: join("/home/x", ".pi", "agent", "jero-agents", "sessions"),
+		transcripts: join("/home/x", ".pi", "agent", "jero-agents", "transcripts"),
 	});
 });
 
@@ -383,7 +383,7 @@ for (const [key, tilde] of [["JERO_PI_AGENT_HOME", false], ["PI_CODING_AGENT_DIR
 		try {
 			const args = harness.spawned[0];
 			const sessionDir = args[args.indexOf("--session-dir") + 1];
-			const expected = join(agentHome, "gentle-agents", "sessions");
+			const expected = join(agentHome, "jero-agents", "sessions");
 			assert.equal(sessionDir, expected);
 			assert.equal(resolve(ctx.sessionManager.getCwd(), sessionDir), expected);
 			assert.equal(existsSync(expected), true, "parent created the exact child session root");
@@ -487,7 +487,7 @@ test("background runs return at once; status, result, send_message, cancel, and 
 	await tick();
 	assert.equal((await tools.get("subagent_result")!.execute("c7", { task_id: id }, undefined, undefined, ctx)).content[0].text, "All done.");
 	assert.equal(sent.length, 1, "a background result is delivered to the model once");
-	assert.equal(sent[0].message.customType, "gentle-agents.result");
+	assert.equal(sent[0].message.customType, "jero-agents.result");
 	assert.equal(sent[0].message.display, true, "completion cards remain visible");
 	// The completion path must never regress to "followUp": the host drains the
 	// follow-up queue only when the parent run stops calling tools, which is the
@@ -495,7 +495,7 @@ test("background runs return at once; status, result, send_message, cancel, and 
 	// bounding an active parent's wait to the current turn.
 	assert.deepEqual(sent[0].options, { deliverAs: "steer", triggerTurn: true });
 	assert.match(String(sent[0].message.content), new RegExp(`^Subagent explore \\(task ${id}, "Long job"\\) finished\\.\n\nAll done\\.$`));
-	const card = renderers.get("gentle-agents.result")!(sent[0].message, { expanded: true }, plainTheme).render(70).map(stripAnsi);
+	const card = renderers.get("jero-agents.result")!(sent[0].message, { expanded: true }, plainTheme).render(70).map(stripAnsi);
 	assert.match(card[0], /^╭─ ❀ Agent result · explore ─+ collapse ╮$/);
 	assert.match(card[1], /Subagent explore/);
 	assert.match(card[card.length - 2], /All done\./);
@@ -732,7 +732,7 @@ test("finished tasks remain available through resolveTask but never reappear in 
 	harness.children[0].emit({ type: "agent_end", messages: [{ role: "assistant", content: [{ type: "text", text: "Kept." }] }] });
 	harness.children[0].emit({ type: "agent_settled" });
 	await tick();
-	const tasksDir = join(home, ".pi", "agent", "gentle-agents", "tasks");
+	const tasksDir = join(home, ".pi", "agent", "jero-agents", "tasks");
 	let stored = await loadHistory(tasksDir);
 	for (let attempt = 0; attempt < 40 && !stored.some((entry) => entry.task.id === id); attempt += 1) {
 		await new Promise((resolve) => setTimeout(resolve, 50));

@@ -230,7 +230,7 @@ export async function resolveSelectedNativeSddChangeStartup(
 		// apply 工作，但刻意保持 `verify` 路线可运行，因为阻塞原因可以
 		// 指明证据刷新这一自身解药（“失败的验证证据不完整；
 		// 重新运行 SDD 验证”，gentle-ai#3538）。否决该路线会让
-		// 原生推荐的阶段不可达（gentle-pi#972）。其他阶段仍然
+		// 原生推荐的阶段不可达。其他阶段仍然
 		// 保守失败，且每个阻塞原因都保留在注入的
 		// status 中供上报。
 		throw new Error(`SDD selection native status blocks phase ${selection.phase}; it cannot execute.`);

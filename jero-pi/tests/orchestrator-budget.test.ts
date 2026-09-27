@@ -115,7 +115,7 @@ function measureOrchestratorPromptBytes(assetsDir: string): number {
 // 2.2 — Byte budget (Spec: Always-On Injection Byte Budget)
 // ---------------------------------------------------------------------------
 
-// gentle-pi#661: `renderOrchestratorPrompt`/`getOrchestratorPrompt` default
+// `renderOrchestratorPrompt`/`getOrchestratorPrompt` default
 // `rddStatusLine` to the "unknown (native status unavailable)" line -- the
 // longest of the three renderable RDD status lines -- precisely so that a
 // no-argument call renders the worst case this budget measures, not a
@@ -292,7 +292,7 @@ const fixtureLines = readFileSync(FIXTURE_PATH, "utf8").split("\n");
 const SUPERSEDED_LIFECYCLE_REVIEW_LINES = new Set([
 	70,
 	// 74/77: the loose mode-choice background lines were replaced by the
-	// marked gentle-pi:background-subagents policy block (issue #256).
+	// marked jero-pi:background-subagents policy block (issue #256).
 	74,
 	76,
 	77,
@@ -437,7 +437,7 @@ test("getOrchestratorPrompt memoizes the return across calls", () => {
 });
 
 // ---------------------------------------------------------------------------
-// gentle-pi#661 follow-up: byte-budget compression must not turn a pointer
+// follow-up: byte-budget compression must not turn a pointer
 // into an opaque "Detail: `file.md`" -- each pointer line must still name
 // the lazy-loaded material it points to, in the shortest form that still
 // says what is over there.

@@ -3,7 +3,7 @@ name: jero-work-unit-commits
 description: "把提交规划为可评审的工作单元。触发词：实现、提交拆分、链式 PR，或让测试文档与代码同行。"
 license: Apache-2.0
 metadata:
-  author: gentleman-programming
+  author: jero-pi
   version: "1.0"
 ---
 

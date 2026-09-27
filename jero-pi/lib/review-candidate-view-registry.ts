@@ -185,7 +185,7 @@ export class CandidateViewRegistry {
 		// 保守失败，尽管实际并无歧义：这是完全相同的
 		// 可评审内容，且已由 Git 重新验证。改为丢弃冗余的
 		// 重复视图并保持已绑定视图为当前视图，而不是让
-		// 重试失败（gentle-pi candidate-view 重绑缺陷，
+		// 重试失败（candidate-view 重绑缺陷，
 		// ga#4085 / ga#4050）。
 		if (candidate !== undefined && existingToken !== undefined && existingToken !== request.token) {
 			const existing = this.records.get(existingToken);
@@ -452,7 +452,7 @@ export class CandidateViewRegistry {
 	}
 
 	/**
-	 * 恢复某条 lineage 的 FINALIZE 绑定（gentle-pi #185）：过期条目
+	 * 恢复某条 lineage 的 FINALIZE 绑定：过期条目
 	 * 只是被分离，不被销毁，因此失败的恢复可以撤销它。
 	 */
 	restoreForFinalizeFromNative(lineageId: string, contributorRoot: string, descriptor: NativeCandidateProjectionDescriptor): CandidateView {

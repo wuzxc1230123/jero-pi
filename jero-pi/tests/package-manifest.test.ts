@@ -555,7 +555,7 @@ test("unowned legacy research migrates by exact normalized hash, preserving rout
 });
 
 test("the retired Pi adversarial role agents are not packaged", () => {
-	// gentle-pi#311 P5: the refuter and targeted validator verdicts execute
+	// P5: the refuter and targeted validator verdicts execute
 	// through Go-owned pi processes via provider-rendered self-contained
 	// vectors; the Pi-authored agent definitions must stay deleted.
 	for (const retired of RETIRED_ADVERSARIAL_AGENTS) {
@@ -565,7 +565,7 @@ test("the retired Pi adversarial role agents are not packaged", () => {
 
 test("forced package installation preserves same-path user-authored agents and separate shadows, including on retired asset paths", async () => {
 	// The user-authored file below sits on the RETIRED review-refuter.md path:
-	// this also pins that gentle-pi#311 P5 asset retirement deletes only
+	// this also pins that P5 asset retirement deletes only
 	// hash-proven package-managed copies, never user content.
 	const temporaryAgentHome = mkdtempSync(join(tmpdir(), "gentle-pi-refuter-home-"));
 	const temporaryProject = mkdtempSync(join(tmpdir(), "gentle-pi-refuter-project-"));

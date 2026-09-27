@@ -14,7 +14,7 @@ export async function handlePersonaCommand(ctx: ExtensionContext): Promise<void>
 		`el Jero persona (current: ${current})`,
 		[...PERSONA_OPTIONS],
 	);
-	if (selected !== "gentleman" && selected !== "neutral") return;
+	if (selected !== "direct" && selected !== "neutral") return;
 	const writtenPaths = writePersonaMode(ctx.cwd, selected);
 	ctx.ui.notify(
 		[

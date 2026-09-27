@@ -5,6 +5,19 @@ jero-pi 尚未发布到 npm（版本停在 0.1.0 基线），本文件自重构�
 
 ## [Unreleased]
 
+### gentle 残留清退批（2026-09-27：第十批）
+
+应用户指令对 2026-09-26 审计的五类 `gentle-` 白名单开专项：四类全部清退，外部契约类经证据确认**不可单方迁移**（`gentle-ai` 是外部原生评审 CLI 的身份——解码器字面校验 `package.name === "gentle-ai"` 与 `invocation: ["gentle-ai", "review", …]`、`FOREIGN_*_STORE` 是防误写外部存储的守卫、68 个黄金向量字节钉住上游 v2.9.1 行为规格），保留并改写白名单文档为"仅外部契约类"。
+
+- **persona 档位 `gentleman`→`direct`**（`PersonaMode`/`PERSONA_OPTIONS`/`DIRECT_PERSONA_PROMPT`/命令描述）：读取侧非 `neutral` 一律归入 `direct`——旧 `persona.json` 里持久化的 `gentleman` 借此原地迁移，写侧只写新值，零 legacy 分支。
+- **`gentle-agents`→`jero-agents`**：三个存储目录（任务历史、运行时 sessions/transcripts、orchestrator presence）按"新名读 + 旧名回退"探测迁移，绝不改写既有目录（新增旧根原地读回归测试）；`AGENTS_RESULT_TYPE`/`AGENTS_MESSAGE_TYPE` 自定义类型改新名，渲染侧注册 legacy 类型实现旧会话 JSONL 兼容读取。
+- **`gentle-pi.*` 自有契约串→`jero-pi.*`**：引擎 `schemaName`（sdd-status）、child standing review permission IPC schema、relay 事件名（`child-session-change`/`session-worktree-changed`）、review reminder receipt customType（读取侧含 legacy 兼容）、侧栏 `Symbol.for` 键、dev-binary widget 键、生成文件头、临时目录前缀。
+- **`gentle-pi#NNN` 工单引用全清**（~186 处）：保留全部说明文本与上游 `gentle-ai#NNN` 互操作引用；ASCII 分轮正则 + 字节级全角残迹清理（`perl -CSD` 下 argv 解码/文件原始字节不一致会使全角模式静默失配——教训入档）。
+- **品牌可见面**：启动横幅 `TEXT_LOGO` 由 GENTLE-PI 手绘草书换为程序化生成的 JERO-PI 像素字模艺术（`LETTER_WEIGHTS` 同步，笔画序动画自动派生不受影响）；`tests/gentle-card-text.ts` 改名 `jero-card-text.ts`；skills frontmatter `author: gentleman-programming`→`jero-pi`（13 个，与 release 技能既有署名对齐）。
+- **补扫清偿**：临时目录前缀 `gentle-pi-opaque-reviewer-`/`gentle-pi-host-relay-result-` 改 `jero-pi-`；`review-host-relay` 常量 `DEFAULT_GENTLE_AI_TIMEOUT_MS`→`DEFAULT_PROVIDER_TIMEOUT_MS`；测试夹具 tmpdir 前缀 ×5 与 agents-widget 标签样例去品牌（宽标签断言按新渲染实测更新）；recovered-lineage 复现锚点注释的仓库属主改 jero-pi（sha 为本仓更名前连续历史，仍然有效；上游 CLI 版本串保留），并以简体中文重写。
+- **文档同步**：`jero-reference.md` 兼容白名单节改写为"仅外部契约类"；`dependency-exit-plan.md` 白名单提醒、`AGENTS.md` 已知约束行同步；文档中引擎 schema 名 `jero-pi.sdd-status@1`。
+- **明确保留**：`gentle-ai.*` wire 串与 `review-integration` fixtures（上游契约 + 黄金向量钉住）、原生 CLI 词与 `FOREIGN_*_STORE` 守卫、注释中的上游 `gentle-ai#NNN` 互操作引用、`runtime-harness-support.mjs` 的 `FORBIDDEN_COMPAT_COMMANDS` 禁用清单（守卫本身）、OpenCode 上游主题沿指描述。
+
 ### 审计清偿批（2026-09-27：第九批）
 
 全库编码规范与命名一致性审计（extensions/lib/lib·authority/tests/scripts/skills·docs 五区深读 + 机械扫描）后的定向清偿；风格分叉类（Error 前缀多式、判别字段 kind/type、assert 导入两式等）按约定留待成文后再统一，本批只动有明确依据的项。

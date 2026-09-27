@@ -147,7 +147,7 @@ test("next_transition decodes an execute variant and rejects a stop that carries
 	assert.throws(() => decodeReviewNextTransitionV3(stopWithExecute), /stop cannot carry/);
 });
 
-// gentle-pi#627: gentle-ai reports a stale managed-asset set as a typed stop
+// gentle-ai reports a stale managed-asset set as a typed stop
 // carrying the exact `gentle-ai sync` invocation that resolves it.
 export function managedAssetsContinuation(overrides: Partial<JsonObject> = {}): JsonObject {
 	return { operation: "sync", command: "gentle-ai sync --agent claude-code", agent: "claude-code", stale_assets: ["orchestration/claude-code.md"], ...overrides };
@@ -182,7 +182,7 @@ test("next_transition stop decodes a managed_assets_outdated continuation and re
 	assert.equal(plainStop.continuation, undefined);
 });
 
-// gentle-pi#638: after the host relay declares a selected lens slot
+// after the host relay declares a selected lens slot
 // unachievable through the native capture-unachievable verb, gentle-ai's
 // STATUS stops with reason_code unachievable_lens_slot and carries one entry
 // per declared slot, each naming the complete withdraw command
@@ -227,4 +227,4 @@ test("next_transition stop decodes unachievable_lens_slots and their withdraw bi
 	assert.equal(decodeReviewNextTransitionV3({ kind: "stop", reason_code: "rdd_disabled" }).unachievableLensSlots, undefined);
 });
 
-// gentle-pi#822: the withdraw form names the slot identity twice — as named arguments and as the binding object — and a slot whose two renderings disagree never decodes, so restart cannot withdraw a different slot.
+// the withdraw form names the slot identity twice — as named arguments and as the binding object — and a slot whose two renderings disagree never decodes, so restart cannot withdraw a different slot.

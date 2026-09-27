@@ -83,7 +83,7 @@ test("first foreground query yields while its child runs and delivers one comple
 	harness.children[0].emit({ type: "agent_end", messages: [{ role: "assistant", content: [{ type: "text", text: "done" }], stopReason: "stop" }] });
 	harness.children[0].emit({ type: "agent_settled" });
 	await tick();
-	assert.equal(sent.filter((entry) => entry.message.customType === "gentle-agents.result").length, 1);
+	assert.equal(sent.filter((entry) => entry.message.customType === "jero-agents.result").length, 1);
 });
 
 test("cancelling a yielded foreground task prevents completion follow-up", async () => {
@@ -102,7 +102,7 @@ test("cancelling a yielded foreground task prevents completion follow-up", async
 	harness.children[0].emit({ type: "agent_end", messages: [{ role: "assistant", content: [{ type: "text", text: "late" }], stopReason: "stop" }] });
 	harness.children[0].emit({ type: "agent_settled" });
 	await tick();
-	assert.equal(sent.filter((entry) => entry.message.customType === "gentle-agents.result").length, 0);
+	assert.equal(sent.filter((entry) => entry.message.customType === "jero-agents.result").length, 0);
 });
 
 test("yielded foreground completion is suppressed after session replacement or cancellation", async () => {
@@ -120,7 +120,7 @@ test("yielded foreground completion is suppressed after session replacement or c
 	harness.children[0].emit({ type: "agent_end", messages: [{ role: "assistant", content: [{ type: "text", text: "done" }], stopReason: "stop" }] });
 	harness.children[0].emit({ type: "agent_settled" });
 	await tick();
-	assert.equal(sent.filter((entry) => entry.message.customType === "gentle-agents.result").length, 0);
+	assert.equal(sent.filter((entry) => entry.message.customType === "jero-agents.result").length, 0);
 	(ctx.sessionManager as { getSessionId(): string }).getSessionId = () => "s1";
 	assert.match((await tools.get("subagent_cancel")!.execute("cancel", { task_id: taskId }, undefined, undefined, ctx)).content[0].text, /not running/);
 });
@@ -158,7 +158,7 @@ test("first handoff failure keeps ordinary completion, later failure retains yie
 	secondHarness.children[0].emit({ type: "agent_end", messages: [{ role: "assistant", content: [{ type: "text", text: "done" }], stopReason: "stop" }] });
 	secondHarness.children[0].emit({ type: "agent_settled" });
 	await tick();
-	assert.equal(second.sent.filter((entry) => entry.message.customType === "gentle-agents.result").length, 1);
+	assert.equal(second.sent.filter((entry) => entry.message.customType === "jero-agents.result").length, 1);
 });
 
 test("foreground handoff survives settlement before its original await resumes", async () => {
@@ -173,7 +173,7 @@ test("foreground handoff survives settlement before its original await resumes",
 	harness.children[0].emit({ type: "agent_end", messages: [{ role: "assistant", content: [{ type: "text", text: "race result" }], stopReason: "stop" }] });
 	harness.children[0].emit({ type: "agent_settled" });
 	assert.equal((await pending as { terminate?: boolean }).terminate, true);
-	assert.equal(sent.filter((entry) => entry.message.customType === "gentle-agents.result").length, 1);
+	assert.equal(sent.filter((entry) => entry.message.customType === "jero-agents.result").length, 1);
 });
 
 
@@ -206,7 +206,7 @@ test("child parent-message tooling admits notifications and the active parent pr
 	assert.equal(parent.sent[0]?.message.content, "raw\u001B[2J text");
 	assert.equal(parent.sent[0]?.message.display, false, "ordinary child notifications remain model-visible but do not render in the transcript");
 	assert.deepEqual(parent.sent[0]?.options, { deliverAs: "followUp", triggerTurn: true });
-	const rendered = parent.renderers.get("gentle-agents.message")!(parent.sent[0]?.message, { expanded: true }, plainTheme).render(80).join("\n");
+	const rendered = parent.renderers.get("jero-agents.message")!(parent.sent[0]?.message, { expanded: true }, plainTheme).render(80).join("\n");
 	assert.match(rendered, /raw\\x1B\[2J text/);
 	(ctx.sessionManager as unknown as { getSessionId(): string }).getSessionId = () => "s2";
 	await parent.fire("session_start", ctx, { type: "session_start", reason: "new" });

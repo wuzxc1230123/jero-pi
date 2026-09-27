@@ -15,11 +15,14 @@ import { type AskAnswer, piCommand, type RunnerDeps } from "./agents-runner.ts";
 import { ChildMessenger, type IpcEndpoint } from "./agents-messaging.ts";
 import { AGENTS_GLYPH } from "./agents-widget.ts";
 import { type ResearchWriteIdentity } from "./sdd-research-capabilities.ts";
-export const AGENTS_WIDGET_KEY = "gentle-agents";
+export const AGENTS_WIDGET_KEY = "jero-agents";
 export const AGENTS_COMMAND_NAME = "jero:agents";
-export const AGENTS_RESULT_TYPE = "gentle-agents.result";
-export const AGENTS_MESSAGE_TYPE = "gentle-agents.message";
-export const AGENTS_STALE_RESULT_TYPE = "gentle-agents.stale-result";
+export const AGENTS_RESULT_TYPE = "jero-agents.result";
+// 身份迁移前的旧品牌 customType：旧会话 JSONL 里已持久化，渲染侧一律兼容读取。
+export const AGENTS_RESULT_TYPE_LEGACY = "gentle-agents.result";
+export const AGENTS_MESSAGE_TYPE = "jero-agents.message";
+export const AGENTS_MESSAGE_TYPE_LEGACY = "gentle-agents.message";
+export const AGENTS_STALE_RESULT_TYPE = "jero-agents.stale-result";
 const COLLAPSE_KEY_DEFAULT = "ctrl+shift+a";
 const VIEW_KEY_DEFAULT = "alt+a";
 const STOP_KEY_DEFAULT = "alt+s";
@@ -43,7 +46,9 @@ export interface AgentsDeps extends RunnerDeps {
 }
 
 export function agentRuntimePaths(home: string, agentHome = join(home, ".pi", "agent")): { sessions: string; transcripts: string } {
-	const root = join(agentHome, "gentle-agents");
+	// 新名读 + 旧名回退（身份迁移）：旧安装的数据目录原地可读，绝不改写。
+	const preferred = join(agentHome, "jero-agents");
+	const root = existsSync(preferred) || !existsSync(join(agentHome, "gentle-agents")) ? preferred : join(agentHome, "gentle-agents");
 	return { sessions: join(root, "sessions"), transcripts: join(root, "transcripts") };
 }
 

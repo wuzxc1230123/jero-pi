@@ -12,7 +12,7 @@ const ROOT = join(import.meta.dirname, "..");
 const ASSETS_AGENTS_DIR = join(ROOT, "assets", "agents");
 const DENY_ALL_RULE = '"*": false';
 
-// gentle-pi#311 P5: review-refuter.md and review-validator.md are retired —
+// P5: review-refuter.md and review-validator.md are retired —
 // the adversarial roles execute through Go-owned pi processes via
 // provider-rendered self-contained vectors, so no Pi agent definition exists
 // for them to deny tools on.

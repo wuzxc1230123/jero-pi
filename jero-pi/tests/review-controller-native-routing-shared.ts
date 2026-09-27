@@ -128,7 +128,7 @@ export function burnedAcknowledgementStatus(lineageId: string): ReviewStatusV3 {
 	return burned;
 }
 
-// gentle-pi#627: gentle-ai reports a stale managed-asset set as a typed stop
+// gentle-ai reports a stale managed-asset set as a typed stop
 // carrying the exact `gentle-ai sync` invocation that resolves it.
 export function managedAssetsOutdatedStatus(lineageId: string): ReviewStatusV3 {
 	const stopped = status(lineageId, [], "approved");

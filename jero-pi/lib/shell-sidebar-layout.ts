@@ -30,7 +30,7 @@ type PreparedRail = {
 	hits: RailHit[];
 	presentation?: SidebarPresentation;
 };
-const CACHE = Symbol.for("gentle-pi.experimental-sidebar.cache");
+const CACHE = Symbol.for("jero-pi.experimental-sidebar.cache");
 
 function sidebarCache(tui: TUI): SidebarCache {
 	const terminal = tui.terminal as unknown as Record<symbol, SidebarCache>;

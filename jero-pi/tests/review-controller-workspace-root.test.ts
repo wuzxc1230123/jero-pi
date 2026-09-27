@@ -246,7 +246,7 @@ test("INSPECT and STATUS operate on the explicit workspace root while the sessio
 	assert.deepEqual(observedCwds, [realpathSync(worktree), realpathSync(worktree), sessionCwd]);
 });
 
-// gentle-pi#599: inspect without an explicit workspaceRoot against a parent
+// inspect without an explicit workspaceRoot against a parent
 // repository that wraps an untracked nested Git repository fails at the
 // native preflight with a decoded, actionable `invalid_request` envelope. The
 // facade used to discard that envelope's cause, code, retry_safe, and

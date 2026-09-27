@@ -69,7 +69,7 @@ tools:
 
 ## Verification
 
-当父任务携带 `## Verification` 标题时，该标题即本任务的被委托验证契约（gentle-pi#661，RDD 感知试点）：
+当父任务携带 `## Verification` 标题时，该标题即本任务的被委托验证契约（RDD 感知试点）：
 
 - 逐字运行其下列出的每条命令，一次一条，在前台运行。绝不在后台启动验证命令，也绝不在有列出的命令未报告的情况下结束任务。
 - 在 `validation` 中把每条报告为 `<exact command>: <observed result>`。

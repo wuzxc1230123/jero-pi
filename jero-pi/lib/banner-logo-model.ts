@@ -68,7 +68,7 @@ function buildLetterSpans(bounds: Span, weights: number[]): Span[] {
 }
 
 export const LOGO_BOUNDS = computeLogoBounds(TEXT_LOGO);
-const LETTER_WEIGHTS = [14, 10, 11, 10, 9, 11, 6, 13, 12]; // G E N T L E - P I
+const LETTER_WEIGHTS = [10, 10, 10, 10, 8, 10, 10]; // J E R O - P I
 const LETTER_SPANS = buildLetterSpans(LOGO_BOUNDS, LETTER_WEIGHTS);
 
 function letterIndexAtX(x: number): number {

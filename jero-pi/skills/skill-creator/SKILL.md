@@ -3,7 +3,7 @@ name: jero-skill-creator
 description: "触发词：/skill-creation、技能创建、skill creator、create skill、新技能。创建带合法 frontmatter 的 LLM 优先技能。"
 license: Apache-2.0
 metadata:
-  author: gentleman-programming
+  author: jero-pi
   version: "1.0"
 ---
 
@@ -65,7 +65,7 @@ name: {skill-name}
 description: "Trigger: {phrases users or agents will say}. {What this skill does}."
 license: Apache-2.0
 metadata:
-  author: gentleman-programming
+  author: jero-pi
   version: "1.0"
 ---
 ```

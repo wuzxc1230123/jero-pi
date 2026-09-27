@@ -256,9 +256,9 @@ test("a background completion settling while the parent agent runs is delivered 
 	harness.children[0].emit({ type: "agent_end", messages: [{ role: "assistant", content: [{ type: "text", text: "Chained done." }] }] });
 	harness.children[0].emit({ type: "agent_settled" });
 	await tick();
-	assert.equal(sent.filter((entry) => entry.message.customType === "gentle-agents.result").length, 0, "nothing enters the conversation while the parent agent run is active");
+	assert.equal(sent.filter((entry) => entry.message.customType === "jero-agents.result").length, 0, "nothing enters the conversation while the parent agent run is active");
 	await fire("turn_end", ctx);
-	const results = sent.filter((entry) => entry.message.customType === "gentle-agents.result");
+	const results = sent.filter((entry) => entry.message.customType === "jero-agents.result");
 	assert.equal(results.length, 1, "the held completion is delivered exactly once at turn_end");
 	assert.match(String(results[0]!.message.content), new RegExp(`task ${id}, "Chained turns"`));
 	// Pins the delivery mode against the host's drain semantics: "followUp" is
@@ -268,7 +268,7 @@ test("a background completion settling while the parent agent runs is delivered 
 	// to the current turn.
 	assert.deepEqual(results[0]!.options, { deliverAs: "steer", triggerTurn: true });
 	await fire("turn_end", ctx);
-	assert.equal(sent.filter((entry) => entry.message.customType === "gentle-agents.result").length, 1, "a later turn_end never replays the completion");
+	assert.equal(sent.filter((entry) => entry.message.customType === "jero-agents.result").length, 1, "a later turn_end never replays the completion");
 	await fire("session_shutdown", ctx);
 });
 
@@ -289,11 +289,11 @@ test("a completion held past the stale window becomes transcript-only content an
 	await tick();
 	clock += STALE_COMPLETION_MS + 1_000;
 	await fire("turn_end", ctx);
-	assert.equal(sent.filter((entry) => entry.message.customType === "gentle-agents.result").length, 0, "a stale completion never enters the model context");
-	const stale = entries.filter((entry) => entry.customType === "gentle-agents.stale-result");
+	assert.equal(sent.filter((entry) => entry.message.customType === "jero-agents.result").length, 0, "a stale completion never enters the model context");
+	const stale = entries.filter((entry) => entry.customType === "jero-agents.stale-result");
 	assert.equal(stale.length, 1, "the human still sees the stale completion as durable transcript content");
 	assert.match(JSON.stringify(stale[0]!.data), new RegExp(id), "the stale notice names the task");
-	const rendered = entryRenderers.get("gentle-agents.stale-result")!(stale[0]!, { expanded: true }, plainTheme).render(90).map(stripAnsi).join("\n");
+	const rendered = entryRenderers.get("jero-agents.stale-result")!(stale[0]!, { expanded: true }, plainTheme).render(90).map(stripAnsi).join("\n");
 	assert.match(rendered, /stale/i);
 	assert.match(rendered, new RegExp(id));
 	assert.match(rendered, /explore/);
@@ -314,10 +314,10 @@ test("a completion the parent already pulled is dropped silently at the next tur
 	harness.children[0].emit({ type: "agent_end", messages: [{ role: "assistant", content: [{ type: "text", text: "Pulled answer." }] }] });
 	harness.children[0].emit({ type: "agent_settled" });
 	await tick();
-	assert.equal(sent.filter((entry) => entry.message.customType === "gentle-agents.result").length, 0);
+	assert.equal(sent.filter((entry) => entry.message.customType === "jero-agents.result").length, 0);
 	assert.match((await tools.get("subagent_result")!.execute("c2", { task_id: id }, undefined, undefined, ctx)).content[0].text, /Pulled answer\./);
 	await fire("turn_end", ctx);
-	assert.equal(sent.filter((entry) => entry.message.customType === "gentle-agents.result").length, 0, "a consumed completion is dropped instead of replayed");
+	assert.equal(sent.filter((entry) => entry.message.customType === "jero-agents.result").length, 0, "a consumed completion is dropped instead of replayed");
 	await fire("session_shutdown", ctx);
 });
 
@@ -333,10 +333,10 @@ test("a session restart never replays a completion still pending from before it"
 	harness.children[0].emit({ type: "agent_end", messages: [{ role: "assistant", content: [{ type: "text", text: "Unclaimed answer." }] }] });
 	harness.children[0].emit({ type: "agent_settled" });
 	await tick();
-	assert.equal(sent.filter((entry) => entry.message.customType === "gentle-agents.result").length, 0);
+	assert.equal(sent.filter((entry) => entry.message.customType === "jero-agents.result").length, 0);
 	await fire("session_start", ctx, { reason: "resume" });
 	await fire("turn_end", ctx);
-	assert.equal(sent.filter((entry) => entry.message.customType === "gentle-agents.result").length, 0, "a resumed session starts with an empty completion queue");
+	assert.equal(sent.filter((entry) => entry.message.customType === "jero-agents.result").length, 0, "a resumed session starts with an empty completion queue");
 	await fire("session_shutdown", ctx);
 });
 
@@ -354,8 +354,8 @@ test("a background completion owned by a prior session is dropped, never deliver
 	harness.children[0].emit({ type: "agent_settled" });
 	await tick();
 	await fire("turn_end", ctx);
-	assert.equal(sent.filter((entry) => entry.message.customType === "gentle-agents.result").length, 0, "the replacement session receives no completion it does not own");
-	assert.equal(entries.filter((entry) => entry.customType === "gentle-agents.stale-result").length, 0);
+	assert.equal(sent.filter((entry) => entry.message.customType === "jero-agents.result").length, 0, "the replacement session receives no completion it does not own");
+	assert.equal(entries.filter((entry) => entry.customType === "jero-agents.stale-result").length, 0);
 	await fire("session_shutdown", ctx);
 });
 

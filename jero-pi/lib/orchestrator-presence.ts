@@ -105,7 +105,10 @@ function rootFor(profile: string, create = false) {
 		directory(path);
 		if (dirname(path) === path) break;
 	}
-	const shared = join(absolute, "gentle-agents");
+	// 新名读 + 旧名回退（身份迁移）：旧安装的数据目录原地可读，绝不改写。
+	const preferred = join(absolute, "jero-agents");
+	const legacy = join(absolute, "gentle-agents");
+	const shared = fs.existsSync(preferred) || !fs.existsSync(legacy) ? preferred : legacy;
 	const root = join(shared, "presence");
 	// 历史模块可能已持有 0755 的共享根目录。绝不更改其权限。
 	for (const path of [shared, root]) {

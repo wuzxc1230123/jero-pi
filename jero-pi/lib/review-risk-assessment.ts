@@ -1,4 +1,4 @@
-// gentle-pi#662：原生只读命令 `gentle-ai review assess`（gentle-ai#4295）
+// 原生只读命令 `gentle-ai review assess`（gentle-ai#4295）
 // 的纯解码、层级映射与验证计划逻辑。与原生评审 CLI 封装
 // （`lib/native-review-cli.ts`）保持独立，使解码器与 verificationPlan
 // 表无需子进程即可做单元测试，并让父工具与委托资产在同一个确定性
@@ -98,7 +98,7 @@ export function decodeReviewAssessmentV1(value: unknown): ReviewAssessmentV1 {
 }
 
 // ---------------------------------------------------------------------------
-// 验证计划分层（gentle-pi#662）。
+// 验证计划分层。
 // ---------------------------------------------------------------------------
 
 export const VERIFICATION_TIER = {
@@ -122,7 +122,7 @@ export const WRITER_PROFILE = {
 } as const;
 export type WriterProfile = (typeof WRITER_PROFILE)[keyof typeof WRITER_PROFILE];
 
-// gentle-pi#668：原生评审是否真的为当前候选达到了终局结局。
+// 原生评审是否真的为当前候选达到了终局结局。
 // `verificationPlan` 的 `on` 分支（写者自验、原生评审即独立检查、
 // 无独立验证者）只在 `CLOSED` 时成立——人类对该候选的拒绝、克隆局部
 // 的 RDD 关闭、被拒绝的 START/STATUS，或任何其他非终局结局都回退到
@@ -143,7 +143,7 @@ export interface VerificationPlanInput {
 	/**
 	 * 当前候选的原生评审结局。只在 `rddLine` 为 `"on"` 时被参考；
 	 * `"off"`/`"unknown"` 线路完全忽略它。省略时解析为
-	 * `NATIVE_REVIEW_OUTCOME.UNKNOWN`（gentle-pi#668）。
+	 * `NATIVE_REVIEW_OUTCOME.UNKNOWN`。
 	 */
 	readonly nativeReviewOutcome?: NativeReviewOutcome;
 }
@@ -157,7 +157,7 @@ export interface VerificationPlan {
 
 /**
  * 构建由 `off`/`unknown` RDD 线路以及原生评审未对该候选闭合的 `on`
- * 线路共享的风险门控验证计划（gentle-pi#668）。`gatePrefix` 提供点名
+ * 线路共享的风险门控验证计划。`gatePrefix` 提供点名
  * 触发了哪个分支的句子片段（到并包含 “and” 一词）；层级专属的
  * 分句追加在其后。
  */
@@ -195,7 +195,7 @@ function riskGatedPlan(gatePrefix: string, risk: VerificationTier, writerProfile
 }
 
 // 为每个未闭合的原生评审结局点名 `on` 线路回退到风险门控路径的原因
-// （gentle-pi#668）。`UNKNOWN` 同时涵盖省略的结局和调用方提供但本
+// 。`UNKNOWN` 同时涵盖省略的结局和调用方提供但本
 // 解码器不认识的结局——两者以相同方式保守失败。
 function nonClosedOutcomeClause(outcome: NativeReviewOutcome): string {
 	switch (outcome) {
@@ -209,7 +209,7 @@ function nonClosedOutcomeClause(outcome: NativeReviewOutcome): string {
 }
 
 /**
- * 计算由谁来验证被委托写者的变更，与 gentle-pi#662/#668 的规定完全
+ * 计算由谁来验证被委托写者的变更，与  的规定完全
  * 一致：
  *
  * - `rdd: "on"` 且原生评审对该候选达到 `NATIVE_REVIEW_OUTCOME.CLOSED`：
@@ -268,7 +268,7 @@ export function verificationPlan(input: VerificationPlanInput): VerificationPlan
 }
 
 // ---------------------------------------------------------------------------
-// 小写者档案判定（gentle-pi#662）。
+// 小写者档案判定。
 // ---------------------------------------------------------------------------
 
 /**
@@ -296,7 +296,7 @@ const SMALL_MODEL_ID_TOKEN = /(?:^|[-_./:\s])mini(?:$|[-_./:\s])/i;
  * - 完全没有任何信号——没有档案对象，或档案既无模型 id 也无已解析
  *   effort。未知或省略的写者档案保守失败到 small 而不是默认为
  *   large，因此无法解析写者档案的调用方绝不会得到比已知小模型更弱
- *   的验证计划（gentle-pi#662）。
+ *   的验证计划。
  *
  * 携带模型 id 或 effort、只是不匹配的档案（例如
  * `{model: {id: "claude-sonnet-5"}, thinking: "high"}`）属于“已知 large”
@@ -316,7 +316,7 @@ export function isSmallWriterProfile(profile: WriterModelProfileLike | undefined
 /**
  * 将已解析的写者档案映射为 `verificationPlan` 期望的 `writerProfile`
  * 输入。未知或省略的档案绝不降低层级：它解析为 `"small"`，与
- * `isSmallWriterProfile` 完全一致（gentle-pi#662）。
+ * `isSmallWriterProfile` 完全一致。
  */
 export function resolveWriterProfile(profile: WriterModelProfileLike | undefined): WriterProfile {
 	return isSmallWriterProfile(profile) ? WRITER_PROFILE.SMALL : WRITER_PROFILE.LARGE;

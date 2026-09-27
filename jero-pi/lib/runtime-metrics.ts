@@ -78,7 +78,7 @@ export function normalizeRuntimeProvider(value: unknown): string {
 }
 
 /** 面向 (provider, id) 选择或响应对的通用 schema 驱动家族模式归一器
- * （gentle-pi#968 / gentle-ai#4536）。任意提供方上的开放权重模型按
+ * （gentle-ai#4536）。任意提供方上的开放权重模型按
  * 名称上报；私有别名与微调保持 custom。规则与镜像的 Go/schema 侧
  * 完全一致：
  *  - 非字符串或空的 provider/id 保守失败为 unknown/unknown；

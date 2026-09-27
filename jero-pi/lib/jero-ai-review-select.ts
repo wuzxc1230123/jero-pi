@@ -60,7 +60,7 @@ export function exactCollectArgument(input: ReviewCollectInputV3, name: string):
 // intended-untracked collect 输入随 status/v6 到来，其后每个
 // status 版本都保留它；只匹配一个确切版本会让每个
 // 含未跟踪文件的工作区在 gentle-ai 应答 v7 后
-// 无法启动评审（gentle-pi#610，gentle-ai#4187）。
+// 无法启动评审（gentle-ai#4187）。
 const INTENDED_UNTRACKED_STATUS_SCHEMA = /^gentle-ai\.review-integration\.status\/v(\d+)$/;
 function statusCarriesIntendedUntrackedSelection(schema: unknown): boolean {
 	const match = typeof schema === "string" ? INTENDED_UNTRACKED_STATUS_SCHEMA.exec(schema) : null;
@@ -76,7 +76,7 @@ export function reviewIntendedUntrackedInput(status: ReviewStatusV3): ReviewColl
 	return matches.length === 1 ? matches[0] : undefined;
 }
 
-// gentle-pi#706：intended-untracked 选择上的 inspect stop 不携带
+// intended-untracked 选择上的 inspect stop 不携带
 // continuation，因此 blocked 结果会精确指明它：清单摘要
 // 只覆盖路径名，往返要么经 select
 // 操作解决，要么经 inspect 自己的顶层 untrackedScope 解决。
@@ -286,7 +286,7 @@ export async function executeReviewCaptureOperation(
 
 	// 纠正期间，流程同时携带原始权威目标身份
 	// 和一个不同的 provider 签发纠正目标身份
-	// （gentle-pi#535 第 15 行）。在捕获结果上回显纠正
+	// （第 15 行）。在捕获结果上回显纠正
 	// 身份，使调用方绝不必从不透明绑定中重建二者的区别。
 	const correctionTargetIdentity = selected.input.validationRequest?.correctionTargetIdentity ?? selected.input.artifactSubject?.correctionTargetIdentity;
 	const withCorrectionTarget = (result: Record<string, unknown>): Record<string, unknown> =>

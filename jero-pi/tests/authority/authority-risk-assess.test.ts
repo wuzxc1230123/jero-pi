@@ -94,7 +94,7 @@ test("committed-only assessment pairs baseRef with committedOnly and reviews the
 });
 
 test("verification tier vocabulary includes unassessable and maps the fail-closed tier", () => {
-	// The ported tier table stays the verification-plan authority (gentle-pi#662);
+	// The ported tier table stays the verification-plan authority ();
 	// risk-assess only feeds it.
 	assert.equal(VERIFICATION_TIER.UNASSESSABLE, "unassessable");
 	assert.equal(VERIFICATION_TIER.HIGH, "high");

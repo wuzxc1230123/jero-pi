@@ -87,7 +87,7 @@ export interface SddRelationships {
 }
 
 export interface SddStatus {
-	schemaName: "gentle-pi.sdd-status";
+	schemaName: "jero-pi.sdd-status";
 	schemaVersion: 1;
 	changeName: string | null;
 	artifactStore: SddArtifactStore;
@@ -98,7 +98,7 @@ export interface SddStatus {
 	 * 时为 true——proposal + tasks 即可 apply-ready，specs/design 显式豁免；
 	 * 无 delta specs 时 sync 阶段 not_applicable（archive 不再要求
 	 * sync-report）。可选字段：仅权威解析且标记在场时携带，既有消费者
-	 * 不受影响（gentle-pi.sdd-status@1 的向后兼容扩展）。
+	 * 不受影响（jero-pi.sdd-status@1 的向后兼容扩展）。
 	 */
 	lightweight?: boolean;
 	artifactPaths: SddArtifactPaths;
@@ -302,7 +302,7 @@ function emptyStatus(cwd: string, changeName: string | null, blockedReasons: str
 		warnings: [],
 	};
 	return {
-		schemaName: "gentle-pi.sdd-status",
+		schemaName: "jero-pi.sdd-status",
 		schemaVersion: 1,
 		changeName,
 		artifactStore,
@@ -437,7 +437,7 @@ function nonAuthoritativeStatus(cwd: string, changeName: string | null, store: S
 		warnings: [],
 	};
 	const status: SddStatus = {
-		schemaName: "gentle-pi.sdd-status",
+		schemaName: "jero-pi.sdd-status",
 		schemaVersion: 1,
 		changeName,
 		artifactStore: store,
@@ -650,7 +650,7 @@ export function resolveSddStatus(options: ResolveSddStatusOptions): SddStatus {
 						: planningRecommendation(artifacts, taskProgress.total, lightweight);
 
 	const status: SddStatus = {
-		schemaName: "gentle-pi.sdd-status",
+		schemaName: "jero-pi.sdd-status",
 		schemaVersion: 1,
 		changeName,
 		artifactStore: store,

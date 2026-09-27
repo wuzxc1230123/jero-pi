@@ -29,7 +29,7 @@ import {
 } from "../lib/review-risk-assessment.ts";
 
 // ---------------------------------------------------------------------------
-// gentle-pi#662: decoder for the native `gentle-ai review assess` envelope
+// decoder for the native `gentle-ai review assess` envelope
 // (gentle-ai#4295, landing in parallel -- stubbed here, never invoked as a
 // real process).
 // ---------------------------------------------------------------------------
@@ -89,7 +89,7 @@ test("decodeReviewAssessmentV1 rejects a malformed shape", () => {
 });
 
 // ---------------------------------------------------------------------------
-// verificationPlan: every (rdd, risk, profile) combination from gentle-pi#662.
+// verificationPlan: every (rdd, risk, profile) combination from .
 // ---------------------------------------------------------------------------
 
 const RISKS: readonly VerificationTier[] = [VERIFICATION_TIER.PASSIVE, VERIFICATION_TIER.MEDIUM, VERIFICATION_TIER.HIGH, VERIFICATION_TIER.UNASSESSABLE];
@@ -118,7 +118,7 @@ test("verificationPlan: rdd on + closed, medium/high/unassessable risk -> writer
 });
 
 // ---------------------------------------------------------------------------
-// gentle-pi#668: the `on` branch holds only while the native review reaches a
+// the `on` branch holds only while the native review reaches a
 // terminal (`closed`) outcome for this candidate. A decline, an unavailable
 // review, or an unknown/omitted outcome falls back to the exact same
 // risk-gated path as `off` -- declining a review is candidate-scoped and
@@ -330,7 +330,7 @@ test("resolveWriterProfile: an unknown or omitted profile fails closed to small,
 
 // ---------------------------------------------------------------------------
 // Tool-level fail-closed path: the `jero_review` tool's `assess` operation
-// (`extensions/jero-ai.ts`, gentle-pi#662) must treat a native CLI without
+// (`extensions/jero-ai.ts`, ) must treat a native CLI without
 // the `assess` verb (an older binary) or a rejected `assess` call (a process
 // failure) the same way -- risk "unassessable", which `verificationPlan`
 // treats as `high`. `assess` is exposed as a `jero_review` operation, not a
@@ -464,7 +464,7 @@ test("jero_review assess: writerModelId/writerEffort in input select the writer 
 	assert.equal((gemini.details as { plan: { independentVerifier: boolean } }).plan.independentVerifier, false);
 });
 
-test("jero_review assess: an explicit nativeReviewOutcome:\"declined\" input falls back to the risk-gated plan even when RDD is on (gentle-pi#668)", async () => {
+test("jero_review assess: an explicit nativeReviewOutcome:\"declined\" input falls back to the risk-gated plan even when RDD is on ()", async () => {
 	const nativeReviewCli: Partial<NativeReviewCli> = {
 		reviewMode: async () => ({ operation: "status", scope: "clone", status: { global: "on", cloneLocal: "", effective: "on", source: NATIVE_REVIEW_MODE_SOURCE.GLOBAL } }),
 		assess: async () => ({
@@ -495,7 +495,7 @@ test("jero_review assess: an unrecognized nativeReviewOutcome value is rejected"
 	);
 });
 
-// gentle-pi#668 correction: keyed per candidate (repository + target
+// correction: keyed per candidate (repository + target
 // identity), never repository alone; `closed` is never written to the memo.
 function assessOnNativeCli(currentTargetIdentity: () => string): Partial<NativeReviewCli> {
 	return {
@@ -505,7 +505,7 @@ function assessOnNativeCli(currentTargetIdentity: () => string): Partial<NativeR
 	};
 }
 
-test("jero_review assess: derivation is bound to the exact candidate recorded, closed can only ever be passed explicitly (gentle-pi#668 correction)", async (t) => {
+test("jero_review assess: derivation is bound to the exact candidate recorded, closed can only ever be passed explicitly (correction)", async (t) => {
 	t.after(() => __testing.clearNativeReviewOutcomeMemoForTesting());
 	__testing.clearNativeReviewOutcomeMemoForTesting();
 	let current = "target-a";

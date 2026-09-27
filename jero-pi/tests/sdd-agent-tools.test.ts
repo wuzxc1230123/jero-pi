@@ -133,7 +133,7 @@ test("generic non-SDD agents declare exact role tool allowlists", () => {
 });
 
 test("sdd-verify phase text carries the verify-result envelope and validate-before-persist rule", () => {
-	// gentle-pi#535 row 5: the phase must produce a natively admissible report
+	// row 5: the phase must produce a natively admissible report
 	// on its first persistence attempt without hunting the format elsewhere.
 	const envelopeFields = [
 		"schema: gentle-ai.verify-result/v1",
@@ -168,7 +168,7 @@ test("sdd-verify phase text carries the verify-result envelope and validate-befo
 });
 
 test("the retired Pi adversarial role agents are not packaged", () => {
-	// gentle-pi#311 P5: the refuter and targeted validator verdicts execute
+	// P5: the refuter and targeted validator verdicts execute
 	// through Go-owned pi processes via provider-rendered self-contained
 	// vectors; no Pi agent definition may reintroduce a Pi-authored verdict.
 	for (const retired of ["review-refuter.md", "review-validator.md"]) {

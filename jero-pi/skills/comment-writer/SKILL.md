@@ -3,7 +3,7 @@ name: jero-comment-writer
 description: "撰写温暖、直接的协作评论。触发词：PR 反馈、issue 回复、评审、Slack 消息或 GitHub 评论。"
 license: Apache-2.0
 metadata:
-  author: gentleman-programming
+  author: jero-pi
   version: "1.0"
 ---
 

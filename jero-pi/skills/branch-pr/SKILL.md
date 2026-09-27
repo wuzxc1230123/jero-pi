@@ -3,7 +3,7 @@ name: jero-branch-pr
 description: "创建带 issue 先行检查的 Jero 拉取请求。触发词：创建、打开或准备送审 PR。"
 license: Apache-2.0
 metadata:
-  author: gentleman-programming
+  author: jero-pi
   version: "2.1"
 ---
 

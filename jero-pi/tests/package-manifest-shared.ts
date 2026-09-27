@@ -46,7 +46,7 @@ export const V014_MANAGED_ASSETS = join(
 	"migrations",
 	"managed-assets-v0.14.json",
 );
-// gentle-pi#311 P5: the managed-asset installer mechanism tests use
+// P5: the managed-asset installer mechanism tests use
 // jero-explore.md as their exemplar (packaged, absent from the v0.13
 // manifest) after review-refuter.md was retired together with every
 // Pi-authored adversarial review verdict.

@@ -9,7 +9,7 @@ import { applyTaskEvent, emptyThread, TASK_EVENT, TASK_STATUS, TaskStore, type T
 
 // Jero Agents history: JSON per task, async, lazy, pruned by count.
 
-const root = mkdtempSync(join(tmpdir(), "gentle-agents-history-"));
+const root = mkdtempSync(join(tmpdir(), "jero-agents-history-"));
 after(() => rmSync(root, { recursive: true, force: true }));
 const dir = join(root, "tasks");
 
@@ -25,9 +25,9 @@ function task(id: string, createdAt: number): TaskRecord {
 }
 
 test("historyDir follows an isolated agent profile while explicit homes retain the default fallback", () => {
-	assert.equal(historyDir("/home/x", "/profiles/pi-principal/agent"), join("/profiles/pi-principal/agent", "gentle-agents", "tasks"));
-	assert.equal(historyDir("/home/x", "/profiles/pi-lab/agent"), join("/profiles/pi-lab/agent", "gentle-agents", "tasks"));
-	assert.equal(historyDir("/home/x"), join("/home/x", ".pi", "agent", "gentle-agents", "tasks"));
+	assert.equal(historyDir("/home/x", "/profiles/pi-principal/agent"), join("/profiles/pi-principal/agent", "jero-agents", "tasks"));
+	assert.equal(historyDir("/home/x", "/profiles/pi-lab/agent"), join("/profiles/pi-lab/agent", "jero-agents", "tasks"));
+	assert.equal(historyDir("/home/x"), join("/home/x", ".pi", "agent", "jero-agents", "tasks"));
 });
 
 test("saveTask writes a task with its thread and loadStoredTask reads it back", async () => {

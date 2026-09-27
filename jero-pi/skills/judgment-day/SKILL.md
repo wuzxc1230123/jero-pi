@@ -3,7 +3,7 @@ name: jero-judgment-day
 description: "触发词：judgment day、judgement day、双重评审、对抗性评审、juzgar。运行显式盲评双重评审，最多两轮有界的修复/再裁定。"
 license: Apache-2.0
 metadata:
-  author: gentleman-programming
+  author: jero-pi
   version: "1.7"
 ---
 

@@ -37,7 +37,7 @@ export const REVIEW_CONTROLLER_OPERATION = {
 	ABANDON: "abandon",
 	RECONCILE_AUTHORITY: "reconcile-authority",
 	REPAIR: "repair",
-	// gentle-pi#662：只读原生风险评估（gentle-ai#4295）。从不
+	// 只读原生风险评估（gentle-ai#4295）。从不
 	// 变更评审权威状态，也从不要求 lineageId。
 	ASSESS: "assess",
 } as const;
@@ -87,7 +87,7 @@ export const REVIEW_CONTROLLER_PARAMETERS = {
 		},
 		input: {
 			type: "string",
-			description: "A JSON-serialized object string, not a nested object. New native ordinary START uses {\"mode\":\"ordinary\"}; answer-consent uses exactly {\"consentBinding\":\"<opaque id>\",\"answer\":\"granted|declined\"}. Ordinary provider capture belongs only to jero_review_capture. An explicit baseRef requires committedOnly: true and requests a committed range, while repository-local policyPath remains optional. ASSESS accepts an optional object with baseRef, committedOnly, writerModelId, writerEffort, and nativeReviewOutcome (gentle-pi#662/#668); omitting writerModelId and writerEffort assesses the ambient working tree and fails closed to a small writer profile (never large) because the writer's actual profile is unknown to this call. nativeReviewOutcome (one of closed, declined, unavailable, unknown) tells ASSESS whether the native review actually closed for this candidate: when Receipt-driven development reads on but the review was declined for this candidate, is unavailable, or its outcome is unknown, ASSESS falls back to the exact risk-gated plan it returns when RDD is off, re-enabling the separate verifier -- a decline is candidate-scoped and never lowers the bar below the RDD-off path. Omitting it lets ASSESS try to derive declined/unavailable from what this process itself recorded for this exact candidate (never a different one, and never from repository state alone), failing closed to unknown when it cannot; `closed` is never derived -- pass it explicitly, and only right after acknowledging the approved review for this same candidate. The returned outcome_source (explicit|derived|unknown) says which of these produced the value. Legacy controller input remains separate.",
+			description: "A JSON-serialized object string, not a nested object. New native ordinary START uses {\"mode\":\"ordinary\"}; answer-consent uses exactly {\"consentBinding\":\"<opaque id>\",\"answer\":\"granted|declined\"}. Ordinary provider capture belongs only to jero_review_capture. An explicit baseRef requires committedOnly: true and requests a committed range, while repository-local policyPath remains optional. ASSESS accepts an optional object with baseRef, committedOnly, writerModelId, writerEffort, and nativeReviewOutcome (); omitting writerModelId and writerEffort assesses the ambient working tree and fails closed to a small writer profile (never large) because the writer's actual profile is unknown to this call. nativeReviewOutcome (one of closed, declined, unavailable, unknown) tells ASSESS whether the native review actually closed for this candidate: when Receipt-driven development reads on but the review was declined for this candidate, is unavailable, or its outcome is unknown, ASSESS falls back to the exact risk-gated plan it returns when RDD is off, re-enabling the separate verifier -- a decline is candidate-scoped and never lowers the bar below the RDD-off path. Omitting it lets ASSESS try to derive declined/unavailable from what this process itself recorded for this exact candidate (never a different one, and never from repository state alone), failing closed to unknown when it cannot; `closed` is never derived -- pass it explicitly, and only right after acknowledging the approved review for this same candidate. The returned outcome_source (explicit|derived|unknown) says which of these produced the value. Legacy controller input remains separate.",
 		},
 		outputPath: { type: "string", description: "Retired with legacy bundle export; ignored. Export returns legacy-operation-retired." },
 		inputPath: { type: "string", description: "Repository-local JSON input file for the separate legacy controller flow (alternative to input). Legacy bundle import is retired." },
@@ -175,7 +175,7 @@ export interface ReviewScopeParameters {
 	cursor?: number;
 }
 
-// gentle-pi#662：只读原生风险评估，在渲染的
+// 只读原生风险评估，在渲染的
 // `Receipt-driven development:` 行为 `off` 或 `unknown` 时，用原生风险
 // 而非任务描述判断来给独立验证者设门。以 `jero_review` 的
 // `assess` 操作暴露（不是独立工具），其可选字段经由控制器既有的
@@ -186,7 +186,7 @@ interface ReviewAssessInput {
 	committedOnly?: boolean;
 	writerModelId?: string;
 	writerEffort?: string;
-	// gentle-pi#668：调用方自己掌握的该候选结果。
+	// 调用方自己掌握的该候选结果。
 	// 省略时会尝试为本候选本身的 target identity 自动派生
 	// declined/unavailable（绝不是别的候选）；`closed`
 	// 永不自动派生——需显式传入。
@@ -265,7 +265,7 @@ export function parseReviewControllerParameters(value: unknown): ReviewControlle
 		if (unexpected !== undefined || typeof value.selectionBinding !== "string" || !Array.isArray(value.intendedUntracked) || (value.workspaceRoot !== undefined && typeof value.workspaceRoot !== "string")) throw new Error("Review intended-untracked selection accepts exactly selectionBinding and intendedUntracked, with optional workspaceRoot");
 		return { operation: value.operation, selectionBinding: value.selectionBinding, intendedUntracked: value.intendedUntracked, ...(typeof value.workspaceRoot === "string" ? { workspaceRoot: value.workspaceRoot } : {}) };
 	}
-	// gentle-pi#706：顶层 untrackedScope/intendedUntracked 仅凭
+	// 顶层 untrackedScope/intendedUntracked 仅凭
 	// inspect 就能解决 intended-untracked 停止点。intendedUntracked 不是
 	// 独立选择器：只有显式 select 范围时 inspect 才接受它。
 	const hasIntendedUntracked = "intendedUntracked" in value;
@@ -610,7 +610,7 @@ export async function resolveReviewModeGate(
 	}
 }
 
-// gentle-pi#185：没有协商出 STATUS 支持的原生 CLI（没有
+// 没有协商出 STATUS 支持的原生 CLI（没有
 // `targetStatus`，或 provider 版本不兼容）会在任何候选视图恢复尝试
 // 之前撞上这条边界，因此绝不会复现 #176 的空注册表
 // 失败——但这条边界自己的 `next_action` 是一个机器 token，
@@ -665,7 +665,7 @@ export function nativeStatusFailed(operation: ReviewControllerOperation, error: 
 			next_action: "require-complete-native-authority-inventory",
 		};
 	}
-	// gentle-pi#599：已协商的 STATUS/inspect 请求若被原生 provider 以
+	// 已协商的 STATUS/inspect 请求若被原生 provider 以
 	// 解码后的 failure/v2 封套拒绝（例如针对嵌套外部 Git 仓库的预检
 	// `invalid_request` 拒绝），过去会落到下方通用结果，
 	// 丢弃封套自带的 cause、code、retry_safe 和 next_action——而那正是
@@ -897,7 +897,7 @@ export function mapNativeTargetStatus(operation: ReviewControllerOperation, stat
 			required_status_action: "Use only the provider-selected recovery disposition; do not substitute scope_changed, invalidated, or escalated.",
 		};
 	}
-	// gentle-pi#627：过期的受管理资产集会用能解决它的那条
+	// 过期的受管理资产集会用能解决它的那条
 	// 精确 `gentle-ai sync` 调用来停止 transition。把该命令渲染为
 	// 唯一可行动的下一步；其他所有 reason code 继续
 	// 渲染为普通的 blocked 结果。
@@ -910,8 +910,8 @@ export function mapNativeTargetStatus(operation: ReviewControllerOperation, stat
 			hint: `run ${status.nextTransition.continuation.command}`,
 		};
 	}
-	// gentle-pi#638：unachievable-lens 停止为每个声明的槽位携带精确的 withdraw 命令，与 managed_assets_outdated 的先例一致。从未见过 collect 提议的重启仍能仅凭这条提示找到回去的路。
-	// gentle-pi#822：当调用方询问某一个 lineage 时，只渲染该 lineage 的 withdraw 命令；第一个条目可能属于无关的 lineage，因此未匹配的请求省略提示，而不是浮出可能无关的 withdraw 命令。没有请求 lineage 时，第一个条目仍是兜底。
+	// unachievable-lens 停止为每个声明的槽位携带精确的 withdraw 命令，与 managed_assets_outdated 的先例一致。从未见过 collect 提议的重启仍能仅凭这条提示找到回去的路。
+	// 当调用方询问某一个 lineage 时，只渲染该 lineage 的 withdraw 命令；第一个条目可能属于无关的 lineage，因此未匹配的请求省略提示，而不是浮出可能无关的 withdraw 命令。没有请求 lineage 时，第一个条目仍是兜底。
 	if (status.nextTransition?.kind === "stop" && status.nextTransition.reasonCode === "unachievable_lens_slot" && status.nextTransition.unachievableLensSlots !== undefined) {
 		const withdrawSlot = requestedLineageId === undefined ? status.nextTransition.unachievableLensSlots[0] : status.nextTransition.unachievableLensSlots.find((slot) => slot.withdraw.binding.lineageId === requestedLineageId);
 		return {

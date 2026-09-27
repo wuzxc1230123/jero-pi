@@ -373,7 +373,7 @@ test("general STATUS returns the typed native-status-unsupported boundary withou
 	});
 });
 
-test("gentle-pi#185: general STATUS on a non-negotiated native CLI names the exact recovery action", async (t) => {
+test("general STATUS on a non-negotiated native CLI names the exact recovery action", async (t) => {
 	// The legacy `correctionForecast` restoration guard this issue originally
 	// reported (extensions/jero-ai.ts, then around line 5329) was scoped to
 	// `targetStatus !== undefined` and skipped restoring a candidate view when

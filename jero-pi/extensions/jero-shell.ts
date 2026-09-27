@@ -20,7 +20,7 @@ import { installSessionChangeCapture } from "../lib/session-change-capture.ts";
 import { REVIEW_PREFLIGHT_TYPE } from "../lib/jero-ai-review-select.ts";
 import { sessionEventReason } from "../lib/session-event-reason.ts";
 
-// Jero Shell：gentle-pi 叠加在 pi 之上的视觉层。它安装
+// Jero Shell：jero-pi 叠加在 pi 之上的视觉层。它安装
 // 状态栏、花瓣提示符、工作树变更挂件与覆盖层、
 // 订阅用量视图，以及绘制 Jero 通知所用的卡片。
 
@@ -375,7 +375,7 @@ function showChanges(ctx: ExtensionContext, model: ChangesModel): void {
 }
 
 const USAGE_COMMAND_NAME = "jero:usage";
-const DEV_BINARY_WIDGET_KEY = "gentle-shell-dev-binary";
+const DEV_BINARY_WIDGET_KEY = "jero-shell-dev-binary";
 const SHA_PREFIX_LENGTH = 16;
 
 function messageText(content: string | Array<{ type: string; text?: string }>): string {

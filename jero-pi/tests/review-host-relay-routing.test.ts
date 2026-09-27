@@ -442,7 +442,7 @@ test("a transport failure stops the selected capture without auto-follow", async
 	assert.equal(harness.statusCalls.length, 1, "no automatic relaunch after transport failure");
 });
 
-// gentle-pi#522 / #524: a submission Go refused at admission is a proven
+//  a submission Go refused at admission is a proven
 // non-mutation. The model must see the refusal text, mutation_outcome none,
 // and a continuation for the reoffered slot, never an unknown outcome that the
 // contract forbids replaying.
@@ -512,7 +512,7 @@ test("a relay timeout reports its one-slot measurements and no auto-follow", asy
 	assert.equal(harness.statusCalls.length, 1);
 });
 
-// gentle-pi#638: the typed stop a provider renders after a host declared a
+// the typed stop a provider renders after a host declared a
 // slot unachievable, built through the production decoder so the routing
 // tests exercise the same typed shape the extension consumes.
 function unachievableStopStatus(lineageId: string, lens: ReviewArtifactSubjectV2["lens"], order: number, reason = "relay_transport_bound_exceeded"): ReviewStatusV3 {
@@ -554,7 +554,7 @@ function unachievableArtifact(lineageId: string, lens: ReviewArtifactSubjectV2["
 	return { schema: "gentle-ai.review-capture-unachievable/v1", lineageId, targetIdentity: SHA, lens, selectedOrder: order, reason, recorded: true };
 }
 
-// gentle-pi#638: a deterministic pi timeout is declared unachievable through
+// a deterministic pi timeout is declared unachievable through
 // the native verb, and one bound STATUS re-query renders the typed stop with
 // its withdraw binding instead of reoffering the same slot.
 test("a deterministic pi timeout declares the slot unachievable and renders the typed stop", async (t) => {
@@ -583,13 +583,13 @@ test("a deterministic pi timeout declares the slot unachievable and renders the 
 	assert.match(slots[0]!.withdraw, /capture-unachievable.*--withdraw=true/);
 	assert.match(String(result.next_action), /withdraw/);
 	assert.equal(result.mutation_performed, true);
-	// gentle-pi#822: the native declaration was recorded, so the flow reports the mutation as committed, not none.
+	// the native declaration was recorded, so the flow reports the mutation as committed, not none.
 	assert.equal(result.mutation_outcome, "committed");
 	assert.equal(harness.statusCalls.length, 2, "one selection STATUS plus exactly one bound re-query");
 	assert.equal(harness.statusCalls.at(-1)?.agent, "pi", "the bound re-query preserves the Pi host runtime");
 });
 
-// gentle-pi#638: generic admission rejections describe the submitted reviewer
+// generic admission rejections describe the submitted reviewer
 // bytes, not a deterministic failure of the provider-bound slot. A fresh
 // reviewer can repair malformed JSON or a binding mismatch, so both retain the
 // ordinary exact-reoffer path and must never declare the slot unachievable.
@@ -620,7 +620,7 @@ test("repairable submission refusals retain the exact-slot retry path", async (t
 	}
 });
 
-// gentle-pi#822: a stop carrying slots that do not match the identity this
+// a stop carrying slots that do not match the identity this
 // session declared is a reconciliation failure — never a success rendering
 // someone else's withdraw command.
 test("a stop whose slots do not match the declared identity reports a reconciliation failure", async (t) => {
@@ -649,7 +649,7 @@ test("a stop whose slots do not match the declared identity reports a reconcilia
 	assert.equal(harness.statusCalls.length, 2, "the bound re-query still runs exactly once");
 });
 
-// gentle-pi#822: with several declared entries on the stop, only the matching
+// with several declared entries on the stop, only the matching
 // identity is exposed — never the withdraw commands of other runs.
 test("a stop carrying several declared slots exposes only the one this session declared", async (t) => {
 	t.after(() => __testing.setReviewHostRelayRunnerForTesting());
@@ -676,7 +676,7 @@ test("a stop carrying several declared slots exposes only the one this session d
 	assert.equal(result.mutation_outcome, "committed");
 });
 
-// gentle-pi#822 (CodeRabbit finding): success must be proven by the unachievable_lens_slot stop itself — a bound STATUS that comes back with a collect reoffer instead of the stop is a reconciliation failure, never a silent success with no withdraw command.
+// (CodeRabbit finding): success must be proven by the unachievable_lens_slot stop itself — a bound STATUS that comes back with a collect reoffer instead of the stop is a reconciliation failure, never a silent success with no withdraw command.
 test("a bound STATUS that reoffers the collect transition instead of the stop reports a reconciliation failure", async (t) => {
 	t.after(() => __testing.setReviewHostRelayRunnerForTesting());
 	const cwd = repository(t);
@@ -700,7 +700,7 @@ test("a bound STATUS that reoffers the collect transition instead of the stop re
 	assert.equal(harness.statusCalls.length, 2, "the bound re-query still runs exactly once");
 });
 
-// gentle-pi#822 (CodeRabbit finding): the same proof requirement covers every STATUS shape that is not the stop — a foreign stop reason code or no transition at all.
+// (CodeRabbit finding): the same proof requirement covers every STATUS shape that is not the stop — a foreign stop reason code or no transition at all.
 test("a bound STATUS stop with a foreign reason code or no transition reports a reconciliation failure", async (t) => {
 	t.after(() => __testing.setReviewHostRelayRunnerForTesting());
 	const cwd = repository(t);
@@ -735,7 +735,7 @@ test("a bound STATUS stop with a foreign reason code or no transition reports a 
 	assert.equal(bareHarness.statusCalls.length, 2);
 });
 
-// gentle-pi#822: STATUS for one lineage renders only that lineage's withdraw
+// STATUS for one lineage renders only that lineage's withdraw
 // command as the hint; a request for an unlisted lineage omits the hint rather
 // than surfacing a potentially unrelated withdraw command.
 test("an unachievable stop renders the withdraw hint only for the requested lineage", async (t) => {
@@ -799,7 +799,7 @@ test("a refused declaration surfaces both failures instead of the transport fall
 	assert.match(String(result.next_action), /fresh STATUS/);
 });
 
-// gentle-pi#822 (outside-diff finding): the declaration failure's own envelope carries the mutation truth — a failure AFTER the provider recorded the declaration reports committed, never a hardcoded none.
+// (outside-diff finding): the declaration failure's own envelope carries the mutation truth — a failure AFTER the provider recorded the declaration reports committed, never a hardcoded none.
 test("a declaration failure whose envelope already committed propagates its mutation state", async (t) => {
 	t.after(() => __testing.setReviewHostRelayRunnerForTesting());
 	const cwd = repository(t);
@@ -821,7 +821,7 @@ test("a declaration failure whose envelope already committed propagates its muta
 	assert.equal(harness.statusCalls.length, 1, "a committed outcome needs no reconciliation re-query");
 });
 
-// gentle-pi#822 (outside-diff finding): an unknown declaration outcome is proven or disproven by one bound STATUS re-query without ever changing the failure outcome.
+// (outside-diff finding): an unknown declaration outcome is proven or disproven by one bound STATUS re-query without ever changing the failure outcome.
 test("an unknown declaration outcome is proven committed by one bound STATUS re-query", async (t) => {
 	t.after(() => __testing.setReviewHostRelayRunnerForTesting());
 	const cwd = repository(t);
@@ -845,7 +845,7 @@ test("an unknown declaration outcome is proven committed by one bound STATUS re-
 	assert.equal(harness.statusCalls.at(-1)?.agent, "pi", "the reconciliation re-query preserves the Pi host runtime");
 });
 
-// gentle-pi#822 (outside-diff finding): a malformed declaration error with no envelope at all keeps the conservative none outcome and performs no re-query.
+// (outside-diff finding): a malformed declaration error with no envelope at all keeps the conservative none outcome and performs no re-query.
 test("a malformed declaration error without an envelope keeps mutation none", async (t) => {
 	t.after(() => __testing.setReviewHostRelayRunnerForTesting());
 	const cwd = repository(t);

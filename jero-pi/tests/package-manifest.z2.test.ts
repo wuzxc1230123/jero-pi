@@ -745,7 +745,7 @@ test("pre-release package and runtime stop before publication", () => {
 	assert.ok(!packageJson.files?.includes("contracts/"));
 
 	const verifier = readFileSync(join(PACKAGE_ROOT, "scripts", "verify-package-files.mjs"), "utf8");
-	// gentle-pi#311 P5: the retired adversarial role agents must not be pinned
+	// P5: the retired adversarial role agents must not be pinned
 	// as required package files, while the append-only migration history stays.
 	assert.doesNotMatch(verifier, /assets\/agents\/review-refuter\.md/);
 	assert.doesNotMatch(verifier, /assets\/agents\/review-validator\.md/);

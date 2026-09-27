@@ -218,7 +218,7 @@ export async function runOpaquePiReviewer(prompt: Buffer, options: OpaquePiRevie
 	let primaryFailure = false;
 	try {
 		try {
-			scratchDirectory = await mkdtemp(join(tmpdir(), "gentle-pi-opaque-reviewer-"));
+			scratchDirectory = await mkdtemp(join(tmpdir(), "jero-pi-opaque-reviewer-"));
 			await chmod(scratchDirectory, 0o700);
 		} catch (error) {
 			throw new OpaquePiReviewerTransportError(

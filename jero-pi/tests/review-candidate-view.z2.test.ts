@@ -193,7 +193,7 @@ test("candidate registry still fails closed rebinding the same lineage to genuin
 	registry.cleanupTerminal("conflict-lineage", "approved", contributorRoot);
 });
 
-// gentle-pi#323: `createOrReuse` reuses whatever view a replay key maps to,
+// `createOrReuse` reuses whatever view a replay key maps to,
 // with no awareness of live candidate content -- a content-independent key
 // reuses a stale view even after the candidate content it was frozen from
 // has changed. The fix lives at the START call site (extensions/jero-ai.ts),
@@ -380,7 +380,7 @@ test("candidate view derives deletion, rename, executable, and symlink scope fro
 	try {
 		// The rename source (tracked.txt) is frozen as a deletion next to its
 		// destination: native STATUS projects the rename as both paths
-		// (gentle-pi#518), and the reviewer scope carries the same identity.
+		// (), and the reviewer scope carries the same identity.
 		// core.filemode=false 的平台（Windows 默认）读不到 chmod 的执行位，
 		// git 冻结树不会携带 100755——该 git 平台限制如实反映在期望里。
 		const filemodeVisible = git(contributorRoot, "config", "core.filemode").trim() !== "false";
@@ -406,7 +406,7 @@ test("candidate view derives deletion, rename, executable, and symlink scope fro
 	}
 });
 
-// gentle-pi#518: native STATUS projects every path whose state changed between
+// native STATUS projects every path whose state changed between
 // the frozen trees (Go diffs with --no-renames), so a staged exact rename is
 // its source deletion plus its destination addition. The candidate view must
 // project the same identity or ordinary START is rejected before native

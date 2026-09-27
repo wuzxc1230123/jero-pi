@@ -36,8 +36,9 @@ jero-pi 的 G4/D5 决策把 9 个生态插件升级为**强制依赖**（精确�
 
 ## 白名单提醒（不要顺手"清理"）
 
-`gentle-agents` 存储目录名、`gentleman` persona 档位值等属**有意保留的
-兼容白名单**（见 `CHANGELOG.md` [Unreleased] 身份清理一节），不在本表
+`gentle-` 残留四类已于 2026-09-27 专项清退（见 `docs/jero-reference.md`
+兼容白名单节）；仅存的外部契约类（`gentle-ai.*` wire 串、原生 CLI 词、
+上游工单引用、harness 禁用清单）仍属**有意保留的兼容白名单**，不在本表
 处置范围内。
 
 ## 评审记录

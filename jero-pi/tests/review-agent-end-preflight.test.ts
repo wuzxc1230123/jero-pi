@@ -12,13 +12,13 @@ import { createJeroAiExtension } from "../extensions/jero-ai.ts";
 import { NATIVE_REVIEW_ERROR_CODE, NativeReviewCliError, type NativeReviewCli } from "../lib/authority/client-contract.ts";
 import type { ReviewStatusV3 } from "../lib/authority/wire-contract.ts";
 
-// gentle-pi#556 / gentle-ai#4051: with RDD enabled, the agent finished an
+// gentle-ai#4051: with RDD enabled, the agent finished an
 // implementation and reported completion without ever entering the review
 // preflight. These tests cover the read-only, idempotent `agent_end` nudge
 // that reminds the agent to call jero_review before reporting completion,
 // without ever starting a review or answering consent itself.
 //
-// gentle-pi#568/#777: startup negotiates STATUS, but only successful own
+//  startup negotiates STATUS, but only successful own
 // mutation receipts authorize agent_end to query a candidate. Pre-session
 // work and foreign-session changes are not this session's output. These tests point
 // `JERO_PI_AGENT_HOME` and the session `cwd` at fresh temp directories so

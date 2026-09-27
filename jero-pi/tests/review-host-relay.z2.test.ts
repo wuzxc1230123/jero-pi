@@ -41,7 +41,7 @@ test("submission refusal is a typed error whose outcome is unknown pending STATU
 	assert.equal(readLog(fixture.logPath).length, 2);
 });
 
-// gentle-pi#522 / #524: Go refuses a reviewer submission at admission with a
+//  Go refuses a reviewer submission at admission with a
 // typed [invalid_request] refusal and states that the lens slot was not
 // consumed. That is a proven non-mutation, not an unknown outcome, and the
 // refusal text is the only thing that tells the host what to change.
@@ -184,7 +184,7 @@ test("refusal classification distinguishes unknown-flag and other (the handshake
 	assert.equal(classifyReviewHostRelayRefusal("some unrelated explosion"), "other");
 });
 
-// gentle-pi#638: only a reviewer killed by the scaled relay bound is proven
+// only a reviewer killed by the scaled relay bound is proven
 // deterministic for this exact slot. Generic admission refusals are repairable
 // by a fresh reviewer and retain the ordinary exact-reoffer behavior.
 test("the unachievable predicate names only deterministic slot failures", () => {

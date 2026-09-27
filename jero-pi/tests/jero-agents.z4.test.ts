@@ -63,7 +63,7 @@ for (const scenario of ["recover", "shutdown", "replacement"] as const) {
 			panel.overlay.handleInput("a");
 			await eventually(() => /io-original/.test(panel.frame()), "same-session peer is visible before publication failure");
 		}
-		const target = join(profile, "gentle-agents", "presence", `${original.sessionHash}.${original.incarnation}.activity.json`);
+		const target = join(profile, "jero-agents", "presence", `${original.sessionHash}.${original.incarnation}.activity.json`);
 		const fs = createRequire(import.meta.url)("node:fs") as typeof import("node:fs");
 		const rename = fs.renameSync;
 		let failures = 0;
@@ -149,7 +149,7 @@ test("live-only directory traverses presence overflow, excludes expired and othe
 		oldClock.mock.restore();
 	}
 	// Simulate an abruptly closed publisher: retained files, but no renewing heartbeat.
-	const stem = join(profile, "gentle-agents", "presence", `${expired.target.sessionHash}.${expired.target.incarnation}`);
+	const stem = join(profile, "jero-agents", "presence", `${expired.target.sessionHash}.${expired.target.incarnation}`);
 	const staleFiles = ["header", "activity"].map((kind) => ({ path: `${stem}.${kind}.json`, bytes: readFileSync(`${stem}.${kind}.json`) }));
 	expired.dispose();
 	for (const { path, bytes } of staleFiles) writeFileSync(path, bytes, { mode: 0o600 });
@@ -317,7 +317,7 @@ for (const matching of [true, false]) {
   const evidence={id:"write",root:target,path:matching?"session-diff-test.ts":"different.ts",before:{kind:"text",text:"original\n"},after:{kind:"text",text:"agent\n"}};
   d.children[0].emit({type:"tool_execution_start",toolCallId:"write",toolName:"write",args:{path:"session-diff-test.ts"}});
   d.children[0].emit({type:"tool_execution_end",toolCallId:"write",isError:false,result:{content:[],details:{jeroSessionChange:evidence}}});
-  const relays=h.events.filter(event=>event.name==="gentle-pi:child-session-change");
+  const relays=h.events.filter(event=>event.name==="jero-pi:child-session-change");
   assert.equal(relays.length,matching?1:0);
   if(matching) assert.match((relays[0].data as any).evidence.id,/:write$/);
   assert.equal(h.entries.filter(entry=>entry.customType===REVIEW_REMINDER_RECEIPT).length,1);

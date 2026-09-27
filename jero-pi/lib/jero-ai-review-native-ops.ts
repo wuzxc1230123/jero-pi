@@ -92,7 +92,7 @@ export function nativeOperationFailure(operation: ReviewControllerOperation | "j
 					: { mutation_performed: false, mutation_outcome: "none" }),
 			...(typeof value.failureEnvelope.replayability === "string" ? { replayability: value.failureEnvelope.replayability } : {}),
 			...(typeof value.failureEnvelope.nextAction === "string" ? { next_action: value.failureEnvelope.nextAction } : {}),
-			// gentle-pi#627：针对过期受管理资产集的 START 预检
+			// 针对过期受管理资产集的 START 预检
 			// 失败封套带有顶层 continuation；把它的
 			// `gentle-ai sync` 命令渲染为唯一可行动的下一步。
 			...(value.failureEnvelope.code === "managed_assets_outdated" && typeof value.failureEnvelope.continuation?.command === "string"
@@ -336,7 +336,7 @@ export function readRetainedNativeUntrackedSelection(selections: Map<string, Ret
 	};
 }
 
-// gentle-pi#706：inspect 的 untrackedScope 往返把已解析的
+// inspect 的 untrackedScope 往返把已解析的
 // 选择保留在 pre-lineage 空 lineage 键下，使该工作树中下一次
 // 普通 START 直接采纳它，而无需重新推导选择。
 export function nativePreLineageCandidateIdentity(
@@ -410,7 +410,7 @@ export function syncRetainedNativeStatusSelections(selections: Map<string, Retai
 	retainNativeCaptureRoutes(selections, workspaceRoot, status, baseRef);
 }
 
-// gentle-pi#311 P4 —— 轻量 Pi 宿主中继。provider 通过在 pi 绑定的
+// P4 —— 轻量 Pi 宿主中继。provider 通过在 pi 绑定的
 // `review.capture-result` collect 输入上签发 --materialize token 来决定
 // 宿主满足哪些捕获槽位；从不做任何推断。
 // P4b：生产 runner 将中继与进程内权威

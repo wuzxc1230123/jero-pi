@@ -16,7 +16,7 @@ import {
 } from "../lib/sdd-status.ts";
 
 async function workspace(): Promise<string> {
-	return mkdtemp(join(tmpdir(), "gentle-pi-sdd-status-"));
+	return mkdtemp(join(tmpdir(), "jero-pi-sdd-status-"));
 }
 
 function write(path: string, content: string): void {
@@ -391,7 +391,7 @@ test("renderSddStatusMarkdown includes structured JSON", async () => {
 
 	assert.match(markdown, /## SDD Status: add-auth/);
 	assert.match(markdown, /```json/);
-	assert.match(markdown, /"schemaName": "gentle-pi.sdd-status"/);
+	assert.match(markdown, /"schemaName": "jero-pi.sdd-status"/);
 });
 
 test("resolveSddStatus with artifactStore engram returns non-authoritative status without disk scan", async () => {

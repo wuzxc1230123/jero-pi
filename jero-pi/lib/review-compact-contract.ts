@@ -1,4 +1,4 @@
-// 精简后的 Pi FINALIZE 输入契约（gentle-pi#311 P5）。
+// 精简后的 Pi FINALIZE 输入契约（P5）。
 //
 // Pi 不再编写或传输 reviewer、refuter 或 validator 的裁决：评审视角
 // 结果经 pi 宿主中继原生受理，对抗角色经提供方渲染的自包含向量在
@@ -25,7 +25,7 @@ export class CompactReviewContractError extends Error {
 	}
 }
 
-// 自已删除的 lib/review-compact.ts 迁移而来（gentle-pi#311 P5）：
+// 自已删除的 lib/review-compact.ts 迁移而来（P5）：
 // 仍有生产消费者的精简形态只有定向验证文档及其组成部分行。
 export interface CompactValidationCheckInput {
 	passed: boolean;

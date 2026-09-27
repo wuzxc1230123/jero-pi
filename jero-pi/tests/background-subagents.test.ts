@@ -116,7 +116,7 @@ test("strict decode rejects malformed shapes", () => {
 		"[]",
 		"null",
 		'{"policy":"on"}',
-		'{"schema":"gentle-pi.background-subagents/v2","policy":"on"}',
+		'{"schema":"jero.background-subagents/v99","policy":"on"}',
 		'{"schema":"jero.background-subagents/v1","policy":"ON"}',
 		'{"schema":"jero.background-subagents/v1","policy":true}',
 		'{"schema":"jero.background-subagents/v1","policy":"on","extra":1}',

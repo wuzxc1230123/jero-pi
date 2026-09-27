@@ -5,7 +5,7 @@
 // （jeroSddStatusV1 / jeroSddContinueV1）→ 线上解码器
 // （decodeNativeSddStatusV2 的 lightweight 布尔校验）。既有非轻量行为
 // 在 authority-sdd-status.test.ts 与根目录 sdd-status 测试中锁定，此处
-// 只钉轻量分叉，二者共同构成 gentle-pi.sdd-status@1 的完整契约语义。
+// 只钉轻量分叉，二者共同构成 jero-pi.sdd-status@1 的完整契约语义。
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";

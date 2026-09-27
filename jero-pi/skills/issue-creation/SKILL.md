@@ -3,7 +3,7 @@ name: jero-issue-creation
 description: "基于仓库证据创建并分诊 GitHub issue。触发词：创建 issue、缺陷报告、功能请求或 issue 审批。"
 license: Apache-2.0
 metadata:
-  author: gentleman-programming
+  author: jero-pi
   version: "1.4"
 ---
 

@@ -2,7 +2,9 @@ import { isAbsolute } from "node:path";
 
 // 仅作提醒簿记：这些条目既不定义评审范围也不授予权威。两个扩展都
 // 向父级的活动 Pi 会话分支追加。
-export const REVIEW_REMINDER_RECEIPT = "gentle-pi.review-reminder-receipt/v1";
+export const REVIEW_REMINDER_RECEIPT = "jero-pi.review-reminder-receipt/v1";
+// 身份迁移前的旧品牌 customType：旧会话 JSONL 里已持久化，读取侧一律兼容。
+export const REVIEW_REMINDER_RECEIPT_LEGACY = "gentle-pi.review-reminder-receipt/v1";
 export interface ReceiptSession {
 	getSessionId(): string;
 	getBranch(): readonly { type: string; customType?: string; data?: unknown }[];
@@ -40,7 +42,7 @@ function valid(value: unknown): value is Receipt {
 
 function receipts(session: ReceiptSession, root: string): Receipt[] {
 	const sessionId = session.getSessionId();
-	return session.getBranch().flatMap((entry) => entry.type === "custom" && entry.customType === REVIEW_REMINDER_RECEIPT &&
+	return session.getBranch().flatMap((entry) => (entry.type === "custom" && (entry.customType === REVIEW_REMINDER_RECEIPT || entry.customType === REVIEW_REMINDER_RECEIPT_LEGACY)) &&
 		valid(entry.data) && entry.data.sessionId === sessionId && entry.data.root === root ? [entry.data] : []);
 }
 

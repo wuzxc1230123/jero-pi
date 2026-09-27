@@ -522,7 +522,7 @@ test("ordinary START refuses a target projection that no longer matches the froz
 	assert.equal(startCalls, 0);
 });
 
-// gentle-pi#455: a consent binding one active Pi session's START created must
+// a consent binding one active Pi session's START created must
 // be answerable from another active session presenting the same opaque
 // binding id -- consent bindings are not partitioned by which session's
 // START created them, only by the repository and candidate they are scoped to.
@@ -548,7 +548,7 @@ test("answer-consent resolves a valid binding presented by a different active Pi
 	assert.notEqual(answered.status, "blocked", JSON.stringify(answered));
 });
 
-// gentle-pi#455: cross-session resolution must still enforce single use --
+// cross-session resolution must still enforce single use --
 // once a binding is answered by any session, no session (including the one
 // whose START created it) may answer it again.
 test("a consumed consent binding cannot be answered a second time from any session", async (t) => {
@@ -576,7 +576,7 @@ test("a consumed consent binding cannot be answered a second time from any sessi
 	assert.equal((replay.diagnostics as { code?: string } | undefined)?.code, "consent-binding-already-consumed", JSON.stringify(replay));
 });
 
-// gentle-pi#455 correction: cross-session resolution looks a binding up by
+// correction: cross-session resolution looks a binding up by
 // its opaque id alone, so it must independently refuse an answer presented
 // from a different repository than the one its owning START minted it for,
 // without ever running the mode gate or native answerConsent, and without
@@ -608,7 +608,7 @@ test("answer-consent refuses a binding presented from a different repository tha
 	assert.equal((rightRepo.result as { lineage_id?: string } | undefined)?.lineage_id, "right-repo", JSON.stringify(rightRepo));
 });
 
-// gentle-pi#323: within the live consent TTL window, a content-independent
+// within the live consent TTL window, a content-independent
 // replay key let a second ordinary START reuse the first START's still-live
 // (never lineage-bound) frozen candidate view even though the live candidate
 // content changed underneath it, and then dead-ended at

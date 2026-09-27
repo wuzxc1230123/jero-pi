@@ -12,7 +12,7 @@ const { classifyGuardedCommand, evaluateGuardedCommand, guardedCommandPreview, g
 // ---------------------------------------------------------------------------
 
 function makeTmpDir(): string {
-	return mkdtempSync(join(tmpdir(), "gentle-pi-autonomous-"));
+	return mkdtempSync(join(tmpdir(), "jero-pi-autonomous-"));
 }
 
 function writeConfig(dir: string, relPath: string, content: unknown): void {

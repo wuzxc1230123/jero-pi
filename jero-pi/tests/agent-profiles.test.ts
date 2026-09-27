@@ -579,7 +579,7 @@ test("normalizeProfilesFile reports an active marker that names no profile", () 
 // (absent file, unreadable JSON, dropped entries, missing parent directories) are
 // exactly the ones a mock would hide.
 
-const root = mkdtempSync(join(tmpdir(), "gentle-agent-profiles-"));
+const root = mkdtempSync(join(tmpdir(), "jero-agent-profiles-"));
 after(() => rmSync(root, { recursive: true, force: true }));
 
 test("readProfilesFileResult reports a missing store without throwing", () => {

@@ -759,7 +759,7 @@ test("jeroShell keeps a dev-binary override visible above the editor for the who
 	jeroShell(pi, { JERO_PI_SHELL_CHANGES_WATCH_MS: "off" }, deps);
 	const { ctx, ui } = fakeContext();
 	await fire(handlers, "session_start", ctx);
-	const factory = ui.widgets.get("gentle-shell-dev-binary") as (tui: unknown, theme: unknown) => { render(width: number): string[] };
+	const factory = ui.widgets.get("jero-shell-dev-binary") as (tui: unknown, theme: unknown) => { render(width: number): string[] };
 	assert.ok(factory, "dev binary widget missing");
 	const lines = factory(fakeTui, plainTheme).render(100).map(stripAnsi);
 	assert.match(lines[0], /^╭─ ✿ Jero · dev binary override · field-test only ─+╮$/);
@@ -772,13 +772,13 @@ test("jeroShell keeps a dev-binary override visible above the editor for the who
 	assert.equal(painted[2], lines[2], "bottom frame cells have no background");
 	assert.equal(painted[3], "", "external spacer has no background");
 	await fire(handlers, "agent_start", ctx);
-	assert.equal(ui.widgets.has("gentle-shell-dev-binary"), false, "the startup notice leaves with the first prompt");
+	assert.equal(ui.widgets.has("jero-shell-dev-binary"), false, "the startup notice leaves with the first prompt");
 
 	const clean = fakePi();
 	jeroShell(clean.pi, { JERO_PI_SHELL_CHANGES_WATCH_MS: "off" }, { ...deps, devBinary: () => undefined });
 	const fresh = fakeContext();
 	await fire(clean.handlers, "session_start", fresh.ctx);
-	assert.equal(fresh.ui.widgets.has("gentle-shell-dev-binary"), false);
+	assert.equal(fresh.ui.widgets.has("jero-shell-dev-binary"), false);
 
 	assert.equal(devBinaryCard({ state: "invalid", reason: "binary missing" }).tone, "error");
 });

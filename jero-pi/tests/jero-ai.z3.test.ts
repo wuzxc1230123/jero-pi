@@ -19,7 +19,7 @@ import { CandidateViewError, type CandidateViewRegistry, CANONICAL_GZIP_OPTIONS 
 import { installPackageAssets } from "../lib/sdd-preflight.ts";
 import { type ReviewCollectInputV3, type ReviewStatusV3 } from "../lib/authority/wire-contract.ts";
 import { stripAnsi } from "../lib/terminal-theme.ts";
-import { cardBody, cardHint, cardTitle, cardTone } from "./gentle-card-text.ts";
+import { cardBody, cardHint, cardTitle, cardTone } from "./jero-card-text.ts";
 import {
 	cleanWorkspaceStatus, lifecycleContext, lifecycleTheme, offeredCommittedRangeStatus,
 	registeredJeroTools, renderComponent, reviewRepository, type ReviewStartRepository,

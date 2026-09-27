@@ -403,8 +403,8 @@ export function gitlinkMapsEqual(left: Readonly<Record<string, string>>, right: 
 // 两个物化候选视图在其基线、候选树、提交状态与变更范围
 // 全部一致时，描述的是完全相同的可评审内容。
 // 正因如此，重试的原生 START 新鲜物化出的重复视图可以
-// 安全丢弃，让位于已绑定的那个（gentle-pi
-// candidate-view 重绑缺陷，ga#4085 / ga#4050）：该比较从不
+// 安全丢弃，让位于已绑定的那个（candidate-view
+// 重绑缺陷，ga#4085 / ga#4050）：该比较从不
 // 信任调用方提供的声明，只信任 materializeCandidateView 已为
 // 两条记录算出的 Git 派生身份。
 export function candidateRecordsShareIdentity(left: CandidateViewRecord, right: CandidateViewRecord): boolean {
@@ -508,7 +508,7 @@ export interface ChangedPathEntry {
 }
 
 //
-// gentle-pi#518：两处推导都用 `--no-renames` 做 diff，与原生
+// 两处推导都用 `--no-renames` 做 diff，与原生
 // 提供方完全一致。重命名因此是源删除加目的
 // 新增，各占一条路径，所以 Pi 冻结的投影身份
 // 即原生 STATUS 投影的身份。这里的重命名检测此前
@@ -607,7 +607,7 @@ export function deriveChangedScope(cwd: string, baseTree: string, candidateTree:
 	const paths = new Set<string>();
 	const deleted = new Set<string>();
 	// `--no-renames` 镜像原生投影：重命名是一条删除
-	// 路径加一条新增路径（gentle-pi#518），且每条记录
+	// 路径加一条新增路径，且每条记录
 	// 恰好携带一条路径。
 	const tokens = gitPathTokens(cwd, ["diff", "--name-status", "-z", "--no-ext-diff", "--no-renames", baseTree, candidateTree], executor);
 	for (let index = 0; index < tokens.length;) {

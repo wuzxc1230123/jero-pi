@@ -177,7 +177,7 @@ export interface ReviewNextTransitionExecuteV3 {
 	command?: string;
 }
 
-// 宿主中介捕获槽位的提供方持有完成表单（gentle-pi#311 P4）。提供方
+// 宿主中介捕获槽位的提供方持有完成表单（P4）。提供方
 // 签发提交捕获字节的确切操作与参数令牌；宿主只把产物位置代入声明
 // 的 {{value}} 槽位，绝不自行合成或过滤该表单。
 export interface ReviewCaptureSubmissionValueV1 {
@@ -201,8 +201,7 @@ export interface ReviewCaptureSubmissionV1 {
 	values: readonly ReviewCaptureSubmissionValueV1[];
 }
 
-// 两个 Go 持有的非评审视角提供方角色捕获操作（gentle-pi#311
-// P4-roles；提供方侧 gentle-ai#3264）。它们的 collect 输入是自包含的
+// 两个 Go 持有的非评审视角提供方角色捕获操作（// P4-roles；提供方侧 gentle-ai#3264）。它们的 collect 输入是自包含的
 // 权威推进向量：绑定令牌外加 `--agent=pi --execute=true`，“没有”提交
 // 描述符。已知集合是封闭的——未知的角色捕获操作绝不被执行。
 export const REVIEW_PROVIDER_ROLE_CAPTURE_OPERATION = {
@@ -312,7 +311,7 @@ export interface ReviewCollectInputV3 {
 	validationRequest?: ReviewTargetedValidationRequestV1;
 }
 
-// gentle-pi#627：解析过期受管资产集的确切 `gentle-ai sync` 调用
+// 解析过期受管资产集的确切 `gentle-ai sync` 调用
 // （STATUS 的 next_transition stop 与 START 的预检失败封套都携带同一
 // 形态）。
 export interface ReviewManagedAssetsContinuationV1 {
@@ -322,7 +321,7 @@ export interface ReviewManagedAssetsContinuationV1 {
 	staleAssets?: readonly string[];
 }
 
-// gentle-pi#638：宿主通过原生 capture-unachievable 动词声明为不可达成
+// 宿主通过原生 capture-unachievable 动词声明为不可达成
 // 的一个已选评审视角槽位，镜像自 Go 的
 // ReviewUnachievableLensSlot（internal/cli/review_next_transition.go）。
 // withdraw 形态刻意比完整的 execute 转换更窄：它是恰好针对该槽位的
@@ -523,7 +522,7 @@ export interface ReviewFailureV2 {
 	causeCategory?: ReviewFailureCauseCategoryV2;
 	cause?: string;
 	context?: ReviewFailureContextV2;
-	/** 仅 code=managed_assets_outdated：sync 续跑（gentle-pi#627）。 */
+	/** 仅 code=managed_assets_outdated：sync 续跑。 */
 	continuation?: ReviewManagedAssetsContinuationV1;
 	raw: Readonly<Record<string, unknown>>;
 }

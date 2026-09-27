@@ -130,7 +130,7 @@ path/to/authorized-file.ts
 2. **多文件写入规则**：对有界多文件写入，优先已安装的包内 `jero-worker`，其次是用户配置的 `worker`。若两个写者定义都不存在，回退到原生 `Agent`，即使 `subagent_*` 工具可用。若无委托机制可用，停止并说明阻塞。
 3. **事故规则**：在错误 `cwd`、误改仓库/工作树、失败的合并恢复、令人困惑的测试命令或环境绕行之后，先停止并单独诊断事故，再恢复工作。
 4. **长会话规则**：当累积的工作不再明显局部——约 20 次工具调用、5 次探索性文件读取或 2 次非机械编辑而未委托——暂停并委托剩余工作，而不是静默地继续单体执行。
-5. **验证规则**（gentle-pi#661/#662，感知 RDD；规范性条文在本文件他处被引用而非重述）：读取渲染在 `Background subagent policy` 旁边的 `Receipt-driven development:` 行。有界写者总是在被委托任务的 `## Verification` 标题下同步、前台地运行父会话精确授权的命令，并逐条报告为 `<command>: <observed result>`——精确规则见 `jero-worker` 的验证契约，包括 `## Known environmental failures`（精确的既有基线失败）与任何其他失败必需命令的区别，后者仍强制 `status: partial`。当该行读作 `on` 时，写者报告即记录在案的验证，原生评审是写者无法影响的独立检查：`jero-verify`（或原生 `Agent` 回退，携带同样的只读验证任务与父会话精确授权的命令）变为按需——仅当写者报告 `partial`/`blocked`、检查昂贵或外部（E2E 运行、安装）且父会话想要更廉价的画像，或父会话想要独立抽查时使用。该 `on` 分支仅当原生评审确实对该候选到达终局结果时成立（gentle-pi#668）：该候选的同意封套被人类拒绝（候选范围，绝不是 RDD 总开关）、流程中发现 clone 本地的 RDD 已禁用，或 START/STATUS 被拒绝，都完全像 `off` 一样回落到风险分级路径——调用 `jero_review` 并传入 `{"operation":"assess"}`（父会话已知时传入 `nativeReviewOutcome`；否则工具从它自己对该候选的观察推导，无法推导时保守失败为 `unknown`）并遵循返回的计划。当该行读作 `off` 或 `unknown` 时，写者返回后，对写者的 diff 调用 `jero_review` 的 `{"operation":"assess"}` 并遵循返回的计划，而不是凭任务描述判断非平凡性：该操作解析原生风险层级并确切说明接下来由谁验证。层级表（在此一次性给出）：
+5. **验证规则**（感知 RDD；规范性条文在本文件他处被引用而非重述）：读取渲染在 `Background subagent policy` 旁边的 `Receipt-driven development:` 行。有界写者总是在被委托任务的 `## Verification` 标题下同步、前台地运行父会话精确授权的命令，并逐条报告为 `<command>: <observed result>`——精确规则见 `jero-worker` 的验证契约，包括 `## Known environmental failures`（精确的既有基线失败）与任何其他失败必需命令的区别，后者仍强制 `status: partial`。当该行读作 `on` 时，写者报告即记录在案的验证，原生评审是写者无法影响的独立检查：`jero-verify`（或原生 `Agent` 回退，携带同样的只读验证任务与父会话精确授权的命令）变为按需——仅当写者报告 `partial`/`blocked`、检查昂贵或外部（E2E 运行、安装）且父会话想要更廉价的画像，或父会话想要独立抽查时使用。该 `on` 分支仅当原生评审确实对该候选到达终局结果时成立：该候选的同意封套被人类拒绝（候选范围，绝不是 RDD 总开关）、流程中发现 clone 本地的 RDD 已禁用，或 START/STATUS 被拒绝，都完全像 `off` 一样回落到风险分级路径——调用 `jero_review` 并传入 `{"operation":"assess"}`（父会话已知时传入 `nativeReviewOutcome`；否则工具从它自己对该候选的观察推导，无法推导时保守失败为 `unknown`）并遵循返回的计划。当该行读作 `off` 或 `unknown` 时，写者返回后，对写者的 diff 调用 `jero_review` 的 `{"operation":"assess"}` 并遵循返回的计划，而不是凭任务描述判断非平凡性：该操作解析原生风险层级并确切说明接下来由谁验证。层级表（在此一次性给出）：
 
 | 原生风险层级 | RDD 为 `off`/`unknown` 时的验证 |
 |---|---|
@@ -157,7 +157,7 @@ path/to/authorized-file.ts
 
 对有界多文件写入，优先已安装的包内 `jero-worker`，其次是用户配置的 `worker`。若两个写者定义都不存在，回退到原生 `Agent`，即使 `subagent_*` 工具可用。若无委托机制可用，停止并说明阻塞。
 
-<!-- gentle-pi:background-subagents -->
+<!-- jero-pi:background-subagents -->
 #### Background Subagent Policy
 
 后台执行受策略门控：常驻编排器提示渲染一行状态，`Background subagent policy: on|off (capability: ready|absent)`。若策略为 off 或 `subagent_run` 工具不可用，则每次委托都在前台运行——存在 `subagent_*` 工具时用 `mode: "task"`，否则用原生 `Agent` 回退——始终如此。
@@ -166,18 +166,18 @@ path/to/authorized-file.ts
 
 - 默认用 `subagent_run` 的 `mode: "background"`。它立即返回一个任务 id；终端保持空闲，人类可以继续输入。传入三到六个词的 `label` 为该工作命名。
 - 子代 `agent_end` 保留其最新答案但不等于完成：Pi 仍可能重试、压缩或运行排队的后续任务。仅在 `agent_settled` 时才把任务视为完成；仅那时释放其队列槽、发布其后台结果或终止它。若它先行退出，报告失败并以其保留的答案作为诊断。
-- 后台任务完成时，其结果以本会话中的一条消息到达（自定义类型 `gentle-agents.result`，每任务一条），你空闲时它开启新回合。等待它：启动与任何不重叠的工作完成后即结束回合。绝不为等待完成而轮询、sleep 或调用 `subagent_status`/`subagent_result`。
+- 后台任务完成时，其结果以本会话中的一条消息到达（自定义类型 `jero-agents.result`，每任务一条），你空闲时它开启新回合。等待它：启动与任何不重叠的工作完成后即结束回合。绝不为等待完成而轮询、sleep 或调用 `subagent_status`/`subagent_result`。
 - 当其必需的验证或纠正后续仍在排队时，不要宣称实现已就绪或 RDD 就绪。在该宣称之前运行必需的聚焦验证，并保留正当的纠正后验证。这不发明普适的全量套件要求，也不把回执变成交付门。
 - 仅当子代理必须中途询问人类（任务模式对话框能到达人类；后台对话框被忽略）或人类要求等待时，才使用 `mode: "task"`。
 - 按工作所拥有的独立任务数启动；超出 `max_concurrency` 由运行器排队。不要重复启动或重复工作，不要重叠文件或主题。绝不在同一工作树中并行运行写者。
 - 已完成的任务跨重启持久；运行中的任务在 pi 退出时被停止，必须重新启动，绝不得声称已恢复。
-<!-- /gentle-pi:background-subagents -->
+<!-- /jero-pi:background-subagents -->
 
 对通用非 SDD 探索与映射，先尝试已安装的包内 `jero-explore`。若该角色缺失或不可用，回退到 Pi 原生 `Agent`，施加同样的只读映射约束并报告回退。
 
 对有界多文件写入，优先已安装的包内 `jero-worker`，其次是用户配置的 `worker`。若两个写者定义都不存在，回退到原生 `Agent`，即使 `subagent_*` 工具可用。若无委托机制可用，停止并说明阻塞。该写者优先级覆盖上方的通用运行时偏好。
 
-按感知 RDD 的验证规则（强制委托触发条件下的触发 5，gentle-pi#661）委托执行或转委托命令的通用非 SDD 验证——规范性的 on/off/unknown 路由在那里，不在此：有界写者总是经 `## Verification` 自验证，`jero-verify`（或原生 `Agent` 回退，携带同样的只读验证约束、父会话精确授权的命令与回退报告）仅当渲染的 `Receipt-driven development:` 行读作 `on` 时按需使用；当该行读作 `off` 或 `unknown` 时，由 `jero_review` 的 `assess` 操作返回的计划按原生风险层级决定，而非一刀切的非平凡规则（gentle-pi#662）。`## Known environmental failures` 遵循与 `jero-worker` 验证契约相同的定义：精确的既有基线失败作为证据报告，绝不是阻塞因素——任何其他失败的必需命令仍强制 `status: partial`。真正本地的 1–3 个已知文件只读检查可保持内联。独立探索保留给父会话需要地图来决策或路由时；为写入做准备的读取属于做出变更的写者，与上方委托规则表一致。
+按感知 RDD 的验证规则（强制委托触发条件下的触发 5）委托执行或转委托命令的通用非 SDD 验证——规范性的 on/off/unknown 路由在那里，不在此：有界写者总是经 `## Verification` 自验证，`jero-verify`（或原生 `Agent` 回退，携带同样的只读验证约束、父会话精确授权的命令与回退报告）仅当渲染的 `Receipt-driven development:` 行读作 `on` 时按需使用；当该行读作 `off` 或 `unknown` 时，由 `jero_review` 的 `assess` 操作返回的计划按原生风险层级决定，而非一刀切的非平凡规则。`## Known environmental failures` 遵循与 `jero-worker` 验证契约相同的定义：精确的既有基线失败作为证据报告，绝不是阻塞因素——任何其他失败的必需命令仍强制 `status: partial`。真正本地的 1–3 个已知文件只读检查可保持内联。独立探索保留给父会话需要地图来决策或路由时；为写入做准备的读取属于做出变更的写者，与上方委托规则表一致。
 
 `sdd-explore` 与 `sdd-verify` 仅在 SDD 内使用。
 

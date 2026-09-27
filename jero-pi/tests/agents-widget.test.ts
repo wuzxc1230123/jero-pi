@@ -46,14 +46,14 @@ test("widgetExpiryMs says how long until the next finished row leaves the card",
 test("renderAgentsCard draws columns for agent, task, and model · tokens · cost · time, with the batch time in the rule", () => {
 	const tasks = [
 		task({ id: "a", status: TASK_STATUS.COMPLETED, startedAt: 1000, endedAt: 26_000 }),
-		task({ id: "b", agent: "sdd-apply", label: "write gentle-shell footer", startedAt: 44_000, tokens: 12_000, cost: 0.09 }),
+		task({ id: "b", agent: "sdd-apply", label: "write jero-shell footer", startedAt: 44_000, tokens: 12_000, cost: 0.09 }),
 	];
 	const lines = renderAgentsCard(tasks, plainTheme, 84, 85_000, { collapsed: false });
 	for (const line of lines) assert.equal(visibleWidth(line), 84, `"${stripAnsi(line)}" is not 84 wide`);
 	const plain = lines.map(stripAnsi);
 	assert.match(plain[0], /^╭─ ❀ Agents · 1 active · 1 done ─+ 1m24s ╮$/);
 	assert.match(plain[1], /^│ ✓  sdd-explore  map footer data sources +claude-sonnet-5 · 34k · \$0\.27 · 25s │$/);
-	assert.match(plain[2], /^│ ◐  sdd-apply    write gentle-shell footer +claude-sonnet-5 · 12k · \$0\.09 · 41s │$/);
+	assert.match(plain[2], /^│ ◐  sdd-apply    write jero-shell footer +claude-sonnet-5 · 12k · \$0\.09 · 41s │$/);
 	assert.match(plain[3], /^╰─+╯$/);
 	assert.deepEqual(renderAgentsCard([], plainTheme, 60, 0, { collapsed: false }), []);
 });
@@ -65,10 +65,10 @@ test("renderAgentsCard renders singleton elapsed time only on its task row", () 
 });
 
 test("renderAgentsCard keeps every task on one line, clipping long labels, and drops the task column when the card is narrow", () => {
-	const tasks = [task({ id: "a", label: "write the gentle shell footer and all of its tests before lunch" })];
+	const tasks = [task({ id: "a", label: "write the jero-shell footer and all of its tests before lunch" })];
 	const wide = renderAgentsCard(tasks, plainTheme, 84, 5_000, { collapsed: false }).map(stripAnsi);
 	assert.equal(wide.length, 3);
-	assert.match(wide[1], /^│ ◐  sdd-explore  write the gentle shell foot… +claude-sonnet-5 · 34k · \$0\.27 · 4s │$/);
+	assert.match(wide[1], /^│ ◐  sdd-explore  write the jero-shell footer…  claude-sonnet-5 · 34k · \$0\.27 · 4s │$/);
 	const narrow = renderAgentsCard(tasks, plainTheme, 44, 5_000, { collapsed: false }).map(stripAnsi);
 	assert.equal(narrow.length, 3);
 	assert.match(narrow[1], /^│ ◐  sdd-explore +claude-sonnet-5 +│$/);

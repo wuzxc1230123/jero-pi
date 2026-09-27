@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { closeSync, fsyncSync, linkSync, lstatSync, mkdirSync, openSync, readFileSync, readlinkSync, readdirSync, unlinkSync, writeFileSync } from "node:fs";
+import { closeSync, existsSync, fsyncSync, linkSync, lstatSync, mkdirSync, openSync, readFileSync, readlinkSync, readdirSync, unlinkSync, writeFileSync } from "node:fs";
 import { mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import { dirname, join } from "node:path";
@@ -31,7 +31,11 @@ const FILE_SUFFIX = ".json";
 const SAFE_ID = /^[a-z0-9-]+$/i;
 
 export function historyDir(home: string, agentHome = join(home, ".pi", "agent")): string {
-	return join(agentHome, "gentle-agents", "tasks");
+	// 新名读 + 旧名回退（身份迁移）：旧安装的数据目录原地可读，绝不改写。
+	const preferred = join(agentHome, "jero-agents", "tasks");
+	if (existsSync(preferred)) return preferred;
+	const legacy = join(agentHome, "gentle-agents", "tasks");
+	return existsSync(legacy) ? legacy : preferred;
 }
 
 function fileFor(dir: string, id: string): string {

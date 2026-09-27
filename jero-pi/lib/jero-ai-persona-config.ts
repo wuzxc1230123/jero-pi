@@ -60,19 +60,19 @@ function readPersonaFile(path: string): PersonaMode | undefined {
 	try {
 		const parsed: unknown = JSON.parse(readFileSync(path, "utf8"));
 		if (!isRecord(parsed)) return undefined;
-		return parsed.mode === "neutral" ? "neutral" : "gentleman";
+		// 非 neutral 一律归入 direct：身份迁移前持久化的 "gentleman"
+		// 借此原地迁移，无需 legacy 分支（写侧只写新值）。
+		return parsed.mode === "neutral" ? "neutral" : "direct";
 	} catch {
 		return undefined;
 	}
 }
 
-
-
 export function readPersonaMode(cwd: string): PersonaMode {
 	return (
 		readPersonaFile(projectPersonaConfigPath(cwd)) ??
 		readPersonaFile(personaConfigPath(cwd)) ??
-		"gentleman"
+		"direct"
 	);
 }
 

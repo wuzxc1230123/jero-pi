@@ -1,4 +1,4 @@
-// 精简的 Pi 宿主中继（gentle-pi#311 P4；提供方契约 gentle-ai#3249）。
+// 精简的 Pi 宿主中继（P4；提供方契约 gentle-ai#3249）。
 //
 // gentle-ai 拥有提示词物化、角色与 schema 选择、字节
 // 预算、解析、准入、不可变捕获、重试、修正
@@ -53,7 +53,7 @@ export const REVIEW_HOST_RELAY_FAILURE = {
 	EMPTY_PROMPT: "empty-prompt",
 	PI_LAUNCH_FAILED: "pi-launch-failed",
 	PI_FAILED: "pi-failed",
-	// gentle-pi#367：被中继上限杀死的评审器不是崩溃。它是
+	// 被中继上限杀死的评审器不是崩溃。它是
 	// 字节级相同的重新发起也无法存活的唯一失败类别，
 	// 因此它拥有自己的 kind、自己的 elapsed/limit 证据，以及自己的
 	// 后续处理，而不是藏在 `pi-failed` 之内。
@@ -79,7 +79,7 @@ export class ReviewHostRelayError extends Error {
 	// 被杀死或失败的子进程实际消耗的墙钟时间，以及度量它所依据的
 	// 上限。只有当没有子进程运行过时二者才为 null。
 	// 没有它们就无法把传输失败与崩溃区分开，这正是
-	// 迫使 gentle-pi#367 报告者手工测量中继的原因。
+	// 迫使 报告者手工测量中继的原因。
 	readonly elapsedMs: number | null;
 	readonly timeoutMs: number | null;
 	// 在 submission 调用发起之前为 "none"；已发起但结局
@@ -87,7 +87,7 @@ export class ReviewHostRelayError extends Error {
 	// 协商出的 STATUS 对账，绝不盲目重试。已发起却被
 	// gentle-ai 以其类型化准入拒绝的 submission 重新回到
 	// "none"：提供方声明该评审视角槽位未被消费
-	// （gentle-pi#522 / #524）。
+	// 。
 	readonly mutationOutcome: "none" | "unknown";
 	constructor(kind: ReviewHostRelayFailureKind, stage: ReviewHostRelayStage, message: string, details?: { exitCode?: number | null; stderr?: string; timedOut?: boolean; elapsedMs?: number; timeoutMs?: number; mutationOutcome?: "none" | "unknown" }) {
 		super(message);
@@ -103,7 +103,7 @@ export class ReviewHostRelayError extends Error {
 	}
 }
 
-// gentle-pi#522 / #524：gentle-ai 在任何准入之前以退出码 1 及其类型化
+// gentle-ai 在任何准入之前以退出码 1 及其类型化
 // 操作符行 `<reason> [invalid_request]` 拒绝评审器 submission。
 // 该代码属于提供方的预检类别：请求按原样被拒绝，
 // 且评审视角槽位未被消费。中继只识别这一
@@ -117,7 +117,7 @@ export function isReviewHostRelayAdmissionRefusal(capture: { exitCode: number | 
 // 二进制传输 materialize 调用的拒绝分类。
 // 已安装的 gentle-ai 是 materialize 表单是否存在的唯一权威；
 // Pi 从不做版本嗅探。jero-pi M3（设计 §8）：
-// gentle-pi.review-relay/v1 握手环境变量及其拒绝类别已被删除
+// 旧 review-relay/v1 握手环境变量及其拒绝类别已被删除
 // —— 不再遗留任何需要声明的跨进程契约。
 const UNKNOWN_FLAG_REFUSAL = /flag provided but not defined: -{1,2}(?:materialize|agent)\b/;
 
@@ -127,7 +127,7 @@ export function classifyReviewHostRelayRefusal(stderr: string): "unknown-flag" |
 }
 
 // ---------------------------------------------------------------------------
-// gentle-pi#638：只有中继上限导致的评审器超时对所选的确切槽位才是
+// 只有中继上限导致的评审器超时对所选的确切槽位才是
 // 决定性的：重新发起同一个物化请求只会撞上同一堵
 // 墙。一般性准入拒绝，包括格式错误的评审器 JSON 与
 // binding_mismatch [invalid_request]，描述的是可修复的已提交字节；换一个
@@ -201,7 +201,7 @@ export function reviewHostRelaySlots(inputs: readonly ReviewCollectInputV3[]): r
 }
 
 // ---------------------------------------------------------------------------
-// 提供方角色向量（gentle-pi#311 P4-roles）—— 两个由 Go 拥有的非评审视角
+// 提供方角色向量（P4-roles）—— 两个由 Go 拥有的非评审视角
 // 对抗性角色捕获操作。与上面的评审视角物化槽位不同，
 // 这些向量是自包含（SELF-CONTAINED）的：提供方渲染出绑定
 // 令牌外加 `--agent=pi --execute=true`，执行这个精确渲染的
@@ -323,10 +323,10 @@ export type ReviewHostRelaySubmissionRunner = (prepared: ReviewHostRelayPrepared
 export type ReviewHostRelayRenderSlot = (request: ReviewHostRelayRequest) => Promise<{ promptBytes: Buffer }>;
 export type ReviewHostRelayAdmitResult = (request: ReviewHostRelayRequest, operationToken: string, argumentTokens: readonly string[], resultFile: string) => Promise<string>;
 
-const DEFAULT_GENTLE_AI_TIMEOUT_MS = 120_000;
+const DEFAULT_PROVIDER_TIMEOUT_MS = 120_000;
 
 // ---------------------------------------------------------------------------
-// 评审器子进程上限（gentle-pi#367）。
+// 评审器子进程上限。
 //
 // 旧上限是单个硬编码的 600_000 ms，只能通过
 // 可测试注入的 runner 触达。一次实地测量的评审视角面对约 1.58 MB 的
@@ -521,7 +521,7 @@ function snapshotReviewHostRelayRequest(request: ReviewHostRelayRequest): Review
 		...(submission === undefined ? {} : { submission }),
 		providerExecutable,
 		environment,
-		providerTimeoutMs: request.providerTimeoutMs ?? DEFAULT_GENTLE_AI_TIMEOUT_MS,
+		providerTimeoutMs: request.providerTimeoutMs ?? DEFAULT_PROVIDER_TIMEOUT_MS,
 		targetCwd: request.targetCwd ?? process.cwd(),
 	});
 }
@@ -687,7 +687,7 @@ export async function submitReviewHostRelayPreparedResult(prepared: ReviewHostRe
 	if (!useInProcessAdmission && request.providerExecutable === undefined) {
 		throw new ReviewHostRelayError(REVIEW_HOST_RELAY_FAILURE.RELAY_UNAVAILABLE, "submit", "authority-unavailable: no in-process admitResult seam was injected and no binary transport exists (jero-pi M3)");
 	}
-	const stagingDirectory = await mkdtemp(join(tmpdir(), "gentle-pi-host-relay-result-"));
+	const stagingDirectory = await mkdtemp(join(tmpdir(), "jero-pi-host-relay-result-"));
 	let primaryFailure = false;
 	try {
 		await chmod(stagingDirectory, 0o700);
@@ -707,7 +707,7 @@ export async function submitReviewHostRelayPreparedResult(prepared: ReviewHostRe
 				if (error instanceof ReviewHostRelayError) throw error;
 				// Mi7（评审）：下面的 [invalid_request] 启发式是 P4
 				// admit-wrapper 契约，镜像上面的二进制纪律
-				// （gentle-pi#522/#524：退出码 1 + `<reason> [invalid_request]` 是
+				// （退出码 1 + `<reason> [invalid_request]` 是
 				// 提供方的类型化预检拒绝，证明评审视角槽位未被
 				// 消费）。把权威拒绝适配到
 				// 该接缝上的 P4 包装器必须把权威的类型化拒绝联合以

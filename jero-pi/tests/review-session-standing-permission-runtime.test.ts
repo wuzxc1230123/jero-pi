@@ -19,7 +19,7 @@ import {
 	hasReviewSessionPermission,
 } from "../lib/review-session-standing-permission.ts";
 
-const LIFECYCLE_SYMBOL = Symbol.for("gentle-pi.test.review-session-permission-lifecycle");
+const LIFECYCLE_SYMBOL = Symbol.for("jero-pi.test.review-session-permission-lifecycle");
 
 interface LifecycleEvent {
 	instance: number;
@@ -106,7 +106,7 @@ test("actual Pi SDK loader preserves permission only across reload and disposes 
 	const extensionPath = join(agentDir, "extensions", "runtime-permission.ts");
 	writeFileSync(extensionPath, `
 import { createJeroAiExtension } from ${JSON.stringify(extensionSource)};
-const lifecycle = globalThis[Symbol.for("gentle-pi.test.review-session-permission-lifecycle")];
+const lifecycle = globalThis[Symbol.for("jero-pi.test.review-session-permission-lifecycle")];
 const instance = ++lifecycle.nextInstance;
 export default function (pi) {
   pi.on("session_start", (event, ctx) => lifecycle.events.push({ instance, type: "start", reason: event.reason, manager: ctx.sessionManager }));

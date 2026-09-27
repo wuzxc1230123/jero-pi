@@ -3,7 +3,7 @@ name: jero-skill-registry
 description: "触发词：更新技能、技能注册表、actualizar skills、技能变更之后。按触发词与路径索引可用技能。"
 license: MIT
 metadata:
-  author: gentleman-programming
+  author: jero-pi
   version: "1.0"
 ---
 

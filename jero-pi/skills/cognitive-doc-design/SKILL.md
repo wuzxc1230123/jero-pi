@@ -3,7 +3,7 @@ name: jero-cognitive-doc-design
 description: "设计降低认知负荷的文档。触发词：撰写指南、README、RFC、入职文档、架构文档或面向评审的文档。"
 license: Apache-2.0
 metadata:
-  author: gentleman-programming
+  author: jero-pi
   version: "1.0"
 ---
 

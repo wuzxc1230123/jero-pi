@@ -251,7 +251,7 @@ for (const statusSchema of ["gentle-ai.review-integration.status/v6", "gentle-ai
 	assert.equal(requests.every((request) => !("lineageId" in request)), true);
 });
 
-// gentle-pi#706: inspect names the exact continuation for the intended-untracked
+// inspect names the exact continuation for the intended-untracked
 // stop and can resolve it in one call through top-level untrackedScope.
 export function untrackedStopFixture(
 	t: test.TestContext,

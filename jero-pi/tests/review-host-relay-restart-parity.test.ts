@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import test from "node:test";
 
-// gentle-pi#311 P6 — restart parity for the provider-relay capture lane.
+// P6 — restart parity for the provider-relay capture lane.
 //
 // P1-P5 proved same-process STATUS re-query after a relay transport failure
 // (tests/review-host-relay-routing.test.ts): the capture tool re-queries STATUS
@@ -72,7 +72,7 @@ function relayCollectInput(lineageId, lens, order) {
 			{ name: "agent", value: "pi", token: "--agent=pi" },
 			{ name: "materialize", value: "true", token: "--materialize=true" },
 		],
-		// gentle-pi#638: the artifact subject is what makes the slot declarable —
+		// the artifact subject is what makes the slot declarable —
 		// its subject_hash is the --request-hash the capture-unachievable verb
 		// binds to. A slot without one cannot be declared, only retried.
 		artifactSubject: {
@@ -265,7 +265,7 @@ function inspectCollectBinding(inspectResult) {
 const PENDING = collectStatus(LINEAGE, [relayCollectInput(LINEAGE, LENS, ORDER)]);
 const CONVERGED = collectStatus(LINEAGE, []);
 
-// gentle-pi#638: the typed stop the provider renders once the slot is declared
+// the typed stop the provider renders once the slot is declared
 // unachievable — no collect inputs, one withdraw binding per declared slot.
 // Built in the same plain-object style as collectStatus: typed fields for the
 // controller, raw fields for the envelope passthrough.
@@ -329,7 +329,7 @@ function unachievableStopStatus(lineageId, lens, order) {
 }
 const UNACHIEVABLE_STOP = unachievableStopStatus(LINEAGE, LENS, ORDER);
 
-// gentle-pi#638: the declared slot must not survive the restart as a reoffer.
+// the declared slot must not survive the restart as a reoffer.
 // Process A declares after the deterministic bound kill; fresh Process B sees
 // the provider's typed stop with the withdraw hint instead of the public
 // collectBinding it would have seen before the declaration.

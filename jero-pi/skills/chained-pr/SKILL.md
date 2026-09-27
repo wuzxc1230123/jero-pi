@@ -3,7 +3,7 @@ name: jero-chained-pr
 description: "触发词：超过 400 行的 PR、堆叠 PR、评审切片。把过大变更拆分为链式 PR，保护评审专注度。"
 license: Apache-2.0
 metadata:
-  author: gentleman-programming
+  author: jero-pi
   version: "1.0"
 ---
 

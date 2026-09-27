@@ -11,7 +11,7 @@ import {
 } from "../lib/authority/client-contract.ts";
 
 // ---------------------------------------------------------------------------
-// gentle-pi#661: the always-on parent prompt renders a second status line,
+// the always-on parent prompt renders a second status line,
 // `Receipt-driven development: on|off (decided by <source>)`, next to
 // `Background subagent policy`, sourced from the native review mode status
 // reader (`gentle-ai review mode status --json`, schema
@@ -156,7 +156,7 @@ test("resolveRddModeStatus resolves to undefined when the native reviewMode call
 });
 
 test("resolveRddModeStatus resolves to undefined within the deadline when reviewMode never settles", async () => {
-	// gentle-pi#661 native-review escalation: a hung `gentle-ai` child must
+	// native-review escalation: a hung `gentle-ai` child must
 	// not stall session start. resolveRddModeStatus races the call against
 	// its own abort listener, so this holds even for a stub reviewMode that
 	// itself ignores the passed `signal`, as a real hung child process would
@@ -237,7 +237,7 @@ test("getOrchestratorPrompt renders the resolved RDD status line next to the bac
 });
 
 test("getOrchestratorPrompt defaults to the worst-case unknown RDD status line (budget-critical path)", () => {
-	// gentle-pi#661 follow-up: the no-argument default must BE the worst case
+	// follow-up: the no-argument default must BE the worst case
 	// the byte budget in tests/orchestrator-budget.test.ts measures, so a
 	// caller that never resolves a status renders the longest line rather
 	// than none at all.

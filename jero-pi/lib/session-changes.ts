@@ -7,7 +7,7 @@ import { changesModel, type ChangedFile, type WorktreeChanges } from "./shell-ch
 
 export const SESSION_CHANGE_ENTRY = "jero.session-change/v1";
 export const SESSION_CHANGE_EVENT = "jero-pi:session-change";
-export const SESSION_CHANGE_RELAY = "gentle-pi:child-session-change";
+export const SESSION_CHANGE_RELAY = "jero-pi:child-session-change";
 export const MAX_CHANGE_BYTES = 64 * 1024;
 const MAX_RECORDS = 256;
 const MAX_SESSION_BYTES = 4 * 1024 * 1024;

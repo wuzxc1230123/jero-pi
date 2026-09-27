@@ -317,7 +317,7 @@ test("pi timeout fails closed with a typed error and no submission", async (t) =
 });
 
 // ---------------------------------------------------------------------------
-// gentle-pi#367 — the reviewer bound is reachable from production, and a
+// — the reviewer bound is reachable from production, and a
 // reviewer killed by it says so with both measurements.
 // ---------------------------------------------------------------------------
 

@@ -314,4 +314,4 @@ export class NativeReviewCliError extends Error {
 }
 
 // 扩展发出的每个 gentle-ai CLI 调用共用的唯一中央运行器。jero-pi M3
-// （设计 §8）：gentle-pi.review-relay/v1 握手声明已删除——中继在进程内
+// （设计 §8）：旧 review-relay/v1 握手声明已删除——中继在进程内

@@ -10,7 +10,7 @@ const helperUrl = new URL("../scripts/install-tui-mode-setting.mjs", import.meta
 const { installTuiModeSetting } = await import(helperUrl.href);
 
 function fixture(t: { after(fn: () => void): void }, packagePath: readonly string[] = ["npm", "node_modules", "jero-pi"]) {
-	const root = mkdtempSync(join(tmpdir(), "gentle-tui-test-"));
+	const root = mkdtempSync(join(tmpdir(), "jero-tui-test-"));
 	t.after(() => rmSync(root, { recursive: true, force: true }));
 	const home = join(root, "agent");
 	const packageRoot = join(home, ...packagePath);
@@ -74,13 +74,13 @@ for (const name of ["JERO_PI_AGENT_HOME", "PI_CODING_AGENT_DIR", "default"]) {
 }
 
 for (const relative of [
-	"project/.pi/npm/node_modules/gentle-pi",
+	"project/.pi/npm/node_modules/jero-pi",
 	"project/.pi/git/github.com/Gentleman-Programming/gentle-pi",
-	"consumer/node_modules/gentle-pi",
+	"consumer/node_modules/jero-pi",
 	"checkout",
 	"agent/git/github.com/gentle-pi",
-	"temporary/npm/node_modules/gentle-pi",
-	"store/.pnpm/gentle-pi/node_modules/gentle-pi",
+	"temporary/npm/node_modules/jero-pi",
+	"store/.pnpm/gentle-pi/node_modules/jero-pi",
 ]) {
 	test(`unowned install is untouched: ${relative}`, async (t) => {
 		const f = fixture(t);

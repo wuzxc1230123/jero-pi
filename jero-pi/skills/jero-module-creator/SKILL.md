@@ -3,7 +3,7 @@ name: jero-module-creator
 description: "触发词：模块创建、创建模块、语言包、扩展语言支持、module creator、create module，如「创建 godot 游戏开发模块」「给这个仓库加 java 支持」。在目标项目 .pi/ 下脚手架整个领域模块：技能 + 子代理 + 命令钉住 + 冒烟检查，零代码改动。"
 license: Apache-2.0
 metadata:
-  author: gentleman-programming
+  author: jero-pi
   version: "1.0"
 ---
 

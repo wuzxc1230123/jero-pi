@@ -48,10 +48,10 @@ const PRE_WRAPPER_IDENTITY_BLOCK = `Identity contract:
 - Do not claim portability outside the Pi runtime.
 `;
 
-/** jero-ai.ts :173-198 — full wrapper static template, pre-change, rendered for "gentleman". */
+/** jero-ai.ts :173-198 — full wrapper static template, pre-change, rendered for "direct". */
 const PRE_WRAPPER_GENTLEMAN = `## el Gentleman Identity and Harness
 
-Current persona mode: gentleman
+Current persona mode: direct
 
 You are el Gentleman: a Pi-specific coding-agent harness for controlled development work.
 
@@ -205,7 +205,7 @@ const ORCH_IDENTITY_DELTA_BYTES = 687; // PRE_ORCH_IDENTITY_BYTES - POST_ORCH_ID
 
 const PRE_ORCH_LANGBOUNDARY_BYTES = 2117; // PRE_ORCH_LANGBOUNDARY
 
-const GENTLEMAN_NET_DELTA_BYTES = -439; // section-sum method, gentleman mode (Chinese i18n baseline)
+const GENTLEMAN_NET_DELTA_BYTES = -439; // section-sum method, direct mode (Chinese i18n baseline)
 const NEUTRAL_NET_DELTA_BYTES = -487; // section-sum method, neutral mode (Chinese i18n baseline)
 
 // ---------------------------------------------------------------------------
@@ -248,7 +248,7 @@ test("fixture integrity: POST_WRAPPER_IDENTITY_BLOCK matches the Chinese i18n ba
 // ---------------------------------------------------------------------------
 
 test("Table A rule: wrapper :177 'You are el Jero...' survives verbatim (KEEP once, wrapper)", () => {
-	for (const persona of ["gentleman", "neutral"] as const) {
+	for (const persona of ["direct", "neutral"] as const) {
 		const prompt = __testing.buildJeroPrompt(persona);
 		assert.match(
 			prompt,
@@ -259,7 +259,7 @@ test("Table A rule: wrapper :177 'You are el Jero...' survives verbatim (KEEP on
 });
 
 test("Table A rule: wrapper :180/:181 + orchestrator :9,:12 self-description MERGE into wrapper bullet 1", () => {
-	for (const persona of ["gentleman", "neutral"] as const) {
+	for (const persona of ["direct", "neutral"] as const) {
 		const prompt = __testing.buildJeroPrompt(persona);
 		assert.match(
 			prompt,
@@ -280,7 +280,7 @@ test("Table A rule: wrapper :180/:181 + orchestrator :9,:12 self-description MER
 });
 
 test("Table A rule: orchestrator :17 'never introduce yourself...' ADDED to wrapper (orchestrator-only rule)", () => {
-	for (const persona of ["gentleman", "neutral"] as const) {
+	for (const persona of ["direct", "neutral"] as const) {
 		const prompt = __testing.buildJeroPrompt(persona);
 		assert.match(
 			prompt,
@@ -291,7 +291,7 @@ test("Table A rule: orchestrator :17 'never introduce yourself...' ADDED to wrap
 });
 
 test("Table A rule: persona-mode selection (trimmed) survives; language clause NOT restated in Identity contract", () => {
-	for (const persona of ["gentleman", "neutral"] as const) {
+	for (const persona of ["direct", "neutral"] as const) {
 		const prompt = __testing.buildJeroPrompt(persona);
 		assert.match(
 			prompt,
@@ -302,7 +302,7 @@ test("Table A rule: persona-mode selection (trimmed) survives; language clause N
 });
 
 test("Table A rule: SDD/OpenSpec artifacts + subagents core-capabilities bullet survives (KEEP once)", () => {
-	for (const persona of ["gentleman", "neutral"] as const) {
+	for (const persona of ["direct", "neutral"] as const) {
 		const prompt = __testing.buildJeroPrompt(persona);
 		assert.match(
 			prompt,
@@ -313,7 +313,7 @@ test("Table A rule: SDD/OpenSpec artifacts + subagents core-capabilities bullet 
 });
 
 test("Table A rule: memory rule (wrapper phrasing, with never-invent clause) survives (KEEP wrapper)", () => {
-	for (const persona of ["gentleman", "neutral"] as const) {
+	for (const persona of ["direct", "neutral"] as const) {
 		const prompt = __testing.buildJeroPrompt(persona);
 		assert.match(
 			prompt,
@@ -324,7 +324,7 @@ test("Table A rule: memory rule (wrapper phrasing, with never-invent clause) sur
 });
 
 test("Table A rule: 'Do not claim portability outside the Pi runtime.' survives (KEEP once, byte-identical wrapper :184 / orchestrator :20)", () => {
-	for (const persona of ["gentleman", "neutral"] as const) {
+	for (const persona of ["direct", "neutral"] as const) {
 		const prompt = __testing.buildJeroPrompt(persona);
 		assert.match(
 			prompt,
@@ -344,7 +344,7 @@ test("Table B rule: LB2 subagent delegation language kept verbatim in delegation
 		fileURLToPath(new URL("../assets/orchestrator-delegation.md", import.meta.url)),
 		"utf8",
 	);
-	for (const persona of ["gentleman", "neutral"] as const) {
+	for (const persona of ["direct", "neutral"] as const) {
 		const prompt = __testing.buildJeroPrompt(persona) + delegationDetail;
 		assert.match(
 			prompt,
@@ -355,7 +355,7 @@ test("Table B rule: LB2 subagent delegation language kept verbatim in delegation
 });
 
 test("Table B rule: LB3 artifacts language rule kept verbatim in orchestrator (unique)", () => {
-	for (const persona of ["gentleman", "neutral"] as const) {
+	for (const persona of ["direct", "neutral"] as const) {
 		const prompt = __testing.buildJeroPrompt(persona);
 		assert.match(
 			prompt,
@@ -366,7 +366,7 @@ test("Table B rule: LB3 artifacts language rule kept verbatim in orchestrator (u
 });
 
 test("Table B rule: LB4 public-comment target language kept verbatim in orchestrator (unique)", () => {
-	for (const persona of ["gentleman", "neutral"] as const) {
+	for (const persona of ["direct", "neutral"] as const) {
 		const prompt = __testing.buildJeroPrompt(persona);
 		assert.match(
 			prompt,
@@ -386,7 +386,7 @@ test("Table B rule: LB5 exceptions kept verbatim in delegation asset (unique)", 
 		fileURLToPath(new URL("../assets/orchestrator-delegation.md", import.meta.url)),
 		"utf8",
 	);
-	for (const persona of ["gentleman", "neutral"] as const) {
+	for (const persona of ["direct", "neutral"] as const) {
 		const prompt = __testing.buildJeroPrompt(persona) + delegationDetail;
 		assert.match(
 			prompt,
@@ -440,7 +440,7 @@ function countOccurrences(haystack: string, needle: string): number {
 }
 
 test("dup guard (exact-string): '不宣称在 Pi 运行时之外可移植。' occurs exactly once", () => {
-	for (const persona of ["gentleman", "neutral"] as const) {
+	for (const persona of ["direct", "neutral"] as const) {
 		const prompt = __testing.buildJeroPrompt(persona);
 		assert.equal(
 			countOccurrences(prompt, "不宣称在 Pi 运行时之外可移植。"),
@@ -453,7 +453,7 @@ test("dup guard (exact-string): '不宣称在 Pi 运行时之外可移植。' oc
 test("dup guard (exact-string): identity self-description sentence occurs exactly once", () => {
 	const selfDescription =
 		"我是 el Jero：一个面向受控开发的 Pi 专用编码代理框架，具备资深架构师人格。我在任务需要时使用 SDD/OpenSpec，协调子代理，使用阶段产物，运行命令并编辑文件。我不是通用聊天机器人。";
-	for (const persona of ["gentleman", "neutral"] as const) {
+	for (const persona of ["direct", "neutral"] as const) {
 		const prompt = __testing.buildJeroPrompt(persona);
 		assert.equal(
 			countOccurrences(prompt, selfDescription),
@@ -476,7 +476,7 @@ test("dup guard (exact-string): LB2/LB3/LB4 each occur exactly once", () => {
 	const lb2 = "面向子代理的委托提示词默认使用简体中文（本包的子代理定义已是中文）。";
 	const lb3 = "生成式技术产物——无论由父会话内联还是由子代理生成";
 	const lb4 = "公开/情境性评论与回复不同于技术产物。";
-	for (const persona of ["gentleman", "neutral"] as const) {
+	for (const persona of ["direct", "neutral"] as const) {
 		const prompt = __testing.buildJeroPrompt(persona);
 		assert.equal(
 			countOccurrences(prompt + delegationDetail, lb2),
@@ -511,12 +511,12 @@ function countLanguageMatchConceptOccurrences(text: string): number {
 }
 
 test("dup guard (concept-level): language-match regex matches exactly once per rendered mode, excluding the scoped self-description exception", () => {
-	const gentlemanPrompt = __testing.buildJeroPrompt("gentleman");
+	const directPrompt = __testing.buildJeroPrompt("direct");
 	const neutralPrompt = __testing.buildJeroPrompt("neutral");
 	assert.equal(
-		countLanguageMatchConceptOccurrences(gentlemanPrompt),
+		countLanguageMatchConceptOccurrences(directPrompt),
 		1,
-		"gentleman mode must have exactly one non-excepted language-match concept occurrence",
+		"direct mode must have exactly one non-excepted language-match concept occurrence",
 	);
 	assert.equal(
 		countLanguageMatchConceptOccurrences(neutralPrompt),
@@ -529,12 +529,12 @@ test("dup guard (concept-level): language-match regex matches exactly once per r
 // Added-rule assertion — task 1.5
 // ---------------------------------------------------------------------------
 
-test("added rule: gentleman output contains the new GENTLEMAN_PERSONA_PROMPT language-match clause", () => {
-	const prompt = __testing.buildJeroPrompt("gentleman");
+test("added rule: direct output contains the new GENTLEMAN_PERSONA_PROMPT language-match clause", () => {
+	const prompt = __testing.buildJeroPrompt("direct");
 	assert.match(
 		prompt,
 		/- 始终用用户写作所用的语言回答。/,
-		"gentleman prompt must contain the new language-match clause mirroring NEUTRAL_PERSONA_PROMPT :158",
+		"direct prompt must contain the new language-match clause mirroring NEUTRAL_PERSONA_PROMPT :158",
 	);
 });
 
@@ -582,11 +582,11 @@ test("byte delta: new GENTLEMAN_PERSONA_PROMPT clause is present and small (sing
 	assert.equal(
 		Buffer.byteLength(`${NEW_GENTLEMAN_LANGUAGE_CLAUSE}\n`),
 		48,
-		"the added gentleman language-match clause line must be 48 B (Chinese i18n baseline, node-measured)",
+		"the added direct language-match clause line must be 48 B (Chinese i18n baseline, node-measured)",
 	);
 });
 
-test("byte delta: net per-session injection delta (gentleman -439 B, neutral -487 B, section-sum method)", () => {
+test("byte delta: net per-session injection delta (direct -439 B, neutral -487 B, section-sum method)", () => {
 	// Section-sum method (fixture-derived, internally consistent). The original
 	// persona-single-channel migration measured -293 B / -351 B against the
 	// English baselines; the en→zh i18n pass re-froze the POST_* baselines in
@@ -597,11 +597,11 @@ test("byte delta: net per-session injection delta (gentleman -439 B, neutral -48
 		Buffer.byteLength(POST_ORCH_IDENTITY) -
 		Buffer.byteLength(PRE_ORCH_IDENTITY) +
 		(Buffer.byteLength(POST_ORCH_LANGBOUNDARY) - Buffer.byteLength(PRE_ORCH_LANGBOUNDARY));
-	const gentlemanClauseDelta = Buffer.byteLength(`${NEW_GENTLEMAN_LANGUAGE_CLAUSE}\n`);
+	const directClauseDelta = Buffer.byteLength(`${NEW_GENTLEMAN_LANGUAGE_CLAUSE}\n`);
 	assert.equal(
-		wrapperDelta + orchDelta + gentlemanClauseDelta,
+		wrapperDelta + orchDelta + directClauseDelta,
 		GENTLEMAN_NET_DELTA_BYTES,
-		"gentleman net per-session injection delta must be -439 B (section-sum method, Chinese i18n baseline)",
+		"direct net per-session injection delta must be -439 B (section-sum method, Chinese i18n baseline)",
 	);
 	assert.equal(
 		wrapperDelta + orchDelta,
@@ -614,24 +614,24 @@ test("byte delta: net per-session injection delta (gentleman -439 B, neutral -48
 // Requirement: Persona Constant Selection Keeps Working
 // ---------------------------------------------------------------------------
 
-test("gentleman persona selected: GENTLEMAN_PERSONA_PROMPT content appears once, no neutral-only rule leaks in", () => {
-	const prompt = __testing.buildJeroPrompt("gentleman");
-	assert.match(prompt, /Current persona mode: gentleman/);
+test("direct persona selected: GENTLEMAN_PERSONA_PROMPT content appears once, no neutral-only rule leaks in", () => {
+	const prompt = __testing.buildJeroPrompt("direct");
+	assert.match(prompt, /Current persona mode: direct/);
 	assert.match(prompt, /用户使用中文时，用自然、地道的简体中文回答/);
 	assert.doesNotMatch(
 		prompt,
 		/不使用网络俚语/,
-		"gentleman prompt must not leak the neutral-only slang/dialect prohibition bullet",
+		"direct prompt must not leak the neutral-only slang/dialect prohibition bullet",
 	);
 });
 
-test("neutral persona selected: NEUTRAL_PERSONA_PROMPT content appears once, no gentleman-only rule leaks in", () => {
+test("neutral persona selected: NEUTRAL_PERSONA_PROMPT content appears once, no direct-only rule leaks in", () => {
 	const prompt = __testing.buildJeroPrompt("neutral");
 	assert.match(prompt, /Current persona mode: neutral/);
 	assert.match(prompt, /不使用网络俚语（yyds、绝绝子）、梗或方言表达（老铁、咋、俺）/);
 	assert.doesNotMatch(
 		prompt,
 		/用自然、地道的简体中文回答/,
-		"neutral prompt must not leak the gentleman-only natural-Chinese instruction",
+		"neutral prompt must not leak the direct-only natural-Chinese instruction",
 	);
 });

@@ -4,7 +4,7 @@ import { homedir } from "node:os";
 import { dirname, resolve } from "node:path";
 
 export const SESSION_WORKTREE_ENTRY = "jero.session-worktree/v1";
-export const SESSION_WORKTREE_CHANGED = "gentle-pi:session-worktree-changed";
+export const SESSION_WORKTREE_CHANGED = "jero-pi:session-worktree-changed";
 export interface WorktreeIdentity { root: string; commonDir: string }
 export type WorktreeResolver = (path: string, cwd: string) => WorktreeIdentity | undefined;
 interface SessionReader {

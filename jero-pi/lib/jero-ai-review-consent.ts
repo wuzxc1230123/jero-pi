@@ -219,7 +219,7 @@ const PENDING_REVIEW_CONSENT_STALE_DISPOSITION_LIMIT = 32;
  */
 export class PendingReviewConsentRegistry {
 	private readonly sessions = new Map<PendingReviewConsentSessionKey, Map<string, PendingReviewConsent>>();
-	// gentle-pi#455：绑定 id 全局唯一（randomUUID），因此其活跃
+	// 绑定 id 全局唯一（randomUUID），因此其活跃
 	// 属主与过期处置仅按绑定 id 追踪。该
 	// 索引让 answer-consent 能解析并恰好原子地取走一次由另一个
 	// 活跃 Pi 会话的 START 创建的绑定；上方按会话的
@@ -249,7 +249,7 @@ export class PendingReviewConsentRegistry {
 
 	// 无论哪个会话发问，都把活跃绑定解析到其属主会话，
 	// 这样 answer-consent 能触及由另一个会话的
-	// START 创建的绑定（gentle-pi#455）。
+	// START 创建的绑定。
 	resolve(bindingId: string): { sessionKey: PendingReviewConsentSessionKey; pending: PendingReviewConsent } | undefined {
 		const sessionKey = this.byBinding.get(bindingId);
 		const pending = sessionKey === undefined ? undefined : this.sessions.get(sessionKey)?.get(bindingId);
@@ -302,7 +302,7 @@ export class PendingReviewConsentRegistry {
 export const processPendingReviewConsentRegistry = new PendingReviewConsentRegistry();
 export const processRetainedNativeStatusSelections = new Map<PendingReviewConsentSessionKey, Map<string, RetainedNativeStatusSelection>>();
 
-// gentle-pi#556 / gentle-ai#4051：会话内具名代理（SDD 阶段
+// gentle-ai#4051：会话内具名代理（SDD 阶段
 // 执行器或其他子代理）启动与结束的嵌套深度。启动与
 // 结束成对，因此子代理自身循环的结束绝不会让主
 // 循环的 `agent_end` 预检在会话余下时间里被抑制：
@@ -422,7 +422,7 @@ export function completedGrantedReviewConsent(outcome: Record<string, unknown>):
 		typeof result.lenses_required === "boolean";
 }
 
-// gentle-pi#516：本会话不持有的绑定（已被应答、
+// 本会话不持有的绑定（已被应答、
 // 已过期，或由另一个 Pi 会话或进程签发）过去会落到
 // 普通的已协商 STATUS，其读起来与健康的前置
 // "ready" 一模一样，把模型又送回 START 进行第二次同意提示。该
@@ -467,7 +467,7 @@ export function staleConsentBindingOutcome(operation: ReviewControllerOperation,
 	};
 }
 
-// gentle-pi#455 修正：跨会话解析仅凭绑定的
+// 修正：跨会话解析仅凭绑定的
 // 不透明 id 查找，因此必须独立确认应答
 // 调用针对的是其属主 START 为之签发该绑定的同一个仓库。
 // 这是一个与过期绑定结果同族的带类型、非持有者
@@ -490,7 +490,7 @@ export function consentBindingRepositoryMismatchOutcome(operation: ReviewControl
 	};
 }
 
-// gentle-pi#874：当前 STATUS 所拥有的 committed-range 选择器。在干净、
+// 当前 STATUS 所拥有的 committed-range 选择器。在干净、
 // 完全已提交的工作树上，无选择器的 STATUS 会以一个
 // 指明 provider 所需确切 merge-base 的 review.start execute
 // transition 作答，因此普通 START 可以采纳 provider 刚渲染的路由，

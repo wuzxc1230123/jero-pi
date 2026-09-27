@@ -18,7 +18,7 @@ import { CandidateViewError, type CandidateViewRegistry, CANONICAL_GZIP_OPTIONS 
 import { installPackageAssets } from "../lib/sdd-preflight.ts";
 import { type ReviewCollectInputV3, type ReviewStatusV3 } from "../lib/authority/wire-contract.ts";
 import { stripAnsi } from "../lib/terminal-theme.ts";
-import { cardBody, cardHint, cardTitle, cardTone } from "./gentle-card-text.ts";
+import { cardBody, cardHint, cardTitle, cardTone } from "./jero-card-text.ts";
 
 
 initTheme("dark");
@@ -64,7 +64,7 @@ export function lifecycleContext(overrides: Record<string, unknown> = {}): Recor
 	};
 }
 
-// gentle-pi#874: the provider's fresh_target_ready offer. The argument order
+// the provider's fresh_target_ready offer. The argument order
 // mirrors the live selectorless STATUS a clean, fully committed worktree
 // receives: it names the merge-base it wants so a plain START can adopt it.
 export function offeredCommittedRangeStatus(baseRef: string, baseTree: string, candidateTree: string, paths: readonly string[] = ["app.ts"]): ReviewStatusV3 {

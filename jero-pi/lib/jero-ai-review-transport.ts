@@ -89,7 +89,7 @@ export async function negotiatedStatusForHostTransport(
 	}
 }
 
-// gentle-pi#568：为会话解析当前已协商的评审 STATUS，
+// 为会话解析当前已协商的评审 STATUS，
 // 沿用 `agent_end` 决定是否提醒的确切守卫：一个
 // 同时具备 `reviewMode` 与 `targetStatus` 的原生评审 CLI、带
 // UI 的上下文，以及 RDD 生效开启。任一守卫缺失、
@@ -120,5 +120,5 @@ export async function resolveNegotiatedReviewStatusForSession(
 	}
 }
 
-// gentle-pi#556 / gentle-ai#4051：经 `agent_end` 发出的
+// gentle-ai#4051：经 `agent_end` 发出的
 // 变更设门提醒。它从不自行运行 START，因此指明唯一

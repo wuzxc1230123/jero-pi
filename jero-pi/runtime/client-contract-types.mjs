@@ -74,13 +74,13 @@ export const NATIVE_REVIEW_ERROR_CODE = {
 
 
 
-	                                                                                                                                                         
+	                                                                                                                                           
 
 	                                     
 	                                              
 	                                      
 
-	                                                
+	                                  
 	                                             
 	                                     
 	                      
@@ -194,7 +194,7 @@ export const NATIVE_REVIEW_MODE_SCOPE = {
 
 
 
-// 只读风险评估请求（gentle-pi#662）。`baseRef` 要求显式的
+// 只读风险评估请求。`baseRef` 要求显式的
 // `committedOnly` 确认，与原生 START 的 baseRef/committedOnly 配对完全
 // 一致，因为两者都选择已提交的范围而非环境中的工作树。
 
@@ -342,7 +342,7 @@ export const NATIVE_REVIEW_RECONCILE_ANOMALIES = {
 
 
 
-// gentle-pi#311 P4-roles：一次 Go 持有的非评审视角提供方角色捕获。提供方
+// P4-roles：一次 Go 持有的非评审视角提供方角色捕获。提供方
 // 渲染自包含的权威推进向量（`review.capture-refuter` /
 // `review.capture-validation`，带绑定令牌外加 `--agent=pi --execute=true`，
 // 无提交描述符）；Pi 逐字执行渲染出的精确调用（前台），由 Go 物化角色
@@ -381,7 +381,7 @@ function isNativeReviewProviderRoleCaptureOperation(operation        )          
 
 
 
-// gentle-pi#638：某个已绑定已选评审视角槽位在当前条件下无法完成的类型化声明。镜像自 Go 的 reviewUnachievableLensCaptureArtifact（internal/cli/review_capture_unachievable.go）：相同的 schema 身份、相同的封闭字段集，以及 Go 强制的相同 512 字节 detail 上限，因此本客户端本地拒绝的声明绝不可能到达会接受它的二进制，反之亦然。
+// 某个已绑定已选评审视角槽位在当前条件下无法完成的类型化声明。镜像自 Go 的 reviewUnachievableLensCaptureArtifact（internal/cli/review_capture_unachievable.go）：相同的 schema 身份、相同的封闭字段集，以及 Go 强制的相同 512 字节 detail 上限，因此本客户端本地拒绝的声明绝不可能到达会接受它的二进制，反之亦然。
 export const NATIVE_REVIEW_UNACHIEVABLE_LENS_CAPTURE_SCHEMA = "gentle-ai.review-capture-unachievable/v1";
 export const NATIVE_REVIEW_UNACHIEVABLE_LENS_DETAIL_LIMIT = 512;
 
@@ -415,7 +415,7 @@ export const NATIVE_REVIEW_UNACHIEVABLE_LENS_DETAIL_LIMIT = 512;
 
 
 
-// gentle-pi#638 的失败放通能力门：`review capture-unachievable` 比 NATIVE_CLI_CONTRACTS 固定的所有已发布二进制都新，因此该动词以调用点邻接方式门控而不是用能力行。旧二进制会在 stderr 上渲染 Go 的精确 `unknown review command "capture-unachievable"` 拒绝（internal/cli/review_facade.go）且无 stdout，因此调用在任何解码之前就拒绝，捕获的诊断信息是该文本幸存的唯一位置。其余所有失败——类型化的绑定不匹配拒绝、超时、解码失败——都是调用方必须呈现的真实结局，绝不是能力信号。刻意采用鸭子类型：分类器必须像它检查的错误一样，在模块实例被重复加载时仍然存活。
+// 的失败放通能力门：`review capture-unachievable` 比 NATIVE_CLI_CONTRACTS 固定的所有已发布二进制都新，因此该动词以调用点邻接方式门控而不是用能力行。旧二进制会在 stderr 上渲染 Go 的精确 `unknown review command "capture-unachievable"` 拒绝（internal/cli/review_facade.go）且无 stdout，因此调用在任何解码之前就拒绝，捕获的诊断信息是该文本幸存的唯一位置。其余所有失败——类型化的绑定不匹配拒绝、超时、解码失败——都是调用方必须呈现的真实结局，绝不是能力信号。刻意采用鸭子类型：分类器必须像它检查的错误一样，在模块实例被重复加载时仍然存活。
 const NATIVE_REVIEW_UNKNOWN_UNACHIEVABLE_VERB_REFUSAL = /unknown review command "capture-unachievable"/;
 
 export function isNativeReviewUnachievableVerbRefused(error         )          {

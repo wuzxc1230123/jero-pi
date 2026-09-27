@@ -866,8 +866,8 @@ export function candidateViewWorktreeCount(cwd: string): number {
 	return git(cwd, "worktree", "list").split("\n").filter((line) => line.includes("candidate-views")).length;
 }
 
-test("gentle-pi#185: a forecast-restored FINALIZE worktree does not leak across the next restore for the same lineage", (t) => {
-	// gentle-pi#185: `restoreForFinalizeFromNative` materializes a real Git
+test("a forecast-restored FINALIZE worktree does not leak across the next restore for the same lineage", (t) => {
+	// `restoreForFinalizeFromNative` materializes a real Git
 	// worktree to restore a lineage's FINALIZE binding from the native frozen
 	// projection. A forecast-only FINALIZE after a process restart uses this
 	// exact path, but its outcome is non-terminal, so `cleanupTerminal` (which
@@ -907,7 +907,7 @@ test("gentle-pi#185: a forecast-restored FINALIZE worktree does not leak across 
 	assert.equal(candidateViewWorktreeCount(cwd), 0, "approved cleanup removes the restored worktree, leaving no candidate worktree registered");
 });
 
-test("gentle-pi#185 review correction: a restore whose materialization fails leaves the previous binding intact", (t) => {
+test("review correction: a restore whose materialization fails leaves the previous binding intact", (t) => {
 	const cwd = repository(t);
 	const lineageId = "forecast-lineage-185-rollback";
 	const descriptor = stagedFinalizeDescriptor(cwd, "tracked.txt", "forecast change\n");
