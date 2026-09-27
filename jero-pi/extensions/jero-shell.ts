@@ -18,6 +18,7 @@ import { installSidebar, invalidateSidebar } from "../lib/shell-sidebar-layout.t
 import { SessionChanges, SESSION_CHANGE_EVENT } from "../lib/session-changes.ts";
 import { installSessionChangeCapture } from "../lib/session-change-capture.ts";
 import { REVIEW_PREFLIGHT_TYPE } from "../lib/jero-ai-review-select.ts";
+import { sessionEventReason } from "../lib/session-event-reason.ts";
 
 // Jero Shell：gentle-pi 叠加在 pi 之上的视觉层。它安装
 // 状态栏、花瓣提示符、工作树变更挂件与覆盖层、
@@ -557,7 +558,7 @@ export default function jeroShell(pi: ExtensionAPI, env: NodeJS.ProcessEnv = pro
 		// SESSION_CHANGE_EVENT 订阅是 setup 期的一次性注册：pi 在 /new、
 		// /resume、/fork 复用扩展实例且不重跑 setup，会话替换不得退订，
 		// 否则子代理变更中继在此后永久失效。
-		const reason = (event as { reason?: unknown }).reason;
+		const reason = sessionEventReason(event);
 		if (reason !== "new" && reason !== "resume" && reason !== "fork") unsubscribeWorktrees();
 	});
 	const openChanges = async (ctx: ExtensionContext) => {

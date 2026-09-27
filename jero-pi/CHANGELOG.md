@@ -5,6 +5,13 @@ jero-pi 尚未发布到 npm（版本停在 0.1.0 基线），本文件自重构�
 
 ## [Unreleased]
 
+### 第四档小改进清偿（2026-09-27：第六批）
+
+- **`mem_save` 元数据补全**：新增可选 `agent`/`phase` 参数并透传 frontmatter——此前恒为空串，SDD 子代理保存时无法自报身份、检索侧无区分度；不传保持空串（既有行为不变），测试钉住两种形态。
+- **未知 RPC 事件可见化**（`lib/agents-protocol.ts`）：`normalizeRpcEvent` 对未知事件类型不再静默丢弃，折为有界 NOTE（`unknown rpc event: <type>`，截 40 字符）——pi 上游新增事件名时线程里可见而不是静默失联；已知高频无语义事件（`message_start`/`queue_update`）保留显式忽略集。测试补双向断言。
+- **`sessionEventReason` 共享助手**（新 `lib/session-event-reason.ts`）：pi 会话生命周期 reason 的类型化读取（reload/new/resume/fork/quit），替换六个扩展文件里散落的 `as { reason?: unknown }` 强转；各站点只与枚举字面量比较，语义逐字保持。
+- 琐碎：删除 jero-ai-rdd-status.ts 中重复粘贴两次的预算论证注释块（escapeControlChars 同名异义经核已历史性解决，无需动作）。
+
 ### 编排契约收编与 P2 清偿（2026-09-27：第五批）
 
 - **共享字面量单一事实源**（`lib/agents-protocol.ts`）：`TOOL_PREFIX`/`PARENT_NOTIFICATION_TOOL`/`SUBAGENT_RUN_TOOL`、子进程身份环境标记 `AGENTS_CHILD_ENV`/`AGENTS_OWNED_IPC_ENV`、`TASK_STEP` 状态机词汇全部钉在 protocol（helpers 与 runner 的共同叶子层）。runner-core 内联的 thinking 级别表改用 `model-routing-authority.THINKING_LEVELS`；`jero.review-preflight` 消息类型常量与渲染器同址（`lib/jero-ai-review-select.ts`），jero-ai/jero-shell 两侧共用。七个文件的字面量引用全部改指常量。

@@ -79,6 +79,7 @@ import {
 } from "../lib/jero-ai-review-consent.ts";
 import { resolveNegotiatedReviewStatusForSession } from "../lib/jero-ai-review-transport.ts";
 import { PARENT_NOTIFICATION_TOOL, SUBAGENT_RUN_TOOL } from "../lib/agents-protocol.ts";
+import { sessionEventReason } from "../lib/session-event-reason.ts";
 import { renderAgentEndReviewPreflightMessage, REVIEW_PREFLIGHT_TYPE } from "../lib/jero-ai-review-select.ts";
 import { type JeroRuntimeDependencies, resolveControllerSddStatus, resolveStartupControllerSddStatus } from "../lib/jero-ai-testing-exports.ts";
 
@@ -155,7 +156,7 @@ function createJeroAiExtensionForTesting(
 			disciplineBootstrapPending = false;
 			// Pi 在 reload 以及会话替换/退出时都会拆除该注册表。
 			try { candidateViews?.cleanupAll(); } catch { /* 保留失败的自有视图以便稍后恢复。 */ }
-			const reason = (event as { reason?: unknown }).reason;
+			const reason = sessionEventReason(event);
 			if (reason !== "reload") {
 				if (childStandingReviewPermissionLease !== undefined) childStandingReviewPermissionLease.closeIfCurrent();
 				else childStandingReviewPermission?.close();
@@ -190,7 +191,7 @@ function createJeroAiExtensionForTesting(
 			reminderState.epoch += 1;
 			disciplineBootstrapPending = true;
 			try { candidateViews?.sweepOrphans(ctx.cwd); } catch { /* 所有权清扫不得阻塞启动。 */ }
-			const reason = (event as { reason?: unknown }).reason;
+			const reason = sessionEventReason(event);
 			if (reason !== "reload") revokeCurrentReviewSessionPermission(ctx);
 			await refreshReviewSessionPermissionStatus(ctx);
 			try {

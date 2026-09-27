@@ -1,6 +1,7 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { EFFORTS, ORCHESTRATOR_AGENT_CLASS, RuntimeMetrics, UNKNOWN_AGENT_CLASS, type FinalResponse, type RuntimeMetricBucket, type TokenMeasurement } from "../lib/runtime-metrics.ts";
 import { CHILD_METRICS_EVENT, CHILD_METRICS_REVOKED, snapshotChildEvent } from "../lib/runtime-metrics-children.ts";
+import { sessionEventReason } from "../lib/session-event-reason.ts";
 
 /** 仅测试用的接缝：活动会话的本地记账快照（若有）。 */
 export let liveSessionMetrics: () => { id: string; snapshot: readonly RuntimeMetricBucket[] } | undefined = () => undefined;
@@ -64,7 +65,7 @@ export default function runtimeMetrics(pi: ExtensionAPI, env = process.env, now:
 		// 与 jero-agents 同因：pi 在 /new、/resume、/fork 复用扩展实例且
 		// 不重跑 setup，一次性事件订阅只随进程退出、/reload 或未知
 		// reason 拆除；会话替换后子代理指标必须继续聚合。
-		const reason = (event as { reason?: unknown }).reason;
+		const reason = sessionEventReason(event);
 		if (reason !== "new" && reason !== "resume" && reason !== "fork") { offChild(); offRevoke(); }
 	});
 	pi.on("turn_start", () => { ambiguous = active; active = true; requestSeen = false; selection = undefined; });

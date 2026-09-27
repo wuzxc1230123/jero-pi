@@ -20,6 +20,7 @@ import { invalidateSidebar } from "../lib/shell-sidebar-layout.ts";
 import { createCompletionQueue } from "../lib/agents-completion-delivery.ts";
 import { AGENT_MODE, discoverAgents, parseAgentDefinition, loadAgentsConfig, resolveAgentProfile, type AgentDefinition, type AgentMode } from "../lib/agents-config.ts";
 import { isFinished, TASK_STATUS, TaskStore, type AskRequest, type TaskRecord, AGENTS_CHILD_ENV, PARENT_NOTIFICATION_TOOL } from "../lib/agents-protocol.ts";
+import { sessionEventReason } from "../lib/session-event-reason.ts";
 import { AgentRunner, piCommand, abortReasonText, plannedCommands, type RemediationPlan, type RemediationScope, REMEDIATION_PLAN_ENV, parseRemediationPlan, remediationEvidence, type AskAnswer, type RunnerDeps, type SddChangeSelection, type TaskRequest, type RemediationTerminalFacts } from "../lib/agents-runner.ts";
 import { ChildMessenger, type IpcEndpoint } from "../lib/agents-messaging.ts";
 import { hasReviewSessionPermission, resolveCanonicalGitRepositoryIdentitySync, type ReviewSessionManager } from "../lib/review-session-standing-permission.ts";
@@ -260,7 +261,7 @@ export default function jeroAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = pr
 		// 指标订阅是 setup 期的一次性注册，而 pi 在 /new、/resume、/fork
 		// 时同样发出 session_shutdown 且不重跑扩展 setup：会话替换不得
 		// 退订，否则复用的扩展实例从此永久丢失子代理指标。
-		const reason = (event as { reason?: unknown }).reason;
+		const reason = sessionEventReason(event);
 		if (reason !== "new" && reason !== "resume" && reason !== "fork") unsubscribeMetrics();
 	});
 	let stopAllConfirmation: Promise<void> | undefined;
@@ -975,7 +976,7 @@ export default function jeroAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = pr
 		// 会话替换（/new、/resume、/fork）不得杀死任务：上方注释承诺
 		// 任务留在存储中并随其会话一起回来。只有进程退出、/reload 或
 		// 未来的未知 reason 才清场（保守方向与既有取消语义一致）。
-		const reason = (event as { reason?: unknown }).reason;
+		const reason = sessionEventReason(event);
 		if (reason !== "new" && reason !== "resume" && reason !== "fork") {
 			runner.cancelAll("cancelled: parent session shut down");
 		}

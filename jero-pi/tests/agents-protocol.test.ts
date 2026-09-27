@@ -64,6 +64,8 @@ test("normalizeRpcEvent maps pi RPC events to task deltas and ignores the rest",
 	assert.deepEqual(normalizeRpcEvent({ type: "message_end", message: { role: "assistant", usage: { totalTokens: 9621, cost: { total: 0.0193 } } } }), [{ type: TASK_EVENT.USAGE, tokens: 9621, cost: 0.0193 }]);
 	assert.deepEqual(normalizeRpcEvent({ type: "message_end", message: { role: "user" } }), []);
 	assert.deepEqual(normalizeRpcEvent({ type: "queue_update" }), []);
+	assert.deepEqual(normalizeRpcEvent({ type: "message_start", message: { role: "assistant" } }), [], "known high-frequency events stay ignored");
+	assert.deepEqual(normalizeRpcEvent({ type: "brand_new_upstream_event" }), [{ type: TASK_EVENT.NOTE, text: "unknown rpc event: brand_new_upstream_event" }], "unknown event types surface as a bounded NOTE instead of vanishing");
 	assert.deepEqual(normalizeRpcEvent("garbage"), []);
 });
 

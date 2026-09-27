@@ -375,15 +375,6 @@ export async function resolveRddStatusLine(
 // 预算的最坏情况；assets/orchestrator.md 的体量已把该最坏情况
 // 计算在内。生产路径仍通过 resolveRddStatusLine 解析并传入
 // 真实的行（on/off/unknown）。
-
-
-// 渲染出的提示词按后台策略/能力/RDD 状态键在进程生命周期内记忆；
-// assets 字节本身每个键只读一次。`rddStatusLine` 默认取 "unknown"
-// 兜底行（三种可渲染形态中最长的那个）而不是 ""，因此无参数的默认
-// 渲染本身就是 tests/orchestrator-budget.test.ts 所度量的规范 8 KiB
-// 预算的最坏情况；assets/orchestrator.md 的体量已把该最坏情况
-// 计算在内。生产路径仍通过 resolveRddStatusLine 解析并传入
-// 真实的行（on/off/unknown）。
 const orchestratorPromptCache = new Map<string, string>();
 
 export function getOrchestratorPrompt(

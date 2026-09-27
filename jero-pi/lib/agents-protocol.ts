@@ -256,6 +256,10 @@ function childResponse(message: Raw): ChildResponseObservation | undefined {
 	});
 }
 
+// 有意忽略的已知事件类型（高频且无任务语义）；其余未知类型折为
+// 有界 NOTE——pi 上游新增事件名时线程里可见，而不是静默失联。
+const IGNORED_RPC_EVENT_TYPES = new Set(["message_start", "queue_update"]);
+
 // 一行 RPC 输入，零个或多个增量输出。流式增量只携带分块；
 // pi 每次更新都重复的整体消息载荷会被忽略。
 export function normalizeRpcEvent(raw: unknown, options: { observeResponses?: boolean } = {}): TaskEvent[] {
@@ -306,6 +310,9 @@ export function normalizeRpcEvent(raw: unknown, options: { observeResponses?: bo
 		case "extension_error":
 			return [{ type: TASK_EVENT.NOTE, text: `extension error: ${clean(event.error)}` }];
 		default:
+			if (typeof event.type === "string" && !IGNORED_RPC_EVENT_TYPES.has(event.type)) {
+				return [{ type: TASK_EVENT.NOTE, text: `unknown rpc event: ${event.type.slice(0, 40)}` }];
+			}
 			return [];
 	}
 }

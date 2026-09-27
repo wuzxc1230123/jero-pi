@@ -24,6 +24,8 @@ const SAVE_PARAMETERS = {
 		topic: { type: "string", description: "Stable topic key, e.g. sdd/<change>/proposal or decisions/auth-layout. Letters, digits, ., _, -, and / for hierarchy." },
 		content: { type: "string", description: `The memory body as markdown, up to ${MAX_MEMORY_CONTENT_BYTES} bytes. Saving again with the same topic replaces it.` },
 		tags: { type: "array", items: { type: "string" }, description: "Optional short labels for listing, e.g. [\"sdd\", \"decision\"]." },
+		agent: { type: "string", description: "Optional author identity, e.g. the subagent name (jero-worker, sdd-apply) or \"parent\". Recorded in frontmatter for retrieval-side attribution." },
+		phase: { type: "string", description: "Optional lifecycle phase marker, e.g. proposal, apply, verify. Recorded in frontmatter for retrieval-side attribution." },
 	},
 } as const;
 
@@ -65,6 +67,8 @@ type MemoryToolParams = {
 	topic?: unknown;
 	content?: unknown;
 	tags?: unknown;
+	agent?: unknown;
+	phase?: unknown;
 	prefix?: unknown;
 	tag?: unknown;
 	limit?: unknown;
@@ -118,6 +122,8 @@ export default function jeroMemory(pi: ExtensionAPI, env: NodeJS.ProcessEnv = pr
 				const saved = await saveMemory(rootFor(ctx, env), topic, content, {
 					session: typeof ctx.sessionManager?.getSessionId === "function" ? (ctx.sessionManager.getSessionId() ?? "") : "",
 					tags: asStringArray(args.tags),
+					agent: typeof args.agent === "string" ? args.agent.trim() : "",
+					phase: typeof args.phase === "string" ? args.phase.trim() : "",
 				});
 				return { content: [{ type: "text", text: `saved ${saved.topic} (${saved.bytes} bytes, ${saved.created ? "created" : "replaced"})` }], details: { topic: saved.topic, bytes: saved.bytes, created: saved.created } };
 			} catch (error) {

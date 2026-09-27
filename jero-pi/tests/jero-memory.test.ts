@@ -227,6 +227,27 @@ test("memoryEnabled honors the JERO_PI_MEMORY opt-out", () => {
 	assert.equal(memoryEnabled({ JERO_PI_MEMORY: "1" }), true);
 });
 
+test("mem_save records optional agent and phase attribution in frontmatter", async () => {
+	const base = tempRoot();
+	const project = join(base, "proj");
+	mkdirSync(join(project, ".jero", "memory"), { recursive: true });
+	try {
+		const { tools } = fakePi();
+		const ctx = { cwd: project, sessionManager: { getSessionId: () => "session-1" } };
+		await tools.get("mem_save")!.execute("id-1", { topic: "sdd/x/tasks", content: "tasks body", agent: "sdd-apply", phase: "tasks" }, undefined, undefined, ctx);
+		const record = readMemory(join(project, ".jero", "memory"), "sdd/x/tasks");
+		assert.equal(record!.agent, "sdd-apply");
+		assert.equal(record!.phase, "tasks");
+		// 不传时保持空串（既有行为），不落垃圾占位。
+		await tools.get("mem_save")!.execute("id-2", { topic: "notes/plain", content: "plain" }, undefined, undefined, ctx);
+		const plain = readMemory(join(project, ".jero", "memory"), "notes/plain");
+		assert.equal(plain!.agent, "");
+		assert.equal(plain!.phase, "");
+	} finally {
+		rmSync(base, { recursive: true, force: true });
+	}
+});
+
 interface RegisteredTool {
 	name: string;
 	execute: (id: string, params: unknown, signal: unknown, onUpdate: unknown, ctx: unknown) => Promise<{ content: { type: string; text: string }[]; details?: Record<string, unknown> }>;
