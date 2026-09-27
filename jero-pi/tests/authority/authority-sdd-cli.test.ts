@@ -33,17 +33,17 @@ function harness(t: { after(fn: () => void): void }): { repo: string; cli: Retur
 test("the authority SDD adapter serves decodeNativeSddStatusV2-compatible records", async (t) => {
 	const { repo, cli } = harness(t);
 	const request = { workspaceRoot: repo, changeName: "add-login" };
-	const status = decodeNativeSddStatusV2(await cli.sddStatus(request), request);
+	const status = decodeNativeSddStatusV2(await cli.sddStatus!(request), request);
 	assert.equal(status.changeName, "add-login");
 	assert.equal(status.artifactStore, "openspec");
 	assert.deepEqual(Object.keys(status.phaseInstructions ?? {}), ["apply", "verify", "remediate", "archive"]);
-	const continued = decodeNativeSddStatusV2(await cli.sddContinue(request), request);
+	const continued = decodeNativeSddStatusV2(await cli.sddContinue!(request), request);
 	assert.equal(continued.changeName, "add-login");
 });
 
 test("the adapter refuses typed: unknown changes, missing selection, non-repos", async (t) => {
 	const { repo, cli } = harness(t);
-	await assert.rejects(cli.sddContinue({ workspaceRoot: repo, changeName: "missing-change" }), /unsupported-transition/);
-	await assert.rejects(cli.sddContinue({ workspaceRoot: repo }), /exact selected change/);
-	await assert.rejects(cli.sddStatus({ workspaceRoot: join(repo, "not-a-repo") }), /refused to resolve/);
+	await assert.rejects(cli.sddContinue!({ workspaceRoot: repo, changeName: "missing-change" }), /unsupported-transition/);
+	await assert.rejects(cli.sddContinue!({ workspaceRoot: repo }), /exact selected change/);
+	await assert.rejects(cli.sddStatus!({ workspaceRoot: join(repo, "not-a-repo") }), /refused to resolve/);
 });

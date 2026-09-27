@@ -100,6 +100,7 @@ function localAgentOverrideCount(cwd: string, owner: PackageAssetOwner): number 
 	const packageSddAgentNames = new Set(
 		listAgentsFromDir(packageSddAgentsDir, "builtin")
 			.filter((agent) =>
+				agent.filePath !== undefined &&
 				getPackageAssetOwner(
 					`agents/${relative(packageSddAgentsDir, agent.filePath).split(sep).join("/")}`,
 				) === owner,

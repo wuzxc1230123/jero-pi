@@ -13,7 +13,7 @@
 // 不带该动词的旧二进制（或任何其他解码/进程失败）以相同方式保守
 // 失败——见下方 `verificationTierForUnassessable`。
 
-import { isRecord } from "./record-utils.ts";
+import { isRecord } from "../record-utils.ts";
 
 export const REVIEW_ASSESSMENT_SCHEMA = "jero-ai.review-assessment/v1" as const;
 

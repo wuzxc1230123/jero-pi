@@ -51,8 +51,8 @@ async function productionChild(requests: number, authorize: () => boolean, optio
 	}
 	let stdout = "";
 	let stderr = "";
-	child.stdout.on("data", (chunk: Buffer) => { stdout += chunk.toString("utf8"); });
-	child.stderr.on("data", (chunk: Buffer) => { stderr += chunk.toString("utf8"); });
+	child.stdout!.on("data", (chunk: Buffer) => { stdout += chunk.toString("utf8"); });
+	child.stderr!.on("data", (chunk: Buffer) => { stderr += chunk.toString("utf8"); });
 	return new Promise((resolve, reject) => child.once("exit", (code) => {
 		broker?.close();
 		if (code !== 0) reject(new Error(`child exited ${code}: ${stderr}`));
@@ -110,8 +110,8 @@ test("fresh Jiti moduleCache:false reloads share fd3 structurally and reject sta
 	const broker = new ParentStandingReviewPermissionBroker({ readable: pipe, writable: pipe }, () => true);
 	let stdout = "";
 	let stderr = "";
-	child.stdout.on("data", (chunk: Buffer) => { stdout += chunk.toString("utf8"); });
-	child.stderr.on("data", (chunk: Buffer) => { stderr += chunk.toString("utf8"); });
+	child.stdout!.on("data", (chunk: Buffer) => { stdout += chunk.toString("utf8"); });
+	child.stderr!.on("data", (chunk: Buffer) => { stderr += chunk.toString("utf8"); });
 	const result = await new Promise<{ answers: boolean[]; classIdentityDiffers: boolean }>((resolve, reject) => child.once("exit", (code) => {
 		broker.close();
 		if (code !== 0) reject(new Error(`Jiti reload child exited ${code}: ${stderr}`));

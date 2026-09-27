@@ -19,7 +19,7 @@ import {
 } from "../../lib/authority/judgment-day.ts";
 import { JeroLineageStoreV1 } from "../../lib/authority/lineage-store.ts";
 import { reviewHarness, applyFixtureFix } from "./fixtures.ts";
-import { canonicalHash, type CanonicalFrozenRowV1 } from "../../lib/review-transaction.ts";
+import { canonicalHash, type CanonicalFrozenRowV1 } from "../../lib/authority/review-transaction.ts";
 
 // Spec §F/§J.3/§J.4: the Judgment Day driver — blind judge admission,
 // discovery freeze, one-batch fix coverage, scoped re-judgment survivor

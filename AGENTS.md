@@ -10,7 +10,7 @@
 
 ## 三条铁律
 
-1. **新评审域代码进 `lib/authority/`**（纯域：不 import extensions、不读 `process.env`、typed 入参/判别联合出参；`scripts/check-authority-boundary.mjs` 结构性强制）。外围前缀 `lib/review-*` 与 `lib/jero-ai-review-*` 是分阶段移植的化石，命名棘轮（`check:review-naming` + `review-naming-baseline.json`）只降不升——改动到这两个前缀的文件时顺手迁入 `authority/` 并 `--update` 基线。
+1. **新评审域代码进 `lib/authority/`**（纯域：不 import extensions、不读 `process.env`、typed 入参/判别联合出参；`scripts/check-authority-boundary.mjs` 结构性强制）。外围前缀 `lib/review-*` 与 `lib/jero-ai-review-*` 是分阶段移植的化石，命名棘轮（`check:review-naming` + `review-naming-baseline.json`）只降不升——改动到这两个前缀的文件时顺手迁入 `authority/` 并 `--update` 基线。**身份层三件是永久宿主侧，不是迁移欠债**：`lib/review-canonical.ts`（上游 `domainHashV1` 的定义点）、`lib/review-lock.ts` 与 `lib/review-repository.ts`（其消费者，`repository_id`/`authority_id` 的铸造点）——边界门第三条规则刻意把上游身份命名空间挡在 authority 之外，authority 只消费它们铸好的身份值，勿尝试迁入。
 2. **测试夹具必须放 `<base>-shared.ts`**。`*.z2/z3/z4.test.ts` 是超长测试文件的机械分片（node:test 只在文件间并行，重文件需重平衡）；**分片之间禁止互相 import**——否则被导入分片的顶层 `test()` 注册会在导入方进程重跑，整套件成倍膨胀。新测试文件 ≤1000 行。
 3. **`runtime/*.mjs` 是生成物，勿手改**。源清单（`lib/authority/wire-contract*`、`lib/authority/client-contract*` 等 13 个）变更后必须 `pnpm run build:runtime-modules`；漂移由 `--check`、import 存在性后校验与打包门三重拦截。
 
@@ -20,8 +20,8 @@
 - `lib/authority/**`：`pnpm run test:authority:full`（runtime 再生成 → authority 域测试 → 一致性 → 边界检查）。
 - 编排/子代理：`pnpm run test:agents`；评审外围：`pnpm run test:review`；SDD：`pnpm run test:sdd`。
 - 新增/改名斜杠命令、工具、技能后：`pnpm run fix:docs-manifest`（再生成 `docs/jero-reference.md` 的 manifest 块）。
-- 全量：`pnpm test`（全部测试文件并发 12 + 顺序 harness）。慢文件定位：`pnpm run test:timed`（单文件预算 180s）。
-- 质量门（被 `prepack` 串联，可单独跑）：`check:test-quality`（4 条反模式 + `// allow-test-rule:<name>` 逃逸阀）· `check:authority-boundary` · `check:docs-manifest` · `check:review-naming` · `verify-package-files.mjs`（必需文件 + 68 个黄金向量字节钉住）。
+- 全量：`pnpm test`（全部测试文件并发 12 + 顺序 harness）。慢文件定位：`pnpm run test:timed`（单文件预算 300s）。
+- 质量门（被 `prepack` 串联，可单独跑）：`check:test-quality`（5 条反模式，含分片互 import + `// allow-test-rule:<name>` 逃逸阀）· `check:empty-catch`（空 catch 必须带注释或语句，`// allow-empty-catch` 逃逸阀）· `check:authority-boundary` · `check:docs-manifest` · `check:review-naming` · `verify-package-files.mjs`（必需文件 + 68 个黄金向量字节钉住）。
 
 ## 已知约束
 

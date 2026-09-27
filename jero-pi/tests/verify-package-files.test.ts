@@ -3,11 +3,17 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import {
+// .mjs 脚本无类型声明；行为测试只依赖这几个纯函数签名（经动态导入显式标注）。
+const packageFilesSpecifier: string = "../scripts/verify-package-files.mjs";
+const {
 	extractGeneratedRuntimeSources,
 	reconcileContractsOnDisk,
 	reconcileGeneratedRuntimeSources,
-} from "../scripts/verify-package-files.mjs";
+} = await import(packageFilesSpecifier) as {
+	extractGeneratedRuntimeSources: (packageRoot: string) => string[];
+	reconcileContractsOnDisk: (packageRoot: string, hashes: Record<string, string>) => { unlistedOnDisk: string[]; listedButMissing: string[] };
+	reconcileGeneratedRuntimeSources: (packageRoot: string, sources: string[], paths: string[]) => { drifted: Array<{ name: string; inSources: boolean; inRuntimeDir: boolean; inRequiredPaths: boolean }> };
+};
 
 function makeFixtureRoot(): string {
 	return mkdtempSync(join(tmpdir(), "jero-pi-verify-package-files-"));

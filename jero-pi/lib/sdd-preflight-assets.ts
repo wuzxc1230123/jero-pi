@@ -477,7 +477,8 @@ function copyDirectoryFiles(
 				}
 				nextSource = migrateLegacyAssetContent(
 					ownershipKey,
-					installedContent,
+					// comparableLegacyHash 已通过校验 ⇒ installedContent 必为已读内容。
+					installedContent!,
 					source,
 				);
 			} else if (installedHash !== managedHash) {

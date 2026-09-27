@@ -11,8 +11,8 @@ import { checkJeroReviewTransitionV1, isJeroTerminalReviewStateV1 } from "./tran
 import { reviewFinalizeV1 } from "./finalize.ts";
 import type { JeroReviewFinalizeResultV1 } from "./finalize.ts";
 import type { JeroFindingRowV1, JeroJudgeProofV1, JeroReviewTransactionStateV1 } from "./protocol.ts";
-import { canonicalHash, type CanonicalFrozenRowV1 } from "../review-transaction.ts";
-import type { JudgmentDayRejudgmentRequestV1 } from "../review-policy-judgment-day.ts";
+import { canonicalHash, type CanonicalFrozenRowV1 } from "./review-transaction.ts";
+import type { JudgmentDayRejudgmentRequestV1 } from "./review-policy-judgment-day.ts";
 
 // Judgment Day 驱动器（spec §F）：两个盲评裁判、零个 refuter、至多两轮
 // 发现/再判决，第二轮幸存的发现直接升级，没有第三轮。

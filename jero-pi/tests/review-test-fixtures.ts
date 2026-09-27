@@ -6,7 +6,7 @@ import {
 	type SnapshotV1,
 	type ReviewMode,
 } from "../lib/review-snapshot.ts";
-import { REVIEW_RISK_TIER } from "../lib/review-risk.ts";
+import { REVIEW_RISK_TIER } from "../lib/authority/review-risk.ts";
 import { existsSync, renameSync } from "node:fs";
 import type { ReviewLockPlatformAdapterV1 } from "../lib/review-lock.ts";
 import {
@@ -16,7 +16,7 @@ import {
 	TRIVIALITY,
 	type ReviewLens,
 	type ReviewRoute,
-} from "../lib/review-triggers.ts";
+} from "../lib/authority/review-triggers.ts";
 
 export function qualifiedReviewLockPlatform(): ReviewLockPlatformAdapterV1 {
 	return {

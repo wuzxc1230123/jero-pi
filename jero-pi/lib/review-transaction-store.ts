@@ -466,7 +466,7 @@ export class ReviewTransactionStore {
 	private writeGraphState(next: ReviewStateV1, previous?: ReviewStateV1, eventContext?: { transition: string; input: unknown }): void {
 		const graph = this.#graphStore;
 		let current: ReturnType<ReviewGraphObjectStoreV1["readCurrent"]> | undefined;
-		try { current = graph.readCurrent(); } catch {}
+		try { current = graph.readCurrent(); } catch { /* 读不到当前指针视为未初始化，前驱校验在下方保守把关。 */ }
 		const existing = current ? (current.body.lineages as Array<Record<string, unknown>>).find((value) => value.lineage_id === next.lineage_id && value.mode === "graph") : undefined;
 		if (previous && !existing) throw new ReviewIntegrityError("Graph predecessor is missing");
 		if (!previous && existing) throw new ReviewIntegrityError("Graph lineage already exists");

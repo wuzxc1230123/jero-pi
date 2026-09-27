@@ -78,7 +78,7 @@ export class JeroObjectCasV1 {
 		} finally {
 			try {
 				unlinkSync(temporary);
-			} catch {}
+			} catch { /* 临时对象清理尽力而为：失败不得掩盖安装结果。 */ }
 		}
 		return { hash, idempotent: false };
 	}

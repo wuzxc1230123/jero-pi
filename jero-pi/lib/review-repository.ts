@@ -207,7 +207,7 @@ export function writePinnedRepositoryIdentityV1(storeRoot: string, identity: Rev
 	} finally {
 		try {
 			unlinkSync(temporary);
-		} catch {}
+		} catch { /* 临时文件清理尽力而为：失败不得掩盖钉扎结果。 */ }
 	}
 	if (!installed) return readPinnedRepositoryIdentityV1(storeRoot) ?? identity;
 	const file = openSync(path, "r+");

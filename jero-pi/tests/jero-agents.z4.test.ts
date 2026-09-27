@@ -67,7 +67,7 @@ for (const scenario of ["recover", "shutdown", "replacement"] as const) {
 		const fs = createRequire(import.meta.url)("node:fs") as typeof import("node:fs");
 		const rename = fs.renameSync;
 		let failures = 0;
-		const fault = t.mock.method(fs, "renameSync", (from, to) => {
+		const fault = t.mock.method(fs, "renameSync", (from: import("node:fs").PathLike, to: import("node:fs").PathLike) => {
 			if (to === target) {
 				failures++;
 				throw Object.assign(new Error("fixture publication failure"), { code: "EIO" });
@@ -306,7 +306,7 @@ for (const matching of [true, false]) {
   const spawn=d.deps.spawn!;
   d.deps.spawn=(...args)=>{
    const child=spawn(...args),on=child.on.bind(child);
-   child.on=((event,listener)=>{if(event==="spawn")queueMicrotask(listener);return on(event,listener);}) as any;
+   child.on=((event: "spawn" | "message" | "disconnect", listener: (...args: unknown[]) => void) => {if(event==="spawn")queueMicrotask(listener);return on(event,listener);}) as any;
    return child;
   };
   jeroAgents(h.pi,{},d.deps);

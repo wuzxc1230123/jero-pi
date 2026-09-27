@@ -4,7 +4,7 @@
 import { lstatSync, readFileSync, realpathSync } from "node:fs";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { type ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { REVIEW_TRANSITION, type ReviewBudgetV1, ReviewTransactionStore, type ReviewTransition } from "./review-transaction.ts";
+import { REVIEW_TRANSITION, type ReviewBudgetV1, ReviewTransactionStore, type ReviewTransition } from "./authority/review-transaction.ts";
 import { REVIEW_MODE, REVIEW_PROJECTION, type ReviewMode, type ReviewProjectionV1 } from "./review-snapshot.ts";
 import {
 	isCanonicalProcessString, NATIVE_REVIEW_ERROR_CODE, NATIVE_REVIEW_MODE_OPERATION,
@@ -15,7 +15,7 @@ import {
 	nativeReviewReconcileAuthorization, type NativeStartResult,
 	sanitizeForeignNativeReviewDiagnostics
 } from "./authority/client-contract.ts";
-import { NATIVE_REVIEW_OUTCOME, type NativeReviewOutcome } from "./review-risk-assessment.ts";
+import { NATIVE_REVIEW_OUTCOME, type NativeReviewOutcome } from "./authority/review-risk-assessment.ts";
 import { type ReviewStatusV3 } from "./authority/wire-contract.ts";
 import { isRecord } from "./jero-ai-persona-config.ts";
 import { NATIVE_START_UNTRACKED_SCOPE, type NativeStartUntrackedScope } from "./jero-ai-review-consent.ts";
@@ -388,7 +388,7 @@ export function parseReviewCaptureGroupParameters(value: unknown): ReviewCapture
 
 export function requiredControllerString(
 	parameters: ReviewControllerParameters,
-	key: "idempotencyKey" | "transition" | "command" | "input" | "outputPath" | "inputPath" | "operationId",
+	key: "idempotencyKey" | "transition" | "input" | "outputPath" | "inputPath" | "operationId",
 ): string {
 	const value = parameters[key];
 	if (typeof value !== "string" || value.trim().length === 0) {
@@ -737,8 +737,12 @@ export async function executeNativeAuthorityMaintenance(
 	nativeReviewCli: NativeReviewCli | null,
 	signal: AbortSignal | undefined,
 ): Promise<Record<string, unknown>> {
-	const method = nativeOperation === "abandon" ? nativeReviewCli?.abandon : nativeReviewCli?.reconcileAuthority;
 	const nativeCommand = nativeOperation === "reconcileAuthority" ? "review reconcile-authority" : "review abandon";
+	if (nativeReviewCli === null) {
+		// null 注入 = 保守失败桩：维护操作按权威不可用阻塞。
+		return { operation, status: "blocked", outcome: "native-maintenance-unavailable", native_operation: nativeCommand, mutation_performed: false, mutation_outcome: "none", next_action: "in-process-review-authority-unavailable" };
+	}
+	const method = nativeOperation === "abandon" ? nativeReviewCli.abandon : nativeReviewCli.reconcileAuthority;
 	if (method === undefined) {
 		return { operation, status: "blocked", outcome: "native-maintenance-unavailable", native_operation: nativeCommand, mutation_performed: false, mutation_outcome: "none", next_action: "in-process-review-authority-unavailable" };
 	}

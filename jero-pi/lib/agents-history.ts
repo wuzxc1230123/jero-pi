@@ -62,7 +62,7 @@ function lockBusy(path: string, reason: string): Error { return new Error(`Task 
 function validTaskLockOwner(value: unknown, taskId: string): value is TaskLockOwner {
 	if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
 	const owner = value as Partial<TaskLockOwner>;
-	return Object.keys(value).sort().join(",") === "host,pid,schema,taskId,token" && owner.schema === TASK_LOCK_SCHEMA && owner.taskId === taskId && typeof owner.token === "string" && UUID.test(owner.token) && Number.isSafeInteger(owner.pid) && owner.pid > 0 && (owner.host === null || typeof owner.host === "string" && owner.host.length > 0 && !owner.host.includes("\0"));
+	return Object.keys(value).sort().join(",") === "host,pid,schema,taskId,token" && owner.schema === TASK_LOCK_SCHEMA && owner.taskId === taskId && typeof owner.token === "string" && UUID.test(owner.token) && typeof owner.pid === "number" && Number.isSafeInteger(owner.pid) && owner.pid > 0 && (owner.host === null || typeof owner.host === "string" && owner.host.length > 0 && !owner.host.includes("\0"));
 }
 function ownerAt(path: string, taskId: string, token: string): TaskLockOwner {
 	if (!path.endsWith(`${taskId}.reconcile.${token}`)) throw lockBusy(path, "candidate filename is malformed");
@@ -87,7 +87,7 @@ function syncTaskLock(path: string, directory = false): void {
 function publishExclusive(path: string, owner: TaskLockOwner): void {
 	const temporary = `${path}.tmp`;
 	try { writeFileSync(temporary, JSON.stringify(owner), { encoding: "utf8", flag: "wx", mode: 0o600 }); syncTaskLock(temporary); linkSync(temporary, path); syncTaskLock(dirname(path), true); }
-	finally { try { unlinkSync(temporary); } catch {} }
+	finally { try { unlinkSync(temporary); } catch { /* 临时文件清理尽力而为：失败不得掩盖发布结果。 */ } }
 }
 function scanTaskCandidates(dir: string, id: string, ownPath: string): void {
 	const prefix = `${id}.reconcile.`;
@@ -115,7 +115,7 @@ export function acquireTaskLock(dir: string, id: string): TaskLock {
 	const path = join(dir, `${id}.reconcile.${owner.token}`);
 	publishExclusive(path, owner);
 	try { scanTaskCandidates(dir, id, path); }
-	catch (error) { try { releaseTaskLock(path, owner); } catch {} throw error; }
+	catch (error) { try { releaseTaskLock(path, owner); } catch { /* 释放失败不得掩盖原始错误。 */ } throw error; }
 	let released = false;
 	return { path, taskId: id, token: owner.token, release() { if (!released) { releaseTaskLock(path, owner); released = true; } } };
 }

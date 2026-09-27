@@ -6,7 +6,7 @@ import { lstatSync, realpathSync } from "node:fs";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { type ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { REVIEW_MODE } from "./review-snapshot.ts";
-import { type CandidateView, CandidateViewError, CandidateViewRegistry } from "./review-candidate-view.ts";
+import { type CandidateView, CandidateViewError, CandidateViewRegistry } from "./authority/review-candidate-view.ts";
 import { isCanonicalProcessString, type NativeIntendedUntrackedSelectionSubmission } from "./authority/client-contract.ts";
 import { type ReviewConsentEnvelope, type ReviewStatusV3 } from "./authority/wire-contract.ts";
 import { isRecord } from "./jero-ai-persona-config.ts";
@@ -253,7 +253,8 @@ export class PendingReviewConsentRegistry {
 	resolve(bindingId: string): { sessionKey: PendingReviewConsentSessionKey; pending: PendingReviewConsent } | undefined {
 		const sessionKey = this.byBinding.get(bindingId);
 		const pending = sessionKey === undefined ? undefined : this.sessions.get(sessionKey)?.get(bindingId);
-		return pending === undefined ? undefined : { sessionKey, pending };
+		if (sessionKey === undefined || pending === undefined) return undefined;
+		return { sessionKey, pending };
 	}
 
 	private remove(sessionKey: PendingReviewConsentSessionKey, pending: PendingReviewConsent): boolean {

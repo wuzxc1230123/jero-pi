@@ -300,9 +300,9 @@ test("launch registration waits for actual spawn, including queued launches, and
 	}, { askUser: async () => ({ cancelled: true }) });
 	const first = runner.run(request({ cwd: "/child", onLaunch: () => launches.push("s1:/child") }));
 	const second = runner.run(request({ cwd: "/queued", onLaunch: () => launches.push("s1:/queued") }));
-	assert.deepEqual(launches, []);
+	assert.deepEqual(launches, [] as typeof launches);
 	await tick();
-	assert.deepEqual(launches, [], "returning a child handle is not successful spawn");
+	assert.deepEqual(launches, [] as typeof launches, "returning a child handle is not successful spawn");
 	assert.equal(typeof spawns[0], "function");
 	spawns[0]();
 	assert.deepEqual(launches, ["s1:/child"]);
@@ -367,9 +367,9 @@ test("runner delivers each response combination once at finish, never attributin
 		child.emit({ type: "turn_end", message });
 		child.emit({ type: "agent_end", messages: [message] });
 	}
-	assert.deepEqual(snapshots, [], "agent_end is not settlement");
+	assert.deepEqual(snapshots, [] as typeof snapshots, "agent_end is not settlement");
 	child.emit({ type: "agent_settled" });
-	assert.deepEqual(snapshots, [], "settlement still waits for process cleanup");
+	assert.deepEqual(snapshots, [] as typeof snapshots, "settlement still waits for process cleanup");
 	child.exit(0);
 	await tick();
 	assert.equal(snapshots.length, 1);

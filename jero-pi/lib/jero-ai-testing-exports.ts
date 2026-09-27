@@ -4,7 +4,7 @@
 
 import { type SddPreflightPreferences } from "./sdd-preflight.ts";
 import { resolveSddStatus } from "./sdd-status.ts";
-import { CandidateViewRegistry } from "./review-candidate-view.ts";
+import { CandidateViewRegistry } from "./authority/review-candidate-view.ts";
 import { type NativeReviewCli } from "./authority/client-contract.ts";
 import { type ChildStandingReviewPermissionClient } from "./review-session-standing-permission-ipc.ts";
 import {

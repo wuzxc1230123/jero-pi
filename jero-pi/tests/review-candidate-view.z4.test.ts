@@ -18,7 +18,7 @@ import {
 	createCandidateView, decodeCandidateContextManifest, deriveChangedPathManifest,
 	digestChangedPathManifest, hasExpectedExecutableBits, injectReviewCandidateView,
 	type NativeCandidateProjectionDescriptor, readCandidateContextManifestPage
-} from "../lib/review-candidate-view.ts";
+} from "../lib/authority/review-candidate-view.ts";
 import {
 	assertCandidateOwnerParent, assertTrustedWindowsOwner, prepareCandidateOwnerParent,
 	setWindowsAclAuthorityForTesting, validatePrivateWindowsDacl, validatePrivateWindowsOwner,
@@ -447,7 +447,7 @@ test("candidate view detects a same-stat tracked rewrite with selected untracked
 	const registry = new CandidateViewRegistry((file, arguments_, options) => {
 		if (arguments_[0] === "add" && privateIndexMtimeNs === undefined) {
 			const privateIndexPath = options.env?.GIT_INDEX_FILE;
-			assert.equal(typeof privateIndexPath, "string", "private candidate index must be set before Git refreshes tracked entries");
+			assert.ok(typeof privateIndexPath === "string", "private candidate index must be set before Git refreshes tracked entries");
 			privateIndexMtimeNs = lstatSync(privateIndexPath, { bigint: true }).mtimeNs;
 		}
 		return execFileSync(file, arguments_, options);

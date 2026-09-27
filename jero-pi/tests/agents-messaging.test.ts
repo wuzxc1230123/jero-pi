@@ -84,7 +84,7 @@ test("a real Node IPC child exchanges a notification acknowledgement without std
 	let output = "";
 	const closed = once(child, "close");
 	child.on("message", (message) => messages.push(message));
-	child.stdout.on("data", (chunk) => { output += chunk; });
+	child.stdout!.on("data", (chunk) => { output += chunk; });
 	await once(child, "message");
 	assert.deepEqual(messages, [{ id: "n1", kind: "notification", message: "fixture ready" }]);
 	child.send({ id: "n1", kind: "ack", accepted: true });

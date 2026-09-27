@@ -7,7 +7,7 @@ import {
 	type ReviewHostRelayPreparedResult, type ReviewHostRelayRequest, type ReviewHostRelaySlot,
 	reviewHostRelaySlots, reviewProviderRoleVectorSlots
 } from "./review-host-relay.ts";
-import { CandidateViewError, CandidateViewRegistry } from "./review-candidate-view.ts";
+import { CandidateViewError, CandidateViewRegistry } from "./authority/review-candidate-view.ts";
 import { isCanonicalProcessString, type NativeReviewCli } from "./authority/client-contract.ts";
 import { type ReviewCollectInputV3, type ReviewLastEventClosureBinding, type ReviewStatusV3 } from "./authority/wire-contract.ts";
 import { isRecord } from "./jero-ai-persona-config.ts";

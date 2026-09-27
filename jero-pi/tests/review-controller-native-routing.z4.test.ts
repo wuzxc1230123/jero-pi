@@ -16,7 +16,7 @@ import { type ExtensionAPI, type ExtensionContext } from "@earendil-works/pi-cod
 import { __testing } from "../lib/jero-ai-testing-exports.ts";
 import { PendingReviewConsentRegistry } from "../lib/jero-ai-review-consent.ts";
 import { createJeroAiExtension } from "../extensions/jero-ai.ts";
-import { CandidateViewRegistry } from "../lib/review-candidate-view.ts";
+import { CandidateViewRegistry } from "../lib/authority/review-candidate-view.ts";
 import { NATIVE_REVIEW_ERROR_CODE, type NativeReviewCli, NativeReviewCliError, NativeReviewConsentRequiredError } from "../lib/authority/client-contract.ts";
 import { decodeReviewConsentV3, decodeReviewStatusV3, type ReviewCollectInputV3, type ReviewStatusV3 } from "../lib/authority/wire-contract.ts";
 import {

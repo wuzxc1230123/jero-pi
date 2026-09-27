@@ -4,7 +4,7 @@
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { isAbsolute, join } from "node:path";
-import { canonicalHash } from "./review-transaction.ts";
+import { canonicalHash } from "./authority/review-transaction.ts";
 
 import type { BackgroundSubagentsCapability, BackgroundSubagentsRendering } from "./jero-ai-background-subagents.ts";
 import { builtinAgentDirs } from "./jero-ai-model-config.ts";

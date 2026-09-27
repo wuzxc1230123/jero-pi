@@ -18,7 +18,7 @@ import {
 import {
 	classifyReviewRoute,
 	REVIEW_ROUTE
-} from "./review-triggers.ts";
+} from "./authority/review-triggers.ts";
 import {
 	applyOrdinaryFix,
 	declineOrdinaryFix,
@@ -41,7 +41,7 @@ import {
 	recordJudgmentDayDiscovery,
 	recordJudgmentDayFinalVerification,
 	recordJudgmentDayRejudgment
-} from "./review-policy-judgment-day.ts";
+} from "./authority/review-policy-judgment-day.ts";
 import {
 	assertBudget,
 	assertCanonicalPaths,

@@ -8,7 +8,7 @@ import test from "node:test";
 import { createJeroAiExtension } from "../extensions/jero-ai.ts";
 import type { NativeReviewCli } from "../lib/authority/client-contract.ts";
 import { reviewTrivialityHint, TRIVIAL_REVIEW_CHANGED_LINES } from "../lib/jero-ai-review-hint.ts";
-import { REVIEW_ASSESSMENT_RISK } from "../lib/review-risk-assessment.ts";
+import { REVIEW_ASSESSMENT_RISK } from "../lib/authority/review-risk-assessment.ts";
 import { cleanWorkspaceStatus, reviewRepository, type ReviewStartRepository } from "./jero-ai-shared.ts";
 
 // ---------------------------------------------------------------------------

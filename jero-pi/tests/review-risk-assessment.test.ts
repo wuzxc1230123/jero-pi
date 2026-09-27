@@ -26,7 +26,7 @@ import {
 	type RddLine,
 	type WriterProfile,
 	type NativeReviewOutcome,
-} from "../lib/review-risk-assessment.ts";
+} from "../lib/authority/review-risk-assessment.ts";
 
 // ---------------------------------------------------------------------------
 // decoder for the native `gentle-ai review assess` envelope

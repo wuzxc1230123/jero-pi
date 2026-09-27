@@ -50,7 +50,7 @@ test("POSIX cleanup retains queue slots when a leader exits but its TERM-resisti
 					armRuntimeTimeout(launchIndex);
 				}
 			});
-			return child;
+			return child as unknown as ChildLike;
 		},
 		now: Date.now,
 		schedule: (fn, ms) => {
@@ -97,11 +97,11 @@ test("POSIX cleanup retains queue slots when a leader exits but its TERM-resisti
 	} finally {
 		if (firstDetached) {
 			for (const pid of ownedPids) {
-				try { process.kill(-pid, "SIGKILL"); } catch {}
+				try { process.kill(-pid, "SIGKILL"); } catch { /* 进程组可能已自行退出（ESRCH），清理尽力而为。 */ }
 			}
 		} else {
 			for (const pid of [firstPid, ...descendantPids, ...ownedPids]) {
-				if (pid) try { process.kill(pid, "SIGKILL"); } catch {}
+				if (pid) try { process.kill(pid, "SIGKILL"); } catch { /* 进程可能已自行退出（ESRCH），清理尽力而为。 */ }
 			}
 		}
 		runner.cancel(second.id);

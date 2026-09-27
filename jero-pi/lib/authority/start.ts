@@ -21,8 +21,8 @@ import { effectiveJeroReviewModeV1 } from "./mode.ts";
 import { issueJeroReviewReceiptV1 } from "./finalize.ts";
 import { mintJeroRepositoryContextV1, type JeroRepositoryContextV1 } from "./repository-context.ts";
 import { JERO_LINEAGE_STATE_SCHEMA } from "./canonical.ts";
-import type { ReviewDiffStat } from "../review-risk.ts";
-import { FULL_4R_LENSES } from "../review-triggers.ts";
+import type { ReviewDiffStat } from "./review-risk.ts";
+import { FULL_4R_LENSES } from "./review-triggers.ts";
 import type { JeroSnapshotKind } from "./protocol.ts";
 
 // `authority.review.start`（spec §B）：基于 jero 快照接缝的冻结计算、
@@ -537,7 +537,7 @@ export function reviewStartV1(context: JeroAuthorityContextV1, target: JeroRevie
 		lenses_required: lenses.length > 0,
 		changed_files: changedFiles,
 		changed_lines: changedLines,
-		correction_budget: record.correction_budget,
+		correction_budget: record.correction_budget ?? 0,
 		risk_reasons: riskReasons,
 		target_identity: targetIdentity,
 		projection: target.projection ?? "workspace",

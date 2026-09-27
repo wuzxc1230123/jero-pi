@@ -279,7 +279,7 @@ export class CandidateViewRegistry {
 		const projection = key === undefined ? undefined : this.projections.get(key);
 		const currentToken = key === undefined ? undefined : this.lineages.get(key);
 		const current = currentToken === undefined ? undefined : this.records.get(currentToken);
-		if (!replacement || replacement.lineageId !== undefined || !key || !projection || (currentToken !== undefined && (!current || current.lineageId !== lineageId))) {
+		if (!replacement || replacement.lineageId !== undefined || root === undefined || !key || !projection || (currentToken !== undefined && (!current || current.lineageId !== lineageId))) {
 			throw new CandidateViewError("corrected candidate replacement is missing or ambiguous");
 		}
 		const currentBinding = this.current.get(root);
@@ -612,7 +612,7 @@ export class CandidateViewRegistry {
 		// 任何漂移必然改变指纹（内容级，非路径级）；探测不可用（如 unborn
 		// HEAD 的孤儿仓库）返回 undefined，保守落回全量对账。
 		const fingerprint = this.liveCandidateFingerprint(record);
-		const fingerprintKey = this.lineageKey(record.contributorRoot, record.lineageId);
+		const fingerprintKey = this.lineageKey(record.contributorRoot, record.lineageId!);
 		if (fingerprint !== undefined && this.liveCandidateFingerprints.get(fingerprintKey) === fingerprint) return;
 		const live = materializeCandidateView({ contributorRoot: record.contributorRoot, baseRef: record.baseCommit, committedOnly: record.committedOnly, ...(record.intendedUntracked === undefined ? {} : { intendedUntracked: record.intendedUntracked }) }, this.gitExecutor, this.platform);
 		try {

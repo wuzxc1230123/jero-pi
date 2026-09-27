@@ -22,11 +22,11 @@ function envelopeFor(lens: string, findings: unknown[]): Buffer {
 }
 
 async function admitThroughRelayRaw(harness: Harness, rawResult: Buffer): Promise<{ submission: string }> {
-	const wireStatus = await createJeroAuthorityReviewCli().targetStatus({ cwd: harness.repo });
+	const wireStatus = await createJeroAuthorityReviewCli().targetStatus!({ cwd: harness.repo });
 	const collectInput = wireStatus.nextTransition?.kind === "collect" ? wireStatus.nextTransition.collect?.inputs[0] : undefined;
 	if (collectInput?.submission === undefined) throw new Error("STATUS offers no reviewer collect input");
 	const request: ReviewHostRelayRequest = {
-		captureArgumentTokens: collectInput.arguments.map(({ token }) => token),
+		captureArgumentTokens: collectInput.arguments.map(({ token }) => token!),
 		targetCwd: harness.repo,
 		submission: collectInput.submission as ReviewHostRelayRequest["submission"],
 	};
@@ -38,11 +38,11 @@ async function admitThroughRelayRaw(harness: Harness, rawResult: Buffer): Promis
 
 async function admitThroughRelay(harness: Harness, rawResult: Buffer): Promise<{ manifest: Record<string, unknown>; wireStatus: ReviewStatusV3 }> {
 	const cli = createJeroAuthorityReviewCli();
-	const wireStatus = await cli.targetStatus({ cwd: harness.repo });
+	const wireStatus = await cli.targetStatus!({ cwd: harness.repo });
 	const collectInput = wireStatus.nextTransition?.kind === "collect" ? wireStatus.nextTransition.collect?.inputs[0] : undefined;
 	if (collectInput === undefined || collectInput.submission === undefined) throw new Error("STATUS offers no reviewer collect input");
 	const request: ReviewHostRelayRequest = {
-		captureArgumentTokens: collectInput.arguments.map(({ token }) => token),
+		captureArgumentTokens: collectInput.arguments.map(({ token }) => token!),
 		targetCwd: harness.repo,
 		submission: collectInput.submission as ReviewHostRelayRequest["submission"],
 	};

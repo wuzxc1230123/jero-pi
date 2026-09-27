@@ -14,7 +14,7 @@ import { applyModelConfig, applyModelConfigAsync } from "../lib/jero-ai-model-ro
 import { createJeroAiExtension } from "../extensions/jero-ai.ts";
 import { PROFILES_KIND, PROFILES_VERSION } from "../lib/agent-profiles.ts";
 import { NATIVE_REVIEW_ERROR_CODE, type NativeReviewCli, NativeReviewCliError } from "../lib/authority/client-contract.ts";
-import { CandidateViewError, type CandidateViewRegistry, CANONICAL_GZIP_OPTIONS } from "../lib/review-candidate-view.ts";
+import { CandidateViewError, type CandidateViewRegistry, CANONICAL_GZIP_OPTIONS } from "../lib/authority/review-candidate-view.ts";
 import { installPackageAssets } from "../lib/sdd-preflight.ts";
 import { type ReviewCollectInputV3, type ReviewStatusV3 } from "../lib/authority/wire-contract.ts";
 import { stripAnsi } from "../lib/terminal-theme.ts";
@@ -226,7 +226,7 @@ export function routingConsumerFixture(t: test.TestContext, agents = ["worker"])
 	createJeroAiExtension({ nativeReviewCli: null })({
 		on() {},
 		registerTool() {},
-		registerCommand(name, command) { commands.set(name, command); },
+		registerCommand(name: string, command: Parameters<ExtensionAPI["registerCommand"]>[1]) { commands.set(name, command); },
 	} as unknown as ExtensionAPI);
 	const notifications: Array<{ message: string; severity: string }> = [];
 	// The profiles panel reads the terminal rows to size its full-screen frame, so

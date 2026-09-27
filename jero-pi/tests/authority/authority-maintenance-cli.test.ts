@@ -45,7 +45,7 @@ function driveToCorrection(t: { after(fn: () => void): void }): { harness: Harne
 test("the approved STATUS carries the five-argument burn vector and the adapter burns idempotently", async (t) => {
 	const { harness, cli } = cliHarness(t);
 	driveToApproved(harness);
-	const wireStatus = await cli.targetStatus({ cwd: harness.repo });
+	const wireStatus = await cli.targetStatus!({ cwd: harness.repo });
 	const execute = wireStatus.nextTransition?.execute;
 	if (execute === undefined || execute.operation !== "review.acknowledge-approved") throw new Error(`expected the burn execute, got ${JSON.stringify(wireStatus.nextTransition)}`);
 	assert.equal(execute.command?.startsWith("jero-ai review acknowledge-approved "), true);
@@ -64,7 +64,7 @@ test("the approved STATUS carries the five-argument burn vector and the adapter 
 test("a drifted burn vector fails closed on the binding", async (t) => {
 	const { harness, cli } = cliHarness(t);
 	driveToApproved(harness);
-	const wireStatus = await cli.targetStatus({ cwd: harness.repo });
+	const wireStatus = await cli.targetStatus!({ cwd: harness.repo });
 	const tokens = wireStatus.nextTransition?.execute?.arguments.map(({ token }) => token!) ?? [];
 	const drifted = tokens.map((token) => token.startsWith("--target=") ? `--target=sha256:${"f".repeat(64)}` : token);
 	await assert.rejects(cli.acknowledgeApproved!({ argumentTokens: drifted, cwd: harness.repo }), /binding-mismatch/);

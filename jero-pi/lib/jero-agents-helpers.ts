@@ -6,6 +6,7 @@ import os from "node:os";
 import { SHIPPED_SDD_AGENT_NAMES } from "./sdd-preflight.ts";
 import { type NativeReviewCli } from "./authority/client-contract.ts";
 import { spawn } from "node:child_process";
+import type { ChildLike } from "./agents-runner-core.ts";
 import { resolveSessionWorktree, type WorktreeResolver } from "./session-worktree-registry.ts";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -59,7 +60,12 @@ export interface ToolText {
 }
 
 export const defaultDeps = (env: NodeJS.ProcessEnv): AgentsDeps => ({
-	spawn: (command, args, options) => spawn(command, args, { cwd: options.cwd, env: options.env, stdio: options.stdio ?? ["pipe", "pipe", "pipe"], windowsHide: true, detached: options.detached }),
+	spawn: (command, args, options) => {
+		const child = spawn(command, args, { cwd: options.cwd, env: options.env, stdio: options.stdio ?? ["pipe", "pipe", "pipe"], windowsHide: true, detached: options.detached });
+		// stdio 全为管道：stdin/stdout 不可能为 null（ChildLike 契约）。
+		if (child.stdin === null || child.stdout === null) throw new Error("agent child must pipe stdin/stdout");
+		return child as ChildLike;
+	},
 	now: () => Date.now(),
 	schedule: (fn, ms) => {
 		const timer = setTimeout(fn, ms);

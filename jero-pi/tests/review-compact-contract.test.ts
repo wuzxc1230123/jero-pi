@@ -5,7 +5,7 @@ import {
 	CompactReviewContractError,
 	parseNativeCompactFinalizeInput,
 	toNativeValidatorDocument,
-} from "../lib/review-compact-contract.ts";
+} from "../lib/authority/review-compact-contract.ts";
 
 const REQUEST_HASH = "a".repeat(64);
 

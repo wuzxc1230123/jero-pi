@@ -241,7 +241,7 @@ tools:
 |---|---|---|
 | 某评审代理必须**每次**机制性必跑，提示层偶发不委派不可接受 | 进包加链：`assets/chains/` 新链文件 + `ASSET_OWNER_BY_KEY`（`lib/sdd-preflight-assets.ts`）加一行 | 一行数据表 + 资产文件；跑 `pnpm run test:review` 等（见 `AGENTS.md` 验证回路） |
 | 多个语言项目重复使用，子代理验证命令经常漂移 | P0 探测器：`IGNORED_DIRS` 补引擎缓存目录 + 新增 `detectDotnet`（`lib/sdd-project-detect.ts`） | 约 20 行；夹具放 `sdd-project-detect-shared.ts`（铁律 2） |
-| 风险分层把 `.csproj/.sln` 全归默认档影响排期 | P1 风险正则：`lib/review-risk.ts` 路径 token 补 .NET 生态 | 数行 |
+| 风险分层把 `.csproj/.sln` 全归默认档影响排期 | P1 风险正则：`lib/authority/review-risk.ts` 路径 token 补 .NET 生态 | 数行 |
 | 包内代理的 JS 测试惯例提示质量不足 | P2 提示词：`assets/support/strict-tdd.md` 等补语言示例 | 资产文件 |
 | 语言能力要随包发布给所有用户 | 技能进包 `skills/`（零代码，但受 `skill-authoring.md` 前缀规则约束）+ `pnpm run fix:docs-manifest` | 数据 + 命令 |
 

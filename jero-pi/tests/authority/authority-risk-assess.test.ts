@@ -4,8 +4,8 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import test from "node:test";
 import { assessJeroReviewRiskFromStatsV1, assessJeroReviewRiskV1 } from "../../lib/authority/risk-assess.ts";
-import { decodeReviewAssessmentV1, REVIEW_ASSESSMENT_SCHEMA, VERIFICATION_TIER } from "../../lib/review-risk-assessment.ts";
-import type { ReviewDiffStat } from "../../lib/review-risk.ts";
+import { decodeReviewAssessmentV1, REVIEW_ASSESSMENT_SCHEMA, VERIFICATION_TIER } from "../../lib/authority/review-risk-assessment.ts";
+import type { ReviewDiffStat } from "../../lib/authority/review-risk.ts";
 import { repository } from "./fixtures.ts";
 
 // Spec §I.7: read-only risk assessment — tier mapping off the ported

@@ -23,7 +23,7 @@ test("feature request form has supported structure and only intake labels", () =
 	// Exact allowlist also rejects approval, exception, and other privileged labels.
 	assert.deepEqual(form.labels, ["enhancement", "status:needs-review"]);
 	assert.ok(Array.isArray(form.body));
-	assert.deepEqual(form.body.map((field) => field.id), [
+	assert.deepEqual(form.body.map((field: { id: string }) => field.id), [
 		"preflight", "problem", "outcome", "alternatives", "context",
 	]);
 	for (const field of form.body) {
@@ -54,7 +54,7 @@ test("duplicate and privacy affirmations are individually required", () => {
 
 test("feature questions require problem and outcome but keep alternatives and context optional", () => {
 	const questions = readForm().body.slice(1);
-	assert.deepEqual(questions.map((field) => ({
+	assert.deepEqual(questions.map((field: { type: string; attributes: { label: string }; validations?: Record<string, unknown> }) => ({
 		type: field.type,
 		label: field.attributes.label,
 		validations: field.validations,

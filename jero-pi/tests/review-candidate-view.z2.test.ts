@@ -18,7 +18,7 @@ import {
 	createCandidateView, decodeCandidateContextManifest, deriveChangedPathManifest,
 	digestChangedPathManifest, hasExpectedExecutableBits, injectReviewCandidateView,
 	type NativeCandidateProjectionDescriptor, readCandidateContextManifestPage
-} from "../lib/review-candidate-view.ts";
+} from "../lib/authority/review-candidate-view.ts";
 import {
 	assertCandidateOwnerParent, assertTrustedWindowsOwner, prepareCandidateOwnerParent,
 	setWindowsAclAuthorityForTesting, validatePrivateWindowsDacl, validatePrivateWindowsOwner,

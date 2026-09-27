@@ -11,7 +11,7 @@ import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-a
 import { createJeroAiExtension } from "../extensions/jero-ai.ts";
 import { ChildStandingReviewPermissionClient, ParentStandingReviewPermissionBroker } from "../lib/review-session-standing-permission-ipc.ts";
 import { captureReviewSessionIdentity, grantReviewSessionPermission, hasReviewSessionPermission, revokeReviewSessionPermissionsForSession } from "../lib/review-session-standing-permission.ts";
-import { CandidateViewRegistry } from "../lib/review-candidate-view.ts";
+import { CandidateViewRegistry } from "../lib/authority/review-candidate-view.ts";
 // 进程加载即打桩 Windows ACL 权威：真实 PowerShell/icacls 栈只归候选视图
 // 专属端到端用例管（见 review-candidate-view-shared.ts）；本文件用例只
 // 验证候选视图之上的业务语义，打桩避免每个创建/清理周期数十次秒级子进程。

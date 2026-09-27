@@ -10,7 +10,7 @@ import {
 	submitReviewHostRelayPreparedResult
 } from "./review-host-relay.ts";
 import { admitJeroCaptureResultForRelayV1, renderJeroCaptureSlotForRelayV1 } from "./authority/capture-relay.ts";
-import { CandidateViewError } from "./review-candidate-view.ts";
+import { CandidateViewError } from "./authority/review-candidate-view.ts";
 import {
 	isNativeReviewUnachievableVerbRefused, type NativeReviewCli,
 	type NativeReviewUnachievableLensCaptureArtifact
@@ -162,7 +162,7 @@ export async function reconcileUnknownReviewCaptureFailure(
 	agent?: "pi",
 ): Promise<Record<string, unknown>> {
 	const failure = error === undefined ? undefined : nativeOperationFailure("jero_review_capture", error);
-	if (error !== undefined && !nativeMutationRequiresStatus(error)) return failure;
+	if (failure !== undefined && !nativeMutationRequiresStatus(error)) return failure;
 	try {
 		const selector = agent === undefined ? route : { ...route, agent };
 		const status = await reconcileUnknownReviewLastEventCapture(nativeReviewCli, cwd, binding, selector);

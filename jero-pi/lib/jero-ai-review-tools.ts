@@ -9,7 +9,7 @@
 import { type ExtensionAPI, type ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { consumeReviewMutation, pendingReviewMutation } from "./review-reminder-receipt.ts";
 import { type JeroRenderContext, renderJeroLifecycleCall, renderJeroResult } from "./jero-ai-renderer.ts";
-import { readCandidateContextManifestPage, type CandidateViewRegistry } from "./review-candidate-view.ts";
+import { readCandidateContextManifestPage, type CandidateViewRegistry } from "./authority/review-candidate-view.ts";
 import { type NativeReviewCli } from "./authority/client-contract.ts";
 import {
 	authorizeDestructiveReviewOperation, parseReviewControllerParameters,
@@ -37,8 +37,9 @@ import type { ChildStandingReviewPermissionClient } from "./review-session-stand
 
 export interface JeroReviewToolContext {
 	pi: ExtensionAPI;
-	nativeReviewCli: NativeReviewCli;
-	candidateViews: CandidateViewRegistry;
+	// 测试与保守桩注入 null：工具按操作粒度 fail-closed，注册本身不受影响。
+	nativeReviewCli: NativeReviewCli | null;
+	candidateViews: CandidateViewRegistry | null;
 	pendingReviewConsentRegistry: PendingReviewConsentRegistry;
 	pendingReviewConsentFallbackKey: symbol;
 	reviewConsentNow: () => number;

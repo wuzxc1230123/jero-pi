@@ -125,7 +125,7 @@ test("renderUsageBar summarizes the main limit with a gauge and the rest as perc
 	const twoWindows = parseCodexUsage({ ...CODEX_PAYLOAD, rate_limit: CODEX_PAYLOAD.additional_rate_limits[0].rate_limit }, NOW);
 	assert.equal(renderUsageBar(twoWindows, plainTheme), "codex 5h ▰▱▱▱▱▱▱▱ 12% · week 3%");
 	const hot = renderUsageBar(parseCodexUsage({ rate_limit: { primary_window: { used_percent: 91, limit_window_seconds: 18_000, reset_at: 1 } } }, NOW), taggedTheme);
-	assert.match(hot, /<warning>▰▰▰▰▰▰▰<\/warning>/);
+	assert.match(hot!, /<warning>▰▰▰▰▰▰▰<\/warning>/);
 	assert.equal(renderUsageBar(parseCodexUsage({}, NOW), plainTheme), undefined);
 });
 

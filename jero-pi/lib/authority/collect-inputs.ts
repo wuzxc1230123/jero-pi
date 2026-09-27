@@ -1,4 +1,4 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync, type ExecFileSyncOptions } from "node:child_process";
 import { delimiter } from "node:path";
 import { jeroDomainHash } from "./canonical.ts";
 import type { JeroArtifactSubjectV1 } from "./start.ts";
@@ -8,7 +8,7 @@ import type { JeroRepositoryContextV1 } from "./repository-context.ts";
 import { readJeroSnapshotRecordV1 } from "./snapshots.ts";
 import { expectedJeroTargetedValidationRequestHashV1 } from "./validate.ts";
 import { reviewGitEnvironment } from "../review-repository.ts";
-import { deriveChangedPathManifest, digestChangedPathManifest } from "../review-candidate-view.ts";
+import { deriveChangedPathManifest, digestChangedPathManifest } from "./review-candidate-view.ts";
 
 // STATUS collect 输入与 execute 绑定（spec §A/§B/§I.2）：确切的
 // `--name=value` 令牌纪律、仅宿主令牌、提交描述符（v5 的单数 `value`
@@ -146,7 +146,7 @@ function recordManifestSha256V1(storeRoot: string, state: JeroReviewTransactionS
 	// 早于 M3 的记录没有该持久化字段：从冻结快照对象存储只读重新派生
 	// （身份匹配保证了树的一致）。
 	const record = readJeroSnapshotRecordV1(storeRoot, state.snapshot.identity);
-	const executor = (file: string, args: readonly string[], options: { cwd: string; env: NodeJS.ProcessEnv }) =>
+	const executor = (file: string, args: readonly string[], options: ExecFileSyncOptions) =>
 		execFileSync(file, args, { ...options, encoding: "buffer", timeout: 60_000 }) as Buffer;
 	const manifest = deriveChangedPathManifest(record.repository_root, state.base_tree, state.snapshot.candidate_tree, executor);
 	return digestChangedPathManifest(manifest);

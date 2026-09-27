@@ -235,7 +235,7 @@ test("worktree refresh shares one scan so polling faster than discovery cannot p
 
 test("registration during an in-flight status scan is included before refresh resolves", async () => {
 	const roots = ["/used"];
-	let release: () => void;
+	let release!: () => void;
 	let entered: () => void;
 	const scanning = new Promise<void>((resolve) => { entered = resolve; });
 	const gate = new Promise<void>((resolve) => { release = resolve; });
@@ -310,7 +310,7 @@ test("isolated Git worktrees include preexisting dirty files only after root reg
 	const registered = [main, linked, clean];
 	const tracker = new WorktreeChangesTracker(gitAt(linked), gitAt, undefined, () => registered);
 	await tracker.start();
-	assert.deepEqual(tracker.worktrees, [], "all clean roots are hidden");
+	assert.deepEqual(tracker.worktrees, [] as typeof tracker.worktrees, "all clean roots are hidden");
 	await writeFile(join(main, "same.ts"), "export const value = 2;\n");
 	await writeFile(join(linked, "same.ts"), "export const value = 3;\n");
 	await tracker.refresh();

@@ -16,7 +16,7 @@ import { type ExtensionAPI, type ExtensionContext } from "@earendil-works/pi-cod
 import { __testing } from "../lib/jero-ai-testing-exports.ts";
 import { PendingReviewConsentRegistry } from "../lib/jero-ai-review-consent.ts";
 import { createJeroAiExtension } from "../extensions/jero-ai.ts";
-import { CandidateViewRegistry } from "../lib/review-candidate-view.ts";
+import { CandidateViewRegistry } from "../lib/authority/review-candidate-view.ts";
 import { NATIVE_REVIEW_ERROR_CODE, type NativeReviewCli, NativeReviewCliError, NativeReviewConsentRequiredError } from "../lib/authority/client-contract.ts";
 import { decodeReviewConsentV3, decodeReviewStatusV3, type ReviewCollectInputV3, type ReviewStatusV3 } from "../lib/authority/wire-contract.ts";
 import {
@@ -173,7 +173,7 @@ export function candidateRepository(t: test.TestContext): string {
 	const cwd = realpathSync(mkdtempSync(join(tmpdir(), "gentle-pi-native-routing-")));
 	// The registry's views are 0555 dirs / 0444 files; restore writability before
 	// the fixture teardown so a surviving view never breaks rmSync.
-	t.after(() => { try { execFileSync("chmod", ["-R", "u+w", cwd]); } catch {} rmSync(cwd, { recursive: true, force: true }); });
+	t.after(() => { try { execFileSync("chmod", ["-R", "u+w", cwd]); } catch { /* chmod 失败不得阻断夹具拆除。 */ } rmSync(cwd, { recursive: true, force: true }); });
 	const git = (...arguments_: string[]) => execFileSync("git", arguments_, { cwd, encoding: "utf8" });
 	git("init", "-b", "main");
 	writeFileSync(join(cwd, "tracked.txt"), "base\n");

@@ -59,7 +59,7 @@ test("a medium-risk start mints a decodable consent/v3 envelope and honours decl
 	assert.match(envelope.reason, /deeper review/);
 	assert.ok(envelope.choices[0].invocation.includes(" --agent pi "));
 	assert.ok(envelope.choices.every((choice) => choice.invocation.endsWith(` --consent ${choice.answer}`)));
-	const declined = await cli.answerConsent({ cwd: repo, consent: error.consent, answer: "declined" });
+	const declined = await cli.answerConsent!({ cwd: repo, consent: error.consent, answer: "declined" });
 	assert.equal(declined.kind, "declined");
 	if (declined.kind === "declined") {
 		assert.equal(declined.consent, "declined_this_candidate");
@@ -74,7 +74,7 @@ test("a granted answer starts the frozen candidate and replays idempotently", as
 	const { repo, cli } = harness(t);
 	write(repo, "src/util.ts", "export const y = 2;\n");
 	const error = await consentFor(cli, repo);
-	const answered = await cli.answerConsent({ cwd: repo, consent: error.consent, answer: "granted" });
+	const answered = await cli.answerConsent!({ cwd: repo, consent: error.consent, answer: "granted" });
 	assert.equal(answered.kind, "started");
 	if (answered.kind === "started") {
 		assert.equal(answered.start.action, "created");
@@ -82,7 +82,7 @@ test("a granted answer starts the frozen candidate and replays idempotently", as
 		assert.equal(answered.start.lensesRequired, true);
 		assert.equal(answered.start.selectedLenses.length, 1);
 	}
-	const replay = await cli.answerConsent({ cwd: repo, consent: error.consent, answer: "granted" });
+	const replay = await cli.answerConsent!({ cwd: repo, consent: error.consent, answer: "granted" });
 	assert.equal(replay.kind, "started");
 	if (replay.kind === "started") assert.equal(replay.start.action, "replayed");
 });
@@ -92,7 +92,7 @@ test("a high-risk candidate binds four lenses through the consent gate", async (
 	write(repo, "src/auth.ts", "export function check(): boolean { return true; }\n");
 	const error = await consentFor(cli, repo);
 	assert.equal(error.consent.riskLevel, "high");
-	const answered = await cli.answerConsent({ cwd: repo, consent: error.consent, answer: "granted" });
+	const answered = await cli.answerConsent!({ cwd: repo, consent: error.consent, answer: "granted" });
 	if (answered.kind === "started") assert.equal(answered.start.selectedLenses.length, 4);
 	else assert.fail("high-risk grant must start");
 });
@@ -102,7 +102,7 @@ test("an answer for a drifted candidate fails closed on identity", async (t) => 
 	write(repo, "src/util.ts", "export const a = 1;\n");
 	const error = await consentFor(cli, repo);
 	write(repo, "src/util.ts", "export const a = 2;\nexport const b = 3;\n");
-	await assert.rejects(cli.answerConsent({ cwd: repo, consent: error.consent, answer: "granted" }), /identity-mismatch/);
+	await assert.rejects(cli.answerConsent!({ cwd: repo, consent: error.consent, answer: "granted" }), /identity-mismatch/);
 });
 
 test("an untracked inventory drift reports blocked-scope-action with the fresh digest", async (t) => {

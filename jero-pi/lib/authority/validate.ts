@@ -3,14 +3,14 @@ import type { JeroAuthorityContextV1 } from "./review.ts";
 import type { JeroReviewTransactionStateV1 } from "./protocol.ts";
 import type { JeroLineageStateFileV1 } from "./lineage-store.ts";
 import { projectJeroReviewStateV1, checkJeroReviewTransitionV1, type JeroEscalationCause, type JeroWireReviewState } from "./transitions.ts";
-import { parseNativeCompactFinalizeInput, CompactReviewContractError, toNativeValidatorDocument, type CompactTargetedValidationInput } from "../review-compact-contract.ts";
+import { parseNativeCompactFinalizeInput, CompactReviewContractError, toNativeValidatorDocument, type CompactTargetedValidationInput } from "./review-compact-contract.ts";
 import {
 	assertDistinctCorrectionEvidence,
 	resolveCorrectionStep,
 	type CorrectionEvidence,
 	type CorrectionOutcome,
 	type CorrectionStatus,
-} from "../review-correction-lifecycle.ts";
+} from "./review-correction-lifecycle.ts";
 import { deriveJeroReviewReceiptV1, issueJeroReviewReceiptV1, type JeroFindingSubmissionRowV1 } from "./finalize.ts";
 import { isJeroLineageId } from "./store-root.ts";
 import { canonicalJsonV1 } from "../review-canonical.ts";

@@ -20,7 +20,7 @@ import {
 	type DiffEvidence,
 	type ReviewLens,
 	type ReviewRoute,
-} from "./review-triggers.ts";
+} from "./authority/review-triggers.ts";
 import {
 	classifyReviewRisk,
 	isGeneratedGoldenPath,
@@ -28,7 +28,7 @@ import {
 	type ReviewDiffStat,
 	type ReviewRiskTier,
 	type ReviewRiskClassification,
-} from "./review-risk.ts";
+} from "./authority/review-risk.ts";
 import { reviewGitEnvironment } from "./review-repository.ts";
 
 export const REVIEW_MODE = {

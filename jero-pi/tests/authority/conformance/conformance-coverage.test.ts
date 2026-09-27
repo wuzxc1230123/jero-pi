@@ -51,14 +51,14 @@ test("conformance 5: the plain unrelated STATUS asks for an empty-candidate base
 	const status = decodeReviewStatusV3(fixture("status-v5"));
 	assert.equal(status.applicability, "unrelated");
 	assert.equal(status.action, "start");
-	assert.equal(status.receipt.status, "not_applicable");
+	assert.equal(status.receipt!.status, "not_applicable");
 	// The empty candidate cannot form a review target: the collect input asks
 	// for a base ref, not reviewer results.
-	assert.equal(status.nextTransition.kind, "collect");
-	if (status.nextTransition.kind !== "collect") return;
+	assert.equal(status.nextTransition!.kind, "collect");
+	if (status.nextTransition?.kind !== "collect") return;
 	assert.equal(status.nextTransition.reasonCode, "empty_candidate_base_ref_required");
-	assert.ok(status.nextTransition.collect.inputs.length >= 1);
-	assert.equal(status.nextTransition.collect.inputs[0]!.name, "base_ref");
+	assert.ok(status.nextTransition.collect!.inputs.length >= 1);
+	assert.equal(status.nextTransition.collect!.inputs[0]!.name, "base_ref");
 	// The repair assessment block rides every v5 status (M2's STATUS reports
 	// it under action repair_authority only for corrupted records; here it is
 	// the inventory shape itself).

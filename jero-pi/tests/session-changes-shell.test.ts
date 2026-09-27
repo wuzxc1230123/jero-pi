@@ -7,16 +7,16 @@ function fixture(entries: any[] = []) {
 	const handlers = new Map<string, Function[]>(), listeners = new Map<string, Function[]>();
 	const commands = new Map<string, any>(), widgets = new Map<string, any>();
 	let gitCalls = 0;
-	const pi: any = { on: (key, fn) => handlers.set(key, [...(handlers.get(key) ?? []), fn]),
-		events: { on: (key, fn) => { listeners.set(key,[...(listeners.get(key) ?? []), fn]); return () => {}; }, emit: (key,data) => listeners.get(key)?.forEach(fn=>fn(data)) },
-		appendEntry: (customType,data) => entries.push({type:"custom",customType,data}), registerTool() {}, registerShortcut() {}, registerMessageRenderer() {},
-		registerCommand: (key, registration) => commands.set(key,registration) };
+	const pi: any = { on: (key: string, fn: (event: unknown, ctx: unknown) => unknown) => handlers.set(key, [...(handlers.get(key) ?? []), fn]),
+		events: { on: (key: string, fn: (data: unknown) => void) => { listeners.set(key,[...(listeners.get(key) ?? []), fn]); return () => {}; }, emit: (key: string, data: unknown) => listeners.get(key)?.forEach(fn=>fn(data)) },
+		appendEntry: (customType: string, data: unknown) => entries.push({type:"custom",customType,data}), registerTool() {}, registerShortcut() {}, registerMessageRenderer() {},
+		registerCommand: (key: string, registration: unknown) => commands.set(key,registration) };
 	const notices: string[] = [];
 	const ctx: any = { hasUI:true, cwd:"/repo", sessionManager:{getSessionId:()=>"session",getEntries:()=>entries},
-		ui: { setFooter() {}, getEditorComponent:()=>({}), setWorkingVisible() {}, setWidget:(key,value)=>widgets.set(key,value), notify:(text)=>notices.push(text) } };
+		ui: { setFooter() {}, getEditorComponent:()=>({}), setWorkingVisible() {}, setWidget:(key: string, value: unknown)=>widgets.set(key,value), notify:(text: string)=>notices.push(text) } };
 	shell(pi,{}, {resolveWorktree:()=>({root:"/repo",commonDir:"/git"}),devBinary:()=>undefined,
 		gitRunner:()=>async()=>{gitCalls++; return await new Promise<any>(()=>{});} });
-	const fire=async(key,event={})=>{for(const fn of handlers.get(key)??[]) await fn(event,ctx);};
+	const fire=async(key: string,event: unknown={})=>{for(const fn of handlers.get(key)??[]) await fn(event,ctx);};
 	return {pi,ctx,entries,notices,commands,widgets,fire,gitCalls:()=>gitCalls};
 }
 test("Jero Shell startup never waits for a repository scan",async()=>{

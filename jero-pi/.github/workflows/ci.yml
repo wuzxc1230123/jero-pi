@@ -51,9 +51,16 @@ jobs:
         run: pnpm run check:authority-boundary
 
       # Test anti-patterns (pass-always asserts, reasonless skips, wall-clock
-      # assertions, magic sleeps) are ratcheted toward zero; see the script header.
+      # assertions, magic sleeps, shard cross-imports) are ratcheted toward
+      # zero; see the script header.
       - name: Test quality ratchet
         run: pnpm run check:test-quality
+
+      # An empty catch block must state its intent — a statement or a
+      # why-comment. Undocumented silent swallows fail the gate; the escape
+      # hatch is `// allow-empty-catch` on the line.
+      - name: Empty catch hygiene
+        run: pnpm run check:empty-catch
 
       - name: Verify package contents
         run: node scripts/verify-package-files.mjs

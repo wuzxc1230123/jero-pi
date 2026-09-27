@@ -126,7 +126,7 @@ test("passed settle accepts remediation evidence alone and an envelope whose evi
 	const { repo, context } = harness(t);
 	const acquired = acquireJeroSddAttemptV1(context, { workspaceRoot: repo, ...acquireBase, requestId: "acq-1", expectedRevision: "" });
 	if (acquired.kind !== "result" || acquired.state !== "proceed") throw new Error("acquire did not proceed");
-	const viaRemediation = settleJeroSddAttemptV1(context, { workspaceRoot: repo, ...settleBase, requestId: "s-1", token: acquired.token, outcome: "passed", remediationEvidence: "remediated via focused tests" });
+	const viaRemediation = settleJeroSddAttemptV1(context, { workspaceRoot: repo, ...settleBase, requestId: "s-1", token: acquired.token!, outcome: "passed", remediationEvidence: "remediated via focused tests" });
 	assert.equal(viaRemediation.kind === "result" && viaRemediation.state, "proceed");
 	const acquired2 = acquireJeroSddAttemptV1(context, { workspaceRoot: repo, ...acquireBase, requestId: "acq-2" });
 	if (acquired2.kind !== "result" || acquired2.state !== "proceed") throw new Error("second acquire did not proceed");
@@ -135,10 +135,10 @@ test("passed settle accepts remediation evidence alone and an envelope whose evi
 		requirements: "4/4", scenarios: "2/2", test_command: "pnpm test", test_exit_code: 0, test_output_hash: EVIDENCE,
 		build_command: "pnpm build", build_exit_code: 0, build_output_hash: EVIDENCE,
 	};
-	const mismatch = settleJeroSddAttemptV1(context, { workspaceRoot: repo, ...settleBase, requestId: "s-2", token: acquired2.token, outcome: "passed", evidenceRevision: `sha256:${"b".repeat(64)}`, verifyResult: envelope });
+	const mismatch = settleJeroSddAttemptV1(context, { workspaceRoot: repo, ...settleBase, requestId: "s-2", token: acquired2.token!, outcome: "passed", evidenceRevision: `sha256:${"b".repeat(64)}`, verifyResult: envelope });
 	assert.equal(mismatch.kind, "refused");
 	if (mismatch.kind === "refused") assert.match(mismatch.detail, /evidence_revision/);
-	const matched = settleJeroSddAttemptV1(context, { workspaceRoot: repo, ...settleBase, requestId: "s-3", token: acquired2.token, outcome: "passed", evidenceRevision: EVIDENCE, verifyResult: envelope });
+	const matched = settleJeroSddAttemptV1(context, { workspaceRoot: repo, ...settleBase, requestId: "s-3", token: acquired2.token!, outcome: "passed", evidenceRevision: EVIDENCE, verifyResult: envelope });
 	assert.equal(matched.kind === "result" && matched.state, "proceed");
 });
 
@@ -146,7 +146,7 @@ test("the attempt budget exhausts to complete, never silently", (t) => {
 	const { repo, context } = harness(t);
 	const first = acquireJeroSddAttemptV1(context, { workspaceRoot: repo, ...acquireBase, requestId: "a1", expectedRevision: "", maxAttempts: 1 });
 	if (first.kind !== "result" || first.state !== "proceed") throw new Error("first acquire did not proceed");
-	const settled = settleJeroSddAttemptV1(context, { workspaceRoot: repo, ...settleBase, requestId: "s1", token: first.token, outcome: "failed", evidenceRevision: EVIDENCE });
+	const settled = settleJeroSddAttemptV1(context, { workspaceRoot: repo, ...settleBase, requestId: "s1", token: first.token!, outcome: "failed", evidenceRevision: EVIDENCE });
 	assert.deepEqual(settled.kind === "result" ? { state: settled.state, reason: settled.reason } : settled, { state: "complete", reason: "attempt budget exhausted" });
 	const exhausted = acquireJeroSddAttemptV1(context, { workspaceRoot: repo, ...acquireBase, requestId: "a2", maxAttempts: 1 });
 	assert.deepEqual(exhausted.kind === "result" ? { state: exhausted.state, reason: exhausted.reason } : exhausted, { state: "complete", reason: "attempt budget exhausted" });

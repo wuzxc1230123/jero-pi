@@ -360,7 +360,7 @@ export function decodeReviewStartV4(value: unknown): ReviewStartV4 {
 	const nextTransition = body.next_transition === undefined ? undefined : decodeReviewNextTransitionV3(body.next_transition);
 	const reviewing = (action === "created" || action === "replayed") && body.state === REVIEW_START_STATE.REVIEWING;
 	if (reviewing && nextTransition?.kind !== "execute") throw new TypeError("reviewing created/replayed START requires next_transition.execute");
-	if (reviewing && nextTransition.execute?.operation !== "review.status") throw new TypeError("reviewing created/replayed START next_transition.execute.operation must be review.status");
+	if (reviewing && nextTransition!.execute?.operation !== "review.status") throw new TypeError("reviewing created/replayed START next_transition.execute.operation must be review.status");
 	const closedApprovedZeroLens = action === "closed" && body.state === REVIEW_START_STATE.APPROVED && Array.isArray(body.selected_lenses) && body.selected_lenses.length === 0;
 	if (closedApprovedZeroLens && nextTransition !== undefined) throw new TypeError("closed approved zero-lens START cannot carry next_transition");
 	const v3Body = { ...body };

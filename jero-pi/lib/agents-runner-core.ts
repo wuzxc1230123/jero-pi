@@ -441,7 +441,7 @@ export class AgentRunner {
 	private launch(id: string, request: TaskRequest): void {
 		const detached = this.processControl.platform !== "win32";
 		const hasParentPermissionChannel = request.authorizeParentStandingReviewPermission !== undefined;
-		const env = {
+		const env: NodeJS.ProcessEnv = {
 			...request.env,
 			...(request.extensionPaths ? { [RESEARCH_SELECTION_ENV]: JSON.stringify(request.researchSelection ?? null), [RESEARCH_ARTIFACT_ENV]: JSON.stringify(request.researchArtifact ?? null) } : {}),
 			[AGENTS_CHILD_ENV]: "1",

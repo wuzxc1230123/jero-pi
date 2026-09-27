@@ -8,15 +8,15 @@ import { SessionChanges, SESSION_CHANGE_ENTRY } from "../lib/session-changes.ts"
 
 async function fixture(run: (f: any) => Promise<void>, child = false) {
 	const root = await realpath(await mkdtemp(join(tmpdir(), "change-capture-")));
-	const handlers = new Map<string, Function>();
+	const handlers = new Map<string, (event: unknown, ctx: unknown) => unknown>();
 	const entries: any[] = [];
-	const listeners = new Map<string, Function>();
-	const pi = { on: (key, fn) => handlers.set(key, fn), appendEntry: (customType, data) => entries.push({type:"custom",customType,data}),
-		events: { on: (key, fn) => { listeners.set(key, fn); return () => listeners.delete(key); }, emit: (key, data) => listeners.get(key)?.(data) } };
+	const listeners = new Map<string, (data: unknown) => void>();
+	const pi = { on: (key: string, fn: (event: unknown, ctx: unknown) => unknown) => handlers.set(key, fn), appendEntry: (customType: string, data: unknown) => entries.push({type:"custom",customType,data}),
+		events: { on: (key: string, fn: (data: unknown) => void) => { listeners.set(key, fn); return () => listeners.delete(key); }, emit: (key: string, data: unknown) => listeners.get(key)?.(data) } };
 	let id = "session";
 	const ctx = { cwd:root, sessionManager: { getSessionId: () => id, getEntries: () => entries } };
 	installSessionChangeCapture(pi as never, child ? {JERO_PI_AGENTS_CHILD:"1"} : {}, () => ({root,commonDir:root}));
-	const fire = (key, event = {}) => handlers.get(key)?.(event, ctx);
+	const fire = (key: string, event: Record<string, unknown> = {}) => handlers.get(key)?.(event, ctx);
 	try { await fire("session_start"); await run({root, entries, ctx, fire, switchSession: () => id = "other"}); }
 	finally { await rm(root, {recursive:true,force:true}); }
 }

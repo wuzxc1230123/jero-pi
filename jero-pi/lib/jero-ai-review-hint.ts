@@ -1,4 +1,4 @@
-import { REVIEW_ASSESSMENT_RISK, type ReviewAssessmentV1 } from "./review-risk-assessment.ts";
+import { REVIEW_ASSESSMENT_RISK, type ReviewAssessmentV1 } from "./authority/review-risk-assessment.ts";
 
 // 微小候选提示：inspect 返回干净的 START 就绪状态时，工具结果附加的
 // 一条建议性字段。阈值刻意保守——只有权威风险评估器判为 passive

@@ -3,9 +3,12 @@ import { join } from "node:path";
 import test from "node:test";
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { parseRemediationPlan, remediationEvidence, observeRemediationTool, type RemediationObservations, type RemediationPlan, type RemediationScope, type TaskRequest } from "../lib/agents-runner.ts";
-import { NATIVE_REVIEW_ERROR_CODE, NATIVE_REVIEW_OPERATION, NativeReviewCliError, type NativeReviewCli } from "../lib/authority/client-contract.ts";
+import { NATIVE_REVIEW_ERROR_CODE, NATIVE_REVIEW_OPERATION, NativeReviewCliError, type NativeReviewCli, type NativeSddAcquireRequest, type NativeSddSettleRequest } from "../lib/authority/client-contract.ts";
 import { remediationUnresolved } from "../lib/agents-history.ts";
-import type { TaskRecord } from "../lib/agents-protocol.ts";
+import type { RemediationTaskState, TaskRecord } from "../lib/agents-protocol.ts";
+
+// 原生调用日志：acquire 与 settle 载荷的宽松记录类型（断言只读取各载荷中出现过的字段）。
+type NativeRemediationCall = [string, Partial<NativeSddAcquireRequest> & Partial<NativeSddSettleRequest>];
 
 const testCwd = process.cwd();
 const human = { hasUI: true, ui: { confirm: async () => true } } as unknown as Pick<ExtensionContext, "hasUI" | "ui">;
@@ -24,6 +27,7 @@ test("remediation evidence requires every exact planned command and rollback obs
 	assert.equal(remediationEvidence(s), undefined);
 	observed(s, "git diff --check", "b");
 	const evidence = remediationEvidence(s);
+	assert.ok(evidence !== undefined);
 	assert.equal(evidence.failed_evidence_revision, revision);
 	assert.equal(evidence.commands[0].exit_code, 0);
 	assert.match(evidence.commands[0].result, /sha256:/);
@@ -51,9 +55,10 @@ test("remediation shell captures numeric exit, preserves stock errors and execut
 			calls++; assert.equal(command, "pnpm test"); assert.equal(cwd, testCwd);
 			options.onData(Buffer.from("real output")); return { exitCode };
 		} }, shellScope(testCwd, ["pnpm test"]));
-		const run = shell.definition.execute("call", { command: "pnpm test" }, undefined, undefined, undefined);
+		const run = shell.definition.execute("call", { command: "pnpm test" }, undefined, undefined, undefined as unknown as ExtensionContext);
 		if (exitCode === 7) await assert.rejects(run, /code 7/); else await run;
 		const patch = shell.result({ toolCallId: "call", details: { fullOutputPath: "/retained", remediationCommand: { exitCode: 99 } } } as unknown as Parameters<typeof shell.result>[0]);
+		assert.ok(patch !== undefined);
 		const details = patch.details as typeof patch.details & { fullOutputPath?: string };
 		assert.equal(details.remediationCommand.exitCode, exitCode);
 		assert.equal(details.remediationCommand.command, "pnpm test");
@@ -88,19 +93,19 @@ test("admitted remediation retains exact settlement before one lost-reply replay
 	const { parseAgentDefinition } = await import("../lib/agents-config.ts");
 	const agent = parseAgentDefinition(readFileSync(path, "utf8"), path, "global");
 	assert.ok("instructions" in agent);
-	const saved = [], calls = [];
+	const saved: TaskRecord[] = [], calls: NativeRemediationCall[] = [];
 	const request = { agent, sddChange: { changeName: "fix", workspaceRoot: testCwd, phase: "remediate", failedEvidenceRevision: revision }, cwd: testCwd } as unknown as TaskRequest;
-	const native = { sddStatus: async () => ({ schemaName: "jero-ai.sdd-status", schemaVersion: 2, artifactStore: "openspec", planningHome: { mode: "repo-local", path: join(testCwd, "openspec") }, changeRoot: join(testCwd, "openspec", "changes", "fix"), dependencies: Object.fromEntries(["proposal", "specs", "design", "tasks", "apply", "verify", "archive"].map(key => [key, "ready"])), phaseInstructions: { apply: [], verify: [], remediate: ["Correct evidence"], archive: [] }, blockedReasons: [], nextRecommended: "remediate", changeName: "fix", actionContext: { mode: "repo-local", workspaceRoot: testCwd, allowedEditRoots: [testCwd] }, remediationState: { required: true, complete: false, failedEvidenceRevision: revision } }), sddAttemptAcquire: async input => { calls.push(["acquire", input]); return { state: "proceed", token: "opaque-admitted" }; }, sddAttemptSettle: async input => { assert.equal(saved.at(-1).sddRemediation.settle.requestId, input.requestId); calls.push(["settle", structuredClone(input)]); if (calls.length === 2) throw new Error("lost reply"); return { state: "complete" as const }; } } as unknown as NativeReviewCli;
+	const native = { sddStatus: async () => ({ schemaName: "jero-ai.sdd-status", schemaVersion: 2, artifactStore: "openspec", planningHome: { mode: "repo-local", path: join(testCwd, "openspec") }, changeRoot: join(testCwd, "openspec", "changes", "fix"), dependencies: Object.fromEntries(["proposal", "specs", "design", "tasks", "apply", "verify", "archive"].map(key => [key, "ready"])), phaseInstructions: { apply: [], verify: [], remediate: ["Correct evidence"], archive: [] }, blockedReasons: [], nextRecommended: "remediate", changeName: "fix", actionContext: { mode: "repo-local", workspaceRoot: testCwd, allowedEditRoots: [testCwd] }, remediationState: { required: true, complete: false, failedEvidenceRevision: revision } }), sddAttemptAcquire: async (input: NativeSddAcquireRequest) => { calls.push(["acquire", input]); return { state: "proceed", token: "opaque-admitted" }; }, sddAttemptSettle: async (input: NativeSddSettleRequest) => { assert.equal(saved.at(-1)!.sddRemediation!.settle!.requestId, input.requestId); calls.push(["settle", structuredClone(input)]); if (calls.length === 2) throw new Error("lost reply"); return { state: "complete" as const }; } } as unknown as NativeReviewCli;
 	const admitted = await admitManagedRemediation(request, { plan, attempt: { requestId: "a", workUnit: "fix", evidenceGoal: "Observed correction", maxAttempts: 1, maxChangedLines: 200 } }, native, async task => { saved.push(structuredClone(task)); }, human, { id: "prepared", cwd: testCwd, agent: "sdd-remediate", status: "queued" } as unknown as TaskRecord);
-	const task = { id: "task", cwd: testCwd, status: "completed", sddRemediation: admitted.sddRemediation } as unknown as TaskRecord & { sddRemediation: typeof admitted.sddRemediation };
+	const task = { id: "task", cwd: testCwd, status: "completed", sddRemediation: admitted.sddRemediation } as unknown as TaskRecord & { sddRemediation: RemediationTaskState };
 	observed(task.sddRemediation, "pnpm test", "one"); observed(task.sddRemediation, "git diff --check", "two");
-	await admitted.finalizeRemediation(task, { spawned: true, exited: true, cleanupConfirmed: true });
+	await admitted.finalizeRemediation!(task, { spawned: true, exited: true, cleanupConfirmed: true });
 	assert.equal(calls.filter(([verb]) => verb === "acquire").length, 1);
 	assert.equal(calls.filter(([verb]) => verb === "settle").length, 2);
 	assert.deepEqual(calls[1], calls[2]);
 	assert.equal(calls[1][1].outcome, "passed");
 	assert.equal(calls[1][1].remediatesEvidenceRevision, revision);
-	assert.equal(JSON.parse(calls[1][1].remediationEvidence).failed_evidence_revision, revision);
+	assert.equal(JSON.parse(calls[1][1].remediationEvidence!).failed_evidence_revision, revision);
 });
 
 
@@ -111,10 +116,10 @@ async function admissionFixture(overrides = {}, persist: (task: TaskRecord) => P
 	const { resolve } = await import("node:path");
 	const path = resolve("assets/agents/sdd-remediate.md");
 	const request = { agent: { ...parseAgentDefinition(readFileSync(path, "utf8"), path, "global"), ...agentPatch }, cwd: testCwd, sddChange: { changeName: "fix", workspaceRoot: testCwd, phase: "remediate", failedEvidenceRevision: revision } } as unknown as TaskRequest;
-	const calls = [];
-	const native = { sddStatus: async () => ({ schemaName: "jero-ai.sdd-status", schemaVersion: 2, artifactStore: "openspec", planningHome: { mode: "repo-local", path: join(testCwd, "openspec") }, changeRoot: join(testCwd, "openspec", "changes", "fix"), dependencies: Object.fromEntries(["proposal", "specs", "design", "tasks", "apply", "verify", "archive"].map(key => [key, "ready"])), phaseInstructions: { apply: [], verify: [], remediate: ["Correct evidence"], archive: [] }, blockedReasons: [], nextRecommended: "remediate", changeName: "fix", actionContext: { mode: "repo-local", workspaceRoot: testCwd, allowedEditRoots: [testCwd] }, remediationState: { required: true, complete: false, failedEvidenceRevision: revision } }), sddAttemptAcquire: async input => { calls.push(["acquire", input]); return { state: "proceed", token: "opaque" }; }, sddAttemptSettle: async input => { calls.push(["settle", input]); return { state: "proceed" as const }; }, ...overrides } as unknown as NativeReviewCli;
+	const calls: NativeRemediationCall[] = [];
+	const native = { sddStatus: async () => ({ schemaName: "jero-ai.sdd-status", schemaVersion: 2, artifactStore: "openspec", planningHome: { mode: "repo-local", path: join(testCwd, "openspec") }, changeRoot: join(testCwd, "openspec", "changes", "fix"), dependencies: Object.fromEntries(["proposal", "specs", "design", "tasks", "apply", "verify", "archive"].map(key => [key, "ready"])), phaseInstructions: { apply: [], verify: [], remediate: ["Correct evidence"], archive: [] }, blockedReasons: [], nextRecommended: "remediate", changeName: "fix", actionContext: { mode: "repo-local", workspaceRoot: testCwd, allowedEditRoots: [testCwd] }, remediationState: { required: true, complete: false, failedEvidenceRevision: revision } }), sddAttemptAcquire: async (input: NativeSddAcquireRequest) => { calls.push(["acquire", input]); return { state: "proceed", token: "opaque" }; }, sddAttemptSettle: async (input: NativeSddSettleRequest) => { calls.push(["settle", input]); return { state: "proceed" as const }; }, ...overrides } as unknown as NativeReviewCli;
 	const admitted = await admitManagedRemediation(request, { plan, attempt: { requestId: "a", workUnit: "fix", evidenceGoal: "Observed correction", untrackedScope: "select", expectedUntrackedInventory: revision, intendedUntracked: ["new file.ts"], ...attemptPatch } }, native, persist, context, { id: "prepared", cwd: testCwd, agent: "sdd-remediate", status: "queued" } as unknown as TaskRecord);
-	return { admitted, calls, task: { id: "one", status: "failed", sddRemediation: admitted.sddRemediation } as unknown as TaskRecord & { sddRemediation: typeof admitted.sddRemediation } };
+	return { admitted, calls, task: { id: "one", status: "failed", sddRemediation: admitted.sddRemediation } as unknown as TaskRecord & { sddRemediation: RemediationTaskState } };
 }
 for (const state of ["blocked", "complete"]) test(`native ${state} refuses without settlement`, async () => {
 	let settles = 0;
@@ -123,7 +128,7 @@ for (const state of ["blocked", "complete"]) test(`native ${state} refuses witho
 });
 for (const status of ["failed", "cancelled", "timed_out"] as const) test(`terminal ${status} settles without passing evidence and retains exact untracked scope`, async () => {
 	const { admitted, calls, task } = await admissionFixture(); task.status = status;
-	await admitted.finalizeRemediation(task, { spawned: true, exited: true, cleanupConfirmed: true });
+	await admitted.finalizeRemediation!(task, { spawned: true, exited: true, cleanupConfirmed: true });
 	const payload = calls[1][1];
 	assert.equal(payload.outcome, status === "failed" ? "failed" : "interrupted");
 	assert.equal(payload.remediationEvidence, undefined);
@@ -132,20 +137,20 @@ for (const status of ["failed", "cancelled", "timed_out"] as const) test(`termin
 	assert.equal(payload.expectedUntrackedInventory, revision);
 });
 test("failure to retain settlement never mutates native; two lost replies retain uncertainty", async () => {
-	const failed = await admissionFixture({}, async task => { if (task.sddRemediation.settle) throw new Error("disk failure"); });
-	await assert.rejects(failed.admitted.finalizeRemediation(failed.task, { spawned: false, exited: false, cleanupConfirmed: true }), /disk failure/);
+	const failed = await admissionFixture({}, async task => { if (task.sddRemediation!.settle) throw new Error("disk failure"); });
+	await assert.rejects(failed.admitted.finalizeRemediation!(failed.task, { spawned: false, exited: false, cleanupConfirmed: true }), /disk failure/);
 	assert.equal(failed.calls.length, 1);
 	let replies = 0;
 	const lost = await admissionFixture({ sddAttemptSettle: async () => { replies++; throw new Error("lost"); } });
-	await lost.admitted.finalizeRemediation(lost.task, { spawned: false, exited: false, cleanupConfirmed: true });
+	await lost.admitted.finalizeRemediation!(lost.task, { spawned: false, exited: false, cleanupConfirmed: true });
 	assert.equal(replies, 2); assert.equal(lost.task.sddRemediation.settlementUncertain, true);
-	assert.equal(lost.task.sddRemediation.settle.outcome, "interrupted");
+	assert.equal(lost.task.sddRemediation.settle!.outcome, "interrupted");
 });
 test("runtime harness requires its own observed command; malformed content cannot pass", () => {
 	const s = state(); s.plan.runtimeHarness = { command: "pnpm run harness" };
 	observed(s, "pnpm test", "test"); observed(s, "git diff --check", "rollback");
 	assert.equal(remediationEvidence(s), undefined);
-	observed(s, "pnpm run harness", "harness"); assert.equal(remediationEvidence(s).runtime_harness.status, "passed");
+	observed(s, "pnpm run harness", "harness"); assert.equal(remediationEvidence(s)!.runtime_harness.status, "passed");
 	const malformed = state();
 	observeRemediationTool(malformed, { type: "tool_execution_start", toolName: "bash", toolCallId: "a", args: { command: "pnpm test" } });
 	observeRemediationTool(malformed, { type: "tool_execution_end", toolName: "bash", toolCallId: "a", isError: false, result: { content: [null], details: { remediationCommand: { toolCallId: "a", command: "pnpm test", cwd: testCwd, exitCode: 0 } } } });
@@ -158,14 +163,14 @@ test("stock local shell wrapper observes real exit zero and preserves cancellati
 	const { createBashToolDefinition } = await import("@earendil-works/pi-coding-agent");
 	const shell = remediationBash(process.cwd(), undefined, shellScope(process.cwd(), ["printf wrapper-proof", "sleep 30"]));
 	assert.deepEqual(shell.definition.parameters, createBashToolDefinition(process.cwd()).parameters);
-	const result = await shell.definition.execute("real", { command: "printf wrapper-proof" }, undefined, undefined, undefined);
+	const result = await shell.definition.execute("real", { command: "printf wrapper-proof" }, undefined, undefined, undefined as unknown as ExtensionContext);
 	const [content] = result.content;
 	assert.ok(content?.type === "text");
 	assert.equal(content.text, "wrapper-proof");
-	assert.equal(shell.result({ toolCallId: "real", details: result.details }).details.remediationCommand.exitCode, 0);
+	assert.equal(shell.result({ toolCallId: "real", details: result.details })!.details.remediationCommand.exitCode, 0);
 	const controller = new AbortController();
 	const timeout = setTimeout(() => controller.abort(), 30);
-	try { await assert.rejects(shell.definition.execute("cancel", { command: "sleep 30" }, controller.signal, undefined, undefined), /aborted/); }
+	try { await assert.rejects(shell.definition.execute("cancel", { command: "sleep 30" }, controller.signal, undefined, undefined as unknown as ExtensionContext), /aborted/); }
 	finally { clearTimeout(timeout); controller.abort(); }
 	assert.equal(shell.result({ toolCallId: "cancel" }), undefined);
 });
@@ -189,7 +194,7 @@ test("history pruning retains admitted unsettled and uncertain task payloads", a
 	await saveTask(dir, { id: "settled-blocked", agent: "sdd-remediate", status: "failed", createdAt: 3, sddRemediation: { settlement: { state: "blocked", reason: "maintainer_decision" } } } as unknown as TaskRecord, emptyThread());
 	await pruneHistory(dir, 0);
 	const stored = await loadHistory(dir);
-	assert.equal(stored.length, 1); assert.equal(stored[0].task.sddRemediation.settle.requestId, "exact");
+	assert.equal(stored.length, 1); assert.equal(stored[0].task.sddRemediation!.settle!.requestId, "exact");
 	assert.ok(!stored.some(entry => entry.task.id === "settled-blocked"), "a known blocked settlement is prunable like any terminal task");
 });
 
@@ -206,40 +211,40 @@ test("settlement is single-finalization and cannot pass drifted failed-evidence 
 	observed(task.sddRemediation, "pnpm test", "a"); observed(task.sddRemediation, "git diff --check", "b");
 	task.sddRemediation.failedEvidenceRevision = `sha256:${"b".repeat(64)}`;
 	const facts = { spawned: true, exited: true, cleanupConfirmed: true };
-	await admitted.finalizeRemediation(task, facts); await admitted.finalizeRemediation(task, facts);
+	await admitted.finalizeRemediation!(task, facts); await admitted.finalizeRemediation!(task, facts);
 	assert.equal(calls.length, 2); assert.equal(calls[1][1].outcome, "failed");
 	assert.equal(calls[1][1].remediatesEvidenceRevision, revision);
 });
 test("native refusal or uncertain settlement is not a completed managed correction", async () => {
 	const { admitted, task } = await admissionFixture({ sddAttemptSettle: async () => ({ state: "blocked", reason: "budget" }) });
 	task.status = "completed";
-	await admitted.finalizeRemediation(task, { spawned: true, exited: true, cleanupConfirmed: true });
+	await admitted.finalizeRemediation!(task, { spawned: true, exited: true, cleanupConfirmed: true });
 	assert.equal(task.status, "failed");
-	assert.match(task.error, /settlement/);
+	assert.match(task.error!, /settlement/);
 });
 test("a received blocked settlement names the block; a lost settlement reply retains unresolved history", async () => {
 	const known = await admissionFixture({ sddAttemptSettle: async () => ({ state: "blocked", reason: "maintainer_decision" }) });
 	known.task.status = "completed";
-	await known.admitted.finalizeRemediation(known.task, { spawned: true, exited: true, cleanupConfirmed: true });
+	await known.admitted.finalizeRemediation!(known.task, { spawned: true, exited: true, cleanupConfirmed: true });
 	assert.equal(known.task.status, "failed");
-	assert.match(known.task.error, /blocked\(maintainer_decision\)/);
-	assert.doesNotMatch(known.task.error, /unresolved/);
+	assert.match(known.task.error!, /blocked\(maintainer_decision\)/);
+	assert.doesNotMatch(known.task.error!, /unresolved/);
 	assert.equal(remediationUnresolved(known.task), false);
 
 	const unspecified = await admissionFixture({ sddAttemptSettle: async () => ({ state: "blocked" }) });
 	unspecified.task.status = "completed";
-	await unspecified.admitted.finalizeRemediation(unspecified.task, { spawned: true, exited: true, cleanupConfirmed: true });
+	await unspecified.admitted.finalizeRemediation!(unspecified.task, { spawned: true, exited: true, cleanupConfirmed: true });
 	assert.equal(unspecified.task.status, "failed");
-	assert.match(unspecified.task.error, /blocked\(unspecified\)/, "a settlement without a reason is distinguishable from one whose reason is literally blocked");
-	assert.doesNotMatch(unspecified.task.error, /unresolved/);
+	assert.match(unspecified.task.error!, /blocked\(unspecified\)/, "a settlement without a reason is distinguishable from one whose reason is literally blocked");
+	assert.doesNotMatch(unspecified.task.error!, /unresolved/);
 
 	let attempts = 0;
 	const uncertain = await admissionFixture({ sddAttemptSettle: async () => { attempts++; throw new Error("lost reply"); } });
 	uncertain.task.status = "completed";
-	await uncertain.admitted.finalizeRemediation(uncertain.task, { spawned: true, exited: true, cleanupConfirmed: true });
+	await uncertain.admitted.finalizeRemediation!(uncertain.task, { spawned: true, exited: true, cleanupConfirmed: true });
 	assert.equal(attempts, 2);
 	assert.equal(uncertain.task.status, "failed");
-	assert.match(uncertain.task.error, /unresolved/);
+	assert.match(uncertain.task.error!, /unresolved/);
 	assert.equal(remediationUnresolved(uncertain.task), true);
 });
 test("remediationUnresolved treats a received settlement as terminal, regardless of state, unless uncertain", () => {
@@ -305,16 +310,16 @@ test("R1 confirms exact canonical paths and commands; data, denial and symlinks 
 
 
 test("R3/R4 acquire request is durable before mutation and token before actor admission", async () => {
-	const records = [], calls = [];
-	const { admitted } = await admissionFixture({ sddAttemptAcquire: async request => {
-		assert.deepEqual(records.at(-1).sddRemediation.acquire, request);
-		assert.equal(records.at(-1).sddRemediation.token, undefined);
+	const records: TaskRecord[] = [], calls: NativeSddAcquireRequest[] = [];
+	const { admitted } = await admissionFixture({ sddAttemptAcquire: async (request: NativeSddAcquireRequest) => {
+		assert.deepEqual(records.at(-1)!.sddRemediation!.acquire, request);
+		assert.equal(records.at(-1)!.sddRemediation!.token, undefined);
 		calls.push(structuredClone(request)); if (calls.length === 1) throw new Error("lost acquire reply");
 		return { state: "proceed", token: "native-returned" };
 	} }, async task => { records.push(structuredClone(task)); });
 	assert.equal(calls.length, 2); assert.deepEqual(calls[0], calls[1]);
-	assert.equal(records.at(-1).sddRemediation.token, "native-returned");
-	assert.equal(admitted.sddRemediation.token, "native-returned");
+	assert.equal(records.at(-1)!.sddRemediation!.token, "native-returned");
+	assert.equal(admitted.sddRemediation!.token, "native-returned");
 });
 test("R3/R4 acquire persistence failure refuses before native mutation", async () => {
 	let mutations = 0;
@@ -334,7 +339,7 @@ test("R1 child invokes only the exact confirmed command/cwd/count with distinct 
 	const { remediationBash } = await import("../extensions/jero-agents.ts");
 	let executions = 0;
 	const shell = remediationBash(testCwd, { exec: async () => { executions++; return { exitCode: 0 }; } }, shellScope(testCwd, ["pnpm test", "pnpm test"]));
-	const execute = (id: string, command: string, cwd = testCwd) => shell.definition.execute(id, { command }, undefined, undefined, cwd === testCwd ? undefined : { cwd } as unknown as ExtensionContext);
+	const execute = (id: string, command: string, cwd = testCwd) => shell.definition.execute(id, { command }, undefined, undefined, (cwd === testCwd ? undefined : { cwd }) as unknown as ExtensionContext);
 	await assert.rejects(execute("outside", "pnpm test; touch outside"), /authorization/);
 	await assert.rejects(execute("cwd", "pnpm test", "/other"), /authorization/);
 	assert.equal(executions, 0);
@@ -344,19 +349,19 @@ test("R1 child invokes only the exact confirmed command/cwd/count with distinct 
 });
 test("R3/R4 known non-mutating acquire failures retain retryable blocked history while ambiguity remains unresolved", async () => {
 	for (const error of [new TypeError("invalid acquire request"), new NativeReviewCliError(NATIVE_REVIEW_ERROR_CODE.UNAVAILABLE, NATIVE_REVIEW_OPERATION.SDD_ATTEMPT, true, false, "native launch unavailable")]) {
-		let calls = 0; const retained = [];
+		let calls = 0; const retained: TaskRecord[] = [];
 		await assert.rejects(admissionFixture({ sddAttemptAcquire: async () => { calls++; throw error; } }, async task => { retained.push(structuredClone(task)); }), error);
 		assert.equal(calls, 1);
-		assert.deepEqual(retained.at(-1).sddRemediation.acquireResult, { state: "blocked" });
-		assert.equal(remediationUnresolved(retained.at(-1)), false);
+		assert.deepEqual(retained.at(-1)!.sddRemediation!.acquireResult, { state: "blocked" });
+		assert.equal(remediationUnresolved(retained.at(-1)!), false);
 	}
-	let calls = 0; const retained = [];
+	let calls = 0; const retained: TaskRecord[] = [];
 	await assert.rejects(admissionFixture({ sddAttemptAcquire: async () => { calls++; throw new Error("lost reply"); } }, async task => { retained.push(structuredClone(task)); }), /Unknown acquire/);
-	assert.equal(calls, 2); assert.equal(retained.at(-1).sddRemediation.acquireUncertain, true);
-	assert.equal(remediationUnresolved(retained.at(-1)), true);
-	assert.deepEqual(retained[0].sddRemediation.acquire, retained.at(-1).sddRemediation.acquire);
+	assert.equal(calls, 2); assert.equal(retained.at(-1)!.sddRemediation!.acquireUncertain, true);
+	assert.equal(remediationUnresolved(retained.at(-1)!), true);
+	assert.deepEqual(retained[0].sddRemediation!.acquire, retained.at(-1)!.sddRemediation!.acquire);
 	calls = 0;
-	await assert.rejects(admissionFixture({ sddAttemptAcquire: async () => { calls++; return { state: "proceed", token: "returned" }; } }, async task => { if (task.sddRemediation.token) throw new Error("token disk failure"); }), /token disk failure/);
+	await assert.rejects(admissionFixture({ sddAttemptAcquire: async () => { calls++; return { state: "proceed", token: "returned" }; } }, async task => { if (task.sddRemediation!.token) throw new Error("token disk failure"); }), /token disk failure/);
 	assert.equal(calls, 1);
 });
 
@@ -364,9 +369,9 @@ test("uncertain acquire reconciliation terminalizes blocked/complete exact repla
 	const { reconcileManagedRemediation } = await import("../extensions/jero-agents.ts");
 	for (const nativeState of ["blocked", "complete"] as const) {
 		const acquire = { workspaceRoot: testCwd, changeName: "fix", requestId: `reconcile-${nativeState}`, workUnit: "fix", evidenceGoal: "Observed correction", remediatesEvidenceRevision: revision };
-		const task = { id: nativeState, agent: "sdd-remediate", cwd: testCwd, status: "failed", createdAt: 1, sddRemediation: { acquire, acquireUncertain: true } } as unknown as TaskRecord;
-		const calls = [], saved = [];
-		const result = await reconcileManagedRemediation(task, { sddAttemptAcquire: async input => { calls.push(structuredClone(input)); return { state: nativeState }; } } as unknown as NativeReviewCli, async current => { saved.push(structuredClone(current)); });
+		const task = { id: nativeState, agent: "sdd-remediate", cwd: testCwd, status: "failed", createdAt: 1, sddRemediation: { acquire, acquireUncertain: true } } as unknown as TaskRecord & { sddRemediation: RemediationTaskState };
+		const calls: NativeSddAcquireRequest[] = [], saved: TaskRecord[] = [];
+		const result = await reconcileManagedRemediation(task, { sddAttemptAcquire: async (input: NativeSddAcquireRequest) => { calls.push(structuredClone(input)); return { state: nativeState }; } } as unknown as NativeReviewCli, async current => { saved.push(structuredClone(current)); });
 		assert.deepEqual(calls, [acquire]);
 		assert.equal(result.acquireState, nativeState);
 		assert.equal(task.sddRemediation.acquireUncertain, undefined);
@@ -379,13 +384,13 @@ test("uncertain acquire reconciliation terminalizes blocked/complete exact repla
 test("recovered proceed is durably settled as interrupted without actor replay", async () => {
 	const { reconcileManagedRemediation } = await import("../extensions/jero-agents.ts");
 	const acquire = { workspaceRoot: testCwd, changeName: "fix", requestId: "reconcile-proceed", workUnit: "fix", evidenceGoal: "Observed correction", remediatesEvidenceRevision: revision, untrackedScope: "exclude" as const };
-	const task = { id: "proceed", agent: "sdd-remediate", cwd: testCwd, status: "failed", createdAt: 1, sddRemediation: { acquire, acquireUncertain: true } } as unknown as TaskRecord;
-	const saved = [], calls = [];
+	const task = { id: "proceed", agent: "sdd-remediate", cwd: testCwd, status: "failed", createdAt: 1, sddRemediation: { acquire, acquireUncertain: true } } as unknown as TaskRecord & { sddRemediation: RemediationTaskState };
+	const saved: TaskRecord[] = [], calls: NativeRemediationCall[] = [];
 	const result = await reconcileManagedRemediation(task, {
-		sddAttemptAcquire: async input => { calls.push(["acquire", structuredClone(input)]); return { state: "proceed", token: "secret-token" }; },
-		sddAttemptSettle: async input => {
+		sddAttemptAcquire: async (input: NativeSddAcquireRequest) => { calls.push(["acquire", structuredClone(input)]); return { state: "proceed", token: "secret-token" }; },
+		sddAttemptSettle: async (input: NativeSddSettleRequest) => {
 			calls.push(["settle", structuredClone(input)]);
-			assert.deepEqual(saved.at(-1).sddRemediation.settle, input, "settle intent is durable before mutation");
+			assert.deepEqual(saved.at(-1)!.sddRemediation!.settle, input, "settle intent is durable before mutation");
 			return { state: "complete" };
 		},
 	} as unknown as NativeReviewCli, async current => { saved.push(structuredClone(current)); });
@@ -393,10 +398,10 @@ test("recovered proceed is durably settled as interrupted without actor replay",
 	assert.deepEqual(calls[0], ["acquire", acquire]);
 	assert.equal(calls[1][1].outcome, "interrupted");
 	assert.equal(calls[1][1].token, "secret-token");
-	assert.match(calls[1][1].requestId, /^reconcile-[a-f0-9]{32}$/);
+	assert.match(calls[1][1].requestId!, /^reconcile-[a-f0-9]{32}$/);
 	assert.equal(calls[1][1].remediatesEvidenceRevision, revision);
 	assert.equal(calls[1][1].untrackedScope, "exclude");
-	assert.ok(saved.filter(snapshot => snapshot.sddRemediation.token).every(snapshot => snapshot.sddRemediation.settle), "no durable checkpoint may retain recovered authority without its compensating settle request");
+	assert.ok(saved.filter(snapshot => snapshot.sddRemediation!.token).every(snapshot => snapshot.sddRemediation!.settle), "no durable checkpoint may retain recovered authority without its compensating settle request");
 	assert.equal(task.sddRemediation.actorClaimed, undefined);
 	assert.equal(task.sddRemediation.acquireUncertain, undefined);
 	assert.equal(task.sddRemediation.settlementUncertain, undefined);
@@ -407,25 +412,25 @@ test("recovered proceed is durably settled as interrupted without actor replay",
 test("reconciliation retries only exact pending mutations and preserves uncertainty", async () => {
 	const { reconcileManagedRemediation } = await import("../extensions/jero-agents.ts");
 	const acquire = { workspaceRoot: testCwd, changeName: "fix", requestId: "reconcile-lost", workUnit: "fix", evidenceGoal: "Observed correction", remediatesEvidenceRevision: revision };
-	const acquireTask = { id: "lost-acquire", agent: "sdd-remediate", cwd: testCwd, status: "failed", createdAt: 1, sddRemediation: { acquire, acquireUncertain: true } } as unknown as TaskRecord;
+	const acquireTask = { id: "lost-acquire", agent: "sdd-remediate", cwd: testCwd, status: "failed", createdAt: 1, sddRemediation: { acquire, acquireUncertain: true } } as unknown as TaskRecord & { sddRemediation: RemediationTaskState };
 	let acquireCalls = 0;
-	await assert.rejects(reconcileManagedRemediation(acquireTask, { sddAttemptAcquire: async input => { acquireCalls++; assert.deepEqual(input, acquire); throw new Error("lost reply"); } } as unknown as NativeReviewCli, async () => {}), /acquire.*unresolved/i);
+	await assert.rejects(reconcileManagedRemediation(acquireTask, { sddAttemptAcquire: async (input: NativeSddAcquireRequest) => { acquireCalls++; assert.deepEqual(input, acquire); throw new Error("lost reply"); } } as unknown as NativeReviewCli, async () => {}), /acquire.*unresolved/i);
 	assert.equal(acquireCalls, 2); assert.equal(acquireTask.sddRemediation.acquireUncertain, true);
 
 	const settle = { workspaceRoot: testCwd, changeName: "fix", token: "retained", requestId: "settle-exact", outcome: "interrupted" as const, diagnosis: "Interrupted", harnessDisposition: "invalidated" as const, cleanupEvidence: "None", processEvidence: "None", remediatesEvidenceRevision: revision };
-	const settleTask = { id: "lost-settle", agent: "sdd-remediate", cwd: testCwd, status: "failed", createdAt: 1, sddRemediation: { acquire, acquireResult: { state: "proceed", token: "retained" }, token: "retained", settle, settlementUncertain: true } } as unknown as TaskRecord;
-	const settleCalls = [];
-	const result = await reconcileManagedRemediation(settleTask, { sddAttemptSettle: async input => { settleCalls.push(structuredClone(input)); return { state: "blocked", reason: "already_closed" }; } } as unknown as NativeReviewCli, async () => {});
+	const settleTask = { id: "lost-settle", agent: "sdd-remediate", cwd: testCwd, status: "failed", createdAt: 1, sddRemediation: { acquire, acquireResult: { state: "proceed", token: "retained" }, token: "retained", settle, settlementUncertain: true } } as unknown as TaskRecord & { sddRemediation: RemediationTaskState };
+	const settleCalls: NativeSddSettleRequest[] = [];
+	const result = await reconcileManagedRemediation(settleTask, { sddAttemptSettle: async (input: NativeSddSettleRequest) => { settleCalls.push(structuredClone(input)); return { state: "blocked", reason: "already_closed" }; } } as unknown as NativeReviewCli, async () => {});
 	assert.deepEqual(settleCalls, [settle]); assert.equal(result.settlementState, "blocked");
 	assert.equal(settleTask.sddRemediation.settlementUncertain, undefined);
 	assert.equal(remediationUnresolved(settleTask), false);
 
-	const ambiguousSettle = { id: "ambiguous-settle", agent: "sdd-remediate", cwd: testCwd, status: "failed", createdAt: 1, sddRemediation: { acquire, acquireResult: { state: "proceed", token: "retained" }, token: "retained", settle, settlementUncertain: true } } as unknown as TaskRecord;
-	let ambiguousCalls = 0; const ambiguousSaved = [];
-	await assert.rejects(reconcileManagedRemediation(ambiguousSettle, { sddAttemptSettle: async input => { ambiguousCalls++; assert.deepEqual(input, settle); throw new Error("lost settle reply"); } } as unknown as NativeReviewCli, async current => { ambiguousSaved.push(structuredClone(current)); }), /settlement.*unresolved/i);
+	const ambiguousSettle = { id: "ambiguous-settle", agent: "sdd-remediate", cwd: testCwd, status: "failed", createdAt: 1, sddRemediation: { acquire, acquireResult: { state: "proceed", token: "retained" }, token: "retained", settle, settlementUncertain: true } } as unknown as TaskRecord & { sddRemediation: RemediationTaskState };
+	let ambiguousCalls = 0; const ambiguousSaved: TaskRecord[] = [];
+	await assert.rejects(reconcileManagedRemediation(ambiguousSettle, { sddAttemptSettle: async (input: NativeSddSettleRequest) => { ambiguousCalls++; assert.deepEqual(input, settle); throw new Error("lost settle reply"); } } as unknown as NativeReviewCli, async current => { ambiguousSaved.push(structuredClone(current)); }), /settlement.*unresolved/i);
 	assert.equal(ambiguousCalls, 2);
 	assert.equal(ambiguousSettle.sddRemediation.settlementUncertain, true);
-	assert.deepEqual(ambiguousSaved.at(-1).sddRemediation.settle, settle);
+	assert.deepEqual(ambiguousSaved.at(-1)!.sddRemediation!.settle, settle);
 	assert.equal(remediationUnresolved(ambiguousSettle), true);
 
 	const actorTask = { id: "actor", agent: "sdd-remediate", cwd: testCwd, status: "failed", createdAt: 1, sddRemediation: { acquire, acquireUncertain: true, actorClaimed: true } } as unknown as TaskRecord;

@@ -15,8 +15,8 @@ import { isJeroLineageId } from "./store-root.ts";
 import { deriveJeroCorrectionLinesV1 } from "./snapshots.ts";
 import { jeroReceiptPathV1, createJeroReceiptEnvelopeV1 } from "./receipts.ts";
 import { projectJeroReviewStateV1, checkJeroReviewTransitionV1, isJeroOrdinaryModeV1, isJeroTerminalReviewStateV1, type JeroEscalationCause, type JeroWireReviewState } from "./transitions.ts";
-import { parseNativeCompactFinalizeInput, CompactReviewContractError, type CompactFinalizeContractInput } from "../review-compact-contract.ts";
-import type { CorrectionOutcome } from "../review-correction-lifecycle.ts";
+import { parseNativeCompactFinalizeInput, CompactReviewContractError, type CompactFinalizeContractInput } from "./review-compact-contract.ts";
+import type { CorrectionOutcome } from "./review-correction-lifecycle.ts";
 import { writeFileSync, mkdirSync, renameSync, rmSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { basename, dirname, join } from "node:path";
@@ -686,10 +686,11 @@ function finalizeAuthorizeFixV1(context: JeroAuthorityContextV1, record: JeroLin
 	if (input.correction_line_forecast === undefined) {
 		return { kind: "refused", code: "invalid-request", detail: "finalize from fix_required requires correction_line_forecast" };
 	}
-	if (!Number.isSafeInteger(input.correction_line_forecast) || input.correction_line_forecast < 1 || input.correction_line_forecast > 200) {
+	if (typeof input.correction_line_forecast !== "number" || !Number.isSafeInteger(input.correction_line_forecast) || input.correction_line_forecast < 1 || input.correction_line_forecast > 200) {
 		// 计划预报有界 1..200（与 native-review-cli :2451 对齐）。
 		return { kind: "refused", code: "invalid-request", detail: "correction_line_forecast must be an integer in 1..200" };
 	}
+	const correctionLineForecast = input.correction_line_forecast;
 	if (state.counters.fix_rounds >= 1 && isJeroOrdinaryModeV1(state.mode)) {
 		// §A.2 非法 #4：第二个修正事务保守失败。
 		return { kind: "refused", code: "second-correction-refused", detail: "ordinary permits exactly one correction transaction" };
@@ -697,7 +698,7 @@ function finalizeAuthorizeFixV1(context: JeroAuthorityContextV1, record: JeroLin
 	return runJournaledV1(context, record, "authorize-fix", input, (next) => {
 		const transition = checkJeroReviewTransitionV1(next.state, next.mode, "authorize-fix", { fixRounds: next.counters.fix_rounds, fixBatches: next.counters.fix_batches });
 		if (!transition.legal) return { kind: "refused", code: transition.reason === "second-correction-refused" ? "second-correction-refused" : "invalid-state", detail: transition.reason };
-		next.proposed_correction_lines = input.correction_line_forecast;
+		next.proposed_correction_lines = correctionLineForecast;
 		next.counters.fix_rounds += 1;
 		next.counters.fix_batches += 1;
 		next.state = "fixing";
@@ -705,7 +706,7 @@ function finalizeAuthorizeFixV1(context: JeroAuthorityContextV1, record: JeroLin
 			kind: "fix_authorized",
 			lineage_id: next.lineage_id,
 			state: projectJeroReviewStateV1(next.state),
-			proposed_correction_lines: next.proposed_correction_lines,
+			proposed_correction_lines: correctionLineForecast,
 			correction_budget: next.correction_budget ?? 0,
 		};
 	});

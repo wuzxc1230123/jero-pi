@@ -11,7 +11,7 @@ import { matchesKey } from "@earendil-works/pi-tui";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { stripAnsi } from "../lib/terminal-theme.ts";
 import { domainHashV1 } from "../lib/review-canonical.ts";
-import { canonicalHash } from "../lib/review-transaction.ts";
+import { canonicalHash } from "../lib/authority/review-transaction.ts";
 import { LEAN_MODE_ENTRY_TYPE } from "../lib/jero-ai-lean.ts";
 
 import {
@@ -723,7 +723,7 @@ export async function part1(env) {
 			pathToFileURL(join(ROOT, "extensions/jero-ai.ts")).href
 		);
 		const { CandidateViewRegistry } = await import(
-			pathToFileURL(join(ROOT, "lib/review-candidate-view.ts")).href
+			pathToFileURL(join(ROOT, "lib/authority/review-candidate-view.ts")).href
 		);
 
 		gitSync(candidateDriftCwd, "init", "-b", "main");

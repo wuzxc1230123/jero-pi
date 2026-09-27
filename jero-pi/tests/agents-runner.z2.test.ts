@@ -473,7 +473,7 @@ test("research narrowing transport keeps exact argv paths and replaces inherited
 test("runner retains remediation observations and awaits terminal settlement", async () => {
 	const h = harness({ pid: 123 });
 	let finalized: { record: TaskRecord; facts: RemediationTerminalFacts } | undefined;
-	let release: () => void;
+	let release!: () => void;
 	const gate = new Promise<void>(resolve => { release = resolve; });
 	const remediationPlan: RemediationPlan = { cwd: "/repo", commands: ["pnpm test"], runtimeHarness: { naReason: "Not applicable because the fixture has no runtime boundary." }, rollback: { boundary: "Revert fixture", command: "git diff --check" } };
 	const remediation: RemediationTaskState = { failedEvidenceRevision: `sha256:${"a".repeat(64)}`, plan: remediationPlan, pending: {}, observations: [], invalid: false, token: "opaque", acquire: { workspaceRoot: "/repo", changeName: "demo", requestId: "fixture", workUnit: "correct", evidenceGoal: "Observed correction" } };
@@ -488,7 +488,7 @@ test("runner retains remediation observations and awaits terminal settlement", a
 	await tick();
 	assert.ok(finalized);
 	assert.equal(finalized.record.sddRemediation?.observations.length, 2);
-	const prompt = h.children[0].written.find(value => value.type === "prompt").message;
+	const prompt = h.children[0].written.find(value => value.type === "prompt")!.message;
 	assert.ok(typeof prompt === "string");
 	assert.match(prompt, /pnpm test/);
 	assert.doesNotMatch(prompt, /opaque/);
@@ -501,7 +501,7 @@ test("runner retains remediation observations and awaits terminal settlement", a
 
 
 test("admitted no-PID failure settles interrupted before sending a prompt", async () => {
-	const h = harness(); let facts;
+	const h = harness(); let facts!: RemediationTerminalFacts;
 	const task = h.runner.run(request({ sddRemediation: { plan: {} } as unknown as RemediationTaskState, finalizeRemediation: async (_task, observed) => { facts = observed; } }));
 	await tick();
 	assert.equal(h.children[0].written.some(value => value.type === "prompt"), false);

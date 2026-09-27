@@ -21,7 +21,7 @@ import {
 import {
 	type ReviewLens,
 	type ReviewRoute
-} from "./review-triggers.ts";
+} from "./authority/review-triggers.ts";
 import {
 	type OrdinaryDiscoveryInput,
 	type OrdinaryEvidenceInput,
@@ -34,7 +34,7 @@ import {
 	type JudgmentDayFinalVerificationInput,
 	type JudgmentDayFixInput,
 	type JudgmentDayRejudgmentInput
-} from "./review-policy-judgment-day.ts";
+} from "./authority/review-policy-judgment-day.ts";
 
 export const REVIEW_PHASE = {
 	STARTED: "started",

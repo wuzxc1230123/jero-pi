@@ -233,7 +233,7 @@ for (const scenario of ["same", "changed", "sibling-root", "nested-root", "faile
 		});
 		assert.deepEqual(acknowledgementRequests, [{ cwd, argumentTokens: arguments_.map(({ token }) => token), binding }]);
 		if (scenario !== "unknown") assert.deepEqual(statusRequests, [{ cwd, lineageId }], "ACK reports burn without a later STATUS");
-		assert.deepEqual(sent, [], "no earlier reminder can mask the post-burn regression");
+		assert.deepEqual(sent, [] as typeof sent, "no earlier reminder can mask the post-burn regression");
 
 		if (scenario === "shutdown") { await handlers.get("session_shutdown")!({}, session); await handlers.get("session_start")!({}, session); }
 		// shutdown 后的 session_start 会重新协商一次宿主 STATUS（缓存随
@@ -620,7 +620,7 @@ for (const ownsMutation of [false, true]) {
 
 			await sessionStart!({}, session);
 			assert.deepEqual(statusRequests, [{ cwd, agent: "pi" }], "startup records targetA separately");
-			assert.deepEqual(sent, []);
+			assert.deepEqual(sent, [] as typeof sent);
 			// Like host event delivery, an event without a subscriber is a no-op.
 			await toolResult?.({
 				type: "tool_result", toolName: "read", toolCallId: "777-read",

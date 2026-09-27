@@ -14,7 +14,7 @@ import {
 } from "../lib/sdd-preflight.ts";
 import { readSavedModelConfigAsync as readModelRoutingAuthorityAsync } from "../lib/model-routing-authority.ts";
 import { parseSddStatusCommandArgs, renderNativeSddPhasePrompt, resolveSddStatus } from "../lib/sdd-status.ts";
-import { CandidateViewRegistry, injectReviewCandidateView } from "../lib/review-candidate-view.ts";
+import { CandidateViewRegistry, injectReviewCandidateView } from "../lib/authority/review-candidate-view.ts";
 import { registerJeroReviewTools } from "../lib/jero-ai-review-tools.ts";
 import {
 	decodeNativeSddStatusV2, NATIVE_REVIEW_ERROR_CODE, NATIVE_REVIEW_MODE_OPERATION,
@@ -397,7 +397,7 @@ function createJeroAiExtensionForTesting(
 			if (status === undefined || !reminderState.active || epoch !== reminderState.epoch || pendingReviewConsentSessionKey(ctx, pendingReviewConsentFallbackKey) !== sessionKey) return;
 			// 另一个并发的结束或 ACK 可能已消耗该前缀。
 			if (!pendingReviewMutation(ctx.sessionManager, root, mutation)) return;
-			if (status.nextTransition?.kind !== "execute" || status.nextTransition.execute.operation !== "review.start") return;
+			if (status.nextTransition?.kind !== "execute" || status.nextTransition.execute?.operation !== "review.start") return;
 			const targetIdentity = status.targetIdentity;
 			pi.sendMessage(
 				{

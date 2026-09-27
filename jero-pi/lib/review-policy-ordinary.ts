@@ -14,12 +14,12 @@ import {
 	type ReviewStateV1,
 	type ValidationEvidenceV1,
 	type FollowUpObservationV1,
-} from "./review-transaction.ts";
+} from "./authority/review-transaction.ts";
 import {
 	FULL_4R_LENSES,
 	REVIEW_ROUTE,
 	type ReviewLens,
-} from "./review-triggers.ts";
+} from "./authority/review-triggers.ts";
 
 export { RESOLUTION_OUTCOME };
 

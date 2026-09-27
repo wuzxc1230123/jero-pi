@@ -200,7 +200,7 @@ test("rail rejects removed or replaced parts before cached geometry is prepared 
 	assert.equal(scroll.handleMouse(click())?.handled, true, "healthy cached geometry still dispatches");
 	assert.equal(originalClicks, 1);
 
-	mounted.dispose();
+	mounted.dispose!();
 	assert.equal(scroll.handleMouse(click()), undefined, "removed parts are inert before the next prepare");
 	assert.equal(originalClicks, 1);
 

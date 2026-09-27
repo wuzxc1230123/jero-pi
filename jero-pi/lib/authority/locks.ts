@@ -58,7 +58,7 @@ export class JeroAuthorityLocksV1 {
 		const inspection = this.#lock.inspect();
 		if (inspection.status === "absent") return { status: "released" };
 		if (inspection.status === "ambiguous") return { status: "ambiguous" };
-		return { status: conservativeOwnerDeathProofV1(inspection.owner) ? "released" : "owned", owner: inspection.owner };
+		return { status: inspection.owner !== undefined && conservativeOwnerDeathProofV1(inspection.owner) ? "released" : "owned", owner: inspection.owner };
 	}
 
 	/** 隔离过期（所有者被证明已死）的锁；令牌围栏由被包装的类拥有。 */

@@ -212,7 +212,7 @@ test("selected native v2 failures fail closed without consulting the local resol
 		() => (__testing as unknown as {
 			resolveSelectedNativeSddChangeStartup(
 				serialized: unknown, cwd: string, agentName: string,
-				native: { sddStatus?: () => Promise<unknown> }, localResolver: () => typeof localStatus,
+				native?: { sddStatus?: () => Promise<unknown> }, localResolver?: () => typeof localStatus,
 			): Promise<unknown>;
 		}).resolveSelectedNativeSddChangeStartup(syncSerialized, root, "sdd-sync", undefined, () => ({ ...localStatus, changeName: "beta" })),
 		/mismatched status/i,

@@ -25,7 +25,7 @@ import { jeroSddContinueV1, type JeroSddContinueResultV1 } from "./sdd-continue.
 import { acquireJeroSddAttemptV1, jeroSddAttemptLedgerRevisionV1, settleJeroSddAttemptV1, type JeroSddAcquireInputV1, type JeroSddAttemptResultV1, type JeroSddSettleInputV1 } from "./sdd-attempt.ts";
 import { abandonJeroLineageV1, jeroAbandonAuthorizationV1, reclaimJeroAuthorityV1, reconcileJeroAuthorityV1, recoverJeroLineageV1, type JeroAbandonInputV1, type JeroMaintenanceResultV1, type JeroReconcileInputV1, type JeroRecoverInputV1 } from "./maintenance.ts";
 import type { JeroReviewModeValue } from "./protocol.ts";
-import type { ReviewAssessmentV1 } from "../review-risk-assessment.ts";
+import type { ReviewAssessmentV1 } from "./review-risk-assessment.ts";
 
 // 面向扩展的唯一外观，叠在已解析的 jero 权威存储之上（设计 §5.1.1
 // 表）：`authority.review.start/status/finalize/validate/acknowledge`、

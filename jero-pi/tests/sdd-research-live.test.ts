@@ -7,7 +7,7 @@ import { dirname, isAbsolute, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { AgentRunner } from "../lib/agents-runner.ts";
+import { AgentRunner, type ChildLike } from "../lib/agents-runner.ts";
 import { TaskStore } from "../lib/agents-protocol.ts";
 import { researchAgent, RESEARCH_CHILD_TOOLS_ENV } from "../lib/sdd-research-capabilities.ts";
 
@@ -144,7 +144,7 @@ export default function liveProbe(pi: ExtensionAPI): void {
 					const child = spawn(command, args, { ...options, stdio: ["pipe", "pipe", "pipe"] });
 					record({ event: "spawn", pid: child.pid, candidate });
 					child.on("exit", (code, signal) => record({ event: "child_exit", pid: child.pid, code, signal }));
-					return child;
+					return child as unknown as ChildLike;
 				},
 			}, { askUser: async () => ({ cancelled: true }) });
 			const timer = setTimeout(() => runner.cancelAll(), 145_000);

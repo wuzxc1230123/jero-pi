@@ -5,8 +5,8 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import test from "node:test";
 import { resolveRepositoryAuthorityV1, reviewGitEnvironment, setReviewRepositoryIdentityRetryHookForTesting } from "../lib/review-repository.ts";
-import { REVIEW_MODE, ReviewTransactionStore, createReviewState, setReviewMutationLockPlatformForTesting } from "../lib/review-transaction.ts";
-import { REVIEW_LENS, REVIEW_ROUTE } from "../lib/review-triggers.ts";
+import { REVIEW_MODE, ReviewTransactionStore, createReviewState, setReviewMutationLockPlatformForTesting } from "../lib/authority/review-transaction.ts";
+import { REVIEW_LENS, REVIEW_ROUTE } from "../lib/authority/review-triggers.ts";
 import { qualifiedReviewLockPlatform, testSnapshot } from "./review-test-fixtures.ts";
 
 setReviewMutationLockPlatformForTesting(qualifiedReviewLockPlatform());

@@ -4,7 +4,7 @@ import { mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import test from "node:test";
+import test, { type TestContext } from "node:test";
 
 // P6 — restart parity for the provider-relay capture lane.
 //
@@ -41,7 +41,7 @@ const LINEAGE = "relay-lineage";
 const LENS = "review-reliability";
 const ORDER = 0;
 
-function bindingArguments(lineageId, lens, order) {
+function bindingArguments(lineageId: string, lens: string, order: number) {
 	return [
 		{ name: "lineage", value: lineageId, token: `--lineage=${lineageId}` },
 		{ name: "expected-revision", value: SHA, token: `--expected-revision=${SHA}` },
@@ -53,7 +53,7 @@ function bindingArguments(lineageId, lens, order) {
 	];
 }
 
-function providerSubmission(lineageId, lens, order) {
+function providerSubmission(lineageId: string, lens: string, order: number) {
 	const bindingTokens = bindingArguments(lineageId, lens, order).map((a) => a.token);
 	return {
 		operationToken: "capture-result",
@@ -62,7 +62,7 @@ function providerSubmission(lineageId, lens, order) {
 	};
 }
 
-function relayCollectInput(lineageId, lens, order) {
+function relayCollectInput(lineageId: string, lens: string, order: number) {
 	return {
 		name: "reviewer_result",
 		schema: "https://jero-ai.dev/schema/review/reviewer/v1",
@@ -91,7 +91,7 @@ function relayCollectInput(lineageId, lens, order) {
 	};
 }
 
-function rawNextTransition(inputs) {
+function rawNextTransition(inputs: ReturnType<typeof relayCollectInput>[]) {
 	return inputs.length === 0 ? undefined : {
 		kind: "collect",
 		reason_code: "reviewer_results_required",
@@ -105,7 +105,7 @@ function rawNextTransition(inputs) {
 	};
 }
 
-function collectStatus(lineageId, inputs) {
+function collectStatus(lineageId: string, inputs: ReturnType<typeof relayCollectInput>[]) {
 	const transition = rawNextTransition(inputs);
 	return {
 		contract: "jero-ai.review-integration/v2",
@@ -131,7 +131,7 @@ function collectStatus(lineageId, inputs) {
 	};
 }
 
-function repository(t) {
+function repository(t: TestContext) {
 	const cwd = realpathSync(mkdtempSync(join(tmpdir(), "gentle-pi-relay-restart-")));
 	t.after(() => rmSync(cwd, { recursive: true, force: true }));
 	execFileSync("git", ["init", "-b", "main"], { cwd });
@@ -243,7 +243,7 @@ await writeFile(outFile, JSON.stringify({ result, inspectResult, captureBinding,
 `;
 }
 
-function runWorker(t, cwd, statuses, mode) {
+function runWorker(t: TestContext, cwd: string, statuses: unknown[], mode: string) {
 	const scratch = realpathSync(mkdtempSync(join(tmpdir(), "gentle-pi-relay-restart-run-")));
 	t.after(() => rmSync(scratch, { recursive: true, force: true }));
 	const statusFile = join(scratch, "statuses.json");
@@ -256,7 +256,7 @@ function runWorker(t, cwd, statuses, mode) {
 	return JSON.parse(readFileSync(outFile, "utf8"));
 }
 
-function inspectCollectBinding(inspectResult) {
+function inspectCollectBinding(inspectResult: { collectBindings?: Array<{ collectBinding?: string }> } | undefined) {
 	const bindings = inspectResult?.collectBindings;
 	if (!Array.isArray(bindings) || bindings.length !== 1) return undefined;
 	return typeof bindings[0]?.collectBinding === "string" ? bindings[0].collectBinding : undefined;
@@ -269,7 +269,7 @@ const CONVERGED = collectStatus(LINEAGE, []);
 // unachievable — no collect inputs, one withdraw binding per declared slot.
 // Built in the same plain-object style as collectStatus: typed fields for the
 // controller, raw fields for the envelope passthrough.
-function unachievableStopStatus(lineageId, lens, order) {
+function unachievableStopStatus(lineageId: string, lens: string, order: number) {
 	const subjectHash = `sha256:${String(order).repeat(64)}`;
 	const repositoryContext = `rctx1_${"e".repeat(64)}`;
 	const withdrawArguments = [
@@ -450,7 +450,7 @@ test("every provider-owned binding drift forbids a capture after restart", async
 	assert.equal(failure.result.outcome, "pi-host-relay-transport-failure");
 	const observedBinding = failure.captureBinding;
 	const baseInput = relayCollectInput(LINEAGE, LENS, ORDER);
-	const driftArgument = (name, value, token) => {
+	const driftArgument = (name: string, value: string, token: string) => {
 		const input = structuredClone(baseInput);
 		const argument = input.arguments.find((candidate) => candidate.name === name);
 		assert.ok(argument !== undefined);

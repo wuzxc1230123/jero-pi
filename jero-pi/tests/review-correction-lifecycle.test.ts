@@ -6,7 +6,7 @@ import {
 	CorrectionOutcomeError,
 	assertDistinctCorrectionEvidence,
 	resolveCorrectionStep,
-} from "../lib/review-correction-lifecycle.ts";
+} from "../lib/authority/review-correction-lifecycle.ts";
 
 // The provider owns the evidence directory and the budget ledger. Pi's job is
 // narrower and entirely decidable from data: given a status and one captured
@@ -95,7 +95,7 @@ test("verification_failed carries the prior identity as supersedes and demands a
 test("verification_failed never consumes budget even when lines were already charged", () => {
 	const charged = { ...STATUS, changedLinesCharged: 40 };
 	// verification_failed 固定产出 recapture-required；显式窄类型让下方字段访问合法。
-	const step = resolveCorrectionStep(charged, evidence("verification_failed")) as import("../lib/review-correction-lifecycle.ts").RecaptureRequiredStep;
+	const step = resolveCorrectionStep(charged, evidence("verification_failed")) as import("../lib/authority/review-correction-lifecycle.ts").RecaptureRequiredStep;
 
 	// The invariant is about what THIS outcome adds, not about resetting prior
 	// accounting: a failed verification must not move the needle at all.

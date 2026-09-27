@@ -8,15 +8,15 @@ import { type ExtensionContext } from "@earendil-works/pi-coding-agent";
 import {
 	canonicalHash, createReviewState, JOURNAL_STATUS, REVIEW_OPERATION, type ReviewReducerInput,
 	ReviewTransactionStore, type StartOperationResultV1
-} from "./review-transaction.ts";
+} from "./authority/review-transaction.ts";
 import { captureReviewSnapshot, REVIEW_MODE } from "./review-snapshot.ts";
-import { CandidateViewError, CandidateViewRegistry, resolveCanonicalCandidateBase } from "./review-candidate-view.ts";
+import { CandidateViewError, CandidateViewRegistry, resolveCanonicalCandidateBase } from "./authority/review-candidate-view.ts";
 import {
 	isCanonicalProcessString, type NativeIntendedUntrackedSelectionSubmission,
 	type NativeReviewAcknowledgeApprovedOutcome, type NativeReviewCli,
 	NativeReviewConsentRequiredError, nativeReviewRecoverAuthorization, type NativeStartResult
 } from "./authority/client-contract.ts";
-import { NATIVE_REVIEW_OUTCOME } from "./review-risk-assessment.ts";
+import { NATIVE_REVIEW_OUTCOME } from "./authority/review-risk-assessment.ts";
 import { assertReviewApprovedAcknowledgementExecuteV1, type ReviewStatusV3 } from "./authority/wire-contract.ts";
 import { GRAPH_V1_ORDINARY_READ_ONLY } from "./jero-ai-package-assets.ts";
 import { recordNativeReviewOutcome, resolveReviewAssessmentPlan } from "./jero-ai-rdd-status.ts";
@@ -311,7 +311,7 @@ export async function executeReviewControllerOperation(
 			&& candidate.authority?.lineageId === input.predecessorLineage
 			&& candidate.authority?.revision === input.expectedPredecessorRevision
 			&& candidate.targetIdentity === status.targetIdentity;
-		if (status.action !== "recover" || status.actionDisposition === undefined || status.authority?.lineageId !== input.predecessorLineage || status.authority.revision !== input.expectedPredecessorRevision || !isCanonicalProcessString(status.targetIdentity)) {
+		if (status.action !== "recover" || status.actionDisposition === undefined || status.authority?.lineageId !== input.predecessorLineage || status.authority?.revision !== input.expectedPredecessorRevision || !isCanonicalProcessString(status.targetIdentity)) {
 			return { operation: parameters.operation, status: "blocked", outcome: "native-recovery-status-mismatch", mutation_performed: false, mutation_outcome: "none", result: status.raw, next_action: "follow-provider-target-status" };
 		}
 		if (input.disposition !== status.actionDisposition) {
@@ -475,10 +475,10 @@ export async function executeReviewControllerOperation(
 		// try/catch 之外运行且各自设防，因此清理失败被
 		// 报告为延迟清理，绝不会被报告为失败的确认——
 		// 那会诱使对一个已销毁操作的重放。
-		const retainedSelectionCleanup = deferredPostBurnCleanup(POST_BURN_CLEANUP.retainedSelection, () => clearRetainedNativeUntrackedSelection(retainedUntrackedSelections, defaultCwd, parameters.lineageId));
+		const retainedSelectionCleanup = deferredPostBurnCleanup(POST_BURN_CLEANUP.retainedSelection, () => clearRetainedNativeUntrackedSelection(retainedUntrackedSelections, defaultCwd, parameters.lineageId!));
 		// 注册表负责在移除前恢复其 0555 视图的
 		// 可写性；终态 approved 清理会保留 lineage 投影。
-		const candidateViewCleanup = deferredPostBurnCleanup(POST_BURN_CLEANUP.candidateView, () => candidateViews?.cleanupTerminal(parameters.lineageId, "approved", defaultCwd));
+		const candidateViewCleanup = deferredPostBurnCleanup(POST_BURN_CLEANUP.candidateView, () => candidateViews?.cleanupTerminal(parameters.lineageId!, "approved", defaultCwd));
 		// `closed` 在此从不自动派生或记录——
 		// 想要走上该路径的父会话，会在其对这一候选的下一次
 		// assess 调用中显式传入 nativeReviewOutcome: "closed"。
@@ -937,7 +937,7 @@ export async function executeReviewControllerOperation(
 			throw new Error(GRAPH_V1_ORDINARY_READ_ONLY);
 		}
 		const result = store.runReducerOperation({
-			lineageId: parameters.lineageId,
+			lineageId: parameters.lineageId!,
 			transition: transitionValue,
 			idempotencyKey,
 			input: rawInput as unknown as ReviewReducerInput,
@@ -945,7 +945,7 @@ export async function executeReviewControllerOperation(
 		return {
 			operation: parameters.operation,
 			result,
-			state: store.read(parameters.lineageId),
+			state: store.read(parameters.lineageId!),
 		};
 	}
 	if (parameters.operation === REVIEW_CONTROLLER_OPERATION.STATUS) {

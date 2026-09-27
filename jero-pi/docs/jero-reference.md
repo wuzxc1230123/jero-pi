@@ -12,7 +12,7 @@ Pi 宿主（@earendil-works/pi-coding-agent ≥0.85.1，peer）
 │   jero-ai · jero-agents · jero-memory · jero-shell ·
 │   runtime-metrics · sdd-init · skill-registry · startup-banner
 ├─ 领域层 lib/（169 个文件，~48k 行）
-│   authority/（进程内评审权威，43 个文件 ~14k 行）· review-* · agents-* ·
+│   authority/（进程内评审权威，51 个文件）· review-* · agents-* ·
 │   shell-* · sdd-* · jero-ai-lean · jero-ai-context-monitor · jero-ai-bootstrap · jero-ai-sdd-guard ·
 │   jero-ai-sdd-breadcrumb · jero-ai-spec-index · memory · runtime-metrics*
 ├─ 伴生插件（dependencies 精确钉版，经 pi 清单加载）
@@ -22,7 +22,7 @@ Pi 宿主（@earendil-works/pi-coding-agent ≥0.85.1，peer）
 ```
 
 - **进程内评审权威** `lib/authority/`：13 个持久状态，15 个 wire 状态投影；不变量——透镜只跑一次、冻结发现与创世范围不变、恰一次有界纠正（预算 `min(200, ceil(原始变更行/2))`）、actor 产物（模型输出）永远是无信托数据。存储在 `.git/jero-review/`（CAS 对象 + lineage 记录 + 候选视图），随仓库走。`scripts/check-authority-boundary.mjs` 结构性强制 authority 不 import 扩展层、不做 IO/env 读取。
-- **评审域命名棘轮**（`scripts/check-review-naming.mjs` + `scripts/review-naming-baseline.json`）：评审域的三前缀是分阶段移植的化石——`authority/`（43，信任边界核心，**收敛目的地**）· `review-*`（32）· `jero-ai-review-*`（9，含 2026-09-27 记录决策的宿主侧工具注册 jero-ai-review-tools.ts）；两个外围前缀钉在基线最大值只降不升（`--update` 棘轮下移），新评审域代码进 `authority/` 或显式记录决策。`jero-authority-cli.ts` 的 SDD 投影已改为逐字段结构化重投影（不再 `as unknown as` 双盲强转）。
+- **评审域命名棘轮**（`scripts/check-review-naming.mjs` + `scripts/review-naming-baseline.json`）：评审域的三前缀是分阶段移植的化石——`authority/`（51，信任边界核心，**收敛目的地**）· `review-*`（24）· `jero-ai-review-*`（9，含 2026-09-27 记录决策的宿主侧工具注册 jero-ai-review-tools.ts）；两个外围前缀钉在基线最大值只降不升（`--update` 棘轮下移），新评审域代码进 `authority/` 或显式记录决策。**身份层三件永久宿主侧**：`review-canonical.ts`（上游 `domainHashV1` 定义点）、`review-lock.ts`、`review-repository.ts`（repository_id/authority_id 铸造点）——边界门第三条规则刻意把上游身份命名空间挡在 authority 外，authority 只消费它们铸好的身份值。`jero-authority-cli.ts` 的 SDD 投影已改为逐字段结构化重投影（不再 `as unknown as` 双盲强转）。
 - **宿主 relay** `lib/review-host-relay.ts`：渲染权威方审查员提示 → `--agent pi --materialize` → 锁定 print-mode pi 子进程在只读工作树评审 → 原始字节经 provider 提交令牌回交；任何失败都是 typed transport error，不重试、不合成。
 - **黄金向量** `tests/fixtures/review-integration/`：68 个字节钉住向量（SHA-256 由 `scripts/verify-package-files.mjs` 校验），是 authority 一致性测试的行为规范。
 
@@ -112,6 +112,6 @@ START → 同意（consent 仪式 v3，host 常任权限按 Git 规范身份授�
 ## 测试与打包门
 
 - 195 个测试文件（node:test，并发 12）+ runtime harness（真实扩展装配 × 假宿主端到端，三段场景）。
-- CI（GitHub Actions）：Ubuntu 全量测试 + 类型诊断棘轮（`scripts/types-baseline.json`）+ runtime 模块一致性（`runtime/*.mjs` 由 lib 再生成）+ 权威边界检查 + 文档清单同步门（`scripts/check-docs-manifest.mjs`，从注册点派生命令/工具/技能清单并钉住本文件的生成块）+ 评审域命名棘轮（`scripts/check-review-naming.mjs`，外围前缀只降不升）+ 断网测试门（代理黑洞 + `NODE_OFFLINE=1`）；Windows 权威探测、候选视图回归与符号链接夹具回归（`sdd-research-capabilities` / `review-candidate-view.z2`——钉住「Windows 上 rmSync 对悬空符号链接是静默 no-op，夹具须用 unlinkSync」的语义）。套件级挂起兜底：全部 `--test` 入口带 `--test-timeout=300000`。
-- 打包门 `prepack`/`prepublishOnly`：全量测试 → runtime 一致性 → 权威边界 → `verify-package-files.mjs`（当前钉 148 个必需文件 = 80 条直接断言 + 68 个字节钉住向量，另 25 条禁带路径）→ 文档清单同步门 → 评审域命名棘轮 → packed tarball 分发链校验（`test-packed-runner.mjs`，仅 publish 链）。
+- CI（GitHub Actions）：Ubuntu 全量测试 + 类型诊断棘轮（`scripts/types-baseline.json`）+ runtime 模块一致性（`runtime/*.mjs` 由 lib 再生成）+ 权威边界检查 + 测试质量棘轮（`scripts/check-test-quality.mjs`，5 条反模式只降不升，含分片互 import）+ 空 catch 卫生门（`scripts/check-empty-catch.mjs`，空块必须带注释或语句）+ 文档清单同步门（`scripts/check-docs-manifest.mjs`，从注册点派生命令/工具/技能清单并钉住本文件的生成块）+ 评审域命名棘轮（`scripts/check-review-naming.mjs`，外围前缀只降不升）+ 断网测试门（代理黑洞 + `NODE_OFFLINE=1`）；Windows 权威探测、候选视图回归与符号链接夹具回归（`sdd-research-capabilities` / `review-candidate-view.z2`——钉住「Windows 上 rmSync 对悬空符号链接是静默 no-op，夹具须用 unlinkSync」的语义）。套件级挂起兜底：全部 `--test` 入口带 `--test-timeout=300000`。
+- 打包门 `prepack`/`prepublishOnly`：全量测试 → runtime 一致性 → 权威边界 → 测试质量棘轮 → 空 catch 卫生门 → `verify-package-files.mjs`（当前钉 157 个必需文件 = 89 条直接断言 + 68 个字节钉住向量，另 25 条禁带路径）→ 文档清单同步门 → 评审域命名棘轮 → packed tarball 分发链校验（`test-packed-runner.mjs`，仅 publish 链）。
 - 供应链：9 个伴生依赖精确钉版；`pnpm-workspace.yaml` 强制发布龄期 / 信任不降级 / 无非常规子依赖来源；CI 重跑 `pnpm audit --prod --audit-level=high` 与 npm publish provenance；`/jero:doctor` 内置伴生依赖健康审计（钉版安装 + pi 清单入口解析，处置指引见 `docs/dependency-exit-plan.md`）。

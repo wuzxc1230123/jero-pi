@@ -27,7 +27,7 @@ import { listPresence, PresenceCursor, PresencePublisher, readActivity } from ".
 import { stripAnsi } from "../lib/terminal-theme.ts";
 import { fakeChild, type FakeChild } from "./agents-fake-child.ts";
 import { AgentRunner } from "../lib/agents-runner.ts";
-import { type NativeReviewCli } from "../lib/authority/client-contract.ts";
+import { type NativeReviewCli, type NativeSddAcquireRequest, type NativeSddSettleRequest } from "../lib/authority/client-contract.ts";
 import { CHILD_METRICS_EVENT } from "../lib/runtime-metrics-children.ts";
 import { renderSddPreflightPrompt } from "../lib/sdd-preflight.ts";
 import {
@@ -35,6 +35,11 @@ import {
 	PARENT_CONFIRMED_SDD_CONTEXT, plainTheme, type Registered, root
 } from "./jero-agents-shared.ts";
 import { eventually, tick } from "./jero-agents-shared.ts";
+
+// acquire/settle 原生载荷的宽松记录类型（断言只读取各载荷中出现过的字段）。
+type NativeRemediationPayload = Partial<NativeSddAcquireRequest> & Partial<NativeSddSettleRequest>;
+// 原生调用日志元组：动词 + 载荷。
+type NativeRemediationCall = [string, NativeRemediationPayload];
 
 test("the overlay confirms a running task once and reports when it finishes during confirmation", async () => {
 	const { pi, tools, fire, commands, sent } = fakePi();
@@ -410,7 +415,7 @@ test("research child narrows artifact arguments and observes actual dual-store r
 	const hooks = new Map<string, (...args: unknown[]) => unknown>();
 	let active = ["read", "write", "mem_read", "mem_save", "subagent_parent_message"];
 	const journal = join(cwd, "session.jsonl"); writeFileSync(journal, "");
-	const pi = { appendEntry: (customType, data) => appendFileSync(journal, JSON.stringify({ type: "custom", customType, data }) + "\n"), on: (name: string, fn: (...args: unknown[]) => unknown) => hooks.set(name, fn), getActiveTools: () => active, getAllTools: () => active.map(name => ({ name })) };
+	const pi = { appendEntry: (customType: string, data: unknown) => appendFileSync(journal, JSON.stringify({ type: "custom", customType, data }) + "\n"), on: (name: string, fn: (...args: unknown[]) => unknown) => hooks.set(name, fn), getActiveTools: () => active, getAllTools: () => active.map(name => ({ name })) };
 	jeroAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(active), JERO_PI_RESEARCH_ARTIFACT: JSON.stringify(scope) });
 	const ctx = { cwd, sessionManager: { getEntries: () => [], getSessionFile: () => journal } };
 	const prompt = hooks.get("before_agent_start")!({ systemPrompt: "research" }, ctx) as { systemPrompt: string };
@@ -532,7 +537,7 @@ test("research child narrows artifact arguments and observes actual dual-store r
 test("managed remediation acquires before spawn and finalizes failure without verifier success", async () => {
 	const h = fakePi(), runtime = deps(), fixtureHome = join(root, "remediation-home");
 	let retainedId: string;
-	const spawn = runtime.deps.spawn;
+	const spawn = runtime.deps.spawn!;
 	runtime.deps.spawn = (...args) => {
 		const retained = JSON.parse(readFileSync(join(historyDir(fixtureHome), `${retainedId}.json`), "utf8")).task.sddRemediation;
 		assert.equal(retained.token, "admitted-fixture"); assert.equal(retained.actorClaimed, true);
@@ -540,11 +545,11 @@ test("managed remediation acquires before spawn and finalizes failure without ve
 	runtime.deps.process = { platform: "win32", kill() {} };
 	mkdirSync(join(fixtureHome, ".pi", "agent", "agents"), { recursive: true });
 	writeFileSync(join(fixtureHome, ".pi", "agent", "agents", "sdd-remediate.md"), readFileSync("assets/agents/sdd-remediate.md"));
-	const revision = `sha256:${"a".repeat(64)}`, calls = [];
-	const nativeSdd = { sddStatus: async () => ({ schemaName: "jero-ai.sdd-status", schemaVersion: 2, changeName: "alpha", artifactStore: "openspec", planningHome: { mode: "repo-local", path: join(cwd, "openspec") }, changeRoot: join(cwd, "openspec/changes/alpha"), actionContext: { mode: "repo-local", workspaceRoot: cwd, allowedEditRoots: [cwd] }, dependencies: Object.fromEntries(["proposal", "specs", "design", "tasks", "apply", "verify", "archive"].map(key => [key, "ready"])), phaseInstructions: { apply: [], verify: [], remediate: ["Correct evidence"], archive: [] }, blockedReasons: [], nextRecommended: "remediate", remediationState: { required: true, complete: false, failedEvidenceRevision: revision } }), sddAttemptAcquire: async input => { assert.equal(runtime.spawned.length, 0); const [saved] = await loadHistory(historyDir(fixtureHome)); retainedId = saved.task.id; assert.deepEqual(saved.task.sddRemediation.acquire, input); assert.equal(saved.task.sddRemediation.token, undefined); calls.push(input); return { state: "proceed", token: "admitted-fixture" }; }, sddAttemptSettle: async input => { calls.push(input); return { state: "proceed" as const }; } } as unknown as NativeReviewCli;
+	const revision = `sha256:${"a".repeat(64)}`, calls: NativeRemediationPayload[] = [];
+	const nativeSdd = { sddStatus: async () => ({ schemaName: "jero-ai.sdd-status", schemaVersion: 2, changeName: "alpha", artifactStore: "openspec", planningHome: { mode: "repo-local", path: join(cwd, "openspec") }, changeRoot: join(cwd, "openspec/changes/alpha"), actionContext: { mode: "repo-local", workspaceRoot: cwd, allowedEditRoots: [cwd] }, dependencies: Object.fromEntries(["proposal", "specs", "design", "tasks", "apply", "verify", "archive"].map(key => [key, "ready"])), phaseInstructions: { apply: [], verify: [], remediate: ["Correct evidence"], archive: [] }, blockedReasons: [], nextRecommended: "remediate", remediationState: { required: true, complete: false, failedEvidenceRevision: revision } }), sddAttemptAcquire: async (input: NativeSddAcquireRequest) => { assert.equal(runtime.spawned.length, 0); const [saved] = await loadHistory(historyDir(fixtureHome)); retainedId = saved.task.id; assert.deepEqual(saved.task.sddRemediation!.acquire, input); assert.equal(saved.task.sddRemediation!.token, undefined); calls.push(input); return { state: "proceed", token: "admitted-fixture" }; }, sddAttemptSettle: async (input: NativeSddSettleRequest) => { calls.push(input); return { state: "proceed" as const }; } } as unknown as NativeReviewCli;
 	jeroAgents(h.pi, {}, { ...runtime.deps, home: fixtureHome, nativeSdd });
 	const { ctx } = fakeContext(); await h.fire("session_start", ctx);
-	const result = await h.tools.get("subagent_run").execute("run", { agent: "sdd-remediate", task: "Correct alpha", context: PARENT_CONFIRMED_SDD_CONTEXT, mode: "background", sdd_change: { changeName: "alpha", workspaceRoot: cwd, phase: "remediate", failedEvidenceRevision: revision }, remediation: { attempt: { requestId: "one", workUnit: "correct", evidenceGoal: "Observed correction", maxAttempts: 1, maxChangedLines: 200 }, plan: { cwd, commands: ["pnpm test"], runtimeHarness: { naReason: "Not applicable because this fixture has no runtime boundary." }, rollback: { boundary: "Revert fixture bytes", command: "git diff --check" } } } }, undefined, undefined, ctx);
+	const result = await h.tools.get("subagent_run")!.execute("run", { agent: "sdd-remediate", task: "Correct alpha", context: PARENT_CONFIRMED_SDD_CONTEXT, mode: "background", sdd_change: { changeName: "alpha", workspaceRoot: cwd, phase: "remediate", failedEvidenceRevision: revision }, remediation: { attempt: { requestId: "one", workUnit: "correct", evidenceGoal: "Observed correction", maxAttempts: 1, maxChangedLines: 200 }, plan: { cwd, commands: ["pnpm test"], runtimeHarness: { naReason: "Not applicable because this fixture has no runtime boundary." }, rollback: { boundary: "Revert fixture bytes", command: "git diff --check" } } } }, undefined, undefined, ctx);
 	await tick(); assert.equal(runtime.spawned.length, 1, result.content[0].text);
 	assert.equal(calls[0].remediatesEvidenceRevision, revision);
 	runtime.children[0].emit({ type: "agent_end", messages: [{ role: "assistant", content: [{ type: "text", text: "All tests passed, trust me" }], stopReason: "stop" }] });
@@ -552,7 +557,7 @@ test("managed remediation acquires before spawn and finalizes failure without ve
 	for (let n = 0; n < 30 && calls.length < 2; n++) await new Promise(resolve => setTimeout(resolve, 5));
 	assert.equal(calls.length, 2); assert.equal(calls[1].outcome, "failed");
 	const history = await loadHistory(historyDir(fixtureHome));
-	assert.equal(history[0].task.sddRemediation.settle.token, "admitted-fixture");
+	assert.equal(history[0].task.sddRemediation!.settle!.token, "admitted-fixture");
 	assert.equal(history[0].task.status, "failed", "prose-only completion cannot advertise successful correction");
 	await h.fire("session_shutdown", ctx);
 });
@@ -581,12 +586,12 @@ test("managed remediation tools publish the typed exact evidence plan and bracke
 
 
 test("R1 malformed child grant denies tools even before/after failed session initialization", () => {
-	const hooks = new Map(), registered = [];
-	const pi = { on: (name, fn) => hooks.set(name, fn), registerTool: tool => registered.push(tool), getFlag: () => "{}" };
+	const hooks = new Map<string, (event: { toolName?: string; input?: object }, ctx?: { cwd: string }) => { block?: boolean } | undefined>(), registered: unknown[] = [];
+	const pi = { on: (name: string, fn: (event: { toolName?: string; input?: object }, ctx?: { cwd: string }) => { block?: boolean } | undefined) => hooks.set(name, fn), registerTool: (tool: unknown) => registered.push(tool), getFlag: () => "{}" };
 	jeroAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_SDD_REMEDIATION_PLAN: "malformed" });
 	const denied = () => hooks.get("tool_call")?.({ toolName: "bash", input: { command: "touch outside" } }, { cwd })?.block;
 	assert.equal(denied(), true);
-	assert.doesNotThrow(() => hooks.get("session_start")({}, { cwd }));
+	assert.doesNotThrow(() => hooks.get("session_start")!({}, { cwd }));
 	assert.equal(denied(), true); assert.equal(registered.length, 0);
 });
 
@@ -595,20 +600,20 @@ test("public reconciliation replays retained authority, persists closure, and ne
 	const fixtureHome = join(root, "remediation-reconcile");
 	const acquire = { workspaceRoot: cwd, changeName: "alpha", requestId: "retained-acquire", workUnit: "correct", evidenceGoal: "Observed correction", remediatesEvidenceRevision: `sha256:${"a".repeat(64)}` };
 	await saveTask(historyDir(fixtureHome), { id: "retained", agent: "sdd-remediate", cwd, status: "failed", createdAt: 1, sddRemediation: { acquire, acquireUncertain: true } } as never, emptyThread());
-	const h = fakePi(), runtime = deps(), calls = [];
+	const h = fakePi(), runtime = deps(), calls: NativeRemediationCall[] = [];
 	jeroAgents(h.pi, {}, { ...runtime.deps, home: fixtureHome, nativeSdd: {
-		sddAttemptAcquire: async input => { calls.push(["acquire", structuredClone(input)]); return { state: "proceed", token: "private-token" }; },
-		sddAttemptSettle: async input => { calls.push(["settle", structuredClone(input)]); return { state: "complete" }; },
+		sddAttemptAcquire: async (input: NativeSddAcquireRequest) => { calls.push(["acquire", structuredClone(input)]); return { state: "proceed", token: "private-token" }; },
+		sddAttemptSettle: async (input: NativeSddSettleRequest) => { calls.push(["settle", structuredClone(input)]); return { state: "complete" }; },
 	} as unknown as NativeReviewCli });
 	const { ctx } = fakeContext(); await h.fire("session_start", ctx);
-	const output = await h.tools.get("subagent_reconcile").execute("reconcile", { task_id: "retained" }, undefined, undefined, ctx);
+	const output = await h.tools.get("subagent_reconcile")!.execute("reconcile", { task_id: "retained" }, undefined, undefined, ctx);
 	assert.match(output.content[0].text, /reconciled/i);
 	assert.equal(JSON.stringify(output).includes("private-token"), false);
 	assert.deepEqual(calls[0], ["acquire", acquire]); assert.equal(calls[1][0], "settle");
 	assert.equal(runtime.spawned.length, 0);
 	const retained = (await loadHistory(historyDir(fixtureHome)))[0].task;
-	assert.equal(retained.sddRemediation.acquireUncertain, undefined);
-	assert.deepEqual(retained.sddRemediation.settlement, { state: "complete" });
+	assert.equal(retained.sddRemediation!.acquireUncertain, undefined);
+	assert.deepEqual(retained.sddRemediation!.settlement, { state: "complete" });
 });
 
 test("durable reconciliation locks serialize independent extension instances sharing one tasksDir", async () => {
@@ -639,7 +644,7 @@ test("reconciliation reloads a stale local task and preserves the retained disk 
 	const freshAcquire = { workspaceRoot: cwd, changeName: "alpha", requestId: "fresh", workUnit: "fresh", evidenceGoal: "fresh" };
 	await saveTask(historyDir(fixtureHome), { id, agent: "sdd-remediate", cwd, status: "failed", createdAt: 1, sddRemediation: { acquire: oldAcquire, acquireUncertain: true } } as never, applyTaskEvent(emptyThread(), { type: TASK_EVENT.NOTE, text: "old thread" }));
 	const h = fakePi(), runtime = deps(), seen: unknown[] = [];
-	jeroAgents(h.pi, {}, { ...runtime.deps, home: fixtureHome, nativeSdd: { sddAttemptAcquire: async input => { seen.push(structuredClone(input)); return { state: "blocked" }; } } as unknown as NativeReviewCli });
+	jeroAgents(h.pi, {}, { ...runtime.deps, home: fixtureHome, nativeSdd: { sddAttemptAcquire: async (input: NativeSddAcquireRequest) => { seen.push(structuredClone(input)); return { state: "blocked" }; } } as unknown as NativeReviewCli });
 	const { ctx } = fakeContext(); await h.fire("session_start", ctx);
 	await h.tools.get("subagent_status")!.execute("status", { task_id: id }, undefined, undefined, ctx);
 	const freshThread = applyTaskEvent(emptyThread(), { type: TASK_EVENT.NOTE, text: "fresh thread" });
@@ -679,9 +684,9 @@ test("R3/R4 host reload refuses retained acquire/actor uncertainty without anoth
 		jeroAgents(h.pi, {}, { ...runtime.deps, home: fixtureHome, nativeSdd: { sddStatus: async () => { throw new Error("fresh status reached"); }, sddAttemptSettle: async () => ({ state: "proceed" as const }), sddAttemptAcquire: async () => { acquisitions++; return { state: "proceed", token: "unsafe" }; } } as unknown as NativeReviewCli });
 		const { ctx } = fakeContext(fakeTui, async () => { confirmations++; return true; });
 		await h.fire("session_start", ctx);
-		await assert.rejects(h.tools.get("subagent_run").execute("again", { agent: "sdd-remediate", task: "Correct alpha", context: PARENT_CONFIRMED_SDD_CONTEXT, mode: "background", sdd_change: { changeName: "alpha", workspaceRoot: cwd, phase: "remediate", failedEvidenceRevision: revision }, remediation: { attempt: { ...acquire, requestId: "different" }, plan: { cwd, commands: ["pnpm test"], runtimeHarness: { naReason: "Not applicable because this fixture has no runtime boundary." }, rollback: { boundary: "Revert fixture", command: "git diff --check" } } } }, undefined, undefined, ctx), normal ? /fresh status reached/ : /reconcile exact history without actor replay/);
+		await assert.rejects(h.tools.get("subagent_run")!.execute("again", { agent: "sdd-remediate", task: "Correct alpha", context: PARENT_CONFIRMED_SDD_CONTEXT, mode: "background", sdd_change: { changeName: "alpha", workspaceRoot: cwd, phase: "remediate", failedEvidenceRevision: revision }, remediation: { attempt: { ...acquire, requestId: "different" }, plan: { cwd, commands: ["pnpm test"], runtimeHarness: { naReason: "Not applicable because this fixture has no runtime boundary." }, rollback: { boundary: "Revert fixture", command: "git diff --check" } } } }, undefined, undefined, ctx), normal ? /fresh status reached/ : /reconcile exact history without actor replay/);
 		assert.equal(acquisitions, 0); assert.equal(confirmations, 0); assert.equal(runtime.spawned.length, 0);
-		assert.deepEqual((await loadHistory(historyDir(fixtureHome)))[0].task.sddRemediation.acquire, acquire);
+		assert.deepEqual((await loadHistory(historyDir(fixtureHome)))[0].task.sddRemediation!.acquire, acquire);
 		await h.fire("session_shutdown", ctx);
 	}
 });
@@ -700,7 +705,7 @@ test("R3/R4 a known native-blocked settlement lets native admission decide the n
 		jeroAgents(h.pi, {}, { ...runtime.deps, home: fixtureHome, nativeSdd: { sddStatus: async () => ({ schemaName: "jero-ai.sdd-status", schemaVersion: 2, changeName: "alpha", artifactStore: "openspec", planningHome: { mode: "repo-local", path: join(cwd, "openspec") }, changeRoot: join(cwd, "openspec/changes/alpha"), actionContext: { mode: "repo-local", workspaceRoot: cwd, allowedEditRoots: [cwd] }, dependencies: Object.fromEntries(["proposal", "specs", "design", "tasks", "apply", "verify", "archive"].map(key => [key, "ready"])), phaseInstructions: { apply: [], verify: [], remediate: ["Correct evidence"], archive: [] }, blockedReasons: [], nextRecommended: "remediate", remediationState: { required: true, complete: false, failedEvidenceRevision: revision } }), sddAttemptSettle: async () => ({ state: "proceed" as const }), sddAttemptAcquire: async () => { acquisitions++; return { state: "blocked" }; } } as unknown as NativeReviewCli });
 		const { ctx } = fakeContext(fakeTui, async () => { confirmations++; return true; });
 		await h.fire("session_start", ctx);
-		await assert.rejects(h.tools.get("subagent_run").execute("again", { agent: "sdd-remediate", task: "Correct alpha", context: PARENT_CONFIRMED_SDD_CONTEXT, mode: "background", sdd_change: { changeName: "alpha", workspaceRoot: cwd, phase: "remediate", failedEvidenceRevision: revision }, remediation: { attempt: { ...acquire, requestId: "different" }, plan: { cwd, commands: ["pnpm test"], runtimeHarness: { naReason: "Not applicable because this fixture has no runtime boundary." }, rollback: { boundary: "Revert fixture", command: "git diff --check" } } } }, undefined, undefined, ctx), uncertain ? /reconcile exact history without actor replay/ : /no actor started/);
+		await assert.rejects(h.tools.get("subagent_run")!.execute("again", { agent: "sdd-remediate", task: "Correct alpha", context: PARENT_CONFIRMED_SDD_CONTEXT, mode: "background", sdd_change: { changeName: "alpha", workspaceRoot: cwd, phase: "remediate", failedEvidenceRevision: revision }, remediation: { attempt: { ...acquire, requestId: "different" }, plan: { cwd, commands: ["pnpm test"], runtimeHarness: { naReason: "Not applicable because this fixture has no runtime boundary." }, rollback: { boundary: "Revert fixture", command: "git diff --check" } } } }, undefined, undefined, ctx), uncertain ? /reconcile exact history without actor replay/ : /no actor started/);
 		assert.equal(acquisitions, uncertain ? 0 : 1, "native admission is consulted once local unresolved history is not uncertain");
 		assert.equal(confirmations, uncertain ? 0 : 1);
 		assert.equal(runtime.spawned.length, 0);

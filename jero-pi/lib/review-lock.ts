@@ -101,7 +101,7 @@ export function qualifiedNodeFsLockPlatformV1(): ReviewLockPlatformAdapterV1 {
 			try {
 				renameSync(source, destination);
 			} catch (error) {
-				try { rmSync(destination, { recursive: true, force: true }); } catch {}
+				try { rmSync(destination, { recursive: true, force: true }); } catch { /* 回滚尽力而为：保留目录清不掉也不掩盖原始失败。 */ }
 				throw new ReviewLockError(`Review lock atomic no-replace move failed after reserving the destination: ${error instanceof Error ? error.message : String(error)}`);
 			}
 		},

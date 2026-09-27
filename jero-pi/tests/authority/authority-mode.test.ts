@@ -128,7 +128,7 @@ test("the cli seam honors JERO_PI_CONFIG_HOME for the global mode record", async
 		else process.env.JERO_PI_CONFIG_HOME = previous;
 	});
 	const cli = createJeroAuthorityReviewCli();
-	const result = await cli.reviewMode({ cwd: repo, operation: "status" });
+	const result = await cli.reviewMode!({ cwd: repo, operation: "status" });
 	assert.equal(result.status.global, "off");
 	assert.equal(result.status.effective, "off");
 	assert.equal(result.status.source, "global");

@@ -90,7 +90,7 @@ function extractPurpose(text: string): string {
 		return (line ?? "").slice(0, MAX_PURPOSE_CHARS);
 	};
 	const purposeMatch = text.match(/^##\s+Purpose\s*$/m);
-	const purpose = purposeMatch ? pick(text.slice(purposeMatch.index + purposeMatch[0].length)) : "";
+		const purpose = purposeMatch ? pick(text.slice(purposeMatch.index! + purposeMatch[0].length)) : "";
 	if (purpose) return purpose;
 	const fallback = pick(text);
 	return fallback || "（spec.md 无 Purpose 段，读文件确认）";

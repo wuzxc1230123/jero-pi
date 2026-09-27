@@ -4,7 +4,7 @@
 import { execFileSync } from "node:child_process";
 import { lstatSync, realpathSync } from "node:fs";
 import { isAbsolute, resolve } from "node:path";
-import { type CandidateView, CandidateViewError, CandidateViewRegistry } from "./review-candidate-view.ts";
+import { type CandidateView, CandidateViewError, CandidateViewRegistry } from "./authority/review-candidate-view.ts";
 import { isCanonicalProcessString, NATIVE_REVIEW_OPERATION, type NativeReviewCli, type NativeStartResult } from "./authority/client-contract.ts";
 import { type ReviewStatusV3 } from "./authority/wire-contract.ts";
 import { isRecord } from "./jero-ai-persona-config.ts";

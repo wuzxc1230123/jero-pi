@@ -257,7 +257,7 @@ function writePinnedIdentity(storeRoot: string, identity: JeroRepositoryIdentity
 	} finally {
 		try {
 			unlinkSync(temporary);
-		} catch {}
+		} catch { /* 临时文件清理尽力而为：失败不得掩盖身份钉扎结果。 */ }
 	}
 	if (!installed) return readPinnedIdentity(storeRoot) ?? identity;
 	const file = openSync(path, "r+");

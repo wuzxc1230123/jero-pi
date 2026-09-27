@@ -6,10 +6,9 @@
 		"allowImportingTsExtensions": true,
 		"noEmit": true,
 		"skipLibCheck": true,
-		"strict": false,
+		"strict": true,
 		"lib": [
-			"ESNext",
-			"DOM"
+			"ESNext"
 		],
 		"types": [
 			"node"

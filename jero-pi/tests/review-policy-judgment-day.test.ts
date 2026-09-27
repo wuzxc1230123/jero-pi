@@ -10,15 +10,15 @@ import {
 	type CanonicalFrozenRowV1,
 	type ReviewMode,
 	type ReviewStateV1,
-} from "../lib/review-transaction.ts";
+} from "../lib/authority/review-transaction.ts";
 import {
 	applyJudgmentDayFix,
 	judgmentDayRejudgmentRequest,
 	recordJudgmentDayDiscovery,
 	recordJudgmentDayFinalVerification,
 	recordJudgmentDayRejudgment,
-} from "../lib/review-policy-judgment-day.ts";
-import { REVIEW_ROUTE } from "../lib/review-triggers.ts";
+} from "../lib/authority/review-policy-judgment-day.ts";
+import { REVIEW_ROUTE } from "../lib/authority/review-triggers.ts";
 import { testSnapshot } from "./review-test-fixtures.ts";
 
 const TREE = {

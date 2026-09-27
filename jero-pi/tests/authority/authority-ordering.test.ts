@@ -63,8 +63,8 @@ for (const row of ROWS) {
 			mode: row.mode ?? "ordinary_4r",
 			selectedLenses: row.selectedLenses ?? [],
 			admittedLenses: row.admittedLenses ?? [],
-			pendingRefuterIds: row.pendingRefuterIds,
-			fixFindingIds: row.fixFindingIds,
+			pendingRefuterIds: row.pendingRefuterIds ?? [],
+			fixFindingIds: row.fixFindingIds ?? [],
 			consumed: row.consumed ?? false,
 		});
 		assert.deepEqual({ kind: next.kind, reason_code: next.reason_code }, row.expect);

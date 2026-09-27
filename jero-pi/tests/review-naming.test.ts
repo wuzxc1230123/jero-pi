@@ -8,7 +8,11 @@ import { join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { collectCounts } from "../scripts/check-review-naming.mjs";
+// .mjs 脚本无类型声明；行为测试只依赖这几个纯函数签名（经动态导入显式标注）。
+const namingGateSpecifier: string = "../scripts/check-review-naming.mjs";
+const { collectCounts } = await import(namingGateSpecifier) as {
+	collectCounts: () => Record<"review" | "jeroAiReview" | "authority", number>;
+};
 
 const PACKAGE_ROOT = join(fileURLToPath(new URL("..", import.meta.url)));
 

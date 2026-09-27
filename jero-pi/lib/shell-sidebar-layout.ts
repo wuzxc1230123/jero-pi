@@ -10,6 +10,8 @@ const GAP = 3;
 // 实验性的 Pi 0.85.1 内部机制。只适配全屏布局树；普通模式保留原生
 // 回滚缓冲与原有的底部组件。
 const NODE = Symbol.for("@earendil-works/pi-tui/layout-node");
+// pi-tui 未从包索引导出 TuiMouseDispatchResult；从 ScrollView 的方法类型派生。
+type TuiMouseDispatchResult = ReturnType<ScrollView["handleMouse"]>;
 type LayoutNode = { type: string; entries?: unknown[]; gap?: number; align?: string };
 type LayoutRoot = Component & { [NODE]?: () => LayoutNode };
 type Host = TUI & { mode?: string; layoutRoot?: LayoutRoot };
@@ -92,13 +94,14 @@ export function installSidebar(tui: TUI, theme: ShellBarTheme): () => void {
 		const contentY = scroll.scrollTop + event.y;
 		const hit = current.hits.find((candidate) => contentY >= candidate.startY && contentY < candidate.startY + candidate.height);
 		if (!hit || state.parts.get(hit.key) !== hit.component || event.x >= RAIL_PADDING + hit.width) return undefined;
+		// 已通过上面的消费守卫：子组件的返回按 pi-tui 派发契约是 dispatch 结果。
 		return hit.component.handleMouse?.({
 			...event,
 			x: event.x - RAIL_PADDING,
 			y: contentY - hit.startY,
 			width: hit.width,
 			height: hit.height,
-		});
+		}) as TuiMouseDispatchResult | undefined;
 	};
 	scroll.handleMouse = (event) => {
 		if (event.type === "wheel") {
@@ -121,14 +124,15 @@ export function installSidebar(tui: TUI, theme: ShellBarTheme): () => void {
 		}
 		const parts = [...state.parts.entries()];
 		const digests = parts.map(([, rail]) => railDigest(rail));
-		const unchanged = prepared?.revision === cache.revision &&
-			prepared.width === width && prepared.mode === host.mode && prepared.root === root && prepared.theme === theme &&
-			prepared.parts.length === parts.length && prepared.parts.every(([key, part], index) => parts[index]?.[0] === key && parts[index]?.[1] === part) &&
-			prepared.digests.length === digests.length && prepared.digests.every((digest, index) => digest === digests[index]);
-		if (unchanged) {
-			railLines = prepared.lines;
-			state.active = prepared.active;
-			return prepared.active;
+		const current = prepared;
+		const unchanged = current !== undefined && current.revision === cache.revision &&
+			current.width === width && current.mode === host.mode && current.root === root && current.theme === theme &&
+			current.parts.length === parts.length && current.parts.every(([key, part], index) => parts[index]?.[0] === key && parts[index]?.[1] === part) &&
+			current.digests.length === digests.length && current.digests.every((digest, index) => digest === digests[index]);
+		if (unchanged && current !== undefined) {
+			railLines = current.lines;
+			state.active = current.active;
+			return current.active;
 		}
 		try {
 			const contentWidth = scroll.getContentWidth(RAIL_WIDTH);

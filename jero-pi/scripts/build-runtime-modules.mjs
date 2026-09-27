@@ -15,7 +15,7 @@ const sources = [
 	"authority/wire-contract-decode-start",
 	"authority/wire-contract-decode-status",
 	"authority/wire-contract-last-event",
-	"review-risk-assessment",
+	"authority/review-risk-assessment",
 	"record-utils",
 	"authority/client-contract",
 	"authority/client-contract-types",

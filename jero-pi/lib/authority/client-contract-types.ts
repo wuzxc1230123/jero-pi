@@ -9,7 +9,7 @@ import {
 } from "node:util";
 import {
 	type ReviewAssessmentV1
-} from "../review-risk-assessment.ts";
+} from "./review-risk-assessment.ts";
 import {
 	type ReviewAcknowledgedExpectationV1,
 	type ReviewAcknowledgedV1,

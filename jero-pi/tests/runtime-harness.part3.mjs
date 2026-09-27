@@ -11,7 +11,7 @@ import { matchesKey } from "@earendil-works/pi-tui";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { stripAnsi } from "../lib/terminal-theme.ts";
 import { domainHashV1 } from "../lib/review-canonical.ts";
-import { canonicalHash } from "../lib/review-transaction.ts";
+import { canonicalHash } from "../lib/authority/review-transaction.ts";
 
 import {
 	EXPECTED_BANNER_COMMANDS,

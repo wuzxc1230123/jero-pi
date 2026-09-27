@@ -33,8 +33,8 @@ import {
 	type ReceiptEnvelopeV1,
 	type ReviewBudgetV1,
 	type ReviewStateV1,
-} from "../lib/review-transaction.ts";
-import { REVIEW_LENS, REVIEW_ROUTE } from "../lib/review-triggers.ts";
+} from "../lib/authority/review-transaction.ts";
+import { REVIEW_LENS, REVIEW_ROUTE } from "../lib/authority/review-triggers.ts";
 import { inheritedUnsafeGitEnvironmentKeys } from "../lib/review-repository.ts";
 import { qualifiedReviewLockPlatform, testSnapshot } from "./review-test-fixtures.ts";
 

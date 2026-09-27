@@ -3,7 +3,8 @@
 //
 // Tests rot in characteristic ways: assertions that can never fail, skips
 // without a reason, assertions on measured wall-clock durations (flaky by
-// construction), and sleeps that slow the suite or mask races. This gate
+// construction), sleeps that slow the suite or mask races, and shard files
+// importing each other (re-runs the imported shard's tests). This gate
 // counts those patterns per (file, rule) and fails when any count grows or
 // the total grows — same ratchet shape as check-types.mjs. Existing hits
 // live in scripts/test-quality-baseline.json; fix them (or justify them with
@@ -56,6 +57,15 @@ const RULES = [
 		pattern: /sleepSync\(|Atomics\.wait\(|setTimeout\(\s*[^,\s)]+\s*,\s*(?:\d{4,}|[5-9]\d{3})\s*[,)]/,
 		label: "sleep/wait of >=1s (or sync block) in tests",
 	},
+	{
+		name: "no-cross-shard-import",
+		// 分片（*.z<N>.test.ts）之间禁止互相 import：node:test 只在文件间
+		// 并行，被导入分片的顶层 test() 会在导入方进程重跑，整套件成倍
+		// 膨胀（AGENTS.md 铁律 2）。夹具必须放 <base>-shared.ts。
+		pattern: /(?:\bimport\b|\bfrom\b)[^"']*["'][^"']*\.test\.ts["']/,
+		label: "import between test shards (re-runs the imported shard's tests)",
+		appliesTo: (file) => /\.z\d+\.test\.ts$/.test(relativeToPackage(file)),
+	},
 ];
 
 function listTestFiles() {
@@ -77,6 +87,7 @@ function scan() {
 		const lines = readFileSync(file, "utf8").split("\n");
 		for (const [index, line] of lines.entries()) {
 			for (const rule of RULES) {
+				if (rule.appliesTo && !rule.appliesTo(file)) continue;
 				if (!rule.pattern.test(line)) continue;
 				const context = lines.slice(Math.max(0, index - 1), index + 2).join("\n");
 				if (context.includes(`${ESCAPE} ${rule.name}`) || context.includes(`${ESCAPE}${rule.name}`)) continue;

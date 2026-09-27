@@ -3,9 +3,9 @@ import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSy
 import { tmpdir } from "node:os";
 import { delimiter, isAbsolute, join, resolve, sep } from "node:path";
 import { reviewGitEnvironment } from "../review-repository.ts";
-import { deriveChangedPathManifest, digestChangedPathManifest, type ChangedPathEntry } from "../review-candidate-view.ts";
-import { buildDiffEvidence, REVIEW_EVENT, REVIEW_ROUTE, type DiffEvidence, type ReviewLens, type ReviewRoute } from "../review-triggers.ts";
-import { classifyReviewRisk, isGeneratedGoldenPath, type ReviewDiffStat, type ReviewRiskClassification, type ReviewRiskTier } from "../review-risk.ts";
+import { deriveChangedPathManifest, digestChangedPathManifest, type ChangedPathEntry } from "./review-candidate-view.ts";
+import { buildDiffEvidence, REVIEW_EVENT, REVIEW_ROUTE, type DiffEvidence, type ReviewLens, type ReviewRoute } from "./review-triggers.ts";
+import { classifyReviewRisk, isGeneratedGoldenPath, type ReviewDiffStat, type ReviewRiskClassification, type ReviewRiskTier } from "./review-risk.ts";
 import { jeroDomainHash } from "./canonical.ts";
 
 // 叠在 lib/review-snapshot.ts 之上的快照根重定向接缝（spec §I.10，

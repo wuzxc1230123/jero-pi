@@ -15,7 +15,7 @@ import { applyModelConfig, applyModelConfigAsync } from "../lib/jero-ai-model-ro
 import { createJeroAiExtension } from "../extensions/jero-ai.ts";
 import { PROFILES_KIND, PROFILES_VERSION } from "../lib/agent-profiles.ts";
 import { NATIVE_REVIEW_ERROR_CODE, type NativeReviewCli, NativeReviewCliError } from "../lib/authority/client-contract.ts";
-import { CandidateViewError, type CandidateViewRegistry, CANONICAL_GZIP_OPTIONS } from "../lib/review-candidate-view.ts";
+import { CandidateViewError, type CandidateViewRegistry, CANONICAL_GZIP_OPTIONS } from "../lib/authority/review-candidate-view.ts";
 import { installPackageAssets } from "../lib/sdd-preflight.ts";
 import { type ReviewCollectInputV3, type ReviewStatusV3 } from "../lib/authority/wire-contract.ts";
 import { stripAnsi } from "../lib/terminal-theme.ts";
@@ -835,6 +835,7 @@ test("the profiles panel fills the terminal, lists routing per agent, and scroll
 		visited.handleInput("\x1b");
 	});
 	await fixture.run("jero:profiles");
+	assert.ok(panel, "the profiles panel must have been visited");
 
 	assert.ok(rendered);
 	const lines = rendered.split("\n");

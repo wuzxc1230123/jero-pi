@@ -143,7 +143,7 @@ export class ReviewGraphObjectStoreV1 {
 			try {
 				const pointer = this.readPointer(slot);
 				if (pointer.root_set_id === quorum.root_set_id && pointer.generation === quorum.generation) continue;
-			} catch {}
+			} catch { /* CURRENT 槽位不可读视为缺失，落入下方的重写修复路径。 */ }
 			this.writePointer(slot, this.readRootSet(quorum.root_set_id), quorum.slot_epoch);
 		}
 	}
@@ -198,7 +198,7 @@ export class ReviewGraphObjectStoreV1 {
 		} catch (error) {
 			if (existsSync(path) && Buffer.from(readFileSync(path)).equals(Buffer.from(bytes))) return;
 			throw new ReviewObjectStoreError(`Immutable object installation failed: ${error instanceof Error ? error.message : String(error)}`);
-		} finally { try { unlinkSync(temporary); } catch {} }
+		} finally { try { unlinkSync(temporary); } catch { /* 临时对象清理尽力而为：失败不得掩盖安装结果。 */ } }
 	}
 	private readRootSet(id: string): ReviewRootSetEnvelopeV1 {
 		try { const value = parseCanonicalJsonV1(readFileSync(this.rootPath(id))) as ReviewRootSetEnvelopeV1; if (value.root_set_id !== id || domainHashV1("root-set", value.body) !== id) throw new Error("identity mismatch"); return value; } catch (error) { throw new ReviewObjectStoreError(`Root set is missing or invalid: ${error instanceof Error ? error.message : String(error)}`); }

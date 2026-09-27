@@ -12,7 +12,7 @@ import { matchesKey } from "@earendil-works/pi-tui";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { stripAnsi } from "../lib/terminal-theme.ts";
 import { domainHashV1 } from "../lib/review-canonical.ts";
-import { canonicalHash } from "../lib/review-transaction.ts";
+import { canonicalHash } from "../lib/authority/review-transaction.ts";
 
 import { EXPECTED_BANNER_COMMANDS, EXPECTED_COMMANDS, EXTENSIONS, FORBIDDEN_COMPAT_COMMANDS, ROOT, createCtx, createJeroAiExtension, createPi, createUi, gitSync, loadExtensions, readAgentDefinition, restoreWorkspaceWritePermissions, sha256, tempWorkspace } from "./runtime-harness-support.mjs";
 import { part1 } from "./runtime-harness.part1.mjs";

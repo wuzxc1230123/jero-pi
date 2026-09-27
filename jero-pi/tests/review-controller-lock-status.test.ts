@@ -89,7 +89,7 @@ function fakeNative(status: LockStatusFixture, onStart?: (request: Parameters<Na
 		currentSnapshotIdentity: targetIdentity,
 	};
 	return {
-		start: async (request) => {
+		start: async (request: Parameters<NativeReviewCli["start"]>[0]) => {
 			onStart?.(request);
 			return { lineageId: "native-lineage", state: "reviewing", riskLevel: "medium", selectedLenses: ["review-reliability"], changedFiles: 1, changedLines: 2, correctionBudget: 1, action: "created", lensesRequired: true };
 		},

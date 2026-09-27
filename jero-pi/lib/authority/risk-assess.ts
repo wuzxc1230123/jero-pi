@@ -1,8 +1,8 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { classifyReviewRisk, countAuthoredChangedLines, type ReviewDiffStat } from "../review-risk.ts";
-import { REVIEW_ASSESSMENT_SCHEMA, REVIEW_ASSESSMENT_RISK, type ReviewAssessmentV1, type ReviewAssessmentCandidateKind } from "../review-risk-assessment.ts";
+import { classifyReviewRisk, countAuthoredChangedLines, type ReviewDiffStat } from "./review-risk.ts";
+import { REVIEW_ASSESSMENT_SCHEMA, REVIEW_ASSESSMENT_RISK, type ReviewAssessmentV1, type ReviewAssessmentCandidateKind } from "./review-risk-assessment.ts";
 import { reviewGitEnvironment } from "../review-repository.ts";
 
 // `authority.risk.assess`（spec §I.7）：对活动 diff 的只读风险评估，

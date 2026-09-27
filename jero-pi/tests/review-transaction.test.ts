@@ -37,8 +37,8 @@ import {
 	type CanonicalFrozenRowV1,
 	type ReceiptBodyV1,
 	type ReviewBudgetV1,
-} from "../lib/review-transaction.ts";
-import { REVIEW_LENS, REVIEW_ROUTE } from "../lib/review-triggers.ts";
+} from "../lib/authority/review-transaction.ts";
+import { REVIEW_LENS, REVIEW_ROUTE } from "../lib/authority/review-triggers.ts";
 import {
 	ordinaryValidatorRequest,
 	recordOrdinaryValidation,

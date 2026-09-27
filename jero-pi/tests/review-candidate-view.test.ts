@@ -18,7 +18,7 @@ import {
 	createCandidateView, decodeCandidateContextManifest, deriveChangedPathManifest,
 	digestChangedPathManifest, hasExpectedExecutableBits, injectReviewCandidateView,
 	type NativeCandidateProjectionDescriptor, readCandidateContextManifestPage
-} from "../lib/review-candidate-view.ts";
+} from "../lib/authority/review-candidate-view.ts";
 import {
 	assertCandidateOwnerParent, assertTrustedWindowsOwner, prepareCandidateOwnerParent,
 	setWindowsAclAuthorityForTesting, validatePrivateWindowsDacl, validatePrivateWindowsOwner,
@@ -231,7 +231,7 @@ test("private candidate owner ignores a spoofed SystemRoot when invoking Windows
 	});
 	const execFile = childProcess.execFileSync;
 	const aclExecutables: string[] = [];
-	t.mock.method(childProcess, "execFileSync", (file, arguments_, options) => {
+	t.mock.method(childProcess, "execFileSync", (file: string, arguments_: string[], options: { cwd?: string }) => {
 		if (typeof file === "string" && /\\(?:whoami|icacls)\.exe$/i.test(file)) {
 			aclExecutables.push(file);
 			assert.equal(file.toLowerCase().startsWith(spoofedSystemRoot.toLowerCase()), false);

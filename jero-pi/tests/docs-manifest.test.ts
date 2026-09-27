@@ -9,7 +9,11 @@ import { join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { checkDocsManifest } from "../scripts/check-docs-manifest.mjs";
+// .mjs 脚本无类型声明；行为测试只依赖这一个纯函数签名（经动态导入显式标注）。
+const manifestGateSpecifier: string = "../scripts/check-docs-manifest.mjs";
+const { checkDocsManifest } = await import(manifestGateSpecifier) as {
+	checkDocsManifest: () => { ok: boolean; problems: string[]; failures: string[]; counts?: { commands: number; tools: number; skills: number } };
+};
 
 const PACKAGE_ROOT = join(fileURLToPath(new URL("..", import.meta.url)));
 

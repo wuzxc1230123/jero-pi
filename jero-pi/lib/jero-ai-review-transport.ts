@@ -79,11 +79,13 @@ export async function negotiatedStatusForHostTransport(
 		syncRetainedNativeStatusSelections(retainedSelections, canonicalRetentionRoot, status, request.baseRef);
 		return { status };
 	} catch (error) {
-		const code = error instanceof NativeReviewIntegrationError ? error.failureEnvelope.code : undefined;
+		const integrationError = error instanceof NativeReviewIntegrationError ? error : undefined;
+		if (integrationError === undefined) throw error;
+		const code = integrationError.failureEnvelope.code;
 		// 只有封闭的传输拒绝集合才被定型为不可用；其余
 		// 每种失败仍是错误，走调用方的常规错误路径。
 		if (code === undefined || !REVIEW_TRANSPORT_REFUSAL_CODES.has(code)) throw error;
-		const transport: ReviewTransportRefusal = { supported: false, code, message: error.message };
+		const transport: ReviewTransportRefusal = { supported: false, code, message: integrationError.message };
 		reviewTransportRefusalByProvider.set(provider, transport);
 		return { transport };
 	}

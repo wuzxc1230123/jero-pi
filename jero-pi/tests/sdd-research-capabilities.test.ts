@@ -191,9 +191,9 @@ test("R4 research write crash reload requires durable desired identity and actua
 	for (const store of ["openspec", "engram", "both"] as const) {
 		const path = join(cwd, "openspec/changes/demo/research.md"), history = join(cwd, `${store}.jsonl`), memory = join(cwd, `${store}-memory.json`);
 		mkdirSync(join(cwd, "openspec/changes/demo"), { recursive: true }); writeFileSync(history, "");
-		const bytes = '{"revision":1}', next = '{"revision":2}', digest = value => createHash("sha256").update(value).digest("hex");
+		const bytes = '{"revision":1}', next = '{"revision":2}', digest = (value: string) => createHash("sha256").update(value).digest("hex");
 		const engram = { topic_key: "sdd/demo/research" };
-		const render = (body) => `saved 2026-01-01T00:00:00.000Z
+		const render = (body: string) => `saved 2026-01-01T00:00:00.000Z
 
 ${body}`;
 		writeFileSync(path, bytes); writeFileSync(memory, render(bytes));
@@ -201,16 +201,16 @@ ${body}`;
 		const entries = () => readFileSync(history, "utf8").trim().split("\n").filter(Boolean).map(line => JSON.parse(line));
 		const start = (durable = true) => {
 			const hooks = new Map(), active = ["read", "write", "mem_read", "mem_save"];
-			const pi = { on: (name, fn) => hooks.set(name, fn), getAllTools: () => active.map(name => ({ name })), getActiveTools: () => active, appendEntry: (customType, data) => appendFileSync(history, JSON.stringify({ type: "custom", customType, data }) + "\n") };
+			const pi = { on: (name: string, fn: (event: unknown, ctx: unknown) => unknown) => hooks.set(name, fn), getAllTools: () => active.map(name => ({ name })), getActiveTools: () => active, appendEntry: (customType: string, data: unknown) => appendFileSync(history, JSON.stringify({ type: "custom", customType, data }) + "\n") };
 			const ctx = { cwd, sessionManager: { getEntries: entries, getSessionFile: () => durable ? history : undefined } };
 			jeroAgents(pi as never, { JERO_PI_AGENTS_CHILD: "1", JERO_PI_RESEARCH_TOOLS: JSON.stringify(active), JERO_PI_RESEARCH_ARTIFACT: JSON.stringify(scope) });
 			hooks.get("before_agent_start")({ systemPrompt: "research" }, ctx);
-			const call = (toolName, input, toolCallId = "call") => hooks.get("tool_call")({ toolName, input, toolCallId }, ctx);
-			const read = toolName => {
+			const call = (toolName: string, input: unknown, toolCallId = "call") => hooks.get("tool_call")({ toolName, input, toolCallId }, ctx);
+			const read = (toolName: string) => {
 				const input = toolName === "read" ? { path } : { topic: engram.topic_key }; assert.equal(call(toolName, input), undefined);
 				return hooks.get("tool_result")({ toolName, input, toolCallId: "call", content: [{ type: "text", text: readFileSync(toolName === "read" ? path : memory, "utf8") }], isError: false }, ctx);
 			};
-			return { call, read, result: (toolName, input, toolCallId) => hooks.get("tool_result")({ toolName, input, toolCallId, content: [{ type: "text", text: "saved" }], isError: false }, ctx) };
+			return { call, read, result: (toolName: string, input: unknown, toolCallId: string) => hooks.get("tool_result")({ toolName, input, toolCallId, content: [{ type: "text", text: "saved" }], isError: false }, ctx) };
 		};
 		const unpersisted = start(false); if (store !== "engram") unpersisted.read("read"); if (store !== "openspec") unpersisted.read("mem_read");
 		assert.equal(unpersisted.call(store === "engram" ? "mem_save" : "write", store === "engram" ? { topic: engram.topic_key, content: next } : { path, content: next })?.block, true, "in-memory session cannot authorize durable mutation");

@@ -5,7 +5,7 @@ import { NativeReviewConsentRequiredError, REVIEW_EMPTY_CANDIDATE_HINT, consentI
 import type { ReviewLastEventClosureV1, ReviewStatusV3 } from "./authority/wire-contract.ts";
 import { decodeReviewLastEventClosureV1 } from "./authority/wire-contract.ts";
 import { prepareReviewHostRelaySlot, submitReviewHostRelayPreparedResult, type ReviewHostRelayRequest, type ReviewHostRelayPreparationRunner } from "./review-host-relay.ts";
-import type { ReviewAssessmentV1 } from "./review-risk-assessment.ts";
+import type { ReviewAssessmentV1 } from "./authority/review-risk-assessment.ts";
 import { resolveJeroAuthorityContextV1, type JeroAuthorityContextV1 } from "./authority/review.ts";
 import { jeroSddStatusV1, type JeroSddStatusV2 } from "./authority/sdd-status.ts";
 import { jeroSddContinueV1 } from "./authority/sdd-continue.ts";

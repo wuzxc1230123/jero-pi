@@ -18,11 +18,11 @@ import {
 	createReviewState,
 	setReviewMutationLockPlatformForTesting,
 	type ReviewBudgetV1,
-} from "../lib/review-transaction.ts";
+} from "../lib/authority/review-transaction.ts";
 import { ordinaryValidatorRequest } from "../lib/review-policy-ordinary.ts";
 import { domainHashV1 } from "../lib/review-canonical.ts";
 import { resolveRepositoryAuthorityV1 } from "../lib/review-repository.ts";
-import { REVIEW_LENS, REVIEW_ROUTE } from "../lib/review-triggers.ts";
+import { REVIEW_LENS, REVIEW_ROUTE } from "../lib/authority/review-triggers.ts";
 import { qualifiedReviewLockPlatform, testSnapshot } from "./review-test-fixtures.ts";
 import type { NativeReviewCli } from "../lib/authority/client-contract.ts";
 

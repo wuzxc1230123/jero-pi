@@ -170,7 +170,7 @@ function closureSubmissionV1(context: import("./review.ts").JeroAuthorityContext
 		operation: JERO_CAPTURE_CLOSURE_OPERATIONS.CAPTURE_RESULT,
 		record: loaded.record,
 		state,
-		cwd,
+		cwd: cwd ?? "",
 		...(state === "approved" ? { advisoryFindings: jeroAdvisoryFindingsFromStateV1(loaded.record.state) } : {}),
 	});
 	// 线上词汇差异 #2：fixture 词汇用斜杠命名两个闭包操作
@@ -254,7 +254,7 @@ function wireClosureSubmissionV1(context: import("./review.ts").JeroAuthorityCon
 		operation,
 		record: loaded.record,
 		state,
-		cwd,
+		cwd: cwd ?? "",
 		...(state === "approved" ? { advisoryFindings: jeroAdvisoryFindingsFromStateV1(loaded.record.state) } : {}),
 	});
 	const wireOperation = operation === "review.capture-validation" ? "review/capture-validation" : operation;

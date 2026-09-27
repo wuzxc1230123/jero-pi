@@ -79,7 +79,7 @@ function windowsDacl(path: string): string {
 		if (sddl === undefined) throw new Error("Windows DACL is unavailable");
 		return sddl;
 	} finally {
-		try { unlinkSync(archivePath); } catch {}
+		try { unlinkSync(archivePath); } catch { /* icacls 归档清理尽力而为：失败不得掩盖 DACL 读取结果。 */ }
 	}
 }
 
@@ -492,7 +492,7 @@ export function removeCandidateOwner(owner: CandidateViewOwner, git: Git, makeWr
 		syncDirectory(parent);
 	} finally {
 		// 即使删除本身失败，也只释放这一个精确匹配的锁。
-		try { assertCandidateOwnerParent(commonDir, platform); checkLock(); unlinkSync(lock); syncDirectory(parent); } catch {}
+		try { assertCandidateOwnerParent(commonDir, platform); checkLock(); unlinkSync(lock); syncDirectory(parent); } catch { /* 已被并发替换或无法触及的锁保留现场供检查。 */ }
 	}
 }
 

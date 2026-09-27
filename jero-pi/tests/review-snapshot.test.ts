@@ -27,8 +27,8 @@ import {
 	REVIEW_MODE,
 	createReviewState,
 	type ReviewBudgetV1,
-} from "../lib/review-transaction.ts";
-import { REVIEW_LENS, REVIEW_ROUTE } from "../lib/review-triggers.ts";
+} from "../lib/authority/review-transaction.ts";
+import { REVIEW_LENS, REVIEW_ROUTE } from "../lib/authority/review-triggers.ts";
 
 function judgmentDayBudget(): ReviewBudgetV1 {
 	return {
