@@ -147,7 +147,7 @@ export function mapAndClearLastEventClosure(
 export function decodeRelayLastEventClosure(submission: string): ReviewLastEventClosureV1 | undefined {
 	let body: unknown;
 	try { body = JSON.parse(submission); } catch { throw new CandidateViewError("host relay submission returned malformed JSON", "last-event-closure-decode-failed"); }
-	if (typeof body !== "object" || body === null || Array.isArray(body) || (body as { schema?: unknown }).schema !== "gentle-ai.review-last-event-closure/v1") return undefined;
+	if (typeof body !== "object" || body === null || Array.isArray(body) || (body as { schema?: unknown }).schema !== "jero-ai.review-last-event-closure/v1") return undefined;
 	return decodeReviewLastEventClosureV1(body);
 }
 

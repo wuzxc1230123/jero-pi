@@ -31,7 +31,7 @@ export const REVIEW_PREFLIGHT_TYPE = "jero.review-preflight";
 // 受支持的 continuation（jero_review inspect），并把由此产生的
 // 同意封套交还给人类。
 export function renderAgentEndReviewPreflightMessage(targetIdentity: string): string {
-	return `Receipt-driven development is enabled, and this worktree holds an unreviewed candidate (target ${targetIdentity}). First determine whether the user explicitly left this exact target unreviewed. If yes, do not invoke review; report that disposition and continue. Only otherwise, call the jero_review tool with {"operation":"inspect"} and follow the transition it returns; it currently offers review.start for this target. An eligible interactive Pi host may resolve consent directly with its own three-action UI. If jero_review instead returns an unresolved gentle-ai.review-integration.consent/v3 envelope, relay that original two-choice provider envelope to the human losslessly. Never answer consent from model prose or tool arguments.\n\nThis extension never runs START itself. This reminder consumes only this session's observed mutation generation.`;
+	return `Receipt-driven development is enabled, and this worktree holds an unreviewed candidate (target ${targetIdentity}). First determine whether the user explicitly left this exact target unreviewed. If yes, do not invoke review; report that disposition and continue. Only otherwise, call the jero_review tool with {"operation":"inspect"} and follow the transition it returns; it currently offers review.start for this target. An eligible interactive Pi host may resolve consent directly with its own three-action UI. If jero_review instead returns an unresolved jero-ai.review-integration.consent/v3 envelope, relay that original two-choice provider envelope to the human losslessly. Never answer consent from model prose or tool arguments.\n\nThis extension never runs START itself. This reminder consumes only this session's observed mutation generation.`;
 }
 
 export function canonicalReviewCaptureBinding(value: unknown): string {
@@ -61,7 +61,7 @@ export function exactCollectArgument(input: ReviewCollectInputV3, name: string):
 // status 版本都保留它；只匹配一个确切版本会让每个
 // 含未跟踪文件的工作区在 gentle-ai 应答 v7 后
 // 无法启动评审（gentle-ai#4187）。
-const INTENDED_UNTRACKED_STATUS_SCHEMA = /^gentle-ai\.review-integration\.status\/v(\d+)$/;
+const INTENDED_UNTRACKED_STATUS_SCHEMA = /^jero-ai\.review-integration\.status\/v(\d+)$/;
 function statusCarriesIntendedUntrackedSelection(schema: unknown): boolean {
 	const match = typeof schema === "string" ? INTENDED_UNTRACKED_STATUS_SCHEMA.exec(schema) : null;
 	return match !== null && Number(match[1]) >= 6;
@@ -71,7 +71,7 @@ export function reviewIntendedUntrackedInput(status: ReviewStatusV3): ReviewColl
 	if (!statusCarriesIntendedUntrackedSelection(status.raw.schema) || status.nextTransition?.kind !== "collect") return undefined;
 	const matches = (status.nextTransition.collect?.inputs ?? []).filter((input) => {
 		const value = input.submission?.values[0];
-		return input.name === "intended_untracked_selection" && input.schema === "gentle-ai.review-intended-untracked-selection/v1" && input.captureOperation === "external.select_intended_untracked" && input.submission?.operationToken === "status" && input.submission.values.length === 1 && value?.slot === "intended_untracked_selection" && value.domain === "schema_bound_json";
+		return input.name === "intended_untracked_selection" && input.schema === "jero-ai.review-intended-untracked-selection/v1" && input.captureOperation === "external.select_intended_untracked" && input.submission?.operationToken === "status" && input.submission.values.length === 1 && value?.slot === "intended_untracked_selection" && value.domain === "schema_bound_json";
 	});
 	return matches.length === 1 ? matches[0] : undefined;
 }

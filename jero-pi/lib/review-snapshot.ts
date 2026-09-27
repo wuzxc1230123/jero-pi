@@ -84,7 +84,7 @@ export interface ReviewSnapshotObjectStoreV1 {
 }
 
 export interface SnapshotV1 {
-	schema: "gentle-ai.review-snapshot/v1";
+	schema: "jero-ai.review-snapshot/v1";
 	mode: ReviewMode;
 	repository_root: string;
 	base_tree: string;
@@ -126,7 +126,7 @@ interface GitEnvironment {
 }
 
 interface SnapshotIdentityV1 {
-	schema: "gentle-ai.review-snapshot-identity/v1";
+	schema: "jero-ai.review-snapshot-identity/v1";
 	mode: ReviewMode;
 	repository_root: string;
 	base_tree: string;
@@ -271,7 +271,7 @@ function assertExistingSnapshotMatches(
 ): SnapshotV1 {
 	const existing = JSON.parse(readFileSync(metadataPath, "utf8")) as SnapshotV1;
 	const existingIdentity: SnapshotIdentityV1 = {
-		schema: "gentle-ai.review-snapshot-identity/v1",
+		schema: "jero-ai.review-snapshot-identity/v1",
 		mode: existing.mode,
 		repository_root: existing.repository_root,
 		base_tree: existing.base_tree,
@@ -403,7 +403,7 @@ export function captureReviewSnapshot(
 						lenses: [] as const,
 					};
 		const identity: SnapshotIdentityV1 = {
-			schema: "gentle-ai.review-snapshot-identity/v1",
+			schema: "jero-ai.review-snapshot-identity/v1",
 			mode: options.mode,
 			repository_root: root,
 			base_tree: baseTree,
@@ -425,7 +425,7 @@ export function captureReviewSnapshot(
 		const finalObjectDirectory = join(finalDirectory, "objects");
 		const metadataPath = join(finalDirectory, "snapshot.json");
 		const snapshot: SnapshotV1 = {
-			schema: "gentle-ai.review-snapshot/v1",
+			schema: "jero-ai.review-snapshot/v1",
 			mode: options.mode,
 			repository_root: root,
 			base_tree: baseTree,

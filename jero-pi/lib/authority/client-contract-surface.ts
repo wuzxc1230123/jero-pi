@@ -217,9 +217,9 @@ export const NATIVE_CLI_CONTRACTS = Object.freeze({
 	// 对照从签名档案安装的已发布 v2.6.0 二进制实测：v2 通道上的
 	// `review capabilities` 宣告 capabilities/v2.5（协议次版本 5），并
 	// 应答 status/v7、consent/v3 与 `start/v4` 续跑，解码器都已能读取。
-	// `review mode status --json` 仍应答 `gentle-ai.rdd-mode-status/v1`，
+	// `review mode status --json` 仍应答 `jero-ai.rdd-mode-status/v1`，
 	// `review validate --gate pre-commit` 仍应答携带 `delivery` 的
-	// `gentle-ai.review-gate-result/v1`，两者均对照二进制验证。在
+	// `jero-ai.review-gate-result/v1`，两者均对照二进制验证。在
 	// `review start` 期间拒绝 consent/v3 提示时，`risk_evidence` 仍只
 	// 出现在那个阻塞封套上，绝不出现在协商的 `start/v4` 续跑上，因此
 	// riskEvidence 与 hint 保持暗置，理由与自 2.2.0 以来每一行相同：
@@ -229,9 +229,9 @@ export const NATIVE_CLI_CONTRACTS = Object.freeze({
 	// 对照从签名档案安装的已发布 v2.7.0 二进制实测：v2 通道上的
 	// `review capabilities` 仍宣告 capabilities/v2.5（协议次版本 5），并
 	// 应答 status/v7、consent/v3 与 `start/v4` 续跑，解码器都已能读取。
-	// `review mode status --json` 仍应答 `gentle-ai.rdd-mode-status/v1`，
+	// `review mode status --json` 仍应答 `jero-ai.rdd-mode-status/v1`，
 	// `review validate --gate pre-commit` 仍应答携带 `delivery` 的
-	// `gentle-ai.review-gate-result/v1`，两者均对照二进制验证。
+	// `jero-ai.review-gate-result/v1`，两者均对照二进制验证。
 	// riskEvidence 与 hint 保持暗置，理由与自 2.2.0 以来每一行相同：
 	// 仍未被证明能到达 Pi 读取的协商 START 路径。2.6.0 到 2.7.0 之间
 	// Pi 消费的封闭字段没有变化，因此各列与 2.6.0 行一致。

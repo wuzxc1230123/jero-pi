@@ -1,12 +1,12 @@
 {
-  "schema": "gentle-ai.review-integration.capabilities/v1.3",
-  "contract": "gentle-ai.review-integration/v1",
+  "schema": "jero-ai.review-integration.capabilities/v1.3",
+  "contract": "jero-ai.review-integration/v1",
   "protocol": {
     "major": 1,
     "minor": 3
   },
   "package": {
-    "name": "gentle-ai",
+    "name": "jero-ai",
     "version": "2.1.7-test",
     "release_channel": "prerelease"
   },
@@ -45,25 +45,25 @@
     "workspace"
   ],
   "schemas": [
-    "gentle-ai.review-admitted-result/v1",
-    "gentle-ai.review-artifact-subject/v1",
-    "gentle-ai.review-authority-repair-assessment/v1",
-    "gentle-ai.review-authority-status/v1",
-    "gentle-ai.review-gate-request/v1",
-    "gentle-ai.review-integration.capabilities/v1.3",
-    "gentle-ai.review-integration.failure/v1",
-    "gentle-ai.review-integration.operation/v1",
-    "gentle-ai.review-integration.projection/v1",
-    "gentle-ai.review-integration.repair/v1",
-    "gentle-ai.review-integration.start/v2",
-    "gentle-ai.review-integration.status/v2",
-    "gentle-ai.review-receipt/v1",
-    "gentle-ai.review-receipt/v2",
-    "gentle-ai.review-result-artifact/v2",
-    "gentle-ai.review-targeted-validation-request/v1",
-    "https://gentle-ai.dev/schema/review/refuter/v1",
-    "https://gentle-ai.dev/schema/review/reviewer/v1",
-    "https://gentle-ai.dev/schema/review/validator/v1"
+    "jero-ai.review-admitted-result/v1",
+    "jero-ai.review-artifact-subject/v1",
+    "jero-ai.review-authority-repair-assessment/v1",
+    "jero-ai.review-authority-status/v1",
+    "jero-ai.review-gate-request/v1",
+    "jero-ai.review-integration.capabilities/v1.3",
+    "jero-ai.review-integration.failure/v1",
+    "jero-ai.review-integration.operation/v1",
+    "jero-ai.review-integration.projection/v1",
+    "jero-ai.review-integration.repair/v1",
+    "jero-ai.review-integration.start/v2",
+    "jero-ai.review-integration.status/v2",
+    "jero-ai.review-receipt/v1",
+    "jero-ai.review-receipt/v2",
+    "jero-ai.review-result-artifact/v2",
+    "jero-ai.review-targeted-validation-request/v1",
+    "https://jero-ai.dev/schema/review/refuter/v1",
+    "https://jero-ai.dev/schema/review/reviewer/v1",
+    "https://jero-ai.dev/schema/review/validator/v1"
   ],
   "features": {
     "mandatory": [
@@ -242,7 +242,7 @@
     ]
   },
   "bootstrap": {
-    "command": "gentle-ai review status --cwd \u003crepo\u003e --contract gentle-ai.review-integration/v1 --next-transition",
+    "command": "jero-ai review status --cwd \u003crepo\u003e --contract jero-ai.review-integration/v1 --next-transition",
     "target_selector_variants": [
       {
         "target_type": "staged",

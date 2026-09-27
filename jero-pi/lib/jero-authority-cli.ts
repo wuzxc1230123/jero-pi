@@ -317,7 +317,7 @@ export function createJeroAuthorityReviewCli(dependencies: { providerRoleReviewe
 			const result = reviewAcknowledgeV1(contextOrThrow(request.cwd), { cwd: request.cwd, lineageId: parsed.lineage, targetIdentity: parsed.target, expectedRevision: parsed.expectedRevision, token: parsed.token });
 			if (result.kind === "refused") throw new Error(refusalDetail("acknowledge", result.code, result.detail));
 			return {
-				schema: "gentle-ai.review-acknowledged/v1",
+				schema: "jero-ai.review-acknowledged/v1",
 				operation: "review/acknowledge-approved",
 				action: "acknowledged",
 				lineageId: result.result.lineage_id,
@@ -388,7 +388,7 @@ export function createJeroAuthorityReviewCli(dependencies: { providerRoleReviewe
 			const prepared = await prepareReviewHostRelaySlot(relayRequest, dependencies.providerRoleReviewer, (req) => renderJeroProviderRoleSlotForRelayV1(req, role));
 			const result = await submitReviewHostRelayPreparedResult(prepared, (req, operationToken, submitTokens, resultFile) => admitJeroProviderRoleResultForRelayV1(req, operationToken, submitTokens, resultFile, role));
 			const body = JSON.parse(result.submission) as Record<string, unknown>;
-			if (body.schema === "gentle-ai.review-last-event-closure/v1") return decodeReviewLastEventClosureV1(body);
+			if (body.schema === "jero-ai.review-last-event-closure/v1") return decodeReviewLastEventClosureV1(body);
 			const loaded = context.lineages.load(lineage);
 			if (loaded.kind !== "ok") throw new Error(refusalDetail("role capture", loaded.kind, "the role artifact could not reload the lineage"));
 			return { schema: NATIVE_REVIEW_PROVIDER_ROLE_CAPTURE_SCHEMA, lineageId: lineage, targetIdentity: loaded.record.state.snapshot.identity, role, captured: true };

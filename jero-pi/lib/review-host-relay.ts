@@ -508,7 +508,7 @@ function snapshotReviewHostRelayRequest(request: ReviewHostRelayRequest): Review
 	// materialize/submit 阶段保守失败；P2 用进程内
 	// authority.capture 渲染替换这些阶段。
 	const providerExecutable = request.providerExecutable;
-	if (providerExecutable !== undefined && !isAbsolute(providerExecutable)) throw new TypeError("Pi host relay requires an absolute gentle-ai executable path");
+	if (providerExecutable !== undefined && !isAbsolute(providerExecutable)) throw new TypeError("Pi host relay requires an absolute provider executable path");
 	const environment = Object.freeze({ ...(request.environment ?? process.env) }) as NodeJS.ProcessEnv;
 	const submission = request.submission === undefined ? undefined : Object.freeze({
 		operationToken: request.submission.operationToken,

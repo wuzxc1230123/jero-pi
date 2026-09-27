@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://gentle-ai.dev/contracts/review-integration/v1/schemas/final-verification-incident.schema.json",
+  "$id": "https://jero-ai.dev/contracts/review-integration/v1/schemas/final-verification-incident.schema.json",
   "title": "Gentle AI final-verification tooling incident",
   "type": "object",
   "additionalProperties": false,
@@ -16,7 +16,7 @@
   ],
   "properties": {
     "schema": {
-      "const": "gentle-ai.review-final-verification-incident/v1"
+      "const": "jero-ai.review-final-verification-incident/v1"
     },
     "class": {
       "const": "procedural_tooling_failure"

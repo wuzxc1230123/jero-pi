@@ -109,7 +109,7 @@ function state(lineageId = "lineage-a") {
 function receiptBody(): ReceiptBodyV1 {
 	const current = state();
 	return {
-		schema: "gentle-ai.review-receipt-body/v1",
+		schema: "jero-ai.review-receipt-body/v1",
 		lineage_id: current.lineage_id,
 		mode: current.mode,
 		base_tree: current.base_tree,

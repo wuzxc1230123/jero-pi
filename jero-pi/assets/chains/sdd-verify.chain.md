@@ -31,7 +31,7 @@ output: verify-report.md
 outputMode: file-only
 progress: true
 
-使用 apply 进度和项目产物为 {task} 运行聚焦和完整验证。包含评审/裁判阻塞项。`verify-report.md` 以强制的围栏 `gentle-ai.verify-result/v1` YAML 封套作为首个非空内容开始，并在持久化之前对封套做字节检查（精确的 `requirements`/`scenarios` 计数、所有字段格式良好）；任何偏差都不持久化任何内容——进程内权威会拒绝 `evidence_revision` 与封套不匹配的结算。
+使用 apply 进度和项目产物为 {task} 运行聚焦和完整验证。包含评审/裁判阻塞项。`verify-report.md` 以强制的围栏 `jero-ai.verify-result/v1` YAML 封套作为首个非空内容开始，并在持久化之前对封套做字节检查（精确的 `requirements`/`scenarios` 计数、所有字段格式良好）；任何偏差都不持久化任何内容——进程内权威会拒绝 `evidence_revision` 与封套不匹配的结算。
 
 ## sdd-sync
 

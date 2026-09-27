@@ -460,7 +460,7 @@ export function assertReceiptMatchesState(
 		throw new ReviewIntegrityError("Authoritative state cannot mint a receipt");
 	}
 	const expected: ReceiptBodyV1 = {
-		schema: "gentle-ai.review-receipt-body/v1",
+		schema: "jero-ai.review-receipt-body/v1",
 		lineage_id: state.lineage_id,
 		mode: state.mode,
 		base_tree: state.base_tree,
@@ -492,7 +492,7 @@ export function createReceiptForState(state: ReviewStateV1): ReceiptEnvelopeV1 {
 		throw new ReviewIntegrityError("Only terminal authoritative state can mint a receipt");
 	}
 	const body: ReceiptBodyV1 = {
-		schema: "gentle-ai.review-receipt-body/v1",
+		schema: "jero-ai.review-receipt-body/v1",
 		lineage_id: state.lineage_id,
 		mode: state.mode,
 		base_tree: state.base_tree,

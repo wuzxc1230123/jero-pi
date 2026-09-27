@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://gentle-ai.dev/contracts/review-integration/v1/schemas/operation.schema.json",
+  "$id": "https://jero-ai.dev/contracts/review-integration/v1/schemas/operation.schema.json",
   "title": "Gentle AI negotiated review operation result",
   "type": "object",
   "additionalProperties": false,
@@ -12,10 +12,10 @@
   ],
   "properties": {
     "schema": {
-      "const": "gentle-ai.review-integration.operation/v1"
+      "const": "jero-ai.review-integration.operation/v1"
     },
     "contract": {
-      "const": "gentle-ai.review-integration/v1"
+      "const": "jero-ai.review-integration/v1"
     },
     "operation": {
       "enum": [
@@ -197,7 +197,7 @@
       ],
       "properties": {
         "schema": {
-          "const": "gentle-ai.review-gate-result/v1"
+          "const": "jero-ai.review-gate-result/v1"
         },
         "result": {
           "enum": [
@@ -240,7 +240,7 @@
       ],
       "properties": {
         "schema": {
-          "const": "gentle-ai.sdd-review-binding/v1"
+          "const": "jero-ai.sdd-review-binding/v1"
         },
         "revision": {
           "$ref": "#/$defs/sha256"

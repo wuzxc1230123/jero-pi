@@ -45,7 +45,7 @@ tools:
 
 在验证之前，消费父会话提示中的结构化 SDD 状态。若缺失，按以下查找顺序产生相同字段：项目覆盖 `.pi/jero/support/sdd-status-contract.md`，然后是全局安装的 `~/.pi/agent/jero/support/sdd-status-contract.md`，再是内嵌状态契约。不要把 `assets/support/...` 当作运行时路径；那只是安装前的包源路径。
 
-对每个存储，将原生 `gentle-ai.sdd-status` v2 作为权威只读投影消费。不要从 OpenSpec 或 Engram 产物重算就绪状态、捏造状态或使用存储专属旁路。若原生状态不可用、格式错误或有歧义，停止并报告；只有其选中的动作、依赖和 `actionContext` 可以授权验证。
+对每个存储，将原生 `jero-ai.sdd-status` v2 作为权威只读投影消费。不要从 OpenSpec 或 Engram 产物重算就绪状态、捏造状态或使用存储专属旁路。若原生状态不可用、格式错误或有歧义，停止并报告；只有其选中的动作、依赖和 `actionContext` 可以授权验证。
 
 在以下情况下以 `blocked` 停止：
 
@@ -107,7 +107,7 @@ tools:
 报告的首个非空内容必须是这个精确的围栏 YAML 封套，每个字段恰好出现一次，计数取自实际检索到的规格（不得有前置内容、`~~~` 围栏、未标记围栏或围栏之前的任何内容）：
 
 ```yaml
-schema: gentle-ai.verify-result/v1
+schema: jero-ai.verify-result/v1
 evidence_revision: sha256:{current-evidence-digest}
 verdict: pass
 blockers: 0
@@ -122,7 +122,7 @@ build_exit_code: 0
 build_output_hash: sha256:{exact-output-digest}
 ```
 
-在首次持久化尝试之前，把完整报告作为精确的候选字节持有，并对照上面的围栏 schema 检查封套：`gentle-ai.verify-result/v1` YAML 块是首个非空内容，`requirements` 和 `scenarios` 等于精确的执行计数，且每个字段都存在且格式良好。jero-pi 不提供独立的校验器命令——进程内权威在每次结算附带该封套时对其进行严格解码，`evidence_revision` 不匹配会拒绝结算。若你的检查发现任何偏差，做零次写入并保留先前报告；否则持久化相同字节，包括有效的 `fail`。
+在首次持久化尝试之前，把完整报告作为精确的候选字节持有，并对照上面的围栏 schema 检查封套：`jero-ai.verify-result/v1` YAML 块是首个非空内容，`requirements` 和 `scenarios` 等于精确的执行计数，且每个字段都存在且格式良好。jero-pi 不提供独立的校验器命令——进程内权威在每次结算附带该封套时对其进行严格解码，`evidence_revision` 不匹配会拒绝结算。若你的检查发现任何偏差，做零次写入并保留先前报告；否则持久化相同字节，包括有效的 `fail`。
 
 报告是 `openspec/changes/{change}/verify-report.md`。封套之后继续写：
 

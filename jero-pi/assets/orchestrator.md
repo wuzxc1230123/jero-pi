@@ -59,7 +59,7 @@ el Jero 是生态配置器与 harness 层。安装后，用户不应记忆工作
 
 {{JERO_PI_BACKGROUND_POLICY}}；规则：委托契约中的 background-subagents 块。
 
-逐动作表、工作路由阶梯示例、成本与上下文平衡、权威工作流及镜像的 gentle-ai 正典（阻塞提示中继、语言、委托）：`orchestrator-delegation.md`。
+逐动作表、工作路由阶梯示例、成本与上下文平衡、权威工作流及镜像的 jero-ai 正典（阻塞提示中继、语言、委托）：`orchestrator-delegation.md`。
 
 ## SDD 工作流（懒加载）
 
@@ -89,7 +89,7 @@ el Jero 是生态配置器与 harness 层。安装后，用户不应记忆工作
 
 ## 安全
 
-- 合格的交互式 Pi 宿主可以在封套到达模型前裁决 `gentle-ai.review-integration.consent/v3`。权限：宿主所有。若 `jero_review` 返回未裁决封套，它仍是原始的提供方所有双选择契约：完全按委托契约的封闭封套规则要求，无损中继并停止。绝不把宿主动作加到已解码或已中继的提供方封套上。
+- 合格的交互式 Pi 宿主可以在封套到达模型前裁决 `jero-ai.review-integration.consent/v3`。权限：宿主所有。若 `jero_review` 返回未裁决封套，它仍是原始的提供方所有双选择契约：完全按委托契约的封闭封套规则要求，无损中继并停止。绝不把宿主动作加到已解码或已中继的提供方封套上。
 - 除非用户显式要求，绝不提交。
 - 破坏性 git 操作、发布或不可逆文件变更前先询问。
 - 除非显式批准隔离工作树，写入保持单线程。

@@ -46,7 +46,7 @@ function validEnvelope(overrides: Record<string, unknown> = {}): Record<string, 
 	};
 }
 
-test("decodeReviewAssessmentV1 accepts a well-formed gentle-ai.review-assessment/v1 envelope", () => {
+test("decodeReviewAssessmentV1 accepts a well-formed jero-ai.review-assessment/v1 envelope", () => {
 	const decoded = decodeReviewAssessmentV1(validEnvelope());
 	assert.equal(decoded.schema, REVIEW_ASSESSMENT_SCHEMA);
 	assert.equal(decoded.risk, "medium");
@@ -67,7 +67,7 @@ test("decodeReviewAssessmentV1 accepts passive and high risk values", () => {
 });
 
 test("decodeReviewAssessmentV1 rejects a wrong schema", () => {
-	assert.throws(() => decodeReviewAssessmentV1(validEnvelope({ schema: "gentle-ai.review-assessment/v2" })), TypeError);
+	assert.throws(() => decodeReviewAssessmentV1(validEnvelope({ schema: "jero-ai.review-assessment/v2" })), TypeError);
 	assert.throws(() => decodeReviewAssessmentV1(validEnvelope({ schema: undefined })), TypeError);
 });
 
@@ -79,7 +79,7 @@ test("decodeReviewAssessmentV1 rejects an unrecognized risk value", () => {
 
 test("decodeReviewAssessmentV1 rejects a malformed shape", () => {
 	assert.throws(() => decodeReviewAssessmentV1(null), TypeError);
-	assert.throws(() => decodeReviewAssessmentV1("gentle-ai.review-assessment/v1"), TypeError);
+	assert.throws(() => decodeReviewAssessmentV1("jero-ai.review-assessment/v1"), TypeError);
 	assert.throws(() => decodeReviewAssessmentV1(validEnvelope({ reasons: "none" })), TypeError);
 	assert.throws(() => decodeReviewAssessmentV1(validEnvelope({ reasons: [{ code: "x" }] })), TypeError);
 	assert.throws(() => decodeReviewAssessmentV1(validEnvelope({ changed_paths: -1 })), TypeError);

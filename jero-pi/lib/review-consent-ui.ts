@@ -21,7 +21,7 @@ export interface ReviewConsentUiModel {
 }
 
 export function isPiConsentV3(consent: ReviewConsentEnvelope): consent is ReviewConsentV3 {
-	return consent.schema === "gentle-ai.review-integration.consent/v3" && consent.agent === "pi";
+	return consent.schema === "jero-ai.review-integration.consent/v3" && consent.agent === "pi";
 }
 
 export function formatReviewConsentUi(consent: ReviewConsentV3): ReviewConsentUiModel {

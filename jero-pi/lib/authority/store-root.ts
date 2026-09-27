@@ -179,7 +179,7 @@ function probeLiveRepository(cwd: string): LiveRepositoryProbe {
 //
 // 镜像 review-repository.ts 的上游 IDENTITY 纪律（wx 临时文件 + fsync
 // + link + EEXIST 读回、有界解析重试、钉住根提交子集校验），但因上游
-// 读回校验的是 `gentle-ai.review-repository/v1` schema、会拒绝 jero
+// 读回校验的是 `jero-ai.review-repository/v1` schema、会拒绝 jero
 // 身份正文而在本地重新实现。身份域哈希是 jero 自己的，因此 jero
 // 仓库 id 绝不是上游 id。
 // ---------------------------------------------------------------------------

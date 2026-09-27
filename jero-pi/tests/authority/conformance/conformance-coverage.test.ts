@@ -35,7 +35,7 @@ test("conformance 2: a declined START creates zero authority", () => {
 // 3. start-v3-zero-lens-closed
 test("conformance 3: a low zero-lens START closes at START", () => {
 	const closed = fixture("start-v3-zero-lens-closed");
-	assert.equal(closed.schema, "gentle-ai.review-integration.start/v3");
+	assert.equal(closed.schema, "jero-ai.review-integration.start/v3");
 	assert.equal(closed.action, "closed");
 	assert.equal(closed.state, "approved");
 	assert.deepEqual(closed.selected_lenses, []);
@@ -63,7 +63,7 @@ test("conformance 5: the plain unrelated STATUS asks for an empty-candidate base
 	// it under action repair_authority only for corrupted records; here it is
 	// the inventory shape itself).
 	const raw = fixture("status-v5").repair as Record<string, unknown>;
-	assert.equal(raw.schema, "gentle-ai.review-authority-repair-assessment/v1");
+	assert.equal(raw.schema, "jero-ai.review-authority-repair-assessment/v1");
 	assert.ok(typeof raw.status === "string");
 	// counts are inventory numbers, not arrays.
 	assert.equal(typeof (raw.counts as Record<string, unknown>).lineages, "number");
@@ -77,7 +77,7 @@ test("conformance 8: the failure/v2 envelope keeps its exact taxonomy", () => {
 	// operation enum (the M1 analysis's noted family), so the taxonomy is
 	// asserted at the field level — which IS the spec this fixture pins.
 	const raw = fixture("failure-v2-capture-evidence");
-	assert.equal(raw.schema, "gentle-ai.review-integration.failure/v2");
+	assert.equal(raw.schema, "jero-ai.review-integration.failure/v2");
 	assert.equal(raw.phase, "preflight");
 	assert.equal(raw.code, "verification_evidence_binding_mismatch");
 	assert.equal(raw.mutation_outcome, "not_started");
@@ -95,7 +95,7 @@ test("conformance 11b: the acknowledgement burns the authority against the consu
 		targetIdentity: raw.target_identity as string,
 	};
 	const acknowledged = decodeReviewAcknowledgedV1(raw, expected);
-	assert.equal(acknowledged.schema, "gentle-ai.review-acknowledged/v1");
+	assert.equal(acknowledged.schema, "jero-ai.review-acknowledged/v1");
 	assert.equal(acknowledged.action, "acknowledged");
 	assert.equal(acknowledged.authority, "burned");
 	// consumed_revision is the binding: the caller held exactly this revision

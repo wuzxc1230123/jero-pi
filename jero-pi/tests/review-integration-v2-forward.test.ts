@@ -46,8 +46,8 @@ function currentStatusFixture(name: string): Record<string, unknown> {
 function initialIntendedUntrackedStatusV6(): JsonObject {
 	const body = currentStatusFixture("status-v5.captured.json");
 	const projection = body.projection as JsonObject;
-	const schema = "gentle-ai.review-intended-untracked-selection/v1";
-	body.schema = "gentle-ai.review-integration.status/v6";
+	const schema = "jero-ai.review-intended-untracked-selection/v1";
+	body.schema = "jero-ai.review-integration.status/v6";
 	body.forecast = {
 		horizon: "partial", steps: [{ step: 1, kind: "collect", reason_code: "intended_untracked_selection_required", description: "initial intended-untracked selection required" }],
 	};
@@ -62,7 +62,7 @@ function initialIntendedUntrackedStatusV6(): JsonObject {
 			].map(([name, value]) => ({ name, value })),
 			submission: {
 				operation_token: "status",
-				argument_tokens: ["--contract=gentle-ai.review-integration/v2", "--next-transition=true", "--agent=pi", "--projection=workspace", "--intended-untracked-selection={{value}}"],
+				argument_tokens: ["--contract=jero-ai.review-integration/v2", "--next-transition=true", "--agent=pi", "--projection=workspace", "--intended-untracked-selection={{value}}"],
 				value: { slot: "intended_untracked_selection", domain: "schema_bound_json", schema, substitution_location: 4 },
 			},
 		}] },
@@ -76,7 +76,7 @@ test("captured capabilities retain their exact schema identity", () => {
 		CAPTURED_DIGEST,
 	);
 	assert.equal(capabilities.packageVersion, "2.4.0-rc.8+fix.verify-attestation-recovery");
-	assert.equal(capabilities.schemas.has("gentle-ai.review-integration.status/v5"), true);
+	assert.equal(capabilities.schemas.has("jero-ai.review-integration.status/v5"), true);
 });
 
 test("historical v3 FINALIZE status remains rejected without rewriting fixture bytes", () => {
@@ -127,9 +127,9 @@ test("captured terminal closure decodes without a compatibility status projectio
 
 test("derived and pinned capabilities remain separately schema-pinned", () => {
 	const derived = decodeReviewCapabilitiesV2(fixture(DEV_FIXTURES, "capabilities-v2.1.derived.json"), CAPTURED_DIGEST);
-	assert.equal(derived.schemas.has("gentle-ai.review-integration.consent/v3"), true);
+	assert.equal(derived.schemas.has("jero-ai.review-integration.consent/v3"), true);
 	const pinned = decodeReviewCapabilitiesV2(fixture(V2_FIXTURES, "capabilities.fixture.json"), "dcc846103b16d365eaeeb9d7f289c23fc4f2897f23def1cb3fe7f05557b64705");
-	assert.equal(pinned.schemas.has("gentle-ai.review-integration.consent/v2"), true);
+	assert.equal(pinned.schemas.has("jero-ai.review-integration.consent/v2"), true);
 });
 
 test("capabilities reject a protocol minor that disagrees with their exact identity", () => {
@@ -148,7 +148,7 @@ test("captured v5 STATUS preserves its provider forecast and collect binding", (
 
 test("v3 status identity rejects v5-only forecast fields", () => {
 	const body = currentStatusFixture("status-v5.captured.json");
-	body.schema = "gentle-ai.review-integration.status/v3";
+	body.schema = "jero-ai.review-integration.status/v3";
 	delete body.receipt;
 	assert.throws(() => decodeReviewStatusV3(body), /forecast/);
 });
@@ -163,7 +163,7 @@ test("the singular v5 capture-result submission normalizes to one typed value", 
 	const decoded = decodeReviewStatusV3(currentStatusFixture("status-v5-capture-result-submission.captured.json"));
 	const input = decoded.nextTransition?.collect?.inputs[0];
 	assert.equal(input?.captureOperation, "review.capture-result");
-	assert.deepEqual(input?.submission?.values, [{ slot: "reviewer_result", domain: "artifact_path_or_stdin", schema: "https://gentle-ai.dev/schema/review/reviewer/v1", substitutionLocation: 7 }]);
+	assert.deepEqual(input?.submission?.values, [{ slot: "reviewer_result", domain: "artifact_path_or_stdin", schema: "https://jero-ai.dev/schema/review/reviewer/v1", substitutionLocation: 7 }]);
 });
 
 test("the singular capture-result form rejects competing legacy values", () => {
@@ -217,13 +217,13 @@ test("nonuniform role capture closures retain their exact upstream operation ide
 test("the derived capabilities/v2.1 payload decodes with protocol minor 1", () => {
 	const capabilities = decodeReviewCapabilitiesV2(fixture(DEV_FIXTURES, "capabilities-v2.1.derived.json"), CAPTURED_DIGEST);
 	assert.equal(capabilities.packageVersion, "2.4.0-rc.8+fix.verify-attestation-recovery");
-	assert.equal(capabilities.schemas.has("gentle-ai.review-integration.status/v3"), true);
-	assert.equal(capabilities.schemas.has("gentle-ai.review-integration.consent/v3"), true);
+	assert.equal(capabilities.schemas.has("jero-ai.review-integration.status/v3"), true);
+	assert.equal(capabilities.schemas.has("jero-ai.review-integration.consent/v3"), true);
 });
 
 test("a status/v3 payload never carries a top-level repository context", () => {
 	const body = currentStatusFixture("status-v5-repository-context.captured.json");
-	body.schema = "gentle-ai.review-integration.status/v3";
+	body.schema = "jero-ai.review-integration.status/v3";
 	delete body.receipt;
 	delete body.forecast;
 	assert.throws(() => decodeReviewStatusV3(body), /repository_context/);
@@ -246,7 +246,7 @@ test("a v5 provider role task input decodes and is confined to external.run_prov
 	const transition = body.next_transition as JsonObject;
 	const input = ((transition.collect as JsonObject).inputs as JsonObject[])[0]!;
 	input.name = "refuter_batch";
-	input.schema = "https://gentle-ai.dev/schema/review/refuter/v1";
+	input.schema = "https://jero-ai.dev/schema/review/refuter/v1";
 	input.capture_operation = "external.run_provider_role";
 	input.provider_task = { agent: "review-refuter", role: "refuter", prompt: "GENTLE_AI_REVIEW_BINDING {}" };
 	const decoded = decodeReviewStatusV3(body);
@@ -258,7 +258,7 @@ test("a v5 provider role task input decodes and is confined to external.run_prov
 
 test("the v3 identity keeps rejecting the singular capture-result value form", () => {
 	const body = currentStatusFixture("status-v5-capture-result-submission.captured.json");
-	body.schema = "gentle-ai.review-integration.status/v3";
+	body.schema = "jero-ai.review-integration.status/v3";
 	delete body.receipt;
 	delete body.forecast;
 	delete body.repository_context;
@@ -267,11 +267,11 @@ test("the v3 identity keeps rejecting the singular capture-result value form", (
 
 test("the v3 next transition keeps rejecting every v5-only surface", () => {
 	const v5 = currentStatusFixture("status-v5.captured.json");
-	v5.schema = "gentle-ai.review-integration.status/v3";
+	v5.schema = "jero-ai.review-integration.status/v3";
 	delete v5.receipt;
 	delete v5.forecast;
 	const transition = v5.next_transition as JsonObject;
-	transition.correction_request = { schema: "gentle-ai.review-correction-plan-request/v1", request_hash: sha("a") };
+	transition.correction_request = { schema: "jero-ai.review-correction-plan-request/v1", request_hash: sha("a") };
 	assert.throws(() => decodeReviewStatusV3(v5), /not allowed|correction_request/);
 });
 
@@ -315,7 +315,7 @@ test("a result artifact rejects unknown keys and weakened bindings", () => {
 
 function reviewingStartV4(action: "created" | "replayed" = "created"): JsonObject {
 	const body = clone(fixture(DEV_FIXTURES, "start-v3-consent-granted.captured.json") as JsonObject);
-	body.schema = "gentle-ai.review-integration.start/v4";
+	body.schema = "jero-ai.review-integration.start/v4";
 	body.action = action;
 	const targetIdentity = (body.repository_context as JsonObject).target_identity as string;
 	const baseTree = body.base_tree as string;
@@ -325,7 +325,7 @@ function reviewingStartV4(action: "created" | "replayed" = "created"): JsonObjec
 		execute: {
 			operation: "review.status",
 			arguments: [
-				{ name: "contract", value: "gentle-ai.review-integration/v2", token: "--contract=gentle-ai.review-integration/v2" },
+				{ name: "contract", value: "jero-ai.review-integration/v2", token: "--contract=jero-ai.review-integration/v2" },
 				{ name: "next-transition", value: "true", token: "--next-transition=true" },
 				{ name: "lineage", value: body.lineage_id, token: `--lineage=${body.lineage_id}` },
 				{ name: "agent", value: "pi", token: "--agent=pi" },
@@ -343,7 +343,7 @@ function reviewingStartV4(action: "created" | "replayed" = "created"): JsonObjec
 
 test("capabilities/v2.3 retains status/v5 while v2.4 requires status/v6", () => {
 	const v23 = clone(fixture(DEV_FIXTURES, "capabilities-v2.2.captured.json") as JsonObject);
-	v23.schema = "gentle-ai.review-integration.capabilities/v2.3";
+	v23.schema = "jero-ai.review-integration.capabilities/v2.3";
 	(v23.protocol as JsonObject).minor = 3;
 	v23.schemas = (v23.schemas as string[]).map((schema) => schema
 		.replace("capabilities/v2.2", "capabilities/v2.3")
@@ -354,22 +354,22 @@ test("capabilities/v2.3 retains status/v5 while v2.4 requires status/v6", () => 
 	features.mandatory = (features.mandatory as JsonObject[]).filter((feature) =>
 		!["exact_receipt_replay", "five_delivery_gates", "sdd_receipt_binding"].includes(feature.name as string));
 	const decoded = decodeReviewCapabilitiesV2(v23, CAPTURED_DIGEST);
-	assert.equal(decoded.schemas.has("gentle-ai.review-integration.start/v4"), true);
-	assert.equal(decoded.schemas.has("gentle-ai.review-integration.start/v3"), false);
-	assert.equal(decoded.schemas.has("gentle-ai.review-integration.status/v5"), true);
+	assert.equal(decoded.schemas.has("jero-ai.review-integration.start/v4"), true);
+	assert.equal(decoded.schemas.has("jero-ai.review-integration.start/v3"), false);
+	assert.equal(decoded.schemas.has("jero-ai.review-integration.status/v5"), true);
 
 	const v24 = clone(v23);
-	v24.schema = "gentle-ai.review-integration.capabilities/v2.4";
+	v24.schema = "jero-ai.review-integration.capabilities/v2.4";
 	(v24.protocol as JsonObject).minor = 4;
 	v24.schemas = [
 		...(v24.schemas as string[]).map((schema) => schema
 			.replace("capabilities/v2.3", "capabilities/v2.4")
 			.replace("status/v5", "status/v6")),
-		"gentle-ai.review-intended-untracked-selection/v1",
+		"jero-ai.review-intended-untracked-selection/v1",
 	];
 	const v24Decoded = decodeReviewCapabilitiesV2(v24, CAPTURED_DIGEST);
-	assert.equal(v24Decoded.schemas.has("gentle-ai.review-integration.status/v6"), true);
-	assert.equal(v24Decoded.schemas.has("gentle-ai.review-integration.status/v5"), false);
+	assert.equal(v24Decoded.schemas.has("jero-ai.review-integration.status/v6"), true);
+	assert.equal(v24Decoded.schemas.has("jero-ai.review-integration.status/v5"), false);
 
 	const missingStatusV6 = clone(v24);
 	missingStatusV6.schemas = (missingStatusV6.schemas as string[]).map((schema) => schema.replace("status/v6", "status/v5"));
@@ -379,7 +379,7 @@ test("capabilities/v2.3 retains status/v5 while v2.4 requires status/v6", () => 
 	// provider no longer advertises these three identities, so a v2.3
 	// advertisement WITHOUT them must still negotiate. A no-op filter would
 	// keep requiring them and fail the superset assertion here.
-	const retiredSchemas = ["gentle-ai.review-final-verification-incident/v1", "gentle-ai.review-receipt/v2", "gentle-ai.review-verification-evidence/v2"];
+	const retiredSchemas = ["jero-ai.review-final-verification-incident/v1", "jero-ai.review-receipt/v2", "jero-ai.review-verification-evidence/v2"];
 	const retiredRemoved = clone(v23);
 	retiredRemoved.schemas = (retiredRemoved.schemas as string[]).filter((schema) => !retiredSchemas.includes(schema));
 	assert.equal((v23.schemas as string[]).length - (retiredRemoved.schemas as string[]).length, 3, "fixture must actually carry and then remove the three retired identities");
@@ -397,7 +397,7 @@ test("capabilities/v2.5 negotiates the v2.6.0 advertisement and status/v7 decode
 	// gentle-ai v2.6.0 advertises capabilities/v2.5: the v2.4 surface plus
 	// status/v7, with status/v6 still advertised for compatibility.
 	const v25 = clone(fixture(DEV_FIXTURES, "capabilities-v2.2.captured.json") as JsonObject);
-	v25.schema = "gentle-ai.review-integration.capabilities/v2.5";
+	v25.schema = "jero-ai.review-integration.capabilities/v2.5";
 	(v25.protocol as JsonObject).minor = 5;
 	const features = v25.features as JsonObject;
 	features.mandatory = (features.mandatory as JsonObject[]).filter((feature) =>
@@ -407,31 +407,31 @@ test("capabilities/v2.5 negotiates the v2.6.0 advertisement and status/v7 decode
 			.replace("capabilities/v2.2", "capabilities/v2.5")
 			.replace("start/v3", "start/v4")
 			.replace("status/v5", "status/v6")),
-		"gentle-ai.review-intended-untracked-selection/v1",
-		"gentle-ai.review-integration.status/v7",
+		"jero-ai.review-intended-untracked-selection/v1",
+		"jero-ai.review-integration.status/v7",
 	];
 	const decoded = decodeReviewCapabilitiesV2(v25, CAPTURED_DIGEST);
-	assert.equal(decoded.schemas.has("gentle-ai.review-integration.status/v6"), true);
+	assert.equal(decoded.schemas.has("jero-ai.review-integration.status/v6"), true);
 	// The negotiated set is the v2.5 requirement floor; status/v7 is additive
 	// and never required, so an advertisement without it still negotiates.
-	assert.equal(decoded.schemas.has("gentle-ai.review-integration.status/v7"), false);
+	assert.equal(decoded.schemas.has("jero-ai.review-integration.status/v7"), false);
 	const withoutStatusV7 = clone(v25);
-	withoutStatusV7.schemas = (withoutStatusV7.schemas as string[]).filter((schema) => schema !== "gentle-ai.review-integration.status/v7");
-	assert.equal(decodeReviewCapabilitiesV2(withoutStatusV7, CAPTURED_DIGEST).schemas.has("gentle-ai.review-integration.status/v6"), true);
+	withoutStatusV7.schemas = (withoutStatusV7.schemas as string[]).filter((schema) => schema !== "jero-ai.review-integration.status/v7");
+	assert.equal(decodeReviewCapabilitiesV2(withoutStatusV7, CAPTURED_DIGEST).schemas.has("jero-ai.review-integration.status/v6"), true);
 
 	// status/v6 stays required: v7 is an additive extension, not a replacement.
 	const missingStatusV6 = clone(v25);
-	missingStatusV6.schemas = (missingStatusV6.schemas as string[]).filter((schema) => schema !== "gentle-ai.review-integration.status/v6");
+	missingStatusV6.schemas = (missingStatusV6.schemas as string[]).filter((schema) => schema !== "jero-ai.review-integration.status/v6");
 	assert.throws(() => decodeReviewCapabilitiesV2(missingStatusV6, CAPTURED_DIGEST), /status\/v6/);
 
 	// status/v7 adds only the optional top-level eligible untracked inventory digest.
 	const v7 = initialIntendedUntrackedStatusV6();
-	v7.schema = "gentle-ai.review-integration.status/v7";
+	v7.schema = "jero-ai.review-integration.status/v7";
 	v7.eligible_untracked_inventory = sha("e");
 	assert.equal(decodeReviewStatusV3(v7).eligibleUntrackedInventory, sha("e"));
 
 	const v7Staged = initialIntendedUntrackedStatusV6();
-	v7Staged.schema = "gentle-ai.review-integration.status/v7";
+	v7Staged.schema = "jero-ai.review-integration.status/v7";
 	assert.equal(decodeReviewStatusV3(v7Staged).eligibleUntrackedInventory, undefined);
 
 	// The digest is v7-only: a v6 envelope carrying it is still rejected.
@@ -444,14 +444,14 @@ test("status/v6 decodes and enforces the intended-untracked selection submission
 	const decoded = decodeReviewStatusV3(initialIntendedUntrackedStatusV6());
 	const input = decoded.nextTransition?.collect?.inputs[0];
 	assert.deepEqual([input?.schema, input?.captureOperation, input?.arguments, input?.submission], [
-		"gentle-ai.review-intended-untracked-selection/v1", "external.select_intended_untracked", [
+		"jero-ai.review-intended-untracked-selection/v1", "external.select_intended_untracked", [
 			{ name: "target_identity", value: decoded.targetIdentity }, { name: "projection", value: "workspace" },
 			{ name: "base_tree", value: decoded.projection.baseTree }, { name: "candidate_tree", value: decoded.projection.currentCandidateTree },
 			{ name: "eligible_paths_json", value: '["docs/selected.md"]' }, { name: "expected_untracked_inventory", value: sha("e") },
 		], {
 			operationToken: "status",
-			argumentTokens: ["--contract=gentle-ai.review-integration/v2", "--next-transition=true", "--agent=pi", "--projection=workspace", "--intended-untracked-selection={{value}}"],
-			values: [{ slot: "intended_untracked_selection", domain: "schema_bound_json", schema: "gentle-ai.review-intended-untracked-selection/v1", substitutionLocation: 4 }],
+			argumentTokens: ["--contract=jero-ai.review-integration/v2", "--next-transition=true", "--agent=pi", "--projection=workspace", "--intended-untracked-selection={{value}}"],
+			values: [{ slot: "intended_untracked_selection", domain: "schema_bound_json", schema: "jero-ai.review-intended-untracked-selection/v1", substitutionLocation: 4 }],
 		},
 	]);
 	const submission = (body: JsonObject) => (((body.next_transition as JsonObject).collect as JsonObject).inputs as JsonObject[])[0]!.submission as JsonObject;
@@ -459,7 +459,7 @@ test("status/v6 decodes and enforces the intended-untracked selection submission
 		["operation", (value) => { value.operation_token = "start"; }, /operation/],
 		["competing values", (value) => { value.values = [clone(value.value)]; }, /value/],
 		["slot", (value) => { delete (value.value as JsonObject).slot; }, /slot/],
-		["schema", (value) => { (value.value as JsonObject).schema = "gentle-ai.review-intended-untracked-selection/v2"; }, /schema/],
+		["schema", (value) => { (value.value as JsonObject).schema = "jero-ai.review-intended-untracked-selection/v2"; }, /schema/],
 		["placeholder", (value) => { (value.argument_tokens as string[])[4] = "--intended-untracked-selection={{selection}}"; }, /value|substitution/],
 		["location", (value) => { (value.value as JsonObject).substitution_location = 3; }, /substitution/],
 	];
@@ -469,14 +469,14 @@ test("status/v6 decodes and enforces the intended-untracked selection submission
 		assert.throws(() => decodeReviewStatusV3(body), pattern, name);
 	}
 	const v5 = initialIntendedUntrackedStatusV6();
-	v5.schema = "gentle-ai.review-integration.status/v5";
+	v5.schema = "jero-ai.review-integration.status/v5";
 	assert.throws(() => decodeReviewStatusV3(v5), /submission/);
 
 	const collectInput = (body: JsonObject) => (((body.next_transition as JsonObject).collect as JsonObject).inputs as JsonObject[])[0]!;
-	const artifactSubject = { schema: "gentle-ai.review-artifact-subject/v2", subject_hash: sha("a"), lineage_id: "review-test", authority_revision: sha("b"), target_identity: sha("c"), base_tree: "a".repeat(40), candidate_tree: "b".repeat(40), changed_path_manifest_sha256: sha("d"), lens: "review-risk", selected_order: 0 };
+	const artifactSubject = { schema: "jero-ai.review-artifact-subject/v2", subject_hash: sha("a"), lineage_id: "review-test", authority_revision: sha("b"), target_identity: sha("c"), base_tree: "a".repeat(40), candidate_tree: "b".repeat(40), changed_path_manifest_sha256: sha("d"), lens: "review-risk", selected_order: 0 };
 	const incompatibleCaptures: ReadonlyArray<readonly [string, JsonObject]> = [
-		["review.capture-result", { schema: "https://gentle-ai.dev/schema/review/reviewer/v1", artifact_subject: artifactSubject, base_tree: "a".repeat(40), candidate_tree: "b".repeat(40), changed_path_manifest: [{ path: "x.ts", status: "M", old_mode: "100644", new_mode: "100644", deleted: false, type_changed: false, mode_only: false, intended_untracked: false }] }],
-		["review.capture-correction-plan", { schema: "gentle-ai.review-correction-plan/v1" }],
+		["review.capture-result", { schema: "https://jero-ai.dev/schema/review/reviewer/v1", artifact_subject: artifactSubject, base_tree: "a".repeat(40), candidate_tree: "b".repeat(40), changed_path_manifest: [{ path: "x.ts", status: "M", old_mode: "100644", new_mode: "100644", deleted: false, type_changed: false, mode_only: false, intended_untracked: false }] }],
+		["review.capture-correction-plan", { schema: "jero-ai.review-correction-plan/v1" }],
 	];
 	for (const [captureOperation, fields] of incompatibleCaptures) {
 		const body = initialIntendedUntrackedStatusV6();
@@ -486,7 +486,7 @@ test("status/v6 decodes and enforces the intended-untracked selection submission
 
 	const mismatchedBindings: ReadonlyArray<readonly [string, string]> = [
 		["name", "renamed_selection"],
-		["schema", "gentle-ai.review-intended-untracked-selection/v0"],
+		["schema", "jero-ai.review-intended-untracked-selection/v0"],
 	];
 	for (const [field, value] of mismatchedBindings) {
 		const body = initialIntendedUntrackedStatusV6();
@@ -501,7 +501,7 @@ test("START/v4 accepts only its reviewing status continuation and preserves v3 s
 		const decoded = decodeReviewStartV4(start);
 		assert.equal(decoded.nextTransition?.execute?.operation, "review.status");
 		assert.deepEqual(decoded.nextTransition?.execute?.arguments, [
-			{ name: "contract", value: "gentle-ai.review-integration/v2", token: "--contract=gentle-ai.review-integration/v2" },
+			{ name: "contract", value: "jero-ai.review-integration/v2", token: "--contract=jero-ai.review-integration/v2" },
 			{ name: "next-transition", value: "true", token: "--next-transition=true" },
 			{ name: "lineage", value: decoded.lineageId, token: `--lineage=${decoded.lineageId}` },
 			{ name: "agent", value: "pi", token: "--agent=pi" },
@@ -515,7 +515,7 @@ test("START/v4 accepts only its reviewing status continuation and preserves v3 s
 	}
 
 	const v3 = reviewingStartV4();
-	v3.schema = "gentle-ai.review-integration.start/v3";
+	v3.schema = "jero-ai.review-integration.start/v3";
 	assert.throws(() => decodeReviewStartV3(v3), /next_transition is not allowed/);
 
 	const wrongOperation = reviewingStartV4();
@@ -614,7 +614,7 @@ test("START/v4 rejects incomplete or incoherent provider-owned status selectors"
 
 test("START/v4 closed approval keeps acknowledgement but forbids a continuation", () => {
 	const closed = clone(fixture(DEV_FIXTURES, "start-v3-zero-lens-closed.captured.json") as JsonObject);
-	closed.schema = "gentle-ai.review-integration.start/v4";
+	closed.schema = "jero-ai.review-integration.start/v4";
 	closed.acknowledgement = { provider_owned: true };
 	assert.deepEqual(decodeReviewStartV4(closed).raw.acknowledgement, { provider_owned: true });
 
@@ -638,7 +638,7 @@ test("review-acknowledged/v1 decodes the captured burn envelope exactly", () => 
 	const raw = acknowledgedFixture();
 	const decoded = decodeReviewAcknowledgedV1(raw);
 	assert.deepEqual(decoded, {
-		schema: "gentle-ai.review-acknowledged/v1",
+		schema: "jero-ai.review-acknowledged/v1",
 		operation: "review/acknowledge-approved",
 		action: "acknowledged",
 		lineageId: "review-3ec95251db75f626",
@@ -648,12 +648,12 @@ test("review-acknowledged/v1 decodes the captured burn envelope exactly", () => 
 		raw,
 	});
 	assert.equal(decodeReviewAcknowledgedV1(raw, { lineageId: decoded.lineageId, targetIdentity: decoded.targetIdentity, revision: decoded.consumedRevision }).authority, "burned");
-	assert.equal(REVIEW_ACKNOWLEDGED_SCHEMA, "gentle-ai.review-acknowledged/v1");
+	assert.equal(REVIEW_ACKNOWLEDGED_SCHEMA, "jero-ai.review-acknowledged/v1");
 });
 
 test("review-acknowledged/v1 rejects identity drift, foreign fields, and a binding that names another burn", () => {
 	const cases: Array<[string, (body: JsonObject) => void, RegExp]> = [
-		["schema", (body) => { body.schema = "gentle-ai.review-acknowledged/v2"; }, /schema/],
+		["schema", (body) => { body.schema = "jero-ai.review-acknowledged/v2"; }, /schema/],
 		["operation", (body) => { body.operation = "review.acknowledge-approved"; }, /operation/],
 		["action", (body) => { body.action = "replayed"; }, /action/],
 		["authority", (body) => { body.authority = "retained"; }, /authority/],
@@ -705,7 +705,7 @@ test("review-acknowledged/v1 is disjoint from every prior captured identity in b
 // last-event-closure.schema.json#/properties/escalation (not a live capture).
 function escalatedStatusV7(): JsonObject {
 	const body = currentStatusFixture("status-v5-capture-result-submission.captured.json");
-	body.schema = "gentle-ai.review-integration.status/v7";
+	body.schema = "jero-ai.review-integration.status/v7";
 	(body.authority as JsonObject).state = "escalated";
 	body.action = "stop";
 	body.replayability = "manual_action_required";
@@ -741,6 +741,6 @@ test("v7 escalation strictly decodes all causes and optional refuter evidence", 
 		assert.throws(() => decodeReviewStatusV3({ ...escalatedStatusV7(), escalation: { cause: "missing_refuter_outcome", finding_ids: ["R1"], refuter_outcomes } }), /refuter_outcomes/);
 	}
 	for (const version of [3, 5, 6]) {
-		assert.throws(() => decodeReviewStatusV3({ ...escalatedStatusV7(), schema: `gentle-ai.review-integration.status/v${version}` }), /not allowed/);
+		assert.throws(() => decodeReviewStatusV3({ ...escalatedStatusV7(), schema: `jero-ai.review-integration.status/v${version}` }), /not allowed/);
 	}
 });

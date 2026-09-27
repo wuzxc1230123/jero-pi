@@ -1,6 +1,6 @@
 {
-  "schema": "gentle-ai.review-integration.start/v3",
-  "contract": "gentle-ai.review-integration/v2",
+  "schema": "jero-ai.review-integration.start/v3",
+  "contract": "jero-ai.review-integration/v2",
   "operation": "review.start",
   "action": "created",
   "lenses_required": true,
@@ -28,7 +28,7 @@
   ],
   "artifact_subjects": [
     {
-      "schema": "gentle-ai.review-artifact-subject/v2",
+      "schema": "jero-ai.review-artifact-subject/v2",
       "subject_hash": "sha256:83a75b97a02e17dca2a466f2a247466751d3d610ed5b18ea45cc6b258dbc4a31",
       "lineage_id": "review-377c60e10b852cfc",
       "authority_revision": "sha256:fe7f383e1b3b0854f8974c94b60597b59a4384c8c6f30c04779d13c6ec32fb66",
@@ -40,7 +40,7 @@
       "selected_order": 0
     },
     {
-      "schema": "gentle-ai.review-artifact-subject/v2",
+      "schema": "jero-ai.review-artifact-subject/v2",
       "subject_hash": "sha256:5abb925fdd448ca0add3f1ce95e84c9f4742e0c1241bade2bde0b3205f3879d8",
       "lineage_id": "review-377c60e10b852cfc",
       "authority_revision": "sha256:fe7f383e1b3b0854f8974c94b60597b59a4384c8c6f30c04779d13c6ec32fb66",
@@ -52,7 +52,7 @@
       "selected_order": 1
     },
     {
-      "schema": "gentle-ai.review-artifact-subject/v2",
+      "schema": "jero-ai.review-artifact-subject/v2",
       "subject_hash": "sha256:cbf59cec5a008893a97b46248c214f4c007ac1b9a18052bfd4f478eaf560e04c",
       "lineage_id": "review-377c60e10b852cfc",
       "authority_revision": "sha256:fe7f383e1b3b0854f8974c94b60597b59a4384c8c6f30c04779d13c6ec32fb66",
@@ -64,7 +64,7 @@
       "selected_order": 2
     },
     {
-      "schema": "gentle-ai.review-artifact-subject/v2",
+      "schema": "jero-ai.review-artifact-subject/v2",
       "subject_hash": "sha256:4a3d37cc911e1b39b03acb15df07be6e3cb041a6c2d493dd4aa9e7446f4b7dfa",
       "lineage_id": "review-377c60e10b852cfc",
       "authority_revision": "sha256:fe7f383e1b3b0854f8974c94b60597b59a4384c8c6f30c04779d13c6ec32fb66",

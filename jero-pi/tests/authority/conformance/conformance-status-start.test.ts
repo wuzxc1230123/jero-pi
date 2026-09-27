@@ -55,7 +55,7 @@ test("conformance 7: the capture-result collect input — 9 exact arguments, sin
 	const value = submission.values[0]!;
 	assert.equal(value.slot, "reviewer_result");
 	assert.equal(value.domain, "artifact_path_or_stdin");
-	assert.equal(value.schema, "https://gentle-ai.dev/schema/review/reviewer/v1");
+	assert.equal(value.schema, "https://jero-ai.dev/schema/review/reviewer/v1");
 	assert.equal(value.substitutionLocation, 7);
 	// INTERNAL CONSISTENCY via jero's own math: argument_tokens = the 9
 	// arguments − the 2 host tokens + the value token at index 7.

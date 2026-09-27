@@ -48,7 +48,7 @@ test("the approved STATUS carries the five-argument burn vector and the adapter 
 	const wireStatus = await cli.targetStatus({ cwd: harness.repo });
 	const execute = wireStatus.nextTransition?.execute;
 	if (execute === undefined || execute.operation !== "review.acknowledge-approved") throw new Error(`expected the burn execute, got ${JSON.stringify(wireStatus.nextTransition)}`);
-	assert.equal(execute.command?.startsWith("gentle-ai review acknowledge-approved "), true);
+	assert.equal(execute.command?.startsWith("jero-ai review acknowledge-approved "), true);
 	assert.deepEqual(execute.arguments.map(({ name }) => name), ["cwd", "lineage", "target", "expected-revision", "token"]);
 	assert.equal(execute.binding.targetIdentity, wireStatus.targetIdentity);
 	assert.equal(execute.binding.lineageId, harness.start.lineage_id);

@@ -56,7 +56,7 @@ function linkedDirtyWorktree(t: test.TestContext): string {
 function reviewerResultCollectInput(lineageId: string, lens: string): ReviewCollectInputV3 {
 	return {
 		name: "reviewer_result",
-		schema: "https://gentle-ai.dev/schema/review/reviewer/v1",
+		schema: "https://jero-ai.dev/schema/review/reviewer/v1",
 		captureOperation: "review.capture-result",
 		arguments: [
 			{ name: "lineage", value: lineageId, token: `--lineage=${lineageId}` },
@@ -65,7 +65,7 @@ function reviewerResultCollectInput(lineageId: string, lens: string): ReviewColl
 			{ name: "order", value: "0", token: "--order=0" },
 		],
 		artifactSubject: {
-			schema: "gentle-ai.review-artifact-subject/v2",
+			schema: "jero-ai.review-artifact-subject/v2",
 			subjectHash: SHA,
 			lineageId,
 			authorityRevision: SHA,
@@ -81,7 +81,7 @@ function reviewerResultCollectInput(lineageId: string, lens: string): ReviewColl
 
 function successorStatus(lineageId: string, projection: { baseTree: string; currentCandidateTree: string; paths: readonly string[] }): ReviewStatusV3 {
 	return {
-		contract: "gentle-ai.review-integration/v2",
+		contract: "jero-ai.review-integration/v2",
 		applicability: "current_target",
 		authority: { version: "compact-v2", lineageId, state: "reviewer_results_required", generation: 2, revision: SHA },
 		receipt: { status: "expected_missing" },
@@ -89,7 +89,7 @@ function successorStatus(lineageId: string, projection: { baseTree: string; curr
 		replayability: "not_replayable",
 		targetIdentity: SHA,
 		projection: {
-			schema: "gentle-ai.review-integration.projection/v1",
+			schema: "jero-ai.review-integration.projection/v1",
 			kind: "current-changes",
 			projection: "workspace",
 			baseTree: projection.baseTree,
@@ -104,7 +104,7 @@ function successorStatus(lineageId: string, projection: { baseTree: string; curr
 		},
 		candidates: [],
 		nextTransition: { kind: "collect", reasonCode: "reviewer_results_required", collect: { inputs: [reviewerResultCollectInput(lineageId, "review-reliability")] } },
-		raw: { schema: "gentle-ai.review-integration.status/v5", action: "finalize", lineage_id: lineageId },
+		raw: { schema: "jero-ai.review-integration.status/v5", action: "finalize", lineage_id: lineageId },
 	} as unknown as ReviewStatusV3;
 }
 

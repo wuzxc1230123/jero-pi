@@ -102,7 +102,7 @@ test("selected native v2 archive authority is injected whole and never falls bac
 	const root = workspace(t);
 	const serialized = JSON.stringify({ changeName: "alpha", workspaceRoot: root, phase: "archive" });
 	const nativeAuthority = {
-		schemaName: "gentle-ai.sdd-status",
+		schemaName: "jero-ai.sdd-status",
 		schemaVersion: 2,
 		changeName: "alpha",
 		artifactStore: "openspec",
@@ -143,7 +143,7 @@ test("selected native v2 failures fail closed without consulting the local resol
 	const root = workspace(t);
 	const serialized = JSON.stringify({ changeName: "alpha", workspaceRoot: root, phase: "archive" });
 	const valid = {
-		schemaName: "gentle-ai.sdd-status", schemaVersion: 2, changeName: "alpha", artifactStore: "openspec",
+		schemaName: "jero-ai.sdd-status", schemaVersion: 2, changeName: "alpha", artifactStore: "openspec",
 		planningHome: { mode: "repo-local", path: join(root, "openspec") }, changeRoot: join(root, "openspec/changes/alpha"),
 		actionContext: { mode: "repo-local", workspaceRoot: root, allowedEditRoots: [root] },
 		dependencies: { proposal: "all_done", specs: "all_done", design: "all_done", tasks: "all_done", apply: "all_done", verify: "all_done", archive: "blocked" },
@@ -235,7 +235,7 @@ function nativeStartup(
 
 function verifyRefreshAuthority(root: string, blockedReasons: readonly string[]) {
 	return {
-		schemaName: "gentle-ai.sdd-status", schemaVersion: 2, changeName: "alpha", artifactStore: "openspec",
+		schemaName: "jero-ai.sdd-status", schemaVersion: 2, changeName: "alpha", artifactStore: "openspec",
 		planningHome: { mode: "repo-local", path: join(root, "openspec") }, changeRoot: join(root, "openspec/changes/alpha"),
 		actionContext: { mode: "repo-local", workspaceRoot: root, allowedEditRoots: [root] },
 		dependencies: { proposal: "all_done", specs: "all_done", design: "all_done", tasks: "all_done", apply: "all_done", verify: "ready", archive: "blocked" },
@@ -324,7 +324,7 @@ test("before_agent_start resolves the unnamed packaged executor and renders nati
 	const systemPrompt = readFileSync(new URL("../assets/agents/sdd-apply.md", import.meta.url), "utf8").replace(/^---\n[\s\S]*?\n---\n/, "");
 	const selection = { changeName: "alpha", workspaceRoot: root, phase: "apply" };
 	const status = {
-		schemaName: "gentle-ai.sdd-status", schemaVersion: 2, changeName: "alpha", artifactStore: "openspec",
+		schemaName: "jero-ai.sdd-status", schemaVersion: 2, changeName: "alpha", artifactStore: "openspec",
 		planningHome: { mode: "repo-local", path: join(root, "openspec") }, changeRoot: join(root, "openspec/changes/alpha"),
 		actionContext: { mode: "repo-local", workspaceRoot: root, allowedEditRoots: [root] },
 		dependencies: { proposal: "all_done", specs: "all_done", design: "all_done", tasks: "all_done", apply: "ready", verify: "blocked", archive: "blocked" },

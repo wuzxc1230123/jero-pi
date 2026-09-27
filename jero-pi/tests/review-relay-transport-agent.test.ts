@@ -61,13 +61,13 @@ function collectInput(lineageId: string, materialize: boolean): ReviewCollectInp
 	];
 	return {
 		name: "reviewer_result",
-		schema: "https://gentle-ai.dev/schema/review/reviewer/v1",
+		schema: "https://jero-ai.dev/schema/review/reviewer/v1",
 		captureOperation: "review.capture-result",
 		arguments: materialize
 			? [...binding, { name: "agent", value: "pi", token: "--agent=pi" }, { name: "materialize", value: "true", token: "--materialize=true" }]
 			: binding,
 		artifactSubject: {
-			schema: "gentle-ai.review-artifact-subject/v2",
+			schema: "jero-ai.review-artifact-subject/v2",
 			subjectHash: SHA,
 			lineageId,
 			authorityRevision: SHA,
@@ -92,14 +92,14 @@ function collectInput(lineageId: string, materialize: boolean): ReviewCollectInp
 
 function recoveredStatus(lineageId: string, materialize: boolean): ReviewStatusV3 {
 	return {
-		contract: "gentle-ai.review-integration/v2",
+		contract: "jero-ai.review-integration/v2",
 		applicability: "current_target",
 		authority: { version: "compact-v2", lineageId, state: "reviewer_results_required", generation: 2, revision: SHA },
 		action: "stop",
 		replayability: "not_replayable",
 		targetIdentity: SHA,
 		projection: {
-			schema: "gentle-ai.review-integration.projection/v1",
+			schema: "jero-ai.review-integration.projection/v1",
 			kind: "current-changes",
 			projection: "workspace",
 			baseTree: "3".repeat(40),
@@ -114,7 +114,7 @@ function recoveredStatus(lineageId: string, materialize: boolean): ReviewStatusV
 		},
 		candidates: [],
 		nextTransition: { kind: "collect", reasonCode: "reviewer_results_required", collect: { inputs: [collectInput(lineageId, materialize)] } },
-		raw: { schema: "gentle-ai.review-integration.status/v5", action: "stop", lineage_id: lineageId },
+		raw: { schema: "jero-ai.review-integration.status/v5", action: "stop", lineage_id: lineageId },
 	} as unknown as ReviewStatusV3;
 }
 
@@ -132,8 +132,8 @@ function transportAwareNative(options: { refusalCode?: string } = {}): {
 			agents.push(request.agent);
 			if (request.agent === "pi" && options.refusalCode !== undefined) {
 				throw new NativeReviewIntegrationError({
-					schema: "gentle-ai.review-integration.failure/v2",
-					contract: "gentle-ai.review-integration/v2",
+					schema: "jero-ai.review-integration.failure/v2",
+					contract: "jero-ai.review-integration/v2",
 					operation: "review.status",
 					phase: "pre_native",
 					code: options.refusalCode,

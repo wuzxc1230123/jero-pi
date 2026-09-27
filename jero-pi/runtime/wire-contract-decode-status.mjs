@@ -110,15 +110,15 @@ function decodeCollectInput(value         , label        , v5         , v6      
 		}
 		if ((V5_SUBMISSION_CAPTURE_OPERATIONS                     ).includes(captureOperation)) {
 			if (input.submission === undefined) throw new TypeError(`${label}.submission is required for ${captureOperation}`);
-			if (captureOperation === "review.capture-correction-plan" && schema !== "gentle-ai.review-correction-plan/v1") throw new TypeError(`${label}.schema must be gentle-ai.review-correction-plan/v1`);
+			if (captureOperation === "review.capture-correction-plan" && schema !== "jero-ai.review-correction-plan/v1") throw new TypeError(`${label}.schema must be jero-ai.review-correction-plan/v1`);
 		}
 	}
 
 	const intendedUntracked = v6
 		&& name === "intended_untracked_selection"
-		&& schema === "gentle-ai.review-intended-untracked-selection/v1"
+		&& schema === "jero-ai.review-intended-untracked-selection/v1"
 		&& captureOperation === "external.select_intended_untracked";
-	if (captureOperation === "external.select_intended_untracked" && (name !== "intended_untracked_selection" || schema !== "gentle-ai.review-intended-untracked-selection/v1")) {
+	if (captureOperation === "external.select_intended_untracked" && (name !== "intended_untracked_selection" || schema !== "jero-ai.review-intended-untracked-selection/v1")) {
 		throw new TypeError(`${label} external.select_intended_untracked requires the intended_untracked_selection binding`);
 	}
 	if (intendedUntracked) {
@@ -148,16 +148,16 @@ function decodeCollectInput(value         , label        , v5         , v6      
 	// 物化角色提示词、运行自己锁定的 pi 子进程并受理原始裁决——因此
 	// 这些输入之一上的提交描述符（宿主中介的完成表单）会让调用方
 	// 获得编写裁决的途径，被作为提供方契约违规拒绝。
-	if (captureOperation === REVIEW_PROVIDER_ROLE_CAPTURE_OPERATION.CAPTURE_REFUTER && schema !== "https://gentle-ai.dev/schema/review/refuter/v1") {
-		throw new TypeError(`${label}.schema must be https://gentle-ai.dev/schema/review/refuter/v1`);
+	if (captureOperation === REVIEW_PROVIDER_ROLE_CAPTURE_OPERATION.CAPTURE_REFUTER && schema !== "https://jero-ai.dev/schema/review/refuter/v1") {
+		throw new TypeError(`${label}.schema must be https://jero-ai.dev/schema/review/refuter/v1`);
 	}
-	if (captureOperation === REVIEW_PROVIDER_ROLE_CAPTURE_OPERATION.CAPTURE_VALIDATION && schema !== "https://gentle-ai.dev/schema/review/validator/v1") {
-		throw new TypeError(`${label}.schema must be https://gentle-ai.dev/schema/review/validator/v1`);
+	if (captureOperation === REVIEW_PROVIDER_ROLE_CAPTURE_OPERATION.CAPTURE_VALIDATION && schema !== "https://jero-ai.dev/schema/review/validator/v1") {
+		throw new TypeError(`${label}.schema must be https://jero-ai.dev/schema/review/validator/v1`);
 	}
 	const targetedValidatorInput = v5
 		&& name === "provider_targeted_validator"
 		&& captureOperation === REVIEW_PROVIDER_ROLE_CAPTURE_OPERATION.CAPTURE_VALIDATION
-		&& schema === "https://gentle-ai.dev/schema/review/validator/v1";
+		&& schema === "https://jero-ai.dev/schema/review/validator/v1";
 	if (input.validation_request !== undefined && !targetedValidatorInput) {
 		throw new TypeError(`${label}.validation_request is only valid for the v5 provider-targeted-validator capture input`);
 	}
@@ -189,7 +189,7 @@ function decodeCollectInput(value         , label        , v5         , v6      
 		if (input.artifact_subject === undefined || input.base_tree === undefined || input.candidate_tree === undefined) {
 			throw new TypeError(`${label} requires artifact_subject, base_tree, and candidate_tree`);
 		}
-		if (schema !== "https://gentle-ai.dev/schema/review/reviewer/v1") throw new TypeError(`${label}.schema must be https://gentle-ai.dev/schema/review/reviewer/v1`);
+		if (schema !== "https://jero-ai.dev/schema/review/reviewer/v1") throw new TypeError(`${label}.schema must be https://jero-ai.dev/schema/review/reviewer/v1`);
 	} else if (input.artifact_subject !== undefined || input.base_tree !== undefined || input.candidate_tree !== undefined || input.changed_path_manifest !== undefined) {
 		throw new TypeError(`${label} carries capture-result fields without review.capture-result`);
 	}
@@ -411,13 +411,13 @@ export function decodeReviewStatusV3(value         )                 {
 	// `eligible_untracked_inventory` 与升级元数据，因此在 v6 表面上解码
 	// 它。v3 继续拒绝每个 v5/v6/v7 专属字段。
 	const schema = typeof value === "object" && value !== null ? (value                           ).schema : undefined;
-	const v7 = schema === "gentle-ai.review-integration.status/v7";
-	const v6 = v7 || schema === "gentle-ai.review-integration.status/v6";
-	const v5 = v6 || schema === "gentle-ai.review-integration.status/v5";
+	const v7 = schema === "jero-ai.review-integration.status/v7";
+	const v6 = v7 || schema === "jero-ai.review-integration.status/v6";
+	const v5 = v6 || schema === "jero-ai.review-integration.status/v5";
 	const body = exactRecord(value, "status", [
 		"schema", "contract", "operation", "applicability", "action", "replayability", "target_identity", "projection", "repair", "candidates",
 	], ["authority", "frozen", "action_disposition", "eligibility", "next_transition", "authority_target_identity", ...(v5 ? ["receipt", "forecast", "repository_context", "validation_request"] : []), ...(v7 ? ["eligible_untracked_inventory", "escalation"] : [])]);
-	requireIdentity(body, v7 ? "gentle-ai.review-integration.status/v7" : v6 ? "gentle-ai.review-integration.status/v6" : v5 ? "gentle-ai.review-integration.status/v5" : "gentle-ai.review-integration.status/v3", REVIEW_INTEGRATION_OPERATION.STATUS);
+	requireIdentity(body, v7 ? "jero-ai.review-integration.status/v7" : v6 ? "jero-ai.review-integration.status/v6" : v5 ? "jero-ai.review-integration.status/v5" : "jero-ai.review-integration.status/v3", REVIEW_INTEGRATION_OPERATION.STATUS);
 
 	const applicability = enumeration(body.applicability, ["current_target", "unrelated", "ambiguous", "corrupted"]         , "status.applicability");
 	let receipt                                   ;
@@ -562,7 +562,7 @@ function decodeConsentChoice(value         , label        , answer              
 		answer,
 		label: nonempty(body.label, `${label}.label`),
 		effect: nonempty(body.effect, `${label}.effect`),
-		invocation: text(body.invocation, `${label}.invocation`, { pattern: new RegExp(`^gentle-ai review start --contract gentle-ai\\.review-integration/v2 .* --consent ${answer}$`) }),
+		invocation: text(body.invocation, `${label}.invocation`, { pattern: new RegExp(`^jero-ai review start --contract jero-ai\\.review-integration/v2 .* --consent ${answer}$`) }),
 	};
 }
 
@@ -583,10 +583,10 @@ function decodeConsentSemantics(body                         )                  
 	}
 
 	const offPathSource = exactRecord(body.off_path, "consent.off_path", ["note", "command"]);
-	// 历史 fixture 逐字携带 gentle-ai 二进制的杀开关命令（金样向量保持
-	// 字节精确）；jero-pi 自己的投影则点名面向用户的 /jero:review-mode
-	// 命令。两者都可解码；归一化输出始终使用 jero 表面。
-	if (offPathSource.command !== "gentle-ai review mode disable" && offPathSource.command !== "/jero:review-mode disable") throw new TypeError("consent.off_path.command is unsupported");
+	// 历史 fixture 逐字携带旧品牌二进制的杀开关命令（向量重导后为
+	// jero-ai 字样）；jero-pi 自己的投影则点名面向用户的 /jero:review-mode
+	// 命令。三者都可解码；归一化输出始终使用 jero 表面。
+	if (offPathSource.command !== "jero-ai review mode disable" && offPathSource.command !== "gentle-ai review mode disable" && offPathSource.command !== "/jero:review-mode disable") throw new TypeError("consent.off_path.command is unsupported");
 
 	return {
 		contract: REVIEW_INTEGRATION_CONTRACT,
@@ -613,9 +613,9 @@ const CONSENT_KEYS_V2 = Object.freeze([
 
 export function decodeReviewConsentV2(value         )                  {
 	const body = exactRecord(value, "consent", CONSENT_KEYS_V2);
-	requireIdentity(body, "gentle-ai.review-integration.consent/v2", "review.start");
+	requireIdentity(body, "jero-ai.review-integration.consent/v2", "review.start");
 	return {
-		schema: "gentle-ai.review-integration.consent/v2",
+		schema: "jero-ai.review-integration.consent/v2",
 		...decodeConsentSemantics(body),
 		raw: body,
 	};
@@ -631,11 +631,11 @@ export function decodeReviewConsentV2(value         )                  {
 // 省略它，因此以捕获为准，Pi 重放到达的任何提供方持有调用。
 export function decodeReviewConsentV3(value         , expectedAgent                       )                  {
 	const body = exactRecord(value, "consent", [...CONSENT_KEYS_V2, "agent"]);
-	requireIdentity(body, "gentle-ai.review-integration.consent/v3", "review.start");
+	requireIdentity(body, "jero-ai.review-integration.consent/v3", "review.start");
 	const agent = enumeration(body.agent, Object.values(REVIEW_CONSENT_AGENT_V3), "consent.agent")                        ;
 	if (expectedAgent !== undefined && agent !== expectedAgent) throw new TypeError("consent.agent does not match the expected runtime binding");
 	return {
-		schema: "gentle-ai.review-integration.consent/v3",
+		schema: "jero-ai.review-integration.consent/v3",
 		agent,
 		...decodeConsentSemantics(body),
 		raw: body,
@@ -700,7 +700,7 @@ export function decodeReviewFailureV2(value         )                  {
 	const body = exactRecord(value, "failure", [
 		"schema", "contract", "operation", "phase", "code", "message", "mutation_outcome", "authority_applicability", "retry_safe", "replayability", "required_inputs", "next_action",
 	], ["lineage_id", "request_digest", "progress_identity", "cause_category", "cause", "context", "continuation"]);
-	requireIdentity(body, "gentle-ai.review-integration.failure/v2");
+	requireIdentity(body, "jero-ai.review-integration.failure/v2");
 	const operation = enumeration(body.operation, FAILURE_OPERATIONS, "failure.operation");
 	const code = text(body.code, "failure.code", { pattern: /^[a-z0-9]+(?:_[a-z0-9]+)*$/ });
 
@@ -717,7 +717,7 @@ export function decodeReviewFailureV2(value         )                  {
 	if (body.continuation !== undefined && code !== "managed_assets_outdated") throw new TypeError("failure.continuation is only valid for code managed_assets_outdated");
 
 	return {
-		schema: "gentle-ai.review-integration.failure/v2",
+		schema: "jero-ai.review-integration.failure/v2",
 		contract: REVIEW_INTEGRATION_CONTRACT,
 		operation,
 		phase: enumeration(body.phase, ["preflight", "pre_native", "native_running", "native_committed", "reconciliation"]         , "failure.phase"),
@@ -771,7 +771,7 @@ export function decodeReviewAdvisoryFindingsV1(value         , label        )   
 
 export function decodeReviewRepairV2(value         )                 {
 	const body = exactRecord(value, "repair", ["schema", "contract", "operation", "mode", "assessment", "required_inputs"], ["provider_inputs", "execution"]);
-	requireIdentity(body, "gentle-ai.review-integration.repair/v2", "review.repair");
+	requireIdentity(body, "jero-ai.review-integration.repair/v2", "review.repair");
 	const mode = enumeration(body.mode, ["preflight", "execute"]         , "repair.mode");
 	const assessment = decodeAuthorityRepairAssessmentV1(body.assessment);
 	const requiredInputs = enumArray(body.required_inputs, ["actor", "reason", "maintainer_authorization"]         , "repair.required_inputs", { maximum: 3, unique: true });
@@ -794,7 +794,7 @@ export function decodeReviewRepairV2(value         )                 {
 		if (source.class !== "legacy_v1_historical_alias") throw new TypeError("repair.provider_inputs.class is unsupported");
 		if (source.cause !== "unsupported_historical_v1_operation_alias") throw new TypeError("repair.provider_inputs.cause is unsupported");
 		if (source.disposition !== "quarantine-approved-historical-alias") throw new TypeError("repair.provider_inputs.disposition is unsupported");
-		if (source.authorization_schema !== "gentle-ai.review-repair-authorization/v1") throw new TypeError("repair.provider_inputs.authorization_schema is unsupported");
+		if (source.authorization_schema !== "jero-ai.review-repair-authorization/v1") throw new TypeError("repair.provider_inputs.authorization_schema is unsupported");
 		providerInputs = {
 			class: "legacy_v1_historical_alias",
 			lineageId: lineage(source.lineage_id, "repair.provider_inputs.lineage_id"),
@@ -802,7 +802,7 @@ export function decodeReviewRepairV2(value         )                 {
 			cause: "unsupported_historical_v1_operation_alias",
 			disposition: "quarantine-approved-historical-alias",
 			repositoryBinding: sha256(source.repository_binding, "repair.provider_inputs.repository_binding"),
-			authorizationSchema: "gentle-ai.review-repair-authorization/v1",
+			authorizationSchema: "jero-ai.review-repair-authorization/v1",
 		};
 	} else if (mode === "preflight") {
 		if (body.provider_inputs !== undefined) throw new TypeError("repair.provider_inputs is only valid for an eligible preflight assessment");
@@ -831,7 +831,7 @@ export function decodeReviewRepairV2(value         )                 {
 	}
 
 	return {
-		schema: "gentle-ai.review-integration.repair/v2",
+		schema: "jero-ai.review-integration.repair/v2",
 		contract: REVIEW_INTEGRATION_CONTRACT,
 		operation: "review.repair",
 		mode,
@@ -872,12 +872,12 @@ export function decodeReviewRepairV2(value         )                 {
 
 export function decodeReviewResultArtifactV2(value         )                         {
 	const body = exactRecord(value, "result_artifact", ["schema", "capability", "sha256", "lineage_id", "target_identity", "lens", "selected_order", "subject_hash", "admission_decision"], ["path", "reference"]);
-	if (body.schema !== "gentle-ai.review-result-artifact/v2") throw new TypeError("result_artifact.schema must be gentle-ai.review-result-artifact/v2");
+	if (body.schema !== "jero-ai.review-result-artifact/v2") throw new TypeError("result_artifact.schema must be jero-ai.review-result-artifact/v2");
 	if (body.capability !== "review.native_result_artifact") throw new TypeError("result_artifact.capability must be review.native_result_artifact");
 	if (body.admission_decision !== "completed") throw new TypeError("result_artifact.admission_decision must be completed");
 	if ((body.path === undefined) === (body.reference === undefined)) throw new TypeError("result_artifact must carry exactly one of path or reference");
 	return {
-		schema: "gentle-ai.review-result-artifact/v2",
+		schema: "jero-ai.review-result-artifact/v2",
 		capability: "review.native_result_artifact",
 		sha256: sha256(body.sha256, "result_artifact.sha256"),
 		lineageId: lineage(body.lineage_id, "result_artifact.lineage_id"),

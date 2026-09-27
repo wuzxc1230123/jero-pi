@@ -52,7 +52,7 @@ test("capabilities reject an incompatible protocol identity", () => {
 	const wrongMinor = clone(source);
 	(wrongMinor.protocol as JsonObject).minor = 1;
 	assert.throws(() => decode(wrongMinor), /incompatible/);
-	assert.throws(() => decode({ ...clone(source), schema: "gentle-ai.review-integration.capabilities/v1" }), /schema/);
+	assert.throws(() => decode({ ...clone(source), schema: "jero-ai.review-integration.capabilities/v1" }), /schema/);
 });
 
 test("START enforces required, exact, and enum-bounded payloads", () => {
@@ -97,7 +97,7 @@ test("start/v3 transports the published selected_lenses wire contract without Pi
 	assert.throws(() => decodeReviewStartV3(duplicateLenses), /selected_lenses.*duplicates/);
 
 	const wrongSchema = clone(captured);
-	wrongSchema.schema = "gentle-ai.review-integration.start/v2";
+	wrongSchema.schema = "jero-ai.review-integration.start/v2";
 	assert.throws(() => decodeReviewStartV3(wrongSchema), /schema/);
 
 	const invalidAction = clone(captured);
@@ -123,7 +123,7 @@ test("projection enforces every required property and rejects additional keys", 
 
 test("failure enforces exact keys, enums, and identifiers", () => {
 	const source: JsonObject = {
-		schema: "gentle-ai.review-integration.failure/v2",
+		schema: "jero-ai.review-integration.failure/v2",
 		contract: REVIEW_INTEGRATION_CONTRACT,
 		operation: "review.capture-result",
 		phase: "pre_native",
@@ -146,7 +146,7 @@ test("failure enforces exact keys, enums, and identifiers", () => {
 
 test("failure with code managed_assets_outdated decodes its continuation, degrades without one, and forbids it elsewhere", () => {
 	const source: JsonObject = {
-		schema: "gentle-ai.review-integration.failure/v2",
+		schema: "jero-ai.review-integration.failure/v2",
 		contract: REVIEW_INTEGRATION_CONTRACT,
 		operation: "review.start",
 		phase: "preflight",
@@ -208,7 +208,7 @@ test("authority repair assessment decodes eligible and unsupported statuses", ()
 
 test("repair execute-without-execution is rejected", () => {
 	const executeMissingExecution: JsonObject = {
-		schema: "gentle-ai.review-integration.repair/v2",
+		schema: "jero-ai.review-integration.repair/v2",
 		contract: REVIEW_INTEGRATION_CONTRACT,
 		operation: "review.repair",
 		mode: "execute",

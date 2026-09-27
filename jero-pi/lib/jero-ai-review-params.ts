@@ -436,7 +436,7 @@ export async function authorizeDestructiveReviewOperation(
 	const parameters = parseReviewControllerParameters(parametersValue);
 	// 只有 RESET 携带旧式的全仓库挑战。原生 compact-v2 的
 	// RECOVER 有自己的六字段契约和自己的派生
-	// `gentle-ai.review-recovery-authorization/v1` 绑定，这两者都无法用
+	// `jero-ai.review-recovery-authorization/v1` 绑定，这两者都无法用
 	// 旧式的 `repositoryId`/`commonDirHash`/`inventoryHash`/`confirmation`
 	// 四元组表达。原生 INSPECT 也从不发布该四元组，因此
 	// 在这里强求它会让唯一受支持的恢复流程不可达
@@ -629,7 +629,7 @@ export function nativeStatusUnsupported(operation: ReviewControllerOperation): R
 		next_action: "require-upstream-read-only-native-status-inventory",
 		remediation_command: NATIVE_STATUS_UNSUPPORTED_REMEDIATION_COMMAND,
 		evidence: {
-			native_contract: "gentle-ai/2.1.4",
+			native_contract: "jero-ai/2.1.4",
 			general_status: "unsupported",
 			claimant_inventory: "unsupported",
 		},

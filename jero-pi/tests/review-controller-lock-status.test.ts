@@ -63,7 +63,7 @@ function repository(t: test.TestContext): string {
 // Exact shape gentle-ai 2.1.8 emits for the residual entry (no owner, no
 // problem), reproduced empirically against the system binary.
 const RELEASED_LOCK = { version: "compact-v2", path: "/repo/.git/gentle-ai/review-transactions/v2/LOCK", status: "released" } as const;
-const OWNED_LOCK = { version: "compact-v2", path: "/repo/.git/gentle-ai/review-transactions/v2/LOCK", status: "owned", owner: { schema: "gentle-ai.review-store-lock/v1", ownerId: "owner", pid: 1, host: "host", acquiredAt: "2026-07-14T00:00:00Z" } } as const;
+const OWNED_LOCK = { version: "compact-v2", path: "/repo/.git/gentle-ai/review-transactions/v2/LOCK", status: "owned", owner: { schema: "jero-ai.review-store-lock/v1", ownerId: "owner", pid: 1, host: "host", acquiredAt: "2026-07-14T00:00:00Z" } } as const;
 const AMBIGUOUS_LOCK = { version: "compact-v2", path: "/repo/.git/gentle-ai/review-transactions/v2/LOCK", status: "ambiguous", problem: "unreadable owner metadata" } as const;
 
 function nativeStatus(cwd: string, status: string, locks: readonly unknown[]): LockStatusFixture {
@@ -75,7 +75,7 @@ function fakeNative(status: LockStatusFixture, onStart?: (request: Parameters<Na
 	const tree = execFileSync("git", ["rev-parse", "HEAD^{tree}"], { cwd: status.repository, encoding: "utf8" }).trim();
 	const targetIdentity = `sha256:${"a".repeat(64)}`;
 	const projection = {
-		schema: "gentle-ai.review-integration.projection/v1",
+		schema: "jero-ai.review-integration.projection/v1",
 		kind: "current-changes",
 		projection: "workspace",
 		baseTree: tree,

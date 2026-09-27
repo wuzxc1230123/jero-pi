@@ -1,6 +1,6 @@
 {
-  "schema": "gentle-ai.review-integration.status/v5",
-  "contract": "gentle-ai.review-integration/v2",
+  "schema": "jero-ai.review-integration.status/v5",
+  "contract": "jero-ai.review-integration/v2",
   "operation": "review.status",
   "applicability": "unrelated",
   "receipt": {
@@ -10,7 +10,7 @@
   "replayability": "not_replayable",
   "target_identity": "sha256:50d13aa33f913bbf99df6ad5b94ac1db2aba969445ffc08aadffd8b42b79f1c4",
   "projection": {
-    "schema": "gentle-ai.review-integration.projection/v1",
+    "schema": "jero-ai.review-integration.projection/v1",
     "kind": "current-changes",
     "projection": "workspace",
     "base_tree": "619289f137abd616d94899f2c9b6726de091ac92",
@@ -24,7 +24,7 @@
     "current_snapshot_identity": "sha256:50d13aa33f913bbf99df6ad5b94ac1db2aba969445ffc08aadffd8b42b79f1c4"
   },
   "repair": {
-    "schema": "gentle-ai.review-authority-repair-assessment/v1",
+    "schema": "jero-ai.review-authority-repair-assessment/v1",
     "status": "unsupported",
     "counts": {
       "lineages": 0,
@@ -40,7 +40,7 @@
       "review/complete-fix",
       "review/validate-fix"
     ],
-    "authorization_schema": "gentle-ai.review-repair-authorization/v1"
+    "authorization_schema": "jero-ai.review-repair-authorization/v1"
   },
   "candidates": [],
   "forecast": {
@@ -61,7 +61,7 @@
       "inputs": [
         {
           "name": "base_ref",
-          "schema": "gentle-ai.review-base-ref-selection/v1",
+          "schema": "jero-ai.review-base-ref-selection/v1",
           "capture_operation": "external.select_base_ref",
           "arguments": [
             {

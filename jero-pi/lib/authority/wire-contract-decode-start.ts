@@ -79,7 +79,7 @@ export function decodeReviewCapabilitiesV2(value: unknown, verifiedExecutableDig
 	if (protocol.major !== 2 || protocol.minor !== identity.protocolMinor) throw new TypeError("incompatible review integration protocol");
 
 	const packageIdentity = exactRecord(body.package, "capabilities.package", ["name", "version", "release_channel"]);
-	if (packageIdentity.name !== "gentle-ai") throw new TypeError("capabilities package identity mismatch");
+	if (packageIdentity.name !== "jero-ai") throw new TypeError("capabilities package identity mismatch");
 	const packageVersion = nonempty(packageIdentity.version, "capabilities.package.version");
 	enumeration(packageIdentity.release_channel, ["development", "prerelease", "stable"] as const, "capabilities.package.release_channel");
 
@@ -135,7 +135,7 @@ export function decodeReviewCapabilitiesV2(value: unknown, verifiedExecutableDig
 
 	if (body.bootstrap !== undefined) {
 		const bootstrap = exactRecord(body.bootstrap, "capabilities.bootstrap", ["command", "target_selector_variants", "required_feature", "unsupported_outcome", "parent_only"]);
-		if (bootstrap.command !== "gentle-ai review status --cwd <repo> --contract gentle-ai.review-integration/v2 --next-transition") throw new TypeError("capabilities.bootstrap.command is unsupported");
+		if (bootstrap.command !== "jero-ai review status --cwd <repo> --contract jero-ai.review-integration/v2 --next-transition") throw new TypeError("capabilities.bootstrap.command is unsupported");
 		array(bootstrap.target_selector_variants, "capabilities.bootstrap.target_selector_variants", (entry, label) => {
 			const selector = exactRecord(entry, label, ["target_type", "arguments"]);
 			enumeration(selector.target_type, ["staged", "base_ref", "workspace_overlay_base_ref", "workspace_overlay_base_tree"] as const, `${label}.target_type`);
@@ -168,9 +168,9 @@ export function decodeReviewCapabilitiesV2(value: unknown, verifiedExecutableDig
 
 export function decodeArtifactSubject(value: unknown, label: string): ReviewArtifactSubjectV2 {
 	const body = exactRecord(value, label, ["schema", "subject_hash", "lineage_id", "authority_revision", "target_identity", "base_tree", "candidate_tree", "changed_path_manifest_sha256", "lens", "selected_order"], ["correction_target_identity"]);
-	if (body.schema !== "gentle-ai.review-artifact-subject/v2") throw new TypeError(`${label}.schema must be gentle-ai.review-artifact-subject/v2`);
+	if (body.schema !== "jero-ai.review-artifact-subject/v2") throw new TypeError(`${label}.schema must be jero-ai.review-artifact-subject/v2`);
 	return {
-		schema: "gentle-ai.review-artifact-subject/v2",
+		schema: "jero-ai.review-artifact-subject/v2",
 		subjectHash: sha256(body.subject_hash, `${label}.subject_hash`),
 		lineageId: lineage(body.lineage_id, `${label}.lineage_id`),
 		authorityRevision: sha256(body.authority_revision, `${label}.authority_revision`),
@@ -212,7 +212,7 @@ export function decodeReviewStartV3(value: unknown, overlayIdentitySatisfiesRepo
 		"schema", "contract", "operation", "action", "lenses_required", "lineage_id", "state", "risk_level",
 		"selected_lenses", "projection", "changed_files", "changed_lines", "correction_budget", "risk_reasons", "artifact_subjects",
 	], [...overlayFields, "changed_path_manifest", "repository_context", "acknowledgement"]);
-	requireIdentity(body, "gentle-ai.review-integration.start/v3", REVIEW_INTEGRATION_OPERATION.START);
+	requireIdentity(body, "jero-ai.review-integration.start/v3", REVIEW_INTEGRATION_OPERATION.START);
 
 	// dependentRequired 让 base_tree 与 candidate_tree 双向绑定，并单独让
 	// target_mode 与 target_identity 双向绑定，两者都要求
@@ -354,7 +354,7 @@ export function decodeReviewStartV4(value: unknown): ReviewStartV4 {
 		"schema", "contract", "operation", "action", "lenses_required", "lineage_id", "state", "risk_level",
 		"selected_lenses", "projection", "changed_files", "changed_lines", "correction_budget", "risk_reasons", "artifact_subjects",
 	], [...overlayFields, "changed_path_manifest", "repository_context", "acknowledgement", "next_transition"]);
-	requireIdentity(body, "gentle-ai.review-integration.start/v4", REVIEW_INTEGRATION_OPERATION.START);
+	requireIdentity(body, "jero-ai.review-integration.start/v4", REVIEW_INTEGRATION_OPERATION.START);
 	const action = enumeration(body.action, ["created", "replayed", "closed", "blocked-scope-action"] as const, "start.action");
 	const v3Action = action === "replayed" ? "resumed" : action;
 	const nextTransition = body.next_transition === undefined ? undefined : decodeReviewNextTransitionV3(body.next_transition);
@@ -365,22 +365,22 @@ export function decodeReviewStartV4(value: unknown): ReviewStartV4 {
 	if (closedApprovedZeroLens && nextTransition !== undefined) throw new TypeError("closed approved zero-lens START cannot carry next_transition");
 	const v3Body = { ...body };
 	delete v3Body.next_transition;
-	const decoded = decodeReviewStartV3({ ...v3Body, schema: "gentle-ai.review-integration.start/v3", action: v3Action }, true);
+	const decoded = decodeReviewStartV3({ ...v3Body, schema: "jero-ai.review-integration.start/v3", action: v3Action }, true);
 	if (reviewing) assertReviewStartV4StatusBinding(nextTransition!.execute!, decoded);
 	return { ...decoded, action, ...(nextTransition === undefined ? {} : { nextTransition }), raw: body };
 }
 
 // ---------------------------------------------------------------------------
 // projection/v1——逐字复用；v2 capabilities schema 仍宣告
-// gentle-ai.review-integration.projection/v1，因此给这个解码器改名就
+// jero-ai.review-integration.projection/v1，因此给这个解码器改名就
 // 等于模块改名想消除的那种谎言。
 // ---------------------------------------------------------------------------
 
 export function decodeReviewProjectionV1(value: unknown): ReviewProjectionDescriptorV1 {
 	const projection = exactRecord(value, "status.projection", ["schema", "kind", "projection", "base_tree", "initial_review_tree", "current_candidate_tree", "paths_digest", "paths", "intended_untracked", "intended_untracked_proof", "initial_snapshot_identity", "current_snapshot_identity"]);
-	if (projection.schema !== "gentle-ai.review-integration.projection/v1") throw new TypeError("status.projection schema is incompatible");
+	if (projection.schema !== "jero-ai.review-integration.projection/v1") throw new TypeError("status.projection schema is incompatible");
 	return {
-		schema: "gentle-ai.review-integration.projection/v1",
+		schema: "jero-ai.review-integration.projection/v1",
 		kind: enumeration(projection.kind, Object.values(REVIEW_PROJECTION_KIND), "status.projection.kind"),
 		projection: enumeration(projection.projection, REQUIRED_PROJECTIONS, "status.projection.projection"),
 		baseTree: gitTree(projection.base_tree, "status.projection.base_tree"),
@@ -417,7 +417,7 @@ function decodeAuthorityRepairAssessmentCounts(value: unknown, label: string): A
 export function decodeAuthorityRepairAssessmentV1(value: unknown): AuthorityRepairAssessmentV1 {
 	const label = "assessment";
 	const body = exactRecord(value, label, ["schema", "status", "counts", "supported_operations", "authorization_schema"], ["class", "cause", "disposition", "repository_binding", "candidate"]);
-	if (body.schema !== "gentle-ai.review-authority-repair-assessment/v1") throw new TypeError(`${label}.schema must be gentle-ai.review-authority-repair-assessment/v1`);
+	if (body.schema !== "jero-ai.review-authority-repair-assessment/v1") throw new TypeError(`${label}.schema must be jero-ai.review-authority-repair-assessment/v1`);
 	const status = enumeration(body.status, ["eligible", "unsupported", "ambiguous", "conflicting", "truncated"] as const, `${label}.status`);
 
 	const eligibleFields = ["class", "cause", "disposition", "repository_binding", "candidate"] as const;
@@ -451,10 +451,10 @@ export function decodeAuthorityRepairAssessmentV1(value: unknown): AuthorityRepa
 
 	const supportedOperations = array(body.supported_operations, `${label}.supported_operations`, (entry, entryLabel) => enumeration(entry, ["review/complete-fix", "review/validate-fix"] as const, entryLabel), { minimum: 2, maximum: 2 });
 	if (supportedOperations[0] !== "review/complete-fix" || supportedOperations[1] !== "review/validate-fix") throw new TypeError(`${label}.supported_operations is out of order`);
-	if (body.authorization_schema !== "gentle-ai.review-repair-authorization/v1") throw new TypeError(`${label}.authorization_schema must be gentle-ai.review-repair-authorization/v1`);
+	if (body.authorization_schema !== "jero-ai.review-repair-authorization/v1") throw new TypeError(`${label}.authorization_schema must be jero-ai.review-repair-authorization/v1`);
 
 	return {
-		schema: "gentle-ai.review-authority-repair-assessment/v1",
+		schema: "jero-ai.review-authority-repair-assessment/v1",
 		status,
 		...(body.class === undefined ? {} : { class: "legacy_v1_historical_alias" as const }),
 		...(body.cause === undefined ? {} : { cause: "unsupported_historical_v1_operation_alias" as const }),
@@ -463,7 +463,7 @@ export function decodeAuthorityRepairAssessmentV1(value: unknown): AuthorityRepa
 		...(candidate === undefined ? {} : { candidate }),
 		counts,
 		supportedOperations: supportedOperations as readonly ["review/complete-fix", "review/validate-fix"],
-		authorizationSchema: "gentle-ai.review-repair-authorization/v1",
+		authorizationSchema: "jero-ai.review-repair-authorization/v1",
 	};
 }
 
@@ -490,7 +490,7 @@ export function decodeCaptureSubmission(value: unknown, label: string, v5: boole
 	if (v6 && captureOperation === "external.select_intended_untracked" && typeof value === "object" && value !== null && (value as Record<string, unknown>).operation_token === "status") {
 		const submission = exactRecord(value, label, ["operation_token", "argument_tokens", "value"]);
 		const expectedTokens = [
-			"--contract=gentle-ai.review-integration/v2", "--next-transition=true", "--agent=pi",
+			"--contract=jero-ai.review-integration/v2", "--next-transition=true", "--agent=pi",
 			"--projection=workspace", "--intended-untracked-selection={{value}}",
 		] as const;
 		const operationToken = enumeration(submission.operation_token, ["status"] as const, `${label}.operation_token`);
@@ -503,7 +503,7 @@ export function decodeCaptureSubmission(value: unknown, label: string, v5: boole
 			values: [{
 				slot: enumeration(row.slot, ["intended_untracked_selection"] as const, `${label}.value.slot`),
 				domain: enumeration(row.domain, ["schema_bound_json"] as const, `${label}.value.domain`),
-				schema: enumeration(row.schema, ["gentle-ai.review-intended-untracked-selection/v1"] as const, `${label}.value.schema`),
+				schema: enumeration(row.schema, ["jero-ai.review-intended-untracked-selection/v1"] as const, `${label}.value.schema`),
 				substitutionLocation: integer(row.substitution_location, `${label}.value.substitution_location`, 4, 4),
 			}],
 		};
@@ -564,9 +564,9 @@ export function decodeProviderTask(value: unknown, label: string): ReviewProvide
 
 export function decodeCorrectionPlanRequestV1(value: unknown, label: string): ReviewCorrectionPlanRequestV1 {
 	const body = exactRecord(value, label, ["schema", "request_hash", "lineage_id", "expected_revision", "target_identity", "correction_budget", "fix_finding_ids", "findings"]);
-	if (body.schema !== "gentle-ai.review-correction-plan-request/v1") throw new TypeError(`${label}.schema must be gentle-ai.review-correction-plan-request/v1`);
+	if (body.schema !== "jero-ai.review-correction-plan-request/v1") throw new TypeError(`${label}.schema must be jero-ai.review-correction-plan-request/v1`);
 	return {
-		schema: "gentle-ai.review-correction-plan-request/v1",
+		schema: "jero-ai.review-correction-plan-request/v1",
 		requestHash: sha256(body.request_hash, `${label}.request_hash`),
 		lineageId: lineage(body.lineage_id, `${label}.lineage_id`),
 		expectedRevision: sha256(body.expected_revision, `${label}.expected_revision`),
@@ -595,7 +595,7 @@ export function decodeReviewTargetedValidationRequestV1(value: unknown, label = 
 		"schema", "request_hash", "lineage_id", "expected_revision", "target_identity", "fix_finding_ids", "policy_content", "fix_findings", "fix_classifications",
 		"projection", "correction_candidate_tree", "correction_target_identity", "correction_paths", "correction_paths_digest",
 	]);
-	if (body.schema !== "gentle-ai.review-targeted-validation-request/v1") throw new TypeError(`${label}.schema must be gentle-ai.review-targeted-validation-request/v1`);
+	if (body.schema !== "jero-ai.review-targeted-validation-request/v1") throw new TypeError(`${label}.schema must be jero-ai.review-targeted-validation-request/v1`);
 	const fixFindingIds = stringArray(body.fix_finding_ids, `${label}.fix_finding_ids`, { minimum: 1, unique: true });
 	const fixFindings = array(body.fix_findings, `${label}.fix_findings`, (entry, entryLabel): ReviewTargetedValidationFindingV1 => {
 		const finding = exactRecord(entry, entryLabel, ["id", "lens", "location", "severity", "claim", "proof_refs", "evidence_class", "causal_disposition"]);
@@ -626,7 +626,7 @@ export function decodeReviewTargetedValidationRequestV1(value: unknown, label = 
 	assertExactSet(findingIds, fixFindingIds, `${label}.fix_findings`);
 	assertExactSet(classificationFindingIds, fixFindingIds, `${label}.fix_classifications`);
 	return {
-		schema: "gentle-ai.review-targeted-validation-request/v1",
+		schema: "jero-ai.review-targeted-validation-request/v1",
 		requestHash: sha256(body.request_hash, `${label}.request_hash`),
 		lineageId: lineage(body.lineage_id, `${label}.lineage_id`),
 		expectedRevision: sha256(body.expected_revision, `${label}.expected_revision`),

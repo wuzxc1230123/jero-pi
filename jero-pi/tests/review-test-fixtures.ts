@@ -48,7 +48,7 @@ export function testSnapshot(options: TestSnapshotOptions): SnapshotV1 {
 	const selected = lenses[0];
 	const changedLines = route === REVIEW_ROUTE.FULL_4R ? 401 : route === REVIEW_ROUTE.TRIVIAL ? 1 : 10;
 	return {
-		schema: "gentle-ai.review-snapshot/v1",
+		schema: "jero-ai.review-snapshot/v1",
 		mode: options.mode ?? REVIEW_MODE.ORDINARY,
 		repository_root: "/test/repository",
 		base_tree: options.baseTree,

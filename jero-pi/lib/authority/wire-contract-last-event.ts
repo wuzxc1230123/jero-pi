@@ -27,7 +27,7 @@ import {
 import {
 	decodeReviewAdvisoryFindingsV1
 } from "./wire-contract-decode-status.ts";
-export const REVIEW_LAST_EVENT_CLOSURE_SCHEMA = "gentle-ai.review-last-event-closure/v1";
+export const REVIEW_LAST_EVENT_CLOSURE_SCHEMA = "jero-ai.review-last-event-closure/v1";
 export const REVIEW_LAST_EVENT_CLOSURE_OPERATION = {
 	CAPTURE_RESULT: "review/capture-result",
 	CAPTURE_CORRECTION_PLAN: "review.capture-correction-plan",
@@ -51,7 +51,7 @@ export interface ReviewStatusContinuationBindingV1 {
 }
 
 export interface ReviewStatusContinuationArtifactV1 {
-	schema: "gentle-ai.review-result-artifact/v2";
+	schema: "jero-ai.review-result-artifact/v2";
 	capability: "review.native_result_artifact";
 	sha256: string;
 	lineageId: string;
@@ -105,7 +105,7 @@ interface ReviewApprovedAcknowledgementExecuteShapeV1 { tokens: ReviewApprovedAc
 function assertReviewApprovedAcknowledgementExecuteShapeV1(execute: ReviewNextTransitionExecuteV3): ReviewApprovedAcknowledgementExecuteShapeV1 {
 	if (execute.operation !== REVIEW_APPROVED_ACKNOWLEDGEMENT_OPERATION) throw new TypeError(`acknowledgement.execute.operation must be ${REVIEW_APPROVED_ACKNOWLEDGEMENT_OPERATION}`);
 	if (execute.command === undefined) throw new TypeError("acknowledgement.execute.command is required");
-	text(execute.command, "acknowledgement.execute.command", { minimum: 1, pattern: /^gentle-ai review acknowledge-approved(?: |$)/ });
+	text(execute.command, "acknowledgement.execute.command", { minimum: 1, pattern: /^jero-ai review acknowledge-approved(?: |$)/ });
 	if (execute.arguments.length !== REVIEW_APPROVED_ACKNOWLEDGEMENT_ARGUMENTS.length) throw new TypeError(`acknowledgement.execute.arguments must carry exactly ${REVIEW_APPROVED_ACKNOWLEDGEMENT_ARGUMENTS.length} provider-issued arguments`);
 	const values = execute.arguments.map((argument, index) => { const name = REVIEW_APPROVED_ACKNOWLEDGEMENT_ARGUMENTS[index]!; if (argument.name !== name) throw new TypeError(`acknowledgement.execute.arguments[${index}].name must be ${name}`); const value = nonempty(argument.value, `acknowledgement.execute.arguments[${index}].value`); if (nonempty(argument.token, `acknowledgement.execute.arguments[${index}].token`) !== `--${name}=${value}`) throw new TypeError(`acknowledgement.execute.arguments[${index}].token must exactly match ${name}`); return value; });
 	if (execute.preconditions.length !== 1 || execute.preconditions[0]?.name !== "state" || execute.preconditions[0]?.value !== "approved") throw new TypeError("acknowledgement.execute.preconditions must be the single approved state precondition");
@@ -143,7 +143,7 @@ export function assertReviewApprovedAcknowledgementExecuteV1(
 // 操作就是它的全部身份，因此 requireIdentity（要求 contract 对）不
 // 适用。至 v2.5.0-rc.3 的每个已发布版本仍不打印任何内容；原生客户端
 // 拥有该区分，本解码器只看字节。
-export const REVIEW_ACKNOWLEDGED_SCHEMA = "gentle-ai.review-acknowledged/v1" as const;
+export const REVIEW_ACKNOWLEDGED_SCHEMA = "jero-ai.review-acknowledged/v1" as const;
 const REVIEW_ACKNOWLEDGED_OPERATION = "review/acknowledge-approved" as const;
 
 export interface ReviewAcknowledgedV1 {
@@ -236,11 +236,11 @@ export interface ReviewLastEventClosureBinding {
 
 function decodeReviewStatusContinuationArtifactV1(value: unknown, label: string): ReviewStatusContinuationArtifactV1 {
 	const artifact = exactRecord(value, label, ["schema", "capability", "sha256", "lineage_id", "target_identity", "lens", "selected_order", "subject_hash", "admission_decision"]);
-	if (artifact.schema !== "gentle-ai.review-result-artifact/v2") throw new TypeError(`${label}.schema must be gentle-ai.review-result-artifact/v2`);
+	if (artifact.schema !== "jero-ai.review-result-artifact/v2") throw new TypeError(`${label}.schema must be jero-ai.review-result-artifact/v2`);
 	if (artifact.capability !== "review.native_result_artifact") throw new TypeError(`${label}.capability must be review.native_result_artifact`);
 	if (artifact.admission_decision !== "completed") throw new TypeError(`${label}.admission_decision must be completed`);
 	return {
-		schema: "gentle-ai.review-result-artifact/v2",
+		schema: "jero-ai.review-result-artifact/v2",
 		capability: "review.native_result_artifact",
 		sha256: sha256(artifact.sha256, `${label}.sha256`),
 		lineageId: lineage(artifact.lineage_id, `${label}.lineage_id`),

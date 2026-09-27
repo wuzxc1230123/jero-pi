@@ -70,13 +70,13 @@ export function lifecycleContext(overrides: Record<string, unknown> = {}): Recor
 export function offeredCommittedRangeStatus(baseRef: string, baseTree: string, candidateTree: string, paths: readonly string[] = ["app.ts"]): ReviewStatusV3 {
 	const targetIdentity = `sha256:${"a".repeat(64)}`;
 	return {
-		contract: "gentle-ai.review-integration/v2",
+		contract: "jero-ai.review-integration/v2",
 		applicability: "unrelated",
 		action: "start",
 		replayability: "not_replayable",
 		targetIdentity,
 		projection: {
-			schema: "gentle-ai.review-candidate-projection/v1",
+			schema: "jero-ai.review-candidate-projection/v1",
 			kind: "base-diff",
 			projection: "workspace",
 			baseTree,
@@ -109,7 +109,7 @@ export function offeredCommittedRangeStatus(baseRef: string, baseTree: string, c
 				binding: { targetIdentity },
 			},
 		},
-		raw: { schema: "gentle-ai.review-integration.status/v5" },
+		raw: { schema: "jero-ai.review-integration.status/v5" },
 	} as unknown as ReviewStatusV3;
 }
 
@@ -118,13 +118,13 @@ export function offeredCommittedRangeStatus(baseRef: string, baseTree: string, c
 export function cleanWorkspaceStatus(headTree: string, nextTransition?: ReviewStatusV3["nextTransition"]): ReviewStatusV3 {
 	const targetIdentity = `sha256:${"a".repeat(64)}`;
 	return {
-		contract: "gentle-ai.review-integration/v2",
+		contract: "jero-ai.review-integration/v2",
 		applicability: "unrelated",
 		action: "start",
 		replayability: "not_replayable",
 		targetIdentity,
 		projection: {
-			schema: "gentle-ai.review-candidate-projection/v1",
+			schema: "jero-ai.review-candidate-projection/v1",
 			kind: "current-changes",
 			projection: "workspace",
 			baseTree: headTree,
@@ -139,7 +139,7 @@ export function cleanWorkspaceStatus(headTree: string, nextTransition?: ReviewSt
 		},
 		candidates: [],
 		...(nextTransition === undefined ? {} : { nextTransition }),
-		raw: { schema: "gentle-ai.review-integration.status/v5" },
+		raw: { schema: "jero-ai.review-integration.status/v5" },
 	} as unknown as ReviewStatusV3;
 }
 

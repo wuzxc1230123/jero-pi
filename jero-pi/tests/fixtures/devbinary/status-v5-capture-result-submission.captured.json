@@ -1,6 +1,6 @@
 {
-  "schema": "gentle-ai.review-integration.status/v5",
-  "contract": "gentle-ai.review-integration/v2",
+  "schema": "jero-ai.review-integration.status/v5",
+  "contract": "jero-ai.review-integration/v2",
   "operation": "review.status",
   "applicability": "current_target",
   "authority": {
@@ -22,7 +22,7 @@
   },
   "target_identity": "sha256:c15e3de5404ab556a237a0a94f1d8d99e33e2ac6664877b2eefee0e210f8252a",
   "projection": {
-    "schema": "gentle-ai.review-integration.projection/v1",
+    "schema": "jero-ai.review-integration.projection/v1",
     "kind": "current-changes",
     "projection": "workspace",
     "base_tree": "96c8f6a2eee2da821f202ee686b70c211bd9fd37",
@@ -38,7 +38,7 @@
     "current_snapshot_identity": "sha256:c15e3de5404ab556a237a0a94f1d8d99e33e2ac6664877b2eefee0e210f8252a"
   },
   "repair": {
-    "schema": "gentle-ai.review-authority-repair-assessment/v1",
+    "schema": "jero-ai.review-authority-repair-assessment/v1",
     "status": "unsupported",
     "counts": {
       "lineages": 0,
@@ -54,7 +54,7 @@
       "review/complete-fix",
       "review/validate-fix"
     ],
-    "authorization_schema": "gentle-ai.review-repair-authorization/v1"
+    "authorization_schema": "jero-ai.review-repair-authorization/v1"
   },
   "candidates": [],
   "forecast": {
@@ -75,7 +75,7 @@
       "inputs": [
         {
           "name": "reviewer_result",
-          "schema": "https://gentle-ai.dev/schema/review/reviewer/v1",
+          "schema": "https://jero-ai.dev/schema/review/reviewer/v1",
           "capture_operation": "review.capture-result",
           "arguments": [
             {
@@ -139,12 +139,12 @@
             "value": {
               "slot": "reviewer_result",
               "domain": "artifact_path_or_stdin",
-              "schema": "https://gentle-ai.dev/schema/review/reviewer/v1",
+              "schema": "https://jero-ai.dev/schema/review/reviewer/v1",
               "substitution_location": 7
             }
           },
           "artifact_subject": {
-            "schema": "gentle-ai.review-artifact-subject/v2",
+            "schema": "jero-ai.review-artifact-subject/v2",
             "subject_hash": "sha256:717aafba627b961e8bf8c1d40e20961475e7e48da7addb635172c62f2c8b8c15",
             "lineage_id": "review-c15e3de5404ab556",
             "authority_revision": "sha256:d6f2eeddd50606fb387daff489a17b612e923e501dc714c2952142a3c1d0e073",

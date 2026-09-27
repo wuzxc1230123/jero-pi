@@ -19,7 +19,7 @@ import { jeroLineageDirectory } from "./store-root.ts";
 // 字段形态遵循本地 fixture tests/fixtures/native-review-cli/v2.1.3/
 // bind-sdd.json——其中 `change` 与 `lineage` 是普通字符串。
 
-export const JERO_SDD_BINDING_SCHEMA = "gentle-ai.sdd-review-binding/v1";
+export const JERO_SDD_BINDING_SCHEMA = "jero-ai.sdd-review-binding/v1";
 
 export interface JeroGateContextV1 {
 	gate: "post-apply" | "pre-commit" | "pre-push" | "pre-pr" | "release";

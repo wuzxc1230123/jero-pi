@@ -47,7 +47,7 @@ tools:
 
 在归档工作之前，消费父会话提示中的结构化 SDD 状态。若缺失，按以下查找顺序产生相同字段：项目覆盖 `.pi/jero/support/sdd-status-contract.md`，然后是全局安装的 `~/.pi/agent/jero/support/sdd-status-contract.md`，再是内嵌状态契约。不要把 `assets/support/...` 当作运行时路径；那只是安装前的包源路径。
 
-对每个存储，将原生 `gentle-ai.sdd-status` v2 作为权威只读投影消费。不要从 OpenSpec 或 Engram 产物重算归档就绪状态、捏造状态或使用存储专属旁路。若原生状态不可用、格式错误或有歧义，停止并报告；只有其选中的动作、依赖和 `actionContext` 可以授权归档工作。
+对每个存储，将原生 `jero-ai.sdd-status` v2 作为权威只读投影消费。不要从 OpenSpec 或 Engram 产物重算归档就绪状态、捏造状态或使用存储专属旁路。若原生状态不可用、格式错误或有歧义，停止并报告；只有其选中的动作、依赖和 `actionContext` 可以授权归档工作。
 
 在以下情况下以 `blocked` 停止：
 

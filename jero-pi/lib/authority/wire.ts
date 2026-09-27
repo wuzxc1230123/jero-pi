@@ -8,12 +8,12 @@ import { type JeroSnapshotDerivationV1, jeroUntrackedInventoryDigestV1 } from ".
 // 渲染器、中继请求构建器）消费 camelCase 的 ReviewStatusV3 线上记录；
 // 权威发出自己的类型化 jero 命名联合。本模块是“唯一”的翻译点——
 // 控制器读取的每个字段都在这里投影，别处不做推断。线上 schema 字符串
-// 在 P5 身份改造前保持 gentle-ai.*（移植纪律）；权威自己的值
+// 在 P5 身份改造前保持 jero-ai.*（移植纪律）；权威自己的值
 // （jero-authority/v1 版本标记）作为非路由元数据逐字透传。
 
-const WIRE_CONTRACT = "gentle-ai.review-integration/v2" as const;
-const PROJECTION_SCHEMA = "gentle-ai.review-candidate-projection/v1" as const;
-const REPAIR_SCHEMA = "gentle-ai.review-authority-repair-assessment/v1" as const;
+const WIRE_CONTRACT = "jero-ai.review-integration/v2" as const;
+const PROJECTION_SCHEMA = "jero-ai.review-candidate-projection/v1" as const;
+const REPAIR_SCHEMA = "jero-ai.review-authority-repair-assessment/v1" as const;
 
 interface WireArgument {
 	name: string;
@@ -122,7 +122,7 @@ export function projectJeroStatusToWireV1(status: Extract<JeroReviewStatusResult
 			initialSnapshotIdentity: `sha256:${derivation.snapshot_id}`,
 			currentSnapshotIdentity: `sha256:${derivation.snapshot_id}`,
 		},
-		repair: { schema: REPAIR_SCHEMA, status: "not_required", counts: { lineages: 0, compact_lineages: 0, legacy_lineages: 0, events: 0, bytes: 0, eligible_candidates: 0, unsupported_lineages: 0, conflicts: 0 }, supported_operations: [], authorization_schema: "gentle-ai.review-abandon-authorization/v2" },
+		repair: { schema: REPAIR_SCHEMA, status: "not_required", counts: { lineages: 0, compact_lineages: 0, legacy_lineages: 0, events: 0, bytes: 0, eligible_candidates: 0, unsupported_lineages: 0, conflicts: 0 }, supported_operations: [], authorization_schema: "jero-ai.review-abandon-authorization/v2" },
 		candidates: [...(status.candidates ?? [])],
 		...(next === undefined ? {} : {
 			nextTransition: {
@@ -142,7 +142,7 @@ export function projectJeroStatusToWireV1(status: Extract<JeroReviewStatusResult
 // P4d-e：START 同意门的线上封套。权威发出类型化的 `consent_required`
 // 联合分支；控制器机制（pending 注册表、reviewConsentDigest、双选项
 // UI、answerConsent 的绑定重新解析）消费
-// gentle-ai.review-integration.consent/v3 记录。Fixture 对齐：
+// jero-ai.review-integration.consent/v3 记录。Fixture 对齐：
 // tests/fixtures/review-integration/v2/fixtures/consent.fixture.json 为
 // 每个文案字符串提供依据；调用内嵌未跟踪选择，使应答路径重新冻结的
 // 正是问题签发时的确切候选（标志形式与
@@ -165,7 +165,7 @@ function projectJeroExecuteToWireV1(execute: { readonly operation: string; reado
 
 // P4d-g：last-event 闭包投影。权威的闭包构建器发出 jero 命名的记录；
 // 控制器经 decodeReviewLastEventClosureV1 消费线上闭包（schema 为
-// gentle-ai.review-last-event-closure/v1，顶层 camelCase，嵌套行 snake_case
+// jero-ai.review-last-event-closure/v1，顶层 camelCase，嵌套行 snake_case
 // 逐字保留）。
 export function projectJeroClosureToWireV1(closure: {
 	readonly schema: string; readonly operation: string; readonly lineage_id: string; readonly state: string; readonly store_revision: string;
@@ -174,7 +174,7 @@ export function projectJeroClosureToWireV1(closure: {
 	readonly acknowledgement?: unknown; readonly acknowledgement_undecodable?: boolean;
 }): Record<string, unknown> {
 	return {
-		schema: "gentle-ai.review-last-event-closure/v1",
+		schema: "jero-ai.review-last-event-closure/v1",
 		operation: closure.operation,
 		lineageId: closure.lineage_id,
 		state: closure.state,
@@ -207,7 +207,7 @@ export function projectJeroConsentEnvelopeV1(
 		answer,
 		label,
 		effect,
-		invocation: ["gentle-ai", "review", "start",
+		invocation: ["jero-ai", "review", "start",
 			"--contract", WIRE_CONTRACT,
 			"--cwd", invocation.cwd,
 			"--target", consent.target_identity,
@@ -223,7 +223,7 @@ export function projectJeroConsentEnvelopeV1(
 	];
 	const offPath = { note: "To turn reviews off for good in this repository, run /jero:review-mode disable.", command: "/jero:review-mode disable" } as const;
 	const raw = {
-		schema: "gentle-ai.review-integration.consent/v3",
+		schema: "jero-ai.review-integration.consent/v3",
 		contract: WIRE_CONTRACT,
 		operation: "review.start",
 		action: "consent_required",
@@ -242,7 +242,7 @@ export function projectJeroConsentEnvelopeV1(
 		agent: "pi",
 	};
 	return {
-		schema: "gentle-ai.review-integration.consent/v3",
+		schema: "jero-ai.review-integration.consent/v3",
 		agent: "pi",
 		contract: WIRE_CONTRACT,
 		operation: "review.start",

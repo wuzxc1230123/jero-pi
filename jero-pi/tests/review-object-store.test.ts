@@ -28,7 +28,7 @@ test("repository factory resolves the graph object path beneath the exact common
 		execFileSync("git", ["-c", "user.name=test", "-c", "user.email=test@example.com", "commit", "-m", "foundation"], { cwd: repository });
 		const store = ReviewGraphObjectStoreV1.forRepository(repository);
 		const commonDirectory = execFileSync("git", ["rev-parse", "--path-format=absolute", "--git-common-dir"], { cwd: repository, encoding: "utf8" }).trim();
-		assert.equal(store.root, join(commonDirectory, "gentle-ai", "reviews", "graph-v1"));
+		assert.equal(store.root, join(commonDirectory, "jero-ai", "reviews", "graph-v1"));
 	} finally {
 		rmSync(parent, { recursive: true, force: true });
 	}
@@ -51,7 +51,7 @@ test("CURRENT only selects a root after a two-slot quorum and preserves old-or-n
 	const root = temporaryRoot();
 	try {
 		const store = new ReviewGraphObjectStoreV1(root, hash, "b".repeat(64));
-		const first = store.installRootSet({ schema: "gentle-ai.review-root-set/v1", repository_id: hash, authority_id: "b".repeat(64), generation: 0, predecessor_root_set_id: null, lineages: [] });
+		const first = store.installRootSet({ schema: "jero-ai.review-root-set/v1", repository_id: hash, authority_id: "b".repeat(64), generation: 0, predecessor_root_set_id: null, lineages: [] });
 		assert.throws(() => store.readCurrent(), /quorum/i);
 		store.publishRootSet(first);
 		assert.equal(store.readCurrent().root_set_id, first.root_set_id);
@@ -73,10 +73,10 @@ test("root publication exposes the old quorum when a fault occurs before the sec
 				}
 			},
 		});
-		const first = store.installRootSet({ schema: "gentle-ai.review-root-set/v1", repository_id: hash, authority_id: "b".repeat(64), generation: 0, predecessor_root_set_id: null, lineages: [] });
+		const first = store.installRootSet({ schema: "jero-ai.review-root-set/v1", repository_id: hash, authority_id: "b".repeat(64), generation: 0, predecessor_root_set_id: null, lineages: [] });
 		store.publishRootSet(first);
 		armed = true;
-		const second = store.installRootSet({ schema: "gentle-ai.review-root-set/v1", repository_id: hash, authority_id: "b".repeat(64), generation: 1, predecessor_root_set_id: first.root_set_id, lineages: [] });
+		const second = store.installRootSet({ schema: "jero-ai.review-root-set/v1", repository_id: hash, authority_id: "b".repeat(64), generation: 1, predecessor_root_set_id: first.root_set_id, lineages: [] });
 		assert.throws(() => store.publishRootSet(second), /injected quorum fault/);
 		assert.equal(store.readCurrent().root_set_id, first.root_set_id);
 	} finally {
@@ -96,7 +96,7 @@ test("genesis quorum-loss crash is forward-recoverable when exactly one unambigu
 				}
 			},
 		});
-		const genesisRoot = store.installRootSet({ schema: "gentle-ai.review-root-set/v1", repository_id: hash, authority_id: "b".repeat(64), generation: 0, predecessor_root_set_id: null, lineages: [] });
+		const genesisRoot = store.installRootSet({ schema: "jero-ai.review-root-set/v1", repository_id: hash, authority_id: "b".repeat(64), generation: 0, predecessor_root_set_id: null, lineages: [] });
 		// Only CURRENT.0 was durably written before the crash.
 		assert.throws(() => store.publishRootSet(genesisRoot), /injected genesis quorum-loss fault/);
 		assert.throws(() => store.readCurrent(), /quorum/i);
@@ -111,8 +111,8 @@ test("genesis repair stays fail closed when two candidate root sets are ambiguou
 	const root = temporaryRoot();
 	try {
 		const store = new ReviewGraphObjectStoreV1(root, hash, "b".repeat(64));
-		store.installRootSet({ schema: "gentle-ai.review-root-set/v1", repository_id: hash, authority_id: "b".repeat(64), generation: 0, predecessor_root_set_id: null, lineages: [] });
-		store.installRootSet({ schema: "gentle-ai.review-root-set/v1", repository_id: hash, authority_id: "b".repeat(64), generation: 0, predecessor_root_set_id: null, lineages: [{ lineage_id: "x", mode: "graph" }] });
+		store.installRootSet({ schema: "jero-ai.review-root-set/v1", repository_id: hash, authority_id: "b".repeat(64), generation: 0, predecessor_root_set_id: null, lineages: [] });
+		store.installRootSet({ schema: "jero-ai.review-root-set/v1", repository_id: hash, authority_id: "b".repeat(64), generation: 0, predecessor_root_set_id: null, lineages: [{ lineage_id: "x", mode: "graph" }] });
 		assert.throws(() => store.readCurrent(), /quorum/i);
 		assert.throws(() => store.repairCurrentPointers(), /quorum/i);
 	} finally {
@@ -124,7 +124,7 @@ test("genesis repair stays fail closed when the sole candidate root set is corru
 	const root = temporaryRoot();
 	try {
 		const store = new ReviewGraphObjectStoreV1(root, hash, "b".repeat(64));
-		const genesisRoot = store.installRootSet({ schema: "gentle-ai.review-root-set/v1", repository_id: hash, authority_id: "b".repeat(64), generation: 0, predecessor_root_set_id: null, lineages: [] });
+		const genesisRoot = store.installRootSet({ schema: "jero-ai.review-root-set/v1", repository_id: hash, authority_id: "b".repeat(64), generation: 0, predecessor_root_set_id: null, lineages: [] });
 		const path = join(root, "roots", "sha256", genesisRoot.root_set_id.slice(0, 2), genesisRoot.root_set_id.slice(2));
 		writeFileSync(path, "not canonical json");
 		assert.throws(() => store.readCurrent(), /quorum/i);
@@ -138,9 +138,9 @@ test("root successors must name the current root and repair restores only a quor
 	const root = temporaryRoot();
 	try {
 		const store = new ReviewGraphObjectStoreV1(root, hash, "b".repeat(64));
-		const first = store.installRootSet({ schema: "gentle-ai.review-root-set/v1", repository_id: hash, authority_id: "b".repeat(64), generation: 0, predecessor_root_set_id: null, lineages: [] });
+		const first = store.installRootSet({ schema: "jero-ai.review-root-set/v1", repository_id: hash, authority_id: "b".repeat(64), generation: 0, predecessor_root_set_id: null, lineages: [] });
 		store.publishRootSet(first);
-		const fork = store.installRootSet({ schema: "gentle-ai.review-root-set/v1", repository_id: hash, authority_id: "b".repeat(64), generation: 1, predecessor_root_set_id: "c".repeat(64), lineages: [] });
+		const fork = store.installRootSet({ schema: "jero-ai.review-root-set/v1", repository_id: hash, authority_id: "b".repeat(64), generation: 1, predecessor_root_set_id: "c".repeat(64), lineages: [] });
 		assert.throws(() => store.publishRootSet(fork), /predecessor|descendant/i);
 		unlinkSync(join(root, "CURRENT.2"));
 		store.repairCurrentPointers();

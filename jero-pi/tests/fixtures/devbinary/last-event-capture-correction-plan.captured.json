@@ -1,5 +1,5 @@
 {
-  "schema": "gentle-ai.review-last-event-closure/v1",
+  "schema": "jero-ai.review-last-event-closure/v1",
   "operation": "review.capture-correction-plan",
   "lineage_id": "review-afeed0d5a9aa24a1",
   "target_identity": "sha256:ccbd92bd891a944ceeb21be0982a5f0dc515ed94a0f15da0a64d21608329aa59",

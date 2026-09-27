@@ -57,15 +57,15 @@ export function assertAdditionalProperty(decoder: Decoder, source: JsonObject, p
 export function repairAssessment(status: "eligible" | "unsupported" = "unsupported"): JsonObject {
 	if (status === "unsupported") {
 		return {
-			schema: "gentle-ai.review-authority-repair-assessment/v1",
+			schema: "jero-ai.review-authority-repair-assessment/v1",
 			status: "unsupported",
 			counts: { lineages: 0, compact_lineages: 0, legacy_lineages: 0, events: 0, bytes: 0, eligible_candidates: 0, unsupported_lineages: 0, conflicts: 0 },
 			supported_operations: ["review/complete-fix", "review/validate-fix"],
-			authorization_schema: "gentle-ai.review-repair-authorization/v1",
+			authorization_schema: "jero-ai.review-repair-authorization/v1",
 		};
 	}
 	return {
-		schema: "gentle-ai.review-authority-repair-assessment/v1",
+		schema: "jero-ai.review-authority-repair-assessment/v1",
 		status: "eligible",
 		class: "legacy_v1_historical_alias",
 		cause: "unsupported_historical_v1_operation_alias",
@@ -81,7 +81,7 @@ export function repairAssessment(status: "eligible" | "unsupported" = "unsupport
 		},
 		counts: { lineages: 1, compact_lineages: 0, legacy_lineages: 1, events: 3, bytes: 128, eligible_candidates: 1, unsupported_lineages: 0, conflicts: 0 },
 		supported_operations: ["review/complete-fix", "review/validate-fix"],
-		authorization_schema: "gentle-ai.review-repair-authorization/v1",
+		authorization_schema: "jero-ai.review-repair-authorization/v1",
 	};
 }
 

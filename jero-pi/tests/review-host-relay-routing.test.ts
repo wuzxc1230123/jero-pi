@@ -51,7 +51,7 @@ function providerSubmission(lineageId: string, lens: ReviewArtifactSubjectV2["le
 function relayCollectInput(lineageId: string, lens: ReviewArtifactSubjectV2["lens"], order: number, materialize = true, submission: ReviewCaptureSubmissionV1 | "provider" | "absent" = "provider", revision = SHA): ReviewCollectInputV3 {
 	return {
 		name: "reviewer_result",
-		schema: "https://gentle-ai.dev/schema/review/reviewer/v1",
+		schema: "https://jero-ai.dev/schema/review/reviewer/v1",
 		captureOperation: "review.capture-result",
 		arguments: [
 			...bindingArguments(lineageId, lens, order, revision),
@@ -61,7 +61,7 @@ function relayCollectInput(lineageId: string, lens: ReviewArtifactSubjectV2["len
 			] : []),
 		],
 		artifactSubject: {
-			schema: "gentle-ai.review-artifact-subject/v2", subjectHash: `sha256:${String(order).repeat(64)}`,
+			schema: "jero-ai.review-artifact-subject/v2", subjectHash: `sha256:${String(order).repeat(64)}`,
 			lineageId, authorityRevision: revision, targetIdentity: SHA, baseTree: TREE, candidateTree: TREE,
 			changedPathManifestSha256: SHA, lens, selectedOrder: order,
 		},
@@ -115,14 +115,14 @@ function replaceArgument(input: ReviewCollectInputV3, name: string, value: strin
 
 function finalizeStatus(lineageId: string, inputs?: readonly ReviewCollectInputV3[]): ReviewStatusV3 {
 	return {
-		contract: "gentle-ai.review-integration/v2",
+		contract: "jero-ai.review-integration/v2",
 		applicability: "current_target",
 		authority: { version: "compact-v2", lineageId, state: "reviewing", generation: 1, revision: SHA },
 		action: "stop",
 		replayability: "unknown",
 		targetIdentity: SHA,
 		projection: {
-			schema: "gentle-ai.review-candidate-projection/v1",
+			schema: "jero-ai.review-candidate-projection/v1",
 			kind: "current-changes",
 			projection: "workspace",
 			baseTree: TREE,
@@ -138,14 +138,14 @@ function finalizeStatus(lineageId: string, inputs?: readonly ReviewCollectInputV
 		candidates: [],
 		repositoryContext: { capability: "review.opaque_repository_context", handle: `rctx1_${"e".repeat(64)}`, revision: SHA, targetIdentity: SHA },
 		...(inputs === undefined ? {} : { nextTransition: { kind: "collect", reasonCode: "reviewer_results_required", collect: { inputs: [...inputs] } } }),
-		raw: { schema: "gentle-ai.review-integration.status/v3", action: "stop", lineage_id: lineageId },
+		raw: { schema: "jero-ai.review-integration.status/v3", action: "stop", lineage_id: lineageId },
 	} as unknown as ReviewStatusV3;
 }
 
 function providerRefuterRequiredStatus(lineageId: string): ReviewStatusV3 {
 	const refuter: ReviewCollectInputV3 = {
 		name: "provider_refuter",
-		schema: "https://gentle-ai.dev/schema/review/refuter/v1",
+		schema: "https://jero-ai.dev/schema/review/refuter/v1",
 		captureOperation: "review.capture-refuter",
 		arguments: bindingArguments(lineageId, "review-risk", 0),
 	};
@@ -380,7 +380,7 @@ test("group preserves earlier admission when a later STATUS drifts, and stops on
 	assert.deepEqual({ outcome: drift.outcome, submissions, mutation: drift.mutation_performed, mutationOutcome: drift.mutation_outcome }, { outcome: "capture-group-authority-drift", submissions: 1, mutation: true, mutationOutcome: "partial" });
 	assert.deepEqual(((drift.host_relay as { reviewers: Array<{ lens: string }> }).reviewers).map((reviewer) => reviewer.lens), ["review-risk"]);
 	submissions = 0;
-	__testing.setReviewHostRelayGroupRunnersForTesting(reviewerGroup, async (result) => { submissions += 1; return { promptByteLength: result.promptByteLength, resultByteLength: result.resultByteLength, submission: JSON.stringify({ schema: "gentle-ai.review-last-event-closure/v1", operation: "review/capture-result", lineage_id: lineageId, state: "approved", store_revision: SHA, action: "native last event closed the review" }) }; });
+	__testing.setReviewHostRelayGroupRunnersForTesting(reviewerGroup, async (result) => { submissions += 1; return { promptByteLength: result.promptByteLength, resultByteLength: result.resultByteLength, submission: JSON.stringify({ schema: "jero-ai.review-last-event-closure/v1", operation: "review/capture-result", lineage_id: lineageId, state: "approved", store_revision: SHA, action: "native last event closed the review" }) }; });
 	const terminal = await runCaptureGroup(cwd, nativeHarness([finalizeStatus(lineageId, inputs), finalizeStatus(lineageId, inputs)]), lineageId, inputs);
 	assert.deepEqual({ status: terminal.status, submissions }, { status: "closed", submissions: 1 });
 	submissions = 0;
@@ -451,7 +451,7 @@ test("an admission refusal reaches the model as a proven non-mutation carrying t
 	const cwd = repository(t);
 	const lineageId = "relay-lineage";
 	const harness = nativeHarness([finalizeStatus(lineageId, [relayCollectInput(lineageId, "review-risk", 0)])]);
-	const refusal = "Error: reviewer artifact admission binding_mismatch: reviewer result echoed a different artifact subject: the rejected admission did not consume the lens slot, so re-run the lens and invoke gentle-ai review capture-result again on the same lineage with a result that echoes the binding's top-level subject_hash [invalid_request]\n";
+	const refusal = "Error: reviewer artifact admission binding_mismatch: reviewer result echoed a different artifact subject: the rejected admission did not consume the lens slot, so re-run the lens and invoke jero-ai review capture-result again on the same lineage with a result that echoes the binding's top-level subject_hash [invalid_request]\n";
 	__testing.setReviewHostRelayRunnerForTesting(async () => {
 		throw new ReviewHostRelayError(REVIEW_HOST_RELAY_FAILURE.SUBMISSION_REFUSED, "submit", refusal.trim(), { exitCode: 1, stderr: refusal, elapsedMs: 40, timeoutMs: 120_000, mutationOutcome: "none" });
 	});
@@ -546,12 +546,12 @@ function unachievableStopStatus(lineageId: string, lens: ReviewArtifactSubjectV2
 	return {
 		...finalizeStatus(lineageId),
 		nextTransition: decodeReviewNextTransitionV3(rawTransition),
-		raw: { schema: "gentle-ai.review-integration.status/v5", action: "stop", lineage_id: lineageId, target_identity: SHA, next_transition: rawTransition },
+		raw: { schema: "jero-ai.review-integration.status/v5", action: "stop", lineage_id: lineageId, target_identity: SHA, next_transition: rawTransition },
 	} as unknown as ReviewStatusV3;
 }
 
 function unachievableArtifact(lineageId: string, lens: ReviewArtifactSubjectV2["lens"], order: number, reason = "relay_transport_bound_exceeded"): NativeReviewUnachievableLensCaptureArtifact {
-	return { schema: "gentle-ai.review-capture-unachievable/v1", lineageId, targetIdentity: SHA, lens, selectedOrder: order, reason, recorded: true };
+	return { schema: "jero-ai.review-capture-unachievable/v1", lineageId, targetIdentity: SHA, lens, selectedOrder: order, reason, recorded: true };
 }
 
 // a deterministic pi timeout is declared unachievable through

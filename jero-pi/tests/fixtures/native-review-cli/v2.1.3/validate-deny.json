@@ -1,5 +1,5 @@
 {
-  "schema": "gentle-ai.review-gate-result/v1",
+  "schema": "jero-ai.review-gate-result/v1",
   "result": "scope-changed",
   "allowed": false,
   "action": "create-new-lineage",

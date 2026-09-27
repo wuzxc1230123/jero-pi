@@ -1,5 +1,5 @@
 {
-  "schema": "gentle-ai.sdd-review-binding/v1",
+  "schema": "jero-ai.sdd-review-binding/v1",
   "revision": "sha256:9ae7d725b93eab436053ea9eb04b2d1a5bf4390dd5b10a709e64086e3c833980",
   "change": "native-review-authority-parity",
   "lineage": "issue136-contract-runtime",

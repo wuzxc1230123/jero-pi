@@ -82,7 +82,7 @@ export function assessJeroReviewRiskFromStatsV1(stats: readonly ReviewDiffStat[]
 /**
  * 只读的 `assess`（设计 §5.1.1 的 `authority.risk.assess(diff)`）。每种
  * 失败——配对错误、Git 失败、无法分类的 diff——都产生风险为 `high` 的
- * `gentle-ai.review-assessment/v1` 形态（P5 改名前容忍该 schema
+ * `jero-ai.review-assessment/v1` 形态（P5 改名前容忍该 schema
  * 字符串，spec §H）。
  */
 export function assessJeroReviewRiskV1(request: JeroRiskAssessRequestV1): ReviewAssessmentV1 {

@@ -35,7 +35,7 @@ export const REVIEW_EVENT_KIND_V1 = {
 export type ReviewEventKindV1 = (typeof REVIEW_EVENT_KIND_V1)[keyof typeof REVIEW_EVENT_KIND_V1];
 
 export interface ReviewEventBodyV1 {
-	schema: "gentle-ai.review-event/v1";
+	schema: "jero-ai.review-event/v1";
 	store_epoch?: string;
 	authority_incarnation_id?: string;
 	initialized_by_reset_id?: string | null;
@@ -63,7 +63,7 @@ function assertDigest(value: string, label: string): void {
 function assertBody(body: ReviewEventBodyV1): void {
 	const allowed = new Set(["schema", "store_epoch", "authority_incarnation_id", "initialized_by_reset_id", "lineage_id", "sequence", "predecessor_event_id", "kind", "reducer_transition", "reducer_input", "payload", "reduced_state_hash"]);
 	if (Object.keys(body).some((key) => !allowed.has(key))) throw new ReviewGraphSchemaError("Review event contains unknown properties");
-	if (body.schema !== "gentle-ai.review-event/v1") throw new ReviewGraphSchemaError("Unsupported review event schema");
+	if (body.schema !== "jero-ai.review-event/v1") throw new ReviewGraphSchemaError("Unsupported review event schema");
 	if ((body.store_epoch !== undefined && !DIGEST.test(body.store_epoch)) || (body.authority_incarnation_id !== undefined && !DIGEST.test(body.authority_incarnation_id)) || (body.initialized_by_reset_id !== undefined && body.initialized_by_reset_id !== null && !DIGEST.test(body.initialized_by_reset_id))) throw new ReviewGraphSchemaError("Review event incarnation is invalid");
 	if (!LINEAGE.test(body.lineage_id)) throw new ReviewGraphSchemaError("Review event lineage ID is invalid");
 	if (!Number.isSafeInteger(body.sequence) || body.sequence < 0) throw new ReviewGraphSchemaError("Review event sequence is invalid");
@@ -84,7 +84,7 @@ function assertBody(body: ReviewEventBodyV1): void {
 }
 
 export function createReviewEventV1(input: CreateReviewEventInputV1): ReviewEventEnvelopeV1 {
-	const body: ReviewEventBodyV1 = { ...input, schema: "gentle-ai.review-event/v1" };
+	const body: ReviewEventBodyV1 = { ...input, schema: "jero-ai.review-event/v1" };
 	assertBody(body);
 	return { body, event_id: domainHashV1("event", body) };
 }

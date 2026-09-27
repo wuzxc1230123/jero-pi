@@ -1,6 +1,6 @@
 {
-  "schema": "gentle-ai.review-integration.status/v5",
-  "contract": "gentle-ai.review-integration/v2",
+  "schema": "jero-ai.review-integration.status/v5",
+  "contract": "jero-ai.review-integration/v2",
   "operation": "review.status",
   "applicability": "current_target",
   "authority": {
@@ -22,7 +22,7 @@
   },
   "target_identity": "sha256:bbfbf9af2dc27936d5fbc0c30579d5122d65bf4ccc65d9a00cde816f3aa6d3ab",
   "projection": {
-    "schema": "gentle-ai.review-integration.projection/v1",
+    "schema": "jero-ai.review-integration.projection/v1",
     "kind": "current-changes",
     "projection": "workspace",
     "base_tree": "7bee507cb7f5aa4dce34e6962366eeea27935c74",
@@ -38,7 +38,7 @@
     "current_snapshot_identity": "sha256:bbfbf9af2dc27936d5fbc0c30579d5122d65bf4ccc65d9a00cde816f3aa6d3ab"
   },
   "repair": {
-    "schema": "gentle-ai.review-authority-repair-assessment/v1",
+    "schema": "jero-ai.review-authority-repair-assessment/v1",
     "status": "unsupported",
     "counts": {
       "lineages": 0,
@@ -54,7 +54,7 @@
       "review/complete-fix",
       "review/validate-fix"
     ],
-    "authorization_schema": "gentle-ai.review-repair-authorization/v1"
+    "authorization_schema": "jero-ai.review-repair-authorization/v1"
   },
   "candidates": [],
   "forecast": {
@@ -73,7 +73,7 @@
     "reason_code": "captured_results_ready",
     "execute": {
       "operation": "review.finalize",
-      "command": "gentle-ai review finalize --lineage=review-bbfbf9af2dc27936 --captured-results=true --contract=gentle-ai.review-integration/v2 --agent=claude-code",
+      "command": "jero-ai review finalize --lineage=review-bbfbf9af2dc27936 --captured-results=true --contract=jero-ai.review-integration/v2 --agent=claude-code",
       "arguments": [
         {
           "name": "lineage",
@@ -87,8 +87,8 @@
         },
         {
           "name": "contract",
-          "value": "gentle-ai.review-integration/v2",
-          "token": "--contract=gentle-ai.review-integration/v2"
+          "value": "jero-ai.review-integration/v2",
+          "token": "--contract=jero-ai.review-integration/v2"
         },
         {
           "name": "agent",
@@ -114,7 +114,7 @@
       },
       "artifacts": [
         {
-          "schema": "gentle-ai.review-result-artifact/v2",
+          "schema": "jero-ai.review-result-artifact/v2",
           "capability": "review.native_result_artifact",
           "sha256": "sha256:02a403472b0bb0c7ad5dddd1010b006af257f516e425795996f276d423d33c9d",
           "lineage_id": "review-bbfbf9af2dc27936",

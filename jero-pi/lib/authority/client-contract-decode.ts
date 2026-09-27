@@ -151,7 +151,7 @@ const NATIVE_SDD_DEPENDENCY_STATES = ["blocked", "ready", "all_done"] as const;
 /** 严格校验原生 v2 契约，同时保留其完整记录。 */
 export function decodeNativeSddStatusV2(value: unknown, request: Pick<NativeSddStatusRequest, "changeName" | "workspaceRoot">): NativeSddStatusV2 {
 	const status = object(value);
-	if (status.schemaName !== "gentle-ai.sdd-status" || status.schemaVersion !== 2) throw new Error("wrong native SDD status schema");
+	if (status.schemaName !== "jero-ai.sdd-status" || status.schemaVersion !== 2) throw new Error("wrong native SDD status schema");
 	if ((request.changeName !== undefined && status.changeName !== request.changeName) || (status.changeName !== null && !isCanonicalProcessString(status.changeName))) throw new Error("native SDD status change identity mismatch");
 	const artifactStore = enumString(status.artifactStore, ["openspec", "engram", "hybrid", "none"]);
 	if (status.lightweight !== undefined && typeof status.lightweight !== "boolean") throw new Error("native SDD lightweight flag must be a boolean");
@@ -190,7 +190,7 @@ export function nativeReviewAbandonAuthorization(request: Pick<NativeReviewAband
 	// reason、captured_lens_results、findings_present、actor）——没有需要
 	// 派生或中继的 evidence_records_present 行。
 	return [
-		"gentle-ai.review-abandon-authorization/v2",
+		"jero-ai.review-abandon-authorization/v2",
 		`lineage=${request.lineage}`,
 		`revision=${request.expectedRevision}`,
 		`snapshot_identity=${request.snapshotIdentity}`,
@@ -203,7 +203,7 @@ export function nativeReviewAbandonAuthorization(request: Pick<NativeReviewAband
 
 export function nativeReviewRecoverAuthorization(request: Pick<NativeReviewRecoverRequest, "predecessorLineage" | "expectedPredecessorRevision" | "actor" | "reason"> & { targetIdentity: string }): string {
 	return [
-		"gentle-ai.review-recovery-authorization/v1",
+		"jero-ai.review-recovery-authorization/v1",
 		`predecessor_lineage=${request.predecessorLineage}`,
 		`predecessor_revision=${request.expectedPredecessorRevision}`,
 		`target_identity=${request.targetIdentity}`,
@@ -214,7 +214,7 @@ export function nativeReviewRecoverAuthorization(request: Pick<NativeReviewRecov
 
 export function nativeReviewReconcileAuthorization(request: Pick<NativeReviewReconcileAuthorityRequest, "predecessorLineage" | "expectedPredecessorRevision" | "successorLineage" | "expectedSuccessorRevision" | "actor" | "reason" | "anomalies">): string {
 	return [
-		"gentle-ai.review-reconcile-authorization/v1",
+		"jero-ai.review-reconcile-authorization/v1",
 		`predecessor_lineage=${request.predecessorLineage}`,
 		`predecessor_revision=${request.expectedPredecessorRevision}`,
 		`successor_lineage=${request.successorLineage}`,
@@ -377,7 +377,7 @@ export function consentInvocationArguments(request: NativeReviewConsentAnswerReq
 	const choice = request.consent.choices.find((candidate) => candidate.answer === request.answer);
 	if (choice === undefined) throw new NativeReviewConsentBindingError("consent-answer-unknown", "Native consent answer must be granted or declined");
 	const words = splitNativeConsentInvocation(choice.invocation);
-	if (words[0] !== "gentle-ai" || words[1] !== "review" || words[2] !== "start") throw new NativeReviewConsentBindingError("consent-invocation-not-start", "Native consent invocation is not a provider review START");
+	if (words[0] !== "jero-ai" || words[1] !== "review" || words[2] !== "start") throw new NativeReviewConsentBindingError("consent-invocation-not-start", "Native consent invocation is not a provider review START");
 	const arguments_ = words.slice(1);
 	if (exactConsentOption(arguments_, "--contract") !== REVIEW_INTEGRATION_CONTRACT) throw new NativeReviewConsentBindingError("consent-invocation-contract-changed", "Native consent invocation contract changed");
 	const providerCwd = exactConsentOption(arguments_, "--cwd");

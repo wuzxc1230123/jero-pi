@@ -13,7 +13,7 @@ const guidancePaths = [
 for (const path of guidancePaths) {
 	test(`${path}: native v2 status remains read-only and authoritative`, () => {
 		const guidance = readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
-		assert.match(guidance, /native.*(?:status|v2)|gentle-ai\.sdd-status/i);
+		assert.match(guidance, /native.*(?:status|v2)|jero-ai\.sdd-status/i);
 		assert.match(guidance, /只读/);
 		assert.doesNotMatch(guidance, /resolve-via-engram/i);
 		assert.doesNotMatch(guidance, /local SDD status engine|manual (?:fallback )?status|reconstruct(?:ing)? (?:native )?status/i);

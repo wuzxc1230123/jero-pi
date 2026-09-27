@@ -44,7 +44,7 @@ test("interleaved sessions sharing a CLI retain only their own capture routes", 
 		captureCorrectionPlan: async ({ argumentTokens }: { argumentTokens: readonly string[] }) => {
 			captures += 1;
 			const lineageId = argumentTokens.find((token) => token.startsWith("--lineage="))!.slice("--lineage=".length);
-			return { schema: "gentle-ai.review-last-event-closure/v1", operation: "review.capture-correction-plan", lineageId, state: "correction_required", storeRevision: SHA };
+			return { schema: "jero-ai.review-last-event-closure/v1", operation: "review.capture-correction-plan", lineageId, state: "correction_required", storeRevision: SHA };
 		},
 	} as unknown as NativeReviewCli;
 	const { controller, capture, sessionShutdown } = reviewRuntime(native, new CandidateViewRegistry());
@@ -104,7 +104,7 @@ test("selectorless STATUS resumes a retained committed correction lineage", asyn
 		},
 		captureCorrectionPlan: async () => {
 			captures += 1;
-			return { schema: "gentle-ai.review-last-event-closure/v1", operation: "review.capture-correction-plan", lineageId, state: "correction_required", storeRevision: SHA };
+			return { schema: "jero-ai.review-last-event-closure/v1", operation: "review.capture-correction-plan", lineageId, state: "correction_required", storeRevision: SHA };
 		},
 	} as unknown as NativeReviewCli;
 
@@ -177,7 +177,7 @@ test("STATUS preserves retained intended-untracked selection through selectorles
 		captureCorrectionPlan: async ({ correctionLines, cwd: captureCwd }: { correctionLines: number; cwd: string }) => {
 			captures += 1;
 			assert.deepEqual({ correctionLines, cwd: captureCwd }, { correctionLines: 1, cwd });
-			return { schema: "gentle-ai.review-last-event-closure/v1", operation: "review.capture-correction-plan", lineageId, state: "correction_required", storeRevision: SHA };
+			return { schema: "jero-ai.review-last-event-closure/v1", operation: "review.capture-correction-plan", lineageId, state: "correction_required", storeRevision: SHA };
 		},
 	} as unknown as NativeReviewCli;
 

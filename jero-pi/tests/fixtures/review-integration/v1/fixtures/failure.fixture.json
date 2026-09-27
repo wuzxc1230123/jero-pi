@@ -1,6 +1,6 @@
 {
-  "schema": "gentle-ai.review-integration.failure/v1",
-  "contract": "gentle-ai.review-integration/v1",
+  "schema": "jero-ai.review-integration.failure/v1",
+  "contract": "jero-ai.review-integration/v1",
   "operation": "review.validate",
   "phase": "preflight",
   "code": "gate_scope_changed",

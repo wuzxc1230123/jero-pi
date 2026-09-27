@@ -30,7 +30,7 @@ test("STATUS renders the managed_assets_outdated continuation command as the act
 	const native = { targetStatus: async () => managedAssetsOutdatedStatus(lineageId) } as unknown as NativeReviewCli;
 	const blocked = await __testing.executeReviewControllerOperation({ operation: "status", lineageId }, process.cwd(), native);
 	assert.equal(blocked.status, "blocked");
-	assert.equal(blocked.hint, "run gentle-ai sync --agent claude-code");
+	assert.equal(blocked.hint, "run jero-ai sync --agent claude-code");
 
 	// an unknown stop reason code keeps rendering as a plain blocked result
 	const otherStopNative = { targetStatus: async () => burnedAcknowledgementStatus(lineageId) } as unknown as NativeReviewCli;
@@ -135,14 +135,14 @@ test("public acknowledgement reports the burn from the review-acknowledged/v1 en
 		acknowledgeApproved: async (request: Record<string, unknown>) => {
 			acknowledgementRequests.push(request);
 			return {
-				schema: "gentle-ai.review-acknowledged/v1",
+				schema: "jero-ai.review-acknowledged/v1",
 				operation: "review/acknowledge-approved",
 				action: "acknowledged",
 				lineageId,
 				targetIdentity: SHA,
 				consumedRevision: SHA,
 				authority: "burned",
-				raw: { schema: "gentle-ai.review-acknowledged/v1" },
+				raw: { schema: "jero-ai.review-acknowledged/v1" },
 			};
 		},
 	} as unknown as NativeReviewCli;
@@ -156,7 +156,7 @@ test("public acknowledgement reports the burn from the review-acknowledged/v1 en
 		target_identity: SHA,
 		consumed_revision: SHA,
 		authority: "burned",
-		burn_evidence: "gentle-ai.review-acknowledged/v1",
+		burn_evidence: "jero-ai.review-acknowledged/v1",
 		delivery: "ordinary-repository-policy",
 		mutation_performed: true,
 		mutation_outcome: "committed",
@@ -275,7 +275,7 @@ test("ambiguous acknowledgement reconciles STATUS once without replaying the pro
 	assert.equal(result.outcome, "native-mutation-status-reconciled");
 	assert.equal(result.mutation_outcome, "unknown");
 	assert.equal((result.diagnostics as { error_code?: string }).error_code, NATIVE_REVIEW_ERROR_CODE.NON_ZERO);
-	assert.deepEqual(result.reconciliation, { schema: "gentle-ai.review-integration.status/v5" });
+	assert.deepEqual(result.reconciliation, { schema: "jero-ai.review-integration.status/v5" });
 	assert.equal(statusCalls, 2);
 	assert.equal(acknowledgementCalls, 1);
 });

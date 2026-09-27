@@ -42,7 +42,7 @@ export function sha256Hex(bytes: string | Uint8Array): string {
 
 export function domainHashV1(domain: string, value: CanonicalValue | unknown): string {
 	if (!/^[a-z0-9-]+$/.test(domain)) throw new ReviewCanonicalError("Canonical hash domain is invalid");
-	return sha256Hex(`gentle-ai.review-${domain}/v1\0${canonicalJsonV1(value)}`);
+	return sha256Hex(`jero-ai.review-${domain}/v1\0${canonicalJsonV1(value)}`);
 }
 
 export function parseCanonicalJsonV1(input: string | Uint8Array, maxBytes = 1024 * 1024): unknown {

@@ -27,7 +27,7 @@
 
 - 测试进程**不得设置任何 `GIT_*` 环境变量**——权威夹具把继承的 `GIT_*` 视为环境篡改并 fail-closed（`scripts/test-env.cjs` 只做 V8 编译缓存预载）。
 - Windows：ACL 权威（PowerShell/icacls）默认进程级打桩，仅专属端到端用例走真栈；spawn 类 spawnSync 一律带 timeout。
-- `gentle-` 残留已于 2026-09-27 专项清退（persona→direct、agents 存储与消息类型→jero-agents 含旧名回退、自有契约串→jero-pi.*、工单注释全清）；**仅存外部契约类白名单**（`gentle-ai.*` wire 串/原生 CLI 词/上游工单引用/harness 禁用清单，见 `docs/jero-reference.md` 兼容白名单节）——**绝不顺手清理**。
+- `gentle-` 残留与 `gentle-ai` 原生二进制依赖已于 2026-09-27 全部清退（评审为进程内权威 `jero-authority-cli`，wire 身份/存储/调用词自化为 `jero-ai.*`，迁移期旧名只读回退）；现存 gentle-ai 字样**仅为守卫对象或历史事实**（外来存储守卫/上游工单引用/harness 禁用清单，见 `docs/jero-reference.md` 兼容白名单节）——**绝不顺手清理**。
 - 评审切片预算默认 400 行（`/jero:lean` 档位与之正交：预算管工作切片，梯子管必要性）。
 
 ## 约定

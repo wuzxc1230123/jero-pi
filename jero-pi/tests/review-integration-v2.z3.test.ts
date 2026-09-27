@@ -79,7 +79,7 @@ test("START independently binds base/candidate tree and the target-mode overlay 
 
 test("failure context accepts scope_change or binding_revision but rejects both or neither", () => {
 	const base: JsonObject = {
-		schema: "gentle-ai.review-integration.failure/v2",
+		schema: "jero-ai.review-integration.failure/v2",
 		contract: REVIEW_INTEGRATION_CONTRACT,
 		operation: "review.capture-result",
 		phase: "pre_native",
@@ -118,7 +118,7 @@ test("consent rejects a swapped choice order, invalid answer domain, or invocati
 	assert.throws(() => decodeReviewConsentV2(badAnswer), /answer/);
 
 	const badInvocation = clone(source);
-	(badInvocation.choices as JsonObject[])[0].invocation = "gentle-ai review start --contract gentle-ai.review-integration/v1 --consent granted";
+	(badInvocation.choices as JsonObject[])[0].invocation = "gentle-ai review start --contract jero-ai.review-integration/v1 --consent granted";
 	assert.throws(() => decodeReviewConsentV2(badInvocation), /invocation/);
 
 	const differentTarget = clone(source);

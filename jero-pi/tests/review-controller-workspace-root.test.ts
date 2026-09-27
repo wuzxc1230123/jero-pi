@@ -90,7 +90,7 @@ function fakeNative(overrides: Partial<NativeReviewCli> = {}): NativeReviewCli {
 	return {
 		start: async () => ({ lineageId: "native-lineage", state: "reviewing", riskLevel: "medium", selectedLenses: ["review-reliability"], changedFiles: 2, changedLines: 7, correctionBudget: 4, action: "created", lensesRequired: true }),
 		sddStatus: async () => ({ ready: false }) as never,
-		reviewStatus: async () => ({ schema: "gentle-ai.review-authority-status/v1", repository: "/repo", complete: true, authoritative: true, status: "clean", entries: [], locks: [], diagnostics: [], raw: { schema: "gentle-ai.review-authority-status/v1", operation: "review/status", repository: "/repo", complete: true, authoritative: true, status: "clean", entries: [], locks: [], diagnostics: [] } }),
+		reviewStatus: async () => ({ schema: "jero-ai.review-authority-status/v1", repository: "/repo", complete: true, authoritative: true, status: "clean", entries: [], locks: [], diagnostics: [], raw: { schema: "jero-ai.review-authority-status/v1", operation: "review/status", repository: "/repo", complete: true, authoritative: true, status: "clean", entries: [], locks: [], diagnostics: [] } }),
 		targetStatus: async (request) => request.lineageId === undefined
 			? candidateStartTargetStatus(request)
 			: candidateTargetStatus(request, request.lineageId),
@@ -99,11 +99,11 @@ function fakeNative(overrides: Partial<NativeReviewCli> = {}): NativeReviewCli {
 }
 
 const UNSUPPORTED_REPAIR_ASSESSMENT: AuthorityRepairAssessmentV1 = {
-	schema: "gentle-ai.review-authority-repair-assessment/v1",
+	schema: "jero-ai.review-authority-repair-assessment/v1",
 	status: "unsupported",
 	counts: { lineages: 0, compactLineages: 0, legacyLineages: 0, events: 0, bytes: 0, eligibleCandidates: 0, unsupportedLineages: 0, conflicts: 0 },
 	supportedOperations: ["review/complete-fix", "review/validate-fix"],
-	authorizationSchema: "gentle-ai.review-repair-authorization/v1",
+	authorizationSchema: "jero-ai.review-repair-authorization/v1",
 };
 
 function targetStatusFixture(options: {
@@ -125,7 +125,7 @@ function targetStatusFixture(options: {
 	const paths = options.paths ?? ["app.ts"];
 	const intendedUntracked = options.intendedUntracked ?? [];
 	const projection = {
-		schema: "gentle-ai.review-integration.projection/v1" as const,
+		schema: "jero-ai.review-integration.projection/v1" as const,
 		kind: "current-changes" as const,
 		projection: "workspace" as const,
 		baseTree,
@@ -149,8 +149,8 @@ function targetStatusFixture(options: {
 		authorization_schema: UNSUPPORTED_REPAIR_ASSESSMENT.authorizationSchema,
 	};
 	const raw: Record<string, unknown> = {
-		schema: "gentle-ai.review-integration.status/v3",
-		contract: "gentle-ai.review-integration/v2",
+		schema: "jero-ai.review-integration.status/v3",
+		contract: "jero-ai.review-integration/v2",
 		operation: "review.status",
 		applicability,
 		receipt: { status: applicability === "current_target" ? "expected_missing" : "not_applicable" },
@@ -179,7 +179,7 @@ function targetStatusFixture(options: {
 		raw.frozen = { tier: "medium", original_changed_lines: 2, correction_budget: 1 };
 	}
 	return {
-		contract: "gentle-ai.review-integration/v2",
+		contract: "jero-ai.review-integration/v2",
 		applicability,
 		...(applicability === "current_target" ? { authority: { version: "compact-v2" as const, lineageId, state: authorityState, generation: 1, revision: sha } } : {}),
 		receipt: { status: applicability === "current_target" ? "expected_missing" : "not_applicable" },
@@ -258,8 +258,8 @@ test("inspect without workspaceRoot preserves the native invalid_request cause f
 	const { controller } = runtime(fakeNative({
 		targetStatus: async () => {
 			throw new NativeReviewIntegrationError(decodeReviewFailureV2({
-				schema: "gentle-ai.review-integration.failure/v2",
-				contract: "gentle-ai.review-integration/v2",
+				schema: "jero-ai.review-integration.failure/v2",
+				contract: "jero-ai.review-integration/v2",
 				operation: "review.status",
 				phase: "preflight",
 				code: "invalid_request",
@@ -517,7 +517,7 @@ test("workspaceRoot fails closed before any native call for invalid target paths
 function providerRoleBinding(lineageId: string) {
 	return {
 		name: "provider_targeted_validator",
-		schema: "https://gentle-ai.dev/schema/review/targeted-validator/v1",
+		schema: "https://jero-ai.dev/schema/review/targeted-validator/v1",
 		captureOperation: "review.capture-validation",
 		arguments: [
 			{ name: "lineage", value: lineageId, token: `--lineage=${lineageId}` },
@@ -544,7 +544,7 @@ test("same-session START binding migrates to one validation capture without a FI
 		captureProviderRole: async (request) => {
 			captureCalls += 1;
 			assert.equal(request.captureOperation, "review.capture-validation");
-			return { schema: "gentle-ai.review-last-event-closure/v1", operation: "review.capture-validation", lineageId, state: "approved", storeRevision: `sha256:${"a".repeat(64)}` } as never;
+			return { schema: "jero-ai.review-last-event-closure/v1", operation: "review.capture-validation", lineageId, state: "approved", storeRevision: `sha256:${"a".repeat(64)}` } as never;
 		},
 	});
 	const { controller } = runtime(native, candidateViews);
@@ -567,7 +567,7 @@ test("an explicit linked-worktree root owns STATUS collect capture over the sess
 			observedRoots.push(request.cwd);
 			return { ...targetStatusFixture({ lineageId }), nextTransition: { kind: "collect", reasonCode: "provider_role_required", collect: { inputs: [binding] } } } as unknown as ReviewStatusV3;
 		},
-		captureProviderRole: async () => ({ schema: "gentle-ai.review-last-event-closure/v1", operation: "review.capture-validation", lineageId, state: "approved", storeRevision: `sha256:${"a".repeat(64)}` }),
+		captureProviderRole: async () => ({ schema: "jero-ai.review-last-event-closure/v1", operation: "review.capture-validation", lineageId, state: "approved", storeRevision: `sha256:${"a".repeat(64)}` }),
 	} as unknown as NativeReviewCli;
 	const result = await __testing.executeReviewCaptureOperation({ lineageId, workspaceRoot: worktree, collectBinding: JSON.stringify(binding) }, sessionCwd, native);
 	assert.equal(result.outcome, "native-last-event-closure");

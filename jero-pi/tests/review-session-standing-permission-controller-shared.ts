@@ -40,7 +40,7 @@ export function consent() {
 export function providerV2Consent() {
 	const raw = consentFixture();
 	delete raw.agent;
-	raw.schema = "gentle-ai.review-integration.consent/v2";
+	raw.schema = "jero-ai.review-integration.consent/v2";
 	return decodeReviewConsentV2(raw);
 }
 
@@ -102,13 +102,13 @@ export function startStatus(cwd: string, intendedUntracked: readonly string[] = 
 	});
 	try {
 		return {
-			contract: "gentle-ai.review-integration/v2",
+			contract: "jero-ai.review-integration/v2",
 			applicability: "unrelated",
 			action: "start",
 			replayability: "not_replayable",
 			targetIdentity: `sha256:${"a".repeat(64)}`,
 			projection: {
-				schema: "gentle-ai.review-candidate-projection/v1",
+				schema: "jero-ai.review-candidate-projection/v1",
 				kind: "current-changes",
 				projection: "workspace",
 				baseTree: candidate.baseTree,
@@ -122,7 +122,7 @@ export function startStatus(cwd: string, intendedUntracked: readonly string[] = 
 				currentSnapshotIdentity: `sha256:${"a".repeat(64)}`,
 			},
 			candidates: [],
-			raw: { schema: "gentle-ai.review-integration.status/v5" },
+			raw: { schema: "jero-ai.review-integration.status/v5" },
 		} as unknown as ReviewStatusV3;
 	} finally {
 		views.cleanup(candidate.token);
@@ -134,7 +134,7 @@ export function intendedUntrackedSelectionStatuses(cwd: string, eligible: string
 	const selectedTarget = startStatus(cwd, [eligible]);
 	const selection = {
 		name: "intended_untracked_selection",
-		schema: "gentle-ai.review-intended-untracked-selection/v1",
+		schema: "jero-ai.review-intended-untracked-selection/v1",
 		captureOperation: "external.select_intended_untracked",
 		arguments: [
 			{ name: "target_identity", value: initialTarget.targetIdentity },
@@ -146,15 +146,15 @@ export function intendedUntrackedSelectionStatuses(cwd: string, eligible: string
 		],
 		submission: {
 			operationToken: "status",
-			argumentTokens: ["--contract=gentle-ai.review-integration/v2", "--next-transition=true", "--agent=pi", "--projection=workspace", "--intended-untracked-selection={{value}}"],
-			values: [{ slot: "intended_untracked_selection", domain: "schema_bound_json", schema: "gentle-ai.review-intended-untracked-selection/v1", substitutionLocation: 4 }],
+			argumentTokens: ["--contract=jero-ai.review-integration/v2", "--next-transition=true", "--agent=pi", "--projection=workspace", "--intended-untracked-selection={{value}}"],
+			values: [{ slot: "intended_untracked_selection", domain: "schema_bound_json", schema: "jero-ai.review-intended-untracked-selection/v1", substitutionLocation: 4 }],
 		},
 	};
 	return {
 		initial: {
 			...initialTarget,
 			nextTransition: { kind: "collect", reasonCode: "intended_untracked_selection_required", collect: { inputs: [selection] } },
-			raw: { schema: "gentle-ai.review-integration.status/v7" },
+			raw: { schema: "jero-ai.review-integration.status/v7" },
 		} as unknown as ReviewStatusV3,
 		selected: selectedTarget,
 	};

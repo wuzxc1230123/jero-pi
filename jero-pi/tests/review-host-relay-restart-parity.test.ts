@@ -65,7 +65,7 @@ function providerSubmission(lineageId, lens, order) {
 function relayCollectInput(lineageId, lens, order) {
 	return {
 		name: "reviewer_result",
-		schema: "https://gentle-ai.dev/schema/review/reviewer/v1",
+		schema: "https://jero-ai.dev/schema/review/reviewer/v1",
 		captureOperation: "review.capture-result",
 		arguments: [
 			...bindingArguments(lineageId, lens, order),
@@ -76,7 +76,7 @@ function relayCollectInput(lineageId, lens, order) {
 		// its subject_hash is the --request-hash the capture-unachievable verb
 		// binds to. A slot without one cannot be declared, only retried.
 		artifactSubject: {
-			schema: "gentle-ai.review-artifact-subject/v2",
+			schema: "jero-ai.review-artifact-subject/v2",
 			subjectHash: `sha256:${String(order).repeat(64)}`,
 			lineageId,
 			authorityRevision: SHA,
@@ -108,7 +108,7 @@ function rawNextTransition(inputs) {
 function collectStatus(lineageId, inputs) {
 	const transition = rawNextTransition(inputs);
 	return {
-		contract: "gentle-ai.review-integration/v2",
+		contract: "jero-ai.review-integration/v2",
 		applicability: "current_target",
 		authority: { version: "compact-v2", lineageId, state: "reviewing", generation: 1, revision: SHA },
 		receipt: { status: "none" },
@@ -116,7 +116,7 @@ function collectStatus(lineageId, inputs) {
 		replayability: "not_replayable",
 		targetIdentity: SHA,
 		projection: {
-			schema: "gentle-ai.review-candidate-projection/v1", kind: "current-changes", projection: "workspace",
+			schema: "jero-ai.review-candidate-projection/v1", kind: "current-changes", projection: "workspace",
 			baseTree: TREE, initialReviewTree: TREE, currentCandidateTree: TREE,
 			pathsDigest: SHA, paths: ["app.ts"], intendedUntracked: [], intendedUntrackedProof: SHA,
 			initialSnapshotIdentity: SHA, currentSnapshotIdentity: SHA,
@@ -124,7 +124,7 @@ function collectStatus(lineageId, inputs) {
 		candidates: [],
 		...(transition === undefined ? {} : { nextTransition: { kind: "collect", reasonCode: "reviewer_results_required", collect: { inputs: [...inputs] } } }),
 		raw: {
-			schema: "gentle-ai.review-integration.status/v5", contract: "gentle-ai.review-integration/v2",
+			schema: "jero-ai.review-integration.status/v5", contract: "jero-ai.review-integration/v2",
 			action: "stop", lineage_id: lineageId, target_identity: SHA,
 			...(transition === undefined ? {} : { next_transition: transition }),
 		},
@@ -145,7 +145,7 @@ function restartWorkerSource() {
 	const extensionUrl = pathToFileURL(join(import.meta.dirname, "..", "lib", "jero-ai-testing-exports.ts")).href;
 	const relayUrl = pathToFileURL(join(import.meta.dirname, "..", "lib", "review-host-relay.ts")).href;
 	const terminalSubmission = JSON.stringify({
-		schema: "gentle-ai.review-last-event-closure/v1",
+		schema: "jero-ai.review-last-event-closure/v1",
 		operation: "review/capture-result",
 		lineage_id: LINEAGE,
 		state: "approved",
@@ -203,7 +203,7 @@ const nativeReviewCli = {
 			...(request.repositoryContext === undefined ? {} : { repositoryContext: request.repositoryContext }),
 		});
 		return {
-			schema: "gentle-ai.review-capture-unachievable/v1",
+			schema: "jero-ai.review-capture-unachievable/v1",
 			lineageId: request.lineageId,
 			targetIdentity: request.targetIdentity,
 			lens: ${JSON.stringify(LENS)},
@@ -280,7 +280,7 @@ function unachievableStopStatus(lineageId, lens, order) {
 		{ name: "request-hash", value: subjectHash, token: `--request-hash=${subjectHash}` },
 		{ name: "withdraw", value: "true", token: "--withdraw=true" },
 	];
-	const withdrawCommand = `gentle-ai review capture-unachievable --lineage=${lineageId} --expected-revision=${SHA} --target=${SHA} --repository-context=${repositoryContext} --request-hash=${subjectHash} --withdraw=true`;
+	const withdrawCommand = `jero-ai review capture-unachievable --lineage=${lineageId} --expected-revision=${SHA} --target=${SHA} --repository-context=${repositoryContext} --request-hash=${subjectHash} --withdraw=true`;
 	return {
 		...collectStatus(lineageId, []),
 		nextTransition: {
@@ -302,7 +302,7 @@ function unachievableStopStatus(lineageId, lens, order) {
 			],
 		},
 		raw: {
-			schema: "gentle-ai.review-integration.status/v5",
+			schema: "jero-ai.review-integration.status/v5",
 			action: "stop",
 			lineage_id: lineageId,
 			target_identity: SHA,

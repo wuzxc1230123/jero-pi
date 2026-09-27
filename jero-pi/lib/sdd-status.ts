@@ -7,9 +7,9 @@ import {
 	type DomainCollision,
 } from "./openspec-guardrails.ts";
 
-// 权威命名与 gentle-ai 一致，该契约归 gentle-ai 所有。双存储
-// 模式在此处曾名为 "both"；"hybrid" 是提供方对同一事物的命名，
-// normalizeSddArtifactStore 保证已持久化的 "both" 仍可加载。
+// 权威命名自 2026-09-27 身份迁移起为 jero-ai 自有；历史命名源自上游
+// gentle-ai。双存储模式在此处曾名为 "both"；"hybrid" 是提供方对同一
+// 事物的命名，normalizeSddArtifactStore 保证已持久化的 "both" 仍可加载。
 export type SddArtifactStore = "openspec" | "engram" | "hybrid" | "none";
 export type ArtifactState = "missing" | "done" | "partial";
 export type DependencyState = "blocked" | "ready" | "all_done" | "not_applicable";
@@ -690,7 +690,7 @@ export function isNonAuthoritativeStatus(status: SddStatus): boolean {
 }
 
 export function renderNativeSddPhasePrompt(status: SddStatus | NativeSddStatusV2, phase?: SddPhase | "remediate"): string {
-	const native = status.schemaName === "gentle-ai.sdd-status";
+	const native = status.schemaName === "jero-ai.sdd-status";
 	let selectedInstructions: readonly string[] | undefined;
 	if (phase) {
 		selectedInstructions = native

@@ -135,7 +135,7 @@ test("strict decode rejects malformed shapes", () => {
 
 test("default is on with no file and no env", () => {
 	const cwd = makeScratch("gp-bg-none-");
-	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
+	const configHome = join(makeScratch("gp-bg-home-"), "jero-ai");
 	assert.equal(
 		loadBackgroundSubagentsPolicy(cwd, { jeroPiConfigHome: configHome, env: EMPTY_ENV }),
 		"on",
@@ -144,7 +144,7 @@ test("default is on with no file and no env", () => {
 
 test("project file overrides global file and env", () => {
 	const cwd = makeScratch("gp-bg-proj-");
-	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
+	const configHome = join(makeScratch("gp-bg-home-"), "jero-ai");
 	writePolicyFile(join(cwd, ".pi", "jero"), "on");
 	writePolicyFile(configHome, "off");
 	assert.equal(
@@ -158,7 +158,7 @@ test("project file overrides global file and env", () => {
 
 test("global file overrides env when no project file exists", () => {
 	const cwd = makeScratch("gp-bg-glob-");
-	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
+	const configHome = join(makeScratch("gp-bg-home-"), "jero-ai");
 	writePolicyFile(configHome, "on");
 	assert.equal(
 		loadBackgroundSubagentsPolicy(cwd, {
@@ -171,7 +171,7 @@ test("global file overrides env when no project file exists", () => {
 
 test("env var applies only when no policy file exists, and only exact on|off", () => {
 	const cwd = makeScratch("gp-bg-env-");
-	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
+	const configHome = join(makeScratch("gp-bg-home-"), "jero-ai");
 	assert.equal(
 		loadBackgroundSubagentsPolicy(cwd, {
 			jeroPiConfigHome: configHome,
@@ -193,7 +193,7 @@ test("env var applies only when no policy file exists, and only exact on|off", (
 
 test("a malformed higher-priority file fails closed to off instead of falling through", () => {
 	const cwd = makeScratch("gp-bg-mal-");
-	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
+	const configHome = join(makeScratch("gp-bg-home-"), "jero-ai");
 	const projectDir = join(cwd, ".pi", "jero");
 	mkdirSync(projectDir, { recursive: true });
 	writeFileSync(join(projectDir, "background-subagents.json"), "{malformed");
@@ -211,7 +211,7 @@ test("a malformed higher-priority file fails closed to off instead of falling th
 // "在场且畸形"保守失败为 off，而不是静默滑向更低优先级来源直至默认 on。
 test("an unreadable controlling file is present-and-malformed, never absent", { skip: process.platform === "win32" && "POSIX chmod 语义（Windows 无对应位）" }, () => {
 	const cwd = makeScratch("gp-bg-unreadable-");
-	const configHome = join(makeScratch("gp-bg-home2-"), "gentle-ai");
+	const configHome = join(makeScratch("gp-bg-home2-"), "jero-ai");
 	const projectDir = join(cwd, ".pi", "jero");
 	mkdirSync(projectDir, { recursive: true });
 	const file = join(projectDir, "background-subagents.json");
@@ -403,7 +403,7 @@ test("getOrchestratorPrompt renders exactly one background status line", () => {
 
 test("the resolver attributes the project file, with its path", () => {
 	const cwd = makeScratch("gp-bg-src-project-");
-	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
+	const configHome = join(makeScratch("gp-bg-home-"), "jero-ai");
 	writePolicyFile(join(cwd, ".pi", "jero"), "on");
 	writePolicyFile(configHome, "off");
 	const resolution = resolveBackgroundSubagentsPolicy(cwd, {
@@ -425,7 +425,7 @@ test("the resolver attributes the project file, with its path", () => {
 
 test("the resolver attributes the global file when no project file exists", () => {
 	const cwd = makeScratch("gp-bg-src-global-");
-	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
+	const configHome = join(makeScratch("gp-bg-home-"), "jero-ai");
 	writePolicyFile(configHome, "on");
 	const resolution = resolveBackgroundSubagentsPolicy(cwd, {
 		jeroPiConfigHome: configHome,
@@ -439,7 +439,7 @@ test("the resolver attributes the global file when no project file exists", () =
 
 test("the resolver attributes the environment variable when no file exists", () => {
 	const cwd = makeScratch("gp-bg-src-env-");
-	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
+	const configHome = join(makeScratch("gp-bg-home-"), "jero-ai");
 	const resolution = resolveBackgroundSubagentsPolicy(cwd, {
 		jeroPiConfigHome: configHome,
 		env: { JERO_PI_BACKGROUND_SUBAGENTS: "on" },
@@ -451,7 +451,7 @@ test("the resolver attributes the environment variable when no file exists", () 
 
 test("the resolver attributes the built-in default when nothing else decides", () => {
 	const cwd = makeScratch("gp-bg-src-default-");
-	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
+	const configHome = join(makeScratch("gp-bg-home-"), "jero-ai");
 	const resolution = resolveBackgroundSubagentsPolicy(cwd, {
 		jeroPiConfigHome: configHome,
 		env: EMPTY_ENV,
@@ -463,7 +463,7 @@ test("the resolver attributes the built-in default when nothing else decides", (
 
 test("an unrecognized env value fails closed to off instead of sliding to the default on", () => {
 	const cwd = makeScratch("gp-bg-src-env-bad-");
-	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
+	const configHome = join(makeScratch("gp-bg-home-"), "jero-ai");
 	const resolution = resolveBackgroundSubagentsPolicy(cwd, {
 		jeroPiConfigHome: configHome,
 		env: { JERO_PI_BACKGROUND_SUBAGENTS: "yes" },
@@ -479,7 +479,7 @@ test("an unrecognized env value fails closed to off instead of sliding to the de
 
 test("the resolver attributes a malformed file to that file and does not fall through", () => {
 	const cwd = makeScratch("gp-bg-src-malformed-");
-	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
+	const configHome = join(makeScratch("gp-bg-home-"), "jero-ai");
 	const projectDir = join(cwd, ".pi", "jero");
 	mkdirSync(projectDir, { recursive: true });
 	writeFileSync(join(projectDir, "background-subagents.json"), "{malformed");
@@ -498,7 +498,7 @@ test("the resolver attributes a malformed file to that file and does not fall th
 });
 
 test("loadBackgroundSubagentsPolicy delegates to the resolver so the two can never disagree", () => {
-	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
+	const configHome = join(makeScratch("gp-bg-home-"), "jero-ai");
 	writePolicyFile(configHome, "on");
 	const scenarios: Array<{ cwd: string; env: Record<string, string | undefined> }> = [];
 	const bare = makeScratch("gp-bg-agree-bare-");
@@ -614,7 +614,7 @@ test("jero:background-subagents is registered and declares user-initiated sub-ac
 
 test("no argument reports the effective policy, the deciding default, and the capability", async (t) => {
 	const cwd = makeScratch("gp-bg-cmd-default-");
-	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
+	const configHome = join(makeScratch("gp-bg-home-"), "jero-ai");
 	const notice = await runBackgroundSubagents(t, "", cwd, configHome);
 	assert.equal(notice.type, "info");
 	assert.equal(
@@ -628,7 +628,7 @@ test("no argument reports the effective policy, the deciding default, and the ca
 
 test("status names the project file that decided and the global file it shadows", async (t) => {
 	const cwd = makeScratch("gp-bg-cmd-project-");
-	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
+	const configHome = join(makeScratch("gp-bg-home-"), "jero-ai");
 	writePolicyFile(join(cwd, ".pi", "jero"), "on");
 	writePolicyFile(configHome, "off");
 	installSubagentsPackage(cwd, "pi-subagents-j0k3r");
@@ -646,7 +646,7 @@ test("status names the project file that decided and the global file it shadows"
 
 test("status names the global file when it is the deciding source", async (t) => {
 	const cwd = makeScratch("gp-bg-cmd-global-");
-	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
+	const configHome = join(makeScratch("gp-bg-home-"), "jero-ai");
 	writePolicyFile(configHome, "on");
 	const notice = await runBackgroundSubagents(t, "status", cwd, configHome);
 	assert.equal(
@@ -657,7 +657,7 @@ test("status names the global file when it is the deciding source", async (t) =>
 
 test("status names the environment variable when it is the deciding source", async (t) => {
 	const cwd = makeScratch("gp-bg-cmd-env-");
-	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
+	const configHome = join(makeScratch("gp-bg-home-"), "jero-ai");
 	const notice = await runBackgroundSubagents(t, "status", cwd, configHome, {
 		JERO_PI_BACKGROUND_SUBAGENTS: "on",
 	});
@@ -670,7 +670,7 @@ test("status names the environment variable when it is the deciding source", asy
 
 test("status calls an unrecognized environment value inert instead of silently ignoring it", async (t) => {
 	const cwd = makeScratch("gp-bg-cmd-env-bad-");
-	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
+	const configHome = join(makeScratch("gp-bg-home-"), "jero-ai");
 	const notice = await runBackgroundSubagents(t, "status", cwd, configHome, {
 		JERO_PI_BACKGROUND_SUBAGENTS: "true",
 	});
@@ -688,7 +688,7 @@ test("status calls an unrecognized environment value inert instead of silently i
 
 test("status reports a malformed deciding file as fail-closed, not as a real off", async (t) => {
 	const cwd = makeScratch("gp-bg-cmd-malformed-");
-	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
+	const configHome = join(makeScratch("gp-bg-home-"), "jero-ai");
 	const projectFile = join(cwd, ".pi", "jero", "background-subagents.json");
 	mkdirSync(join(cwd, ".pi", "jero"), { recursive: true });
 	writeFileSync(projectFile, "{malformed");
@@ -709,7 +709,7 @@ test("status reports a malformed deciding file as fail-closed, not as a real off
 
 test("enable writes the global file and reports that it decides", async (t) => {
 	const cwd = makeScratch("gp-bg-cmd-enable-");
-	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
+	const configHome = join(makeScratch("gp-bg-home-"), "jero-ai");
 	const globalFile = join(configHome, "background-subagents.json");
 	const notice = await runBackgroundSubagents(t, "enable", cwd, configHome);
 	assert.deepEqual(JSON.parse(readFileSync(globalFile, "utf8")), {
@@ -729,7 +729,7 @@ test("enable writes the global file and reports that it decides", async (t) => {
 
 test("disable writes the global file off and reports that it decides", async (t) => {
 	const cwd = makeScratch("gp-bg-cmd-disable-");
-	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
+	const configHome = join(makeScratch("gp-bg-home-"), "jero-ai");
 	const globalFile = join(configHome, "background-subagents.json");
 	writePolicyFile(configHome, "on");
 	const notice = await runBackgroundSubagents(t, "disable", cwd, configHome);
@@ -749,7 +749,7 @@ test("disable writes the global file off and reports that it decides", async (t)
 // what the user asked for — but the report must lead with the truth.
 test("enable under an outranking project file writes the global file and says it does not take effect", async (t) => {
 	const cwd = makeScratch("gp-bg-cmd-outranked-");
-	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
+	const configHome = join(makeScratch("gp-bg-home-"), "jero-ai");
 	const projectFile = join(cwd, ".pi", "jero", "background-subagents.json");
 	const globalFile = join(configHome, "background-subagents.json");
 	writePolicyFile(join(cwd, ".pi", "jero"), "off");
@@ -773,7 +773,7 @@ test("enable under an outranking project file writes the global file and says it
 
 test("enable with the environment variable set reports where that variable ranks", async (t) => {
 	const cwd = makeScratch("gp-bg-cmd-enable-env-");
-	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
+	const configHome = join(makeScratch("gp-bg-home-"), "jero-ai");
 	const globalFile = join(configHome, "background-subagents.json");
 	const notice = await runBackgroundSubagents(t, "enable", cwd, configHome, {
 		JERO_PI_BACKGROUND_SUBAGENTS: "off",
@@ -792,7 +792,7 @@ test("enable with the environment variable set reports where that variable ranks
 
 test("an unknown sub-action warns and changes nothing", async (t) => {
 	const cwd = makeScratch("gp-bg-cmd-unknown-");
-	const configHome = join(makeScratch("gp-bg-home-"), "gentle-ai");
+	const configHome = join(makeScratch("gp-bg-home-"), "jero-ai");
 	const notice = await runBackgroundSubagents(t, "toggle", cwd, configHome);
 	assert.equal(notice.type, "warning");
 	assert.equal(

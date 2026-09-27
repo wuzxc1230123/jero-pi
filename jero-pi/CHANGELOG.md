@@ -5,6 +5,17 @@ jero-pi 尚未发布到 npm（版本停在 0.1.0 基线），本文件自重构�
 
 ## [Unreleased]
 
+### gentle-ai 依赖切除批（2026-09-27：第十一批）
+
+**切除对 `gentle-ai` 原生评审 CLI（Go 二进制）的运行时依赖，评审全面落于自实现。** 关键事实：进程内权威适配器（`lib/jero-authority-cli.ts`）本就是生产唯一默认 CLI（评审全操作——START/STATUS/同意仪式/修正捕获/acknowledge/维护四联/风险评估/SDD 对——进程内服务），二进制仅在显式提供 `providerExecutable` 的测试接缝里才会被 spawn。本批把"自实现"落实为**自命名与自存储**：
+
+- **wire 身份自化**：全部 `gentle-ai.*` schema 身份（`review-integration.*`、`sdd-status@2` 等 20+ 个）改 `jero-ai.*`——编码端（wire 投影）、解码端（字面校验与封闭词表）、runtime 再生成（13 模块）、68 个黄金向量按新字节重导为**本仓行为规格**（不再钉上游 v2.9.1）、`tests/fixtures/review-integration/**`、devbinary、runtime-harness 分片与 sdd-agent 资产同步；转义形态 `gentle-ai\\.`（字符串内正则）单独补扫。
+- **capabilities 与调用词自化**：`package.name` 校验、consent/start invocation 词（`["jero-ai", "review", "start", …]` 与编解码双侧）、bootstrap 锚点命令、`native_contract: "jero-ai/2.1.4"`、off-path 杀开关命令接受集（jero-ai/历史 gentle-ai/`/jero:` 三元）。
+- **存储自化**：managed 存储根 `gentle-ai/reviews`→`jero-ai/reviews`，"新名缺席且旧名在场时原地收编旧存储，绝不改写"（新增旧根收编回归测试）；权威自有存储 `jero-review` 不变；`FOREIGN_*_STORE` 外来守卫保持指向上游路径（守卫对象是位置事实）。
+- **二进制接缝保留为通用测试接缝**：`providerExecutable` 生产者全部在测试中，生产路径从不 spawn 任何外部可执行文件；host-relay 错误文案去掉品牌、transport 的"安装 native provider"指引改为进程内权威语义。
+- **兼容性裁决**：旧版 wire 身份的持久化评审记录在新解码器下 fail-closed（未发布包、单机数据、存量评审按新候选重启）；迁移期只读面——旧存储根收编、旧 managed-assets 注册表路径、consent off-path 双接受——保持可读。
+- **文档**：`jero-reference.md` 兼容白名单节改写为"守卫对象与历史事实"四行清单；`dependency-exit-plan.md`、`AGENTS.md`、sdd-status.ts 归属头注同步。
+
 ### gentle 残留清退批（2026-09-27：第十批）
 
 应用户指令对 2026-09-26 审计的五类 `gentle-` 白名单开专项：四类全部清退，外部契约类经证据确认**不可单方迁移**（`gentle-ai` 是外部原生评审 CLI 的身份——解码器字面校验 `package.name === "gentle-ai"` 与 `invocation: ["gentle-ai", "review", …]`、`FOREIGN_*_STORE` 是防误写外部存储的守卫、68 个黄金向量字节钉住上游 v2.9.1 行为规格），保留并改写白名单文档为"仅外部契约类"。

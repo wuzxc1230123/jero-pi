@@ -15,7 +15,7 @@ import {
 // `Receipt-driven development: on|off (decided by <source>)`, next to
 // `Background subagent policy`, sourced from the native review mode status
 // reader (`gentle-ai review mode status --json`, schema
-// `gentle-ai.rdd-mode-status/v1`, decoded to `NativeReviewModeStatus`).
+// `jero-ai.rdd-mode-status/v1`, decoded to `NativeReviewModeStatus`).
 //
 // `getOrchestratorPrompt`/`renderOrchestratorPrompt` stay synchronous and
 // default `rddStatusLine` to the "unknown (native status unavailable)" line

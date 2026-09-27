@@ -134,14 +134,14 @@ export function createFrozenLedger(
 		}
 	}
 	return {
-		schema: "gentle-ai.review-frozen-ledger/v1",
+		schema: "jero-ai.review-frozen-ledger/v1",
 		rows: canonicalRows,
 		frozen_ledger_hash: canonicalHash(canonicalRows),
 	};
 }
 
 export function assertFrozenLedgerIntegrity(ledger: FrozenLedgerV1): void {
-	if (ledger.schema !== "gentle-ai.review-frozen-ledger/v1") {
+	if (ledger.schema !== "jero-ai.review-frozen-ledger/v1") {
 		throw new ReviewIntegrityError("Unknown frozen ledger schema");
 	}
 	const rebuilt = createFrozenLedger(ledger.rows);
@@ -154,7 +154,7 @@ export function assertFrozenLedgerIntegrity(ledger: FrozenLedgerV1): void {
 }
 
 export function createReviewState(input: CreateReviewStateInput): ReviewStateV1 {
-	if (input.snapshot.schema !== "gentle-ai.review-snapshot/v1") {
+	if (input.snapshot.schema !== "jero-ai.review-snapshot/v1") {
 		throw new ReviewIntegrityError("Unknown review snapshot schema");
 	}
 	if (input.snapshot.mode !== input.mode) {
@@ -179,7 +179,7 @@ export function createReviewState(input: CreateReviewStateInput): ReviewStateV1 
 		throw new ReviewIntegrityError("Judgment Day snapshot must not carry ordinary route classification");
 	}
 	const result: ReviewStateV1 = {
-		schema: "gentle-ai.review-state/v1",
+		schema: "jero-ai.review-state/v1",
 		lineage_id: input.lineageId,
 		mode: input.mode,
 		revision: 0,
@@ -208,7 +208,7 @@ export function createReviewState(input: CreateReviewStateInput): ReviewStateV1 
 }
 
 export function assertState(state: ReviewStateV1, previous?: ReviewStateV1): void {
-	if (state.schema !== "gentle-ai.review-state/v1") {
+	if (state.schema !== "jero-ai.review-state/v1") {
 		throw new ReviewIntegrityError("Unknown review state schema");
 	}
 	assertLineageId(state.lineage_id);
@@ -386,7 +386,7 @@ export function createReceiptEnvelope(body: ReceiptBodyV1): ReceiptEnvelopeV1 {
 }
 
 function assertReceiptBody(body: ReceiptBodyV1): void {
-	if (body.schema !== "gentle-ai.review-receipt-body/v1") {
+	if (body.schema !== "jero-ai.review-receipt-body/v1") {
 		throw new ReviewIntegrityError("Unknown receipt body schema");
 	}
 	assertLineageId(body.lineage_id);

@@ -161,7 +161,7 @@ function composeCapturedResultsFinalizeV1(context: import("./review.ts").JeroAut
 }
 
 // 终局闭包随提交逐字搭载：扩展从中继结果解码
-// gentle-ai.review-last-event-closure/v1 正文（snake 键），因此 jero 闭包
+// jero-ai.review-last-event-closure/v1 正文（snake 键），因此 jero 闭包
 // 只需换掉 schema 字符串。
 function closureSubmissionV1(context: import("./review.ts").JeroAuthorityContextV1, cwd: string | undefined, lineageId: string, state: "approved" | "escalated"): Record<string, unknown> | undefined {
 	const loaded = context.lineages.load(lineageId);
@@ -177,7 +177,7 @@ function closureSubmissionV1(context: import("./review.ts").JeroAuthorityContext
 	// （review/capture-result、review/capture-validation），另两个用点；
 	// jero 构建器是统一的。
 	const wireOperation = closure.operation === "review.capture-result" ? "review/capture-result" : closure.operation === "review.capture-validation" ? "review/capture-validation" : closure.operation;
-	return { kind: "closure", closure_json: JSON.stringify({ ...closure, schema: "gentle-ai.review-last-event-closure/v1", operation: wireOperation }) };
+	return { kind: "closure", closure_json: JSON.stringify({ ...closure, schema: "jero-ai.review-last-event-closure/v1", operation: wireOperation }) };
 }
 
 export async function admitJeroCaptureResultForRelayV1(request: { readonly captureArgumentTokens: readonly string[]; readonly targetCwd?: string }, operationToken: string, submitTokens: readonly string[], resultFile: string): Promise<string> {
@@ -258,7 +258,7 @@ function wireClosureSubmissionV1(context: import("./review.ts").JeroAuthorityCon
 		...(state === "approved" ? { advisoryFindings: jeroAdvisoryFindingsFromStateV1(loaded.record.state) } : {}),
 	});
 	const wireOperation = operation === "review.capture-validation" ? "review/capture-validation" : operation;
-	return JSON.stringify({ ...closure, schema: "gentle-ai.review-last-event-closure/v1", operation: wireOperation });
+	return JSON.stringify({ ...closure, schema: "jero-ai.review-last-event-closure/v1", operation: wireOperation });
 }
 
 export async function admitJeroProviderRoleResultForRelayV1(request: { readonly captureArgumentTokens: readonly string[]; readonly targetCwd?: string }, operationToken: string, submitTokens: readonly string[], resultFile: string, role: JeroProviderRoleV1): Promise<string> {

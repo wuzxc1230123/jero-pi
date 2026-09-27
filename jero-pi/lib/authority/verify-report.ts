@@ -7,7 +7,7 @@ import { decodeJeroVerifyResultV1, type JeroVerifyResultV1 } from "./protocol.ts
 // 内容可解码为封套——别无其他。
 //
 // 刻意分歧（设计 §5.1.8）：上游最新 head 已退役
-// gentle-ai.verify-result/v1 的证明受理；jero-pi 刻意在 jero.* 命名空间
+// jero-ai.verify-result/v1 的证明受理；jero-pi 刻意在 jero.* 命名空间
 // 下于进程内恢复该纪律。封套字段属于我们，并经 schema 评审演进，
 // 而非自由形式的编辑。
 

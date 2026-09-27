@@ -75,7 +75,7 @@ test("P4b: the relay composes renderBinding + in-process admission end to end", 
 	// submission is now the approved last-event closure; the artifact trail
 	// below still proves the admission itself.
 	const admitted = JSON.parse(result.submission) as { schema?: string; state?: string; operation?: string };
-	assert.equal(admitted.schema, "gentle-ai.review-last-event-closure/v1");
+	assert.equal(admitted.schema, "jero-ai.review-last-event-closure/v1");
 	assert.equal(admitted.state, "approved");
 	assert.equal(admitted.operation, "review/capture-result");
 	// The artifact trail exists on disk: the verbatim reviewer bytes plus the

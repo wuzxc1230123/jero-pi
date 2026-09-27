@@ -1,6 +1,6 @@
 {
-  "schema": "gentle-ai.review-integration.start/v1",
-  "contract": "gentle-ai.review-integration/v1",
+  "schema": "jero-ai.review-integration.start/v1",
+  "contract": "jero-ai.review-integration/v1",
   "operation": "review.start",
   "action": "created",
   "lenses_required": true,

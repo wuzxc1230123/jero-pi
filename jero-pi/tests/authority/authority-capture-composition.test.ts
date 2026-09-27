@@ -75,7 +75,7 @@ test("clean findings close to an approved last-event closure riding the submissi
 	const clean = envelopeFor("review-readability", []);
 	const { submission } = await admitThroughRelayRaw(harness, clean);
 	const body = JSON.parse(submission) as Record<string, unknown>;
-	assert.equal(body.schema, "gentle-ai.review-last-event-closure/v1");
+	assert.equal(body.schema, "jero-ai.review-last-event-closure/v1");
 	assert.equal(body.operation, "review/capture-result");
 	assert.equal(body.state, "approved");
 	assert.match(String(body.action ?? ""), /burned; delivery follows ordinary repository policy/);

@@ -29,7 +29,7 @@ test("conformance 11: consent/v3 invocation vectors are unchanged by M3", () => 
 	const answers = consent.choices.map(({ answer }) => answer).toSorted();
 	assert.deepEqual(answers, ["declined", "granted"]);
 	for (const choice of consent.choices) {
-		assert.ok(choice.invocation.startsWith("gentle-ai review start "));
+		assert.ok(choice.invocation.startsWith("jero-ai review start "));
 		assert.ok(choice.invocation.includes(`--target ${consent.targetIdentity}`));
 		assert.ok(choice.invocation.includes("--projection workspace"));
 		assert.ok(choice.invocation.endsWith(`--consent ${choice.answer}`));

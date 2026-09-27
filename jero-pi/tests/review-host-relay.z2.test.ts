@@ -229,7 +229,7 @@ export function collectInput(overrides: Partial<{ captureOperation: string; argu
 	];
 	return {
 		name: "reviewer_result",
-		schema: "https://gentle-ai.dev/schema/review/reviewer/v1",
+		schema: "https://jero-ai.dev/schema/review/reviewer/v1",
 		captureOperation: overrides.captureOperation ?? "review.capture-result",
 		arguments: argumentsList,
 		...("submission" in overrides ? (overrides.submission === undefined ? {} : { submission: overrides.submission }) : { submission: SUBMISSION }),
@@ -329,7 +329,7 @@ test("the negotiated decoder carries the provider submission through the capture
 	};
 	const rawInput = {
 		name: "reviewer_result",
-		schema: "https://gentle-ai.dev/schema/review/reviewer/v1",
+		schema: "https://jero-ai.dev/schema/review/reviewer/v1",
 		capture_operation: "review.capture-result",
 		arguments: [
 			{ name: "lineage", value: lineageId, token: `--lineage=${lineageId}` },
@@ -337,7 +337,7 @@ test("the negotiated decoder carries the provider submission through the capture
 			{ name: "materialize", value: "true", token: "--materialize=true" },
 		],
 		artifact_subject: {
-			schema: "gentle-ai.review-artifact-subject/v2",
+			schema: "jero-ai.review-artifact-subject/v2",
 			subject_hash: sha,
 			lineage_id: lineageId,
 			authority_revision: sha,
@@ -362,7 +362,7 @@ test("the negotiated decoder carries the provider submission through the capture
 	// substitution location outside its own argument tokens.
 	assert.throws(() => decodeReviewNextTransitionV3({ kind: "collect", reason_code: "verification_evidence_required", collect: { inputs: [{
 		name: "verification_evidence",
-		schema: "gentle-ai.review-verification-evidence/v2",
+		schema: "jero-ai.review-verification-evidence/v2",
 		capture_operation: "review.capture-evidence",
 		arguments: [{ name: "lineage", value: lineageId }],
 		submission: rawSubmission,

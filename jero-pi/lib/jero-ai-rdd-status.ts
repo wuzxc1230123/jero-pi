@@ -264,7 +264,7 @@ export async function resolveReviewAssessmentPlan(
 	let assessment: ReviewAssessmentV1 | undefined;
 	let unassessableDetail: string | undefined;
 	if (nativeReviewCli?.assess === undefined) {
-		unassessableDetail = "native review assess is unavailable: the installed gentle-ai binary does not expose the assess command.";
+		unassessableDetail = "native review assess is unavailable: the in-process jero authority does not expose the assess command.";
 	} else {
 		try {
 			const request: NativeReviewAssessRequest = {

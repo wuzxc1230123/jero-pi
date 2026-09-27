@@ -208,18 +208,18 @@ test("ambiguous START reconciliation preserves the provider-selected recovery di
 	assert.equal(startCalls, 1, "reconciliation never replays START");
 });
 
-for (const statusSchema of ["gentle-ai.review-integration.status/v6", "gentle-ai.review-integration.status/v7"]) test(`pre-lineage intended-untracked selection revalidates and starts at an explicit workspace root (${statusSchema})`, async (t) => {
+for (const statusSchema of ["jero-ai.review-integration.status/v6", "jero-ai.review-integration.status/v7"]) test(`pre-lineage intended-untracked selection revalidates and starts at an explicit workspace root (${statusSchema})`, async (t) => {
 	const cwd = realpathSync(repository(t)), sessionCwd = repository(t), eligible = "selected.md";
 	writeFileSync(join(cwd, eligible), "selected\n");
 	const initialTarget = startStatus(cwd), target = startStatus(cwd, undefined, [eligible]);
 	const selection: ReviewCollectInputV3 = {
-		name: "intended_untracked_selection", schema: "gentle-ai.review-intended-untracked-selection/v1", captureOperation: "external.select_intended_untracked",
+		name: "intended_untracked_selection", schema: "jero-ai.review-intended-untracked-selection/v1", captureOperation: "external.select_intended_untracked",
 		arguments: [
 			{ name: "target_identity", value: SHA }, { name: "projection", value: "workspace" },
 			{ name: "base_tree", value: initialTarget.projection.baseTree }, { name: "candidate_tree", value: initialTarget.projection.currentCandidateTree },
 			{ name: "eligible_paths_json", value: JSON.stringify([eligible]) }, { name: "expected_untracked_inventory", value: SHA },
 		],
-		submission: { operationToken: "status", argumentTokens: ["--contract=gentle-ai.review-integration/v2", "--next-transition=true", "--agent=pi", "--projection=workspace", "--intended-untracked-selection={{value}}"], values: [{ slot: "intended_untracked_selection", domain: "schema_bound_json", schema: "gentle-ai.review-intended-untracked-selection/v1", substitutionLocation: 4 }] },
+		submission: { operationToken: "status", argumentTokens: ["--contract=jero-ai.review-integration/v2", "--next-transition=true", "--agent=pi", "--projection=workspace", "--intended-untracked-selection={{value}}"], values: [{ slot: "intended_untracked_selection", domain: "schema_bound_json", schema: "jero-ai.review-intended-untracked-selection/v1", substitutionLocation: 4 }] },
 	};
 	const initial = { ...initialTarget, nextTransition: { kind: "collect", reasonCode: "intended_untracked_selection_required", collect: { inputs: [selection] } }, raw: { schema: statusSchema } } as ReviewStatusV3;
 	const requests: Array<Record<string, unknown>> = [], starts: Array<Record<string, unknown>> = [], retained = new Map();
@@ -235,7 +235,7 @@ for (const statusSchema of ["gentle-ai.review-integration.status/v6", "gentle-ai
 	assert.equal(starts.length, 1, JSON.stringify(selectedResult));
 	assert.deepEqual(requests.map((request) => request.cwd), [cwd, cwd, cwd]);
 	assert.equal(starts[0]!.cwd, cwd);
-	assert.deepEqual(starts[0]!.intendedUntrackedSelection, { argumentTokens: selection.submission!.argumentTokens, value: JSON.stringify({ schema: "gentle-ai.review-intended-untracked-selection/v1", untracked_scope: "select", expected_untracked_inventory: SHA, intended_untracked: [eligible] }) });
+	assert.deepEqual(starts[0]!.intendedUntrackedSelection, { argumentTokens: selection.submission!.argumentTokens, value: JSON.stringify({ schema: "jero-ai.review-intended-untracked-selection/v1", untracked_scope: "select", expected_untracked_inventory: SHA, intended_untracked: [eligible] }) });
 	for (const invalid of [
 		{ selectionBinding: selectionBinding.replace(eligible, "docs/stale.md"), intendedUntracked: [eligible] },
 		{ selectionBinding, intendedUntracked: [eligible, eligible] }, { selectionBinding, intendedUntracked: ["docs/unknown.md"] },
@@ -255,7 +255,7 @@ for (const statusSchema of ["gentle-ai.review-integration.status/v6", "gentle-ai
 // stop and can resolve it in one call through top-level untrackedScope.
 export function untrackedStopFixture(
 	t: test.TestContext,
-	statusSchema = "gentle-ai.review-integration.status/v7",
+	statusSchema = "jero-ai.review-integration.status/v7",
 ): {
 	cwd: string;
 	eligible: string;
@@ -270,7 +270,7 @@ export function untrackedStopFixture(
 		target = startStatus(cwd, undefined, [eligible]);
 	const selection: ReviewCollectInputV3 = {
 		name: "intended_untracked_selection",
-		schema: "gentle-ai.review-intended-untracked-selection/v1",
+		schema: "jero-ai.review-intended-untracked-selection/v1",
 		captureOperation: "external.select_intended_untracked",
 		arguments: [
 			{ name: "target_identity", value: SHA },
@@ -286,7 +286,7 @@ export function untrackedStopFixture(
 		submission: {
 			operationToken: "status",
 			argumentTokens: [
-				"--contract=gentle-ai.review-integration/v2",
+				"--contract=jero-ai.review-integration/v2",
 				"--next-transition=true",
 				"--agent=pi",
 				"--projection=workspace",
@@ -296,7 +296,7 @@ export function untrackedStopFixture(
 				{
 					slot: "intended_untracked_selection",
 					domain: "schema_bound_json",
-					schema: "gentle-ai.review-intended-untracked-selection/v1",
+					schema: "jero-ai.review-intended-untracked-selection/v1",
 					substitutionLocation: 4,
 				},
 			],
@@ -315,8 +315,8 @@ export function untrackedStopFixture(
 }
 
 for (const statusSchema of [
-	"gentle-ai.review-integration.status/v6",
-	"gentle-ai.review-integration.status/v7",
+	"jero-ai.review-integration.status/v6",
+	"jero-ai.review-integration.status/v7",
 ])
 	test(`inspect on the intended-untracked stop returns nextStep and the selection binding (${statusSchema})`, async (t) => {
 		const { cwd, initial } = untrackedStopFixture(t, statusSchema);
@@ -371,7 +371,7 @@ test("inspect with untrackedScope exclude resolves the intended-untracked stop i
 	assert.deepEqual(requests[1]!.intendedUntrackedSelection, {
 		argumentTokens: selection.submission!.argumentTokens,
 		value: JSON.stringify({
-			schema: "gentle-ai.review-intended-untracked-selection/v1",
+			schema: "jero-ai.review-intended-untracked-selection/v1",
 			untracked_scope: "exclude",
 			expected_untracked_inventory: SHA,
 			intended_untracked: [],
@@ -411,7 +411,7 @@ test("inspect with untrackedScope select resolves the stop with exactly the sele
 		value: string;
 	};
 	assert.deepEqual(JSON.parse(submission.value), {
-		schema: "gentle-ai.review-intended-untracked-selection/v1",
+		schema: "jero-ai.review-intended-untracked-selection/v1",
 		untracked_scope: "select",
 		expected_untracked_inventory: SHA,
 		intended_untracked: [eligible],
@@ -550,7 +550,7 @@ test("plain START adopts the pre-lineage selection retained by inspect and delet
 	assert.deepEqual(startStatusRequest.intendedUntrackedSelection, {
 		argumentTokens: selection.submission!.argumentTokens,
 		value: JSON.stringify({
-			schema: "gentle-ai.review-intended-untracked-selection/v1",
+			schema: "jero-ai.review-intended-untracked-selection/v1",
 			untracked_scope: "select",
 			expected_untracked_inventory: SHA,
 			intended_untracked: [eligible],

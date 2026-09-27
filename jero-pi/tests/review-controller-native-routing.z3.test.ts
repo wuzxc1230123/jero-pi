@@ -102,7 +102,7 @@ test("STATUS preserves ambiguous native status as read-only provider-owned state
 	const result = await __testing.executeReviewControllerOperation({ operation: "status", lineageId }, process.cwd(), native);
 	assert.equal(result.operation, "status");
 	assert.equal(result.status, "blocked");
-	assert.deepEqual(result.result, { schema: "gentle-ai.review-integration.status/v5" });
+	assert.deepEqual(result.result, { schema: "jero-ai.review-integration.status/v5" });
 });
 
 test("STATUS routes an explicit workspace root to the provider and reports it", async () => {
@@ -126,7 +126,7 @@ test("a public provider-role collect binding remains reachable through one nativ
 	const input = {
 		...roleInput,
 		name: "provider_refuter",
-		schema: "https://gentle-ai.dev/schema/review/refuter/v1",
+		schema: "https://jero-ai.dev/schema/review/refuter/v1",
 		captureOperation: "review.capture-refuter",
 		arguments: [
 			{ name: "lineage", value: closureLineage, token: `--lineage=${closureLineage}` },
@@ -146,7 +146,7 @@ test("a public provider-role collect binding remains reachable through one nativ
 			captureCalls += 1;
 			assert.equal(request.captureOperation, "review.capture-refuter");
 			assert.deepEqual(request.argumentTokens, [`--lineage=${closureLineage}`, `--target=${SHA}`, "--agent=pi", "--execute=true"]);
-			return { schema: "gentle-ai.review-last-event-closure/v1", operation: "review.capture-refuter", lineageId: closureLineage, state: "approved", storeRevision: SHA };
+			return { schema: "jero-ai.review-last-event-closure/v1", operation: "review.capture-refuter", lineageId: closureLineage, state: "approved", storeRevision: SHA };
 		},
 	} as unknown as NativeReviewCli;
 	const result = await __testing.executeReviewCaptureOperation({ lineageId: closureLineage, collectBinding: JSON.stringify(input) }, process.cwd(), native);
@@ -163,7 +163,7 @@ test("ordinary START follows a provider reconciliation status without creating a
 	} as unknown as NativeReviewCli;
 	const result = await __testing.executeReviewControllerOperation({ operation: "start", input: JSON.stringify({ mode: "ordinary" }) }, process.cwd(), native);
 	assert.equal(result.status, "blocked");
-	assert.deepEqual(result.result, { schema: "gentle-ai.review-integration.status/v5" });
+	assert.deepEqual(result.result, { schema: "jero-ai.review-integration.status/v5" });
 	assert.equal(startCalls, 0);
 });
 
@@ -203,7 +203,7 @@ test("targeted-validator provider vectors preserve their nonuniform native closu
 	const input = {
 		...roleInput,
 		name: "provider_targeted_validator",
-		schema: "https://gentle-ai.dev/schema/review/targeted-validator/v1",
+		schema: "https://jero-ai.dev/schema/review/targeted-validator/v1",
 		captureOperation: "review.capture-validation",
 		arguments: [
 			{ name: "lineage", value: closureLineage, token: `--lineage=${closureLineage}` },
@@ -217,7 +217,7 @@ test("targeted-validator provider vectors preserve their nonuniform native closu
 		targetStatus: async () => roleStatus,
 		captureProviderRole: async (request: { captureOperation: string }) => {
 			assert.equal(request.captureOperation, "review.capture-validation");
-			return { schema: "gentle-ai.review-last-event-closure/v1", operation: "review/capture-validation", lineageId: closureLineage, state: "approved", storeRevision: SHA };
+			return { schema: "jero-ai.review-last-event-closure/v1", operation: "review/capture-validation", lineageId: closureLineage, state: "approved", storeRevision: SHA };
 		},
 	} as unknown as NativeReviewCli;
 	const result = await __testing.executeReviewCaptureOperation({ lineageId: closureLineage, collectBinding: JSON.stringify(input) }, process.cwd(), native);
@@ -236,7 +236,7 @@ test("targeted-validator captures echo the distinct provider correction target i
 	const input = {
 		...roleInput,
 		name: "provider_targeted_validator",
-		schema: "https://gentle-ai.dev/schema/review/targeted-validator/v1",
+		schema: "https://jero-ai.dev/schema/review/targeted-validator/v1",
 		captureOperation: "review.capture-validation",
 		arguments: [
 			{ name: "lineage", value: closureLineage, token: `--lineage=${closureLineage}` },
@@ -249,7 +249,7 @@ test("targeted-validator captures echo the distinct provider correction target i
 	const roleStatus = { ...status(closureLineage), nextTransition: { kind: "collect", reasonCode: "provider_role_required", collect: { inputs: [input] } } } as ReviewStatusV3;
 	const native = {
 		targetStatus: async () => roleStatus,
-		captureProviderRole: async () => ({ schema: "gentle-ai.review-last-event-closure/v1", operation: "review/capture-validation", lineageId: closureLineage, state: "approved", storeRevision: SHA }),
+		captureProviderRole: async () => ({ schema: "jero-ai.review-last-event-closure/v1", operation: "review/capture-validation", lineageId: closureLineage, state: "approved", storeRevision: SHA }),
 	} as unknown as NativeReviewCli;
 	const result = await __testing.executeReviewCaptureOperation({ lineageId: closureLineage, collectBinding: JSON.stringify(input) }, process.cwd(), native);
 	assert.equal(result.outcome, "native-last-event-closure");
@@ -282,7 +282,7 @@ test("correction-plan collection demands provider-bounded lines, then returns it
 	const lineageId = "review-correction";
 	const input = {
 		name: "correction_plan",
-		schema: "https://gentle-ai.dev/schema/review/correction-plan/v1",
+		schema: "https://jero-ai.dev/schema/review/correction-plan/v1",
 		captureOperation: "review.capture-correction-plan",
 		arguments: [
 			{ name: "lineage", value: lineageId, token: `--lineage=${lineageId}` },
@@ -302,7 +302,7 @@ test("correction-plan collection demands provider-bounded lines, then returns it
 			captures += 1;
 			assert.equal(request.correctionLines, 3);
 			assert.deepEqual(request.argumentTokens, [`--lineage=${lineageId}`, "--correction-lines={{value}}"]);
-			return { schema: "gentle-ai.review-last-event-closure/v1", operation: "review.capture-correction-plan", lineageId, state: "approved", storeRevision: SHA };
+			return { schema: "jero-ai.review-last-event-closure/v1", operation: "review.capture-correction-plan", lineageId, state: "approved", storeRevision: SHA };
 		},
 	} as unknown as NativeReviewCli;
 	const binding = JSON.stringify(input);
@@ -379,7 +379,7 @@ test("current STATUS binding allows exactly one provider capture and never follo
 	const input = {
 		...withoutReviewerDocument,
 		name: "provider_refuter",
-		schema: "https://gentle-ai.dev/schema/review/refuter/v1",
+		schema: "https://jero-ai.dev/schema/review/refuter/v1",
 		captureOperation: "review.capture-refuter",
 		arguments: [
 			{ name: "lineage", value: lineageId, token: `--lineage=${lineageId}` },
@@ -399,7 +399,7 @@ test("current STATUS binding allows exactly one provider capture and never follo
 			captureCalls += 1;
 			assert.equal(request.captureOperation, "review.capture-refuter");
 			assert.deepEqual(request.argumentTokens, [`--lineage=${lineageId}`, `--target=${SHA}`, "--agent=pi", "--execute=true"]);
-			return { schema: "gentle-ai.review-last-event-closure/v1", operation: "review.capture-refuter", lineageId, state: "approved", storeRevision: SHA };
+			return { schema: "jero-ai.review-last-event-closure/v1", operation: "review.capture-refuter", lineageId, state: "approved", storeRevision: SHA };
 		},
 	} as unknown as NativeReviewCli;
 	const result = await __testing.executeReviewCaptureOperation({ lineageId, collectBinding: JSON.stringify(input) }, process.cwd(), native);
@@ -478,7 +478,7 @@ test("START and consent ambiguity reconciliation register their returned committ
 	const directNative = {
 		targetStatus: async (request: Record<string, unknown>) => { directRequests.push(request); return directRequests.length === 1 ? startStatus(cwd, baseRef) : status(lineageId, [input]); },
 		start: () => { directStartCalls += 1; return unknown(); },
-		captureCorrectionPlan: async () => ({ schema: "gentle-ai.review-last-event-closure/v1", operation: "review.capture-correction-plan", lineageId, state: "correction_required", storeRevision: SHA }),
+		captureCorrectionPlan: async () => ({ schema: "jero-ai.review-last-event-closure/v1", operation: "review.capture-correction-plan", lineageId, state: "correction_required", storeRevision: SHA }),
 	} as unknown as NativeReviewCli;
 	const directStart = await __testing.executeReviewControllerOperation({ operation: "start", input: JSON.stringify({ mode: "ordinary", baseRef, committedOnly: true }) }, cwd, directNative, { retainedUntrackedSelections: directRoutes });
 	assert.deepEqual({ outcome: directStart.outcome, status: directStart.status, mutationOutcome: directStart.mutation_outcome, startCalls: directStartCalls, statusCalls: directRequests.length }, { outcome: "native-mutation-status-reconciled", status: "blocked", mutationOutcome: "unknown", startCalls: 1, statusCalls: 2 });

@@ -366,7 +366,7 @@ test("general STATUS returns the typed native-status-unsupported boundary withou
 		next_action: "require-upstream-read-only-native-status-inventory",
 		remediation_command: "reinstall the jero-pi package (pnpm install); review STATUS is served in-process and there is no external CLI to run",
 		evidence: {
-			native_contract: "gentle-ai/2.1.4",
+			native_contract: "jero-ai/2.1.4",
 			general_status: "unsupported",
 			claimant_inventory: "unsupported",
 		},

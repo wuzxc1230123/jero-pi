@@ -3,7 +3,7 @@ import { canonicalBytesV1, sha256Hex } from "../review-canonical.ts";
 // jero-authority 哈希原语（设计 §5.1.2、§9）。
 //
 // jero 权威命名空间刻意与上游 `domainHashV1` 分离，后者的输出嵌入了
-// `gentle-ai.review-` 前缀：jero 身份对相同的权威 JSON 字节计算，但使用
+// `jero-ai.review-` 前缀：jero 身份对相同的权威 JSON 字节计算，但使用
 // 崭新的 `jero.authority.<domain>/v1` 域，因此 jero 身份绝不与上游
 // gentle-ai 身份冲突——也不会被误认作后者。
 
@@ -28,7 +28,7 @@ function concatBytes(head: Uint8Array, tail: Uint8Array): Uint8Array {
  * `jero.authority.<domain>/v1\0<canonicalBytesV1(value)>`。
  *
  * 绝不在此处替换为 `domainHashV1`——它的输出嵌入了上游
- * `gentle-ai.review-` 前缀，会伪造与外来权威存储之间的身份连续性。
+ * `jero-ai.review-` 前缀，会伪造与外来权威存储之间的身份连续性。
  */
 export function jeroDomainHash(domain: string, value: unknown): string {
 	if (!JERO_DOMAIN.test(domain)) throw new JeroAuthorityCanonicalError("Jero authority hash domain is invalid");

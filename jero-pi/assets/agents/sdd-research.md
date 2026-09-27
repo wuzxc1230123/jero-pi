@@ -63,9 +63,9 @@ tools:
 - `openspec`：写入/更新 `openspec/changes/{change}/research.md`。
 - `none`：内联返回研究记录。
 
-研究产物使用 schema `gentle-ai.sdd-research/v1`：一个正的 `revision`、显式的 `done | partial | blocked` 结果、问题清单、准入和观察到的精确授权、来源，以及经验证的声明（每条声明映射到来源 ID）。仅当所有被选问题都有经验证的来源背书答案时使用 `done`；采集不完整用 `partial`，采集无法运行用 `blocked`。不支持的类别和失败调用携带显式拒绝原因，而非捏造的声明。任何被选类别为 blocked/partial 都保持 `proposal_ready: false`；产品决策仍由父会话单独确认。
+研究产物使用 schema `jero-ai.sdd-research/v1`：一个正的 `revision`、显式的 `done | partial | blocked` 结果、问题清单、准入和观察到的精确授权、来源，以及经验证的声明（每条声明映射到来源 ID）。仅当所有被选问题都有经验证的来源背书答案时使用 `done`；采集不完整用 `partial`，采集无法运行用 `blocked`。不支持的类别和失败调用携带显式拒绝原因，而非捏造的声明。任何被选类别为 blocked/partial 都保持 `proposal_ready: false`；产品决策仍由父会话单独确认。
 
-还要更新预提案状态（`engram`/`both`：主题 `"sdd/{change}/preproposal"`；相同的保存约定），使用 schema `gentle-ai.sdd-preproposal/v1`：一个正的 `revision`、探索引用、研究请求和类别、准入结果、证据引用、产品决策（`pending | confirmed`）和 `proposal_ready`。
+还要更新预提案状态（`engram`/`both`：主题 `"sdd/{change}/preproposal"`；相同的保存约定），使用 schema `jero-ai.sdd-preproposal/v1`：一个正的 `revision`、探索引用、研究请求和类别、准入结果、证据引用、产品决策（`pending | confirmed`）和 `proposal_ready`。
 
 混合（`both`）持久化意味着两个存储中字节一致。混合不匹配或单侧写入失败时，绝不偏爱任何一个存储：从保留的意图恢复，而非从幸存的存储恢复，并在恢复期间保持提案就绪为假。
 

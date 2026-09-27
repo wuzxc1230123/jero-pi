@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://gentle-ai.dev/contracts/review-integration/v2/schemas/failure.schema.json",
+  "$id": "https://jero-ai.dev/contracts/review-integration/v2/schemas/failure.schema.json",
   "title": "Gentle AI negotiated review v2 failure",
   "type": "object",
   "additionalProperties": false,
@@ -9,8 +9,8 @@
     "authority_applicability", "retry_safe", "replayability", "required_inputs", "next_action"
   ],
   "properties": {
-    "schema": {"const": "gentle-ai.review-integration.failure/v2"},
-    "contract": {"const": "gentle-ai.review-integration/v2"},
+    "schema": {"const": "jero-ai.review-integration.failure/v2"},
+    "contract": {"const": "jero-ai.review-integration/v2"},
     "operation": {"enum": [
       "review.capabilities", "review.start", "review.status", "review.finalize", "review.repair",
       "review.retry_final_verification", "review.validate", "review.bind_sdd",

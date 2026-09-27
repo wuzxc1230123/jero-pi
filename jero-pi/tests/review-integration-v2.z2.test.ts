@@ -118,7 +118,7 @@ export function approvedAcknowledgementTransition(): JsonObject {
 		reason_code: "approved_acknowledgement_required",
 		execute: {
 			operation: "review.acknowledge-approved",
-			command: "gentle-ai review acknowledge-approved --provider-vector",
+			command: "jero-ai review acknowledge-approved --provider-vector",
 			arguments: [
 				{ name: "cwd", value: "/provider/repository", token: "--cwd=/provider/repository" },
 				{ name: "lineage", value: "review-fixture", token: "--lineage=review-fixture" },
@@ -152,7 +152,7 @@ test("acknowledgement execute rejects decoy bindings, closed-vector drift, and m
 
 test("repair decodes a committed execute result and rejects a non-eligible preflight carrying provider_inputs", () => {
 	const executed: JsonObject = {
-		schema: "gentle-ai.review-integration.repair/v2",
+		schema: "jero-ai.review-integration.repair/v2",
 		contract: REVIEW_INTEGRATION_CONTRACT,
 		operation: "review.repair",
 		mode: "execute",
@@ -174,7 +174,7 @@ test("repair decodes a committed execute result and rejects a non-eligible prefl
 	assert.equal(decodeReviewRepairV2(executed).execution?.status, "committed");
 
 	const nonEligibleWithInputs: JsonObject = {
-		schema: "gentle-ai.review-integration.repair/v2",
+		schema: "jero-ai.review-integration.repair/v2",
 		contract: REVIEW_INTEGRATION_CONTRACT,
 		operation: "review.repair",
 		mode: "preflight",
@@ -186,7 +186,7 @@ test("repair decodes a committed execute result and rejects a non-eligible prefl
 			cause: "unsupported_historical_v1_operation_alias",
 			disposition: "quarantine-approved-historical-alias",
 			repository_binding: digest,
-			authorization_schema: "gentle-ai.review-repair-authorization/v1",
+			authorization_schema: "jero-ai.review-repair-authorization/v1",
 		},
 		required_inputs: [],
 	};
@@ -204,7 +204,7 @@ test("artifact-subject accepts an optional correction_target_identity", () => {
 
 test("repair eligible preflight with wrong required_inputs order is rejected", () => {
 	const wrongOrder: JsonObject = {
-		schema: "gentle-ai.review-integration.repair/v2",
+		schema: "jero-ai.review-integration.repair/v2",
 		contract: REVIEW_INTEGRATION_CONTRACT,
 		operation: "review.repair",
 		mode: "preflight",
@@ -216,7 +216,7 @@ test("repair eligible preflight with wrong required_inputs order is rejected", (
 			cause: "unsupported_historical_v1_operation_alias",
 			disposition: "quarantine-approved-historical-alias",
 			repository_binding: digest,
-			authorization_schema: "gentle-ai.review-repair-authorization/v1",
+			authorization_schema: "jero-ai.review-repair-authorization/v1",
 		},
 		required_inputs: ["reason", "actor", "maintainer_authorization"],
 	};
@@ -279,31 +279,31 @@ test("next_transition decodes the self-contained provider role capture vectors s
 	});
 
 	const decodeRoleTransition = (value: unknown) => decodeReviewNextTransitionV3(value, { v5: true });
-	const refuter = roleInput("provider_refuter", "review.capture-refuter", "https://gentle-ai.dev/schema/review/refuter/v1");
+	const refuter = roleInput("provider_refuter", "review.capture-refuter", "https://jero-ai.dev/schema/review/refuter/v1");
 	const decodedRefuter = decodeRoleTransition(refuter);
 	assert.equal(decodedRefuter.collect?.inputs[0]?.captureOperation, "review.capture-refuter");
 	assert.equal(decodedRefuter.collect?.inputs[0]?.arguments.at(-1)?.token, "--execute=true");
 
 	assert.throws(
-		() => decodeRoleTransition(roleInput("provider_refuter", "review.capture-refuter", "https://gentle-ai.dev/schema/review/reviewer/v1")),
-		/schema must be https:\/\/gentle-ai\.dev\/schema\/review\/refuter\/v1/,
+		() => decodeRoleTransition(roleInput("provider_refuter", "review.capture-refuter", "https://jero-ai.dev/schema/review/reviewer/v1")),
+		/schema must be https:\/\/jero-ai\.dev\/schema\/review\/refuter\/v1/,
 	);
 	assert.throws(
-		() => decodeRoleTransition(roleInput("provider_refuter", "review.capture-refuter", "https://gentle-ai.dev/schema/review/refuter/v1", {
+		() => decodeRoleTransition(roleInput("provider_refuter", "review.capture-refuter", "https://jero-ai.dev/schema/review/refuter/v1", {
 			submission: { operation_token: "capture-refuter", argument_tokens: ["--input={{value}}"], values: [{ slot: "{{value}}", domain: "artifact-path", substitution_location: 0 }] },
 		})),
 		/submission is not allowed on the self-contained/,
 	);
 
-	const validator = roleInput("provider_targeted_validator", "review.capture-validation", "https://gentle-ai.dev/schema/review/validator/v1");
+	const validator = roleInput("provider_targeted_validator", "review.capture-validation", "https://jero-ai.dev/schema/review/validator/v1");
 	assert.throws(
 		() => decodeRoleTransition(validator),
 		/validation_request is required/,
 	);
 
 	assert.throws(
-		() => decodeRoleTransition(roleInput("provider_targeted_validator", "review.capture-validation", "https://gentle-ai.dev/schema/review/refuter/v1")),
-		/schema must be https:\/\/gentle-ai\.dev\/schema\/review\/validator\/v1/,
+		() => decodeRoleTransition(roleInput("provider_targeted_validator", "review.capture-validation", "https://jero-ai.dev/schema/review/refuter/v1")),
+		/schema must be https:\/\/jero-ai\.dev\/schema\/review\/validator\/v1/,
 	);
 });
 
@@ -314,7 +314,7 @@ test("v5 targeted-validator collect inputs carry the exact provider-owned valida
 	const correctionTargetIdentity = `sha256:${"d".repeat(64)}`;
 	const correctionPathsDigest = `sha256:${"e".repeat(64)}`;
 	const validationRequest = {
-		schema: "gentle-ai.review-targeted-validation-request/v1",
+		schema: "jero-ai.review-targeted-validation-request/v1",
 		request_hash: requestHash,
 		lineage_id: "review-fixture",
 		expected_revision: expectedRevision,
@@ -345,7 +345,7 @@ test("v5 targeted-validator collect inputs carry the exact provider-owned valida
 	};
 	const input = {
 		name: "provider_targeted_validator",
-		schema: "https://gentle-ai.dev/schema/review/validator/v1",
+		schema: "https://jero-ai.dev/schema/review/validator/v1",
 		capture_operation: "review.capture-validation",
 		arguments: [
 			{ name: "lineage", value: "review-fixture", token: "--lineage=review-fixture" },
@@ -394,7 +394,7 @@ test("v5 targeted-validator collect inputs carry the exact provider-owned valida
 	const refuter = clone(transition);
 	const refuterInput = refuter.collect.inputs[0] as JsonObject;
 	refuterInput.name = "provider_refuter";
-	refuterInput.schema = "https://gentle-ai.dev/schema/review/refuter/v1";
+	refuterInput.schema = "https://jero-ai.dev/schema/review/refuter/v1";
 	refuterInput.capture_operation = "review.capture-refuter";
 	assert.throws(() => decodeReviewNextTransitionV3(refuter, { v5: true }), /validation_request.*targeted-validator/);
 

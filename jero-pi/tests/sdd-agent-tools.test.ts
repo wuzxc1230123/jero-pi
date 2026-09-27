@@ -136,7 +136,7 @@ test("sdd-verify phase text carries the verify-result envelope and validate-befo
 	// row 5: the phase must produce a natively admissible report
 	// on its first persistence attempt without hunting the format elsewhere.
 	const envelopeFields = [
-		"schema: gentle-ai.verify-result/v1",
+		"schema: jero-ai.verify-result/v1",
 		"evidence_revision: sha256:",
 		"verdict:",
 		"blockers:",
@@ -152,7 +152,7 @@ test("sdd-verify phase text carries the verify-result envelope and validate-befo
 	];
 
 	const agentSource = readFileSync(join(assetsAgentsDir, "sdd-verify.md"), "utf8");
-	assert.match(agentSource, /```yaml\nschema: gentle-ai\.verify-result\/v1\n/);
+	assert.match(agentSource, /```yaml\nschema: jero-ai\.verify-result\/v1\n/);
 	for (const field of envelopeFields) {
 		assert.ok(agentSource.includes(field), `sdd-verify.md envelope must carry \`${field}\``);
 	}
@@ -163,7 +163,7 @@ test("sdd-verify phase text carries the verify-result envelope and validate-befo
 	);
 
 	const chainSource = readFileSync(join(repoRoot, "assets", "chains", "sdd-verify.chain.md"), "utf8");
-	assert.match(chainSource, /gentle-ai\.verify-result\/v1/);
+	assert.match(chainSource, /jero-ai\.verify-result\/v1/);
 	assert.match(chainSource, /对封套做字节检查/);
 });
 

@@ -23,7 +23,7 @@ function captured(name: string): unknown {
 
 function closure(operation: string, lineageId: string): Record<string, unknown> {
 	return {
-		schema: "gentle-ai.review-last-event-closure/v1",
+		schema: "jero-ai.review-last-event-closure/v1",
 		operation,
 		lineage_id: lineageId,
 		state: operation === "review.capture-correction-plan" ? "correction_required" : "approved",
@@ -54,11 +54,11 @@ function materializeInput(lineageId: string, suffix = "0"): ReviewCollectInputV3
 	];
 	return {
 		name: "reviewer_result",
-		schema: "https://gentle-ai.dev/schema/review/reviewer/v1",
+		schema: "https://jero-ai.dev/schema/review/reviewer/v1",
 		captureOperation: "review.capture-result",
 		arguments: arguments_,
 		artifactSubject: {
-			schema: "gentle-ai.review-artifact-subject/v2",
+			schema: "jero-ai.review-artifact-subject/v2",
 			subjectHash: SHA,
 			lineageId,
 			authorityRevision: SHA,
@@ -80,7 +80,7 @@ function materializeInput(lineageId: string, suffix = "0"): ReviewCollectInputV3
 function correctionPlanInput(lineageId: string): ReviewCollectInputV3 {
 	return {
 		name: "correction_plan",
-		schema: "gentle-ai.review-correction-plan/v1",
+		schema: "jero-ai.review-correction-plan/v1",
 		captureOperation: "review.capture-correction-plan",
 		arguments: bindingArguments(lineageId),
 		submission: {
@@ -94,7 +94,7 @@ function correctionPlanInput(lineageId: string): ReviewCollectInputV3 {
 function roleInput(lineageId: string, operation: "review.capture-refuter" | "review.capture-validation"): ReviewCollectInputV3 {
 	return {
 		name: operation === "review.capture-refuter" ? "provider_refuter" : "targeted_validator",
-		schema: "gentle-ai.review-provider-role/v1",
+		schema: "jero-ai.review-provider-role/v1",
 		captureOperation: operation,
 		arguments: [
 			...bindingArguments(lineageId),
@@ -106,14 +106,14 @@ function roleInput(lineageId: string, operation: "review.capture-refuter" | "rev
 
 function status(lineageId: string, inputs: readonly ReviewCollectInputV3[]): ReviewStatusV3 {
 	return {
-		contract: "gentle-ai.review-integration/v2",
+		contract: "jero-ai.review-integration/v2",
 		applicability: "current_target",
 		authority: { version: "compact-v2", lineageId, state: "reviewing", generation: 1, revision: SHA },
 		action: "stop",
 		replayability: "not_replayable",
 		targetIdentity: SHA,
 		projection: {
-			schema: "gentle-ai.review-candidate-projection/v1",
+			schema: "jero-ai.review-candidate-projection/v1",
 			kind: "current-changes",
 			projection: "workspace",
 			baseTree: TREE,
@@ -128,7 +128,7 @@ function status(lineageId: string, inputs: readonly ReviewCollectInputV3[]): Rev
 		},
 		candidates: [],
 		nextTransition: { kind: "collect", reasonCode: "capture_required", collect: { inputs: [...inputs] } },
-		raw: { schema: "gentle-ai.review-integration.status/v5" },
+		raw: { schema: "jero-ai.review-integration.status/v5" },
 	} as unknown as ReviewStatusV3;
 }
 
@@ -332,7 +332,7 @@ test("refuter and validation each execute one self-contained provider vector", a
 			targetStatus: async () => status(lineageId, [input]),
 			captureProviderRole: async (request: { captureOperation: string; argumentTokens: readonly string[] }) => {
 				requests.push(request);
-				return { schema: "gentle-ai.review-provider-role-capture/v1", lineageId, targetIdentity: SHA, role: operation, captured: true };
+				return { schema: "jero-ai.review-provider-role-capture/v1", lineageId, targetIdentity: SHA, role: operation, captured: true };
 			},
 		} as unknown as NativeReviewCli;
 		const result = await capture(lineageId, input, native);
@@ -470,7 +470,7 @@ function approvedClosureWithAcknowledgement(): Record<string, unknown> {
 	const body = closure("review/capture-result", lineageId);
 	body.acknowledgement = {
 		operation: "review.acknowledge-approved",
-		command: "gentle-ai review acknowledge-approved",
+		command: "jero-ai review acknowledge-approved",
 		arguments: [
 			{ name: "cwd", value: "/repo", token: "--cwd=/repo" },
 			{ name: "lineage", value: lineageId, token: `--lineage=${lineageId}` },

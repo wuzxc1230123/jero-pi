@@ -20,7 +20,7 @@ import type { JeroReviewStateName } from "./protocol.ts";
 // （P4）；权威侧在必需绑定缺失或漂移时保守失败。恢复不授予新预算。
 // 隔离是改名挪开，绝不删除：审计轨迹得以幸存。
 //
-// 绑定 schema 字符串在 P5 身份改造之前保持 gentle-ai.*——它们被渲染
+// 绑定 schema 字符串在 P5 身份改造之前保持 jero-ai.*——它们被渲染
 // 给维护者且无处被哈希；在这里改名会静默孤立上游文档化的绑定。
 
 // 上游维护者授权的字符纪律（native-review-cli.ts:1603-1605）：
@@ -84,7 +84,7 @@ export type JeroMaintenanceResultV1 =
 /** 精确的八行 abandon 绑定（native-review-cli.ts:1710-1724，逐字）。 */
 export function jeroAbandonAuthorizationV1(request: Pick<JeroAbandonInputV1, "lineage" | "expectedRevision" | "snapshotIdentity" | "capturedLensResults" | "findingsPresent" | "actor" | "reason">): string {
 	return [
-		"gentle-ai.review-abandon-authorization/v2",
+		"jero-ai.review-abandon-authorization/v2",
 		`lineage=${request.lineage}`,
 		`revision=${request.expectedRevision}`,
 		`snapshot_identity=${request.snapshotIdentity}`,
@@ -98,7 +98,7 @@ export function jeroAbandonAuthorizationV1(request: Pick<JeroAbandonInputV1, "li
 /** 精确的七行 reconcile 绑定（+可选的双重异常，native-review-cli.ts:1766-1777）。 */
 export function jeroReconcileAuthorizationV1(request: Pick<JeroReconcileInputV1, "predecessorLineage" | "expectedPredecessorRevision" | "successorLineage" | "expectedSuccessorRevision" | "actor" | "reason" | "anomalies">): string {
 	return [
-		"gentle-ai.review-reconcile-authorization/v1",
+		"jero-ai.review-reconcile-authorization/v1",
 		`predecessor_lineage=${request.predecessorLineage}`,
 		`predecessor_revision=${request.expectedPredecessorRevision}`,
 		`successor_lineage=${request.successorLineage}`,

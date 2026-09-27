@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://gentle-ai.dev/contracts/review-integration/v1/schemas/verification-evidence.schema.json",
+  "$id": "https://jero-ai.dev/contracts/review-integration/v1/schemas/verification-evidence.schema.json",
   "title": "Gentle AI outcome-bearing verification evidence record",
   "type": "object",
   "additionalProperties": false,
@@ -20,7 +20,7 @@
     "record_digest"
   ],
   "properties": {
-    "schema": { "const": "gentle-ai.review-verification-evidence/v2" },
+    "schema": { "const": "jero-ai.review-verification-evidence/v2" },
     "version": { "const": 2 },
     "lineage_id": {
       "type": "string",

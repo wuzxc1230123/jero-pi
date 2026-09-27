@@ -11,7 +11,7 @@ export class ReviewObjectStoreError extends Error {
 }
 
 export interface ReviewRootSetBodyV1 {
-	schema: "gentle-ai.review-root-set/v1";
+	schema: "jero-ai.review-root-set/v1";
 	repository_id: string;
 	authority_id: string;
 	store_epoch?: string;
@@ -23,7 +23,7 @@ export interface ReviewRootSetBodyV1 {
 }
 
 export interface ReviewStoreDescriptorV1 {
-	schema: "gentle-ai.review-store/v1";
+	schema: "jero-ai.review-store/v1";
 	graph_format: "graph-v1";
 	repository_id: string;
 	authority_id: string;
@@ -34,7 +34,7 @@ export interface ReviewStoreDescriptorV1 {
 	reset_authorization_hash: string;
 }
 export interface ReviewRootSetEnvelopeV1 { body: ReviewRootSetBodyV1; root_set_id: string; }
-interface CurrentPointerV1 { schema: "gentle-ai.review-current/v1"; repository_id: string; authority_id: string; generation: number; root_set_id: string; slot_epoch: number; pointer_hash: string; }
+interface CurrentPointerV1 { schema: "jero-ai.review-current/v1"; repository_id: string; authority_id: string; generation: number; root_set_id: string; slot_epoch: number; pointer_hash: string; }
 export type ReviewObjectStoreFaultPoint = "before-object-fsync" | "before-object-install" | "before-current-slot-0-replace" | "before-current-slot-1-replace" | "before-current-slot-2-replace";
 export interface ReviewGraphObjectStoreOptionsV1 { faultInjector?: (point: ReviewObjectStoreFaultPoint) => void; }
 
@@ -75,7 +75,7 @@ export class ReviewGraphObjectStoreV1 {
 	}
 
 	installRootSet(body: ReviewRootSetBodyV1): ReviewRootSetEnvelopeV1 {
-		if (body.schema !== "gentle-ai.review-root-set/v1" || body.repository_id !== this.#repositoryId || body.authority_id !== this.#authorityId || !Number.isSafeInteger(body.generation) || body.generation < 0 || !Array.isArray(body.lineages) || (body.generation === 0 ? body.predecessor_root_set_id !== null : !DIGEST.test(body.predecessor_root_set_id ?? ""))) throw new ReviewObjectStoreError("Root set is invalid");
+		if (body.schema !== "jero-ai.review-root-set/v1" || body.repository_id !== this.#repositoryId || body.authority_id !== this.#authorityId || !Number.isSafeInteger(body.generation) || body.generation < 0 || !Array.isArray(body.lineages) || (body.generation === 0 ? body.predecessor_root_set_id !== null : !DIGEST.test(body.predecessor_root_set_id ?? ""))) throw new ReviewObjectStoreError("Root set is invalid");
 		const canonicalBody = JSON.parse(canonicalJsonV1(body)) as ReviewRootSetBodyV1;
 		const envelope = { body: canonicalBody, root_set_id: domainHashV1("root-set", canonicalBody) };
 		this.installImmutable(this.rootPath(envelope.root_set_id), new TextEncoder().encode(canonicalJsonV1(envelope)));
@@ -105,18 +105,18 @@ export class ReviewGraphObjectStoreV1 {
 	readStoreDescriptor(): ReviewStoreDescriptorV1 {
 		try {
 			const value = parseCanonicalJsonV1(readFileSync(join(this.root, "STORE"))) as ReviewStoreDescriptorV1;
-			if (value.schema !== "gentle-ai.review-store/v1" || value.graph_format !== "graph-v1" || value.repository_id !== this.#repositoryId || value.authority_id !== this.#authorityId || !DIGEST.test(value.store_epoch) || !DIGEST.test(value.authority_incarnation_id) || !DIGEST.test(value.reset_authorization_hash) || !DIGEST.test(value.initialized_by_reset_id)) throw new Error("invalid descriptor");
+			if (value.schema !== "jero-ai.review-store/v1" || value.graph_format !== "graph-v1" || value.repository_id !== this.#repositoryId || value.authority_id !== this.#authorityId || !DIGEST.test(value.store_epoch) || !DIGEST.test(value.authority_incarnation_id) || !DIGEST.test(value.reset_authorization_hash) || !DIGEST.test(value.initialized_by_reset_id)) throw new Error("invalid descriptor");
 			return value;
 		} catch (error) { throw new ReviewObjectStoreError(`Store descriptor is missing or invalid: ${error instanceof Error ? error.message : String(error)}`); }
 	}
 
 	initializeDestructiveReset(options: { store_epoch: string; authority_incarnation_id: string; reset_id: string; reset_authorization_hash: string }): ReviewStoreDescriptorV1 {
 		if (![options.store_epoch, options.authority_incarnation_id, options.reset_id, options.reset_authorization_hash].every((value) => DIGEST.test(value))) throw new ReviewObjectStoreError("Reset descriptor identities are invalid");
-		const descriptor: ReviewStoreDescriptorV1 = { schema: "gentle-ai.review-store/v1", graph_format: "graph-v1", repository_id: this.#repositoryId, authority_id: this.#authorityId, store_epoch: options.store_epoch, authority_incarnation_id: options.authority_incarnation_id, initialization_kind: "destructive-reset", initialized_by_reset_id: options.reset_id, reset_authorization_hash: options.reset_authorization_hash };
+		const descriptor: ReviewStoreDescriptorV1 = { schema: "jero-ai.review-store/v1", graph_format: "graph-v1", repository_id: this.#repositoryId, authority_id: this.#authorityId, store_epoch: options.store_epoch, authority_incarnation_id: options.authority_incarnation_id, initialization_kind: "destructive-reset", initialized_by_reset_id: options.reset_id, reset_authorization_hash: options.reset_authorization_hash };
 		const path = join(this.root, "STORE");
 		if (existsSync(path)) { if (canonicalJsonV1(parseCanonicalJsonV1(readFileSync(path))) !== canonicalJsonV1(descriptor)) throw new ReviewObjectStoreError("Store descriptor already exists with a different authority incarnation"); }
 		else { writeFileSync(path, canonicalJsonV1(descriptor), { flag: "wx", mode: 0o600 }); this.fsyncFile(path); this.fsyncDirectory(this.root); }
-		const root = this.installRootSet({ schema: "gentle-ai.review-root-set/v1", repository_id: this.#repositoryId, authority_id: this.#authorityId, store_epoch: options.store_epoch, authority_incarnation_id: options.authority_incarnation_id, initialized_by_reset_id: options.reset_id, generation: 0, predecessor_root_set_id: null, lineages: [] });
+		const root = this.installRootSet({ schema: "jero-ai.review-root-set/v1", repository_id: this.#repositoryId, authority_id: this.#authorityId, store_epoch: options.store_epoch, authority_incarnation_id: options.authority_incarnation_id, initialized_by_reset_id: options.reset_id, generation: 0, predecessor_root_set_id: null, lineages: [] });
 		this.publishRootSet(root);
 		return descriptor;
 	}
@@ -204,7 +204,7 @@ export class ReviewGraphObjectStoreV1 {
 		try { const value = parseCanonicalJsonV1(readFileSync(this.rootPath(id))) as ReviewRootSetEnvelopeV1; if (value.root_set_id !== id || domainHashV1("root-set", value.body) !== id) throw new Error("identity mismatch"); return value; } catch (error) { throw new ReviewObjectStoreError(`Root set is missing or invalid: ${error instanceof Error ? error.message : String(error)}`); }
 	}
 	private writePointer(slot: number, root: ReviewRootSetEnvelopeV1, epoch: number): void {
-		const body = { schema: "gentle-ai.review-current/v1" as const, repository_id: this.#repositoryId, authority_id: this.#authorityId, generation: root.body.generation, root_set_id: root.root_set_id, slot_epoch: epoch };
+		const body = { schema: "jero-ai.review-current/v1" as const, repository_id: this.#repositoryId, authority_id: this.#authorityId, generation: root.body.generation, root_set_id: root.root_set_id, slot_epoch: epoch };
 		const pointer: CurrentPointerV1 = { ...body, pointer_hash: domainHashV1("current", body) };
 		const path = join(this.root, `CURRENT.${slot}`); const temporary = `${path}.${process.pid}.${Math.random().toString(16).slice(2)}.tmp`;
 		writeFileSync(temporary, canonicalJsonV1(pointer), { mode: 0o600, flag: "wx" });
@@ -213,7 +213,7 @@ export class ReviewGraphObjectStoreV1 {
 		renameSync(temporary, path);
 		this.fsyncDirectory(this.root);
 	}
-	private readPointer(slot: number): CurrentPointerV1 { const pointer = parseCanonicalJsonV1(readFileSync(join(this.root, `CURRENT.${slot}`))) as CurrentPointerV1; const { pointer_hash, ...body } = pointer; if (pointer.schema !== "gentle-ai.review-current/v1" || pointer.repository_id !== this.#repositoryId || pointer.authority_id !== this.#authorityId || !DIGEST.test(pointer.root_set_id) || pointer.pointer_hash !== domainHashV1("current", body)) throw new ReviewObjectStoreError("CURRENT pointer is invalid"); return pointer; }
+	private readPointer(slot: number): CurrentPointerV1 { const pointer = parseCanonicalJsonV1(readFileSync(join(this.root, `CURRENT.${slot}`))) as CurrentPointerV1; const { pointer_hash, ...body } = pointer; if (pointer.schema !== "jero-ai.review-current/v1" || pointer.repository_id !== this.#repositoryId || pointer.authority_id !== this.#authorityId || !DIGEST.test(pointer.root_set_id) || pointer.pointer_hash !== domainHashV1("current", body)) throw new ReviewObjectStoreError("CURRENT pointer is invalid"); return pointer; }
 	private fsyncFile(path: string): void { const descriptor = openSync(path, "r+"); try { fsyncSync(descriptor); } finally { closeSync(descriptor); } }
 	private fsyncDirectory(path: string): void { if (!statSync(path).isDirectory()) throw new ReviewObjectStoreError("Expected a directory"); if (process.platform === "win32") return; const descriptor = openSync(path, "r"); try { fsyncSync(descriptor); } finally { closeSync(descriptor); } }
 }

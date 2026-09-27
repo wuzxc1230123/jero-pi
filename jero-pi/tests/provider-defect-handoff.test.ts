@@ -7,7 +7,7 @@ import test from "node:test";
 // Provider Defect Handoff — structural readback tests (issue #256, track 5)
 //
 // Pins the port of Gentle AI's v2.4.0-rc.8 provider-defect handoff consent
-// contract (the gentle-ai.review-integration.consent/v3 envelope; canonical
+// contract (the jero-ai.review-integration.consent/v3 envelope; canonical
 // source internal/assets/generic/sdd-orchestrator.md at tag v2.4.0-rc.8 of
 // Gentleman-Programming/gentle-ai) into Pi's lazy-loaded orchestrator assets.
 // The contract is a prerelease (not in v2.3.0 stable). These tests assert
@@ -56,7 +56,7 @@ test("orchestrator-delegation.md carries the provider defect handoff section", (
 
 test("orchestrator-delegation.md references the prerelease consent/v3 contract", () => {
 	assert.match(DELEGATION, /预发布/i);
-	assert.match(DELEGATION, /gentle-ai\.review-integration\.consent\/v3/);
+	assert.match(DELEGATION, /jero-ai\.review-integration\.consent\/v3/);
 });
 
 test("orchestrator-delegation.md lists all three semantic choice tokens", () => {
@@ -162,7 +162,7 @@ test("orchestrator-delegation.md states the uncertainty continuation (decline in
 
 test("orchestrator-delegation.md states the exact-captured-decline-invocation rule", () => {
 	assert.match(DELEGATION, /两个继续选项都恰好一次执行那个精确捕获的拒绝调用/i);
-	assert.match(DELEGATION, /`gentle-ai\.review-integration\.consent\/v3` 封套中精确捕获的提供方所有 `choices\[answer="declined"\]\.invocation`/i);
+	assert.match(DELEGATION, /`jero-ai\.review-integration\.consent\/v3` 封套中精确捕获的提供方所有 `choices\[answer="declined"\]\.invocation`/i);
 	assert.match(
 		DELEGATION,
 		/绝不由散文合成拒绝命令、目标、令牌或消费者延续/i,

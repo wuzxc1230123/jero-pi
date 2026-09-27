@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://gentle-ai.dev/contracts/review-integration/v1/schemas/capabilities-v1.5.schema.json",
+  "$id": "https://jero-ai.dev/contracts/review-integration/v1/schemas/capabilities-v1.5.schema.json",
   "title": "Gentle AI review integration capabilities protocol 1.5",
   "type": "object",
   "additionalProperties": false,
@@ -20,7 +20,7 @@
   ],
   "properties": {
     "schema": {
-      "const": "gentle-ai.review-integration.capabilities/v1.5"
+      "const": "jero-ai.review-integration.capabilities/v1.5"
     },
     "contract": {
       "$ref": "capabilities-v1.4.schema.json#/properties/contract"
@@ -59,27 +59,27 @@
       "uniqueItems": true,
       "items": {
         "enum": [
-          "gentle-ai.review-admitted-result/v1",
-          "gentle-ai.review-artifact-subject/v1",
-          "gentle-ai.review-authority-repair-assessment/v1",
-          "gentle-ai.review-authority-status/v1",
-          "gentle-ai.review-gate-request/v1",
-          "gentle-ai.review-integration.capabilities/v1.5",
-          "gentle-ai.review-integration.failure/v1",
-          "gentle-ai.review-final-verification-incident/v1",
-          "gentle-ai.review-integration.operation/v1",
-          "gentle-ai.review-integration.projection/v1",
-          "gentle-ai.review-integration.repair/v1",
-          "gentle-ai.review-integration.start/v2",
-          "gentle-ai.review-integration.status/v2",
-          "gentle-ai.review-receipt/v1",
-          "gentle-ai.review-receipt/v2",
-          "gentle-ai.review-result-artifact/v2",
-          "gentle-ai.review-targeted-validation-request/v1",
-          "gentle-ai.review-verification-evidence/v2",
-          "https://gentle-ai.dev/schema/review/refuter/v1",
-          "https://gentle-ai.dev/schema/review/reviewer/v1",
-          "https://gentle-ai.dev/schema/review/validator/v1"
+          "jero-ai.review-admitted-result/v1",
+          "jero-ai.review-artifact-subject/v1",
+          "jero-ai.review-authority-repair-assessment/v1",
+          "jero-ai.review-authority-status/v1",
+          "jero-ai.review-gate-request/v1",
+          "jero-ai.review-integration.capabilities/v1.5",
+          "jero-ai.review-integration.failure/v1",
+          "jero-ai.review-final-verification-incident/v1",
+          "jero-ai.review-integration.operation/v1",
+          "jero-ai.review-integration.projection/v1",
+          "jero-ai.review-integration.repair/v1",
+          "jero-ai.review-integration.start/v2",
+          "jero-ai.review-integration.status/v2",
+          "jero-ai.review-receipt/v1",
+          "jero-ai.review-receipt/v2",
+          "jero-ai.review-result-artifact/v2",
+          "jero-ai.review-targeted-validation-request/v1",
+          "jero-ai.review-verification-evidence/v2",
+          "https://jero-ai.dev/schema/review/refuter/v1",
+          "https://jero-ai.dev/schema/review/reviewer/v1",
+          "https://jero-ai.dev/schema/review/validator/v1"
         ]
       }
     },

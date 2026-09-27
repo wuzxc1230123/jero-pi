@@ -33,7 +33,7 @@ test("sdd status projects the openspec tree into the v2 wire shape with self-che
 	assert.equal(result.kind, "ok");
 	if (result.kind !== "ok") return;
 	const { status } = result;
-	assert.equal(status.schemaName, "gentle-ai.sdd-status");
+	assert.equal(status.schemaName, "jero-ai.sdd-status");
 	assert.equal(status.schemaVersion, 2);
 	assert.equal(status.changeName, "add-login");
 	assert.equal(status.artifactStore, "openspec");

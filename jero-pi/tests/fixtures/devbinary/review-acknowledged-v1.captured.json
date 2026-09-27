@@ -1,5 +1,5 @@
 {
-  "schema": "gentle-ai.review-acknowledged/v1",
+  "schema": "jero-ai.review-acknowledged/v1",
   "operation": "review/acknowledge-approved",
   "action": "acknowledged",
   "lineage_id": "review-3ec95251db75f626",

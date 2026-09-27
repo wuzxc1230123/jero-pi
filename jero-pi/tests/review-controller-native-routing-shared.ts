@@ -58,11 +58,11 @@ export function collectInput(lineageId: string): ReviewCollectInputV3 {
 	];
 	return {
 		name: "reviewer_result",
-		schema: "https://gentle-ai.dev/schema/review/reviewer/v1",
+		schema: "https://jero-ai.dev/schema/review/reviewer/v1",
 		captureOperation: "review.capture-result",
 		arguments: arguments_,
 		artifactSubject: {
-			schema: "gentle-ai.review-artifact-subject/v2",
+			schema: "jero-ai.review-artifact-subject/v2",
 			subjectHash: SHA,
 			lineageId,
 			authorityRevision: SHA,
@@ -87,7 +87,7 @@ export function status(
 	authorityState = "reviewing",
 ): ReviewStatusV3 {
 	return {
-		contract: "gentle-ai.review-integration/v2",
+		contract: "jero-ai.review-integration/v2",
 		applicability: "current_target",
 		authority: { version: "compact-v2", lineageId, state: authorityState, generation: 1, revision: SHA },
 		receipt: { status: "expected_missing" },
@@ -95,7 +95,7 @@ export function status(
 		replayability: "not_replayable",
 		targetIdentity: SHA,
 		projection: {
-			schema: "gentle-ai.review-candidate-projection/v1",
+			schema: "jero-ai.review-candidate-projection/v1",
 			kind: "current-changes",
 			projection: "workspace",
 			baseTree: TREE,
@@ -108,17 +108,17 @@ export function status(
 			initialSnapshotIdentity: SHA,
 			currentSnapshotIdentity: SHA,
 		},
-		repair: { schema: "gentle-ai.review-authority-repair-assessment/v1", status: "unsupported", counts: { lineages: 0, compactLineages: 0, legacyLineages: 0, events: 0, bytes: 0, eligibleCandidates: 0, unsupportedLineages: 0, conflicts: 0 }, supportedOperations: ["review/complete-fix", "review/validate-fix"], authorizationSchema: "gentle-ai.review-repair-authorization/v1" },
+		repair: { schema: "jero-ai.review-authority-repair-assessment/v1", status: "unsupported", counts: { lineages: 0, compactLineages: 0, legacyLineages: 0, events: 0, bytes: 0, eligibleCandidates: 0, unsupportedLineages: 0, conflicts: 0 }, supportedOperations: ["review/complete-fix", "review/validate-fix"], authorizationSchema: "jero-ai.review-repair-authorization/v1" },
 		candidates: [],
 		nextTransition: { kind: "collect", reasonCode: "capture_required", collect: { inputs } },
-		raw: { schema: "gentle-ai.review-integration.status/v5" },
+		raw: { schema: "jero-ai.review-integration.status/v5" },
 	} as unknown as ReviewStatusV3;
 }
 
 export function approvedAcknowledgementStatus(lineageId: string, cwd = process.cwd()): ReviewStatusV3 {
 	const arguments_ = [{ name: "cwd", value: cwd, token: `--cwd=${cwd}` }, { name: "lineage", value: lineageId, token: `--lineage=${lineageId}` }, { name: "target", value: SHA, token: `--target=${SHA}` }, { name: "expected-revision", value: SHA, token: `--expected-revision=${SHA}` }, { name: "token", value: "provider-issued-once", token: "--token=provider-issued-once" }];
 	const approved = status(lineageId, [], "approved");
-	approved.nextTransition = { kind: "execute", reasonCode: "approved_acknowledgement_required", execute: { operation: "review.acknowledge-approved", command: "gentle-ai review acknowledge-approved --provider-vector", arguments: arguments_, preconditions: [{ name: "state", value: "approved", token: "--state=approved" }], binding: { lineageId, targetIdentity: SHA, revision: SHA } } };
+	approved.nextTransition = { kind: "execute", reasonCode: "approved_acknowledgement_required", execute: { operation: "review.acknowledge-approved", command: "jero-ai review acknowledge-approved --provider-vector", arguments: arguments_, preconditions: [{ name: "state", value: "approved", token: "--state=approved" }], binding: { lineageId, targetIdentity: SHA, revision: SHA } } };
 	return approved;
 }
 
@@ -132,7 +132,7 @@ export function burnedAcknowledgementStatus(lineageId: string): ReviewStatusV3 {
 // carrying the exact `gentle-ai sync` invocation that resolves it.
 export function managedAssetsOutdatedStatus(lineageId: string): ReviewStatusV3 {
 	const stopped = status(lineageId, [], "approved");
-	stopped.nextTransition = { kind: "stop", reasonCode: "managed_assets_outdated", continuation: { operation: "sync", command: "gentle-ai sync --agent claude-code", agent: "claude-code", staleAssets: ["orchestration/claude-code.md"] } };
+	stopped.nextTransition = { kind: "stop", reasonCode: "managed_assets_outdated", continuation: { operation: "sync", command: "jero-ai sync --agent claude-code", agent: "claude-code", staleAssets: ["orchestration/claude-code.md"] } };
 	return stopped;
 }
 
@@ -146,7 +146,7 @@ export interface RegisteredControllerTool {
 
 export function correctionPlanInput(lineageId: string): ReviewCollectInputV3 {
 	const arguments_ = [{ name: "lineage", value: lineageId, token: `--lineage=${lineageId}` }, { name: "target", value: SHA, token: `--target=${SHA}` }];
-	return { name: "correction_plan", schema: "https://gentle-ai.dev/schema/review/correction-plan/v1", captureOperation: "review.capture-correction-plan", arguments: arguments_, submission: { operationToken: "capture-correction-plan", argumentTokens: [`--lineage=${lineageId}`, "--correction-lines={{value}}"], values: [{ slot: "correction_lines", domain: "integer", substitutionLocation: 1, minimum: 1, maximum: 200 }] } } as unknown as ReviewCollectInputV3;
+	return { name: "correction_plan", schema: "https://jero-ai.dev/schema/review/correction-plan/v1", captureOperation: "review.capture-correction-plan", arguments: arguments_, submission: { operationToken: "capture-correction-plan", argumentTokens: [`--lineage=${lineageId}`, "--correction-lines={{value}}"], values: [{ slot: "correction_lines", domain: "integer", substitutionLocation: 1, minimum: 1, maximum: 200 }] } } as unknown as ReviewCollectInputV3;
 }
 
 export function bindingOf(result: Record<string, unknown>): string {
@@ -198,13 +198,13 @@ export function startStatus(cwd: string, baseRef?: string, intendedUntracked: re
 	const view = candidateViews.create({ contributorRoot: cwd, intendedUntracked, ...(baseRef === undefined ? {} : { baseRef, committedOnly: true }) });
 	try {
 		return {
-			contract: "gentle-ai.review-integration/v2",
+			contract: "jero-ai.review-integration/v2",
 			applicability: "unrelated",
 			action: "start",
 			replayability: "not_replayable",
 			targetIdentity: SHA,
 			projection: {
-				schema: "gentle-ai.review-candidate-projection/v1",
+				schema: "jero-ai.review-candidate-projection/v1",
 				kind: "current-changes",
 				projection: "workspace",
 				baseTree: view.baseTree,
@@ -218,7 +218,7 @@ export function startStatus(cwd: string, baseRef?: string, intendedUntracked: re
 				currentSnapshotIdentity: SHA,
 			},
 			candidates: [],
-			raw: { schema: "gentle-ai.review-integration.status/v5" },
+			raw: { schema: "jero-ai.review-integration.status/v5" },
 		} as unknown as ReviewStatusV3;
 	} finally {
 		candidateViews.cleanup(view.token);

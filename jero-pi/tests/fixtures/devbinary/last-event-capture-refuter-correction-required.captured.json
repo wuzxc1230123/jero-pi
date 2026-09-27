@@ -1,5 +1,5 @@
 {
-  "schema": "gentle-ai.review-last-event-closure/v1",
+  "schema": "jero-ai.review-last-event-closure/v1",
   "operation": "review.capture-refuter",
   "lineage_id": "review-2c1f3ae8139e6fe3",
   "state": "correction_required",
@@ -8,7 +8,7 @@
     "operation": "review.status",
     "arguments": [
       {"name": "cwd", "value": "/tmp/repository", "token": "--cwd=/tmp/repository"},
-      {"name": "contract", "value": "gentle-ai.review-integration/v2", "token": "--contract=gentle-ai.review-integration/v2"},
+      {"name": "contract", "value": "jero-ai.review-integration/v2", "token": "--contract=jero-ai.review-integration/v2"},
       {"name": "next-transition", "value": "true", "token": "--next-transition=true"},
       {"name": "lineage", "value": "review-2c1f3ae8139e6fe3", "token": "--lineage=review-2c1f3ae8139e6fe3"},
       {"name": "agent", "value": "pi", "token": "--agent=pi"}

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://gentle-ai.dev/contracts/review-integration/v2/schemas/last-event-closure.schema.json",
+  "$id": "https://jero-ai.dev/contracts/review-integration/v2/schemas/last-event-closure.schema.json",
   "title": "Gentle AI review terminal last-event capture response v1",
   "type": "object",
   "additionalProperties": false,
@@ -29,7 +29,7 @@
     }
   ],
   "properties": {
-    "schema": {"const": "gentle-ai.review-last-event-closure/v1"},
+    "schema": {"const": "jero-ai.review-last-event-closure/v1"},
     "operation": {"enum": ["review/capture-result", "review.capture-correction-plan", "review.capture-refuter", "review/capture-validation"]},
     "lineage_id": {"type": "string", "minLength": 1},
     "target_identity": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},

@@ -172,7 +172,7 @@ for (const scenario of ["same", "changed", "sibling-root", "nested-root", "faile
 			["expected-revision", targetIdentity], ["token", "provider-issued-once"],
 		].map(([name, value]) => ({ name, value, token: `--${name}=${value}` }));
 		const approved = {
-			contract: "gentle-ai.review-integration/v2",
+			contract: "jero-ai.review-integration/v2",
 			applicability: "current_target",
 			authority: { version: "compact-v2", lineageId, state: "approved", generation: 1, revision: targetIdentity },
 			receipt: { status: "expected_missing" },
@@ -181,13 +181,13 @@ for (const scenario of ["same", "changed", "sibling-root", "nested-root", "faile
 				kind: "execute", reasonCode: "approved_acknowledgement_required",
 				execute: {
 					operation: "review.acknowledge-approved",
-					command: "gentle-ai review acknowledge-approved --provider-vector",
+					command: "jero-ai review acknowledge-approved --provider-vector",
 					arguments: arguments_,
 					preconditions: [{ name: "state", value: "approved", token: "--state=approved" }],
 					binding,
 				},
 			},
-			raw: { schema: "gentle-ai.review-integration.status/v5" },
+			raw: { schema: "jero-ai.review-integration.status/v5" },
 		} as unknown as ReviewStatusV3;
 		const statusRequests: unknown[] = [];
 		const acknowledgementRequests: unknown[] = [];
@@ -207,10 +207,10 @@ for (const scenario of ["same", "changed", "sibling-root", "nested-root", "faile
 				if (scenario === "unknown") throw new NativeReviewCliError(NATIVE_REVIEW_ERROR_CODE.NON_ZERO, "review/acknowledge-approved", true, true, "acknowledgement outcome unknown");
 				if (scenario === "legacy-success") return undefined;
 				return {
-					schema: "gentle-ai.review-acknowledged/v1",
+					schema: "jero-ai.review-acknowledged/v1",
 					operation: "review/acknowledge-approved", action: "acknowledged",
 					lineageId, targetIdentity, consumedRevision: targetIdentity, authority: "burned",
-					raw: { schema: "gentle-ai.review-acknowledged/v1" },
+					raw: { schema: "jero-ai.review-acknowledged/v1" },
 				};
 			},
 		} as unknown as NativeReviewCli;
@@ -227,7 +227,7 @@ for (const scenario of ["same", "changed", "sibling-root", "nested-root", "faile
 			operation: "acknowledge-approved", status: "closed",
 			outcome: "native-approved-acknowledgement-completed",
 			lineage_id: lineageId, target_identity: targetIdentity,
-			...(scenario === "legacy-success" ? {} : { consumed_revision: targetIdentity, burn_evidence: "gentle-ai.review-acknowledged/v1" }),
+			...(scenario === "legacy-success" ? {} : { consumed_revision: targetIdentity, burn_evidence: "jero-ai.review-acknowledged/v1" }),
 			authority: "burned",
 			delivery: "ordinary-repository-policy", mutation_performed: true, mutation_outcome: "committed",
 		});

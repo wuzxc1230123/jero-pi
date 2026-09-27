@@ -15,7 +15,7 @@
 
 ## 原生引擎
 
-- 进程内权威的 `gentle-ai.sdd-status/v2` 投影（由 `/jero-sdd-status` 渲染）是所有存储的唯一状态权威。它是只读的：原样检查其原生投影，读取期间绝不发起阶段、准备同意或授予根权限。
+- 进程内权威的 `jero-ai.sdd-status/v2` 投影（由 `/jero-sdd-status` 渲染）是所有存储的唯一状态权威。它是只读的：原样检查其原生投影，读取期间绝不发起阶段、准备同意或授予根权限。
 - 若原生状态不可用、格式错误，或未选中请求的变更/工作区，停止并报告该失败。绝不构造本地状态、从产物推断就绪度、顶替继续流程，或经由 Engram 绕过它。
 - `nextRecommended`、`dependencies`、`blockedReasons`、`actionContext` 与可选的 `phaseInstructions` 是生产者事实。仅依据其类型化值路由，绝不依据自然语言描述或本地生命周期图路由。真实阻塞项的人类可读解释属于 `blockedReasons`；非阻塞诊断属于 `notes`；两者都不属于 `nextRecommended`。
 - 运行时尝试权威独立于状态：托管修复启动由包运行时在进程内以 acquire/settle 方式包裹（按 `proceed`、`blocked` 或 `complete` 路由）；apply/verify 的单飞（single-flight）经由同一权威投影强制执行。
@@ -51,7 +51,7 @@ Before any planning launch, stop for ambiguous change selection, unresolved sess
 
 ## 状态 Schema
 
-无损地消费原生 v2 投影（`schemaName: gentle-ai.sdd-status`，`schemaVersion: 2`）。其生产者定义的变更选择、产物定位符、任务进度、七项依赖、`actionContext`、`blockedReasons`、可选的执行说明、修复状态与 `nextRecommended` 都是状态事实，而不是需要 Pi 重建的 schema。
+无损地消费原生 v2 投影（`schemaName: jero-ai.sdd-status`，`schemaVersion: 2`）。其生产者定义的变更选择、产物定位符、任务进度、七项依赖、`actionContext`、`blockedReasons`、可选的执行说明、修复状态与 `nextRecommended` 都是状态事实，而不是需要 Pi 重建的 schema。
 
 ## 动作上下文守卫
 

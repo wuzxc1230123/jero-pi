@@ -4,7 +4,7 @@
 import {
 	decodeReviewStatusV3
 } from "./wire-contract-decode-status.ts";
-export const REVIEW_INTEGRATION_CONTRACT = "gentle-ai.review-integration/v2";
+export const REVIEW_INTEGRATION_CONTRACT = "jero-ai.review-integration/v2";
 
 export const REVIEW_INTEGRATION_OPERATION = {
 	REPAIR: "review.repair",
@@ -115,24 +115,24 @@ export const REQUIRED_PROJECTIONS = Object.freeze(Object.values(REVIEW_PROJECTIO
 // capabilities[-v2.1|-v2.2].schema.json 契约与来自主线开发构建的一次
 // 真实 v2.2 捕获实测。
 const REQUIRED_SCHEMAS_COMMON = Object.freeze([
-	"gentle-ai.review-admitted-result/v2",
-	"gentle-ai.review-artifact-subject/v2",
-	"gentle-ai.review-authority-repair-assessment/v1",
-	"gentle-ai.review-authority-status/v1",
-	"gentle-ai.review-gate-request/v1",
-	"gentle-ai.review-integration.failure/v2",
-	"gentle-ai.review-final-verification-incident/v1",
-	"gentle-ai.review-integration.operation/v2",
-	"gentle-ai.review-integration.projection/v1",
-	"gentle-ai.review-integration.repair/v2",
-	"gentle-ai.review-receipt/v1",
-	"gentle-ai.review-receipt/v2",
-	"gentle-ai.review-result-artifact/v2",
-	"gentle-ai.review-targeted-validation-request/v1",
-	"gentle-ai.review-verification-evidence/v2",
-	"https://gentle-ai.dev/schema/review/refuter/v1",
-	"https://gentle-ai.dev/schema/review/reviewer/v1",
-	"https://gentle-ai.dev/schema/review/validator/v1",
+	"jero-ai.review-admitted-result/v2",
+	"jero-ai.review-artifact-subject/v2",
+	"jero-ai.review-authority-repair-assessment/v1",
+	"jero-ai.review-authority-status/v1",
+	"jero-ai.review-gate-request/v1",
+	"jero-ai.review-integration.failure/v2",
+	"jero-ai.review-final-verification-incident/v1",
+	"jero-ai.review-integration.operation/v2",
+	"jero-ai.review-integration.projection/v1",
+	"jero-ai.review-integration.repair/v2",
+	"jero-ai.review-receipt/v1",
+	"jero-ai.review-receipt/v2",
+	"jero-ai.review-result-artifact/v2",
+	"jero-ai.review-targeted-validation-request/v1",
+	"jero-ai.review-verification-evidence/v2",
+	"https://jero-ai.dev/schema/review/refuter/v1",
+	"https://jero-ai.dev/schema/review/reviewer/v1",
+	"https://jero-ai.dev/schema/review/validator/v1",
 ] as const);
 // v2.3 提供方契约（首次由固定的 v2.5.0-rc.3 运行时宣告）把
 // exact_receipt_replay、five_delivery_gates 与 sdd_receipt_binding 从
@@ -156,36 +156,36 @@ const REQUIRED_MANDATORY_FEATURES_V23 = Object.freeze([
 // 标识符形态偏离了这些裸标识符，模块会高声失败，而不是静默地要求
 // 提供方已退役的 schema。
 const RETIRED_SCHEMAS_V23: readonly string[] = Object.freeze([
-	"gentle-ai.review-final-verification-incident/v1",
-	"gentle-ai.review-receipt/v2",
-	"gentle-ai.review-verification-evidence/v2",
+	"jero-ai.review-final-verification-incident/v1",
+	"jero-ai.review-receipt/v2",
+	"jero-ai.review-verification-evidence/v2",
 ]);
 const REQUIRED_SCHEMAS_COMMON_V23 = Object.freeze(REQUIRED_SCHEMAS_COMMON.filter((schema) => !RETIRED_SCHEMAS_V23.includes(schema)));
 if (REQUIRED_SCHEMAS_COMMON_V23.length !== REQUIRED_SCHEMAS_COMMON.length - RETIRED_SCHEMAS_V23.length) {
 	throw new TypeError("v2.3 retired-schema filter must remove exactly the retired identities from the common schema list");
 }
 export const CAPABILITIES_SCHEMA_IDENTITIES: Readonly<Record<string, { protocolMinor: number; requiredSchemas: readonly string[]; requiredMandatoryFeatures?: readonly string[]; optionalFeatureFloor?: number }>> = Object.freeze({
-	"gentle-ai.review-integration.capabilities/v2": Object.freeze({
+	"jero-ai.review-integration.capabilities/v2": Object.freeze({
 		protocolMinor: 0,
-		requiredSchemas: Object.freeze([...REQUIRED_SCHEMAS_COMMON, "gentle-ai.review-integration.capabilities/v2", "gentle-ai.review-integration.consent/v2", "gentle-ai.review-integration.start/v3", "gentle-ai.review-integration.status/v3"]),
+		requiredSchemas: Object.freeze([...REQUIRED_SCHEMAS_COMMON, "jero-ai.review-integration.capabilities/v2", "jero-ai.review-integration.consent/v2", "jero-ai.review-integration.start/v3", "jero-ai.review-integration.status/v3"]),
 	}),
-	"gentle-ai.review-integration.capabilities/v2.1": Object.freeze({
+	"jero-ai.review-integration.capabilities/v2.1": Object.freeze({
 		protocolMinor: 1,
-		requiredSchemas: Object.freeze([...REQUIRED_SCHEMAS_COMMON, "gentle-ai.review-integration.capabilities/v2.1", "gentle-ai.review-integration.consent/v3", "gentle-ai.review-integration.start/v3", "gentle-ai.review-integration.status/v3"]),
+		requiredSchemas: Object.freeze([...REQUIRED_SCHEMAS_COMMON, "jero-ai.review-integration.capabilities/v2.1", "jero-ai.review-integration.consent/v3", "jero-ai.review-integration.start/v3", "jero-ai.review-integration.status/v3"]),
 	}),
-	"gentle-ai.review-integration.capabilities/v2.2": Object.freeze({
+	"jero-ai.review-integration.capabilities/v2.2": Object.freeze({
 		protocolMinor: 2,
-		requiredSchemas: Object.freeze([...REQUIRED_SCHEMAS_COMMON, "gentle-ai.review-integration.capabilities/v2.2", "gentle-ai.review-integration.consent/v3", "gentle-ai.review-integration.start/v3", "gentle-ai.review-integration.status/v5"]),
+		requiredSchemas: Object.freeze([...REQUIRED_SCHEMAS_COMMON, "jero-ai.review-integration.capabilities/v2.2", "jero-ai.review-integration.consent/v3", "jero-ai.review-integration.start/v3", "jero-ai.review-integration.status/v5"]),
 	}),
-	"gentle-ai.review-integration.capabilities/v2.3": Object.freeze({
+	"jero-ai.review-integration.capabilities/v2.3": Object.freeze({
 		protocolMinor: 3,
-		requiredSchemas: Object.freeze([...REQUIRED_SCHEMAS_COMMON_V23, "gentle-ai.review-integration.capabilities/v2.3", "gentle-ai.review-integration.consent/v3", "gentle-ai.review-integration.start/v4", "gentle-ai.review-integration.status/v5"]),
+		requiredSchemas: Object.freeze([...REQUIRED_SCHEMAS_COMMON_V23, "jero-ai.review-integration.capabilities/v2.3", "jero-ai.review-integration.consent/v3", "jero-ai.review-integration.start/v4", "jero-ai.review-integration.status/v5"]),
 		requiredMandatoryFeatures: REQUIRED_MANDATORY_FEATURES_V23,
 		optionalFeatureFloor: 14,
 	}),
-	"gentle-ai.review-integration.capabilities/v2.4": Object.freeze({
+	"jero-ai.review-integration.capabilities/v2.4": Object.freeze({
 		protocolMinor: 4,
-		requiredSchemas: Object.freeze([...REQUIRED_SCHEMAS_COMMON_V23, "gentle-ai.review-integration.capabilities/v2.4", "gentle-ai.review-integration.consent/v3", "gentle-ai.review-integration.start/v4", "gentle-ai.review-integration.status/v6", "gentle-ai.review-intended-untracked-selection/v1"]),
+		requiredSchemas: Object.freeze([...REQUIRED_SCHEMAS_COMMON_V23, "jero-ai.review-integration.capabilities/v2.4", "jero-ai.review-integration.consent/v3", "jero-ai.review-integration.start/v4", "jero-ai.review-integration.status/v6", "jero-ai.review-intended-untracked-selection/v1"]),
 		requiredMandatoryFeatures: REQUIRED_MANDATORY_FEATURES_V23,
 		optionalFeatureFloor: 14,
 	}),
@@ -194,9 +194,9 @@ export const CAPABILITIES_SCHEMA_IDENTITIES: Readonly<Record<string, { protocolM
 	// schema，后者是经超集检查的增补而非必需项——decodeReviewStatusV3
 	// 把 v7 当作 v6 的加性扩展接受，因此必需 schema 下限不变。
 	// v2.6.0 二进制宣告了 15 个可选特性（下限保持 14，即其既定最小值）。
-	"gentle-ai.review-integration.capabilities/v2.5": Object.freeze({
+	"jero-ai.review-integration.capabilities/v2.5": Object.freeze({
 		protocolMinor: 5,
-		requiredSchemas: Object.freeze([...REQUIRED_SCHEMAS_COMMON_V23, "gentle-ai.review-integration.capabilities/v2.5", "gentle-ai.review-integration.consent/v3", "gentle-ai.review-integration.start/v4", "gentle-ai.review-integration.status/v6", "gentle-ai.review-intended-untracked-selection/v1"]),
+		requiredSchemas: Object.freeze([...REQUIRED_SCHEMAS_COMMON_V23, "jero-ai.review-integration.capabilities/v2.5", "jero-ai.review-integration.consent/v3", "jero-ai.review-integration.start/v4", "jero-ai.review-integration.status/v6", "jero-ai.review-intended-untracked-selection/v1"]),
 		requiredMandatoryFeatures: REQUIRED_MANDATORY_FEATURES_V23,
 		optionalFeatureFloor: 14,
 	}),

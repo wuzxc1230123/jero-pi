@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { closeSync, linkSync, lstatSync, mkdirSync, openSync, readFileSync, realpathSync, statSync, unlinkSync, writeFileSync, fsyncSync } from "node:fs";
+import { closeSync, existsSync, linkSync, lstatSync, mkdirSync, openSync, readFileSync, realpathSync, statSync, unlinkSync, writeFileSync, fsyncSync } from "node:fs";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { canonicalJsonV1, domainHashV1, parseCanonicalJsonV1 } from "./review-canonical.ts";
 
@@ -14,7 +14,7 @@ export class ReviewRepositoryError extends Error {
 }
 
 export interface ReviewRepositoryIdentityBodyV1 {
-	schema: "gentle-ai.review-repository/v1";
+	schema: "jero-ai.review-repository/v1";
 	object_format: "sha1" | "sha256";
 	root_commit_ids: string[];
 }
@@ -127,7 +127,7 @@ function isValidRepositoryIdentityBodyV1(value: unknown): value is ReviewReposit
 	if (typeof value !== "object" || value === null) return false;
 	const candidate = value as ReviewRepositoryIdentityBodyV1;
 	return (
-		candidate.schema === "gentle-ai.review-repository/v1" &&
+		candidate.schema === "jero-ai.review-repository/v1" &&
 		OBJECT_FORMAT.test(candidate.object_format) &&
 		Array.isArray(candidate.root_commit_ids) &&
 		candidate.root_commit_ids.length > 0 &&
@@ -249,7 +249,10 @@ function probeLiveRepositoryV1(cwd: string): LiveRepositoryProbeV1 {
 	if (oneGitLine(cwd, ["rev-parse", "--is-shallow-repository"]) !== "false") {
 		throw new ReviewRepositoryError("Shallow repositories cannot establish review authority");
 	}
-	const storeRoot = assertManagedStorePathV1(canonicalCommonDirectory, join(canonicalCommonDirectory, "gentle-ai", "reviews"));
+	// 身份迁移（自实现自命名）：新名缺席且旧名在场时原地续用旧存储，绝不改写。
+	const preferredStore = join(canonicalCommonDirectory, "jero-ai", "reviews");
+	const legacyStore = join(canonicalCommonDirectory, "gentle-ai", "reviews");
+	const storeRoot = assertManagedStorePathV1(canonicalCommonDirectory, existsSync(preferredStore) || !existsSync(legacyStore) ? preferredStore : legacyStore);
 	const liveAnchors = gitLines(cwd, ["rev-list", "--max-parents=0", "--all"]).toSorted();
 	if (liveAnchors.length === 0) throw new ReviewRepositoryError("Repository root commit anchors are required");
 	if (new Set(liveAnchors).size !== liveAnchors.length || liveAnchors.some((anchor) => !OBJECT_ID.test(anchor))) {
@@ -273,7 +276,7 @@ export function resolveRepositoryAuthorityV1(cwd: string): RepositoryAuthorityV1
 		repository_identity = pinned;
 	} else {
 		repository_identity = writePinnedRepositoryIdentityV1(probe.storeRoot, {
-			schema: "gentle-ai.review-repository/v1",
+			schema: "jero-ai.review-repository/v1",
 			object_format: probe.objectFormat,
 			root_commit_ids: probe.liveAnchors,
 		});
@@ -313,10 +316,10 @@ export function resolveRepositoryAuthorityForRecoveryV1(cwd: string): Repository
 			repository_identity = pinned;
 		} else {
 			identity_broken = true;
-			repository_identity = { schema: "gentle-ai.review-repository/v1", object_format: probe.objectFormat, root_commit_ids: probe.liveAnchors };
+			repository_identity = { schema: "jero-ai.review-repository/v1", object_format: probe.objectFormat, root_commit_ids: probe.liveAnchors };
 		}
 	} else {
-		repository_identity = { schema: "gentle-ai.review-repository/v1", object_format: probe.objectFormat, root_commit_ids: probe.liveAnchors };
+		repository_identity = { schema: "jero-ai.review-repository/v1", object_format: probe.objectFormat, root_commit_ids: probe.liveAnchors };
 	}
 	const repository_id = domainHashV1("repository", repository_identity);
 	return Object.freeze({

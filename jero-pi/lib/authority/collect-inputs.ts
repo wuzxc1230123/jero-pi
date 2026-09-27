@@ -101,10 +101,10 @@ export const JERO_CAPTURE_INPUT_SCHEMAS = {
 
 /** 供合规测试使用的 fixture 词汇映射（绝不用于生产路径）。 */
 export const JERO_CAPTURE_INPUT_SCHEMA_CONFORMANCE_MAP: Readonly<Record<string, string>> = {
-	[JERO_CAPTURE_INPUT_SCHEMAS.REVIEWER]: "https://gentle-ai.dev/schema/review/reviewer/v1",
-	[JERO_CAPTURE_INPUT_SCHEMAS.CORRECTION_PLAN]: "gentle-ai.review-correction-plan/v1",
-	[JERO_CAPTURE_INPUT_SCHEMAS.REFUTER]: "https://gentle-ai.dev/schema/review/refuter/v1",
-	[JERO_CAPTURE_INPUT_SCHEMAS.VALIDATOR]: "https://gentle-ai.dev/schema/review/validator/v1",
+	[JERO_CAPTURE_INPUT_SCHEMAS.REVIEWER]: "https://jero-ai.dev/schema/review/reviewer/v1",
+	[JERO_CAPTURE_INPUT_SCHEMAS.CORRECTION_PLAN]: "jero-ai.review-correction-plan/v1",
+	[JERO_CAPTURE_INPUT_SCHEMAS.REFUTER]: "https://jero-ai.dev/schema/review/refuter/v1",
+	[JERO_CAPTURE_INPUT_SCHEMAS.VALIDATOR]: "https://jero-ai.dev/schema/review/validator/v1",
 };
 
 // ---------------------------------------------------------------------------
@@ -505,7 +505,7 @@ export function buildJeroAcknowledgeExecuteTransitionV1(record: JeroLineageState
 	];
 	return {
 		operation: "review.acknowledge-approved",
-		command: `gentle-ai review acknowledge-approved ${arguments_.map(({ token }) => token).join(" ")}`,
+		command: `jero-ai review acknowledge-approved ${arguments_.map(({ token }) => token).join(" ")}`,
 		arguments: arguments_,
 		preconditions: [{ name: "state", value: "approved" }],
 		binding: {

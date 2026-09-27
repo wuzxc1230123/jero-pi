@@ -176,7 +176,7 @@ test("ordinary native capture exposes a registered schema and STATUS binding cop
 	const lineageId = "ordinary-capture";
 	const collectInput: ReviewCollectInputV3 = {
 		name: "reviewer_result",
-		schema: "https://gentle-ai.dev/schema/review/reviewer/v1",
+		schema: "https://jero-ai.dev/schema/review/reviewer/v1",
 		captureOperation: "review.capture-result",
 		arguments: [
 			{ name: "lineage", value: lineageId, token: `--lineage=${lineageId}` },
@@ -191,14 +191,14 @@ test("ordinary native capture exposes a registered schema and STATUS binding cop
 		},
 	};
 	const currentStatus = {
-		contract: "gentle-ai.review-integration/v2",
+		contract: "jero-ai.review-integration/v2",
 		applicability: "current_target",
 		authority: { version: "compact-v2", lineageId, state: "reviewing", generation: 1, revision: sha },
 		action: "stop",
 		replayability: "not_replayable",
 		targetIdentity: sha,
 		projection: {
-			schema: "gentle-ai.review-candidate-projection/v1",
+			schema: "jero-ai.review-candidate-projection/v1",
 			kind: "current-changes",
 			projection: "workspace",
 			baseTree: "b".repeat(40),
@@ -213,7 +213,7 @@ test("ordinary native capture exposes a registered schema and STATUS binding cop
 		},
 		candidates: [],
 		nextTransition: { kind: "collect", reasonCode: "capture_required", collect: { inputs: [collectInput] } },
-		raw: { schema: "gentle-ai.review-integration.status/v5" },
+		raw: { schema: "jero-ai.review-integration.status/v5" },
 	} as unknown as ReviewStatusV3;
 	const native = { targetStatus: async () => currentStatus } as unknown as NativeReviewCli;
 
@@ -291,13 +291,13 @@ test("ordinary START keeps today's invocation when STATUS offers no committed-ra
 test("ordinary START reports candidate-owner preparation failure as pre-native no mutation", async () => {
 	let nativeStarts = 0;
 	const target = {
-		contract: "gentle-ai.review-integration/v2",
+		contract: "jero-ai.review-integration/v2",
 		applicability: "unrelated",
 		action: "start",
 		replayability: "not_replayable",
 		targetIdentity: "a".repeat(64),
 		projection: {
-			schema: "gentle-ai.review-candidate-projection/v1",
+			schema: "jero-ai.review-candidate-projection/v1",
 			kind: "current-changes",
 			projection: "workspace",
 			baseTree: "b".repeat(40),
@@ -311,7 +311,7 @@ test("ordinary START reports candidate-owner preparation failure as pre-native n
 			currentSnapshotIdentity: "a".repeat(64),
 		},
 		candidates: [],
-		raw: { schema: "gentle-ai.review-integration.status/v5" },
+		raw: { schema: "jero-ai.review-integration.status/v5" },
 	} as unknown as ReviewStatusV3;
 	const native = {
 		targetStatus: async () => target,

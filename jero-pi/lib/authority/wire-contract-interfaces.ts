@@ -64,7 +64,7 @@ export interface ChangedPathEntry {
 }
 
 export interface ReviewArtifactSubjectV2 {
-	schema: "gentle-ai.review-artifact-subject/v2";
+	schema: "jero-ai.review-artifact-subject/v2";
 	subjectHash: string;
 	lineageId: string;
 	authorityRevision: string;
@@ -123,7 +123,7 @@ export interface ReviewStartV4 extends Omit<ReviewStartV3, "action"> {
 }
 
 export interface ReviewProjectionDescriptorV1 {
-	schema: "gentle-ai.review-integration.projection/v1";
+	schema: "jero-ai.review-integration.projection/v1";
 	kind: ReviewProjectionKind;
 	projection: ReviewProjection;
 	baseTree: string;
@@ -246,7 +246,7 @@ export interface ReviewCorrectionPlanFindingV1 {
 }
 
 export interface ReviewCorrectionPlanRequestV1 {
-	schema: "gentle-ai.review-correction-plan-request/v1";
+	schema: "jero-ai.review-correction-plan-request/v1";
 	requestHash: string;
 	lineageId: string;
 	expectedRevision: string;
@@ -279,7 +279,7 @@ export interface ReviewTargetedValidationClassificationV1 {
 }
 
 export interface ReviewTargetedValidationRequestV1 {
-	schema: "gentle-ai.review-targeted-validation-request/v1";
+	schema: "jero-ai.review-targeted-validation-request/v1";
 	requestHash: string;
 	lineageId: string;
 	expectedRevision: string;
@@ -412,7 +412,7 @@ export interface ReviewConsentChoiceV2 {
 }
 
 export interface ReviewConsentV2 {
-	schema: "gentle-ai.review-integration.consent/v2";
+	schema: "jero-ai.review-integration.consent/v2";
 	contract: typeof REVIEW_INTEGRATION_CONTRACT;
 	operation: "review.start";
 	action: "consent_required";
@@ -444,7 +444,7 @@ export const REVIEW_CONSENT_AGENT_V3 = {
 export type ReviewConsentAgentV3 = (typeof REVIEW_CONSENT_AGENT_V3)[keyof typeof REVIEW_CONSENT_AGENT_V3];
 
 export interface ReviewConsentV3 extends Omit<ReviewConsentV2, "schema"> {
-	schema: "gentle-ai.review-integration.consent/v3";
+	schema: "jero-ai.review-integration.consent/v3";
 	agent: ReviewConsentAgentV3;
 }
 
@@ -504,7 +504,7 @@ export interface ReviewFailureContextV2 {
 export type ReviewFailureOperation = ReviewIntegrationOperation | "review.capture-result" | "review.capture-correction-plan" | "review.capture-refuter" | "review.capture-validation";
 
 export interface ReviewFailureV2 {
-	schema: "gentle-ai.review-integration.failure/v2";
+	schema: "jero-ai.review-integration.failure/v2";
 	contract: typeof REVIEW_INTEGRATION_CONTRACT;
 	operation: ReviewFailureOperation;
 	phase: "preflight" | "pre_native" | "native_running" | "native_committed" | "reconciliation";
@@ -576,7 +576,7 @@ export interface AuthorityRepairAssessmentCountsV1 {
 }
 
 export interface AuthorityRepairAssessmentV1 {
-	schema: "gentle-ai.review-authority-repair-assessment/v1";
+	schema: "jero-ai.review-authority-repair-assessment/v1";
 	status: "eligible" | "unsupported" | "ambiguous" | "conflicting" | "truncated";
 	class?: "legacy_v1_historical_alias";
 	cause?: "unsupported_historical_v1_operation_alias";
@@ -585,7 +585,7 @@ export interface AuthorityRepairAssessmentV1 {
 	candidate?: AuthorityRepairAssessmentCandidateV1;
 	counts: AuthorityRepairAssessmentCountsV1;
 	supportedOperations: readonly ["review/complete-fix", "review/validate-fix"];
-	authorizationSchema: "gentle-ai.review-repair-authorization/v1";
+	authorizationSchema: "jero-ai.review-repair-authorization/v1";
 }
 
 export interface ReviewRepairProviderInputsV2 {
@@ -595,7 +595,7 @@ export interface ReviewRepairProviderInputsV2 {
 	cause: "unsupported_historical_v1_operation_alias";
 	disposition: "quarantine-approved-historical-alias";
 	repositoryBinding: string;
-	authorizationSchema: "gentle-ai.review-repair-authorization/v1";
+	authorizationSchema: "jero-ai.review-repair-authorization/v1";
 }
 
 export interface ReviewRepairExecutionV2 {
@@ -612,7 +612,7 @@ export interface ReviewRepairExecutionV2 {
 }
 
 export interface ReviewRepairV2 {
-	schema: "gentle-ai.review-integration.repair/v2";
+	schema: "jero-ai.review-integration.repair/v2";
 	contract: typeof REVIEW_INTEGRATION_CONTRACT;
 	operation: "review.repair";
 	mode: "preflight" | "execute";

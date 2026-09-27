@@ -7,7 +7,7 @@
 //
 // 原生参考（gentle-ai#4295，与本变更并行落地）：
 // `gentle-ai review assess --cwd <repo> [--base-ref <ref> --committed-only] --json`
-// 打印 `{"schema":"gentle-ai.review-assessment/v1","risk":"passive|medium|high",
+// 打印 `{"schema":"jero-ai.review-assessment/v1","risk":"passive|medium|high",
 // "reasons":[{"code":"…","path":"…","detail":"…"}],"changed_paths":1,
 // "changed_lines":1,"candidate":{"kind":"current-changes|base-diff","base_ref":"…"}}`。
 // 非零退出码或失败封套表示候选无法评估；宿主将其视为 `high`。
@@ -16,7 +16,7 @@
 
 import { isRecord } from "./record-utils.mjs";
 
-export const REVIEW_ASSESSMENT_SCHEMA = "gentle-ai.review-assessment/v1"         ;
+export const REVIEW_ASSESSMENT_SCHEMA = "jero-ai.review-assessment/v1"         ;
 
 export const REVIEW_ASSESSMENT_RISK = {
 	PASSIVE: "passive",
@@ -73,7 +73,7 @@ function decodeCandidate(value         )                            {
 }
 
 /**
- * 解码并校验一个 `gentle-ai.review-assessment/v1` 封套。拒绝任何其他
+ * 解码并校验一个 `jero-ai.review-assessment/v1` 封套。拒绝任何其他
  * schema、无法识别的风险值或畸形结构——原生评审 CLI 封装会把这里抛出
  * 的错误转换成它对其他所有已解码原生响应同样产生的“schema 不兼容”
  * 失败。

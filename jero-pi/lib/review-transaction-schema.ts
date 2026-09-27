@@ -180,7 +180,7 @@ export interface CanonicalFrozenRowV1 {
 }
 
 export interface FrozenLedgerV1 {
-	schema: "gentle-ai.review-frozen-ledger/v1";
+	schema: "jero-ai.review-frozen-ledger/v1";
 	rows: CanonicalFrozenRowV1[];
 	frozen_ledger_hash: string;
 }
@@ -232,7 +232,7 @@ export interface FollowUpObservationV1 {
 }
 
 export interface ReviewStateV1 {
-	schema: "gentle-ai.review-state/v1";
+	schema: "jero-ai.review-state/v1";
 	lineage_id: string;
 	parent_lineage_id?: string;
 	mode: ReviewMode;
@@ -273,7 +273,7 @@ export interface CreateReviewStateInput {
 }
 
 export interface ReceiptBodyV1 {
-	schema: "gentle-ai.review-receipt-body/v1";
+	schema: "jero-ai.review-receipt-body/v1";
 	lineage_id: string;
 	mode: ReviewMode;
 	base_tree: string;
@@ -309,7 +309,7 @@ interface ChildClaimEnvelopeV1 {
 }
 
 
-export const authoritativeReceiptBrand: unique symbol = Symbol("gentle-ai.authoritative-receipt");
+export const authoritativeReceiptBrand: unique symbol = Symbol("jero-ai.authoritative-receipt");
 
 export interface AuthoritativeReceiptV1 {
 	readonly [authoritativeReceiptBrand]: true;

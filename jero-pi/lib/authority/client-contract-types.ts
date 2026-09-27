@@ -181,7 +181,7 @@ export type NativeSddDependencyState = "blocked" | "ready" | "all_done";
  * 返回对象，不添加、不省略、不调和本地 SDD 状态。
  */
 export interface NativeSddStatusV2 extends Readonly<Record<string, unknown>> {
-	schemaName: "gentle-ai.sdd-status";
+	schemaName: "jero-ai.sdd-status";
 	schemaVersion: 2;
 	changeName: string | null;
 	artifactStore: "openspec" | "engram" | "hybrid" | "none";
@@ -357,7 +357,7 @@ export interface NativeReviewCorrectionPlanCaptureRequest {
 // 无提交描述符）；Pi 逐字执行渲染出的精确调用（前台），由 Go 物化角色
 // 提示词、派发自己锁定的 pi 子进程并受理原始裁决。这里不编写、解析或
 // 传输角色输出。
-export const NATIVE_REVIEW_PROVIDER_ROLE_CAPTURE_SCHEMA = "gentle-ai.review-provider-role-capture/v1";
+export const NATIVE_REVIEW_PROVIDER_ROLE_CAPTURE_SCHEMA = "jero-ai.review-provider-role-capture/v1";
 
 // 捕获操作与其终局闭包操作在上游是独立命名的。保持这个封闭映射
 // 显式化：capture-validation 的闭包操作刻意采用不统一的
@@ -391,7 +391,7 @@ export interface NativeReviewProviderRoleCaptureArtifact {
 }
 
 // 某个已绑定已选评审视角槽位在当前条件下无法完成的类型化声明。镜像自 Go 的 reviewUnachievableLensCaptureArtifact（internal/cli/review_capture_unachievable.go）：相同的 schema 身份、相同的封闭字段集，以及 Go 强制的相同 512 字节 detail 上限，因此本客户端本地拒绝的声明绝不可能到达会接受它的二进制，反之亦然。
-export const NATIVE_REVIEW_UNACHIEVABLE_LENS_CAPTURE_SCHEMA = "gentle-ai.review-capture-unachievable/v1";
+export const NATIVE_REVIEW_UNACHIEVABLE_LENS_CAPTURE_SCHEMA = "jero-ai.review-capture-unachievable/v1";
 export const NATIVE_REVIEW_UNACHIEVABLE_LENS_DETAIL_LIMIT = 512;
 
 export interface NativeReviewUnachievableLensCaptureRequest {
@@ -535,7 +535,7 @@ export const NATIVE_REVIEW_LOCK_STATUS = {
 export type NativeReviewLockStatus = (typeof NATIVE_REVIEW_LOCK_STATUS)[keyof typeof NATIVE_REVIEW_LOCK_STATUS];
 
 export const NATIVE_REVIEW_LOCK_OWNER_SCHEMA = {
-	V1: "gentle-ai.review-store-lock/v1",
+	V1: "jero-ai.review-store-lock/v1",
 } as const;
 export type NativeReviewLockOwnerSchema = (typeof NATIVE_REVIEW_LOCK_OWNER_SCHEMA)[keyof typeof NATIVE_REVIEW_LOCK_OWNER_SCHEMA];
 

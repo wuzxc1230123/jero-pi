@@ -47,7 +47,7 @@ if (inputToken !== undefined) {
 	if (mode === "ok" || mode === "cleanup-fail") {
 		const bytes = fs.readFileSync(inputPath);
 		if (process.env.RELAY_FAKE_SUBMIT_CAPTURE) fs.writeFileSync(process.env.RELAY_FAKE_SUBMIT_CAPTURE, bytes);
-		const accepted = JSON.stringify({ schema: "gentle-ai.review-result-artifact/v2", admission_decision: "completed" });
+		const accepted = JSON.stringify({ schema: "jero-ai.review-result-artifact/v2", admission_decision: "completed" });
 		if (mode === "cleanup-fail") {
 			// Windows 忽略目录只读位（rmdir 照常成功）；改用分离锁持进程：
 			// 在暂存目录内保持一个打开句柄使 rm 失败。等锁持方就绪后再退出，
@@ -80,13 +80,13 @@ if (inputToken !== undefined) {
 		let parsed;
 		try { parsed = JSON.parse(bytes.toString("utf8")); } catch { parsed = undefined; }
 		const refuse = (cause) => {
-			process.stdout.write(JSON.stringify({ schema: "gentle-ai.review-integration.failure/v2", contract: "gentle-ai.review-integration/v2", operation: "review.capture-result", phase: "preflight", code: "invalid_request", message: "The negotiated review request is invalid.", mutation_outcome: "not_started", authority_applicability: "not_evaluated", retry_safe: true, replayability: "not_replayable", required_inputs: [], next_action: "correct_request", cause }));
+			process.stdout.write(JSON.stringify({ schema: "jero-ai.review-integration.failure/v2", contract: "jero-ai.review-integration/v2", operation: "review.capture-result", phase: "preflight", code: "invalid_request", message: "The negotiated review request is invalid.", mutation_outcome: "not_started", authority_applicability: "not_evaluated", retry_safe: true, replayability: "not_replayable", required_inputs: [], next_action: "correct_request", cause }));
 			process.stderr.write("Error: " + cause + " [invalid_request]\\n");
 			process.exit(1);
 		};
 		if (parsed === undefined || typeof parsed !== "object") refuse("lens provider result admission incomplete: reviewer payload contains no complete JSON object: no object start was found in " + bytes.length + " bytes; the rejected reviewer payload was preserved at " + inputPath + ".rejected");
 		if (parsed.subject_hash !== process.env.RELAY_FAKE_EXPECTED_SUBJECT) refuse("reviewer artifact admission binding_mismatch: reviewer result echoed a different artifact subject: the rejected admission did not consume the lens slot, so re-run the lens and invoke gentle-ai review capture-result again on the same lineage with a result that echoes the binding's top-level subject_hash, which is " + process.env.RELAY_FAKE_EXPECTED_SUBJECT);
-		process.stdout.write(JSON.stringify({ schema: "gentle-ai.review-result-artifact/v2", admission_decision: "completed" }));
+		process.stdout.write(JSON.stringify({ schema: "jero-ai.review-result-artifact/v2", admission_decision: "completed" }));
 		process.exit(0);
 	}
 	process.stderr.write("capture binding does not match the current reviewing authority\\n");
@@ -168,7 +168,7 @@ export function harness(t: test.TestContext, overrides: Record<string, string> =
 	chmodSync(jeroAi, 0o755);
 	writeFileSync(pi, FAKE_PI);
 	chmodSync(pi, 0o755);
-	const logPath = join(directory, "gentle-ai.log");
+	const logPath = join(directory, "jero-ai.log");
 	const piLogPath = join(directory, "pi.log");
 	const stdinCapturePath = join(directory, "pi-stdin.bin");
 	const submitCapturePath = join(directory, "submitted.bin");

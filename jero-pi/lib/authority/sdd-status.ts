@@ -6,7 +6,7 @@ import type { JeroAuthorityContextV1 } from "./review.ts";
 // 二进制以 `sdd-status` 提供的纯投影。jero-pi 从移植的 TS 解析器已在
 // 读取的“同一个”openspec 树计算它——lib/sdd-status.ts 的
 // resolveSddStatus 拥有产物/依赖发现——并把解析器的 v1 记录投影为扩展
-// 曾消费的 v2 线上形态（camelCase，schema “gentle-ai.sdd-status” v2；
+// 曾消费的 v2 线上形态（camelCase，schema “jero-ai.sdd-status” v2；
 // 该字符串是移植的契约，在 P5 身份改造时改名）。不写日志：状态只报告
 // 产物状态，绝不报告尝试令牌或计数（sdd-status-contract.md:66）。
 //
@@ -25,7 +25,7 @@ export type JeroSddNextRecommendedV1 =
 	| "sync" | "fix-task-ownership-marker" | "resolve-via-engram" | "blocked";
 
 export interface JeroSddStatusV2 {
-	schemaName: "gentle-ai.sdd-status";
+	schemaName: "jero-ai.sdd-status";
 	schemaVersion: 2;
 	changeName: string | null;
 	artifactStore: SddArtifactStore;
@@ -114,7 +114,7 @@ export function jeroSddStatusV1(_context: JeroAuthorityContextV1, request: { cha
 	} satisfies Record<SevenDependency, JeroSddDependencyStateV1>;
 	const nextRecommended = NEXT_RECOMMENDED_MAP[resolved.nextRecommended] ?? (resolved.changeName === null ? "select-change" : "resolve-blockers");
 	const record: JeroSddStatusV2 = {
-		schemaName: "gentle-ai.sdd-status",
+		schemaName: "jero-ai.sdd-status",
 		schemaVersion: 2,
 		changeName: resolved.changeName,
 		artifactStore: resolved.artifactStore,

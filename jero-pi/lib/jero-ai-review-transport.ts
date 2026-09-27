@@ -56,7 +56,7 @@ export function hostTransportUnavailable(
 			operation: REVIEW_CONTROLLER_OPERATION.INSPECT,
 			...(isCapture ? { then: operation } : {}),
 		},
-		next_action: `Install a native gentle-ai provider that supports \`review status --agent pi\`, then re-enter negotiated STATUS with jero_review {"operation":"inspect"}${!isCapture ? " and follow the transition it returns" : operation === "jero_review_capture_group" ? " and resubmit jero_review_capture_group with the complete exact ordered collectBindings that fresh STATUS returns" : " and resubmit jero_review_capture with the exact one-slot collectBinding that fresh STATUS returns"}. A provider-printed raw CLI continuation does not run in this runtime, and Pi never falls back to an agent-less lifecycle route.`,
+		next_action: `The in-process jero authority supports \`review status --agent pi\`, then re-enter negotiated STATUS with jero_review {"operation":"inspect"}${!isCapture ? " and follow the transition it returns" : operation === "jero_review_capture_group" ? " and resubmit jero_review_capture_group with the complete exact ordered collectBindings that fresh STATUS returns" : " and resubmit jero_review_capture with the exact one-slot collectBinding that fresh STATUS returns"}. A provider-printed raw CLI continuation does not run in this runtime, and Pi never falls back to an agent-less lifecycle route.`,
 	};
 }
 

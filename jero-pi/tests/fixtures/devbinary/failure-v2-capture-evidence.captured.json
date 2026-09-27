@@ -1,6 +1,6 @@
 {
-  "schema": "gentle-ai.review-integration.failure/v2",
-  "contract": "gentle-ai.review-integration/v2",
+  "schema": "jero-ai.review-integration.failure/v2",
+  "contract": "jero-ai.review-integration/v2",
   "operation": "review.capture-evidence",
   "phase": "preflight",
   "code": "verification_evidence_binding_mismatch",

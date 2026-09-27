@@ -55,7 +55,7 @@ export async function part1(env) {
 		];
 		const input = {
 			name: "correction_plan",
-			schema: "gentle-ai.review-correction-plan/v1",
+			schema: "jero-ai.review-correction-plan/v1",
 			captureOperation: "review.capture-correction-plan",
 			arguments: arguments_,
 			submission: {
@@ -65,7 +65,7 @@ export async function part1(env) {
 			},
 		};
 		const status = {
-			contract: "gentle-ai.review-integration/v2",
+			contract: "jero-ai.review-integration/v2",
 			applicability: "current_target",
 			authority: { version: "compact-v2", lineageId, state: "correction_required", generation: 1, revision: sha },
 			receipt: { status: "expected_missing" },
@@ -73,7 +73,7 @@ export async function part1(env) {
 			replayability: "not_replayable",
 			targetIdentity: sha,
 			projection: {
-				schema: "gentle-ai.review-candidate-projection/v1",
+				schema: "jero-ai.review-candidate-projection/v1",
 				kind: "current-changes",
 				projection: "workspace",
 				baseTree: tree,
@@ -86,10 +86,10 @@ export async function part1(env) {
 				initialSnapshotIdentity: sha,
 				currentSnapshotIdentity: sha,
 			},
-			repair: { schema: "gentle-ai.review-authority-repair-assessment/v1", status: "unsupported", counts: { lineages: 0, compactLineages: 0, legacyLineages: 0, events: 0, bytes: 0, eligibleCandidates: 0, unsupportedLineages: 0, conflicts: 0 }, supportedOperations: ["review/complete-fix", "review/validate-fix"], authorizationSchema: "gentle-ai.review-repair-authorization/v1" },
+			repair: { schema: "jero-ai.review-authority-repair-assessment/v1", status: "unsupported", counts: { lineages: 0, compactLineages: 0, legacyLineages: 0, events: 0, bytes: 0, eligibleCandidates: 0, unsupportedLineages: 0, conflicts: 0 }, supportedOperations: ["review/complete-fix", "review/validate-fix"], authorizationSchema: "jero-ai.review-repair-authorization/v1" },
 			candidates: [],
 			nextTransition: { kind: "collect", reasonCode: "correction_plan_required", collect: { inputs: [input] } },
-			raw: { schema: "gentle-ai.review-integration.status/v5" },
+			raw: { schema: "jero-ai.review-integration.status/v5" },
 		};
 		const nativeReviewCli = {
 			async targetStatus(request) {
@@ -99,7 +99,7 @@ export async function part1(env) {
 			async captureCorrectionPlan(request) {
 				calls.push({ operation: "capture-correction-plan", request });
 				return {
-					schema: "gentle-ai.review-last-event-closure/v1",
+					schema: "jero-ai.review-last-event-closure/v1",
 					operation: "review.capture-correction-plan",
 					lineageId,
 					state: "correction_required",
@@ -343,7 +343,7 @@ export async function part1(env) {
 		assert.match(applyPromptResult.systemPrompt, /### apply instructions/);
 		const statusCtx = createCtx(promptCwd, true);
 		await commands.get("jero-sdd-status").handler("status-demo --json", statusCtx);
-		assert.match(statusCtx.ui.notifications.at(-1).message, /"schemaName": "gentle-ai\.sdd-status"/);
+		assert.match(statusCtx.ui.notifications.at(-1).message, /"schemaName": "jero-ai\.sdd-status"/);
 		const continueCtx = createCtx(promptCwd, true);
 		let markerConfirmations = 0;
 		continueCtx.ui.confirm = async (_title, message) => {
@@ -362,7 +362,7 @@ export async function part1(env) {
 		await mkdir(recoveryRequiredDirectory, { recursive: true });
 		await writeFile(
 			join(recoveryRequiredDirectory, `${domainHashV1("openspec-change-name", "status-demo")}.json`),
-			'{"schema":"gentle-ai.recovery-required/v1","change_name":"status-demo"}',
+			'{"schema":"jero-ai.recovery-required/v1","change_name":"status-demo"}',
 		);
 		const blockedContinueCtx = createCtx(promptCwd, true);
 		// Design §5.1.6: an upstream `.git` authority store is foreign data —
