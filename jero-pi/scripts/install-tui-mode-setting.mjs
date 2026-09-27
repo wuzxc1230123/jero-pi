@@ -81,7 +81,13 @@ export async function installTuiModeSetting(options = {}) {
 	// Ownership requires the caller's package root to BE the owned location —
 	// an owned install merely existing in the home never grants another
 	// package's postinstall the right to mutate Pi settings.
-	const installation = installations.find(({ packageRoot: expected }) => realpathSync(packageRoot) === expected);
+	// 谓词解析的必须是调用方包根（与候选位比对）；调用方根不可解析
+	// （如安装目录已消失的残留 postinstall）按不匹配处理，走
+	// recognized: false，而不是让裸 ENOENT 冒泡打断探测。
+	const installation = installations.find(({ packageRoot: expected }) => {
+		try { return realpathSync(packageRoot) === expected; }
+		catch { return false; }
+	});
 	if (!installation) return { changed: false, recognized: false };
 	assertDirectories(installation.paths);
 	const settingsPath = join(home, "settings.json");

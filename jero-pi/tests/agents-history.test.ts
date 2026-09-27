@@ -16,7 +16,7 @@ const dir = join(root, "tasks");
 function orphanLock(lockDir: string, id: string): void {
 	const moduleUrl = new URL("../lib/agents-history.ts", import.meta.url).href;
 	const source = `import { acquireTaskLock } from ${JSON.stringify(moduleUrl)}; const [dir, id] = process.argv.slice(-2); acquireTaskLock(dir, id);`;
-	const child = spawnSync(process.execPath, ["--experimental-strip-types", "--input-type=module", "-e", source, lockDir, id], { encoding: "utf8" });
+	const child = spawnSync(process.execPath, ["--experimental-strip-types", "--input-type=module", "-e", source, lockDir, id], { encoding: "utf8", timeout: 30_000 });
 	assert.equal(child.status, 0, child.stderr || child.stdout);
 }
 

@@ -6,7 +6,7 @@ import { default as childProcess, execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
 	chmodSync, default as fs, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync,
-	readFileSync, realpathSync, renameSync, rmSync, symlinkSync, utimesSync, writeFileSync
+	readFileSync, realpathSync, renameSync, rmSync, symlinkSync, unlinkSync, utimesSync, writeFileSync
 } from "node:fs";
 import { syncBuiltinESMExports } from "node:module";
 import { tmpdir } from "node:os";
@@ -670,7 +670,9 @@ test("candidate view detects symlink target-byte tampering after materialization
 	try {
 		const frozenLink = join(view.root, "candidate-link");
 		chmodSync(view.root, 0o755);
-		rmSync(frozenLink);
+		// Windows 上 rmSync 对悬空符号链接是静默 no-op（实测含 force/recursive），
+		// 换新链接会 EEXIST；unlinkSync 才真正删除链接本体。
+		unlinkSync(frozenLink);
 		symlinkSync("other-target", frozenLink);
 		chmodSync(view.root, 0o555);
 		assert.throws(() => view.verify(), CandidateViewError);
@@ -697,11 +699,12 @@ test("candidate view retains a valid dangling symlink through bind and finalize 
 		finalized.verify();
 		chmodSync(finalized.root, 0o755);
 		for (const target of ["other-target", "../escape"]) {
-			rmSync(link);
+			// 同上：被删对象是悬空符号链接，Windows 必须用 unlinkSync。
+			unlinkSync(link);
 			symlinkSync(target, link);
 			assert.throws(() => finalized.verify(), CandidateViewError);
 		}
-		rmSync(link);
+		unlinkSync(link);
 		assert.throws(() => finalized.verify(), CandidateViewError);
 	} finally {
 		registry.cleanup(view.token);

@@ -78,7 +78,8 @@ function boundedDetail(value: unknown): string {
 function gitLines(cwd: string, args: readonly string[]): string[] {
 	let output: string;
 	try {
-		output = execFileSync("git", ["-C", cwd, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], shell: false, env: reviewGitEnvironment() });
+		// 60s 上限：探针挂起时按既有 git-unavailable 类型化拒绝收敛，绝不无限期阻塞。
+		output = execFileSync("git", ["-C", cwd, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 60_000, shell: false, env: reviewGitEnvironment() });
 	} catch (error) {
 		const failure = error as NodeJS.ErrnoException & { stderr?: string };
 		if (failure.code === "ENOENT") throw new JeroAuthorityProbeError("git-unavailable", "The Git executable is unavailable");

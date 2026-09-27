@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { __testing } from "../lib/skill-registry-engine.ts";
@@ -38,5 +38,17 @@ for (const dir of UNPREFIXED_DIRS) {
 		const name = readSkillName(dir);
 		assert.ok(name, `expected a name for ${dir}`);
 		assert.ok(!name?.startsWith("jero-"), `${dir} should not be prefixed, got ${name}`);
+	});
+}
+
+// 前向棘轮：新技能走「jero- 前缀 + 同名目录」约定（skill-authoring §2），
+// jero-ai 是历史特例（目录 jero-ai、name 为 jero），排除在外。
+const jeroConventionDirs = readdirSync(join(repoRoot, "skills"), { withFileTypes: true })
+	.filter((entry) => entry.isDirectory() && entry.name.startsWith("jero-") && entry.name !== "jero-ai")
+	.map((entry) => entry.name);
+
+for (const dir of jeroConventionDirs) {
+	test(`skills/${dir}/SKILL.md frontmatter name matches directory (jero- convention)`, () => {
+		assert.equal(readSkillName(dir), dir);
 	});
 }

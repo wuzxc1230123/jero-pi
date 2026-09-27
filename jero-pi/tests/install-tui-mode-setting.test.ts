@@ -261,7 +261,7 @@ for (const fault of ["write", "rename", "concurrent-change"]) {
 			try { await installTuiModeSetting(${JSON.stringify(f.options)}); process.exitCode = 2; }
 			catch (error) { console.error(error.message); process.exitCode = 1; }
 		`;
-		const result = spawnSync(process.execPath, ["--input-type=module", "--eval", code], { encoding: "utf8", env: { ...process.env, ...f.env } });
+		const result = spawnSync(process.execPath, ["--input-type=module", "--eval", code], { encoding: "utf8", timeout: 30_000, env: { ...process.env, ...f.env } });
 		assert.equal(result.status, 1, result.stderr);
 		assert.match(result.stderr, fault === "concurrent-change" ? /changed concurrently/ : /injected/);
 		assert.equal(readFileSync(f.settings, "utf8"), fault === "concurrent-change" ? '{"theme":"concurrent"}' : original);

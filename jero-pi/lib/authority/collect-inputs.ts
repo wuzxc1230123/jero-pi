@@ -147,7 +147,7 @@ function recordManifestSha256V1(storeRoot: string, state: JeroReviewTransactionS
 	// （身份匹配保证了树的一致）。
 	const record = readJeroSnapshotRecordV1(storeRoot, state.snapshot.identity);
 	const executor = (file: string, args: readonly string[], options: { cwd: string; env: NodeJS.ProcessEnv }) =>
-		execFileSync(file, args, { ...options, encoding: "buffer" }) as Buffer;
+		execFileSync(file, args, { ...options, encoding: "buffer", timeout: 60_000 }) as Buffer;
 	const manifest = deriveChangedPathManifest(record.repository_root, state.base_tree, state.snapshot.candidate_tree, executor);
 	return digestChangedPathManifest(manifest);
 }
@@ -381,6 +381,7 @@ function jeroCorrectionPathsV1(storeRoot: string, state: JeroReviewTransactionSt
 		cwd: record.repository_root,
 		encoding: "utf8",
 		stdio: ["ignore", "pipe", "pipe"],
+		timeout: 60_000,
 		env: { ...reviewGitEnvironment(), ...environment },
 	});
 	return output.split("\0").filter(Boolean).toSorted();

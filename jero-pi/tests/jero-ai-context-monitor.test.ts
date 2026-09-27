@@ -175,6 +175,24 @@ test("agent_settled notifies once per escalation and session_compact resets the 
 	assert.equal(afterCompact.notifications.length, 1, "after compaction the threshold must warn again");
 });
 
+test("session_shutdown resets the escalation ladder for the next session", () => {
+	const fake = makeFakePi();
+	const settled = fake.handlers.get("agent_settled")!;
+	const shutdown = fake.handlers.get("session_shutdown")!;
+
+	const critical = makeCtx(CONTEXT_MONITOR_THRESHOLDS.critical);
+	settled({}, critical.ctx);
+	assert.equal(critical.notifications.length, 1);
+
+	// Pi 在 /new、/resume、/fork 复用扩展实例：会话结束必须复位档位，
+	// 否则上一会话残留的 critical 档会压制新会话的全部逐档告警。
+	shutdown({ reason: "quit" }, makeCtx(null).ctx);
+
+	const nextSession = makeCtx(CONTEXT_MONITOR_THRESHOLDS.notice);
+	settled({}, nextSession.ctx);
+	assert.equal(nextSession.notifications.length, 1, "a fresh session must escalate from the notice threshold again");
+});
+
 test("session_compact surfaces the memory-recovery hint", () => {
 	const fake = makeFakePi();
 	const notifications: Notification[] = [];

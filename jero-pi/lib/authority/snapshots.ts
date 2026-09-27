@@ -98,7 +98,8 @@ function runGit(cwd: string, args: readonly string[], environment: NodeJS.Proces
 	if (environment.GIT_INDEX_FILE) env.GIT_INDEX_FILE = environment.GIT_INDEX_FILE;
 	if (environment.GIT_OBJECT_DIRECTORY) env.GIT_OBJECT_DIRECTORY = environment.GIT_OBJECT_DIRECTORY;
 	if (environment.GIT_ALTERNATE_OBJECT_DIRECTORIES) env.GIT_ALTERNATE_OBJECT_DIRECTORIES = environment.GIT_ALTERNATE_OBJECT_DIRECTORIES;
-	return execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env }).trim();
+	// 60s 上限：快照捕获持权威锁跑 add/diff，挂起即冻结整个评审管道。
+	return execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 60_000, env }).trim();
 }
 
 function repositoryRoot(cwd: string): string {
@@ -308,7 +309,7 @@ function deriveJeroReviewSnapshotUncachedV1(options: JeroSnapshotDeriveOptionsV1
 		};
 		const identityHash = jeroDomainHash("snapshot", identityBody(record));
 		const manifestExecutor = (file: string, args: readonly string[], execOptions: ExecFileSyncOptions) =>
-			execFileSync(file, args, { ...execOptions, env: { ...reviewGitEnvironment(), ...(diffEnvironment as NodeJS.ProcessEnv) }, encoding: "buffer" });
+			execFileSync(file, args, { ...execOptions, timeout: 60_000, env: { ...reviewGitEnvironment(), ...(diffEnvironment as NodeJS.ProcessEnv) }, encoding: "buffer" });
 		const manifest = deriveChangedPathManifest(root, baseTree, completeSnapshotTree, manifestExecutor);
 		return {
 			record,
@@ -439,7 +440,7 @@ export function deriveJeroCorrectionLinesV1(options: {
 	const diffEnvironment: NodeJS.ProcessEnv = {
 		GIT_ALTERNATE_OBJECT_DIRECTORIES: `${record.object_store.object_directory}${delimiter}${record.object_store.alternate_object_directory}`,
 	};
-	const run = (args: readonly string[]): string => execFileSync("git", args, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env: { ...reviewGitEnvironment(), ...diffEnvironment } }).trim();
+	const run = (args: readonly string[]): string => execFileSync("git", args, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 60_000, env: { ...reviewGitEnvironment(), ...diffEnvironment } }).trim();
 	for (const tree of [options.initialTree, options.candidateTree]) {
 		if (!OBJECT_ID.test(tree)) throw new JeroSnapshotError("Correction tree is not a Git object ID");
 		let kind: string;

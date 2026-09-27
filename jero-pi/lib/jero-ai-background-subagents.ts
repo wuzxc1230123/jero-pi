@@ -1,7 +1,7 @@
 // 后台子代理策略：on/off 配置的解析、决议与渲染。唯一写入者是用户命令，自动化绝不触碰。
 // 自 extensions/jero-ai.ts 拆分（机械平移，语义零改动）。
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { loadRuntimeGuardrailsConfig } from "./jero-ai-guardrails.ts";
@@ -90,6 +90,19 @@ export function parseBackgroundSubagentsPolicyFile(
 }
 
 /**
+ * existsSync 无法区分 ENOENT 与 EACCES：把"存在但不可读"误判为"不存在"
+ * 会让它静默滑向更低优先级来源直至默认 on。探测到非 ENOENT 错误时按
+ * "在场"处理，让后续读取走畸形分支，保守失败为 off。
+ */
+function probeFilePresence(path: string): boolean {
+	try { statSync(path); return true; }
+	catch (error) {
+		if ((error as NodeJS.ErrnoException).code === "ENOENT") return false;
+		return true;
+	}
+}
+
+/**
  * 解析后台子代理策略，以及决定该策略的来源。
  *
  * 解析顺序（先命中者优先，与 loadRuntimeGuardrailsConfig 一致）：
@@ -102,7 +115,9 @@ export function parseBackgroundSubagentsPolicyFile(
  * 两类显式输入保守失败为 "off"，而不是继续落到较低优先级的来源：
  * 存在但畸形的文件（归属于该文件），以及设置了但无法识别的环境变量值
  * （归属于环境变量）——"用户想控制但输入坏了"与"用户没有表态"是两种
- * 不同情况，前者绝不静默滑向默认 on。
+ * 不同情况，前者绝不静默滑向默认 on。同理，存在但不可读的文件按
+ * "在场且畸形"处理（existsSync 会把 EACCES 误判为不存在），解析基础
+ * 设施自身的故障（如配置主目录不可解析）也保守失败为 "off"。
  *
  * 四个来源且先命中优先，正是那种会让一次编辑看起来毫无效果的结构，
  * 因此决定来源被纳入返回结果，而不是让调用方自行重新推导。
@@ -119,8 +134,8 @@ export function resolveBackgroundSubagentsPolicy(
 		const configHome = options.jeroPiConfigHome ?? jeroConfigHome();
 		projectFile = join(cwd, ".pi", "jero", BACKGROUND_SUBAGENTS_FILE);
 		globalFile = join(configHome, BACKGROUND_SUBAGENTS_FILE);
-		const projectFileExists = existsSync(projectFile);
-		const globalFileExists = existsSync(globalFile);
+		const projectFileExists = probeFilePresence(projectFile);
+		const globalFileExists = probeFilePresence(globalFile);
 		const locations = { projectFile, globalFile, projectFileExists, globalFileExists, envValue };
 		for (const [source, path, present] of [
 			["project_file", projectFile, projectFileExists],
@@ -148,8 +163,10 @@ export function resolveBackgroundSubagentsPolicy(
 		}
 		return { policy: "on", source: "default", malformed: false, ...locations };
 	} catch {
+		// 解析基础设施故障（如配置主目录不可解析）：无法断定用户意图时
+		// 与其余保守分支对齐，失败为 off——绝不因为"读不到信号"而滑向默认 on。
 		return {
-			policy: "on",
+			policy: "off",
 			source: "default",
 			malformed: false,
 			projectFile,

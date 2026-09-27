@@ -203,6 +203,14 @@ export async function fetchCodexUsage(token: string | undefined, fetchFn: typeof
 	}
 }
 
+// 该端点是 git / gh / pi 三类外部进程之外唯一携带凭证的网络出口：
+// 默认开启；JERO_PI_USAGE_FETCH=0|false|off 时自动与手动刷新一律
+// 不发请求（连令牌解析都不做）。
+export function usageFetchEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+	const value = env.JERO_PI_USAGE_FETCH?.trim().toLowerCase();
+	return !(value === "0" || value === "false" || value === "off");
+}
+
 function paintMeter(percent: number, cells: number, theme: UsageTheme): string {
 	return paintGauge(percent, theme, cells);
 }

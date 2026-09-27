@@ -28,8 +28,10 @@ export function deriveJeroFixApplicationV1(context: JeroAuthorityContextV1, line
 	const snapshot = readJeroSnapshotRecordV1(context.store.store_root, state.snapshot.identity);
 	const staging = mkdtempSync(join(tmpdir(), "jero-fix-application-"));
 	const delimiter = process.platform === "win32" ? ";" : ":";
+	// 权威变更持锁期间跑同步 git：60s 上限防止挂起的 git 无限期冻结评审管道
+	// （超时按既有 derivation-failed 类型化拒绝收敛）。
 	const run = (args: readonly string[], environment: NodeJS.ProcessEnv): string =>
-		execFileSync("git", [...args], { cwd: repositoryRoot, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env: { ...reviewGitEnvironment(), ...environment } }).trim();
+		execFileSync("git", [...args], { cwd: repositoryRoot, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 60_000, env: { ...reviewGitEnvironment(), ...environment } }).trim();
 	try {
 		const indexEnvironment = {
 			GIT_INDEX_FILE: join(staging, "index"),

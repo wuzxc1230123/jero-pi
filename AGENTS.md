@@ -38,4 +38,4 @@
 
 ## 入口文档链
 
-`jero-pi/README.md` → `docs/jero-reference.md`（架构/命令/工具/生命周期总表）→ `docs/tutorial-first-review.md`（第一次评审最小闭环）· `docs/how-to-choose-discipline.md`（评审/SDD/精益选档）· `docs/dependency-exit-plan.md`（9 个伴生依赖退出预案）。运行时技能路由表：`skills/jero-skills/SKILL.md`。
+`jero-pi/README.md` → `docs/jero-reference.md`（架构/命令/工具/生命周期总表）→ `docs/tutorial-first-review.md`（第一次评审最小闭环）· `docs/how-to-choose-discipline.md`（评审/SDD/精益选档）· `docs/extension-guide.md`（零代码扩展：技能/子代理/语言包，自动创建走 `/module-creation` `/agent-creation`）· `docs/dependency-exit-plan.md`（9 个伴生依赖退出预案）。运行时技能路由表：`skills/jero-skills/SKILL.md`。

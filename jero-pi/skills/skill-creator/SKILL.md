@@ -40,6 +40,8 @@ metadata:
 | 较长的解释或边界情况 | 添加 `skills/{skill-name}/references/` |
 | 既有技能已覆盖 | 改为更新既有技能 |
 | 技能影响委托发现 | 确保触发词出现在 `description` 中 |
+| 整套领域模块（技能 + 子代理 + 命令钉住） | 转交 `jero-module-creator`（`/module-creation`） |
+| 单个项目级子代理 | 转交 `jero-agent-creator`（`/agent-creation`） |
 
 ## 执行步骤
 

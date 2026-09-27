@@ -130,3 +130,10 @@ jobs:
           $passes = [regex]::Match(($output -join "`n"), "(?m)^# pass (\d+)$")
           if ($output -match "(?m)^1\.\.0$" -or !$passes.Success -or [int]$passes.Groups[1].Value -eq 0) { throw "Windows candidate view regression selected no tests" }
 
+      # Windows 夹具回归：Node 在 Windows 上对悬空符号链接的 rmSync 是
+      # 静默 no-op（Linux 正常删除），夹具必须改用 unlinkSync。这两个
+      # 文件钉住该语义，只有在 Windows 上跑才有信号。
+      - name: Run Windows symlink fixture regression
+        shell: pwsh
+        run: pnpm exec node --experimental-strip-types --test tests/sdd-research-capabilities.test.ts tests/review-candidate-view.z2.test.ts
+

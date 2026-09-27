@@ -19,7 +19,8 @@ export interface JeroRiskAssessRequestV1 {
 }
 
 function runGit(cwd: string, args: readonly string[]): string {
-	return execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env: reviewGitEnvironment() }).trim();
+	// 60s 上限：大工作树上的 numstat 挂起按既有 derivation 失败路径收敛。
+	return execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 60_000, env: reviewGitEnvironment() }).trim();
 }
 
 function parseNumstat(value: string): ReviewDiffStat[] {

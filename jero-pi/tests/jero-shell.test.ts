@@ -8,7 +8,7 @@ import { initTheme, type ExtensionAPI, type ExtensionContext } from "@earendil-w
 import type { TUI } from "@earendil-works/pi-tui";
 import installJeroShell, { buildShellBarModel, createActiveProfileReader, changesShortcut, devBinaryCard, openInExternalEditor, type ExternalEditorHost, type JeroPromptEditor } from "../extensions/jero-shell.ts";
 import { CHANGE_STATUS, loadFileDiff, shellGitRunner } from "../lib/shell-changes.ts";
-import { fetchCodexUsage } from "../lib/shell-usage.ts";
+import { fetchCodexUsage, usageFetchEnabled } from "../lib/shell-usage.ts";
 import { sidebarState, type SidebarRail } from "../lib/shell-sidebar.ts";
 import { compactModel, type ShellBarModel, type ShellBarTheme } from "../lib/shell-bar.ts";
 import { stripAnsi } from "../lib/terminal-theme.ts";
@@ -680,6 +680,27 @@ test("jeroShell fetches Codex usage on session start and shows it in the bar", a
 	await fire(handlers, "agent_end", ctx);
 	await new Promise((resolve) => setTimeout(resolve, 0));
 	assert.equal(calls.length, 1, "agent_end must not refetch within the refresh window");
+});
+
+test("JERO_PI_USAGE_FETCH=0 keeps the token off the wire for automatic and manual refreshes", async () => {
+	assert.equal(usageFetchEnabled({}), true);
+	assert.equal(usageFetchEnabled({ JERO_PI_USAGE_FETCH: "0" }), false);
+	assert.equal(usageFetchEnabled({ JERO_PI_USAGE_FETCH: "off" }), false);
+	assert.equal(usageFetchEnabled({ JERO_PI_USAGE_FETCH: "1" }), true);
+
+	const { pi, handlers, commands } = fakePi();
+	const { fetchFn, calls } = fakeFetch();
+	jeroShell(pi, { JERO_PI_USAGE_FETCH: "0", JERO_PI_SHELL_CHANGES_WATCH_MS: "off" }, { fetch: fetchFn, now: () => 1_788_600_000_000 });
+	const { ctx, ui } = fakeContext({ token: JWT });
+	await fire(handlers, "session_start", ctx);
+	await new Promise((resolve) => setTimeout(resolve, 0));
+	assert.equal(calls.length, 0, "the opt-out must block the automatic session-start fetch");
+
+	const opened = commands.get("jero:usage")!.handler("", ctx);
+	await new Promise((resolve) => setTimeout(resolve, 0));
+	assert.equal(calls.length, 0, "the opt-out must also block manual refreshes");
+	ui.closeOverlay?.();
+	await opened;
 });
 
 test("jeroShell records SSE rate-limit headers from provider responses", async () => {

@@ -1,0 +1,16 @@
+# openspec/config.yaml 命令钉住片段（/jero-sdd-init 生成后手改这些键）
+# Verification 契约读取顺序：缓存能力 → 本文件 → 兜底探测；钉住的值评审与 SDD 执行共享。
+# 落键前每条命令必须在目标项目实际跑通一次。
+rules:
+  apply:
+    test_command: {test_command}
+  verify:
+    test_command: {test_command}
+testing:
+  runner:
+    command: {test_command}
+    framework: {framework}
+quality:
+  lint: {lint_command}
+  typecheck: {typecheck_command}
+  format: {format_command}

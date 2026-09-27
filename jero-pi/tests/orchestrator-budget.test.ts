@@ -101,6 +101,7 @@ function measureOrchestratorPromptBytes(assetsDir: string): number {
 	const result = spawnSync(process.execPath, ["--experimental-strip-types", scriptPath, assetsDir], {
 		env: process.env,
 		encoding: "utf8",
+		timeout: 30_000,
 	});
 	assert.equal(
 		result.status,

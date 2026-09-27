@@ -11,7 +11,7 @@ import { WorktreeChangesView } from "../lib/shell-changes-view.ts";
 import { SessionWorktreeRegistry, resolveSessionWorktree, type WorktreeResolver } from "../lib/session-worktree-registry.ts";
 import { CARD_TONE, renderCard, type Card, type CardTheme } from "../lib/shell-card.ts";
 import { framePromptLines, PROMPT_HINT, PROMPT_STATE, withPromptHint, type PromptState } from "../lib/shell-prompt.ts";
-import { CODEX_PROVIDER, fetchCodexUsage, parseUsageHeaders, UsageStore, type ProviderUsage } from "../lib/shell-usage.ts";
+import { CODEX_PROVIDER, fetchCodexUsage, parseUsageHeaders, UsageStore, usageFetchEnabled, type ProviderUsage } from "../lib/shell-usage.ts";
 import { UsageView } from "../lib/shell-usage-view.ts";
 import { sidebarPart } from "../lib/shell-sidebar.ts";
 import { installSidebar, invalidateSidebar } from "../lib/shell-sidebar-layout.ts";
@@ -429,7 +429,11 @@ export default function jeroShell(pi: ExtensionAPI, env: NodeJS.ProcessEnv = pro
 	const usage = new UsageStore();
 	let renderHost: ShellRenderHost | undefined;
 	let usageFetchedAt = 0;
+	// Codex 用量端点是唯一带凭证的网络出口：总开关关闭时自动与手动
+	// 刷新一并短路（见 lib/shell-usage.ts 的 usageFetchEnabled）。
+	const usageFetchAllowed = usageFetchEnabled(env);
 	const refreshUsage = async (ctx: ExtensionContext, force: boolean) => {
+		if (!usageFetchAllowed) return;
 		const provider = ctx.model?.provider;
 		if (provider !== CODEX_PROVIDER) return;
 		const now = deps.now();

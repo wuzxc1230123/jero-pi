@@ -182,3 +182,38 @@ test("session_shutdown disarms a pending injection", () => {
 		rmSync(ctx.cwd as string, { recursive: true, force: true });
 	}
 });
+
+test("a nested subagent agent_end does not close the main loop's bootstrap window", async () => {
+	const fake = makeFakePi();
+	const context = fake.handlers.get("context");
+	const start = fake.handlers.get("session_start");
+	const agentStart = fake.handlers.get("before_agent_start");
+	const end = fake.handlers.get("agent_end");
+	assert.ok(context && start && agentStart && end, "the extension must register the lifecycle handlers");
+
+	const configHome = mkdtempSync(join(tmpdir(), "jero-bootstrap-config-"));
+	const previousConfigHome = process.env.JERO_PI_CONFIG_HOME;
+	process.env.JERO_PI_CONFIG_HOME = configHome;
+	const ctx = makeCtx();
+	try {
+		await start({ reason: "startup" }, ctx);
+		// 主循环开始（深度归零）→ 具名子代理开始（深度 +1）→ 子代理结束：
+		// 主代理循环仍在注入窗口内，bootstrap 绝不因嵌套代理结束而丢失。
+		await agentStart({ systemPrompt: "main loop" }, ctx);
+		await agentStart({ systemPrompt: "sub loop", agentName: "jero-explore" }, ctx);
+		end({}, ctx);
+		const stillArmed = context({ type: "context", messages: [] }, ctx) as { messages: unknown[] } | undefined;
+		assert.ok(Array.isArray(stillArmed?.messages), "subagent agent_end must not disarm the main loop's window");
+		assert.ok(messageContainsJeroBootstrap(stillArmed!.messages[0]));
+
+		// 只有主代理自身的 agent_end（深度已归零）才关闭窗口。
+		await agentStart({ systemPrompt: "main loop again" }, ctx);
+		end({}, ctx);
+		assert.equal(context({ type: "context", messages: [] }, ctx), undefined, "main agent_end must disarm the window");
+	} finally {
+		if (previousConfigHome === undefined) delete process.env.JERO_PI_CONFIG_HOME;
+		else process.env.JERO_PI_CONFIG_HOME = previousConfigHome;
+		rmSync(ctx.cwd as string, { recursive: true, force: true });
+		rmSync(configHome, { recursive: true, force: true });
+	}
+});

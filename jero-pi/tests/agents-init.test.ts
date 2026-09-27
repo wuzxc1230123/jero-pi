@@ -69,10 +69,15 @@ test("evidence gathering stays local, budgeted, and layered", () => {
 	assert.match(prompt, /就近原则生效/);
 });
 
-test("prompts directory stays pinned to the two registered templates", () => {
+test("prompts directory stays pinned to the four registered templates", () => {
 	const promptsDir = join(PACKAGE_ROOT, "prompts");
 	const names = readdirSync(promptsDir).sort();
-	assert.deepEqual(names, ["agents-init.md", "skill-creation.md"]);
+	assert.deepEqual(names, [
+		"agent-creation.md",
+		"agents-init.md",
+		"module-creation.md",
+		"skill-creation.md",
+	]);
 });
 
 test("frontmatter stays single-line and parseable", () => {

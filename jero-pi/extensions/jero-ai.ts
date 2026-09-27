@@ -150,10 +150,15 @@ function createJeroAiExtensionForTesting(
 		// 纪律引导窗口：session_start / session_compact 置位，
 		// agent_end / session_shutdown 复位（见下方 context 处理器）。
 		let disciplineBootstrapPending = false;
+		// 声明前置：session_shutdown 处理器（下方注册）需要复位它。
+		let contextMonitorLevel: ContextMonitorLevel = "ok";
 		pi.on("session_shutdown", (event, context) => {
 			reminderState.active = false;
 			reminderState.epoch += 1;
 			disciplineBootstrapPending = false;
+			// Pi 在 /new、/resume、/fork 复用扩展实例：档位必须随会话复位，
+			// 否则上一会话残留的 critical 档会让新会话的逐档告警永不升级。
+			contextMonitorLevel = "ok";
 			// Pi 在 reload 以及会话替换/退出时都会拆除该注册表。
 			try { candidateViews?.cleanupAll(); } catch { /* 保留失败的自有视图以便稍后恢复。 */ }
 			const reason = sessionEventReason(event);
@@ -368,15 +373,19 @@ function createJeroAiExtensionForTesting(
 		// 应答同意，也不选择部分候选。持久的自身变更回执
 		// 为 STATUS 设门，且只消耗该 await 之前捕获的代。
 		pi.on("agent_end", async (_event, ctx) => {
-			disciplineBootstrapPending = false;
-			if (nativeReviewCli?.reviewMode === undefined || nativeReviewCli.targetStatus === undefined) return;
-			if (ctx.hasUI !== true || !reminderState.active) return;
 			const sessionKey = pendingReviewConsentSessionKey(ctx, pendingReviewConsentFallbackKey);
 			const subagentDepth = processAgentEndSubagentDepth.get(sessionKey) ?? 0;
 			if (subagentDepth > 0) {
+				// 嵌套子代理循环的结束不得提前关闭主代理循环的纪律注入
+				// 窗口：注入按请求转换、不落会话文件，窗口一旦误清，主循环
+				// 后续请求即丢失 bootstrap/规范索引直至下次压缩。深度递减
+				// 前置到评审回执门之前，保证每个子代理结束都恰好配对一次。
 				processAgentEndSubagentDepth.set(sessionKey, subagentDepth - 1);
 				return;
 			}
+			disciplineBootstrapPending = false;
+			if (nativeReviewCli?.reviewMode === undefined || nativeReviewCli.targetStatus === undefined) return;
+			if (ctx.hasUI !== true || !reminderState.active) return;
 			const root = resolveSessionWorktree(ctx.cwd, ctx.cwd)?.root;
 			if (!root) return;
 			let mutation: string | undefined;
@@ -413,7 +422,6 @@ function createJeroAiExtensionForTesting(
 		// 上下文余量监控：主会话每个代理回合落定时评估一次，升级跨档各通知
 		// 一次（详见 lib/jero-ai-context-monitor.ts）。RPC 子进程与无 UI 宿主
 		// 直接跳过——这是用户可见提示，绝不是权威，也绝不自动触发压缩。
-		let contextMonitorLevel: ContextMonitorLevel = "ok";
 		pi.on("agent_settled", (_event, ctx) => {
 			if (ctx.mode !== "tui" || !ctx.hasUI || !contextMonitorEnabled(permissionEnvironment)) return;
 			let usage: ContextUsageSnapshot | undefined;

@@ -5,6 +5,24 @@ jero-pi 尚未发布到 npm（版本停在 0.1.0 基线），本文件自重构�
 
 ## [Unreleased]
 
+### 扩展机制批（2026-09-27：第八批）
+
+- **零代码扩展指南与模块/子代理创建器**：新增 `docs/extension-guide.md`（目标项目 `.pi/` 扩展的放置机制、错误避免与升级路径单一事实源）与 `skills/jero-module-creator`、`skills/jero-agent-creator` 技能（领域访谈 → 领域词元命名 → 技能/代理生成 → `openspec/config.yaml` 命令钉住 → 冒烟五步）；`prompts/` 补 `/module-creation`、`/agent-creation` 薄转交入口（目录钉住断言 2→4），`skill-creator` 决策门补转交行防路由落错。命名统一为"一个模块一个领域词元"（技能名 = 词元，代理名 = `词元-角色`）。
+- **扩展资产的机器钉住**：`verify-package-files` requiredPaths +7（两个 SKILL.md 与 5 个模板资产——创建器模板驱动的完整性面）；`skill-collision-prefixes` 前向棘轮——"`jero-` 前缀 + 同名目录"从文档约定升为机器约定（`jero-ai` 历史特例排除）；新增两份技能内容测试（`tests/jero-module-creator.test.ts` / `tests/jero-agent-creator.test.ts`）钉住零代码边界、不建执行代理、词元命名（含近义词干回归禁令）、只读模板与台账输出契约。
+- **文档链同步**：`jero-skills` 路由表、`jero-reference.md`（技能散文清单 + prompt 模板行）、`skill-authoring.md`（范围说明）、`README.md` 与 `AGENTS.md` 文档链接入扩展指南。
+
+### 审核修复批（2026-09-27：第七批）
+
+- **Codex 用量端点开关与边界登记**：`lib/shell-usage.ts` 新增 `usageFetchEnabled`——`JERO_PI_USAGE_FETCH=0|false|off` 时自动与手动订阅用量刷新一并短路（连令牌解析都不做）。该端点（`chatgpt.com/backend-api/wham/usage`，携带 OAuth Bearer）是 git/gh/pi 三类外部进程之外唯一带凭证的网络出口，jero-reference 架构边界、Shell 节与环境变量清单三处显式登记；README 安装须知同步补 postinstall tuiMode 写入的知情说明。
+- **上下文监控档位随会话复位**（`extensions/jero-ai.ts`）：`contextMonitorLevel` 此前只在 `session_compact` 复位，Pi 在 /new、/resume、/fork 复用扩展实例，上一会话残留的 critical 档会让新会话的逐档告警永不升级；现随 `session_shutdown` 复位。测试钉住"critical → 会话结束 → notice 再告警"。
+- **嵌套子代理结束不再提前关闭纪律注入窗口**（`extensions/jero-ai.ts`）：`agent_end` 的 `disciplineBootstrapPending = false` 原先在子代理深度判断之前无条件执行，具名/SDD 子代理结束时主代理循环即丢失 bootstrap/规范索引注入（注入不落会话文件，丢失即时）；深度门控与递减一并前置到评审回执门之前，保证每个子代理结束恰好配对一次。测试钉住"子代理 agent_end 后窗口仍在、主代理 agent_end 才关闭"。
+- **authority 域同步 git 调用补 60s timeout**：`fix-application`/`snapshots`/`risk-assess`/`store-root`/`collect-inputs` 共 8 处 `execFileSync("git")` 此前全部无上限——git 挂起会无限期持有权威变更锁（独占 mkdir）冻结整个评审管道；超时按既有 `git-unavailable`/`derivation-failed` 类型化拒绝收敛。
+- **Windows 悬空符号链接夹具修复**（3 例本机 Windows 失败、CI 门外）：实测 Node 在 Windows 上对悬空符号链接的 `rmSync` 是**静默 no-op**（含 force/recursive；`unlinkSync` 正常），后续 `writeFileSync`/`symlinkSync` 会穿透或 EEXIST。`tests/sdd-research-capabilities.test.ts` 与 `tests/review-candidate-view.z2.test.ts` 的 5 处删除改用 `unlinkSync`；CI Windows 作业新增这两个文件的符号链接夹具回归步骤。
+- **测试挂起兜底**：三处测试 `spawnSync`（agents-history/orchestrator-budget/install-tui-mode-setting）补 30s timeout；全部 `--test` 入口（test/test:authority/test:agents/test:review/test:sdd）补 `--test-timeout=300000`——此前任一子进程挂死即整套件挂死直到 CI 级超时。
+- **后台子代理策略 fail-closed 补缝**（`lib/jero-ai-background-subagents.ts`）：外层 catch（配置主目录不可解析等基础设施故障）此前返回默认 `on`，与"无效显式输入保守失败为 off"契约相悖，现保守返回 `off`；`existsSync` 换成 `statSync` 探测——EACCES 等"存在但不可读"不再被误判为"不存在"而滑向默认 on，改走 malformed-off 并正确归属文件（POSIX 测试钉住）。
+- **postinstall 安装位探测容错**（`scripts/install-tui-mode-setting.mjs`）：所有权谓词解析调用方包根并与候选安装位比对，调用方根不可解析（如安装目录已消失的残留 postinstall）时 `realpathSync` 抛裸 ENOENT 打断探测；现按不匹配处理，干净走 `recognized: false`（所有权语义逐字保持：谓词仍解析调用方根，绝非候选位自比对）。
+- **发布链补类型门**：`prepack`/`prepublishOnly` 首步补 `pnpm run typecheck`（此前全链唯独漏它，类型回归可随发布出门）。
+
 ### 第四档小改进清偿（2026-09-27：第六批）
 
 - **`mem_save` 元数据补全**：新增可选 `agent`/`phase` 参数并透传 frontmatter——此前恒为空串，SDD 子代理保存时无法自报身份、检索侧无区分度；不传保持空串（既有行为不变），测试钉住两种形态。

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, symlinkSync, rmSync } from "node:fs";
+import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, symlinkSync, unlinkSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
@@ -141,7 +141,9 @@ test("artifact intent narrows exact paths and topics without granting tools or r
   rmSync(path);
   symlinkSync(join(cwd, "missing-target"), path);
   assert.throws(() => researchArtifactCall(scope, cwd, "write", { path }), /ENOENT|scope/);
-  rmSync(path);
+  // Windows 上 rmSync 对悬空符号链接是静默 no-op（实测含 force/recursive），
+  // 随后的 writeFileSync 会穿透链接写到目标；unlinkSync 才真正删除链接。
+  unlinkSync(path);
   writeFileSync(path, bytes);
   for (const patch of [{ worktree: tmpdir() }, { store: "engram" }, { retainedIntent: "replacement" }, { locators: [{ ...locator, digest: "0".repeat(64) }] }]) {
    assert.throws(() => parseResearchArtifactIntent({ ...intent, ...patch }, cwd, scope), /scope|worktree|stale/);

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import {
+	chmodSync,
 	existsSync,
 	mkdirSync,
 	mkdtempSync,
@@ -204,6 +205,28 @@ test("a malformed higher-priority file fails closed to off instead of falling th
 		}),
 		"off",
 	);
+});
+
+// existsSync 会把 EACCES 误判为"不存在"：存在但不可读的决策文件必须按
+// "在场且畸形"保守失败为 off，而不是静默滑向更低优先级来源直至默认 on。
+test("an unreadable controlling file is present-and-malformed, never absent", { skip: process.platform === "win32" && "POSIX chmod 语义（Windows 无对应位）" }, () => {
+	const cwd = makeScratch("gp-bg-unreadable-");
+	const configHome = join(makeScratch("gp-bg-home2-"), "gentle-ai");
+	const projectDir = join(cwd, ".pi", "jero");
+	mkdirSync(projectDir, { recursive: true });
+	const file = join(projectDir, "background-subagents.json");
+	writeFileSync(file, JSON.stringify({ schema: "jero.background-subagents/v1", policy: "on" }));
+	writePolicyFile(configHome, "on");
+	chmodSync(file, 0o000);
+	try {
+		const resolution = resolveBackgroundSubagentsPolicy(cwd, { jeroPiConfigHome: configHome, env: {} });
+		assert.equal(resolution.policy, "off", "an unreadable controlling file must fail closed");
+		assert.equal(resolution.source, "project_file");
+		assert.equal(resolution.malformed, true);
+		assert.equal(resolution.projectFileExists, true);
+	} finally {
+		chmodSync(file, 0o644);
+	}
 });
 
 // ---------------------------------------------------------------------------
