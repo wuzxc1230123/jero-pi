@@ -228,7 +228,9 @@ export function sha256(content) {
 }
 
 export function gitSync(cwd, ...arguments_) {
-	return execFileSync("git", arguments_, { cwd, encoding: "utf8" }).trim();
+	// 夹具仓库强制 LF 语义（等价 Linux CI 默认）：阻断 Windows 全局 autocrlf
+	// 在 add/checkout 方向的换行转换与 "LF will be replaced by CRLF" 警告噪音。
+	return execFileSync("git", ["-c", "core.autocrlf=false", ...arguments_], { cwd, encoding: "utf8" }).trim();
 }
 
 export async function tempWorkspace() {
