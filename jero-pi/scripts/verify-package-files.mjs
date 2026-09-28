@@ -103,6 +103,7 @@ const requiredPaths = [
 	"skills/skill-registry/SKILL.md",
 	"skills/work-unit-commits/SKILL.md",
 	"scripts/test-packed-runner.mjs",
+	"scripts/host-boot-smoke.mjs",
 ];
 
 // jero-pi P1/P4 gate: none of the deleted distribution-chain files may

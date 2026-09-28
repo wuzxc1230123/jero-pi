@@ -43,6 +43,14 @@ jobs:
       - name: Type check
         run: pnpm run typecheck
 
+      # Unit tests assemble extensions against a fake host; this gate boots the
+      # real one so pi.extensions load-order conflicts (e.g. the pi-pretty x
+      # pi-hashline-edit-pro read/grep clash that slipped every fake-host gate)
+      # fail CI at boot. Runs offline with stripped API keys: success terminus
+      # is provider auth, never a real model turn.
+      - name: Real host boot smoke
+        run: pnpm run test:host-boot-smoke
+
       - name: Verify generated runtime modules
         run: pnpm run check:runtime-modules
 
