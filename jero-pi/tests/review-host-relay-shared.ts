@@ -43,6 +43,7 @@ if (inputToken !== undefined) {
 	const mode = process.env.RELAY_FAKE_SUBMIT_MODE || "ok";
 	const inputPath = inputToken.startsWith("--input=") ? inputToken.slice("--input=".length) : argv[argv.indexOf("--input") + 1];
 	const submitDelayMs = Number(process.env.RELAY_FAKE_SUBMIT_DELAY_MS || "0");
+	// allow-test-rule:no-magic-sleep 参数化延迟注入：submitDelayMs 就是这些用例的被测对象（提交延迟下的宿主行为）。
 	if (Number.isSafeInteger(submitDelayMs) && submitDelayMs > 0) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, submitDelayMs);
 	if (mode === "ok" || mode === "cleanup-fail") {
 		const bytes = fs.readFileSync(inputPath);
@@ -62,6 +63,7 @@ if (inputToken !== undefined) {
 				const killFlag = path.join(path.dirname(path.dirname(inputPath)), "kill-holders");
 				require("node:child_process").spawn(process.execPath, ["-e", "process.chdir(process.argv[1]); require('node:fs').writeFileSync(process.argv[2], 'ready'); setInterval(() => { if (require('node:fs').existsSync(process.argv[3])) process.exit(0); }, 100);", lockDir, ready, killFlag], { detached: true, stdio: "ignore" }).unref();
 				const deadline = Date.now() + 5000;
+				// allow-test-rule:no-magic-sleep 25ms 条件轮询（等锁持子进程的 ready 文件、带 5s deadline），非盲等。
 				while (!fs.existsSync(ready) && Date.now() < deadline) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 25);
 			} else {
 				fs.chmodSync(path.dirname(path.dirname(inputPath)), 0o500);

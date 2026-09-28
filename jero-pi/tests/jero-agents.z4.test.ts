@@ -187,6 +187,7 @@ test("live-only directory traverses presence overflow, excludes expired and othe
 	panel.overlay.handleInput("q");
 	await panel.opened;
 	const readsAtClose = pages.mock.callCount();
+	// allow-test-rule:no-magic-sleep 负空间窗口：证明关闭后不再扫描，无可轮询条件，1.1s 必须超过扫描间隔。
 	await new Promise((resolve) => setTimeout(resolve, 1100));
 	assert.equal(pages.mock.callCount(), readsAtClose, "closing the overlay cancels future directory scans");
 	pages.mock.restore();
