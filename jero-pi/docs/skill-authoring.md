@@ -2,7 +2,7 @@
 
 写给要新增、修改或淘汰 `skills/` 目录下技能的贡献者。规范借鉴 mattpocock/skills 的两条核心纪律——**触发措辞双轨制**与**路由器不许撒谎**——以及 superpowers 的行为验证学说（**写技能 = 对流程文档做 TDD**），并结合 jero-pi/pi 宿主的实际机制落地。机器强制项标注 🔒。
 
-本规范只管**包内** `skills/` 目录。目标项目 `.pi/` 下的零代码扩展（领域模块、子代理、语言包）见 `docs/extension-guide.md`；其自动创建入口是 `jero-module-creator` / `jero-agent-creator` 技能与 `/module-creation` / `/agent-creation` 命令。
+本规范只管**包内** `skills/` 目录。目标项目 `.pi/` 下的零代码扩展：契约化模块（主路径，`module.json` 清单 + 安装验证）见 `docs/module-contract.md`；松散技能/子代理/语言包见 `docs/extension-guide.md`；自动创建入口是 `jero-module-creator` / `jero-agent-creator` 技能与 `/module-creation` / `/agent-creation` 命令。
 
 ## 1. 触发措辞双轨制
 

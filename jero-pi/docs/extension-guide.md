@@ -12,21 +12,22 @@
 
 ## 1. 扩展模型总览
 
-三层资产 + 一个数据文件，全部是 markdown 与数据，零代码：
-
 | 资产 | 放置位置 | 自动加载 | 自动使用 | 机制强度 |
 |---|---|---|---|---|
-| 技能 `SKILL.md` | 项目 `.pi/skills/<名>/` 等 | 机制保证（索引自动刷新） | 机制保证（编排器按 description 匹配注入） | 强 |
-| 子代理 `*.md` | 项目 `.pi/agents/` 等 | 机制保证（递归发现） | **提示层**（需技能路由指示或点名委派） | 中 |
+| **契约化模块** `.pi/modules/{token}/`（**主路径**） | 项目/全局模块根 | 机制保证（注册表 + 覆盖层自动刷新） | 机制保证（静态触发机器判定、八面注入档位、路由表委派审计） | 强（八查安装验证） |
+| 技能 `SKILL.md`（松散） | 项目 `.pi/skills/<名>/` 等 | 机制保证（索引自动刷新） | 机制保证（编排器按 description 匹配注入） | 强 |
+| 子代理 `*.md`（松散） | 项目 `.pi/agents/` 等 | 机制保证（递归发现） | **提示层**（需技能路由指示或点名委派） | 中 |
 | `openspec/config.yaml` | 目标项目（`/jero-sdd-init` 生成后手改） | — | 机制保证（Verification 契约优先读） | 强 |
 | 链 `*.chain.md` | 包内受管资产 | 受管安装 | 固定序列 | 零代码下**不可扩展** |
+
+契约化模块是推荐路径——一个目录一份 `module.json` 声明全部四个面，添加即机器接线（规范见 `docs/module-contract.md`）；本文其余章节管**松散资产**的编写，以及**所有路径共用**的放置机制与错误避免。同一词元不允许同时存在两种形态（安装验证的 no-loose-duplicate 查会拒绝——同一知识双源必漂移）。
 
 两个不变量决定了这套模型可以无限叠加：
 
 1. **核心流程不消费扩展资产本身**。评审权威走 git 对象、SDD 走状态机，读的是仓库事实与 config.yaml。叠加资产对既有流程是纯增量——最坏情况是新资产没被用上（静默失效），评审与 SDD 照常运行，不会崩。
 2. **发现是目录约定**。加第十个包和加第一个包走完全相同的机制，没有注册表要维护、没有清单要更新、不受 jero-pi 升级影响。
 
-代价的不对称要记住：**知识与命令是机制性自动生效的；专用子代理的委派是"技能指路、编排器照办"的半自动**（高概率、可审计，非编译期保证）。若某代理必须每次机制性必跑，唯一路径是进链——见第 8 节升级路径。
+代价的不对称要记住：**知识与命令是机制性自动生效的；专用子代理的委派是"技能指路、编排器照办"的半自动**（高概率、可审计，非编译期保证）。若某代理必须每次机制性必跑：先在模块清单声明 `pipeline.gate`（覆盖层响亮明示缺席，编排器不得静默跳过），真正安装的唯一路径是进链——见第 8 节升级路径。
 
 ---
 
@@ -99,7 +100,7 @@ SKILL.md 正文写一段显式路由，编排器消费注入的技能后照指�
 - 执行实现：直接使用 jero-worker（本技能注入的语言知识随之生效）。
 ```
 
-注意：这里引用的代理名（含包内 `jero-worker` 等）相当于你依赖的 API 面，写错一个字母委派就会静默不发生。第 7 节检查单第 4 步专门抓这个。
+契约化路径下这一段是 manifest 的 `routing` 数据——编译进覆盖层路由表供编排器求值（见 `docs/module-contract.md`）；本节的散文写法仅用于松散技能。两条路径的共同纪律不变：这里引用的代理名（含包内 `jero-worker` 等）相当于你依赖的 API 面，写错一个字母委派就会静默不发生。第 7 节检查单第 4 步专门抓这个。
 
 ### 3.5 自动使用的完整链路（机制保证的部分）
 
@@ -152,18 +153,18 @@ tools:
 
 ## 5. 语言包模式（完整模板）
 
-自动创建整套模块说一句"创建 {领域} 模块"或跑 `/module-creation`——`jero-module-creator` 会按 `assets/interview.md` 访谈后生成本节全部内容并跑第 7 节冒烟检查。本节是手工创建与审阅产出时的参考结构。一个语言包 = 自包含目录，全部是 markdown 与数据。以 Godot/C# 为例：
+自动创建整套模块说一句"创建 {领域} 模块"或跑 `/module-creation`——`jero-module-creator` 会按 `assets/interview.md` 访谈后生成契约化模块并跑 `/jero-module-verify` 安装验证。手工创建时以 `docs/module-contract.md` 为规范、`skills/jero-module-creator/assets/` 的金样（`module-manifest.template.json` + `module-entry.template.md`）为起点。一个语言包 = 一个自包含目录：
 
 ```
-.pi/
-├─ skills/
-│  └─ godot/               # 第 3 节结构
-└─ agents/
-   ├─ godot-reviewer.md    # 只读领域评审
-   └─ godot-designer.md    # 设计提案角色
+.pi/modules/{token}/
+├─ module.json               # 契约清单：触发/知识/角色/接线/路由/配置
+├─ knowledge/
+│  └─ SKILL.md               # L1 入口（≤60 行，注册表可见）
+└─ references/               # L2 深度知识（惯例/命令/评审清单/设计知识）
+.pi/agents/{token}-reviewer.md   # 角色按需（须在 manifest roles 中声明）
 ```
 
-外加一次性数据动作：跑 `/jero-sdd-init`，手改生成的 `openspec/config.yaml`，把 `rules.apply.test_command` / `rules.verify.test_command` 钉成真实命令（Godot/C# 场景通常是 `dotnet test`——前提是把游戏逻辑与 Node 解耦成纯 C# 类库，这条设计约束本身写进技能）。Verification 契约的读取顺序是：缓存能力 → `openspec/config.yaml` → 兜底探测，所以这份手改数据是机制层钉住的，评审与 SDD 执行共享同一真相。
+外加一次性数据动作：跑 `/jero-sdd-init`，把测试命令钉进 `openspec/config.yaml` **并写进清单 `config.testCommand`**（后者的优先级更高——它是 Strict TDD 转发取值链的第一级：覆盖层 → config.yaml → 兜底探测，三方共享同一真相）。
 
 ### 5.1 各语言现状（决定包内要补偿什么）
 
@@ -227,6 +228,8 @@ tools:
 
 ## 7. 冒烟检查单（每加一个包 5 分钟）
 
+**第 0 步（契约化模块）**：跑 `/jero-module-verify`——八查全绿 + `.atl/module-overlay.md` 生成，就是下面第 1–4 步的机器版（触发命中/路由解析/防遮蔽/entry 行数全部自动钉住），只需再人工确认第 5 步无重名。以下五步仅松散资产需要人肉执行：
+
 1. **技能计数**：会话启动看启动通知的技能计数是否 +N。没加上 = frontmatter 坏了。
 2. **索引在列**：打开 `.atl/skill-registry.md`，确认新技能在列且 Trigger 列含你的门控词。不在 = 解析失败。
 3. **匹配注入**：问一句"这个仓库是什么技术栈"，确认编排器注入了新技能（子代理回报 `paths-injected`）。不注入 = description 写偏。
@@ -241,7 +244,7 @@ tools:
 
 | 信号 | 动作 | 改动面 |
 |---|---|---|
-| 某评审代理必须**每次**机制性必跑，提示层偶发不委派不可接受 | 进包加链：`assets/chains/` 新链文件 + `ASSET_OWNER_BY_KEY`（`lib/sdd-preflight-assets.ts`）加一行 | 一行数据表 + 资产文件；跑 `pnpm run test:review` 等（见 `AGENTS.md` 验证回路） |
+| 某评审代理必须**每次**机制性必跑 | 先在模块清单声明 `pipeline.gate`（覆盖层响亮明示缺席，编排器不得静默跳过），再进包加链真正安装：`assets/chains/` 新链文件 + `ASSET_OWNER_BY_KEY`（`lib/sdd-preflight-assets.ts`）加一行 | 一行数据表 + 资产文件；跑 `pnpm run test:review` 等（见 `AGENTS.md` 验证回路） |
 | 多个语言项目重复使用，子代理验证命令经常漂移 | P0 探测器：`IGNORED_DIRS` 补引擎缓存目录 + 新增 `detectDotnet`（`lib/sdd-project-detect.ts`） | 约 20 行；夹具放 `sdd-project-detect-shared.ts`（铁律 2） |
 | 风险分层把 `.csproj/.sln` 全归默认档影响排期 | P1 风险正则：`lib/authority/review-risk.ts` 路径 token 补 .NET 生态 | 数行 |
 | 包内代理的 JS 测试惯例提示质量不足 | P2 提示词：`assets/support/strict-tdd.md` 等补语言示例 | 资产文件 |
@@ -255,16 +258,19 @@ tools:
 
 | 文件 | 职责 |
 |---|---|
-| `lib/skill-registry-engine.ts` | 技能根扫描（项目 17 + 全局 19）、索引渲染、缓存与监视 |
+| `lib/skill-registry-engine.ts` | 技能根扫描（项目 17 + 全局 19 + 项目/全局模块知识根）、索引渲染、缓存与监视 |
 | `extensions/skill-registry.ts` | `session_start` 自动刷新 + `/skill-registry:refresh` 命令 |
-| `assets/orchestrator-skills.md` | 编排器技能注册协议、`## Skills to load before work` 注入、`skill_resolution` 审计 |
-| `assets/orchestrator-delegation.md` | 编排器委托细则 |
+| `assets/orchestrator-skills.md` | 编排器技能注册协议（含第 5 步：按覆盖层档位收窄注入）、`## Skills to load before work` 注入、`skill_resolution` 审计 |
+| `assets/orchestrator-delegation.md` | 编排器委托细则与「自然语言路由单」（R1–R4） |
 | `lib/jero-ai-model-config.ts` | 代理递归发现（排除 `.chain.md` 与 `skills/`） |
 | `lib/agents-config.ts` | 代理 frontmatter 解析、全局→项目发现顺序与同名覆盖 |
 | `lib/sdd-preflight-assets.ts` | 包内受管资产清单（`ASSET_OWNER_BY_KEY`）、锁与安装 |
 | `lib/sdd-project-detect.ts` | 栈/命令探测（Node/Go/Rust/Python/泛型/Makefile）、`IGNORED_DIRS` |
 | `assets/support/strict-tdd.md` | Verification 契约：缓存能力 → config.yaml → 兜底探测 |
 | `docs/skill-authoring.md` | 包内技能写作规范（触发双轨制、前缀棘轮、行为验证） |
-| `skills/jero-module-creator/` | 领域模块脚手架技能：访谈清单、模块技能模板、config 钉住模板 |
+| `docs/module-contract.md` | 契约化模块的规范单一事实源（清单字段/编排面/八查/保证谱） |
+| `lib/module-contract.ts` · `lib/module-trigger-compiler.ts` | 模块契约执行面：清单解析/八查/静态触发编译/覆盖层渲染 |
+| `extensions/module-verify.ts` | `/jero-module-verify` 安装验证 + 覆盖层刷新与模块根监视 |
+| `skills/jero-module-creator/` | 领域模块脚手架技能：访谈清单、契约金样、config 钉住模板 |
 | `skills/jero-agent-creator/` | 单个子代理创建技能：reviewer/designer 两类代理模板 |
 | `prompts/module-creation.md` · `prompts/agent-creation.md` | 显式创建入口（薄转交，不复述流程） |

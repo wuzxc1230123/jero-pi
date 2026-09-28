@@ -25,6 +25,10 @@ on-path 只在"本候选评审已关闭（closed）"时成立；评审被拒绝�
   tasks → apply → verify → sync）。阶段引擎的 `next_recommended` 是确定性的，
   不靠模型自觉；`/jero-sdd-continue` 推进时有工件收缩守卫兜底。
 
+领域能力（Go/Godot 等语言包）经能力模块自动生效：知识按编排面注入各阶段代理，
+测试命令走取值链（模块覆盖层 → `openspec/config.yaml` → 探测兜底）——选档时
+不需要为"换个语言"多操心任何事，装模块见 `docs/module-contract.md`。
+
 判断口诀：**如果做错了需要"考古"才能恢复，就用 SDD；否则评审轴就够了。**
 
 ## 精益轴：管输出的量，不管必要性

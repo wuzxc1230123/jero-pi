@@ -11,6 +11,7 @@
 - **SDD/OpenSpec**：`/jero-sdd-init` 探测技术栈并落配置；确定性阶段状态引擎（proposal/spec/design/tasks/apply/verify/sync/archive）；严格 TDD 证据（RED/GREEN/TRIANGULATE/REFACTOR）。
 - **持久记忆**：`mem_save` / `mem_read` / `mem_list` / `mem_search`，topic 键 Markdown 文件 + 轻量索引，零数据库、零原生模块。
 - **精益纪律**（借自 ponytail 的"懒惰资深工程师"）：七级梯子写入节制 + `/jero:lean` 分档（off/lite/full/ultra，会话条目持久化，`stop lean` 一句话关闭）+ `jero:` 简化标记与 `/jero:debt` 债务台账 + `jero-lean-review` 独立精益评审。纯提示词层增强，`off` 完全还原历史行为。
+- **能力模块契约**（`jero.module-contract/v1`）：目标项目的领域扩展（Go/Godot/Unity…）一个目录一份 `module.json` 声明触发/知识/角色/接线——静态触发机器判定、安装验证八查、派发覆盖层自动接线，添加即生效；规范见 [docs/module-contract.md](docs/module-contract.md)。
 - **Shell 层**：底部状态栏（git / 模型 / 上下文窗口 / 会话成本）、侧栏、变更小部件与 diff 视图、订阅用量窗口、主题（Jero / Jero-Cute / Jero-Sexy）。
 
 ## 安装与使用

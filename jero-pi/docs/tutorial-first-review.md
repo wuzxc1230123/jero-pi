@@ -88,6 +88,10 @@ mem_search "关键词"                           ←下次会话先搜再重推
 
 ## 6. 下一步
 
+- **给你的领域装一个能力模块**（Go/Godot/Unity…）：说一句"创建 {领域} 模块"
+  或跑 `/module-creation`，然后 `/jero-module-verify` 绿灯——之后该领域的
+  惯例知识自动注入所有干活的角色，领域评审代理自动进评审追加名单。
+  规范见 `docs/module-contract.md`。
 - `/jero:lean status` 看当前精益档位；`/jero:lean ultra` 收紧输出纪律，
   "stop lean" 一句话关闭。
 - 高危变更可了解 Judgment Day（显式触发的双盲终审）与 RDD 开关
