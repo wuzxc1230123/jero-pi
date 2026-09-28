@@ -5,6 +5,14 @@ jero-pi 尚未发布到 npm（版本停在 0.1.0 基线），本文件自重构�
 
 ## [Unreleased]
 
+### 伴生插件撞名消解批（2026-09-28）
+
+**修复真实宿主启动阻断：`pi-pretty` 与 `pi-hashline-edit-pro` 都注册 `read`/`grep`，宿主（peer 0.85.1）对扩展间同名工具是硬冲突，按发布配置启动会话直接失败（`Tool "read" conflicts`）。** 单测与 runtime harness 用假宿主加载不到这一层；发现路径：隔离 Pi home `pi install` → 裸 `pi -p` 启动实测。上游 pi-pretty 最新 0.6.29 仍默认注册 `read`，升级钉版不解决。
+
+- **撞名消解内置**：新增 `lib/pretty-disable-tools.ts`（纯合并助手，typed 入参不触 `process.env`），`extensions/jero-ai.ts` 模块顶层（`pi.extensions` 数组中 `./extensions` 先于 node_modules 插件加载）把 `read,grep` 合并进 pi-pretty 自有开关 `PRETTY_DISABLE_TOOLS`，让哈希锚定版本独占这两个名字；操作者已有的跳过项保留并去重。
+- **文档拨正**：`dependency-exit-plan.md` pi-pretty 行声称的 `JERO_PI_PRETTY=0` 开关在代码中不存在（全仓 grep 仅命中文档本身），改为如实描述内置消解与操作者级全关法（`PRETTY_DISABLE_TOOLS=read,grep,bash`）。
+- **验证**：真实宿主裸启动（无手工 env）从撞名失败变为直达 provider 鉴权（隔离环境预期终点）；新增 `tests/pretty-disable-tools.test.ts` 3 例。
+
 ### gentle-ai 依赖切除批（2026-09-27：第十一批）
 
 **切除对 `gentle-ai` 原生评审 CLI（Go 二进制）的运行时依赖，评审全面落于自实现。** 关键事实：进程内权威适配器（`lib/jero-authority-cli.ts`）本就是生产唯一默认 CLI（评审全操作——START/STATUS/同意仪式/修正捕获/acknowledge/维护四联/风险评估/SDD 对——进程内服务），二进制仅在显式提供 `providerExecutable` 的测试接缝里才会被 spawn。本批把"自实现"落实为**自命名与自存储**：

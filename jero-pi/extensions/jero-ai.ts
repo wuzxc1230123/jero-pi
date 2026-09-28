@@ -50,6 +50,7 @@ import { applyJeroBootstrap } from "../lib/jero-ai-bootstrap.ts";
 import { applySddBreadcrumb, cachedResolveSddStatus, renderSddBreadcrumb, sddBreadcrumbEnabled } from "../lib/jero-ai-sdd-breadcrumb.ts";
 import { applySpecIndex, specIndexEnabled, specIndexTextFor } from "../lib/jero-ai-spec-index.ts";
 import { companionDependencyDiagnosticLines } from "../lib/jero-ai-companion-deps.ts";
+import { mergePrettyDisableTools } from "../lib/pretty-disable-tools.ts";
 import { evaluateSddArtifactShrink, recordSddArtifactWatermarks, renderSddShrinkReport } from "../lib/jero-ai-sdd-guard.ts";
 import { buildJeroPrompt, loadReviewContractPromptFragment } from "../lib/jero-ai-prompts.ts";
 import { setGuardrailsProcessEnv } from "../lib/jero-ai-guardrails.ts";
@@ -82,6 +83,11 @@ import { PARENT_NOTIFICATION_TOOL, SUBAGENT_RUN_TOOL } from "../lib/agents-proto
 import { sessionEventReason } from "../lib/session-event-reason.ts";
 import { renderAgentEndReviewPreflightMessage, REVIEW_PREFLIGHT_TYPE } from "../lib/jero-ai-review-select.ts";
 import { type JeroRuntimeDependencies, resolveControllerSddStatus, resolveStartupControllerSddStatus } from "../lib/jero-ai-testing-exports.ts";
+
+// 宿主按 pi.extensions 顺序先加载本目录再加载 node_modules 插件；在 pi-pretty
+// 注册前合并其跳过名单，消解与 pi-hashline-edit-pro 的 read/grep 同名冲突
+// （见 lib/pretty-disable-tools.ts）。
+process.env.PRETTY_DISABLE_TOOLS = mergePrettyDisableTools(process.env.PRETTY_DISABLE_TOOLS);
 
 export function createJeroAiExtension(dependencies: JeroRuntimeDependencies = {}): (pi: ExtensionAPI) => void {
 	return createJeroAiExtensionForTesting(dependencies);

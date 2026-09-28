@@ -16,7 +16,7 @@ jero-pi 的 G4/D5 决策把 9 个生态插件升级为**强制依赖**（精确�
 
 | 依赖（钉版） | 承接的能力 | 失效信号 | 退出路径 | 退出成本 |
 |---|---|---|---|---|
-| `@heyhuynhgiabuu/pi-pretty` 0.6.14 | 工具输出渲染全权（替代自研 quiet-tools 重注册 + 包装层） | 渲染错乱、注册冲突复发、停更 | 退路 A：`JERO_PI_PRETTY=0` 关闭（已有开关，回到宿主默认渲染）；退路 B：从 git 历史恢复 quiet-tools 的"权威生命周期卡"自渲染部分，工具输出交给宿主默认 | 低——开关已存在 |
+| `@heyhuynhgiabuu/pi-pretty` 0.6.14 | 工具输出渲染全权（替代自研 quiet-tools 重注册 + 包装层） | 渲染错乱、注册冲突复发、停更 | 撞名消解已内置：extensions 装配层在 pi-pretty 注册前合并其自有开关 `PRETTY_DISABLE_TOOLS=read,grep`（read/grep 交给 pi-hashline-edit-pro，否则两者同名注册会让宿主启动直接失败，见 `lib/pretty-disable-tools.ts`）；如需整个退回宿主默认渲染，操作者设 `PRETTY_DISABLE_TOOLS=read,grep,bash`；退路 B：从 git 历史恢复 quiet-tools 的"权威生命周期卡"自渲染部分，工具输出交给宿主默认 | 低——合并逻辑包内自带，操作者零配置 |
 | `@juicesharp/rpiv-ask-user-question` 2.10.1 | 封闭选项询问工具（替代自研 ask-user-choice） | 工具缺席/签名变更/停更 | 从 git 历史（jero-todo 退役同批次）恢复自研 `ask-user-choice.ts`；评审同意 UI 本就是独立组件，不受影响 | 中——实现已在历史中，需恢复 + 测试改写 |
 | `@juicesharp/rpiv-todo` 2.10.1 | todo 工具（Q1 裁决：jero-todo 退役换此件） | 同上 | 从 git 历史恢复 jero-todo（退役于同一裁决，恢复路径对称） | 中 |
 | `billion-context-pi` 0.1.75 | 模型驱动的上下文管理（压缩/整理） | 压缩质量劣化、与宿主 compact 冲突 | 直接移除：宿主 Pi 自带 compaction；jero-pi 的记忆工具（`mem_*`）已承载跨压缩的状态保全，不构成硬依赖 | 低 |
