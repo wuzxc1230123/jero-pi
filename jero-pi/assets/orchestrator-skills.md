@@ -10,7 +10,8 @@
 2. 把任务上下文与目标文件对照 `Trigger / description` 列匹配。
 3. 只把匹配的 `Path` 值经 `## Skills to load before work` 传给子代理。
 4. 告知子代理在读、写、评审、测试或创建产物之前先读这些确切的 `SKILL.md` 文件。
-5. 若注册表缺失，继续但说明项目专属技能路径不可用。
+5. 若存在 `.atl/module-overlay.md`，按其各面注入档位收窄：`manifest-only` 面只提示模块存在与触发词（不整注入 entry）；`entry` 面注入该模块知识入口；覆盖层路由表声明的追加角色按 `delegate-role`/`suggest-role` 委派，委派结果以 `module_resolution`（`delegated` / `skipped:<原因>` / `name-unresolved`）回报。
+6. 若注册表缺失，继续但说明项目专属技能路径不可用。
 
 子代理应收到精确的已索引路径，不应自行重新发现注册表。
 

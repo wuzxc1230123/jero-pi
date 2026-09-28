@@ -182,7 +182,10 @@ artifacts
 next_recommended
 risks
 skill_resolution
+module_resolution
 ```
+
+`module_resolution` 报告能力模块的消费结果：`none`（无活动模块或本面未接线）、`paths-injected`（按覆盖层档位注入）、`delegated: {角色}`（按覆盖层路由表完成委派）、`skipped: {原因}` 或 `name-unresolved`（路由目标不可解析——安装验证遗漏或资产被移动，按编排缺口纠正）。
 
 父会话应综合这些封套，除非确有必要，不粘贴冗长的原始报告。
 
@@ -196,7 +199,7 @@ Every installed SDD phase executor agent (`assets/agents/sdd-*.md`) carries the 
 
 按结果契约检查每个阶段结果：
 
-- **契约符合：**阶段返回了 `status`、`executive_summary`、`artifacts`、`next_recommended`、`risks` 与 `skill_resolution`，且 `status` 表示成功而非 partial、failed 或 blocked。
+- **契约符合：**阶段返回了 `status`、`executive_summary`、`artifacts`、`next_recommended`、`risks`、`skill_resolution` 与 `module_resolution`，且 `status` 表示成功而非 partial、failed 或 blocked。
 - **产物存在：**每个声明的产物在活动后端存在且可读。memory 支撑的流程用可用的记忆工具检索主题；OpenSpec/文件支撑的流程读取声明的路径。成功的阶段却没有可检索的产物，即未过门。
 - **无幻觉引用：**抽查阶段声称创建或使用过的具体文件路径、符号、命令与产物。无法解析的被引用路径或产物，即未过门。
 - **无范围漂移：**输出必须与其输入及依赖图保持一致：spec 保持在提案范围之内，design 回答提案，tasks 覆盖 spec 与 design，apply 实现 tasks，verify 依 spec 检查实现，sync 在归档之前反映已验证的状态。
@@ -286,14 +289,15 @@ path/to/authorized-file.ts
 2. 按上方的模型分配门确认其模型路由。
 3. 每会话一次从注册表解析匹配的技能路径，并在 `## Skills to load before work` 之下传递精确的 `SKILL.md` 路径。
 4. 若被委托结果把 `skill_resolution` 报告为 `fallback-registry`、`fallback-path` 或 `none`，在后续委托之前重读注册表。
+5. 若被委托结果把 `module_resolution.delegation` 报告为 `name-unresolved`，对照 `.atl/module-overlay.md` 的路由表核对目标角色，并在后续委托中纠正；`skipped` 值作为信息报告，不设门。
 
 **Key Learnings closing（通用委托）：**委托给通用代理（`jero-explore`、`jero-worker`、`jero-verify`、scout/worker 角色或原生 `Agent` 回退）时，精确按 `assets/orchestrator-delegation.md` 中 "Key Learnings closing block" 之下的规则原文执行。该文件是该规则的唯一陈述；不要在此重述或转述。SDD 阶段启动提示无需此类注入：每个已安装的 SDD 阶段执行器已在其自身提示中携带有效契约（见上方 "Key Learnings closing block (routing)"）。
 
 ## Strict TDD 转发
 
-对 `sdd-apply` 与 `sdd-verify`，存在时读取 `openspec/config.yaml`。
+对 `sdd-apply` 与 `sdd-verify`，测试命令取值链是：`.atl/module-overlay.md` 的 Strict TDD 命令（能力模块 `config.testCommand` 的编译产物）→ `openspec/config.yaml`（存在时）→ 兜底探测。
 
-若它声明 strict TDD 与测试命令，在阶段提示中包含一条不可协商的指令：
+取值链上任一层给出 strict TDD 与测试命令时，在阶段提示中包含一条不可协商的指令：
 
 ```text
 STRICT TDD MODE IS ACTIVE. Test runner: <command>. Follow RED, GREEN, TRIANGULATE, REFACTOR. Record evidence.

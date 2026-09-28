@@ -6,7 +6,7 @@
 
 - 仓库根 = `D:\jero-pi`；npm 包本体在 `jero-pi/` 子目录（所有命令在包目录内执行）。
 - `JERO-PI-DESIGN.md`：重构设计文档（决策与迁移表）；`_tools/`：实现期的分阶段分析文档——**lib 代码注释中引用的 `_tools/*.md` 相对仓库根解析**（包目录内没有这个目录）。
-- 包内：`extensions/`（Pi 注册层，8 文件）· `lib/`（领域层）· `lib/authority/`（进程内评审权威，信任边界核心）· `assets/`（24 代理 + 4 链 + orchestrator 文档，被安装/转录/渲染的活资产）· `skills/` · `prompts/` · `docs/` · `schemas/` · `scripts/`（质量门）· `tests/` · `runtime/`（生成物）· `benchmarks/`（不随包发布）。
+- 包内：`extensions/`（Pi 注册层，9 文件）· `lib/`（领域层；`lib/module-contract.ts` + `lib/module-trigger-compiler.ts` 是能力模块契约的执行面）· `lib/authority/`（进程内评审权威，信任边界核心）· `assets/`（24 代理 + 4 链 + orchestrator 文档，被安装/转录/渲染的活资产）· `skills/` · `prompts/` · `docs/` · `schemas/`（含 `module.schema.json`，与 lib 常量由门钉零漂移）· `scripts/`（质量门）· `tests/` · `runtime/`（生成物）· `benchmarks/`（不随包发布）。
 
 ## 三条铁律
 
@@ -21,7 +21,7 @@
 - 编排/子代理：`pnpm run test:agents`；评审外围：`pnpm run test:review`；SDD：`pnpm run test:sdd`。
 - 新增/改名斜杠命令、工具、技能后：`pnpm run fix:docs-manifest`（再生成 `docs/jero-reference.md` 的 manifest 块）。
 - 全量：`pnpm test`（全部测试文件并发 12 + 顺序 harness）。慢文件定位：`pnpm run test:timed`（单文件预算 300s）。
-- 质量门（被 `prepack` 串联，可单独跑）：`check:test-quality`（5 条反模式，含分片互 import + `// allow-test-rule:<name>` 逃逸阀）· `check:empty-catch`（空 catch 必须带注释或语句，`// allow-empty-catch` 逃逸阀）· `check:authority-boundary` · `check:docs-manifest` · `check:review-naming` · `verify-package-files.mjs`（必需文件 + 68 个黄金向量字节钉住）。
+- 质量门（被 `prepack` 串联，可单独跑）：`check:test-quality`（5 条反模式，含分片互 import + `// allow-test-rule:<name>` 逃逸阀）· `check:empty-catch`（空 catch 必须带注释或语句，`// allow-empty-catch` 逃逸阀）· `check:authority-boundary` · `check:docs-manifest` · `check:review-naming` · `check:module-contract`（模块 schema 与 lib 常量零漂移 + 创建器金样绿灯）· `verify-package-files.mjs`（必需文件 + 68 个黄金向量字节钉住）。
 
 ## 已知约束
 
@@ -38,4 +38,4 @@
 
 ## 入口文档链
 
-`jero-pi/README.md` → `docs/jero-reference.md`（架构/命令/工具/生命周期总表）→ `docs/tutorial-first-review.md`（第一次评审最小闭环）· `docs/how-to-choose-discipline.md`（评审/SDD/精益选档）· `docs/extension-guide.md`（零代码扩展：技能/子代理/语言包，自动创建走 `/module-creation` `/agent-creation`）· `docs/dependency-exit-plan.md`（9 个伴生依赖退出预案）。运行时技能路由表：`skills/jero-skills/SKILL.md`。
+`jero-pi/README.md` → `docs/jero-reference.md`（架构/命令/工具/生命周期总表）→ `docs/tutorial-first-review.md`（第一次评审最小闭环）· `docs/how-to-choose-discipline.md`（评审/SDD/精益选档）· `docs/extension-guide.md`（零代码扩展：技能/子代理/语言包，自动创建走 `/module-creation` `/agent-creation`；机器验证的契约化模块见 `docs/module-contract.md` + `/jero-module-verify`）· `docs/dependency-exit-plan.md`（9 个伴生依赖退出预案）。运行时技能路由表：`skills/jero-skills/SKILL.md`。

@@ -77,7 +77,7 @@ el Jero 是生态配置器与 harness 层。安装后，用户不应记忆工作
 
 ## 技能注册协议
 
-父会话每会话在 `## Skills to load before work` 下一次性解析技能路径；子代理先读这些 `SKILL.md` 文件，路径不可用则报告。回退语义（`paths-injected`/`fallback-registry`/`fallback-path`/`none`）与 SDD 执行器区别：`orchestrator-skills.md`。
+父会话每会话在 `## Skills to load before work` 下一次性解析技能路径；子代理先读这些 `SKILL.md` 文件，路径不可用则报告。回退语义（`paths-injected`/`fallback-registry`/`fallback-path`/`none`）与 SDD 执行器区别：`orchestrator-skills.md`。存在 `.atl/module-overlay.md` 时，其各面注入档位与角色路由表是对注册表匹配的机器收窄——先档位后注入，委派结果以 `module_resolution` 回报。
 
 ## 意图驱动技能发现
 

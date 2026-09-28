@@ -101,6 +101,32 @@ function projectSkillDirs(cwd: string): string[] {
 	];
 }
 
+// 能力模块（jero.module-contract/v1）的知识入口：`.pi/modules/{token}/knowledge/SKILL.md`。
+// 把模块目录本身当发现根，findSkillFiles 的 {root}/{dir}/SKILL.md 探测天然命中
+// knowledge/SKILL.md——模块知识与松散技能共用同一注册表，宿主触发（S1）与
+// 编排器注册表注入（S2–S6）无需任何协议改动即可消费模块知识。
+async function moduleSkillDirs(cwd: string): Promise<string[]> {
+	return moduleKnowledgeRoots(join(cwd, ".pi", "modules"));
+}
+
+// 全局模块根（~/.pi/agent/modules）——与技能/代理的全局发现对称。
+async function globalModuleSkillDirs(): Promise<string[]> {
+	return moduleKnowledgeRoots(join(homedir(), ".pi", "agent", "modules"));
+}
+
+async function moduleKnowledgeRoots(modulesRoot: string): Promise<string[]> {
+	if (!(await pathExists(modulesRoot))) return [];
+	try {
+		const entries = await readdir(modulesRoot, { withFileTypes: true });
+		return entries
+			.filter((entry) => entry.isDirectory())
+			.map((entry) => join(modulesRoot, entry.name));
+	} catch {
+		// 模块根不可读时按无模块处理；module-verify 命令会给出显式失败。
+		return [];
+	}
+}
+
 async function findSkillFiles(root: string): Promise<string[]> {
 	if (!(await pathExists(root))) return [];
 	let entries;
@@ -384,7 +410,9 @@ export async function regenerateRegistry(
 ): Promise<RegenResult> {
 	const existingDirs = await uniqueExistingDirs([
 		...projectSkillDirs(cwd),
+		...(await moduleSkillDirs(cwd)),
 		...userSkillDirs(),
+		...(await globalModuleSkillDirs()),
 	]);
 	const files: string[] = [];
 	for (const dir of existingDirs) {
@@ -505,7 +533,9 @@ export async function startSkillRegistryWatcher(
 	watchedCwds.add(cwd);
 	const dirs = await uniqueExistingDirs([
 		...projectSkillDirs(cwd),
+		...(await moduleSkillDirs(cwd)),
 		...userSkillDirs(),
+		...(await globalModuleSkillDirs()),
 	]);
 	let timer: ReturnType<typeof setTimeout> | undefined;
 	const refresh = () => {

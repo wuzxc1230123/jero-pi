@@ -1,0 +1,56 @@
+{
+	"schema": "jero.module-contract/v1",
+	"token": "godot",
+	"version": "1.0.0",
+	"description": "Godot 2D/3D 游戏开发：场景/节点/信号惯例、引擎解耦测试策略、领域评审关注点。",
+	"triggers": {
+		"files": ["project.godot", "**/*.tscn", "**/*.tres"],
+		"intents": ["Godot", "场景", "节点", "信号", "横版"]
+	},
+	"knowledge": {
+		"entry": "knowledge/SKILL.md",
+		"references": ["references/*.md"]
+	},
+	"roles": [
+		{
+			"name": "godot-reviewer",
+			"isolation": ["adversarial-eyes", "least-privilege"],
+			"permission": "read-only",
+			"model": "balanced",
+			"output": "findings-report"
+		},
+		{
+			"name": "godot-designer",
+			"isolation": ["least-privilege"],
+			"permission": "read-only",
+			"model": "deep-reasoning",
+			"output": "design-proposal"
+		}
+	],
+	"bindings": {
+		"inline": { "inject": "entry" },
+		"explore": { "inject": "manifest-only" },
+		"worker": { "inject": "entry" },
+		"verify": { "inject": "entry" },
+		"sdd-planning": { "inject": "entry" },
+		"sdd-execution": { "inject": "entry" },
+		"review": { "inject": "entry", "appendRoles": ["godot-reviewer"] },
+		"answer": { "inject": "entry" }
+	},
+	"routing": [
+		{
+			"when": { "surface": "review" },
+			"action": "delegate-role",
+			"target": "godot-reviewer"
+		},
+		{
+			"when": { "slip": { "utteranceType": "design-request", "crossModule": true } },
+			"action": "suggest-role",
+			"target": "godot-designer"
+		}
+	],
+	"config": {
+		"testCommand": "dotnet test",
+		"gitignore": [".godot/"]
+	}
+}

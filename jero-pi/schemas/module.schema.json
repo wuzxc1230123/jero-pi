@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "jero.module-contract/v1",
+  "description": "Capability module manifest for jero-pi orchestration surfaces. One module = one directory with module.json declaring triggers (static globs judged by machine), knowledge (progressive disclosure), roles (isolation-justified), bindings (which orchestrator dispatch surfaces consume it), routing (structured delegation over routing-slip fields) and config (test command pinning). Normative spec: docs/module-contract.md. The enums in $defs are drift-checked against lib/module-contract.ts by scripts/check-module-contract.mjs — edit both or neither.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "token", "version", "triggers", "knowledge", "roles", "bindings"],
+  "properties": {
+    "schema": {"const": "jero.module-contract/v1"},
+    "token": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,23}$", "description": "One module one domain token. Must not start with package prefixes jero-/review-/sdd-/jd-."},
+    "version": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+([-+][0-9A-Za-z.-]+)?$"},
+    "description": {"type": "string", "maxLength": 200},
+    "triggers": {"$ref": "#/$defs/triggerSpec"},
+    "knowledge": {"$ref": "#/$defs/knowledgeSpec"},
+    "roles": {"type": "array", "items": {"$ref": "#/$defs/role"}},
+    "bindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "inline": {"$ref": "#/$defs/binding"},
+        "explore": {"$ref": "#/$defs/binding"},
+        "worker": {"$ref": "#/$defs/binding"},
+        "verify": {"$ref": "#/$defs/binding"},
+        "sdd-planning": {"$ref": "#/$defs/binding"},
+        "sdd-execution": {"$ref": "#/$defs/binding"},
+        "review": {"$ref": "#/$defs/binding"},
+        "answer": {"$ref": "#/$defs/binding"}
+      }
+    },
+    "routing": {"type": "array", "items": {"$ref": "#/$defs/routingRule"}},
+    "config": {"$ref": "#/$defs/configSpec"},
+    "pipeline": {"$ref": "#/$defs/pipelineSpec"}
+  },
+  "$defs": {
+    "surface": {"enum": ["inline", "explore", "worker", "verify", "sdd-planning", "sdd-execution", "review", "answer"]},
+    "injectLevel": {"enum": ["manifest-only", "entry"]},
+    "isolationReason": {"enum": ["adversarial-eyes", "least-privilege", "context-economy", "parallel-fanout"]},
+    "modelTier": {"enum": ["fast", "balanced", "deep-reasoning"]},
+    "permissionPreset": {"enum": ["read-only", "scan", "write-bounded"]},
+    "routingAction": {"enum": ["suggest-role", "delegate-role"]},
+    "slipUtteranceType": {"enum": ["qa", "micro-edit", "implement", "explore", "verify", "design-request", "review", "incident", "continue"]},
+    "slipDeliverable": {"enum": ["decision", "document", "plan-then-code"]},
+    "slipIrreversibility": {"enum": ["reversible", "recoverable", "archaeology"]},
+    "triggerSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["files"],
+      "properties": {
+        "files": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}, "description": "Static globs matched against the repo tree by machine. '*' stays within a segment, '**' crosses directories, '?' is one char."},
+        "intents": {"type": "array", "items": {"type": "string", "minLength": 1}, "description": "Semantic fallback words only; every hit is logged."}
+      }
+    },
+    "knowledgeSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entry"],
+      "properties": {
+        "entry": {"type": "string", "pattern": "^[^].*\\.md$|^\\.\\.?\\/.*\\.md$", "description": "Module-relative .md path; linted to <=60 lines (lib/module-contract.ts MAX_ENTRY_LINES) when any binding injects it."},
+        "references": {"type": "array", "items": {"type": "string", "minLength": 1}, "description": "Deep-knowledge globs (L2); read on demand by subagents, never injected wholesale."}
+      }
+    },
+    "role": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "isolation", "permission", "model", "output"],
+      "properties": {
+        "name": {"type": "string", "pattern": "^[a-z][a-z0-9-]*-[a-z][a-z0-9-]*$", "description": "Must be {token}-{role}; must not collide with builtin agent names."},
+        "isolation": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/isolationReason"}, "description": "Why this role deserves an execution context. Empty isolation = knowledge intent; put it in knowledge instead. Install verification rejects."},
+        "permission": {"$ref": "#/$defs/permissionPreset"},
+        "model": {"$ref": "#/$defs/modelTier"},
+        "output": {"type": "string", "minLength": 1, "description": "Output contract, e.g. findings-report / design-proposal."}
+      }
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["inject"],
+      "properties": {
+        "inject": {"$ref": "#/$defs/injectLevel"},
+        "appendRoles": {"type": "array", "items": {"type": "string", "minLength": 1}, "description": "Roles this surface should additionally delegate (review surface appends domain reviewers)."}
+      }
+    },
+    "routingRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["when", "action", "target"],
+      "properties": {
+        "when": {
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "maxProperties": 1,
+          "properties": {
+            "surface": {"$ref": "#/$defs/surface"},
+            "slip": {
+              "type": "object",
+              "additionalProperties": false,
+              "minProperties": 1,
+              "properties": {
+                "utteranceType": {"$ref": "#/$defs/slipUtteranceType"},
+                "crossModule": {"type": "boolean"},
+                "deliverable": {"$ref": "#/$defs/slipDeliverable"},
+                "irreversibility": {"$ref": "#/$defs/slipIrreversibility"},
+                "triggerHit": {"type": "boolean"}
+              }
+            }
+          }
+        },
+        "action": {"$ref": "#/$defs/routingAction"},
+        "target": {"type": "string", "minLength": 1, "description": "Must resolve to a role of this module; re-routing builtin agents is the orchestrator's job."}
+      }
+    },
+    "configSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "testCommand": {"type": "string", "minLength": 1, "description": "Pinned test command; becomes the Strict TDD forward for sdd-apply/sdd-verify. Prove it runs in the target project before pinning."},
+        "gitignore": {"type": "array", "items": {"type": "string", "minLength": 1}, "description": "Repo hygiene entries (e.g. engine cache dirs) the module requires."}
+      }
+    },
+    "pipelineSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gate"],
+      "properties": {
+        "gate": {"type": "string", "minLength": 1, "description": "C-level hard guarantee: a role that must run mechanically. The only installation path is a package chain; declaring it here makes its absence loud (overlay states it, the orchestrator must not silently skip)."}
+      }
+    }
+  }
+}

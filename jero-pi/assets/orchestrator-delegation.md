@@ -98,7 +98,7 @@
 3. **写入规则**：仅当无需研究或不存在未决设计工作时，机械且已理解的单文件保持内联；2+ 个非平凡文件委托一个写者。
 4. **上下文规则**：委托为写入做准备的读取，以及广泛研究/上下文压缩。
 5. **逐动作规则**：测试、构建与安装可使用全新工作者，而不改变实现路由、不创建 SDD 状态。
-6. **可选 SDD 规则**：仅当持久的提案/规格/设计/任务能实质降低重大歧义时建议 SDD。仅在显式请求或已接受提案之后选择 SDD；风险本身绝不强制 SDD。
+6. **可选 SDD 规则**：仅当持久的提案/规格/设计/任务能实质降低重大歧义时建议 SDD。仅在显式请求或已接受提案之后选择 SDD；风险本身绝不强制 SDD。判断按下方「自然语言路由单」协议填单执行，不做自由发挥。
 
 对有界多文件写入，优先已安装的包内 `jero-worker`，其次是用户配置的 `worker`。若两个写者定义都不存在，回退到原生 `Agent`，即使 `subagent_*` 工具可用。若无任何委托机制可用，停止并说明阻塞。Judgment Day 阶段角色绝不是通用回退。若通用写者链不可用，使用文档记载的原生通用回退或停止。
 
@@ -222,6 +222,29 @@ parent clarifies and checks git → one worker writes when authorized → focuse
 SDD 绝不仅凭规模、文件数或风险被选择。当持久的提案/规格/设计/任务能实质降低重大歧义（不清晰的需求或验收标准、架构或产品决策、横切的行为变更）时，自然地建议它，由用户决定。
 
 仅当用户显式要求使用 SDD、调用 `/jero-sdd-init` 或 `/jero-sdd-continue`，或接受 SDD 提案时，才选择 SDD。一旦选中，不要直接跳到实现。校准上下文、创建产物，并在适当的门处请求批准。
+
+#### 自然语言路由单（RoutingSlip）
+
+对"做个方案/设计 X"这类自然语言请求，语义层只做特征提取——填一张类型化单据，路由是单据上的确定性规则，不自由裁量：
+
+```text
+utterance_type: qa | micro-edit | implement | explore | verify | design-request | review | incident | continue
+deliverable:    decision | document | plan-then-code
+scope:          cross_module: bool, components: [...]
+ambiguity:      decision_points: N, acceptance_unclear: bool
+irreversibility: reversible | recoverable | archaeology
+persistence:    single-shot | multi-session
+context:        trigger_hit: bool（.atl/module-overlay.md 静态触发，机器预填）
+```
+
+路由规则（按序短路）：
+
+- R1 `deliverable=decision` → 回答优先（研究 + 至多一轮提问），禁 SDD、禁实现。
+- R2 `design-request ∧ 决策点≤2 ∧ ¬cross_module ∧ deliverable=document` → 轻量设计（内联成文或单阶段委托）。
+- R3 SDD-suggest ⇔ 重大歧义 ∧（archaeology ∨ multi-session ∨ cross_module ∨ plan-then-code）；重大歧义 = 决策点≥3 ∨ acceptance_unclear ∨ 架构/产品级开放问题。风险、规模、文件数永不进入 R3 的条件——高危只作为建议时的注记。
+- R4 其余 → 本节上方的工作路由阶梯与强制委托触发条件。
+
+能力模块的路由表（`.atl/module-overlay.md`）以 `slip` 条件引用本单据字段；编排器求值命中即按 `suggest-role`/`delegate-role` 执行并回报 `module_resolution.delegation`。建议被接受的瞬间语义层退场，SDD 预检与有界路由接管。
 
 ## Pi 委托绑定
 

@@ -1,10 +1,26 @@
 import assert from "node:assert/strict";
-import { mkdirSync, readFileSync, statSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test from "node:test";
 import { pathToFileURL } from "node:url";
 import { __testing } from "../lib/skill-registry-engine.ts";
+
+test("能力模块知识入口经 .pi/modules/{token}/knowledge 进入注册表", async () => {
+	const cwd = join(tmpdir(), `jero-module-registry-${Date.now()}`);
+	const skillPath = join(cwd, ".pi", "modules", "godot", "knowledge", "SKILL.md");
+	mkdirSync(dirname(skillPath), { recursive: true });
+	writeFileSync(skillPath, "---\nname: godot\ndescription: Trigger: Godot scenes, signals.\n---\n\n## Body\n");
+	try {
+		const result = await __testing.regenerateRegistry(cwd, true);
+		assert.ok(result.skillCount >= 1, "模块知识入口必须计入技能数");
+		const registry = readFileSync(join(cwd, ".atl", "skill-registry.md"), "utf8");
+		assert.match(registry, /godot/);
+		assert.match(registry, /modules[\\/]godot[\\/]knowledge[\\/]SKILL\.md/);
+	} finally {
+		rmSync(cwd, { recursive: true, force: true });
+	}
+});
 
 test("project skill dirs include supported workspace roots", () => {
 	const cwd = "/repo";

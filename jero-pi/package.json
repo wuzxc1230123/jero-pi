@@ -49,14 +49,15 @@
 		"build:runtime-modules": "node scripts/build-runtime-modules.mjs --write",
 		"check:runtime-modules": "node scripts/build-runtime-modules.mjs --check",
 		"typecheck": "node scripts/check-types.mjs",
-		"prepack": "pnpm run typecheck && pnpm test && pnpm run check:runtime-modules && pnpm run check:authority-boundary && pnpm run check:test-quality && pnpm run check:empty-catch && node scripts/verify-package-files.mjs && pnpm run check:docs-manifest && pnpm run check:review-naming",
-		"prepublishOnly": "pnpm run typecheck && pnpm test && pnpm run check:runtime-modules && pnpm run check:authority-boundary && pnpm run check:test-quality && pnpm run check:empty-catch && node scripts/verify-package-files.mjs && pnpm run test:packed-package && pnpm run check:docs-manifest && pnpm run check:review-naming",
+		"prepack": "pnpm run typecheck && pnpm test && pnpm run check:runtime-modules && pnpm run check:authority-boundary && pnpm run check:test-quality && pnpm run check:empty-catch && node scripts/verify-package-files.mjs && pnpm run check:docs-manifest && pnpm run check:review-naming && pnpm run check:module-contract",
+		"prepublishOnly": "pnpm run typecheck && pnpm test && pnpm run check:runtime-modules && pnpm run check:authority-boundary && pnpm run check:test-quality && pnpm run check:empty-catch && node scripts/verify-package-files.mjs && pnpm run test:packed-package && pnpm run check:docs-manifest && pnpm run check:review-naming && pnpm run check:module-contract",
 		"check:authority-boundary": "node scripts/check-authority-boundary.mjs",
 		"check:test-quality": "node scripts/check-test-quality.mjs",
 		"check:empty-catch": "node scripts/check-empty-catch.mjs",
 		"check:docs-manifest": "node scripts/check-docs-manifest.mjs",
 		"fix:docs-manifest": "node scripts/check-docs-manifest.mjs --write",
-		"check:review-naming": "node scripts/check-review-naming.mjs"
+		"check:review-naming": "node scripts/check-review-naming.mjs",
+		"check:module-contract": "node --experimental-strip-types scripts/check-module-contract.mjs"
 	},
 	"pi": {
 		"image": "assets/jero-logo.png",
