@@ -150,3 +150,64 @@ test("invalidate 幂等且随后渲染正常", () => {
 	const lines = panel.render(120);
 	assert.ok(lines.length > 0);
 });
+
+test("鼠标：详情窗格内滚轮被消费并触发重渲染", () => {
+	const { panel } = makePanel({ selectedName: "review-heavy" });
+	panel.render(120);
+	// panes 模式下列表在左、详情在右：右缘的滚轮落在详情窗格。
+	const handled = panel.handleMouse({ type: "wheel", x: 116, y: 3, wheelDelta: 2 } as never);
+	assert.deepEqual(handled, { handled: true, render: true });
+	// 列表区之外的滚轮（未布局/越界语义）不得崩且返回可判值。
+	const outside = panel.handleMouse({ type: "wheel", x: 116, y: 40, wheelDelta: 1 } as never);
+	assert.ok(outside === undefined || typeof outside === "object");
+});
+
+test("鼠标：中栏窄宽（单视口模式）渲染不空、滚轮不崩", () => {
+	const { panel } = makePanel();
+	const lines = panel.render(60);
+	assert.ok(lines.length > 0, "60 列单视口模式仍应有主体");
+	const handled = panel.handleMouse({ type: "wheel", x: 30, y: 2, wheelDelta: -1 } as never);
+	assert.ok(handled === undefined || typeof handled === "object");
+});
+
+test("带主题渲染：fg/bg 着色路径与悬停背景生效", () => {
+	const results: Captured[] = [];
+	const panel = new ProfilesPanel(
+		profilesFile(),
+		config,
+		(result) => results.push(result as Captured),
+		undefined,
+		{
+			// 最小主题桩：fg 打标记便于断言，bg 原样透传。
+			fg: (_tone: unknown, text: string) => `<fg>${text}</fg>`,
+			bg: (_tone: unknown, text: string) => text,
+		} as never,
+		"review-heavy",
+		() => 24,
+		{ status: "missing" } as never,
+		(name) => createProfile(profilesFile(), `snap-${name}`, config),
+		() => {},
+	);
+	const lines = panel.render(100).join("\n");
+	assert.ok(lines.includes("<fg>"), "主题 fg 路径必须被走到");
+	assert.match(lines, /review-heavy/);
+	assert.doesNotThrow(() => panel.handleInput("j"));
+	assert.ok(panel.render(100).length > 0);
+});
+
+test("翻页键滚详情与列表区鼠标点击委托不崩", () => {
+	const { panel, results } = makePanel({ selectedName: "review-heavy" });
+	panel.render(100);
+	// 翻页键（pageDown/pageUp）与 ctrl+j/k 同路：滚动详情，不改选中。
+	assert.doesNotThrow(() => panel.handleInput("\u001b[6~"));
+	assert.doesNotThrow(() => panel.handleInput("\u001b[5~"));
+	assert.doesNotThrow(() => panel.handleInput("\n"));
+	assert.deepEqual(results, []);
+	// 列表区内的点击事件委托给 choice list（选中项）。
+	const handled = panel.handleMouse({ type: "press", x: 4, y: 2, button: 0 } as never);
+	assert.ok(handled === undefined || typeof handled === "object");
+	// 滚动后渲染仍完整、选中保持。
+	const lines = panel.render(100);
+	assert.ok(lines.length > 0);
+	assert.match(lines.join("\n"), /review-heavy/);
+});

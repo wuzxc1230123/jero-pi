@@ -28,9 +28,9 @@ export function currentIntroMode(): IntroMode {
 	return pickIntroMode(rows, cols);
 }
 
-export async function countSddAgents(): Promise<number> {
+export async function countSddAgents(agentsDir: string = join(PI_AGENT_DIR, "agents")): Promise<number> {
 	try {
-		const entries = await readdir(join(PI_AGENT_DIR, "agents"), { withFileTypes: true });
+		const entries = await readdir(agentsDir, { withFileTypes: true });
 		return entries.filter((entry) => entry.isFile() && /^sdd-.*\.md$/.test(entry.name)).length;
 	} catch {
 		return 0;
@@ -47,13 +47,16 @@ function packageNameFromSpec(spec: unknown): string | undefined {
 	return clean.split("@")[0] || undefined;
 }
 
-export async function countPackageExtensions(packages: unknown[]): Promise<number> {
+export async function countPackageExtensions(
+	packages: unknown[],
+	npmDir: string = PI_NPM_DIR,
+): Promise<number> {
 	let count = 0;
 	for (const spec of packages) {
 		const name = packageNameFromSpec(spec);
 		if (!name) continue;
 		try {
-			const raw = await readFile(join(PI_NPM_DIR, name, "package.json"), "utf8");
+			const raw = await readFile(join(npmDir, name, "package.json"), "utf8");
 			const pkg = JSON.parse(raw);
 			const extensions = pkg?.pi?.extensions;
 			if (Array.isArray(extensions)) count += extensions.length;

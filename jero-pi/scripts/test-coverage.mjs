@@ -154,6 +154,11 @@ function renderReport(merged) {
 	for (const row of rows.filter((r) => r.line < 50)) {
 		lines.push(`${row.line.toFixed(1)}%\t${row.covered}/${row.executable}\t${row.file}`);
 	}
+	lines.push("");
+	lines.push("=== 行覆盖 50-74%（升序，抬门槛观察区） ===");
+	for (const row of rows.filter((r) => r.line >= 50 && r.line < 75)) {
+		lines.push(`${row.line.toFixed(1)}%\t${row.covered}/${row.executable}\t${row.file}`);
+	}
 	return lines.join("\n");
 }
 
@@ -177,11 +182,24 @@ function runSuite() {
 }
 
 function main() {
+	const fileArgIndex = process.argv.indexOf("--file");
+	const fileFilter = fileArgIndex === -1 ? undefined : process.argv[fileArgIndex + 1];
 	if (!process.argv.includes("--merge-only")) runSuite();
 	const merged = mergeProfiles(loadProfiles());
 	if (merged.size === 0) {
 		console.error(`未采集到任何 lib/ extensions/ profile——检查 ${RAW_DIR}`);
 		process.exit(1);
+	}
+	if (fileFilter !== undefined) {
+		const entry = [...merged.entries()].find(([url]) => url.endsWith(fileFilter.replaceAll("\\", "/")));
+		if (entry === undefined) {
+			console.error(`没有匹配 ${fileFilter} 的 profile`);
+			process.exit(1);
+		}
+		const uncovered = [...entry[1].executable].filter((line) => !entry[1].covered.has(line)).toSorted((a, b) => a - b);
+		console.log(`${fileFilter}: ${entry[1].covered.size}/${entry[1].executable.size} (${((entry[1].covered.size / entry[1].executable.size) * 100).toFixed(1)}%)`);
+		console.log(`未覆盖行（共 ${uncovered.length}）: ${uncovered.join(" ")}`);
+		return;
 	}
 	const report = renderReport(merged);
 	writeFileSync(REPORT_PATH, report, "utf8");

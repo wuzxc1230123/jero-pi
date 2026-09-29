@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import extension from "../extensions/sdd-init.ts";
 import {
 	runSddInitCommand,
 	type SddInitCtx,
@@ -120,5 +121,68 @@ test("无测试命令的项目：strict TDD disabled 摘要", async () => {
 		assert.match(notifications[0].message, /strict TDD disabled because no test runner was detected/);
 	} finally {
 		rmSync(cwd, { recursive: true, force: true });
+	}
+});
+
+test("扩展装配：注册命令；真预检走沙箱 HOME 确认后写盘", async () => {
+	const project = mkdtempSync(join(tmpdir(), "jero-sdd-init-ext2-"));
+	const agentHome = mkdtempSync(join(tmpdir(), "jero-sdd-init-agent2-"));
+	const configHome = mkdtempSync(join(tmpdir(), "jero-sdd-init-config2-"));
+	const home = mkdtempSync(join(tmpdir(), "jero-sdd-init-home2-"));
+	const saved = {
+		JERO_PI_AGENT_HOME: process.env.JERO_PI_AGENT_HOME,
+		JERO_PI_CONFIG_HOME: process.env.JERO_PI_CONFIG_HOME,
+		HOME: process.env.HOME,
+		USERPROFILE: process.env.USERPROFILE,
+	};
+	process.env.JERO_PI_AGENT_HOME = agentHome;
+	process.env.JERO_PI_CONFIG_HOME = configHome;
+	process.env.HOME = home;
+	process.env.USERPROFILE = home;
+	try {
+		mkdirSync(join(project, "tests"), { recursive: true });
+		writeFileSync(join(project, "package.json"), JSON.stringify({ name: "demo", scripts: { test: "node --test" } }));
+
+		const commands = new Map<string, { description: string; handler: (args: string, ctx: unknown) => Promise<void> }>();
+		const fakePi = {
+			registerCommand(name: string, def: { description: string; handler: (args: string, ctx: unknown) => Promise<void> }) {
+				commands.set(name, def);
+				return fakePi;
+			},
+		};
+		extension(fakePi as never);
+		assert.ok(commands.has("jero-sdd-init"));
+
+		const notifications: string[] = [];
+		const selections: string[] = [];
+		const ctx = {
+			cwd: project,
+			hasUI: true,
+			ui: {
+				// 会话预检的确认仪式：确认选择"Confirm"，其余问询取首项。
+				select: async (title: string, options: readonly string[]) => {
+					selections.push(title);
+					return options.includes("Confirm") ? "Confirm" : options[0];
+				},
+				input: async () => "",
+				notify: (message: string) => notifications.push(message),
+			},
+		};
+		await commands.get("jero-sdd-init")!.handler("", ctx);
+
+		// 预检确认发生过，且命令主体完成了写盘与通知。
+		assert.ok(selections.some((title) => title.includes("preflight")), `应触发预检确认，实际：${JSON.stringify(selections)}`);
+		assert.ok(existsSync(join(project, "openspec", "config.yaml")));
+		assert.ok(notifications.some((message) => message.includes("Wrote openspec/config.yaml")));
+		assert.ok(notifications.some((message) => message.includes("strict TDD enabled with `npm test`")));
+	} finally {
+		for (const [key, value] of Object.entries(saved)) {
+			if (value === undefined) delete process.env[key];
+			else process.env[key] = value;
+		}
+		rmSync(project, { recursive: true, force: true });
+		rmSync(agentHome, { recursive: true, force: true });
+		rmSync(configHome, { recursive: true, force: true });
+		rmSync(home, { recursive: true, force: true });
 	}
 });
