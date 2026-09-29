@@ -1,1 +1,5 @@
 node_modules/
+
+# 覆盖率聚合产物（NODE_V8_COVERAGE 原始 profile 与合并报告）
+.coverage-raw/
+.coverage-merged.txt

@@ -336,6 +336,25 @@ test("verifyModule：entry 超行失败、缺文本失败、无 entry 档跳过"
 	assert.equal(skipped.checks.find((item) => item.id === "entry-size")?.status, "skip");
 });
 
+test("verifyModule：entry 恰好上限行数 + 尾随换行不计行，过门", () => {
+	const exactly = Array.from({ length: MAX_ENTRY_LINES }, (_, i) => `line ${i}`).join("\n") + "\n";
+	const report = verifyModule({ manifest: goldenManifest(), entryText: exactly });
+	const entryCheck = report.checks.find((item) => item.id === "entry-size");
+	assert.equal(entryCheck?.status, "pass");
+	assert.match(entryCheck?.detail ?? "", new RegExp(`^entry 正文 ${MAX_ENTRY_LINES} 行`));
+});
+
+test("verifyModule：截断样本的零命中失败标注假阴性可能", () => {
+	const truncated = verifyModule({
+		manifest: goldenManifest(),
+		repoFiles: ["package.json"],
+		repoFilesTruncated: true,
+	});
+	const hit = truncated.checks.find((item) => item.id === "triggers-hit");
+	assert.equal(hit?.status, "fail");
+	assert.match(hit?.detail ?? "", /截断.*假阴性/);
+});
+
 test("glob 语义：* 不跨目录、** 跨目录、? 单字符、字面量转义", () => {
 	assert.equal(globToRegExp("project.godot").test("project.godot"), true);
 	assert.equal(globToRegExp("project.godot").test("src/project.godot"), false);

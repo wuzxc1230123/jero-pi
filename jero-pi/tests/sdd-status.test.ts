@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test from "node:test";
 import {
+	activeChangeLabel,
 	isNonAuthoritativeStatus,
 	listActiveOpenSpecChanges,
 	parseSddStatusCommandArgs,
@@ -13,6 +14,8 @@ import {
 	renderSddDispatcherMarkdown,
 	renderSddStatusMarkdown,
 	resolveSddStatus,
+	sddStatusSeverity,
+	summarizeSddStatusForTitle,
 } from "../lib/sdd-status.ts";
 
 async function workspace(): Promise<string> {
@@ -779,4 +782,37 @@ test("renderSddDispatcherMarkdown for non-authoritative both status shows artifa
 	assert.match(markdown, /artifact store: hybrid/);
 	assert.doesNotMatch(markdown, /Engram or none/);
 	assert.match(markdown, /resolve via Engram/i);
+});
+
+test("sddStatusSeverity：非权威恒 info；阻塞才 warning", async () => {
+	// 有阻塞：warning（planning 缺工件即阻塞）。
+	const blockedCwd = await workspace();
+	mkdirSync(join(blockedCwd, "openspec", "changes", "stuck"), { recursive: true });
+	const blocked = resolveSddStatus({ cwd: blockedCwd });
+	assert.equal(blocked.isNonAuthoritative, false);
+	assert.ok(blocked.blockedReasons.length > 0);
+	assert.equal(sddStatusSeverity(blocked), "warning");
+
+	// 非权威状态：无论内容恒 info。
+	const nonAuthoritative = resolveSddStatus({ cwd: await workspace(), artifactStore: "engram" });
+	assert.equal(nonAuthoritative.isNonAuthoritative, true);
+	assert.equal(sddStatusSeverity(nonAuthoritative), "info");
+});
+
+test("summarizeSddStatusForTitle：变更名 + 推荐 + 任务进度的紧凑一行", async () => {
+	const cwd = await workspace();
+	seedChange(cwd);
+	const status = resolveSddStatus({ cwd });
+	assert.match(
+		summarizeSddStatusForTitle(status),
+		new RegExp(`^add-auth: ${status.nextRecommended} \\(\\d+/\\d+ tasks\\)$`),
+	);
+
+	const unresolved = resolveSddStatus({ cwd: await workspace() });
+	assert.match(summarizeSddStatusForTitle(unresolved), /^unresolved: /);
+});
+
+test("activeChangeLabel：取 cwd 的 basename", () => {
+	assert.equal(activeChangeLabel(join("D:", "work", "my-game")), "my-game");
+	assert.equal(activeChangeLabel("flat-repo"), "flat-repo");
 });

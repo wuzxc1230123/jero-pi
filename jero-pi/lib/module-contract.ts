@@ -563,6 +563,8 @@ export interface ModuleVerifyInput {
 	readonly entryText?: string;
 	/** 当前仓库相对路径样本（正斜杠）；提供时执行 triggers-hit 检查。 */
 	readonly repoFiles?: readonly string[];
+	/** 样本是否被扫描上限截断；截断时零命中失败的详情会标注假阴性可能。 */
+	readonly repoFilesTruncated?: boolean;
 	/** 同仓库其他模块的 token；提供时执行 token-unique 检查。 */
 	readonly otherTokens?: readonly string[];
 	/** 项目 `.pi/skills/` 下的松散技能名；提供时执行 no-loose-duplicate 检查。 */
@@ -641,12 +643,13 @@ export function verifyModule(input: ModuleVerifyInput): ModuleVerifyReport {
 				if (re.test(file)) matched.add(`${glob} → ${file}`);
 			}
 		}
+		const truncationNote = input.repoFilesTruncated ? "（样本已被扫描上限截断，可能是假阴性——先确认触发文件未被截掉）" : "";
 		checks.push(
 			check(
 				"triggers-hit",
 				matched.size > 0,
-				`静态触发器命中 ${matched.size} 处`,
-				"静态触发器在本仓库零命中——门控词写偏，或本模块不属于此仓库",
+				`静态触发器命中 ${matched.size} 处${input.repoFilesTruncated ? "（样本已截断，命中数可能偏低）" : ""}`,
+				`静态触发器在本仓库零命中——门控词写偏，或本模块不属于此仓库${truncationNote}`,
 			),
 		);
 	}
@@ -692,7 +695,8 @@ export function verifyModule(input: ModuleVerifyInput): ModuleVerifyReport {
 	} else if (input.entryText === undefined) {
 		checks.push({ id: "entry-size", status: "fail", detail: "接线使用 entry 档但未提供 entry 文本——渐进披露无从检查" });
 	} else {
-		const lines = input.entryText.split(/\r?\n/).length;
+		// 尾随换行不计行：编辑器普遍补尾空行，60 行整的文件就该是 60 行。
+		const lines = input.entryText.replace(/\r?\n$/, "").split(/\r?\n/).length;
 		checks.push(
 			check(
 				"entry-size",

@@ -142,6 +142,19 @@ test("renderOverlayMarkdown：无活动模块时的空态提示", () => {
 	assert.ok(markdown.includes("无——本仓库没有命中任何模块"));
 });
 
+test("renderOverlayMarkdown：单元格管道符转义与截断警示", () => {
+	const raw = JSON.parse(goModuleJson());
+	raw.triggers = { files: ["a|b.go"], intents: [] };
+	const overlay = compileDispatchOverlay([manifestFrom(JSON.stringify(raw))], ["a|b.go"]);
+	const markdown = renderOverlayMarkdown(overlay, { repoFilesTruncated: true });
+
+	assert.match(markdown, /扫描已触及上限截断/);
+	assert.match(markdown, /假阴性/);
+	// 命中行的管道符必须转义，否则撕开列表/表格结构。
+	assert.match(markdown, /`a\\\|b\.go`/);
+	assert.doesNotMatch(markdown, /[^\\]\|b\.go`：/);
+});
+
 test("discoverModules：合法/坏清单/无清单目录三分", () => {
 	const dir = mkdtempSync(join(tmpdir(), "jero-module-discover-"));
 	try {

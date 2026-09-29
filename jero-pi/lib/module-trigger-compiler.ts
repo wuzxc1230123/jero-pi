@@ -44,14 +44,15 @@ export function clearRepoWalkCache(): void {
 	repoWalkCache.clear();
 }
 
-/** 递归收集仓库相对路径（正斜杠），忽略依赖/VCS 目录，超限截断。结果按 cwd 做 TTL 缓存。 */
+/** 递归收集仓库相对路径（正斜杠），忽略依赖/VCS 目录，超限截断。结果按 cwd 做 TTL 缓存；自定义忽略集不缓存（缓存键不含忽略集，避免串味）。 */
 export function walkRepoFiles(cwd: string, ignoredDirs: Set<string> = OVERLAY_IGNORED_DIRS): WalkedRepo {
-	const cached = repoWalkCache.get(cwd);
+	const cacheable = ignoredDirs === OVERLAY_IGNORED_DIRS;
+	const cached = cacheable ? repoWalkCache.get(cwd) : undefined;
 	if (cached !== undefined && Date.now() - cached.at < REPO_WALK_CACHE_TTL_MS) {
 		repoWalkStats.hits += 1;
 		return cached.walked;
 	}
-	repoWalkStats.misses += 1;
+	if (cacheable) repoWalkStats.misses += 1;
 	const files: string[] = [];
 	let truncated = false;
 	const visit = (dir: string, prefix: string): void => {
@@ -81,7 +82,7 @@ export function walkRepoFiles(cwd: string, ignoredDirs: Set<string> = OVERLAY_IG
 	};
 	visit(cwd, "");
 	const walked: WalkedRepo = { files, truncated };
-	repoWalkCache.set(cwd, { walked, at: Date.now() });
+	if (cacheable) repoWalkCache.set(cwd, { walked, at: Date.now() });
 	return walked;
 }
 
@@ -182,13 +183,30 @@ export function compileDispatchOverlay(
 	};
 }
 
+// markdown 表格单元格转义：值里的 | 会撕开表格列。
+function mdCell(text: string): string {
+	return text.replaceAll("|", "\\|");
+}
+
+export interface RenderOverlayOptions {
+	/** 仓库扫描是否截断；截断时在覆盖层明示触发判定可能假阴性。 */
+	readonly repoFilesTruncated?: boolean;
+}
+
 /** 渲染 .atl/module-overlay.md（自动生成物）。编排器与子代理按面消费此表。 */
-export function renderOverlayMarkdown(overlay: DispatchOverlay): string {
+export function renderOverlayMarkdown(
+	overlay: DispatchOverlay,
+	options: RenderOverlayOptions = {},
+): string {
 	const lines: string[] = [];
 	lines.push("# 模块派发覆盖层（自动生成物，勿手改）");
 	lines.push("");
 	lines.push(`契约：\`${MODULE_OVERLAY_ID}\`。由静态触发器对仓库文件树确定性编译（\`/jero-module-verify\` 刷新）。`);
 	lines.push("知识注入按面执行：\`manifest-only\` = 只暴露存在与触发词；\`entry\` = 注入 entry 正文；深度知识一律在 references 由子代理按需读。");
+	if (options.repoFilesTruncated) {
+		lines.push("");
+		lines.push("**注意**：仓库文件扫描已触及上限截断——本覆盖层的触发判定可能假阴性（截掉的部分未参与匹配），超大仓库请人工复核。");
+	}
 	lines.push("");
 
 	lines.push("## 活动模块");
@@ -196,7 +214,7 @@ export function renderOverlayMarkdown(overlay: DispatchOverlay): string {
 		lines.push("（无——本仓库没有命中任何模块的静态触发器）");
 	} else {
 		for (const module of overlay.activeModules) {
-			lines.push(`- \`${module.token}\`：命中 ${module.matchedBy.map((glob) => `\`${glob}\``).join("、")}`);
+			lines.push(`- \`${mdCell(module.token)}\`：命中 ${module.matchedBy.map((glob) => `\`${mdCell(glob)}\``).join("、")}`);
 		}
 	}
 	lines.push("");
@@ -210,7 +228,7 @@ export function renderOverlayMarkdown(overlay: DispatchOverlay): string {
 		for (const surface of overlay.surfaces) {
 			for (const entry of surface.entries) {
 				lines.push(
-					`| ${surface.surface} | ${entry.token} | ${entry.inject} | ${entry.appendRoles.join(", ") || "—"} |`,
+					`| ${mdCell(surface.surface)} | ${mdCell(entry.token)} | ${mdCell(entry.inject)} | ${mdCell(entry.appendRoles.join(", ")) || "—"} |`,
 				);
 			}
 		}
@@ -221,9 +239,9 @@ export function renderOverlayMarkdown(overlay: DispatchOverlay): string {
 	if (overlay.strictTdd.command === undefined) {
 		lines.push("（无模块钉测试命令，SDD 走 config.yaml → 探测兜底）");
 	} else {
-		lines.push(`\`${overlay.strictTdd.command}\`（来自模块 \`${overlay.strictTdd.fromToken}\`）——sdd-apply / sdd-verify 启动提示优先携带此命令。`);
+		lines.push(`\`${mdCell(overlay.strictTdd.command)}\`（来自模块 \`${mdCell(overlay.strictTdd.fromToken ?? "")}\`）——sdd-apply / sdd-verify 启动提示优先携带此命令。`);
 		if (overlay.strictTdd.conflicts.length > 0) {
-			lines.push(`冲突：${overlay.strictTdd.conflicts.join("、")} 钉了不同命令，须人工消解。`);
+			lines.push(`冲突：${overlay.strictTdd.conflicts.map(mdCell).join("、")} 钉了不同命令，须人工消解。`);
 		}
 	}
 	lines.push("");
@@ -231,7 +249,7 @@ export function renderOverlayMarkdown(overlay: DispatchOverlay): string {
 	if (overlay.declaredGates.length > 0) {
 		lines.push("## 硬门声明（C 级）");
 		for (const gate of overlay.declaredGates) {
-			lines.push(`- 模块 \`${gate.token}\` 要求机制性必跑：\`${gate.gate}\`。硬保证唯一路径是进包加链；未安装时编排器**不得静默跳过**——每次该场景都应报告缺席。`);
+			lines.push(`- 模块 \`${mdCell(gate.token)}\` 要求机制性必跑：\`${mdCell(gate.gate)}\`。硬保证唯一路径是进包加链；未安装时编排器**不得静默跳过**——每次该场景都应报告缺席。`);
 		}
 		lines.push("");
 	}
@@ -249,7 +267,7 @@ export function renderOverlayMarkdown(overlay: DispatchOverlay): string {
 			const condition = row.rule.when.surface !== undefined
 				? `surface=${row.rule.when.surface}`
 				: `slip=${JSON.stringify(row.rule.when.slip)}`;
-			lines.push(`| ${row.token} | ${condition} | ${row.rule.action} | ${row.rule.target} |`);
+			lines.push(`| ${mdCell(row.token)} | ${mdCell(condition)} | ${mdCell(row.rule.action)} | ${mdCell(row.rule.target)} |`);
 		}
 		lines.push("");
 		lines.push("动作语义：`suggest-role` = 提示层建议（审计留痕）；`delegate-role` = 编排器应尝试委派并在结果封套回报 `module_resolution.delegation`。条件命中前都必须有本模块静态触发命中。");
@@ -259,7 +277,7 @@ export function renderOverlayMarkdown(overlay: DispatchOverlay): string {
 	if (overlay.inactiveTokens.length > 0) {
 		lines.push("## 已声明但未触发");
 		for (const token of overlay.inactiveTokens) {
-			lines.push(`- \`${token}\`：静态触发器在本仓库零命中，不参与任何编排面。`);
+			lines.push(`- \`${mdCell(token)}\`：静态触发器在本仓库零命中，不参与任何编排面。`);
 		}
 		lines.push("");
 	}
@@ -267,7 +285,7 @@ export function renderOverlayMarkdown(overlay: DispatchOverlay): string {
 	if (overlay.issues.length > 0) {
 		lines.push("## 编译告警");
 		for (const message of overlay.issues) {
-			lines.push(`- ${message}`);
+			lines.push(`- ${mdCell(message)}`);
 		}
 		lines.push("");
 	}

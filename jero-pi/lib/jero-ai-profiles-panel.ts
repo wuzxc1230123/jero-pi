@@ -72,7 +72,9 @@ function clampDetailScroll(offset: number, lineCount: number, bodyRows: number):
 // 同一份测量布局；列表行通过 NativeChoiceList 保留原生键盘、悬停、
 // 按下、点击与滚轮处理。外框占满整个
 // overlay，因此其高度与 AgentsView 一样跟随终端行数。
-class ProfilesPanel implements OverlayComponent {
+// 导出供 tests/jero-ai-profiles-panel.test.ts 直接驱动（构造器全依赖注入，
+// 与 NativeChoiceList 同测试法）；运行期唯一消费方仍是本模块的 handleProfilesCommand。
+export class ProfilesPanel implements OverlayComponent {
 	private completed = false;
 	private pointerLayout: ProfilesPanelPointerLayout | undefined;
 	private detailScroll = 0;

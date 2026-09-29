@@ -44,6 +44,7 @@
 		"test:review": "node --require ./scripts/test-env.cjs --experimental-strip-types --test --test-concurrency=12 --test-timeout=300000 \"tests/review-*.test.ts\"",
 		"test:sdd": "node --require ./scripts/test-env.cjs --experimental-strip-types --test --test-concurrency=12 --test-timeout=300000 \"tests/sdd-*.test.ts\"",
 		"test:timed": "node scripts/test-timed.mjs",
+		"test:coverage": "node scripts/test-coverage.mjs",
 		"test:packed-package": "node scripts/test-packed-runner.mjs",
 		"test:host-boot-smoke": "node scripts/host-boot-smoke.mjs",
 		"build:runtime-modules": "node scripts/build-runtime-modules.mjs --write",

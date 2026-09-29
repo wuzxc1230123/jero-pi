@@ -56,7 +56,7 @@
       "additionalProperties": false,
       "required": ["entry"],
       "properties": {
-        "entry": {"type": "string", "pattern": "^[^].*\\.md$|^\\.\\.?\\/.*\\.md$", "description": "Module-relative .md path; linted to <=60 lines (lib/module-contract.ts MAX_ENTRY_LINES) when any binding injects it."},
+        "entry": {"type": "string", "pattern": "\\.md$", "description": "Module-relative .md path; must not contain '..' (validated in lib/module-contract.ts). Linted to <=60 lines (MAX_ENTRY_LINES, trailing newline not counted) when any binding injects it."},
         "references": {"type": "array", "items": {"type": "string", "minLength": 1}, "description": "Deep-knowledge globs (L2); read on demand by subagents, never injected wholesale."}
       }
     },

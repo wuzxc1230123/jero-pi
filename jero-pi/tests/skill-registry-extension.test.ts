@@ -1,0 +1,103 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import extension from "../extensions/skill-registry.ts";
+
+// skill-registry 扩展壳测试：引擎行为由 tests/skill-registry.test.ts 钉住，
+// 这里测生命周期装配——旗标跳过、启动刷新通知、手动命令与 watcher 清理。
+
+type Handler = (event: unknown, ctx: unknown) => void | Promise<void>;
+
+function fakePi(flags: Record<string, boolean> = {}) {
+	const handlers = new Map<string, Handler>();
+	const commands = new Map<string, { description: string; handler: Handler }>();
+	const registeredFlags: string[] = [];
+	const pi = {
+		on(name: string, callback: Handler) {
+			handlers.set(name, callback);
+			return pi;
+		},
+		registerCommand(name: string, definition: { description: string; handler: Handler }) {
+			commands.set(name, definition);
+			return pi;
+		},
+		registerFlag(name: string) {
+			registeredFlags.push(name);
+			return pi;
+		},
+		getFlag: (name: string) => flags[name] === true,
+	};
+	return { pi: pi as unknown as Parameters<typeof extension>[0], handlers, commands, registeredFlags };
+}
+
+function fakeCtx(cwd: string, hasUI = true) {
+	const notifications: { message: string; level: string }[] = [];
+	return {
+		ctx: { cwd, hasUI, ui: { notify: (message: string, level: string) => notifications.push({ message, level }) } } as never,
+		notifications,
+	};
+}
+
+function projectWithSkill(): string {
+	const cwd = mkdtempSync(join(tmpdir(), "jero-skill-ext-"));
+	mkdirSync(join(cwd, "skills", "demo"), { recursive: true });
+	writeFileSync(join(cwd, "skills", "demo", "SKILL.md"), "---\nname: demo\ndescription: Trigger: demo.\n---\n\nbody\n");
+	return cwd;
+}
+
+// 去重守卫是进程级：整个文件只装配一次，旗标经 getFlag 注入。
+const assembly = fakePi();
+extension(assembly.pi);
+const flagged = fakePi({ "no-skill-registry": true });
+
+test("装配面：flag + refresh 命令 + 生命周期钩子", () => {
+	assert.ok(assembly.registeredFlags.includes("no-skill-registry"));
+	assert.ok(assembly.commands.has("skill-registry:refresh"));
+	assert.ok(assembly.handlers.has("session_start"));
+	assert.ok(assembly.handlers.has("session_shutdown"));
+});
+
+test("session_start：刷新注册表（无 UI 路径断言落盘副作用）", async () => {
+	const cwd = projectWithSkill();
+	try {
+		// hasUI:false 不启动 watcher（句柄零风险，关闭语义由引擎层
+		// "skill registry watchers close on shutdown" 钉住）；刷新的
+		// 可观察副作用是 .atl/skill-registry.md 落盘。
+		const { ctx } = fakeCtx(cwd, false);
+		await assembly.handlers.get("session_start")!({}, ctx);
+		const registry = readFileSync(join(cwd, ".atl", "skill-registry.md"), "utf8");
+		assert.ok(registry.includes("demo"), "项目技能必须进注册表");
+	} finally {
+		rmSync(cwd, { recursive: true, force: true });
+	}
+});
+
+test("session_start：no-skill-registry 旗标置位时整体跳过", async () => {
+	const cwd = projectWithSkill();
+	try {
+		// 旗标实例不经过默认装配（守卫进程级），直接以旗标 ctx 驱动默认装配的
+		// handler 不可行——改为验证判定函数对旗标的短路语义。
+		const { shouldSkipSkillRegistryStartup } = await import("../lib/skill-registry-engine.ts");
+		assert.equal(shouldSkipSkillRegistryStartup(flagged.pi as never), true);
+		assert.equal(shouldSkipSkillRegistryStartup(assembly.pi), false);
+	} finally {
+		rmSync(cwd, { recursive: true, force: true });
+	}
+});
+
+test("命令：refresh 写盘并通知", async () => {
+	const cwd = projectWithSkill();
+	try {
+		const { ctx, notifications } = fakeCtx(cwd);
+		await assembly.commands.get("skill-registry:refresh")!.handler("", ctx);
+		assert.equal(notifications.length, 1);
+		// 技能总数含用户 HOME 里的既有技能（环境相关），只钉格式与项目技能在列。
+		assert.match(notifications[0].message, /Skill registry: \d+ skill\(s\) written to/);
+		assert.match(notifications[0].message, /\.atl[\\/]skill-registry\.md/);
+		assert.ok(readFileSync(join(cwd, ".atl", "skill-registry.md"), "utf8").includes("demo"));
+	} finally {
+		rmSync(cwd, { recursive: true, force: true });
+	}
+});

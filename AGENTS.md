@@ -6,7 +6,7 @@
 
 - 仓库根 = `D:\jero-pi`；npm 包本体在 `jero-pi/` 子目录（所有命令在包目录内执行）。
 - `JERO-PI-DESIGN.md`：重构设计文档（决策与迁移表）；`_tools/`：实现期的分阶段分析文档——**lib 代码注释中引用的 `_tools/*.md` 相对仓库根解析**（包目录内没有这个目录）。
-- 包内：`extensions/`（Pi 注册层，9 文件）· `lib/`（领域层；`lib/module-contract.ts` + `lib/module-trigger-compiler.ts` 是能力模块契约的执行面）· `lib/authority/`（进程内评审权威，信任边界核心）· `assets/`（24 代理 + 4 链 + orchestrator 文档，被安装/转录/渲染的活资产）· `skills/` · `prompts/` · `docs/` · `schemas/`（含 `module.schema.json`，与 lib 常量由门钉零漂移）· `scripts/`（质量门）· `tests/` · `runtime/`（生成物）· `benchmarks/`（不随包发布）。
+- 包内：`extensions/`（Pi 注册层，9 文件）· `lib/`（领域层；`lib/module-contract.ts` + `lib/module-trigger-compiler.ts` + `lib/module-verify-pipeline.ts` 是能力模块契约的执行面）· `lib/authority/`（进程内评审权威，信任边界核心）· `assets/`（24 代理 + 4 链 + orchestrator 文档，被安装/转录/渲染的活资产）· `skills/` · `prompts/` · `docs/` · `schemas/`（含 `module.schema.json`，与 lib 常量由门钉零漂移）· `scripts/`（质量门）· `tests/` · `runtime/`（生成物）· `benchmarks/`（不随包发布）。
 
 ## 三条铁律
 
