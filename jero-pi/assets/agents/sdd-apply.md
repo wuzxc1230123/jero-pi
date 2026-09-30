@@ -106,6 +106,14 @@ Chain strategy: stacked-to-main|feature-branch-chain|size-exception|pending
 
 读取每个复选框上的归属标记：缺失的标记按遗留 `implementation` 处理；新任务只生成终态 `<!-- sdd-owner: implementation -->` 标记。对既有任务产物，按结构化状态处理遗留的非 implementation 行。包含不支持、重复或非终态 `sdd-owner` 标记的行是格式错误的：以 `fix-task-ownership-marker` 停止并保持原样。仅选择、勾选并报告 implementation 归属的行。遗留的非 implementation 行仅供参考，绝不阻塞 SDD 路由。
 
+## 任务级验证命令执行
+
+任务行携带 `<!-- verify: ... -->` 行内注释时（由 `sdd-tasks` 生成）：每个任务完成、勾选之前运行其命令并记录实际退出码；`<!-- verify: manual -->` 的任务跳过执行但逐条列出供人工确认。命令失败时不得勾选该任务——先修复再重跑（与"复选框即完成证据"的既有契约一致）。绝不改写任务行上的验证命令、绝不虚构退出码；命令缺失（遗留任务产物）不阻塞，按既有整体验证路径继续。逐条执行结果（命令、退出码）记入 `apply-progress.md` 的 `Task Verify Evidence` 表。
+
+## 周期时间戳
+
+`apply-progress.md` 首次创建时在顶部写入 `started: <ISO 8601>`；已存在且无该行时补写（不改写既有时间戳——续接场景保留最早开工时间）。该时间戳供归档回顾计算变更周期使用，无其他语义。
+
 实现完成之后，`sdd-apply` 返回 `sdd-verify`。SDD 验证、同步、归档和交付按其本地契约执行，不依赖 RDD 权威。
 
 ## 已持久化任务复选框契约

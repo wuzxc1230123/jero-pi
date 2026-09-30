@@ -180,6 +180,37 @@ test("SDD sync/archive/remediate carry the knowledge-deposit and repeat-offender
 	assert.match(remediate, /绝不自行向项目测试套件添加检查/);
 });
 
+test("SDD tasks/apply/verify/archive carry the per-task verify command and traceability copy", async () => {
+	// bigpowers 借鉴批（量化与追溯）：任务级 verify: 命令由 tasks 定死，
+	// apply 执行、verify 复核、archive 生成追溯矩阵与周期校准——四段闭环。
+	const tasks = await readFile(join(ROOT, "assets/agents/sdd-tasks.md"), "utf8");
+	assert.match(tasks, /<!-- verify: pnpm test -- tests\/foo\.test\.ts -->/);
+	assert.match(tasks, /<!-- verify: manual -->/);
+	assert.match(tasks, /命令必须一行可运行、确定性退出码、不发起网络请求/);
+	assert.match(tasks, /验证期不得改写/);
+	assert.match(tasks, /## Size Estimate/);
+
+	const apply = await readFile(join(ROOT, "assets/agents/sdd-apply.md"), "utf8");
+	assert.match(apply, /<!-- verify: \.\.\. -->/);
+	assert.match(apply, /Task Verify Evidence/);
+	assert.match(apply, /started: <ISO 8601>/);
+	// 时间戳只补不改：续接场景保留最早开工时间。
+	assert.match(apply, /不改写既有时间戳/);
+
+	const verify = await readFile(join(ROOT, "assets/agents/sdd-verify.md"), "utf8");
+	assert.match(verify, /任务级验证命令复核/);
+	assert.match(verify, /勾选与证据矛盾/);
+	assert.match(verify, /遗留任务产物无命令注释时不阻塞/);
+
+	const archive = await readFile(join(ROOT, "assets/agents/sdd-archive.md"), "utf8");
+	assert.match(archive, /## 追溯矩阵/);
+	assert.match(archive, /traceability\.md/);
+	assert.match(archive, /untraced/);
+	assert.match(archive, /orphan/);
+	assert.match(archive, /绝不为了矩阵整洁而补造映射/);
+	assert.match(archive, /周期与估点校准/);
+});
+
 test("all shipped SDD agents and chains require parent preflight transport", async () => {
 	const agents = [
 		"sdd-init", "sdd-onboard", "sdd-explore", "sdd-research", "sdd-proposal", "sdd-spec", "sdd-design",

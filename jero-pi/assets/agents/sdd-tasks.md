@@ -91,6 +91,31 @@ Chain strategy: stacked-to-main|feature-branch-chain|size-exception|pending
 
 对 RED/GREEN/TRIANGULATE/REFACTOR、代码、测试和 apply 自有的验证使用 `implementation`。不生成 RDD 权威、回执或交付闸门任务。不添加新的 owner 取值，也不从标题推断归属。
 
+## 任务级验证命令
+
+每个任务行携带一行可运行的验证命令，作为归属标记之后的行内注释（机器可查、人可评审）：
+
+```markdown
+- [ ] Implement and verify the behavior. <!-- sdd-owner: implementation --> <!-- verify: pnpm test -- tests/foo.test.ts -->
+```
+
+规则：命令必须一行可运行、确定性退出码、不发起网络请求；能机械断言本任务的完成标准就足够，不追求覆盖整个变更。无法给出有意义命令的任务（纯文档阅读、纯决策）显式写 `<!-- verify: manual -->`，不得留空也不得虚构命令。后续 `sdd-apply` 按勾选执行这些命令、`sdd-verify` 逐条复核——命令在任务生成期定死，验证期不得改写。
+
+## 轻量估点（可选）
+
+在 `Review Workload Forecast` 表之后追加一张可选的估点表，用 6 步斐波那契（1/2/3/5/8/13）按任务估点，合计给出变更总点数：
+
+```markdown
+## Size Estimate
+
+| Task | Points |
+|------|--------|
+| <task ref> | <1-13> |
+| **Total** | <sum> |
+```
+
+估点只服务周期度量与后续校准（见归档回顾），绝不作为交付承诺或门槛；任务本身拿不准时标 `?` 而不是猜。用户未要求或信息不足时可整节省略。
+
 ## 任务规则
 
 - 每个任务都引用具体的文件路径或具体的发现目标。
