@@ -189,6 +189,7 @@ test("SDD tasks/apply/verify/archive carry the per-task verify command and trace
 	assert.match(tasks, /命令必须一行可运行、确定性退出码、不发起网络请求/);
 	assert.match(tasks, /验证期不得改写/);
 	assert.match(tasks, /## Size Estimate/);
+	assert.match(tasks, /## 任务行解剖/);
 
 	const apply = await readFile(join(ROOT, "assets/agents/sdd-apply.md"), "utf8");
 	assert.match(apply, /<!-- verify: \.\.\. -->/);
@@ -274,6 +275,13 @@ test("context manifest and bootstrap receipt stay pinned", async () => {
 	assert.match(bootstrapSource, /注入回执（一次性）/);
 	assert.match(bootstrapSource, /jero bootstrap ✓/);
 	assert.match(bootstrapSource, /除此之外不重复/);
+
+	// 审计修复批：回执可经 JERO_PI_BOOTSTRAP_RECEIPT 摘除；tutorial 补可选增强一节。
+	assert.match(bootstrapSource, /JERO_PI_BOOTSTRAP_RECEIPT/);
+	const tutorial = await readFile(join(ROOT, "docs/tutorial-first-review.md"), "utf8");
+	assert.match(tutorial, /## 6\. 可选增强/);
+	assert.match(tutorial, /JERO_PI_BOOTSTRAP_RECEIPT=0/);
+	assert.match(tutorial, /jero-diagnose-stall/);
 });
 
 test("architecture patrol skill and router entry stay pinned", async () => {

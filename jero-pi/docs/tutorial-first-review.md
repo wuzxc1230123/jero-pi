@@ -86,7 +86,21 @@ mem_search "关键词"                           ←下次会话先搜再重推
 压缩临近时你会收到告警（可 `JERO_PI_CONTEXT_MONITOR=0` 关闭）；压缩完成后
 会有一次提示：用 `mem_search`/`mem_read` 找回关键上下文。
 
-## 6. 下一步
+## 6. 可选增强
+
+以下能力已内嵌在既有流程里（全部可选、对旧工件向后兼容、零预检配置），新手不必记，需要时知道在哪：
+
+| 能力 | 入口 |
+|---|---|
+| 需求澄清提问轮 | SDD interactive 模式提案前；问题从探索/研究证据派生，术语沉淀进提案 `## 共享语言` |
+| 知识沉淀回写 | sdd-sync 时术语进 `specs/glossary/`、决策与非目标进 `specs/decisions/`，后续会话自动发现 |
+| 任务级验证与风险 | tasks 行内 `<!-- verify: … -->`（勾选前执行、verify 复核）与 `<!-- risk: P0–P3 -->`（P0 强制重跑、P3 可豁免） |
+| 上下文清单 | tasks 附 `## Context Manifest`，apply/verify 按清单精准取上下文 |
+| 事前威胁建模 | sdd-design 对安全敏感变更可选产出 `## Threat Model` |
+| 停滞诊断 / 架构巡检 | `jero-diagnose-stall`（编排停滞六类分诊）· `jero-architecture-patrol`（仓库结构巡检，发现走 SDD 立变更） |
+| 注入回执 | 会话首轮一行确认 harness 纪律已加载；`JERO_PI_BOOTSTRAP_RECEIPT=0` 可关闭 |
+
+## 7. 下一步
 
 - **给你的领域装一个能力模块**（Go/Godot/Unity…）：说一句"创建 {领域} 模块"
   或跑 `/module-creation`，然后 `/jero-module-verify` 绿灯——之后该领域的

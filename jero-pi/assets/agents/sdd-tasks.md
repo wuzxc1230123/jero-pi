@@ -134,6 +134,16 @@ Chain strategy: stacked-to-main|feature-branch-chain|size-exception|pending
 
 规则：路径必须具体到文件（规格、研究断言、被触及代码、配置），每条带一句话理由；`apply` 行是 `sdd-apply` 的实现上下文，`verify` 行是 `sdd-verify` 的验证上下文——两列各自取舍，不互相代替。琐碎变更可整节省略；省略或遗留任务无清单时，消费者回退"读全部变更产物"的既有路径，绝不阻塞。清单是**读取**上下文，绝不构成编辑许可——编辑面仍归 `allowedEditRoots` 与 `## Allowed edit surfaces` 既有机制。
 
+## 任务行解剖
+
+三种行内标记的完整形状与顺序（各标记的规则见上文对应节）：
+
+```markdown
+- [ ] Implement and verify the behavior. <!-- sdd-owner: implementation --> <!-- verify: <一行命令 | manual> --> <!-- risk: P0|P1|P2|P3 -->
+```
+
+标记顺序固定：归属 → 验证命令 → 风险级。`sdd-owner` 必填（缺失按遗留 `implementation` 处理）；新任务的 `verify` 必须给出命令或 `manual`；`risk` 可省略（省略 = `P2` 默认）。遗留任务缺 `verify`/`risk` 均不阻塞消费者。
+
 ## 轻量估点（可选）
 
 在 `Review Workload Forecast` 表之后追加一张可选的估点表，用 6 步斐波那契（1/2/3/5/8/13）按任务估点，合计给出变更总点数：

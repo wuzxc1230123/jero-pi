@@ -8,7 +8,10 @@ import test from "node:test";
 import { createJeroAiExtension } from "../extensions/jero-ai.ts";
 import {
 	applyJeroBootstrap,
+	bootstrapReceiptEnabled,
+	composeJeroBootstrapText,
 	JERO_BOOTSTRAP_MARKER,
+	JERO_BOOTSTRAP_RECEIPT_LINE,
 	JERO_BOOTSTRAP_TEXT,
 	messageContainsJeroBootstrap,
 } from "../lib/jero-ai-bootstrap.ts";
@@ -61,6 +64,21 @@ test("an existing bootstrap message (string or segmented content) blocks re-inje
 	assert.equal(applyJeroBootstrap(asSegments), undefined);
 	const unrelated = [{ role: "user", content: [{ type: "image", source: {} }] }];
 	assert.ok(Array.isArray(applyJeroBootstrap(unrelated)), "unrelated history must still be injectable");
+});
+
+test("bootstrap receipt honors the JERO_PI_BOOTSTRAP_RECEIPT off switch", () => {
+	assert.equal(composeJeroBootstrapText({}), JERO_BOOTSTRAP_TEXT, "default keeps the receipt line");
+	// 回执行必须是精确尾行：摘除才可能字节干净，其余纪律一个字符不动。
+	assert.ok(JERO_BOOTSTRAP_TEXT.endsWith(JERO_BOOTSTRAP_RECEIPT_LINE), "the receipt must be the exact trailing line");
+	for (const off of ["0", "false", "off"]) {
+		const disabled = composeJeroBootstrapText({ JERO_PI_BOOTSTRAP_RECEIPT: off });
+		assert.equal(disabled.includes("注入回执"), false, off);
+		assert.equal(disabled.includes("jero bootstrap ✓"), false, off);
+		assert.ok(disabled.includes(JERO_BOOTSTRAP_MARKER), "discipline body must survive the removal");
+		assert.equal(bootstrapReceiptEnabled({ JERO_PI_BOOTSTRAP_RECEIPT: off }), false);
+	}
+	assert.equal(bootstrapReceiptEnabled({ JERO_PI_BOOTSTRAP_RECEIPT: "1" }), true);
+	assert.equal(bootstrapReceiptEnabled({ JERO_PI_BOOTSTRAP_RECEIPT: undefined }), true);
 });
 
 // ---------------------------------------------------------------------------
