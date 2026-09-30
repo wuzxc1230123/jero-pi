@@ -276,6 +276,23 @@ test("context manifest and bootstrap receipt stay pinned", async () => {
 	assert.match(bootstrapSource, /除此之外不重复/);
 });
 
+test("architecture patrol skill and router entry stay pinned", async () => {
+	// mattpocock/bigpowers 借鉴批（架构巡检）：只读幂等六轴巡检，
+	// 发现走 SDD 立变更，绝不直接重构、绝不自我触发。
+	const skill = await readFile(join(ROOT, "skills/jero-architecture-patrol/SKILL.md"), "utf8");
+	assert.match(skill, /巡检是只读的/);
+	assert.match(skill, /深模块机会（Ousterhout）/);
+	assert.match(skill, /幂等纪律/);
+	assert.match(skill, /openspec\/specs\/glossary\//);
+	assert.match(skill, /绝不自我触发/);
+
+	const router = await readFile(join(ROOT, "skills/jero-skills/SKILL.md"), "utf8");
+	assert.match(router, /jero-architecture-patrol/);
+
+	const discipline = await readFile(join(ROOT, "docs/how-to-choose-discipline.md"), "utf8");
+	assert.match(discipline, /jero-architecture-patrol/);
+});
+
 test("all shipped SDD agents and chains require parent preflight transport", async () => {
 	const agents = [
 		"sdd-init", "sdd-onboard", "sdd-explore", "sdd-research", "sdd-proposal", "sdd-spec", "sdd-design",
