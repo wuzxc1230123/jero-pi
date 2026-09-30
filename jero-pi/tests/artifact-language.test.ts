@@ -234,6 +234,27 @@ test("diagnose-stall skill, design threat model, and spike discipline stay pinne
 	assert.match(discipline, /spike 的产出是答案，不是代码/);
 });
 
+test("plan-time risk grading stays pinned across tasks, verify, and discipline doc", async () => {
+	// bigpowers 借鉴批（计划期风险分级）：后果轴与体量轴正交，
+	// 级别只调节验证深度，绝不调节预算或替代评审轴决策。
+	const tasks = await readFile(join(ROOT, "assets/agents/sdd-tasks.md"), "utf8");
+	assert.match(tasks, /## 任务风险分级（P0–P3）/);
+	assert.match(tasks, /<!-- risk: P1 -->/);
+	assert.match(tasks, /与评审预算的\*\*体量轴\*\*正交/);
+	assert.match(tasks, /未标记任务的默认级/);
+	assert.match(tasks, /就高不就低/);
+
+	const verify = await readFile(join(ROOT, "assets/agents/sdd-verify.md"), "utf8");
+	assert.match(verify, /## 风险感知复核深度/);
+	assert.match(verify, /无命令注释的 P0 任务列为完整性问题/);
+	assert.match(verify, /绝不因缺标记阻塞/);
+	assert.match(verify, /也不绕过任何既有门禁/);
+
+	const discipline = await readFile(join(ROOT, "docs/how-to-choose-discipline.md"), "utf8");
+	assert.match(discipline, /### 任务风险分级（P0–P3）/);
+	assert.match(discipline, /触发 sdd-design 的事前威胁建模/);
+});
+
 test("all shipped SDD agents and chains require parent preflight transport", async () => {
 	const agents = [
 		"sdd-init", "sdd-onboard", "sdd-explore", "sdd-research", "sdd-proposal", "sdd-spec", "sdd-design",
