@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
 	OVERLAY_REL_PATH,
+	looseSkillTokens,
 	runModuleVerifyPipeline,
 } from "../lib/module-verify-pipeline.ts";
 
@@ -166,5 +167,43 @@ test("entry 读取走模块根：entry 缺失时 entry-size 失败", () => {
 	} finally {
 		cleanup(cwd);
 		cleanup(root);
+	}
+});
+
+test("根内字典序：多模块报告顺序稳定（覆盖层优先序契约）", () => {
+	const cwd = makeProject();
+	const root = makeProject();
+	try {
+		writeModule(root, "zeta-tool");
+		writeModule(root, "alpha-tool");
+		writeFileSync(join(cwd, "go.mod"), "");
+
+		const result = runModuleVerifyPipeline(cwd, { roots: [root] });
+		assert.deepEqual(
+			result.reports.map((report) => report.token),
+			["alpha-tool", "zeta-tool"],
+		);
+	} finally {
+		cleanup(cwd);
+		cleanup(root);
+	}
+});
+
+test("looseSkillTokens：全局根注入——用户级同名松散技能也入双轨查名单", () => {
+	const cwd = makeProject();
+	const globalRoot = mkdtempSync(join(tmpdir(), "jero-global-skills-"));
+	try {
+		mkdirSync(join(cwd, ".pi", "skills", "project-skill"), { recursive: true });
+		mkdirSync(join(globalRoot, "gogame"), { recursive: true });
+
+		const tokens = looseSkillTokens(cwd, globalRoot);
+		assert.ok(tokens !== undefined);
+		assert.deepEqual([...tokens].sort(), ["gogame", "project-skill"]);
+
+		// 两根皆缺 → undefined（检查以 skip 呈现）。
+		assert.equal(looseSkillTokens(makeProject(), join(globalRoot, "nope")), undefined);
+	} finally {
+		cleanup(cwd);
+		rmSync(globalRoot, { recursive: true, force: true });
 	}
 });

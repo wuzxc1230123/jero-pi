@@ -7,8 +7,10 @@ import {
 	clearRepoWalkCache,
 	compileDispatchOverlay,
 	discoverModules,
+	effectiveSurfaceRoles,
 	renderOverlayMarkdown,
 	repoWalkCacheStats,
+	validateModuleResolutionReport,
 	walkRepoFiles,
 } from "../lib/module-trigger-compiler.ts";
 import {
@@ -133,7 +135,7 @@ test("renderOverlayMarkdown：关键段落与表格行齐全", () => {
 	assert.ok(markdown.includes("| review | gogame | entry | gogame-reviewer |"));
 	assert.ok(markdown.includes("go test ./..."));
 	assert.ok(markdown.includes("delegate-role"));
-	assert.ok(markdown.includes("module_resolution.delegation"));
+	assert.ok(markdown.includes("module_resolution"));
 });
 
 test("renderOverlayMarkdown：无活动模块时的空态提示", () => {
@@ -241,4 +243,112 @@ test("compileDispatchOverlay + 渲染：C 级硬门声明的响亮缺席", () =>
 	const noGate = compileDispatchOverlay([manifestFrom(goModuleJson())], ["go.mod"]);
 	assert.deepEqual(noGate.declaredGates, []);
 	assert.doesNotMatch(renderOverlayMarkdown(noGate), /硬门声明/);
+});
+
+// 双模块夹具：同触发文件都激活，各带 delegate 路由与同名追加角色，
+// 用于优先序/冲突检测/验证器测试。
+function secondModuleJson(): string {
+	return JSON.stringify({
+		schema: "jero.module-contract/v1",
+		token: "webapi",
+		version: "1.0.0",
+		triggers: { files: ["go.mod"], intents: [] },
+		knowledge: { entry: "knowledge/SKILL.md", references: [] },
+		roles: [
+			{
+				name: "webapi-reviewer",
+				isolation: ["adversarial-eyes"],
+				permission: "read-only",
+				model: "balanced",
+				output: "findings-report",
+			},
+			{
+				name: "shared-reviewer",
+				isolation: ["least-privilege"],
+				permission: "scan",
+				model: "fast",
+				output: "findings-report",
+			},
+		],
+		bindings: { review: { inject: "manifest-only", appendRoles: ["shared-reviewer"] } },
+		routing: [
+			{ when: { surface: "review" }, action: "delegate-role", target: "webapi-reviewer" },
+		],
+	});
+}
+
+function sharedRoleModuleJson(): string {
+	const raw = JSON.parse(goModuleJson());
+	raw.roles.push({
+		name: "shared-reviewer",
+		isolation: ["least-privilege"],
+		permission: "scan",
+		model: "fast",
+		output: "findings-report",
+	});
+	raw.bindings.review.appendRoles.push("shared-reviewer");
+	return JSON.stringify(raw);
+}
+
+test("多模块：路由表稳定 ID、delegate 冲突检测与追加角色去重", () => {
+	const overlay = compileDispatchOverlay(
+		[manifestFrom(sharedRoleModuleJson()), manifestFrom(secondModuleJson())],
+		["go.mod"],
+	);
+
+	// 稳定规则 ID：token#manifest 序号。
+	assert.deepEqual(
+		overlay.routingTable.map((row) => row.id),
+		["gogame#0", "webapi#0"],
+	);
+
+	// 同面不同目标的 delegate 规则 → 冲突告警，先见者（gogame）胜。
+	assert.ok(
+		overlay.issues.some((message) => message.includes("delegate 规则冲突") && message.includes("gogame") && message.includes("webapi")),
+		`应有 delegate 冲突告警，实际：${JSON.stringify(overlay.issues)}`,
+	);
+
+	// 同名追加角色跨模块去重：生效列表只一份，冲突入告警。
+	assert.deepEqual(effectiveSurfaceRoles(overlay, "review"), ["gogame-reviewer", "shared-reviewer"]);
+	assert.ok(overlay.issues.some((message) => message.includes("同时追加") && message.includes("shared-reviewer")));
+
+	// 渲染带规则 ID 列与优先序说明。
+	const markdown = renderOverlayMarkdown(overlay);
+	assert.match(markdown, /\| 规则 ID \| 模块 \| 条件 \| 动作 \| 目标角色 \|/);
+	assert.match(markdown, /gogame#0/);
+	assert.match(markdown, /webapi#0/);
+	assert.match(markdown, /项目根模块先于全局根/);
+});
+
+test("验证器：module_resolution 报告的机器校验全分支", () => {
+	const overlay = compileDispatchOverlay(
+		[manifestFrom(sharedRoleModuleJson()), manifestFrom(secondModuleJson())],
+		["go.mod"],
+	);
+
+	assert.deepEqual(validateModuleResolutionReport("none", overlay), { ok: true, kind: "none", detail: "无活动模块或该面未接线" });
+	assert.equal(validateModuleResolutionReport("paths-injected", overlay).ok, true);
+	assert.equal(validateModuleResolutionReport("skipped:review surface not wired", overlay).kind, "skipped");
+
+	// 带规则 ID：角色与目标一致 → 通过。
+	const withRule = validateModuleResolutionReport("delegated:gogame-reviewer@gogame#0", overlay);
+	assert.equal(withRule.ok, true);
+	assert.equal(withRule.kind, "delegated");
+	assert.match(withRule.detail, /规则 gogame#0/);
+
+	// 不带规则 ID：角色存在即通过（宽松档，兼容提示层回报）。
+	assert.equal(validateModuleResolutionReport("delegated:webapi-reviewer", overlay).ok, true);
+
+	// 规则 ID 的目标与报告角色不一致 → 拒绝。
+	const mismatch = validateModuleResolutionReport("delegated:webapi-reviewer@gogame#0", overlay);
+	assert.equal(mismatch.ok, false);
+	assert.match(mismatch.detail, /目标是 gogame-reviewer/);
+
+	// 未知规则 ID / 未知角色 / 垃圾格式 / 编排缺口。
+	assert.equal(validateModuleResolutionReport("delegated:gogame-reviewer@ghost#9", overlay).ok, false);
+	assert.equal(validateModuleResolutionReport("delegated:no-such-role", overlay).ok, false);
+	assert.equal(validateModuleResolutionReport("随便写", overlay).kind, "invalid");
+	const unresolved = validateModuleResolutionReport("name-unresolved", overlay);
+	assert.equal(unresolved.ok, false);
+	assert.equal(unresolved.kind, "name-unresolved");
 });

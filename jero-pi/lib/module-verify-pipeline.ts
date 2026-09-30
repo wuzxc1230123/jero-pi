@@ -37,17 +37,30 @@ export function anyModuleRootExists(cwd: string): boolean {
 	return moduleRoots(cwd).some((root) => existsSync(root));
 }
 
-// 项目 .pi/skills/ 下的松散技能名——no-loose-duplicate 查的数据源。
-export function looseSkillTokens(cwd: string): string[] | undefined {
-	const skillsDir = join(cwd, ".pi", "skills");
-	try {
-		return readdirSync(skillsDir, { withFileTypes: true })
-			.filter((entry) => entry.isDirectory())
-			.map((entry) => entry.name);
-	} catch {
-		// 无松散技能目录是正常态；该检查以 skip 呈现。
-		return undefined;
+// 项目 .pi/skills/ 与全局 ~/.pi/skills/ 下的松散技能名——no-loose-duplicate
+// 查的数据源。全局口专门盯 ~/.pi/skills（Pi 生态用户级技能根）：模块知识
+// 入口与全局同名松散技能在注册表层会互相遮蔽，双轨漂移必须在此拦截。
+// globalRoot 参数仅供测试注入；缺省读真实用户级根。
+export function looseSkillTokens(
+	cwd: string,
+	globalRoot: string = join(homedir(), ".pi", "skills"),
+): string[] | undefined {
+	const names = new Set<string>();
+	const roots = [join(cwd, ".pi", "skills"), globalRoot];
+	let anyRoot = false;
+	for (const root of roots) {
+		try {
+			for (const entry of readdirSync(root, { withFileTypes: true })) {
+				if (entry.isDirectory()) {
+					names.add(entry.name);
+					anyRoot = true;
+				}
+			}
+		} catch {
+			// 无该技能根是正常态；至少项目根不存在时由 anyRoot 表达。
+		}
 	}
+	return anyRoot ? [...names] : undefined;
 }
 
 export interface BrokenModule {
@@ -107,7 +120,12 @@ export function runModuleVerifyPipeline(cwd: string, options: VerifyPipelineOpti
 
 	const discovered: { root: string; found: DiscoveredModule }[] = [];
 	for (const root of roots) {
-		for (const found of discoverModules(root)) discovered.push({ root, found });
+		// 根内按目录名字典序稳定化——覆盖层优先序契约（项目根先于全局根、
+		// 根内字典序）的一半在这里钉死；readdir 顺序不做任何假设。
+		const foundInRoot = discoverModules(root).toSorted((left, right) =>
+			left.dirName.localeCompare(right.dirName),
+		);
+		for (const found of foundInRoot) discovered.push({ root, found });
 	}
 	const walked = walkRepoFiles(cwd);
 	const loose = looseSkillTokens(cwd);

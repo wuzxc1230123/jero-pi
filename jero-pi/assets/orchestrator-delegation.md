@@ -244,7 +244,7 @@ context:        trigger_hit: bool（.atl/module-overlay.md 静态触发，机器
 - R3 SDD-suggest ⇔ 重大歧义 ∧（archaeology ∨ multi-session ∨ cross_module ∨ plan-then-code）；重大歧义 = 决策点≥3 ∨ acceptance_unclear ∨ 架构/产品级开放问题。风险、规模、文件数永不进入 R3 的条件——高危只作为建议时的注记。
 - R4 其余 → 本节上方的工作路由阶梯与强制委托触发条件。
 
-能力模块的路由表（`.atl/module-overlay.md`）以 `slip` 条件引用本单据字段；编排器求值命中即按 `suggest-role`/`delegate-role` 执行并回报 `module_resolution.delegation`。建议被接受的瞬间语义层退场，SDD 预检与有界路由接管。
+能力模块的路由表（`.atl/module-overlay.md`）以 `slip` 条件引用本单据字段；编排器求值命中即按 `suggest-role`/`delegate-role` 执行，并在结果封套回报 `module_resolution`——`delegated:{角色}@{规则 ID}` 形式（规则 ID 取自覆盖层路由表）可被机器校验。建议被接受的瞬间语义层退场，SDD 预检与有界路由接管。
 
 ## Pi 委托绑定
 

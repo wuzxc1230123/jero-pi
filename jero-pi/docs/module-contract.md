@@ -54,6 +54,19 @@
 
 `read-only` → read/grep/find；`scan` → read/grep；`write-bounded` → read/grep/find/edit/write/bash。编译期展开，模块不手写工具清单。
 
+### 多模块优先序与冲突语义（机器保证）
+
+覆盖层编译的确定性规则，全部写在 [lib/module-trigger-compiler.ts](../lib/module-trigger-compiler.ts) 并有测试钉住：
+
+- **优先序**：项目根模块先于全局根；同根内按 token 字典序。面注入顺序、追加角色去重、路由表顺序全部继承它；
+- **追加角色去重**：同面同名角色取先见者（项目根胜），冲突列入覆盖层编译告警；
+- **delegate 冲突**：同面不同目标的 `delegate-role` 规则取先见者并告警；
+- **Strict TDD 冲突**：多模块钉不同测试命令取第一并告警（既有行为）。
+
+### 路由规则 ID 与 module_resolution 机器校验
+
+覆盖层路由表为每条规则分配稳定 ID（`{token}#{manifest 内序号}`）。子代理的结果契约回报 `module_resolution`，其中 `delegated:{角色}@{规则 ID}` 形式可经 `validateModuleResolutionReport`（同文件导出的纯函数）对照覆盖层机器校验：角色存在、规则 ID 存在、目标一致。`name-unresolved` 判定为编排缺口。这把审计从"约定回报"升级为"可校验回报"——提示层产出、机器层验证。
+
 ## 编排面（bindings 的键）
 
 | 面 | orchestrator 情况 | 消费方式 |

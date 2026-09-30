@@ -123,8 +123,11 @@ export default function (pi: ExtensionAPI) {
 			if (ctx.hasUI) {
 				startOverlayWatcher(ctx.cwd, (message) => ctx.ui.notify(message, "info"));
 			}
-			// 全仓扫描延后：会话启动绝不等待仓库扫描（与 Shell 层同纪律）。
-			setImmediate(() => {
+			// 覆盖层缺失（首次运行/被清理）时同步编译——启动后第一次委托
+			// 绝不能读到"无覆盖层"的空档；已有覆盖层时才延后刷新（陈旧窗口
+			// 由审计协议的 name-unresolved 纠正步兜底）。
+			const overlayMissing = !existsSync(join(ctx.cwd, ".atl", "module-overlay.md"));
+			const refresh = () => {
 				try {
 					runModuleVerifyPipeline(ctx.cwd);
 				} catch (error) {
@@ -133,7 +136,14 @@ export default function (pi: ExtensionAPI) {
 						ctx.ui.notify(`Module overlay refresh failed: ${message}`, "warning");
 					}
 				}
-			});
+			};
+			if (overlayMissing) {
+				// 同步路径：一次全仓扫描（≤2 万文件）值得换取首委托的正确性。
+				refresh();
+			} else {
+				// 刷新延后：会话启动绝不等待仓库扫描（与 Shell 层同纪律）。
+				setImmediate(refresh);
+			}
 		} catch (error) {
 			// 启动路径尽力而为：覆盖层缺失时编排器按 legacy 路径工作，不阻断会话。
 			if (ctx.hasUI) {

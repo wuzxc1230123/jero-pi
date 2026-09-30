@@ -101,6 +101,16 @@ export interface SurfaceInjection {
 	}[];
 }
 
+export interface RoutingRuleRow {
+	/** 稳定规则 ID：`{token}#{manifest 内序号}`——module_resolution 审计的机器锚点。 */
+	readonly id: string;
+	readonly token: string;
+	readonly action: string;
+	readonly target: string;
+	/** 条件的人类可读形式（surface=… 或 slip=…）。 */
+	readonly condition: string;
+}
+
 export interface DispatchOverlay {
 	readonly contract: typeof MODULE_OVERLAY_ID;
 	readonly activeModules: readonly ActiveModule[];
@@ -113,10 +123,13 @@ export interface DispatchOverlay {
 	};
 	/** 活动模块声明的 C 级硬门（响亮的缺席：渲染明示，缺席不静默）。 */
 	readonly declaredGates: readonly { readonly token: string; readonly gate: string }[];
+	/** 全部活动模块的路由规则平表（带稳定 ID，供审计验证器消费）。 */
+	readonly routingTable: readonly RoutingRuleRow[];
 	readonly issues: readonly string[];
 }
 
-/** 静态触发判定 + 各面注入计划编译。routing 的 slip 条件留给编排器按路由单求值。 */
+// 输入序即优先序：管线保证项目根模块先于全局根、同根内按 token 字典序。
+// 覆盖层的面注入顺序、追加角色去重（先见者胜）与路由表顺序全部继承它。
 export function compileDispatchOverlay(
 	manifests: readonly ModuleManifest[],
 	repoFiles: readonly string[],
@@ -135,6 +148,7 @@ export function compileDispatchOverlay(
 		else inactive.push(manifest.token);
 	}
 
+	const appendRoleOwners = new Map<string, string>();
 	const surfaces: SurfaceInjection[] = [];
 	for (const surface of BINDING_SURFACES) {
 		const entries = [];
@@ -144,11 +158,44 @@ export function compileDispatchOverlay(
 			for (const role of binding.appendRoles) {
 				if (!module.manifest.roles.some((candidate) => candidate.name === role)) {
 					issues.push(`模块 ${module.token} 在 ${surface} 面追加的角色 ${role} 未在本模块声明`);
+					continue;
+				}
+				const owner = appendRoleOwners.get(`${surface}:${role}`);
+				if (owner !== undefined) {
+					issues.push(`角色 ${role} 在 ${surface} 面被模块 ${owner} 与 ${module.token} 同时追加，取 ${owner}（项目根优先于全局根）`);
+				} else {
+					appendRoleOwners.set(`${surface}:${role}`, module.token);
 				}
 			}
 			entries.push({ token: module.token, inject: binding.inject, appendRoles: binding.appendRoles });
 		}
 		if (entries.length > 0) surfaces.push({ surface, entries });
+	}
+
+	// 路由平表 + delegate 冲突检测：同面不同目标的 delegate 规则告警，先见者胜。
+	const routingTable: RoutingRuleRow[] = [];
+	const delegateBySurface = new Map<string, { token: string; target: string }>();
+	for (const module of active) {
+		for (const [index, rule] of module.manifest.routing.entries()) {
+			const condition = rule.when.surface !== undefined
+				? `surface=${rule.when.surface}`
+				: `slip=${JSON.stringify(rule.when.slip)}`;
+			routingTable.push({
+				id: `${module.token}#${index}`,
+				token: module.token,
+				action: rule.action,
+				target: rule.target,
+				condition,
+			});
+			if (rule.when.surface !== undefined && rule.action === "delegate-role") {
+				const existing = delegateBySurface.get(rule.when.surface);
+				if (existing !== undefined && existing.target !== rule.target) {
+					issues.push(`面 ${rule.when.surface} 上模块 ${existing.token}（→${existing.target}）与 ${module.token}（→${rule.target}）的 delegate 规则冲突，取 ${existing.token}（先见者胜，项目根优先）`);
+				} else if (existing === undefined) {
+					delegateBySurface.set(rule.when.surface, { token: module.token, target: rule.target });
+				}
+			}
+		}
 	}
 
 	const testCommandSources = active
@@ -179,8 +226,70 @@ export function compileDispatchOverlay(
 			conflicts,
 		},
 		declaredGates,
+		routingTable,
 		issues,
 	};
+}
+
+/** 面上生效的追加角色（跨模块去重，先见者胜 = 项目根优先于全局根）。 */
+export function effectiveSurfaceRoles(overlay: DispatchOverlay, surface: BindingSurface): readonly string[] {
+	const roles: string[] = [];
+	for (const entry of overlay.surfaces.find((candidate) => candidate.surface === surface)?.entries ?? []) {
+		for (const role of entry.appendRoles) {
+			if (!roles.includes(role)) roles.push(role);
+		}
+	}
+	return roles;
+}
+
+export interface ModuleResolutionVerdict {
+	readonly ok: boolean;
+	readonly kind: "none" | "paths-injected" | "delegated" | "skipped" | "name-unresolved" | "invalid";
+	readonly detail: string;
+}
+
+const DELEGATED_REPORT_PATTERN = /^delegated:([a-z][a-z0-9-]*)(?:@([a-z][a-z0-9-]*#[0-9]+))?$/;
+
+/**
+ * module_resolution 审计报告的机器验证 v1——把"约定回报"变成"可校验回报"：
+ * 子代理按结果契约回报字符串，本函数对照覆盖层校验其真实性（角色存在、
+ * 规则 ID 存在且目标一致）。`name-unresolved` 视为编排缺口（ok:false）。
+ */
+export function validateModuleResolutionReport(
+	report: string,
+	overlay: DispatchOverlay,
+): ModuleResolutionVerdict {
+	const value = report.trim();
+	if (value === "none") return { ok: true, kind: "none", detail: "无活动模块或该面未接线" };
+	if (value === "paths-injected") return { ok: true, kind: "paths-injected", detail: "按覆盖层档位注入" };
+	if (value.startsWith("skipped:")) {
+		return { ok: true, kind: "skipped", detail: value.slice("skipped:".length) };
+	}
+	if (value === "name-unresolved") {
+		return { ok: false, kind: "name-unresolved", detail: "路由目标不可解析——按编排缺口纠正" };
+	}
+	const delegated = value.match(DELEGATED_REPORT_PATTERN);
+	if (delegated === null) {
+		return { ok: false, kind: "invalid", detail: `无法识别的 module_resolution 报告：${value}` };
+	}
+	const role = delegated[1] as string;
+	const ruleId = delegated[2];
+	const roleKnown = overlay.activeModules.some((module) =>
+		module.manifest.roles.some((candidate) => candidate.name === role),
+	);
+	if (!roleKnown) {
+		return { ok: false, kind: "invalid", detail: `报告的角色 ${role} 不在任何活动模块的 roles 中` };
+	}
+	if (ruleId !== undefined) {
+		const rule = overlay.routingTable.find((candidate) => candidate.id === ruleId);
+		if (rule === undefined) {
+			return { ok: false, kind: "invalid", detail: `规则 ID ${ruleId} 不在覆盖层路由表中` };
+		}
+		if (rule.target !== role) {
+			return { ok: false, kind: "invalid", detail: `规则 ${ruleId} 的目标是 ${rule.target}，与报告的角色 ${role} 不一致` };
+		}
+	}
+	return { ok: true, kind: "delegated", detail: ruleId === undefined ? `委派 ${role}（未带规则 ID）` : `委派 ${role}（规则 ${ruleId}）` };
 }
 
 // markdown 表格单元格转义：值里的 | 会撕开表格列。
@@ -255,22 +364,18 @@ export function renderOverlayMarkdown(
 	}
 
 	lines.push("## 角色委派路由（供编排器按路由单求值）");
-	const routingRows = overlay.activeModules.flatMap((module) =>
-		module.manifest.routing.map((rule) => ({ token: module.token, rule })),
-	);
-	if (routingRows.length === 0) {
+	if (overlay.routingTable.length === 0) {
 		lines.push("（无）");
 	} else {
-		lines.push("| 模块 | 条件 | 动作 | 目标角色 |");
-		lines.push("| --- | --- | --- | --- |");
-		for (const row of routingRows) {
-			const condition = row.rule.when.surface !== undefined
-				? `surface=${row.rule.when.surface}`
-				: `slip=${JSON.stringify(row.rule.when.slip)}`;
-			lines.push(`| ${mdCell(row.token)} | ${mdCell(condition)} | ${mdCell(row.rule.action)} | ${mdCell(row.rule.target)} |`);
+		lines.push("| 规则 ID | 模块 | 条件 | 动作 | 目标角色 |");
+		lines.push("| --- | --- | --- | --- | --- |");
+		for (const row of overlay.routingTable) {
+			lines.push(`| ${mdCell(row.id)} | ${mdCell(row.token)} | ${mdCell(row.condition)} | ${mdCell(row.action)} | ${mdCell(row.target)} |`);
 		}
 		lines.push("");
-		lines.push("动作语义：`suggest-role` = 提示层建议（审计留痕）；`delegate-role` = 编排器应尝试委派并在结果封套回报 `module_resolution.delegation`。条件命中前都必须有本模块静态触发命中。");
+		lines.push("动作语义：`suggest-role` = 提示层建议（审计留痕）；`delegate-role` = 编排器应尝试委派并在结果封套回报 `module_resolution`。条件命中前都必须有本模块静态触发命中。");
+		lines.push("回报格式：`none` / `paths-injected` / `delegated:{角色}` / `delegated:{角色}@{规则 ID}` / `skipped:{原因}` / `name-unresolved`；带规则 ID 的回报可被机器校验（对照上表角色与目标）。");
+		lines.push("优先序：项目根模块先于全局根、同根内按 token 字典序；同面追加角色与 delegate 冲突取先见者，冲突已在编译告警列出。");
 	}
 	lines.push("");
 

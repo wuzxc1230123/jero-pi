@@ -61,11 +61,21 @@ export function lineStartOffsets(text) {
 /**
  * 归并一组 profile，输出 { file → { executable, covered } }（行号集合的计数）。
  * profiles: [{ url, source, ranges }]；ranges 为摊平后的区间。
+ * 性能：每 profile 的区间先按宽度升序排序 + 去重，最内层包含区间即首个
+ * 包含区间（早退），把每行 O(区间数) 降为近似 O(命中最小区间的位置)。
  */
 export function mergeProfiles(profiles) {
 	const merged = new Map();
 	for (const profile of profiles) {
 		const offsets = lineStartOffsets(profile.source);
+		const sortedRanges = [...new Map(profile.ranges.map((range) => [`${range.start}:${range.end}`, range])).values()]
+			.toSorted((left, right) => (left.end - left.start) - (right.end - right.start));
+		const innermost = (offset) => {
+			for (const range of sortedRanges) {
+				if (offset >= range.start && offset < range.end) return range.count > 0;
+			}
+			return undefined;
+		};
 		const linesOf = (start, end) => {
 			const lines = [];
 			for (let li = 0; li < offsets.length; li++) {
@@ -79,11 +89,11 @@ export function mergeProfiles(profiles) {
 			entry = { executable: new Set(), covered: new Set() };
 			merged.set(profile.url, entry);
 		}
-		for (const range of profile.ranges) {
+		for (const range of sortedRanges) {
 			for (const line of linesOf(range.start, range.end)) entry.executable.add(line);
 		}
 		for (const line of entry.executable) {
-			if (innermostCovered(profile.ranges, offsets[line - 1])) entry.covered.add(line);
+			if (innermost(offsets[line - 1])) entry.covered.add(line);
 		}
 	}
 	return merged;

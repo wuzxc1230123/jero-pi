@@ -157,3 +157,21 @@ test("session_start·有模块根：延后重写覆盖层，shutdown 不抛", as
 		rmSync(cwd, { recursive: true, force: true });
 	}
 });
+
+test("session_start·覆盖层缺失（首次运行）：同步编译，await 返回时已落盘", async () => {
+	const cwd = makeProject();
+	try {
+		writeModule(join(cwd, ".pi", "modules"), "gogame");
+		writeFileSync(join(cwd, "go.mod"), "");
+		// 不预置覆盖层——首次运行走同步路径，启动后第一次委托无空档。
+
+		const { ctx } = fakeCtx(cwd);
+		await assembly.handlers.get("session_start")!({}, ctx);
+		// 不 flush：同步路径意味着 handler 返回时覆盖层必须已在磁盘上。
+		const overlay = readFileSync(join(cwd, ".atl", "module-overlay.md"), "utf8");
+		assert.match(overlay, /gogame/);
+		assert.doesNotThrow(() => assembly.handlers.get("session_shutdown")!({}, fakeCtx(cwd).ctx));
+	} finally {
+		rmSync(cwd, { recursive: true, force: true });
+	}
+});

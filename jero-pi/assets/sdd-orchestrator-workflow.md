@@ -185,7 +185,7 @@ skill_resolution
 module_resolution
 ```
 
-`module_resolution` 报告能力模块的消费结果：`none`（无活动模块或本面未接线）、`paths-injected`（按覆盖层档位注入）、`delegated: {角色}`（按覆盖层路由表完成委派）、`skipped: {原因}` 或 `name-unresolved`（路由目标不可解析——安装验证遗漏或资产被移动，按编排缺口纠正）。
+`module_resolution` 报告能力模块的消费结果：`none`（无活动模块或本面未接线）、`paths-injected`（按覆盖层档位注入）、`delegated: {角色}` 或 `delegated: {角色}@{规则 ID}`（按覆盖层路由表完成委派；规则 ID 取自覆盖层路由表，带 ID 的回报可被机器校验）、`skipped: {原因}` 或 `name-unresolved`（路由目标不可解析——安装验证遗漏或资产被移动，按编排缺口纠正）。
 
 父会话应综合这些封套，除非确有必要，不粘贴冗长的原始报告。
 
