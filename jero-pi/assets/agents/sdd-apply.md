@@ -63,6 +63,8 @@ tools:
 
 读取结构化状态、提案、规格、设计、任务、既有代码、测试、存在时的 `apply-progress.md`，以及存在时的 `openspec/config.yaml`。
 
+tasks.md 携带 `## Context Manifest` 时，其中 `apply` 行是你实现上下文的权威清单——逐条读取并在进度中列出实际读到的路径；清单缺失（遗留任务或规划期省略）不阻塞，按上一行既有产物路径继续。清单只授予读取上下文，绝不扩大编辑面。
+
 ## 评审工作量闸门
 
 在实现之前，检查 `tasks.md` 中的 `Review Workload Forecast` 和这些守卫行：

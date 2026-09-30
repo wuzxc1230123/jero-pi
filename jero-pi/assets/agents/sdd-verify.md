@@ -58,6 +58,8 @@ tools:
 
 读取结构化状态、规格、设计、任务、apply 进度、已变更代码、测试，以及存在时的 `openspec/config.yaml`。
 
+tasks.md 携带 `## Context Manifest` 时，`verify` 行是验证上下文的权威清单——逐条读取并在报告列出；清单缺失不阻塞，按上一行既有产物路径继续。
+
 ## Verification
 
 在可用时运行必需的聚焦和完整验证命令。精确报告命令，包括失败。

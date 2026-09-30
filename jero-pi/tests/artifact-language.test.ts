@@ -255,6 +255,27 @@ test("plan-time risk grading stays pinned across tasks, verify, and discipline d
 	assert.match(discipline, /触发 sdd-design 的事前威胁建模/);
 });
 
+test("context manifest and bootstrap receipt stay pinned", async () => {
+	// Trellis 借鉴批：任务级上下文清单（读取≠编辑许可）+ 注入回执（一次性确认）。
+	const tasks = await readFile(join(ROOT, "assets/agents/sdd-tasks.md"), "utf8");
+	assert.match(tasks, /## 上下文清单（Context Manifest）/);
+	assert.match(tasks, /\| 消费者 \| 路径 \| 理由 \|/);
+	assert.match(tasks, /绝不构成编辑许可/);
+
+	const apply = await readFile(join(ROOT, "assets/agents/sdd-apply.md"), "utf8");
+	assert.match(apply, /`apply` 行是你实现上下文的权威清单/);
+	assert.match(apply, /绝不扩大编辑面/);
+
+	const verify = await readFile(join(ROOT, "assets/agents/sdd-verify.md"), "utf8");
+	assert.match(verify, /`verify` 行是验证上下文的权威清单/);
+
+	// 回执指令钉在 lib 注入文本里：语言跟随、中性回退、一次性。
+	const bootstrapSource = await readFile(join(ROOT, "lib/jero-ai-bootstrap.ts"), "utf8");
+	assert.match(bootstrapSource, /注入回执（一次性）/);
+	assert.match(bootstrapSource, /jero bootstrap ✓/);
+	assert.match(bootstrapSource, /除此之外不重复/);
+});
+
 test("all shipped SDD agents and chains require parent preflight transport", async () => {
 	const agents = [
 		"sdd-init", "sdd-onboard", "sdd-explore", "sdd-research", "sdd-proposal", "sdd-spec", "sdd-design",

@@ -118,6 +118,22 @@ Chain strategy: stacked-to-main|feature-branch-chain|size-exception|pending
 
 映射验证深度（消费方是 `sdd-verify` 的风险感知复核深度节）：P0 强制逐任务重跑并在报告单列 + 附完整评审生命周期建议；P1 逐任务重跑；P2 按既有路径；P3 可豁免逐条重跑。风险级只调节验证深度，绝不调节评审预算或交付门槛，也绝不替代评审轴的 assess/生命周期决策——那是用户的选择。拿不准时**就高不就低**。
 
+## 上下文清单（Context Manifest）
+
+在任务清单之后附一张按消费者分列的上下文表，规划期由你策展——实现与验证各自真正要读哪些既有文件、为什么：
+
+```markdown
+## Context Manifest
+
+| 消费者 | 路径 | 理由 |
+|--------|------|------|
+| apply | openspec/specs/{domain}/spec.md | 本变更修改的需求基线 |
+| apply | src/foo.ts | 被触及的既有实现，先读再改 |
+| verify | openspec/changes/{change}/design.md | 验证须对照的契约决策 |
+```
+
+规则：路径必须具体到文件（规格、研究断言、被触及代码、配置），每条带一句话理由；`apply` 行是 `sdd-apply` 的实现上下文，`verify` 行是 `sdd-verify` 的验证上下文——两列各自取舍，不互相代替。琐碎变更可整节省略；省略或遗留任务无清单时，消费者回退"读全部变更产物"的既有路径，绝不阻塞。清单是**读取**上下文，绝不构成编辑许可——编辑面仍归 `allowedEditRoots` 与 `## Allowed edit surfaces` 既有机制。
+
 ## 轻量估点（可选）
 
 在 `Review Workload Forecast` 表之后追加一张可选的估点表，用 6 步斐波那契（1/2/3/5/8/13）按任务估点，合计给出变更总点数：
