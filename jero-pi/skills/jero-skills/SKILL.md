@@ -30,6 +30,7 @@ license: MIT
 | 技能增删后刷新索引 | `/skill-registry:refresh`（或自动重扫）；机器索引在 `.atl/skill-registry.md` |
 | 发布 | `release` |
 | 体检 / 状态诊断 | `/jero:doctor` `/jero:status` `/jero:guard` |
+| 编排停滞 / 空转（阶段不推进、子代理悬挂、门反复失败） | `jero-diagnose-stall` 技能（只读六类分诊：状态投影/门失败停链/等人确认丢失/子代未结算/修复循环/预算停） |
 | 跨会话记忆 | `mem_save/mem_read/mem_list/mem_search` 工具 |
 | 评审会话常任权限 / RDD 开关 | `/jero:review-session-permission` `/jero:review-mode` |
 

@@ -211,6 +211,29 @@ test("SDD tasks/apply/verify/archive carry the per-task verify command and trace
 	assert.match(archive, /周期与估点校准/);
 });
 
+test("diagnose-stall skill, design threat model, and spike discipline stay pinned", async () => {
+	// bigpowers 借鉴批（诊断与防御）：停滞分诊技能 + 路由表条目同步、
+	// 设计期可选威胁建模（不新增门禁）、抛弃式原型纪律（代码即弃）。
+	const skill = await readFile(join(ROOT, "skills/jero-diagnose-stall/SKILL.md"), "utf8");
+	assert.match(skill, /诊断是只读的/);
+	assert.match(skill, /绝不替编排器做状态转移/);
+	assert.match(skill, /未分类/);
+
+	const router = await readFile(join(ROOT, "skills/jero-skills/SKILL.md"), "utf8");
+	assert.match(router, /jero-diagnose-stall/);
+
+	const design = await readFile(join(ROOT, "assets/agents/sdd-design.md"), "utf8");
+	assert.match(design, /## 事前威胁建模（安全敏感时）/);
+	assert.match(design, /## Threat Model/);
+	assert.match(design, /非安全敏感变更省略本节/);
+	assert.match(design, /不新增任何门禁/);
+
+	const discipline = await readFile(join(ROOT, "docs/how-to-choose-discipline.md"), "utf8");
+	assert.match(discipline, /抛弃式原型（spike）/);
+	assert.match(discipline, /绝不合并、绝不转正/);
+	assert.match(discipline, /spike 的产出是答案，不是代码/);
+});
+
 test("all shipped SDD agents and chains require parent preflight transport", async () => {
 	const agents = [
 		"sdd-init", "sdd-onboard", "sdd-explore", "sdd-research", "sdd-proposal", "sdd-spec", "sdd-design",
