@@ -154,6 +154,32 @@ test("SDD proposal questions focus on business and PRD gaps", async () => {
 	);
 });
 
+test("SDD sync/archive/remediate carry the knowledge-deposit and repeat-offender copy", async () => {
+	// grilling/CONTEXT.md/ADR/non-goal-retrospective/build-eval 借鉴批：
+	// 写入侧归 sync（术语表 + 决策记录 + 非目标，追加式、非破坏），
+	// 读取侧由已确立规范索引自动发现——这里钉住三份资产的关键文案。
+	const sync = await readFile(join(ROOT, "assets/agents/sdd-sync.md"), "utf8");
+	assert.match(sync, /## 知识沉淀回写/);
+	assert.match(sync, /openspec\/specs\/glossary\/spec\.md/);
+	assert.match(sync, /openspec\/specs\/decisions\/spec\.md/);
+	assert.match(sync, /## 决策记录/);
+	assert.match(sync, /## 非目标记录/);
+	assert.match(sync, /### DR-YYYY-MM-DD: \{标题\}/);
+	assert.match(sync, /绝不改写既有条目/);
+
+	const archive = await readFile(join(ROOT, "assets/agents/sdd-archive.md"), "utf8");
+	assert.match(archive, /## 归档回顾/);
+	assert.match(archive, /project\/non-goals/);
+	assert.match(archive, /project\/repeat-offenders/);
+	assert.match(archive, /先 `mem_read` 既有主题再合并保存/);
+
+	const remediate = await readFile(join(ROOT, "assets/agents/sdd-remediate.md"), "utf8");
+	assert.match(remediate, /重复 offender 纪律/);
+	assert.match(remediate, /project\/repeat-offenders/);
+	// 借鉴 build-eval 但守住边界：remediate 只提议可执行检查，绝不自行改测试套件。
+	assert.match(remediate, /绝不自行向项目测试套件添加检查/);
+});
+
 test("all shipped SDD agents and chains require parent preflight transport", async () => {
 	const agents = [
 		"sdd-init", "sdd-onboard", "sdd-explore", "sdd-research", "sdd-proposal", "sdd-spec", "sdd-design",

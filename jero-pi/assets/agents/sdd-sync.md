@@ -72,6 +72,7 @@ tools:
 - `openspec/changes/{change}/proposal.md`
 - `openspec/changes/{change}/specs/`
 - 存在时的 `openspec/changes/{change}/tasks.md`
+- 存在时的 `openspec/changes/{change}/design.md`（知识沉淀回写读取决策与权衡）
 - `openspec/changes/{change}/verify-report.md`
 - 存在时的 `openspec/config.yaml`
 
@@ -114,6 +115,16 @@ openspec/specs/{domain}/spec.md
 - 检测遗留扁平规格；
 - 报告破坏性 REMOVED / 大型 MODIFIED 增量并要求批准。
 
+## 知识沉淀回写
+
+文件承载模式下，除需求增量外，还把变更中沉淀的可复用知识合并进权威规范——写入侧归本阶段，读取侧由已确立规范索引自动发现（`openspec/specs/**` 下含非空 `spec.md` 的每个目录都是一个域）。全部合并非破坏性：保留既有内容，冲突时以权威规范为准并在同步报告中标注。
+
+- **共享语言合并**：读取 `openspec/changes/{change}/proposal.md` 的 `## 共享语言` 小节，把达成一致的术语（术语/定义/来源）合并进 `openspec/specs/glossary/spec.md`。该文件缺失时创建并带 `## Purpose` 首行（说明这是全项目共享术语表）；同义术语不覆盖既有定义，新术语追加，定义冲突在同步报告中列出待人工裁决。
+- **决策记录**：读取存在时的 `openspec/changes/{change}/design.md` 与 proposal 的业务权衡，把难从代码本身看出的关键决策（选了什么、为什么、否决了哪些备选）以追加式条目写入 `openspec/specs/decisions/spec.md` 的 `## 决策记录` 节。该文件缺失时创建并带 `## Purpose`；每条含日期、状态（accepted/superseded）、上下文、决策、后果、被否备选，按 `### DR-YYYY-MM-DD: {标题}` 三级标题编目（条目层级从属于所属节，与 `### Requirement:` 条目惯例一致）；绝不改写既有条目，被取代时把旧条目状态改为 `superseded` 并注明后继条目。
+- **非目标记录**：把 proposal 的范围边界与非目标、以及过程中明确放弃或砍除的方向，以追加式条目记入同一文件的 `## 非目标记录` 节（每条含日期、内容、原因）——后续会话规划同类功能时先读它，不再重新提议已否决的方向。
+
+`engram`/`none` 存储不适用本节（无权威规格合并层）；`both`/`hybrid` 照常执行文件侧回写。轻量 change 无需求增量时同步整体 `not_applicable`，本节随之跳过——此类变更的沉淀由 `sdd-archive` 的归档回顾兜底。完成后在同步报告的"知识沉淀"项列出写入的文件与条目数；无知识可沉淀时显式写"本次无"，不留空节。
+
 ## 同步报告
 
 在文件承载模式下写入 `openspec/changes/{change}/sync-report.md`。
@@ -127,6 +138,7 @@ openspec/specs/{domain}/spec.md
 - 活跃的同领域冲突；
 - 破坏性同步的批准或阻塞项；
 - 执行过的验证命令或检查；
+- 知识沉淀：写入的规范文件与条目数，或"本次无"；
 - 结构化状态和 `actionContext` 发现；
 - 下一个推荐阶段：干净时为 `sdd-archive`。
 

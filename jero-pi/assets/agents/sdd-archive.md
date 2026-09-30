@@ -67,6 +67,7 @@ tools:
 - `openspec/changes/{change}/tasks.md`
 - `openspec/changes/{change}/verify-report.md`
 - 执行过文件承载同步时的 `openspec/changes/{change}/sync-report.md`
+- sync 已执行知识沉淀回写时的 `openspec/specs/decisions/spec.md`（归档回顾引用其 `DR-` 条目编号）
 - 存在时的 `openspec/config.yaml`
 
 在以下情况下以 `blocked` 停止：
@@ -170,6 +171,16 @@ openspec/changes/{change}/
 
 使用今天的 ISO 日期。缺失时创建 `openspec/changes/archive/`。归档是审计轨迹；绝不默默删除或修改已归档的变更。
 
+## 归档回顾
+
+归档移动之前，从提案的范围边界与非目标、design 的权衡和验证报告中提取三类回顾，写入归档报告的 `## 归档回顾` 一节：
+
+- **放弃与砍除**：过程中明确放弃、砍除或降级的方向及原因（一句话一条）；
+- **关键裁决**：本次变更中难从代码本身看出的关键决策——sync 已回写决策记录时引用 `DR-` 条目编号，不重复展开；
+- **重复 offender**：对照验证报告与本变更此前的修复记录，同一文件/同一缺陷类别的第二次及以后出现，逐条列出并建议转为可执行检查（项目测试、静态检查或基准任务，含放置位置与断言内容），供父会话/编排器决定是否立任务。
+
+`engram`/`both` 且记忆工具可用时，另把放弃方向与重复 offender 经 `mem_save` 持久化到项目级记忆主题 `project/non-goals` 与 `project/repeat-offenders`——先 `mem_read` 既有主题再合并保存，避免 last-write-wins 覆盖历史条目。`openspec`/`none` 模式不执行记忆保存；回顾内容已随归档报告进入审计轨迹。
+
 ## 归档报告
 
 归档报告的处理取决于模式：
@@ -188,6 +199,7 @@ openspec/changes/{change}/
 - 未勾选的实现任务行，或确认没有剩余的 `- [ ]` 实现任务复选框；
 - 存在时的非关键部分归档批准或陈旧复选框对账细节；
 - 结构化状态和 `actionContext` 发现；
+- `## 归档回顾` 一节（放弃与砍除 / 关键裁决 / 重复 offender）；
 - 破坏性合并的批准或阻塞项；
 - 归档路径；
 - 使用 Engram 或 `both` / `hybrid` 模式时经由 `mem_save` 持久化的记忆主题键。
