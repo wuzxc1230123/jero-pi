@@ -111,7 +111,7 @@ Chain strategy: stacked-to-main|feature-branch-chain|size-exception|pending
 
 风险轴度量的是**错了的代价**（后果轴），与评审预算的**体量轴**正交：小 diff 也可能是 P0，大 diff 也可能是 P3。判据从重到轻：
 
-- `P0`——不可逆或安全敏感：认证/凭据/会话、数据删除或迁移、支付、shell/子进程、网络边界（与 sdd-design 事前威胁建模的触发信号同源，P0 任务应触发该建模）；
+- `P0`——不可逆或安全敏感：认证/凭据/会话、数据删除或迁移、支付、shell/子进程、网络边界（与 sdd-design 事前威胁建模的触发信号同源；design.md 尚无 `## Threat Model` 时在报告中标注回补，不阻塞 tasks）。P0 任务的 `verify` 不得为 `manual`——P0 必须有可机器断言的命令，写不出命令说明任务还没拆对；
 - `P1`——核心路径：主流程行为、跨契约边界（wire/API/schema）、并发与状态一致性；
 - `P2`——常规功能：局部、可逆、有测试兜底（**未标记任务的默认级**，包括遗留任务产物）；
 - `P3`——近零代价：文档、注释、格式、死代码清理。
@@ -132,7 +132,7 @@ Chain strategy: stacked-to-main|feature-branch-chain|size-exception|pending
 | verify | openspec/changes/{change}/design.md | 验证须对照的契约决策 |
 ```
 
-规则：路径必须具体到文件（规格、研究断言、被触及代码、配置），每条带一句话理由；`apply` 行是 `sdd-apply` 的实现上下文，`verify` 行是 `sdd-verify` 的验证上下文——两列各自取舍，不互相代替。琐碎变更可整节省略；省略或遗留任务无清单时，消费者回退"读全部变更产物"的既有路径，绝不阻塞。清单是**读取**上下文，绝不构成编辑许可——编辑面仍归 `allowedEditRoots` 与 `## Allowed edit surfaces` 既有机制。
+规则：路径必须具体到文件（规格、研究断言、被触及代码、配置），每条带一句话理由；`apply` 行是 `sdd-apply` 的实现上下文，`verify` 行是 `sdd-verify` 的验证上下文——两列各自取舍，不互相代替。琐碎变更可整节省略；省略或遗留任务无清单时，消费者按记忆契约的必需输入继续，绝不阻塞。清单是**必需输入之上的增补**，绝不替代它们；清单是**读取**上下文，也绝不构成编辑许可——编辑面仍归 `allowedEditRoots` 与 `## Allowed edit surfaces` 既有机制。
 
 ## 任务行解剖
 

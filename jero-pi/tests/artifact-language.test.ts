@@ -197,11 +197,18 @@ test("SDD tasks/apply/verify/archive carry the per-task verify command and trace
 	assert.match(apply, /started: <ISO 8601>/);
 	// 时间戳只补不改：续接场景保留最早开工时间。
 	assert.match(apply, /不改写既有时间戳/);
+	// 冲突修复批：P0 不得配 manual；manifest 是增补而非替代必需输入。
+	assert.match(tasks, /P0 任务的 `verify` 不得为 `manual`/);
+	assert.match(tasks, /尚无 `## Threat Model` 时在报告中标注回补/);
 
 	const verify = await readFile(join(ROOT, "assets/agents/sdd-verify.md"), "utf8");
 	assert.match(verify, /任务级验证命令复核/);
 	assert.match(verify, /勾选与证据矛盾/);
 	assert.match(verify, /遗留任务产物无命令注释时不阻塞/);
+	// 冲突修复批：P0 必须机器断言（manual 也算完整性问题）；
+	// 复核小节改名避免与 apply-progress 的 Task Verify Evidence 表同名。
+	assert.match(verify, /无命令注释或仅标 `manual` 的 P0 任务列为完整性问题/);
+	assert.match(verify, /Task Verify Recheck/);
 
 	const archive = await readFile(join(ROOT, "assets/agents/sdd-archive.md"), "utf8");
 	assert.match(archive, /## 追溯矩阵/);
@@ -247,7 +254,7 @@ test("plan-time risk grading stays pinned across tasks, verify, and discipline d
 
 	const verify = await readFile(join(ROOT, "assets/agents/sdd-verify.md"), "utf8");
 	assert.match(verify, /## 风险感知复核深度/);
-	assert.match(verify, /无命令注释的 P0 任务列为完整性问题/);
+	assert.match(verify, /无命令注释或仅标 `manual` 的 P0 任务列为完整性问题/);
 	assert.match(verify, /绝不因缺标记阻塞/);
 	assert.match(verify, /也不绕过任何既有门禁/);
 
@@ -264,11 +271,12 @@ test("context manifest and bootstrap receipt stay pinned", async () => {
 	assert.match(tasks, /绝不构成编辑许可/);
 
 	const apply = await readFile(join(ROOT, "assets/agents/sdd-apply.md"), "utf8");
-	assert.match(apply, /`apply` 行是你实现上下文的权威清单/);
+	assert.match(apply, /`apply` 行是必需产物之外的增补实现上下文/);
 	assert.match(apply, /绝不扩大编辑面/);
+	assert.match(apply, /清单绝不豁免记忆契约的必需输入/);
 
 	const verify = await readFile(join(ROOT, "assets/agents/sdd-verify.md"), "utf8");
-	assert.match(verify, /`verify` 行是验证上下文的权威清单/);
+	assert.match(verify, /`verify` 行是必需产物之外的增补验证上下文/);
 
 	// 回执指令钉在 lib 注入文本里：语言跟随、中性回退、一次性。
 	const bootstrapSource = await readFile(join(ROOT, "lib/jero-ai-bootstrap.ts"), "utf8");
