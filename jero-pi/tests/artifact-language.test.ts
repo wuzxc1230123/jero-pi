@@ -84,7 +84,9 @@ test("rendered SDD preflight prompt is English artifact copy", () => {
 	assert.match(prompt, /approve only the immediate next phase/i);
 	assert.match(prompt, /offer the user a proposal question round/i);
 	assert.match(prompt, /business rules, implications, impact, edge cases/i);
-	assert.match(prompt, /second question round/i);
+	// 多轮语义与资产文本对齐：持续作答即持续追问、直到用户停止或无开放分支。
+	assert.match(prompt, /another question round/i);
+	assert.match(prompt, /continue question rounds until the user stops/i);
 	assert.match(prompt, /explicit acceptance of `size:exception`/);
 	assert.match(prompt, /human-controlled consent, authorization, security, destructive\/publishing/);
 	for (const pattern of SPANISH_PREFLIGHT_COPY) {
@@ -137,6 +139,10 @@ test("SDD proposal questions focus on business and PRD gaps", async () => {
 	assert.match(proposalAgent, /目标用户/);
 	assert.match(proposalAgent, /产品成果/);
 	assert.match(proposalAgent, /决策缺口/);
+	// grilling 借鉴批（纯文本强化）：问题必须从证据与先前答案派生、
+	// 按"会否改变提案走向"取舍而非面面俱到；术语沉淀为共享语言小节随提案沉淀。
+	assert.match(proposalAgent, /从探索结果、研究断言与用户已给出的信息中派生/);
+	assert.match(proposalAgent, /## 共享语言/);
 	// Proposal-shaping questions must stay on business/product ground: the agent is
 	// explicitly told to keep harness mechanics out of the proposal question round
 	// unless the user opts into discussing delivery. Removing this guard is the most
