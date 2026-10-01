@@ -101,17 +101,13 @@ function projectSkillDirs(cwd: string): string[] {
 	];
 }
 
-// 能力模块（jero.module-contract/v1）的知识入口：`.pi/modules/{token}/knowledge/SKILL.md`。
+// 能力模块（jero.module-contract/v2，兼容 v1）的知识入口：`.pi/modules/{token}/knowledge/SKILL.md`。
 // 把模块目录本身当发现根，findSkillFiles 的 {root}/{dir}/SKILL.md 探测天然命中
 // knowledge/SKILL.md——模块知识与松散技能共用同一注册表，宿主触发（S1）与
 // 编排器注册表注入（S2–S6）无需任何协议改动即可消费模块知识。
+// 模块只装在项目内（无全局模块根）：全局生效与"项目即边界"的契约冲突。
 async function moduleSkillDirs(cwd: string): Promise<string[]> {
 	return moduleKnowledgeRoots(join(cwd, ".pi", "modules"));
-}
-
-// 全局模块根（~/.pi/agent/modules）——与技能/代理的全局发现对称。
-async function globalModuleSkillDirs(): Promise<string[]> {
-	return moduleKnowledgeRoots(join(homedir(), ".pi", "agent", "modules"));
 }
 
 async function moduleKnowledgeRoots(modulesRoot: string): Promise<string[]> {
@@ -412,7 +408,6 @@ export async function regenerateRegistry(
 		...projectSkillDirs(cwd),
 		...(await moduleSkillDirs(cwd)),
 		...userSkillDirs(),
-		...(await globalModuleSkillDirs()),
 	]);
 	const files: string[] = [];
 	for (const dir of existingDirs) {
@@ -535,7 +530,6 @@ export async function startSkillRegistryWatcher(
 		...projectSkillDirs(cwd),
 		...(await moduleSkillDirs(cwd)),
 		...userSkillDirs(),
-		...(await globalModuleSkillDirs()),
 	]);
 	let timer: ReturnType<typeof setTimeout> | undefined;
 	const refresh = () => {

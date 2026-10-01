@@ -41,5 +41,5 @@ test("the generated manifest block pins the historically drifted surfaces", () =
 	assert.ok(begin !== -1 && end > begin, "the generated block must exist");
 	const block = doc.slice(begin, end);
 	assert.match(block, /`subagent_continue`/, "subagent_continue once vanished from the docs; the block must carry it");
-	assert.match(block, /`\/jero:install-delegation` `\/jero:install-review` `\/jero:install-sdd`/, "the template-registered install commands must each count");
+	assert.match(block, /`\/jero:install-delegation` `\/jero:install-module` `\/jero:install-review` `\/jero:install-sdd`/, "the template-registered install commands must each count");
 });

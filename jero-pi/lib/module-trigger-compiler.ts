@@ -128,7 +128,7 @@ export interface DispatchOverlay {
 	readonly issues: readonly string[];
 }
 
-// 输入序即优先序：管线保证项目根模块先于全局根、同根内按 token 字典序。
+// 输入序即优先序：管线保证模块根内按 token 字典序输入。
 // 覆盖层的面注入顺序、追加角色去重（先见者胜）与路由表顺序全部继承它。
 export function compileDispatchOverlay(
 	manifests: readonly ModuleManifest[],
@@ -161,8 +161,8 @@ export function compileDispatchOverlay(
 					continue;
 				}
 				const owner = appendRoleOwners.get(`${surface}:${role}`);
-				if (owner !== undefined) {
-					issues.push(`角色 ${role} 在 ${surface} 面被模块 ${owner} 与 ${module.token} 同时追加，取 ${owner}（项目根优先于全局根）`);
+					if (owner !== undefined) {
+						issues.push(`角色 ${role} 在 ${surface} 面被模块 ${owner} 与 ${module.token} 同时追加，取 ${owner}（先见者胜）`);
 				} else {
 					appendRoleOwners.set(`${surface}:${role}`, module.token);
 				}
@@ -190,7 +190,7 @@ export function compileDispatchOverlay(
 			if (rule.when.surface !== undefined && rule.action === "delegate-role") {
 				const existing = delegateBySurface.get(rule.when.surface);
 				if (existing !== undefined && existing.target !== rule.target) {
-					issues.push(`面 ${rule.when.surface} 上模块 ${existing.token}（→${existing.target}）与 ${module.token}（→${rule.target}）的 delegate 规则冲突，取 ${existing.token}（先见者胜，项目根优先）`);
+						issues.push(`面 ${rule.when.surface} 上模块 ${existing.token}（→${existing.target}）与 ${module.token}（→${rule.target}）的 delegate 规则冲突，取 ${existing.token}（先见者胜）`);
 				} else if (existing === undefined) {
 					delegateBySurface.set(rule.when.surface, { token: module.token, target: rule.target });
 				}
@@ -231,7 +231,7 @@ export function compileDispatchOverlay(
 	};
 }
 
-/** 面上生效的追加角色（跨模块去重，先见者胜 = 项目根优先于全局根）。 */
+/** 面上生效的追加角色（跨模块去重，先见者胜 = 输入序先到先占）。 */
 export function effectiveSurfaceRoles(overlay: DispatchOverlay, surface: BindingSurface): readonly string[] {
 	const roles: string[] = [];
 	for (const entry of overlay.surfaces.find((candidate) => candidate.surface === surface)?.entries ?? []) {
@@ -375,7 +375,7 @@ export function renderOverlayMarkdown(
 		lines.push("");
 		lines.push("动作语义：`suggest-role` = 提示层建议（审计留痕）；`delegate-role` = 编排器应尝试委派并在结果封套回报 `module_resolution`。条件命中前都必须有本模块静态触发命中。");
 		lines.push("回报格式：`none` / `paths-injected` / `delegated:{角色}` / `delegated:{角色}@{规则 ID}` / `skipped:{原因}` / `name-unresolved`；带规则 ID 的回报可被机器校验（对照上表角色与目标）。");
-		lines.push("优先序：项目根模块先于全局根、同根内按 token 字典序；同面追加角色与 delegate 冲突取先见者，冲突已在编译告警列出。");
+		lines.push("优先序：模块根内按 token 字典序；同面追加角色与 delegate 冲突取先见者，冲突已在编译告警列出。");
 	}
 	lines.push("");
 
@@ -405,7 +405,7 @@ export interface DiscoveredModule {
 	readonly issues: readonly { readonly code: string; readonly message: string }[];
 }
 
-/** 发现约定目录下的模块：`{modulesRoot}/{token}/module.json`；接受多根（项目 + 全局）。 */
+/** 发现约定目录下的模块：`{modulesRoot}/{token}/module.json`；接受多根注入（缺省管线只传项目根 .pi/modules）。 */
 export function discoverModules(modulesRoot: string | readonly string[]): DiscoveredModule[] {
 	const roots = Array.isArray(modulesRoot) ? modulesRoot : [modulesRoot];
 	const discovered: DiscoveredModule[] = [];

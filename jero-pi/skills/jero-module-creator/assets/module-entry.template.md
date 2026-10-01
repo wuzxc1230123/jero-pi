@@ -1,6 +1,6 @@
 ---
 name: godot
-description: 当仓库含 project.godot、.tscn/.tres 场景资源，或任务涉及 Godot、节点、信号、横版平台跳跃时使用。引擎惯例、解耦测试策略与领域评审关注点的知识入口。
+description: 引擎惯例、解耦测试策略与领域评审关注点的知识入口。当仓库含 project.godot、.tscn/.tres 场景资源，或任务涉及 Godot、节点、信号、横版平台跳跃时使用。
 ---
 
 # Godot 游戏开发（entry 金样：≤60 行含 frontmatter，深度知识一律住 references）

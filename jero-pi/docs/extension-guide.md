@@ -14,7 +14,7 @@
 
 | 资产 | 放置位置 | 自动加载 | 自动使用 | 机制强度 |
 |---|---|---|---|---|
-| **契约化模块** `.pi/modules/{token}/`（**主路径**） | 项目/全局模块根 | 机制保证（注册表 + 覆盖层自动刷新） | 机制保证（静态触发机器判定、八面注入档位、路由表委派审计） | 强（八查安装验证） |
+| **契约化模块** `.pi/modules/{token}/`（**主路径**） | **仅项目模块根**（`/jero:install-module` 指令安装或 `/module-creation` 创建，依赖自动先装） | 机制保证（注册表 + 覆盖层自动刷新） | 机制保证（静态触发机器判定、八面注入档位、路由表委派审计） | 强（安装验证检查集含 deps-resolve） |
 | 技能 `SKILL.md`（松散） | 项目 `.pi/skills/<名>/` 等 | 机制保证（索引自动刷新） | 机制保证（编排器按 description 匹配注入） | 强 |
 | 子代理 `*.md`（松散） | 项目 `.pi/agents/` 等 | 机制保证（递归发现） | **提示层**（需技能路由指示或点名委派） | 中 |
 | `openspec/config.yaml` | 目标项目（`/jero-sdd-init` 生成后手改） | — | 机制保证（Verification 契约优先读） | 强 |
@@ -50,7 +50,7 @@
 |---|---|---|
 | **A. 项目级**（推荐默认） | 目标项目只放需要的包 | 单团队/单项目起步 |
 | **B. 独立 npm 伴生包** | 项目装哪个包就有哪种语言 | 团队级分发；照 `pi-fovea`/`pi-lens` 形态（技能根需落在 2.1 约定路径之一，最省事是安装时落 `.pi/skills/`） |
-| **C. 全局装全量** | 靠 description 仓库特征门控触发收敛 | 个人多项目；牺牲项目隔离 |
+| **C. 全局装全量**（仅松散技能/代理；**模块无全局形态**） | 靠 description 仓库特征门控触发收敛 | 个人多项目；牺牲项目隔离。模块走包内模块库 + `/jero:install-module` 按项目安装 |
 | 包内 `assets/` | 无（受管安装到共享代理主目录，全项目生效） | **零代码边界之外**，见第 8 节 |
 
 ---
@@ -258,7 +258,7 @@ tools:
 
 | 文件 | 职责 |
 |---|---|
-| `lib/skill-registry-engine.ts` | 技能根扫描（项目 17 + 全局 19 + 项目/全局模块知识根）、索引渲染、缓存与监视 |
+| `lib/skill-registry-engine.ts` | 技能根扫描（项目 17 + 全局 19 + 项目模块知识根——模块只装项目内）、索引渲染、缓存与监视 |
 | `extensions/skill-registry.ts` | `session_start` 自动刷新 + `/skill-registry:refresh` 命令 |
 | `assets/orchestrator-skills.md` | 编排器技能注册协议（含第 5 步：按覆盖层档位收窄注入）、`## Skills to load before work` 注入、`skill_resolution` 审计 |
 | `assets/orchestrator-delegation.md` | 编排器委托细则与「自然语言路由单」（R1–R4） |

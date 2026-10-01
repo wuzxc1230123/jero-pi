@@ -29,6 +29,7 @@ import {
 	revokeReviewSessionPermission, revokeReviewSessionPermissionsForSession,
 } from "../lib/review-session-standing-permission.ts";
 import { packageAssetDiagnosticLines } from "../lib/jero-ai-package-assets.ts";
+import { moduleDoctorLines } from "../lib/module-installer.ts";
 import {
 	type BackgroundSubagentsPolicy, renderBackgroundSubagentsReport,
 	resolveBackgroundSubagentsPolicy, writeGlobalBackgroundSubagentsPolicy
@@ -704,10 +705,13 @@ function createJeroAiExtensionForTesting(
 					companionStatuses.some((status) => status.name === "pi-browser-use" && status.installedVersion !== undefined),
 				);
 				if (browserEngineLine !== undefined) companionLines.push(browserEngineLine);
+				// 项目内模块诊断：已装模块与包内模块束的版本漂移、无记录目录显影。
+				const moduleLines = moduleDoctorLines(ctx.cwd);
 				const lines = [
 					"el Jero doctor",
 					...assetLines,
 					...companionLines,
+					...moduleLines,
 					`${openspecConfigured ? "pass" : "warn"}: OpenSpec config ${openspecConfigured ? "present" : "missing"}`,
 					`${skillRegistryPresent ? "pass" : "warn"}: Skill registry ${skillRegistryPresent ? "present" : "missing"}`,
 					`${modelConfig.status === "invalid" ? "fail" : "pass"}: Global model config ${modelConfig.status}`,
@@ -722,7 +726,8 @@ function createJeroAiExtensionForTesting(
 					lines.join("\n"),
 					lines.some((line) => line.startsWith("fail:")) ||
 						assetLines.some((line) => line.startsWith("warn:")) ||
-						companionLines.some((line) => line.startsWith("warn:")) ? "warning" : "info",
+						companionLines.some((line) => line.startsWith("warn:")) ||
+						moduleLines.some((line) => line.startsWith("warn:")) ? "warning" : "info",
 				);
 			},
 		});

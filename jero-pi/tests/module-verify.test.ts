@@ -68,13 +68,15 @@ function makeProject(): string {
 const assembly = fakePi();
 extension(assembly.pi);
 
-test("装配面：注册 shutdown/startup 钩子与 jero-module-verify 命令", () => {
+test("装配面：注册 shutdown/startup 钩子与 jero-module-verify / 安装 / 列表三命令", () => {
 	assert.equal(assembly.handlers.size, 2);
-	assert.equal(assembly.commands.size, 1);
+	assert.equal(assembly.commands.size, 3);
 	assert.ok(assembly.handlers.has("session_shutdown"));
 	assert.ok(assembly.handlers.has("session_start"));
 	assert.ok(assembly.commands.has("jero-module-verify"));
 	assert.ok(assembly.commands.get("jero-module-verify")!.description.length > 0);
+	assert.ok(assembly.commands.has("jero:install-module"));
+	assert.ok(assembly.commands.has("jero:module-list"));
 });
 
 test("命令·无模块：提示 legacy 路径，info 级", async () => {
@@ -171,6 +173,74 @@ test("session_start·覆盖层缺失（首次运行）：同步编译，await �
 		const overlay = readFileSync(join(cwd, ".atl", "module-overlay.md"), "utf8");
 		assert.match(overlay, /gogame/);
 		assert.doesNotThrow(() => assembly.handlers.get("session_shutdown")!({}, fakeCtx(cwd).ctx));
+	} finally {
+		rmSync(cwd, { recursive: true, force: true });
+	}
+});
+
+test("命令·install-module 无参数：用法提示，warning 级", async () => {
+	const cwd = makeProject();
+	try {
+		const { ctx, notifications } = fakeCtx(cwd);
+		await assembly.commands.get("jero:install-module")!.handler({}, ctx);
+		assert.equal(notifications[0].level, "warning");
+		assert.match(notifications[0].message, /用法：\/jero:install-module/);
+	} finally {
+		rmSync(cwd, { recursive: true, force: true });
+	}
+});
+
+test("命令·install-module 未知词元：响亮失败并列出可装词元", async () => {
+	const cwd = makeProject();
+	try {
+		const { ctx, notifications } = fakeCtx(cwd);
+		await assembly.commands.get("jero:install-module")!.handler("no-such-module", ctx);
+		assert.equal(notifications[0].level, "warning");
+		assert.match(notifications[0].message, /未知模块词元：no-such-module/);
+		assert.match(notifications[0].message, /godot/);
+	} finally {
+		rmSync(cwd, { recursive: true, force: true });
+	}
+});
+
+test("命令·install-module godot：真实包内束装进项目 + 验证管线联动", async () => {
+	const cwd = makeProject();
+	try {
+		// 触发命中样本：godot 束的静态触发器需要仓库里有 project.godot。
+		writeFileSync(join(cwd, "project.godot"), "");
+		const { ctx, notifications } = fakeCtx(cwd);
+		await assembly.commands.get("jero:install-module")!.handler("godot", ctx);
+		const message = notifications.map((item) => item.message).join("\n");
+		assert.match(message, /\+ 已安装 godot@/);
+		// 三类落盘面：模块本体 / 代理 / 技能 + 安装记录。
+		assert.ok(existsSync(join(cwd, ".pi", "modules", "godot", "module.json")));
+		assert.ok(existsSync(join(cwd, ".pi", "agents", "godot-reviewer.md")));
+		assert.ok(existsSync(join(cwd, ".pi", "agents", "godot-tester.md")));
+		assert.ok(existsSync(join(cwd, ".pi", "skills", "godot-verify", "SKILL.md")));
+		assert.ok(existsSync(join(cwd, ".pi", "module-installs.json")));
+		// 安装后验证管线跑过：覆盖层含 godot 且八查汇总绿。
+		const overlay = readFileSync(join(cwd, ".atl", "module-overlay.md"), "utf8");
+		assert.match(overlay, /godot/);
+		assert.match(message, /✓ godot：\d+ 项通过/);
+		// 幂等：再装一次同版本 → 跳过。
+		const again = fakeCtx(cwd);
+		await assembly.commands.get("jero:install-module")!.handler("godot", again.ctx);
+		assert.match(again.notifications.map((item) => item.message).join("\n"), /= godot：已装同版本/);
+	} finally {
+		rmSync(cwd, { recursive: true, force: true });
+	}
+});
+
+test("命令·module-list：列出包内束与安装状态", async () => {
+	const cwd = makeProject();
+	try {
+		const { ctx, notifications } = fakeCtx(cwd);
+		await assembly.commands.get("jero:module-list")!.handler({}, ctx);
+		const message = notifications[0].message;
+		assert.match(message, /可安装模块/);
+		assert.match(message, /godot@/);
+		assert.match(message, /未安装/);
+		assert.match(message, /依赖：无/);
 	} finally {
 		rmSync(cwd, { recursive: true, force: true });
 	}

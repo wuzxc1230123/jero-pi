@@ -6,11 +6,13 @@ import { join } from "node:path";
 import {
 	OVERLAY_REL_PATH,
 	looseSkillTokens,
+	moduleRoots,
 	runModuleVerifyPipeline,
 } from "../lib/module-verify-pipeline.ts";
 
 // module-verify-pipeline 域测试：陈旧覆盖层纪律（零清单写空态/无根删残留）、
-// 双根发现、坏清单报告、双轨查集成。根全部注入临时目录，不碰真实 home。
+// 单根发现（仅项目 .pi/modules，全局根已随模块项目内化移除）、坏清单报告、
+// 双轨查与 deps-resolve 集成。根全部注入临时目录，不碰真实 home。
 
 function makeProject(): string {
 	return mkdtempSync(join(tmpdir(), "jero-pipeline-"));
@@ -207,3 +209,65 @@ test("looseSkillTokens：全局根注入——用户级同名松散技能也入�
 		rmSync(globalRoot, { recursive: true, force: true });
 	}
 });
+
+test("模块根单根化：moduleRoots 只含项目根，不含用户级根", async () => {
+	const { homedir } = await import("node:os");
+	const cwd = makeProject();
+	try {
+		const roots = moduleRoots(cwd);
+		assert.deepEqual(roots, [join(cwd, ".pi", "modules")]);
+		assert.ok(!roots.includes(join(homedir(), ".pi", "agent", "modules")));
+	} finally {
+		cleanup(cwd);
+	}
+});
+
+test("deps-resolve 集成：依赖齐备通过、缺失响亮失败", () => {
+	const cwd = makeProject();
+	const root = makeProject();
+	try {
+		writeModule(root, "gogame");
+		writeModuleDependent(root);
+		writeFileSync(join(cwd, "go.mod"), "");
+
+		const result = runModuleVerifyPipeline(cwd, { roots: [root] });
+		const byToken = new Map(result.reports.map((report) => [report.token, report]));
+		assert.equal(byToken.get("gogame")?.ok, true);
+		const dependent = byToken.get("depmod");
+		assert.ok(dependent !== undefined);
+		const deps = dependent.checks.find((item) => item.id === "deps-resolve");
+		assert.equal(deps?.status, "pass");
+
+		// 删掉依赖模块后重跑：depmod 的 deps-resolve 响亮失败（不静默半装）。
+		rmSync(join(root, "gogame"), { recursive: true, force: true });
+		const after = runModuleVerifyPipeline(cwd, { roots: [root] });
+		const failing = after.reports.find((report) => report.token === "depmod");
+		assert.equal(
+			failing?.checks.find((item) => item.id === "deps-resolve")?.status,
+			"fail",
+		);
+	} finally {
+		cleanup(cwd);
+		cleanup(root);
+	}
+});
+
+// v2 依赖模块（依赖 gogame）：与 writeModule 同构，仅多 dependencies 声明。
+function writeModuleDependent(root: string): void {
+	mkdirSync(join(root, "depmod", "knowledge"), { recursive: true });
+	writeFileSync(
+		join(root, "depmod", "module.json"),
+		JSON.stringify({
+			schema: "jero.module-contract/v2",
+			token: "depmod",
+			version: "1.0.0",
+			dependencies: ["gogame"],
+			triggers: { files: ["go.mod"], intents: [] },
+			knowledge: { entry: "knowledge/SKILL.md", references: [] },
+			roles: [],
+			bindings: { worker: { inject: "manifest-only" } },
+			routing: [],
+		}),
+	);
+	writeFileSync(join(root, "depmod", "knowledge", "SKILL.md"), "---\nname: x\ndescription: d\n---\n\nbody\n");
+}

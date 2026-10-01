@@ -1,9 +1,10 @@
 {
-	"schema": "jero.module-contract/v1",
-	"token": "godot",
-	"version": "1.0.0",
-	"description": "Godot 2D/3D 游戏开发：场景/节点/信号惯例、引擎解耦测试策略、领域评审关注点。",
-	"triggers": {
+  "schema": "jero.module-contract/v2",
+  "token": "godot",
+  "version": "1.0.0",
+  "description": "Godot 2D/3D 游戏开发：场景/节点/信号惯例、引擎解耦测试策略、领域评审关注点。",
+  "dependencies": [],
+  "triggers": {
 		"files": ["project.godot", "**/*.tscn", "**/*.tres"],
 		"intents": ["Godot", "场景", "节点", "信号", "横版"]
 	},

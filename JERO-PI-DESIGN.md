@@ -363,3 +363,14 @@ topic-key 沿用 SDD 记忆契约的稳定键：`sdd/<change>/proposal|spec|desi
 ### C. 本文档引用的上游事实来源
 
 评审权威/维护路由/FINALIZE 契约：`gentle-pi-main/docs/readme-reference.md`；shell/agents/todo 行为：`docs/gentle-shell.md`；操作表与调用点：`lib/native-review-cli.ts`、`lib/gentle-ai-binary.ts`、`scripts/gentle-ai-installer.mjs`；能力总表：`docs/readme-reference.md` Capability reference。
+
+### D. 追加决策记录（2026-10-01：模块系统 v2 批）
+
+| 决策 | 内容 | 动因 |
+|---|---|---|
+| 契约升 v2 | `jero.module-contract/v2` = v1 + 可选 `dependencies`（模块间依赖自述）；v1 清单继续通过，`dependencies` 仅 v2 可用（schema if/then 分支 + 解析器白名单双钉） | 用户需求：模块依赖自动安装。依赖进清单（而非外挂注册表）使模块自描述、安装器单源解析 |
+| 模块仅项目内 | 移除全局模块根（`~/.pi/agent/modules`）：管线/编译器/技能注册表三面单根化到 `.pi/modules`；技能/代理的全局发现不动 | 用户需求：模块不全局安装、不全局生效。全局生效使"装了什么"离开项目可见性，与覆盖层/验证的项目内语义冲突 |
+| 指令安装 | 新增 `/jero:install-module <词元> [--force]` 与 `/jero:module-list`；包内模块库 `assets/modules/` 即注册表（扫描 module.json），束内 `agents/`→`.pi/agents/`、`skills/`→`.pi/skills/` 随装；依赖闭包后序安装，环/缺失响亮失败；安装记录 `.pi/module-installs.json`（版本+文件哈希）承载幂等与用户改动保护 | 用户需求：调用指定指令安装。手工放置/`/module-creation` 照常生效（零代码哲学不破） |
+| deps-resolve 查 | 安装验证新增第 12 查：依赖缺失/自依赖/成环即 fail（含补救命令提示）；管线自动组装已装模块依赖图 | 静默拆依赖等于运行时知识链断裂 |
+| godot 模块落地 | 首束 `assets/modules/godot/`（全中文，含 frontmatter description）：v2 清单 + 11 篇 L2 参考（验证主干/GDScript 规范/场景架构/UI/着色器/物理/音频动画/测试/性能/陷阱/编辑器活会话）+ 三角色（godot-reviewer/godot-designer/godot-tester）+ godot-verify 伴生技能；`config.testCommand` 钉 `godot --headless --path . --import` | 金样实例化；知识面吸收 GD-Agentic-Skills 范式与 CCGS 验证闭环（NEVER 优先、渐进披露、退出码验证、NOT VERIFIED 语义） |
+| 门扩展 | `check:module-contract` 三段：schema 漂移（含 v2 枚举/依赖分支）+ 创建器金样绿灯 + **包内模块库绿灯**（逐束解析+安装验证、roles↔agents 一一对应、依赖库内可解析） | 安装器分发的束本身必须过它要装的门 |

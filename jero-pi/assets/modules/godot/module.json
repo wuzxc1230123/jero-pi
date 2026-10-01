@@ -1,0 +1,69 @@
+{
+	"schema": "jero.module-contract/v2",
+	"token": "godot",
+	"version": "1.0.0",
+	"description": "Godot 4 游戏开发领域模块：37 个领域技能入口（语言/架构/物理/视听/玩法/平台/工程/验证/godot-ai 活会话）+ 37 篇深知识 references，附评审/设计/测试三角色。",
+	"dependencies": [],
+	"triggers": {
+		"files": ["project.godot", "**/*.tscn", "**/*.tres", "**/*.gd"],
+		"intents": ["Godot", "GDScript", "场景", "节点", "信号", "横版", "游戏开发"]
+	},
+	"knowledge": {
+		"entry": "knowledge/SKILL.md",
+		"references": ["references/*.md"]
+	},
+	"roles": [
+		{
+			"name": "godot-reviewer",
+			"isolation": ["adversarial-eyes", "least-privilege"],
+			"permission": "read-only",
+			"model": "balanced",
+			"output": "findings-report"
+		},
+		{
+			"name": "godot-designer",
+			"isolation": ["least-privilege"],
+			"permission": "read-only",
+			"model": "deep-reasoning",
+			"output": "design-proposal"
+		},
+		{
+			"name": "godot-tester",
+			"isolation": ["least-privilege"],
+			"permission": "write-bounded",
+			"model": "fast",
+			"output": "verification-report"
+		}
+	],
+	"bindings": {
+		"inline": { "inject": "entry" },
+		"explore": { "inject": "manifest-only" },
+		"worker": { "inject": "entry" },
+		"verify": { "inject": "entry", "appendRoles": ["godot-tester"] },
+		"sdd-planning": { "inject": "entry" },
+		"sdd-execution": { "inject": "entry" },
+		"review": { "inject": "entry", "appendRoles": ["godot-reviewer"] },
+		"answer": { "inject": "entry" }
+	},
+	"routing": [
+		{
+			"when": { "surface": "review" },
+			"action": "delegate-role",
+			"target": "godot-reviewer"
+		},
+		{
+			"when": { "surface": "verify" },
+			"action": "delegate-role",
+			"target": "godot-tester"
+		},
+		{
+			"when": { "slip": { "utteranceType": "design-request", "crossModule": true } },
+			"action": "suggest-role",
+			"target": "godot-designer"
+		}
+	],
+	"config": {
+		"testCommand": "godot --headless --path . --import",
+		"gitignore": [".godot/"]
+	}
+}

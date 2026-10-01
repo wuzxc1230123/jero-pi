@@ -28,7 +28,7 @@ Pi 宿主（@earendil-works/pi-coding-agent ≥0.85.1，peer）
 - **宿主 relay** `lib/review-host-relay.ts`：渲染权威方审查员提示 → `--agent pi --materialize` → 锁定 print-mode pi 子进程在只读工作树评审 → 原始字节经 provider 提交令牌回交；任何失败都是 typed transport error，不重试、不合成。
 - **黄金向量** `tests/fixtures/review-integration/`：68 个字节钉住向量（SHA-256 由 `scripts/verify-package-files.mjs` 校验），是 authority 一致性测试的行为规范。
 
-## 命令（26 个斜杠命令）
+## 命令（28 个斜杠命令）
 
 | 组 | 命令 |
 |---|---|
@@ -80,12 +80,12 @@ START → 同意（consent 仪式 v3，host 常任权限按 Git 规范身份授�
 - **已确立规范索引**（`lib/jero-ai-spec-index.ts`，知识飞轮读取侧）：SDD sync 把增量 spec 回写 `openspec/specs/` 后，后续会话在 bootstrap 同一注入窗口收到域索引（域路径 + Purpose 首行摘要，marker `jero:spec-index/v1`，≤40 域、摘要 ≤160 字符）——沉淀下来的规范会被看见，同一教训不再每会话重学。写入侧归 SDD sync 既有机制；索引只是发现入口，内容以 spec.md 为准。`JERO_PI_SPEC_INDEX=0|false|off` 关闭。
 - Judgment Day（显式触发）：双盲评审（jd-judge-a/b）→ 冻结发现（SHA-256）→ 至多两轮有界修复（jd-fix-agent）→ 一次终审 `APPROVED|ESCALATED`；`lib/jero-ai-writer-scope.ts` 代码级校验派发块。
 
-## 能力模块契约（jero.module-contract/v1）
+## 能力模块契约（jero.module-contract/v2，兼容 v1）
 
-目标项目/全局的领域扩展（如 go、godot）走机器验证的契约化路径：`.pi/modules/{token}/module.json` 一份清单声明触发（静态 glob）、知识（L0/L1/L2 渐进披露）、角色（隔离正当性必填）、接线（八个编排面）与路由（消费路由单字段）。核心机制：
+目标项目的领域扩展（如 go、godot）走机器验证的契约化路径——**模块仅装项目内，不全局生效**；v2 清单可声明 `dependencies`，`/jero:install-module <词元>` 指令从包内模块库（`assets/modules/`，首束 godot 全中文模块）安装并**依赖自动先装**（`/jero:module-list` 查看可装清单）：`.pi/modules/{token}/module.json` 一份清单声明触发（静态 glob）、知识（L0/L1/L2 渐进披露）、角色（隔离正当性必填）、接线（八个编排面）与路由（消费路由单字段）。核心机制：
 
 - **静态触发编译**：`lib/module-trigger-compiler.ts` 对仓库文件树确定性判定模块激活，产出 `.atl/module-overlay.md`（自动生成物）——各面注入档位、追加角色、Strict TDD 命令（SDD 转发取值链第一级：覆盖层 → config.yaml → 探测）、C 级硬门声明的响亮缺席。
-- **安装验证八查**：`/jero-module-verify`——token 合法/唯一/双轨（与松散技能重名即拒）、防遮蔽、触发命中、路由解析、隔离正当、entry ≤60 行、命令钉住；`check:module-contract` 门钉 schema 与 TS 常量零漂移 + 创建器金样绿灯。
+- **安装验证**：`/jero-module-verify`——token 合法/唯一、deps-resolve（v2 依赖缺失/自依赖/成环即 fail）、双轨（与松散技能重名即拒）、防遮蔽、触发命中、路由解析、隔离正当、entry ≤60 行、命令钉住；`check:module-contract` 门钉 schema 与 TS 常量零漂移（含 v2 枚举与依赖分支）+ 创建器金样绿灯 + 包内模块库绿灯。
 - **注册表桥**：模块知识入口 `knowledge/SKILL.md` 进技能注册表——宿主触发与编排器注入零新协议消费模块知识；编排器按覆盖层档位收窄注入（`assets/orchestrator-skills.md` 注册协议第 5 步），委派以 `module_resolution` 回报（`delegated`/`skipped`/`name-unresolved`，SDD 结果契约字段）。
 - **自然语言路由单**：`assets/orchestrator-delegation.md`——语义层只填类型化单据（trigger_hit 由覆盖层预填），路由是 R1–R4 确定性规则；风险/规模/文件数永不触发 SDD 建议。
 
@@ -108,9 +108,9 @@ START → 同意（consent 仪式 v3，host 常任权限按 Git 规范身份授�
 
 | 面 | 值 |
 |---|---|
-| 契约串 | `jero.authority/v1`（协议族）、`jero.authority.review-mode/v1`、`jero.review-assessment-plan/v1`、`jero.lean-mode/v1`、`jero.background-subagents/v1`、`jero.session-change/v1`、`jero.session-worktree/v1`、`jero.child-standing-review-permission/v1`、`jero.agent_model_profiles/v1`、`jero.memory-index/v1`、`jero.remediation-evidence/v1`、`jero.task-reconciliation-lock/v1`、`jero.module-contract/v1`、`jero.module-overlay/v1` |
+| 契约串 | `jero.authority/v1`（协议族）、`jero.authority.review-mode/v1`、`jero.review-assessment-plan/v1`、`jero.lean-mode/v1`、`jero.background-subagents/v1`、`jero.session-change/v1`、`jero.session-worktree/v1`、`jero.child-standing-review-permission/v1`、`jero.agent_model_profiles/v1`、`jero.memory-index/v1`、`jero.remediation-evidence/v1`、`jero.task-reconciliation-lock/v1`、`jero.module-contract/v1`（兼容）、`jero.module-contract/v2`、`jero.module-overlay/v1`、`jero.module-installs/v1`（安装记录） |
 | 环境变量 | `JERO_PI_CONFIG_HOME` `JERO_PI_AGENT_HOME`（兼容 `PI_CODING_AGENT_DIR`）`JERO_PI_LEAN_MODE` `JERO_PI_MEMORY` `JERO_PI_MEMORY_ROOT`（显式记忆根覆盖；编排器经它把父会话解析的记忆根下传给子代理，保证"子保存、父检索"同一存储）`JERO_PI_AUTONOMOUS_MODE` `JERO_PI_CONTEXT_MONITOR`（`0` 关闭上下文余量告警）`JERO_PI_USAGE_FETCH`（`0` 关闭 Codex 订阅用量端点外发，自动与手动刷新一并关闭）`JERO_PI_SDD_BREADCRUMB`（`0` 关闭 SDD 状态面包屑）`JERO_PI_SPEC_INDEX`（`0` 关闭已确立规范索引注入）`JERO_PI_BOOTSTRAP_RECEIPT`（`0` 摘除 bootstrap 注入尾的一次性回执行，纪律本体不变）`JERO_PI_BROWSER_DOMAINS`（浏览器出站结构门：`allow:<域清单>` / `deny:<域清单>`，清单逗号或空白分隔，`example.com` 含子域、`.example.com` 仅子域；只作用于 browser_* 工具携带 url 参数的导航；allow 模式对未命中与无法解析主机名的目标 fail-closed 阻断，配置写错同样阻断而非静默拆门；未设或空白 = 不设门；判定逻辑在 `lib/jero-ai-browser-gate.ts`。已知边界：页面内链接点击等浏览器自身发起的跳转不经工具面，本门不覆盖（结构性关闭需 Chrome 级配置，伴生件设置面不透传）；pi-browser-use 要求 Node ≥24，低于此版本时 `/jero:doctor` 显影 warn 行） |
-| 配置路径 | `~/.pi/jero/`（全局：models.json / persona.json / review-mode.json）、`<repo>/.pi/jero/`（项目覆盖）、`<repo>/.jero/policies/`（评审策略）、`.atl/skill-registry.md`（技能索引）、`.pi/modules/`（项目能力模块）与 `~/.pi/agent/modules/`（全局能力模块）、`.atl/module-overlay.md`（模块派发覆盖层，自动生成） |
+| 配置路径 | `~/.pi/jero/`（全局：models.json / persona.json / review-mode.json）、`<repo>/.pi/jero/`（项目覆盖）、`<repo>/.jero/policies/`（评审策略）、`.atl/skill-registry.md`（技能索引）、`.pi/modules/`（项目能力模块，**唯一模块根**——无全局模块根）、`.pi/module-installs.json`（模块安装记录）、`.atl/module-overlay.md`（模块派发覆盖层，自动生成） |
 
 ### 兼容白名单（gentle- 残留，2026-09-26 审计；2026-09-27 两批清退后仅剩守卫与历史事实）
 
@@ -124,7 +124,7 @@ START → 同意（consent 仪式 v3，host 常任权限按 Git 规范身份授�
 | 迁移期兼容读取（旧存储根 `gentle-ai/reviews` 原地收编、旧 managed-assets 注册表路径、consent off-path 旧命令双接受、旧会话 legacy customType 渲染、persona 非 neutral 归一 direct） | "新名写 + 旧名读"的探测迁移面 | 旧数据与旧会话在迁移窗口内可读；写侧一律新名 |
 
 <!-- jero:manifest:begin (generated by scripts/check-docs-manifest.mjs) -->
-斜杠命令（26）：`/jero-module-verify` `/jero-sdd-continue` `/jero-sdd-init` `/jero-sdd-status` `/jero:agents` `/jero:background-subagents` `/jero:banner` `/jero:banner-color` `/jero:changes` `/jero:doctor` `/jero:guard` `/jero:install-delegation` `/jero:install-review` `/jero:install-sdd` `/jero:lean` `/jero:models` `/jero:persona` `/jero:profiles` `/jero:review-mode` `/jero:review-session-permission` `/jero:sdd-preflight` `/jero:status` `/jero:toggle-rose` `/jero:toggle-text-logo` `/jero:usage` `/skill-registry:refresh`
+斜杠命令（28）：`/jero-module-verify` `/jero-sdd-continue` `/jero-sdd-init` `/jero-sdd-status` `/jero:agents` `/jero:background-subagents` `/jero:banner` `/jero:banner-color` `/jero:changes` `/jero:doctor` `/jero:guard` `/jero:install-delegation` `/jero:install-module` `/jero:install-review` `/jero:install-sdd` `/jero:lean` `/jero:models` `/jero:module-list` `/jero:persona` `/jero:profiles` `/jero:review-mode` `/jero:review-session-permission` `/jero:sdd-preflight` `/jero:status` `/jero:toggle-rose` `/jero:toggle-text-logo` `/jero:usage` `/skill-registry:refresh`
 工具（19）：`jero_review` `jero_review_capture` `jero_review_capture_group` `jero_review_scope` `mem_list` `mem_read` `mem_save` `mem_search` `session_worktree_register` `subagent_cancel` `subagent_continue` `subagent_list_agents` `subagent_list_tasks` `subagent_reconcile` `subagent_reply` `subagent_result` `subagent_run` `subagent_send_message` `subagent_status`
 技能（21）：`branch-pr` `chained-pr` `cognitive-doc-design` `comment-writer` `issue-creation` `jero-agent-creator` `jero-ai` `jero-architecture-patrol` `jero-debt` `jero-diagnose-stall` `jero-lean` `jero-lean-review` `jero-module-creator` `jero-skills` `judgment-day` `rdd-defect-workflow` `release` `skill-creator` `skill-improver` `skill-registry` `work-unit-commits`
 <!-- jero:manifest:end -->
@@ -132,6 +132,6 @@ START → 同意（consent 仪式 v3，host 常任权限按 Git 规范身份授�
 ## 测试与打包门
 
 - 201 个测试文件（node:test，并发 12）+ runtime harness（真实扩展装配 × 假宿主端到端，三段场景）。**行覆盖以 `pnpm run test:coverage` 为准**（NODE_V8_COVERAGE 跨进程归并，含 harness 与 CLI 子进程）；Node 内置 `--experimental-test-coverage` 在全量多子进程场景对同文件的合并会失真（实测同一文件 19% vs 真值 87%），勿直接采信内置全量表。
-- CI（GitHub Actions）：Ubuntu 全量测试 + 类型诊断棘轮（`scripts/types-baseline.json`）+ runtime 模块一致性（`runtime/*.mjs` 由 lib 再生成）+ 权威边界检查 + 测试质量棘轮（`scripts/check-test-quality.mjs`，5 条反模式只降不升，含分片互 import）+ 空 catch 卫生门（`scripts/check-empty-catch.mjs`，空块必须带注释或语句）+ 文档清单同步门（`scripts/check-docs-manifest.mjs`，从注册点派生命令/工具/技能清单并钉住本文件的生成块）+ 评审域命名棘轮（`scripts/check-review-naming.mjs`，外围前缀只降不升）+ 模块契约门（`scripts/check-module-contract.mjs`，schema 与 lib 常量零漂移 + 创建器金样绿灯）+ 断网测试门（代理黑洞 + `NODE_OFFLINE=1`）；Windows 权威探测、候选视图回归与符号链接夹具回归（`sdd-research-capabilities` / `review-candidate-view.z2`——钉住「Windows 上 rmSync 对悬垂符号链接是静默 no-op，夹具须用 unlinkSync」的语义）。套件级挂起兜底：全部 `--test` 入口带 `--test-timeout=300000`。
-- 打包门 `prepack`/`prepublishOnly`：全量测试 → runtime 一致性 → 权威边界 → 测试质量棘轮 → 空 catch 卫生门 → `verify-package-files.mjs`（当前钉 158 个必需文件 = 90 条直接断言 + 68 个字节钉住向量，另 25 条禁带路径）→ 文档清单同步门 → 评审域命名棘轮 → 模块契约门 → packed tarball 分发链校验（`test-packed-runner.mjs`，仅 publish 链）。
+- CI（GitHub Actions）：Ubuntu 全量测试 + 类型诊断棘轮（`scripts/types-baseline.json`）+ runtime 模块一致性（`runtime/*.mjs` 由 lib 再生成）+ 权威边界检查 + 测试质量棘轮（`scripts/check-test-quality.mjs`，5 条反模式只降不升，含分片互 import）+ 空 catch 卫生门（`scripts/check-empty-catch.mjs`，空块必须带注释或语句）+ 文档清单同步门（`scripts/check-docs-manifest.mjs`，从注册点派生命令/工具/技能清单并钉住本文件的生成块）+ 评审域命名棘轮（`scripts/check-review-naming.mjs`，外围前缀只降不升）+ 模块契约门（`scripts/check-module-contract.mjs`，schema 与 lib 常量零漂移（含 v2）+ 创建器金样绿灯 + 包内模块库绿灯）+ 断网测试门（代理黑洞 + `NODE_OFFLINE=1`）；Windows 权威探测、候选视图回归与符号链接夹具回归（`sdd-research-capabilities` / `review-candidate-view.z2`——钉住「Windows 上 rmSync 对悬垂符号链接是静默 no-op，夹具须用 unlinkSync」的语义）。套件级挂起兜底：全部 `--test` 入口带 `--test-timeout=300000`。
+- 打包门 `prepack`/`prepublishOnly`：全量测试 → runtime 一致性 → 权威边界 → 测试质量棘轮 → 空 catch 卫生门 → `verify-package-files.mjs`（当前钉 176 个必需文件 = 108 条直接断言 + 68 个字节钉住向量，另 25 条禁带路径）→ 文档清单同步门 → 评审域命名棘轮 → 模块契约门 → packed tarball 分发链校验（`test-packed-runner.mjs`，仅 publish 链）。
 - 供应链：10 个伴生依赖精确钉版；`pnpm-workspace.yaml` 强制发布龄期 / 信任不降级 / 无非常规子依赖来源；CI 重跑 `pnpm audit --prod --audit-level=high` 与 npm publish provenance；`/jero:doctor` 内置伴生依赖健康审计（钉版安装 + pi 清单入口解析，处置指引见 `docs/dependency-exit-plan.md`）。

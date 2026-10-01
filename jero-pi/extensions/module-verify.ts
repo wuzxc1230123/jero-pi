@@ -1,6 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { existsSync, watch, type FSWatcher } from "node:fs";
-import { homedir } from "node:os";
 import { join } from "node:path";
 import { ensureAtlIgnored } from "../lib/skill-registry-engine.ts";
 import {
@@ -8,6 +7,13 @@ import {
 	runModuleVerifyPipeline,
 	type VerifyPipelineResult,
 } from "../lib/module-verify-pipeline.ts";
+import {
+	bundleModulesRoot,
+	discoverBundles,
+	installBundle,
+	readModuleInstalls,
+	resolveInstallPlan,
+} from "../lib/module-installer.ts";
 
 // module-verify 扩展：管线（发现/八查/覆盖层落盘与清理）在
 // lib/module-verify-pipeline.ts，这里只做生命周期装配与 UI 汇总。
@@ -33,8 +39,8 @@ function summarize(result: VerifyPipelineResult): string {
 	const lines: string[] = [];
 	if (result.reports.length === 0 && result.brokenModules.length === 0) {
 		return result.overlayRemoved
-			? "未发现能力模块（项目 .pi/modules/ 与全局 ~/.pi/agent/modules/ 均无 module.json）；已清理残留覆盖层"
-			: "未发现能力模块（项目 .pi/modules/ 与全局 ~/.pi/agent/modules/ 均无 module.json）——松散技能/代理仍按 legacy 路径工作";
+			? "未发现能力模块（项目 .pi/modules/ 无 module.json）；已清理残留覆盖层"
+			: "未发现能力模块（项目 .pi/modules/ 无 module.json）——可装模块用 /jero:module-list 查看；松散技能/代理仍按 legacy 路径工作";
 	}
 	for (const report of result.reports) {
 		const failed = report.checks.filter((item) => item.status === "fail");
@@ -92,11 +98,10 @@ function closeOverlayWatchers(): void {
 	if (overlayWatchTimer) clearTimeout(overlayWatchTimer);
 }
 
-// 仅监听已存在的根；缺省的根出现要等下次会话/命令（与发现语义一致）。
+// 仅监听已存在的根；根的出现要等下次会话/命令（与发现语义一致）。
+// 模块只装在项目内（无全局根可监听）。
 function moduleRootsForWatch(cwd: string): string[] {
-	return [join(cwd, ".pi", "modules"), join(homedir(), ".pi", "agent", "modules")].filter((root) =>
-		existsSync(root),
-	);
+	return [join(cwd, ".pi", "modules")].filter((root) => existsSync(root));
 }
 
 export default function (pi: ExtensionAPI) {
@@ -163,6 +168,90 @@ export default function (pi: ExtensionAPI) {
 			} catch (error) {
 				const message = error instanceof Error ? error.message : String(error);
 				ctx.ui.notify(`Module verify failed: ${message}`, "warning");
+			}
+		},
+	});
+
+	// 模块安装的受支持入口：包内模块库（assets/modules）→ 项目 .pi/，依赖
+	// 闭包自动先装。域逻辑在 lib/module-installer.ts，这里只做装配与汇总。
+	pi.registerCommand("jero:install-module", {
+		description: "Install package module bundle(s) into this project (.pi/modules, .pi/agents, .pi/skills) with automatic dependency resolution. Usage: /jero:install-module <token>... [--force].",
+		handler: async (args, ctx) => {
+			try {
+				const raw = typeof args === "string" ? args : "";
+				const force = raw.includes("--force");
+				const tokens = raw.split(/\s+/).filter((part) => part.length > 0 && part !== "--force");
+				if (tokens.length === 0) {
+					ctx.ui.notify("用法：/jero:install-module <词元>... [--force]（可装模块用 /jero:module-list 查看）", "warning");
+					return;
+				}
+				const { bundles, broken } = discoverBundles(bundleModulesRoot());
+				const byToken = new Map(bundles.map((bundle) => [bundle.token, bundle]));
+				const installs = readModuleInstalls(ctx.cwd);
+				const installedVersions = new Map(
+					Object.entries(installs.modules).map(([token, record]) => [token, record.version]),
+				);
+				const plan = resolveInstallPlan(bundles, tokens, installedVersions);
+				if (!plan.ok) {
+					ctx.ui.notify(`安装计划失败（${plan.reason}）：${plan.detail}`, "warning");
+					return;
+				}
+				const lines: string[] = [];
+				let anyInstalled = false;
+				for (const step of plan.steps) {
+					const bundle = byToken.get(step.token);
+					if (bundle === undefined) continue;
+					const outcome = installBundle(ctx.cwd, bundle, { force });
+					if (outcome.kind === "installed") {
+						anyInstalled = true;
+						lines.push(`+ ${outcome.detail}`);
+					} else {
+						lines.push(`= ${outcome.token}：${outcome.detail}`);
+					}
+				}
+				if (anyInstalled || broken.length > 0) {
+					await ensureAtlIgnored(ctx.cwd);
+					const result = runModuleVerifyPipeline(ctx.cwd);
+					lines.push("", ...summarize(result).split("\n"));
+				}
+				ctx.ui.notify(lines.join("\n"), "info");
+			} catch (error) {
+				const message = error instanceof Error ? error.message : String(error);
+				ctx.ui.notify(`Module install failed: ${message}`, "warning");
+			}
+		},
+	});
+
+	pi.registerCommand("jero:module-list", {
+		description: "List installable module bundles in the package library with versions, dependencies and project install status.",
+		handler: async (_args, ctx) => {
+			try {
+				const { bundles, broken } = discoverBundles(bundleModulesRoot());
+				if (bundles.length === 0 && broken.length === 0) {
+					ctx.ui.notify("包内模块库为空（assets/modules/）", "info");
+					return;
+				}
+				const installs = readModuleInstalls(ctx.cwd);
+				const lines = ["可安装模块（装到项目 .pi/，依赖自动先装）："];
+				for (const bundle of [...bundles].toSorted((left, right) => left.token.localeCompare(right.token))) {
+					const record = installs.modules[bundle.token];
+					const dirExists = existsSync(join(ctx.cwd, ".pi", "modules", bundle.token));
+					const status = record !== undefined
+						? `已装 ${record.version}`
+						: dirExists
+							? "目录存在但无安装记录（手工安装）"
+							: "未安装";
+					const deps = bundle.dependencies.length > 0 ? bundle.dependencies.join("、") : "无";
+					lines.push(`- ${bundle.token}@${bundle.version}｜${status}｜依赖：${deps}｜${bundle.description ?? ""}`);
+				}
+				for (const item of broken) {
+					lines.push(`✗ ${item.dirName}：清单解析失败——${item.issues.map((issue) => issue.message).join("；")}`);
+				}
+				lines.push("安装：/jero:install-module <词元>（依赖自动先装；--force 强制重装）");
+				ctx.ui.notify(lines.join("\n"), broken.length > 0 ? "warning" : "info");
+			} catch (error) {
+				const message = error instanceof Error ? error.message : String(error);
+				ctx.ui.notify(`Module list failed: ${message}`, "warning");
 			}
 		},
 	});

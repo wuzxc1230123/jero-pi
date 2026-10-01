@@ -317,7 +317,7 @@ test("多模块：路由表稳定 ID、delegate 冲突检测与追加角色去�
 	assert.match(markdown, /\| 规则 ID \| 模块 \| 条件 \| 动作 \| 目标角色 \|/);
 	assert.match(markdown, /gogame#0/);
 	assert.match(markdown, /webapi#0/);
-	assert.match(markdown, /项目根模块先于全局根/);
+	assert.match(markdown, /模块根内按 token 字典序/);
 });
 
 test("验证器：module_resolution 报告的机器校验全分支", () => {

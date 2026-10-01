@@ -1,9 +1,12 @@
-// 模块验证管线——发现（项目 + 全局双根）→ 安装验证（八查）→ 编译覆盖层
+// 模块验证管线——发现（仅项目根 .pi/modules）→ 安装验证 → 编译覆盖层
 // → 落盘/清理。扩展（extensions/module-verify.ts）只做生命周期装配，本模块
 // 承载全部可测业务逻辑。
 //
-// 陈旧覆盖层纪律：任一模块根存在就**总是**重写覆盖层（含零模块的空态）；
-// 模块根全部消失时删除残留覆盖层——编排器绝不能消费过期的接线数据。
+// 模块只装在项目内（无全局根）：全局生效与"项目即边界"的契约冲突，
+// 安装入口收敛到 /jero:install-module（lib/module-installer.ts）。
+//
+// 陈旧覆盖层纪律：模块根存在就**总是**重写覆盖层（含零模块的空态）；
+// 模块根消失时删除残留覆盖层——编排器绝不能消费过期的接线数据。
 
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
@@ -18,19 +21,14 @@ import {
 } from "./module-trigger-compiler.ts";
 
 export const MODULES_REL_DIR = join(".pi", "modules");
-export const GLOBAL_MODULES_REL_DIR = join(".pi", "agent", "modules");
 export const OVERLAY_REL_PATH = join(".atl", "module-overlay.md");
 
 export function projectModulesRoot(cwd: string): string {
 	return join(cwd, MODULES_REL_DIR);
 }
 
-export function globalModulesRoot(): string {
-	return join(homedir(), GLOBAL_MODULES_REL_DIR);
-}
-
 export function moduleRoots(cwd: string): string[] {
-	return [projectModulesRoot(cwd), globalModulesRoot()];
+	return [projectModulesRoot(cwd)];
 }
 
 export function anyModuleRootExists(cwd: string): boolean {
@@ -102,7 +100,7 @@ function readEntryText(root: string, dirName: string, manifest: ModuleManifest):
 }
 
 export interface VerifyPipelineOptions {
-	/** 覆盖模块根（测试注入用）；缺省 = 项目 + 全局双根。 */
+	/** 覆盖模块根（测试注入用）；缺省 = 项目根 .pi/modules。 */
 	readonly roots?: readonly string[];
 }
 
@@ -120,8 +118,8 @@ export function runModuleVerifyPipeline(cwd: string, options: VerifyPipelineOpti
 
 	const discovered: { root: string; found: DiscoveredModule }[] = [];
 	for (const root of roots) {
-		// 根内按目录名字典序稳定化——覆盖层优先序契约（项目根先于全局根、
-		// 根内字典序）的一半在这里钉死；readdir 顺序不做任何假设。
+		// 根内按目录名字典序稳定化——覆盖层优先序契约（根内 token 字典序）
+		// 在这里钉死；readdir 顺序不做任何假设。
 		const foundInRoot = discoverModules(root).toSorted((left, right) =>
 			left.dirName.localeCompare(right.dirName),
 		);
@@ -135,6 +133,11 @@ export function runModuleVerifyPipeline(cwd: string, options: VerifyPipelineOpti
 	const allTokens = discovered
 		.map((item) => item.found.manifest?.token)
 		.filter((token): token is string => token !== undefined);
+	// deps-resolve 数据源：全部解析成功模块的依赖图（坏清单模块不进图，
+	// 其依赖者会以"依赖缺失"响亮失败，而不是静默半装）。
+	const installedModules = discovered
+		.flatMap((item) => (item.found.manifest ? [item.found.manifest] : []))
+		.map((manifest) => ({ token: manifest.token, dependencies: [...manifest.dependencies ?? []] }));
 
 	for (const { root, found } of discovered) {
 		if (found.manifest === undefined) {
@@ -151,6 +154,7 @@ export function runModuleVerifyPipeline(cwd: string, options: VerifyPipelineOpti
 				repoFilesTruncated: walked.truncated,
 				otherTokens: allTokens.filter((token) => token !== manifest.token),
 				looseSkillTokens: loose,
+				installedModules,
 			}),
 		);
 		manifests.push(manifest);

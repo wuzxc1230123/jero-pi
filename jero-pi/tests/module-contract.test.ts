@@ -17,9 +17,10 @@ import {
 
 function goldenManifestJson(): string {
 	return JSON.stringify({
-		schema: "jero.module-contract/v1",
+		schema: "jero.module-contract/v2",
 		token: "godot",
 		version: "1.0.0",
+		dependencies: [],
 		triggers: { files: ["project.godot", "**/*.tscn"], intents: ["场景"] },
 		knowledge: { entry: "knowledge/SKILL.md", references: ["references/*.md"] },
 		roles: [
@@ -370,4 +371,109 @@ test("glob 语义：* 不跨目录、** 跨目录、? 单字符、字面量转�
 	assert.equal(globToRegExp("a?c.md").test("ac.md"), false);
 
 	assert.equal(globToRegExp("v1.0.txt").test("v1x0.txt"), false);
+});
+
+// —— v2 契约：dependencies 字段解析与 deps-resolve 安装验证 ——
+
+test("v2 依赖字段：合法解析、v1 拒绝、非法词元与重复拒绝", () => {
+	const v2 = parseModuleManifest(mutateGolden((data) => {
+		data.dependencies = ["webapi"];
+	}));
+	assert.deepEqual(v2.issues, []);
+	assert.deepEqual(v2.manifest?.dependencies, ["webapi"]);
+
+	// v1 清单带 dependencies → unknown-key 拒绝（封闭契约的演进纪律）。
+	const v1WithDeps = parseModuleManifest(mutateGolden((data) => {
+		data.schema = "jero.module-contract/v1";
+		data.dependencies = ["webapi"];
+	}));
+	assert.ok(v1WithDeps.issues.some((item) => item.code === "unknown-key" && item.path === "$.dependencies"));
+
+	const illegal = parseModuleManifest(mutateGolden((data) => {
+		data.dependencies = ["Not_Legal"];
+	}));
+	assert.ok(illegal.issues.some((item) => item.path === "$.dependencies" && item.code === "pattern"));
+
+	const duplicated = parseModuleManifest(mutateGolden((data) => {
+		data.dependencies = ["webapi", "webapi"];
+	}));
+	assert.ok(duplicated.issues.some((item) => item.path === "$.dependencies" && item.code === "duplicate"));
+});
+
+test("deps-resolve：无依赖声明或未提供已装清单时 skip", () => {
+	const manifest = goldenManifest();
+	assert.equal(
+		verifyModule({ manifest }).checks.find((item) => item.id === "deps-resolve")?.status,
+		"skip",
+	);
+
+	const withDeps = parseModuleManifest(mutateGolden((data) => {
+		data.dependencies = ["webapi"];
+	})).manifest!;
+	assert.equal(
+		verifyModule({ manifest: withDeps }).checks.find((item) => item.id === "deps-resolve")?.status,
+		"skip",
+	);
+});
+
+test("deps-resolve：依赖缺失响亮失败并列出补救命令", () => {
+	const withDeps = parseModuleManifest(mutateGolden((data) => {
+		data.dependencies = ["webapi"];
+	})).manifest!;
+	const report = verifyModule({
+		manifest: withDeps,
+		installedModules: [{ token: "godot", dependencies: [] }],
+	});
+	const check = report.checks.find((item) => item.id === "deps-resolve");
+	assert.equal(check?.status, "fail");
+	assert.match(check?.detail ?? "", /依赖缺失：webapi/);
+	assert.match(check?.detail ?? "", /\/jero:install-module webapi/);
+});
+
+test("deps-resolve：依赖齐备时通过", () => {
+	const withDeps = parseModuleManifest(mutateGolden((data) => {
+		data.dependencies = ["webapi"];
+	})).manifest!;
+	const report = verifyModule({
+		manifest: withDeps,
+		entryText: "---\nname: godot\ndescription: d\n---\n\n正文\n",
+		installedModules: [
+			{ token: "godot", dependencies: ["webapi"] },
+			{ token: "webapi", dependencies: [] },
+		],
+	});
+	assert.equal(report.checks.find((item) => item.id === "deps-resolve")?.status, "pass");
+	assert.equal(report.ok, true);
+});
+
+test("deps-resolve：自依赖与成环失败", () => {
+	const selfDep = parseModuleManifest(mutateGolden((data) => {
+		data.dependencies = ["godot"];
+	})).manifest!;
+	const selfReport = verifyModule({
+		manifest: selfDep,
+		installedModules: [{ token: "godot", dependencies: ["godot"] }],
+	});
+	assert.match(
+		selfReport.checks.find((item) => item.id === "deps-resolve")?.detail ?? "",
+		/自依赖 godot/,
+	);
+
+	const aDep = parseModuleManifest(mutateGolden((data) => {
+		data.token = "alpha-mod";
+		data.dependencies = ["beta-mod"];
+		data.roles = (data.roles as Record<string, unknown>[]).map((role) => ({ ...role, name: "alpha-mod-reviewer" }));
+		(data.bindings as { review: { appendRoles: string[] } }).review.appendRoles = ["alpha-mod-reviewer"];
+		data.routing = [{ when: { surface: "review" }, action: "delegate-role", target: "alpha-mod-reviewer" }];
+	})).manifest!;
+	const cycleReport = verifyModule({
+		manifest: aDep,
+		installedModules: [
+			{ token: "alpha-mod", dependencies: ["beta-mod"] },
+			{ token: "beta-mod", dependencies: ["alpha-mod"] },
+		],
+	});
+	const cycle = cycleReport.checks.find((item) => item.id === "deps-resolve");
+	assert.equal(cycle?.status, "fail");
+	assert.match(cycle?.detail ?? "", /依赖成环：alpha-mod → beta-mod → alpha-mod/);
 });

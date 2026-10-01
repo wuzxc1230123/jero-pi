@@ -1,4 +1,4 @@
-// 能力模块契约（jero.module-contract/v1）——编排面扩展的机器验证单元。
+// 能力模块契约（jero.module-contract/v2，兼容 v1）——编排面扩展的机器验证单元。
 //
 // 设计：一个模块 = 一个目录 + 一份 module.json 清单，声明四个面
 // （触发/知识/角色/接线）。语义判断变数据：静态触发器由机器对仓库
@@ -6,8 +6,16 @@
 // （RoutingSlip，见 assets/orchestrator-delegation.md）字段，角色档案
 // 携带隔离正当性——孤儿代理在安装验证时被拒绝，而不是运行时静默不被
 // 委派。规范见 docs/module-contract.md。
+//
+// v2 = v1 + dependencies（模块间依赖自述）：安装器（lib/module-installer.ts）
+// 据此做闭包解析与依赖先装，安装验证做缺失/成环的响亮失败。
 
-export const MODULE_CONTRACT_ID = "jero.module-contract/v1";
+export const MODULE_CONTRACT_V1 = "jero.module-contract/v1";
+export const MODULE_CONTRACT_V2 = "jero.module-contract/v2";
+// 发布面接受两个契约版本；v1 清单继续通过（向后兼容），dependencies
+// 字段仅 v2 可用——封闭契约的演进纪律，不搞静默宽容。
+export const MODULE_CONTRACT_IDS = [MODULE_CONTRACT_V1, MODULE_CONTRACT_V2] as const;
+export type ModuleContractId = (typeof MODULE_CONTRACT_IDS)[number];
 
 // 编排面 S1–S8：orchestrator 真实派发情况中扩展可参与的位置。
 // S9（事故诊断）与 S10（继续/恢复）刻意不开放：后者是纯机械层。
@@ -168,10 +176,12 @@ export interface PipelineSpec {
 }
 
 export interface ModuleManifest {
-	readonly schema: typeof MODULE_CONTRACT_ID;
+	readonly schema: ModuleContractId;
 	readonly token: string;
 	readonly version: string;
 	readonly description?: string;
+	/** v2 专属：依赖的模块词元（安装器闭包解析 + 安装验证缺失/成环检查）。 */
+	readonly dependencies?: readonly string[];
 	readonly triggers: TriggerSpec;
 	readonly knowledge: KnowledgeSpec;
 	readonly roles: readonly RoleSpec[];
@@ -331,16 +341,21 @@ export function parseModuleManifest(raw: string): ParsedManifest {
 	if (!isPlainObject(data)) {
 		return { issues: [issue("type", "$", "顶层必须是对象")] };
 	}
-	checkUnknownKeys(
-		data,
-		["schema", "token", "version", "description", "triggers", "knowledge", "roles", "bindings", "routing", "config", "pipeline"],
-		"$",
-		issues,
-	);
-
-	if (data.schema !== MODULE_CONTRACT_ID) {
-		issues.push(issue("const", "$.schema", `必须是 "${MODULE_CONTRACT_ID}"`));
+	// 契约版本先行判定：v2 的顶层白名单多一个 dependencies。v1 清单出现
+	// 该键仍按 unknown-key 拒绝——封闭契约的演进纪律，不搞静默宽容。
+	const contractId = typeof data.schema === "string" &&
+			(MODULE_CONTRACT_IDS as readonly string[]).includes(data.schema)
+		? (data.schema as ModuleContractId)
+		: undefined;
+	if (contractId === undefined) {
+		issues.push(issue("enum", "$.schema", `必须是 ${MODULE_CONTRACT_IDS.join(" | ")} 之一`));
 	}
+	const topLevelKeys = [
+		"schema", "token", "version", "description", "triggers", "knowledge", "roles", "bindings", "routing", "config", "pipeline",
+	];
+	if (contractId === MODULE_CONTRACT_V2) topLevelKeys.splice(4, 0, "dependencies");
+	checkUnknownKeys(data, topLevelKeys, "$", issues);
+
 	if (typeof data.token !== "string" || !TOKEN_PATTERN.test(data.token)) {
 		issues.push(issue("pattern", "$.token", "token 必须匹配 /^[a-z][a-z0-9-]{1,23}$/（小写词元，禁下划线）"));
 	}
@@ -349,6 +364,23 @@ export function parseModuleManifest(raw: string): ParsedManifest {
 	}
 	if (data.description !== undefined && (typeof data.description !== "string" || data.description.length > 200)) {
 		issues.push(issue("type", "$.description", "description 必须是 ≤200 字符的字符串"));
+	}
+
+	// dependencies（仅 v2）：模块间依赖自述，安装器据此闭包解析、依赖先装。
+	let dependencies: readonly string[] | undefined;
+	if (contractId === MODULE_CONTRACT_V2 && data.dependencies !== undefined) {
+		const list = stringList(data.dependencies, "$.dependencies", issues);
+		if (list !== undefined) {
+			const illegal = list.filter((dep) => !TOKEN_PATTERN.test(dep));
+			if (illegal.length > 0) {
+				issues.push(issue("pattern", "$.dependencies", `依赖词元非法：${illegal.join(", ")}（须与 token 同模式）`));
+			}
+			const duplicated = [...new Set(list.filter((dep, index) => list.indexOf(dep) !== index))];
+			if (duplicated.length > 0) {
+				issues.push(issue("duplicate", "$.dependencies", `依赖词元重复：${duplicated.join(", ")}`));
+			}
+			dependencies = list;
+		}
 	}
 
 	// triggers：静态 files 是契约的心脏，必填且非空。
@@ -529,10 +561,11 @@ export function parseModuleManifest(raw: string): ParsedManifest {
 	const token = data.token as string;
 	return {
 		manifest: {
-			schema: MODULE_CONTRACT_ID,
+			schema: contractId as ModuleContractId,
 			token,
 			version: data.version as string,
 			description: typeof data.description === "string" ? data.description : undefined,
+			dependencies,
 			triggers,
 			knowledge: knowledge as KnowledgeSpec,
 			roles,
@@ -569,6 +602,8 @@ export interface ModuleVerifyInput {
 	readonly otherTokens?: readonly string[];
 	/** 项目 `.pi/skills/` 下的松散技能名；提供时执行 no-loose-duplicate 检查。 */
 	readonly looseSkillTokens?: readonly string[];
+	/** 项目模块根内全部已装模块的 {token, dependencies}（含本模块）；提供时执行 deps-resolve 检查。 */
+	readonly installedModules?: readonly { readonly token: string; readonly dependencies: readonly string[] }[];
 }
 
 function check(
@@ -580,7 +615,30 @@ function check(
 	return { id, status: ok ? "pass" : "fail", detail: ok ? passDetail : failDetail };
 }
 
-/** 安装验证：语义级八查。任何 fail 即模块未过门，静默失效族在这里显式失败。 */
+/** 依赖图环检测：从 start 深度优先，返回环上的词元序列（首尾相同闭合，如 a → b → a）；无环返回 undefined。 */
+function findDependencyCycle(start: string, graph: Map<string, string[]>): string[] | undefined {
+	const state = new Map<string, "visiting" | "visited">();
+	const stack: string[] = [];
+	const visit = (token: string): string[] | undefined => {
+		const mark = state.get(token);
+		if (mark === "visiting") {
+			return [...stack.slice(stack.indexOf(token)), token];
+		}
+		if (mark === "visited") return undefined;
+		state.set(token, "visiting");
+		stack.push(token);
+		for (const dep of graph.get(token) ?? []) {
+			const found = visit(dep);
+			if (found !== undefined) return found;
+		}
+		stack.pop();
+		state.set(token, "visited");
+		return undefined;
+	};
+	return visit(start);
+}
+
+/** 安装验证：语义级检查（token/依赖/防遮蔽/触发/路由/隔离/entry/config/硬门）。任何 fail 即模块未过门，静默失效族在这里显式失败。 */
 export function verifyModule(input: ModuleVerifyInput): ModuleVerifyReport {
 	const { manifest } = input;
 	const checks: ModuleVerifyCheck[] = [];
@@ -603,6 +661,40 @@ export function verifyModule(input: ModuleVerifyInput): ModuleVerifyReport {
 	checks.push(
 		check("token-unique", unique, "token 在本仓库模块中唯一", `token 与既有模块冲突：${manifest.token}`),
 	);
+
+	// deps-resolve（v2）：依赖缺失/自依赖/成环都是安装期响亮失败——静默
+	// 拆依赖等于运行时知识链断裂。
+	const declaredDeps = manifest.dependencies ?? [];
+	if (declaredDeps.length === 0) {
+		checks.push({ id: "deps-resolve", status: "skip", detail: "无依赖声明（v1 清单或 v2 空依赖）" });
+	} else if (input.installedModules === undefined) {
+		checks.push({ id: "deps-resolve", status: "skip", detail: "未提供已装模块清单，跳过依赖解析" });
+	} else {
+		const installedTokens = new Set(input.installedModules.map((item) => item.token));
+		const selfDep = declaredDeps.includes(manifest.token);
+		const missing = declaredDeps.filter((dep) => !installedTokens.has(dep));
+		const graph = new Map(input.installedModules.map((item) => [item.token, [...item.dependencies]]));
+		// 本模块不在清单（独立验证场景）时也要入图，环检测才完整。
+		if (!graph.has(manifest.token)) graph.set(manifest.token, [...declaredDeps]);
+		const cycle = findDependencyCycle(manifest.token, graph);
+		const depsOk = !selfDep && missing.length === 0 && cycle === undefined;
+		checks.push(
+			check(
+				"deps-resolve",
+				depsOk,
+				`依赖全部解析（${declaredDeps.join("、")}）且无环`,
+				[
+					selfDep ? `自依赖 ${manifest.token}` : "",
+					missing.length > 0
+						? `依赖缺失：${missing.join("、")}——先安装依赖模块（/jero:install-module ${missing.join(" ")}）或删掉该声明`
+						: "",
+					cycle !== undefined ? `依赖成环：${cycle.join(" → ")}` : "",
+				]
+					.filter((part) => part.length > 0)
+					.join("；"),
+			),
+		);
+	}
 
 	if (input.looseSkillTokens === undefined) {
 		checks.push({ id: "no-loose-duplicate", status: "skip", detail: "未提供松散技能名清单，跳过双轨检查" });

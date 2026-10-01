@@ -26,6 +26,7 @@ license: MIT
 | 写面向认知的文档 / 注释 | `jero-cognitive-doc-design` · `jero-comment-writer` |
 | 建 issue | `jero-issue-creation` |
 | 创建 / 改进技能 | `jero-skill-creator` · `jero-skill-improver`；写作规范见 `docs/skill-authoring.md` |
+| 安装包内领域模块（godot 等，依赖自动先装）/ 查看可装清单 | `/jero:install-module <词元>` · `/jero:module-list` |
 | 创建领域模块（语言/引擎整套扩展）/ 单个子代理 | `/module-creation` · `/agent-creation`（自主触发走 `jero-module-creator` · `jero-agent-creator`）；放置与机制见 `docs/extension-guide.md` |
 | 技能增删后刷新索引 | `/skill-registry:refresh`（或自动重扫）；机器索引在 `.atl/skill-registry.md` |
 | 发布 | `release` |
