@@ -210,7 +210,7 @@ export function assertWorkerFallbackRouting(section: string, sectionName: string
 	);
 }
 
-// P4 落地（设计 §5.3 集成矩阵）：九个伴生 pi-package 是硬依赖，其资源经
+// P4 落地（设计 §5.3 集成矩阵）：十个伴生 pi-package 是硬依赖，其资源经
 // node_modules 路径进 pi manifest 才会被宿主加载（宿主目录扫描跳过
 // node_modules；packages.md "Dependencies" 契约）。缺路径时宿主静默跳过，
 // 即"依赖存在即用"。禁止 bundledDependencies：pi-pretty/pi-lens 含平台
@@ -220,6 +220,7 @@ export const COMPANION_EXTENSION_REFS: Record<string, string> = {
 	"@juicesharp/rpiv-ask-user-question": "node_modules/@juicesharp/rpiv-ask-user-question/index.ts",
 	"@juicesharp/rpiv-todo": "node_modules/@juicesharp/rpiv-todo/index.ts",
 	"billion-context-pi": "node_modules/billion-context-pi/dist/index.js",
+	"pi-browser-use": "node_modules/pi-browser-use/dist/index.js",
 	"pi-cache-optimizer": "node_modules/pi-cache-optimizer/index.ts",
 	"pi-fovea": "node_modules/pi-fovea/src/index.ts",
 	"pi-hashline-edit-pro": "node_modules/pi-hashline-edit-pro/index.ts",
@@ -227,6 +228,7 @@ export const COMPANION_EXTENSION_REFS: Record<string, string> = {
 	"pi-web-access": "node_modules/pi-web-access/index.ts",
 };
 export const COMPANION_SKILL_REFS = [
+	"node_modules/pi-browser-use/skills",
 	"node_modules/pi-fovea/skills",
 	"node_modules/pi-lens/skills",
 ];

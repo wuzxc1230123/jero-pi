@@ -18,8 +18,9 @@ Pi 宿主（@earendil-works/pi-coding-agent ≥0.85.1，peer）
 │   jero-ai-sdd-breadcrumb · jero-ai-spec-index · memory · runtime-metrics*
 ├─ 伴生插件（dependencies 精确钉版，经 pi 清单加载）
 │   pi-pretty · rpiv-ask-user-question · rpiv-todo · billion-context-pi ·
-│   pi-cache-optimizer · pi-fovea · pi-hashline-edit-pro · pi-lens · pi-web-access
-└─ 系统边界（仅 git / gh(可选) / pi 自身三类外部进程；另有唯一一条带凭证的网络出口：活动 provider 为 openai-codex 时订阅用量查询 GET `https://chatgpt.com/backend-api/wham/usage`，`JERO_PI_USAGE_FETCH=0` 可完全关闭）
+│   pi-browser-use · pi-cache-optimizer · pi-fovea · pi-hashline-edit-pro ·
+│   pi-lens · pi-web-access
+└─ 系统边界（jero 自有代码仅 git / gh(可选) / pi 自身三类外部进程；伴生件 pi-browser-use 在代理调用 browser_* 工具时按需拉起本地 Chrome——chrome-devtools-mcp 引擎经环回端口，浏览器出站网络受其 browser-policy 技能的 CLI-first 梯子约束；另有唯一一条带凭证的网络出口：活动 provider 为 openai-codex 时订阅用量查询 GET `https://chatgpt.com/backend-api/wham/usage`，`JERO_PI_USAGE_FETCH=0` 可完全关闭）
 ```
 
 - **进程内评审权威** `lib/authority/`：13 个持久状态，15 个 wire 状态投影；不变量——透镜只跑一次、冻结发现与创世范围不变、恰一次有界纠正（预算 `min(200, ceil(原始变更行/2))`）、actor 产物（模型输出）永远是无信托数据。存储在 `.git/jero-review/`（CAS 对象 + lineage 记录 + 候选视图），随仓库走。`scripts/check-authority-boundary.mjs` 结构性强制 authority 不 import 扩展层、不做 IO/env 读取。
@@ -133,4 +134,4 @@ START → 同意（consent 仪式 v3，host 常任权限按 Git 规范身份授�
 - 201 个测试文件（node:test，并发 12）+ runtime harness（真实扩展装配 × 假宿主端到端，三段场景）。**行覆盖以 `pnpm run test:coverage` 为准**（NODE_V8_COVERAGE 跨进程归并，含 harness 与 CLI 子进程）；Node 内置 `--experimental-test-coverage` 在全量多子进程场景对同文件的合并会失真（实测同一文件 19% vs 真值 87%），勿直接采信内置全量表。
 - CI（GitHub Actions）：Ubuntu 全量测试 + 类型诊断棘轮（`scripts/types-baseline.json`）+ runtime 模块一致性（`runtime/*.mjs` 由 lib 再生成）+ 权威边界检查 + 测试质量棘轮（`scripts/check-test-quality.mjs`，5 条反模式只降不升，含分片互 import）+ 空 catch 卫生门（`scripts/check-empty-catch.mjs`，空块必须带注释或语句）+ 文档清单同步门（`scripts/check-docs-manifest.mjs`，从注册点派生命令/工具/技能清单并钉住本文件的生成块）+ 评审域命名棘轮（`scripts/check-review-naming.mjs`，外围前缀只降不升）+ 模块契约门（`scripts/check-module-contract.mjs`，schema 与 lib 常量零漂移 + 创建器金样绿灯）+ 断网测试门（代理黑洞 + `NODE_OFFLINE=1`）；Windows 权威探测、候选视图回归与符号链接夹具回归（`sdd-research-capabilities` / `review-candidate-view.z2`——钉住「Windows 上 rmSync 对悬垂符号链接是静默 no-op，夹具须用 unlinkSync」的语义）。套件级挂起兜底：全部 `--test` 入口带 `--test-timeout=300000`。
 - 打包门 `prepack`/`prepublishOnly`：全量测试 → runtime 一致性 → 权威边界 → 测试质量棘轮 → 空 catch 卫生门 → `verify-package-files.mjs`（当前钉 158 个必需文件 = 90 条直接断言 + 68 个字节钉住向量，另 25 条禁带路径）→ 文档清单同步门 → 评审域命名棘轮 → 模块契约门 → packed tarball 分发链校验（`test-packed-runner.mjs`，仅 publish 链）。
-- 供应链：9 个伴生依赖精确钉版；`pnpm-workspace.yaml` 强制发布龄期 / 信任不降级 / 无非常规子依赖来源；CI 重跑 `pnpm audit --prod --audit-level=high` 与 npm publish provenance；`/jero:doctor` 内置伴生依赖健康审计（钉版安装 + pi 清单入口解析，处置指引见 `docs/dependency-exit-plan.md`）。
+- 供应链：10 个伴生依赖精确钉版；`pnpm-workspace.yaml` 强制发布龄期 / 信任不降级 / 无非常规子依赖来源；CI 重跑 `pnpm audit --prod --audit-level=high` 与 npm publish provenance；`/jero:doctor` 内置伴生依赖健康审计（钉版安装 + pi 清单入口解析，处置指引见 `docs/dependency-exit-plan.md`）。

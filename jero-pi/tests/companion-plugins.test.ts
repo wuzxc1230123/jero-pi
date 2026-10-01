@@ -1,4 +1,4 @@
-// 伴生插件回归门（jero-pi P4/D5/D6）：九个伴生 pi-package 经 node_modules
+// 伴生插件回归门（jero-pi P4/D5/D6）：十个伴生 pi-package 经 node_modules
 // 路径进 pi manifest（"依赖存在即用"），全部精确钉版且清单引用不残留死路径；
 // 被 rpiv-todo 替代的内置 todo 实现保持删除，且 jero 自有源码不再注册同名
 // `todo` 工具（双实现禁令）。
@@ -16,6 +16,7 @@ const AUDITED_COMPANION_PINS: Record<string, string> = {
 	"@juicesharp/rpiv-ask-user-question": "2.10.1",
 	"@juicesharp/rpiv-todo": "2.10.1",
 	"billion-context-pi": "0.1.75",
+	"pi-browser-use": "0.11.8",
 	"pi-cache-optimizer": "2.8.10",
 	"pi-fovea": "0.27.0",
 	"pi-hashline-edit-pro": "4.3.6",
@@ -75,4 +76,28 @@ test("jero extensions no longer register the todo tool the rpiv-todo companion p
 test("rpiv-todo companion keeps the todo tool name so existing session history replays", () => {
 	const toolTypes = readFileSync(join(PACKAGE_ROOT, "node_modules", "@juicesharp", "rpiv-todo", "tool", "types.ts"), "utf8");
 	assert.match(toolTypes, /TOOL_NAME\s*=\s*"todo"/, "sessions written under the todo tool name must keep replaying after the switch");
+});
+
+test("every companion dependency has a matching exit-plan row with its pinned version", () => {
+	const exitPlan = readFileSync(join(PACKAGE_ROOT, "docs", "dependency-exit-plan.md"), "utf8");
+	for (const [name, version] of Object.entries(AUDITED_COMPANION_PINS)) {
+		// 表格行的依赖列格式为 "| `<name>` <version> |"（反引号包名 + 空格 + 钉版）。
+		const rowPattern = new RegExp("`" + name + "`\\s+" + version.replaceAll(".", "\\."));
+		assert.match(
+			exitPlan,
+			rowPattern,
+			`companion ${name}@${version} must keep a dependency-exit-plan.md row; a dependency without an exit row violates the exit-plan discipline`,
+		);
+	}
+});
+
+test("pi-browser-use companion ships its policy and visual-qa skills for the declared skills ref", () => {
+	// skills 目录经 pi manifest 的 node_modules/pi-browser-use/skills 引用被宿主
+	// 扫描；browser-policy 是 CLI-first 必要性梯子（先 gh/API/抓取再开浏览器），
+	// visual-qa 承接截图验证——两者缺席即视为伴生件失效信号，按退出预案行动。
+	const skillsRoot = join(PACKAGE_ROOT, "node_modules", "pi-browser-use", "skills");
+	for (const skill of ["browser-policy", "visual-qa"]) {
+		const skillDoc = join(skillsRoot, skill, "SKILL.md");
+		assert.ok(existsSync(skillDoc), `pi-browser-use skill ${skill}/SKILL.md must exist (skills ref would otherwise point at a dead directory)`);
+	}
 });
