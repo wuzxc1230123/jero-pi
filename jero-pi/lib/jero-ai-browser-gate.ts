@@ -7,6 +7,13 @@
 // 门面约定：只拦 toolName 以 browser_ 开头、且 input.url 为非空字符串的
 // 调用（pi-browser-use 以 browser_ 前缀注册全部上游工具，导航面携带
 // url 参数）。不硬编码具体工具清单，上游增删工具名不产生漏门。
+//
+// 已知边界：页面内链接点击等浏览器自身发起的跳转不经工具面，本门拦不
+// 到；结构性关闭该面需要 Chrome 级配置（如 host-resolver-rules），而
+// pi-browser-use 的设置面不透传任意 Chrome 启动参数，故 jero-pi 代码层
+// 无法提供，只能依赖 browser-policy 技能与 fresh 净室缓解。结果侧解析
+// 页面内容做"落地域检测"是明确反模式：页面文本是攻击者可控输入，会
+// 把隔离触发权交给注入者。
 
 export type BrowserDomainPolicy =
 	| { mode: "off" }
@@ -118,4 +125,21 @@ export function evaluateBrowserDomainGate(
 		return blocked(`${GATE_LABEL}：${hostname} 命中拒绝清单。`);
 	}
 	return { action: "ignore" };
+}
+
+/** pi-browser-use 伴生件的 engines 下限（高于本仓 >=22.6 基线）。 */
+export const BROWSER_COMPANION_NODE_FLOOR = 24;
+
+/**
+ * 伴生件 Node 引擎诊断：pi-browser-use 已安装但当前 Node 主版本低于其
+ * engines 下限时返回 warn 行（fail-visible——扩展加载失败比静默缺席好），
+ * 否则返回 undefined（健康态不刷屏）。纯函数，安装状态由调用方传入。
+ */
+export function browserCompanionEngineDiagnostic(
+	nodeMajor: number,
+	piBrowserUseInstalled: boolean,
+): string | undefined {
+	if (!piBrowserUseInstalled || nodeMajor >= BROWSER_COMPANION_NODE_FLOOR) return undefined;
+	return `warn: Companion pi-browser-use requires Node >=${BROWSER_COMPANION_NODE_FLOOR} (engines), current major is ${nodeMajor}; `
+		+ `its extension may fail to load on this runtime — see docs/dependency-exit-plan.md`;
 }

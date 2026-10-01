@@ -2,7 +2,7 @@
 // SDD 命令与启动流程。评审域实现已拆至 lib/jero-ai-review-*（见 import/re-export）。
 
 import { consumeReviewMutation, pendingReviewMutation, recordReviewMutation } from "../lib/review-reminder-receipt.ts";
-import { evaluateBrowserDomainGate, resolveBrowserDomainPolicy } from "../lib/jero-ai-browser-gate.ts";
+import { browserCompanionEngineDiagnostic, evaluateBrowserDomainGate, resolveBrowserDomainPolicy } from "../lib/jero-ai-browser-gate.ts";
 import { resolveSessionWorktree } from "../lib/session-worktree-registry.ts";
 import { renderResearchCapabilities, resolveResearchCapabilities } from "../lib/sdd-research-capabilities.ts";
 import { existsSync, lstatSync, realpathSync } from "node:fs";
@@ -50,7 +50,8 @@ import {
 import { applyJeroBootstrap } from "../lib/jero-ai-bootstrap.ts";
 import { applySddBreadcrumb, cachedResolveSddStatus, renderSddBreadcrumb, sddBreadcrumbEnabled } from "../lib/jero-ai-sdd-breadcrumb.ts";
 import { applySpecIndex, specIndexEnabled, specIndexTextFor } from "../lib/jero-ai-spec-index.ts";
-import { companionDependencyDiagnosticLines } from "../lib/jero-ai-companion-deps.ts";
+import { companionDependencyDiagnosticLines, readCompanionDependencyStatuses } from "../lib/jero-ai-companion-deps.ts";
+import { PACKAGE_ROOT } from "../lib/jero-ai-paths.ts";
 import { mergePrettyDisableTools } from "../lib/pretty-disable-tools.ts";
 import { evaluateSddArtifactShrink, recordSddArtifactWatermarks, renderSddShrinkReport } from "../lib/jero-ai-sdd-guard.ts";
 import { buildJeroPrompt, loadReviewContractPromptFragment } from "../lib/jero-ai-prompts.ts";
@@ -695,6 +696,14 @@ function createJeroAiExtensionForTesting(
 				const modelConfig = await readSavedModelConfigAsync(ctx.cwd);
 				const engramActive = hasWritableMemoryTool(pi);
 				const companionLines = companionDependencyDiagnosticLines();
+				// 伴生件引擎诊断：pi-browser-use 的 Node >=24 下限高于本仓
+				// 基线，低版本运行时上加载可能静默失败——在 doctor 里显影。
+				const companionStatuses = readCompanionDependencyStatuses(PACKAGE_ROOT);
+				const browserEngineLine = browserCompanionEngineDiagnostic(
+					Number.parseInt(process.versions.node.split(".")[0] ?? "0", 10),
+					companionStatuses.some((status) => status.name === "pi-browser-use" && status.installedVersion !== undefined),
+				);
+				if (browserEngineLine !== undefined) companionLines.push(browserEngineLine);
 				const lines = [
 					"el Jero doctor",
 					...assetLines,
