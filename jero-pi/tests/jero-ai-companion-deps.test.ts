@@ -117,10 +117,10 @@ test("a non-exact pin stays healthy but is called out as policy drift", () => {
 
 test("the shipped package itself stays fully healthy", () => {
 	const statuses = readCompanionDependencyStatuses(PACKAGE_ROOT);
-	assert.equal(statuses.length, 10, "the exit-plan companion set is ten dependencies");
+	assert.equal(statuses.length, 9, "the exit-plan companion set is nine dependencies");
 	const lines = companionDependencyDiagnosticLines(PACKAGE_ROOT);
 	const summary = lines[lines.length - 1]!;
-	assert.match(summary, /^pass: Companion dependencies 10\/10 healthy/);
+	assert.match(summary, /^pass: Companion dependencies 9\/9 healthy/);
 	for (const status of statuses) {
 		assert.equal(status.exactPinned, true, `${status.name} must stay exact-pinned`);
 		assert.equal(status.installedVersion, status.pinned, `${status.name} must match its pin`);

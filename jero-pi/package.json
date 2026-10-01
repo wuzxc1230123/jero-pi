@@ -68,7 +68,6 @@
 			"node_modules/@juicesharp/rpiv-ask-user-question/index.ts",
 			"node_modules/@juicesharp/rpiv-todo/index.ts",
 			"node_modules/billion-context-pi/dist/index.js",
-			"node_modules/pi-browser-use/dist/index.js",
 			"node_modules/pi-cache-optimizer/index.ts",
 			"node_modules/pi-fovea/src/index.ts",
 			"node_modules/pi-hashline-edit-pro/index.ts",
@@ -83,7 +82,6 @@
 		],
 		"skills": [
 			"./skills",
-			"node_modules/pi-browser-use/skills",
 			"node_modules/pi-fovea/skills",
 			"node_modules/pi-lens/skills"
 		]
@@ -93,7 +91,6 @@
 		"@juicesharp/rpiv-ask-user-question": "2.10.1",
 		"@juicesharp/rpiv-todo": "2.10.1",
 		"billion-context-pi": "0.1.75",
-		"pi-browser-use": "0.11.8",
 		"pi-cache-optimizer": "2.8.10",
 		"pi-fovea": "0.27.0",
 		"pi-hashline-edit-pro": "4.3.6",

@@ -1,19 +1,15 @@
-// 浏览器出站结构门：对伴生件 pi-browser-use 注册的 browser_* 工具调用做
-// 域名级 allow/deny 判定。browser-policy 技能是提示级约束；本门经宿主
-// tool_call 拦截做结构级收窄——allow 模式下未命中清单或无法解析主机名的
-// 导航一律 fail-closed 阻断。判定只依赖 (策略, 工具名, 入参) 三元组：
-// 策略串的解析与 env 读取均为可注入纯函数（默认 process.env），不做 IO。
-//
-// 门面约定：只拦 toolName 以 browser_ 开头、且 input.url 为非空字符串的
-// 调用（pi-browser-use 以 browser_ 前缀注册全部上游工具，导航面携带
-// url 参数）。不硬编码具体工具清单，上游增删工具名不产生漏门。
+// 浏览器出站结构门：对 browser_* 前缀工具携带 url 参数的导航调用做域名级
+// allow/deny 判定。门是 jero 自有通用防线，与具体浏览器 provider 无关
+// （按 toolName 前缀 + 入参约定匹配，不硬编码工具清单）——provider 缺席时
+// 门自动空转。allow 模式下未命中清单或无法解析主机名的导航一律 fail-closed
+// 阻断。判定只依赖 (策略, 工具名, 入参) 三元组：策略串的解析与 env 读取
+// 均为可注入纯函数（默认 process.env），不做 IO。
 //
 // 已知边界：页面内链接点击等浏览器自身发起的跳转不经工具面，本门拦不
-// 到；结构性关闭该面需要 Chrome 级配置（如 host-resolver-rules），而
-// pi-browser-use 的设置面不透传任意 Chrome 启动参数，故 jero-pi 代码层
-// 无法提供，只能依赖 browser-policy 技能与 fresh 净室缓解。结果侧解析
-// 页面内容做"落地域检测"是明确反模式：页面文本是攻击者可控输入，会
-// 把隔离触发权交给注入者。
+// 到；结构性关闭该面需要浏览器级配置（如 host-resolver-rules），宿主侧
+// 浏览器扩展的设置面通常不透传启动参数，故 jero-pi 代码层无法提供。结果
+// 侧解析页面内容做"落地域检测"是明确反模式：页面文本是攻击者可控输入，
+// 会把隔离触发权交给注入者。
 
 export type BrowserDomainPolicy =
 	| { mode: "off" }
@@ -125,21 +121,4 @@ export function evaluateBrowserDomainGate(
 		return blocked(`${GATE_LABEL}：${hostname} 命中拒绝清单。`);
 	}
 	return { action: "ignore" };
-}
-
-/** pi-browser-use 伴生件的 engines 下限（高于本仓 >=22.6 基线）。 */
-export const BROWSER_COMPANION_NODE_FLOOR = 24;
-
-/**
- * 伴生件 Node 引擎诊断：pi-browser-use 已安装但当前 Node 主版本低于其
- * engines 下限时返回 warn 行（fail-visible——扩展加载失败比静默缺席好），
- * 否则返回 undefined（健康态不刷屏）。纯函数，安装状态由调用方传入。
- */
-export function browserCompanionEngineDiagnostic(
-	nodeMajor: number,
-	piBrowserUseInstalled: boolean,
-): string | undefined {
-	if (!piBrowserUseInstalled || nodeMajor >= BROWSER_COMPANION_NODE_FLOOR) return undefined;
-	return `warn: Companion pi-browser-use requires Node >=${BROWSER_COMPANION_NODE_FLOOR} (engines), current major is ${nodeMajor}; `
-		+ `its extension may fail to load on this runtime — see docs/dependency-exit-plan.md`;
 }

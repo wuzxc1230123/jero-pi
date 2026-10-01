@@ -7,7 +7,6 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-	browserCompanionEngineDiagnostic,
 	evaluateBrowserDomainGate,
 	parseBrowserDomainPolicy,
 	resolveBrowserDomainPolicy,
@@ -109,14 +108,4 @@ test("hostnames are compared case-insensitively through URL parsing", () => {
 	const deny = parseBrowserDomainPolicy("deny:Evil.Example")!;
 	const decision = evaluateBrowserDomainGate(deny, "browser_navigate_page", { url: "https://SUB.EVIL.EXAMPLE/x" });
 	assert.equal(decision.action, "block");
-});
-
-test("engine diagnostic warns only when the browser companion is installed below its Node floor", () => {
-	assert.equal(browserCompanionEngineDiagnostic(25, true), undefined);
-	assert.equal(browserCompanionEngineDiagnostic(24, true), undefined);
-	assert.equal(browserCompanionEngineDiagnostic(22, false), undefined, "uninstalled companion never warns");
-	const warning = browserCompanionEngineDiagnostic(22, true);
-	assert.match(warning!, /^warn: Companion pi-browser-use requires Node >=24/);
-	assert.match(warning!, /current major is 22/);
-	assert.match(warning!, /dependency-exit-plan/);
 });

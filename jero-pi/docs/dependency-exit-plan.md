@@ -1,6 +1,6 @@
 # 伴生依赖退出预案（dependency exit plan）
 
-jero-pi 的 G4/D5 决策把 10 个生态插件升级为**强制依赖**（精确钉版 + lockfile +
+jero-pi 的 G4/D5 决策把 9 个生态插件升级为**强制依赖**（精确钉版 + lockfile +
 发布龄期 + CI 审计）。这是"调用而非复刻"的收益，代价是供应链集中：每个依赖
 一旦停更、破坏性变更或被投毒，都会直接进入每个用户的会话。本文件为每个
 依赖声明：它承接什么、失效信号是什么、退出路径是什么。**依赖出事时按本表
@@ -23,7 +23,6 @@ jero-pi 的 G4/D5 决策把 10 个生态插件升级为**强制依赖**（精确
 | `pi-cache-optimizer` 2.8.10 | 提示/KV 缓存命中率优化（稳定提示、缓存键、页脚统计） | 缓存统计错乱、代理请求被改写出错 | 直接移除：纯优化项，无功能面依赖它；唯一接线是其页脚统计与 shell 层并存的显示问题 | 低 |
 | `pi-fovea` 0.27.0 | 仓库代码图/符号地图（每次提示注入 repo map） | 图谱错乱、停更 | 无胶水依赖：SDD explore 资产提示词只说"如有代码图工具优先用之"；移除后 explore 退化为普通检索，无需代码改动 | 低 |
 | `pi-hashline-edit-pro` 4.3.6 | 哈希锚定的 read/replace/insert/grep 编辑工具（陈旧锚拒绝、不模糊匹配） | 编辑工具缺席/锚语义变更 | 移除后子代理回退宿主内建 edit/write；哈希锚定的"防错位编辑"是增强而非契约，SDD 的 TDD 证据与评审权威不依赖它 | 低-中 |
-| `pi-browser-use` 0.11.8 | 内置浏览器自动化：`browser_*` 工具（导航/AX 快照/截图/交互），chrome-devtools-mcp 引擎经环回端口驱动本地 Chrome，持久档案 `~/.pi/browser-profile`；skills 含 browser-policy（CLI-first 必要性梯子：先 gh/API/抓取再开浏览器）与 visual-qa（截图验证）。**jero 侧自有防线**：`JERO_PI_BROWSER_DOMAINS` 结构门（`lib/jero-ai-browser-gate.ts`，tool_call 拦截）对其导航做域名级 allow/deny，allow 模式 fail-closed——该门是 jero 代码，不随本伴生件增删 | browser_* 工具缺席、Chrome/MCP 启动失败、skills 目录缺失（companion 测试有结构断言）、停更 | 直接移除：零胶水——jero 自有代码不引用其工具名（结构门按 `browser_` 前缀 + url 参数约定匹配，伴生件缺席时门自动空转），SDD 研究准入/评审权威/精益纪律均不依赖；移除即"无浏览器能力"，前端验证退化为 pi-web-access 抓取与读代码。注意其 engines 要求 Node ≥24（高于本仓 ≥22.6 下限），低版本环境本就装不上它，移除无额外代价；已装但运行时 Node 主版本低于下限时 `/jero:doctor` 输出 warn 行（`browserCompanionEngineDiagnostic`），加载失败显影而非静默缺席。结构门边界：页面内链接跳转不经工具面、门不覆盖，Chrome 级强制（host-resolver-rules 等）因其设置面不透传启动参数而无法由 jero-pi 侧提供 | 低 |
 | `pi-lens` 4.1.6 | 编辑时语言感知快速反馈（LSP/lint/格式化），评审透镜的非权威辅证 | 误报淹没会话、停更 | 直接移除：设计 §5.3 已声明其反馈"非权威、不阻塞流程"；透镜权威在 `lib/authority/` | 低 |
 | `pi-web-access` 0.29.0 | web_search / fetch_content 等研究工具；SDD 研究准入按其四个精确工具名授 `open-web`/`documentation` | 工具名变更/停更/成本问题（社区反馈约 $0.012/请求） | 准入机制是 fail-closed 的：工具不全 → 研究能力不授予、SDD 预检明示，MCP 网关与 Bash 兜底仍禁止。移除即"无研究能力"，无需代码改动；如需恢复研究，另选提供同形工具的插件并把准入表指过去 | 低 |
 
@@ -71,3 +70,12 @@ gentle-ai 字样全部是**守卫对象或历史事实**（外来存储守卫、
   重解析，需移动/删除 node_modules 强制。overrides 仅作用于本仓/CI 的
   lockfile 树；终端用户机器按 semver 区间现装，天然解析到已修复版本。
   audit 复核（修正后）：0 high / 0 moderate / 0 low。
+
+- **2026-10-01 移除 pi-browser-use**（业主指令，按本表"直接移除：零胶水"
+  退出路径执行）：依赖声明、pi 清单 extensions/skills 引用、`/jero:doctor`
+  的 Node≥24 引擎诊断（`browserCompanionEngineDiagnostic`）与 companion
+  结构断言测试一并移除；伴生计数 10→9。`JERO_PI_BROWSER_DOMAINS` 结构门
+  按"该门是 jero 代码，不随本伴生件增删"的既定边界**保留**（与 provider
+  无关，缺席自动空转）。移除即"无浏览器能力"：前端验证退化为
+  pi-web-access 抓取与读代码；未来如需浏览器自动化，按通用纪律重新收编
+  并补回本表行。

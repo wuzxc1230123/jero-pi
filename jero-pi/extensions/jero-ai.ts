@@ -2,7 +2,7 @@
 // SDD 命令与启动流程。评审域实现已拆至 lib/jero-ai-review-*（见 import/re-export）。
 
 import { consumeReviewMutation, pendingReviewMutation, recordReviewMutation } from "../lib/review-reminder-receipt.ts";
-import { browserCompanionEngineDiagnostic, evaluateBrowserDomainGate, resolveBrowserDomainPolicy } from "../lib/jero-ai-browser-gate.ts";
+import { evaluateBrowserDomainGate, resolveBrowserDomainPolicy } from "../lib/jero-ai-browser-gate.ts";
 import { resolveSessionWorktree } from "../lib/session-worktree-registry.ts";
 import { renderResearchCapabilities, resolveResearchCapabilities } from "../lib/sdd-research-capabilities.ts";
 import { existsSync, lstatSync, realpathSync } from "node:fs";
@@ -51,8 +51,7 @@ import {
 import { applyJeroBootstrap } from "../lib/jero-ai-bootstrap.ts";
 import { applySddBreadcrumb, cachedResolveSddStatus, renderSddBreadcrumb, sddBreadcrumbEnabled } from "../lib/jero-ai-sdd-breadcrumb.ts";
 import { applySpecIndex, specIndexEnabled, specIndexTextFor } from "../lib/jero-ai-spec-index.ts";
-import { companionDependencyDiagnosticLines, readCompanionDependencyStatuses } from "../lib/jero-ai-companion-deps.ts";
-import { PACKAGE_ROOT } from "../lib/jero-ai-paths.ts";
+import { companionDependencyDiagnosticLines } from "../lib/jero-ai-companion-deps.ts";
 import { mergePrettyDisableTools } from "../lib/pretty-disable-tools.ts";
 import { evaluateSddArtifactShrink, recordSddArtifactWatermarks, renderSddShrinkReport } from "../lib/jero-ai-sdd-guard.ts";
 import { buildJeroPrompt, loadReviewContractPromptFragment } from "../lib/jero-ai-prompts.ts";
@@ -487,9 +486,9 @@ function createJeroAiExtensionForTesting(
 				event.input,
 			);
 			if (sensitivePathDenied) return sensitivePathDenied;
-			// 浏览器出站结构门（JERO_PI_BROWSER_DOMAINS）：对伴生件
-			// pi-browser-use 的 browser_* 导航做域名级 allow/deny；未设
-			// 环境变量时为 ignore 直通，零行为变化。
+			// 浏览器出站结构门（JERO_PI_BROWSER_DOMAINS）：对 browser_*
+			// 前缀工具的导航调用做域名级 allow/deny（provider 无关的通用
+			// 防线）；未设环境变量时为 ignore 直通，零行为变化。
 			const browserGate = evaluateBrowserDomainGate(
 				resolveBrowserDomainPolicy(),
 				event.toolName,
@@ -697,14 +696,6 @@ function createJeroAiExtensionForTesting(
 				const modelConfig = await readSavedModelConfigAsync(ctx.cwd);
 				const engramActive = hasWritableMemoryTool(pi);
 				const companionLines = companionDependencyDiagnosticLines();
-				// 伴生件引擎诊断：pi-browser-use 的 Node >=24 下限高于本仓
-				// 基线，低版本运行时上加载可能静默失败——在 doctor 里显影。
-				const companionStatuses = readCompanionDependencyStatuses(PACKAGE_ROOT);
-				const browserEngineLine = browserCompanionEngineDiagnostic(
-					Number.parseInt(process.versions.node.split(".")[0] ?? "0", 10),
-					companionStatuses.some((status) => status.name === "pi-browser-use" && status.installedVersion !== undefined),
-				);
-				if (browserEngineLine !== undefined) companionLines.push(browserEngineLine);
 				// 项目内模块诊断：已装模块与包内模块束的版本漂移、无记录目录显影。
 				const moduleLines = moduleDoctorLines(ctx.cwd);
 				const lines = [
