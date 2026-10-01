@@ -57,10 +57,17 @@ gentle-ai 字样全部是**守卫对象或历史事实**（外来存储守卫、
   无关——undici 8.9.0（GHSA-rfgv-xxqx-mfg5 DoS / GHSA-w293-vg96-wgc3
   TLS 校验绕过，经 pi-web-access 与宿主）、brace-expansion 5.0.9
   （GHSA-qhr7-859c-m2p7 / GHSA-8436-99hf-9mmv 栈耗尽，经宿主 minimatch）。
-  按"最小增量"以 `package.json` 的 `pnpm.overrides` 钉 undici@8.10.2、
-  brace-expansion@5.0.11：两者均在依赖方声明的 semver 区间内（^8.9.0 / ^5）、
-  满足 ≥3 天发布龄期门（26.7d / 16.4d）。**坑位记录**：本仓 pnpm 11.1.1
-  实测只从 manifest 读 overrides，写在 `pnpm-workspace.yaml` 不生效（已留
-  注释指路）。overrides 仅作用于本仓/CI 的 lockfile 树；终端用户机器按
-  semver 区间现装，天然解析到已修复版本。audit 复核：0 high / 1 moderate
-  （低于 CI 门 `--audit-level=high` 阈值，通过）。
+  按"最小增量"钉 undici@8.10.2、brace-expansion@5.0.12（后者多覆盖一条
+  moderate 级后续修补）：两者均在依赖方声明的 semver 区间内（^8.9.0 / ^5）、
+  满足 ≥3 天发布龄期门。**坑位记录（含当日回退事故，方向曾记录反，此处
+  为勘误后的事实）**：本仓 pnpm 11.1.1 存在 `pnpm-workspace.yaml` 时
+  **忽略 `package.json` 的 `pnpm.overrides`，生效位置就是 workspace
+  yaml**；且 overrides 只在真正触发重解析（清单/设置变更或全新解析）时
+  应用——首测时 yaml overrides 因"Already up to date"空转被误判为无效，
+  转投 manifest 后一度"生效"（实为当时 yaml 内仍残留同值配置），随后
+  删除 yaml 配置触发重解析即回退，且**回退态 lockfile 曾随 40cd0b9 提交
+  并误报 0 high**；后以删净 node_modules 的全新解析实验证实方向并修正
+  （manifest 死配置已删）。另：pnpm 11 对"看似最新"的树会拒绝 `--force`
+  重解析，需移动/删除 node_modules 强制。overrides 仅作用于本仓/CI 的
+  lockfile 树；终端用户机器按 semver 区间现装，天然解析到已修复版本。
+  audit 复核（修正后）：0 high / 0 moderate / 0 low。
