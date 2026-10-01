@@ -14,3 +14,9 @@
 /skills-main/
 /superpowers-main/
 /ponytail-main/
+/GD-Agentic-Skills-main/
+/GodotPrompter-master/
+/awesome-gamedev-agent-skills-main/
+
+# ZCode 会话工具产物（plans 等），不入库
+/.zcode/
