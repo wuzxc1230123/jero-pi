@@ -75,6 +75,12 @@ test("bootstrap receipt honors the JERO_PI_BOOTSTRAP_RECEIPT off switch", () => 
 		assert.equal(disabled.includes("注入回执"), false, off);
 		assert.equal(disabled.includes("jero bootstrap ✓"), false, off);
 		assert.ok(disabled.includes(JERO_BOOTSTRAP_MARKER), "discipline body must survive the removal");
+		// 字节级重建：摘除必须精确可逆——disabled + 摘掉的行 === 原文。
+		assert.equal(
+			`${disabled}\n${JERO_BOOTSTRAP_RECEIPT_LINE}`,
+			JERO_BOOTSTRAP_TEXT,
+			"removal must be byte-exact and reversible",
+		);
 		assert.equal(bootstrapReceiptEnabled({ JERO_PI_BOOTSTRAP_RECEIPT: off }), false);
 	}
 	assert.equal(bootstrapReceiptEnabled({ JERO_PI_BOOTSTRAP_RECEIPT: "1" }), true);

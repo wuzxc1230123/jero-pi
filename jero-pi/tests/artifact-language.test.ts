@@ -260,7 +260,7 @@ test("plan-time risk grading stays pinned across tasks, verify, and discipline d
 
 	const discipline = await readFile(join(ROOT, "docs/how-to-choose-discipline.md"), "utf8");
 	assert.match(discipline, /### 任务风险分级（P0–P3）/);
-	assert.match(discipline, /触发 sdd-design 的事前威胁建模/);
+	assert.match(discipline, /威胁建模部分重叠，缺模时回补标注/);
 });
 
 test("context manifest and bootstrap receipt stay pinned", async () => {
@@ -307,6 +307,32 @@ test("architecture patrol skill and router entry stay pinned", async () => {
 
 	const discipline = await readFile(join(ROOT, "docs/how-to-choose-discipline.md"), "utf8");
 	assert.match(discipline, /jero-architecture-patrol/);
+});
+
+test("cross-surface conflict fixes stay pinned", async () => {
+	// 四代理评审的交叉面修复批：P2 复核量词收窄、轻量归档豁免、
+	// 威胁建模真实消费者、四类回顾、P0+manual 提前拦截、`?` 行双侧规则。
+	const verify = await readFile(join(ROOT, "assets/agents/sdd-verify.md"), "utf8");
+	assert.match(verify, /重跑范围由「风险感知复核深度」节裁定/);
+	assert.match(verify, /apply 进度的 `Task Verify Evidence` 表是其执行证据，仅抽查存疑项/);
+	assert.match(verify, /对照威胁清单检查实现未打穿缓解/);
+
+	const archive = await readFile(join(ROOT, "assets/agents/sdd-archive.md"), "utf8");
+	assert.match(archive, /「不适用」的 `not_applicable` sync-report 即满足本条件/);
+	assert.match(archive, /提取四类回顾/);
+	assert.match(archive, /周期与估点校准）；/);
+	assert.match(archive, /轻量路径下术语沉淀的唯一兜底/);
+
+	const apply = await readFile(join(ROOT, "assets/agents/sdd-apply.md"), "utf8");
+	assert.match(apply, /按格式冲突报告并以 `blocked` 停止/);
+	assert.match(apply, /绝不打穿显式缓解/);
+
+	const design = await readFile(join(ROOT, "assets/agents/sdd-design.md"), "utf8");
+	assert.match(design, /评审 risk 透镜以候选视图为准，不直接读该产物/);
+
+	const tasks = await readFile(join(ROOT, "assets/agents/sdd-tasks.md"), "utf8");
+	assert.match(tasks, /触发信号部分重叠/);
+	assert.match(tasks, /`\?` 行不计入 Total/);
 });
 
 test("all shipped SDD agents and chains require parent preflight transport", async () => {

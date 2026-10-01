@@ -36,7 +36,9 @@ export function bootstrapReceiptEnabled(env: NodeJS.ProcessEnv = process.env): b
 
 export function composeJeroBootstrapText(env: NodeJS.ProcessEnv = process.env): string {
 	if (bootstrapReceiptEnabled(env)) return JERO_BOOTSTRAP_TEXT;
-	return JERO_BOOTSTRAP_TEXT.replace(`\n${JERO_BOOTSTRAP_RECEIPT_LINE}`, "");
+	// replaceAll 而非 replace：回执行若因复制粘贴事故出现两份，摘除必须两份都摘，
+	// 残留一份会让"关闭开关"静默失效。
+	return JERO_BOOTSTRAP_TEXT.replaceAll(`\n${JERO_BOOTSTRAP_RECEIPT_LINE}`, "");
 }
 
 // 去重扫描：string 与分段两种 content 形态都要覆盖，保证恢复/重放的
