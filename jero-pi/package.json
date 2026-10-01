@@ -67,9 +67,9 @@
 			"node_modules/@heyhuynhgiabuu/pi-pretty/dist/index.js",
 			"node_modules/@juicesharp/rpiv-ask-user-question/index.ts",
 			"node_modules/@juicesharp/rpiv-todo/index.ts",
-				"node_modules/billion-context-pi/dist/index.js",
-				"node_modules/pi-browser-use/dist/index.js",
-				"node_modules/pi-cache-optimizer/index.ts",
+			"node_modules/billion-context-pi/dist/index.js",
+			"node_modules/pi-browser-use/dist/index.js",
+			"node_modules/pi-cache-optimizer/index.ts",
 			"node_modules/pi-fovea/src/index.ts",
 			"node_modules/pi-hashline-edit-pro/index.ts",
 			"node_modules/pi-lens/dist/index.js",
@@ -114,5 +114,11 @@
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/wuzxc1230123/jero-pi.git"
+	},
+	"pnpm": {
+		"overrides": {
+			"undici": "8.10.2",
+			"brace-expansion": "5.0.11"
+		}
 	}
 }

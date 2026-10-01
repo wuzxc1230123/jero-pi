@@ -51,3 +51,16 @@ gentle-ai 字样全部是**守卫对象或历史事实**（外来存储守卫、
   退出**。钉版全部落后于 latest（如 pi-pretty 0.6.14→0.6.29、
   pi-fovea 0.27.0→0.31.1）；按通用纪律升级一律单独 PR + 全量测试 +
   打包门，不在此评审里顺手升。下次评审：2026-12 或任一失效信号出现时。
+
+- **2026-10-01 advisory 处置**（收编 pi-browser-use 后例行审计发现）：
+  4 个 high 级 advisory 落在**既有钉版**的传递依赖上，与 pi-browser-use
+  无关——undici 8.9.0（GHSA-rfgv-xxqx-mfg5 DoS / GHSA-w293-vg96-wgc3
+  TLS 校验绕过，经 pi-web-access 与宿主）、brace-expansion 5.0.9
+  （GHSA-qhr7-859c-m2p7 / GHSA-8436-99hf-9mmv 栈耗尽，经宿主 minimatch）。
+  按"最小增量"以 `package.json` 的 `pnpm.overrides` 钉 undici@8.10.2、
+  brace-expansion@5.0.11：两者均在依赖方声明的 semver 区间内（^8.9.0 / ^5）、
+  满足 ≥3 天发布龄期门（26.7d / 16.4d）。**坑位记录**：本仓 pnpm 11.1.1
+  实测只从 manifest 读 overrides，写在 `pnpm-workspace.yaml` 不生效（已留
+  注释指路）。overrides 仅作用于本仓/CI 的 lockfile 树；终端用户机器按
+  semver 区间现装，天然解析到已修复版本。audit 复核：0 high / 1 moderate
+  （低于 CI 门 `--audit-level=high` 阈值，通过）。

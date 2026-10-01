@@ -27,6 +27,10 @@ trustPolicy: no-downgrade
 # Block transitive dependencies from using git: or tarball sources.
 blockExoticSubdeps: true
 
+# 注意：传递依赖的安全 overrides（undici / brace-expansion advisory 修补）
+# 位于 package.json 的 pnpm.overrides——本仓 pnpm 11.1.1 实测只从 manifest
+# 读取该字段，写在这里不生效。
+
 allowBuilds:
   '@ast-grep/cli': false
   '@google/genai': true
