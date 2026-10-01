@@ -32,7 +32,7 @@ func tick(delta: float, perception: PerceptionSnapshot) -> State:
 - Godot 无内置 BT 节点：轻量自建（`BTNode` 抽象 + Sequence/Selector/Leaf 组合）或用 LimboAI 插件（第三方依赖——引入前需评审并备退出预案，别裸引）。
 - 树每 tick（决策频率 5–10Hz 足够，别每帧）从根求值；节点返回 `SUCCESS/FAILURE/RUNNING`。
 - 自建纪律：节点无副作用求值 + `activate()/halt()` 生命周期；黑板（Dictionary）传上下文，不做节点间直连。
-- Boss 阶段切换 = 树上层 Selector 按阶段 Gate 分流，不塞进叶子节点。
+- Boss 阶段切换 = 树上层 Selector 按阶段 Gate 分流，不塞进叶子节点（Boss 范式库与阶段设计见 `boss-design.md`）。
 
 ## Utility AI（评估打分选行为）
 

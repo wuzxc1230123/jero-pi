@@ -2,7 +2,7 @@
 	"schema": "jero.module-contract/v2",
 	"token": "godot",
 	"version": "1.0.0",
-	"description": "Godot 4 游戏开发领域模块：37 个领域技能入口（语言/架构/物理/视听/玩法/平台/工程/验证/godot-ai 活会话）+ 37 篇深知识 references，附评审/设计/测试三角色。",
+	"description": "Godot 4 游戏开发领域模块：38 个领域技能入口（语言/架构/物理/视听/玩法含战斗与 Boss 设计/平台/工程/验证/godot-ai 活会话）+ 39 篇深知识 references，附评审/设计/测试三角色。",
 	"dependencies": [],
 	"mcp": {
 		"servers": [

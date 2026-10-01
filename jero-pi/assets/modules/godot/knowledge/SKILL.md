@@ -12,10 +12,9 @@ description: Godot 4 游戏开发领域知识入口：引擎惯例、headless �
 
 - 语言与数据：`gdscript-style`（规范与 NEVER 清单）、`csharp-dotnet`（C#/.NET 侧纪律）、`resources-data`（Resource 数据层）、`save-systems`（存档与持久化）、`math-essentials`（向量/插值/角度/变换）、`dependency-injection`（依赖显式化，可测性底座）
 - 架构与通信：`scene-architecture`（场景组织与 autoload）、`component-system`（组件模式实操）、`signals-groups`（信号/组/事件总线）、`common-pitfalls`（4.x API 陷阱与改名）
-- 玩法与内容：`physics-gameplay`（物理/碰撞/手感机制）、`game-feel`（Juice 与反馈层级）、`game-ai`（决策与执行分层）、`ability-system`（技能/冷却/状态效果）、`procedural-gen`（种子纯函数生成）、`dialogue-narrative`（对话即数据）、`multiplayer`（权威服务器模型）
+- 玩法与内容：`physics-gameplay`（物理/碰撞/手感机制）、`game-feel`（Juice 与反馈层级）、`game-ai`（决策与执行分层）、`ability-system`（技能/冷却/状态效果）、`combat-design`（ACT 战斗设计：招式集/元规则/参数基线）、`boss-design`（Boss 范式/阶段/场地参战）、`procedural-gen`（种子纯函数生成）、`dialogue-narrative`（对话即数据）、`multiplayer`（权威服务器模型）
 - 视听与呈现：`shaders-visuals`（着色器与后处理）、`audio-animation`（音频/动画）、`camera-systems`（跟随/震动/构图）、`ui-theming`（布局/主题/适配）、`tilemap-levels`（瓦片与关卡组织）、`3d-essentials`（3D 基础）
-- 工程与验证：`verification`（三道门协议）、`testing`（gdUnit4 与逻辑解耦）、`export-publishing`（导出即最后一道门）、`performance`（预算与反模式）、`editor-live-session`（编辑器活会话桥，godot-ai 对接见 `godot-live` 技能）、`addon-development`（EditorPlugin/gdextension）、`asset-pipeline`（导入管线与 .import 伴生）、`input-actions`（输入动作映射）
-- 拓展配方：`genres-recipes`（品类组合配方）、`jam-prototyping`（时间盒原型工作流）
+- 工程与验证：`verification`（三道门协议）、`testing`（gdUnit4 与逻辑解耦）、`export-publishing`（导出即最后一道门）、`performance`（预算与反模式）、`editor-live-session`（编辑器活会话桥，godot-ai 对接见 `godot-live` 技能）、`addon-development`（EditorPlugin/gdextension）、`asset-pipeline`（导入管线与 .import 伴生）、`input-actions`（输入动作映射）- 拓展配方：`genres-recipes`（品类组合配方）、`jam-prototyping`（时间盒原型工作流）
 - 平台与专题：`mobile-development`（触屏/适配/生命周期/发布链）、`xr-development`（OpenXR/舒适度/双目预算）、`multithreading`（线程边界与 WorkerThreadPool）、`localization`（tr/翻译/locale）
 
 ## 硬约束
