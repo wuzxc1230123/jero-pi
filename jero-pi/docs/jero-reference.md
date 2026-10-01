@@ -20,7 +20,7 @@ Pi 宿主（@earendil-works/pi-coding-agent ≥0.85.1，peer）
 │   pi-pretty · rpiv-ask-user-question · rpiv-todo · billion-context-pi ·
 │   pi-browser-use · pi-cache-optimizer · pi-fovea · pi-hashline-edit-pro ·
 │   pi-lens · pi-web-access
-└─ 系统边界（jero 自有代码仅 git / gh(可选) / pi 自身三类外部进程；伴生件 pi-browser-use 在代理调用 browser_* 工具时按需拉起本地 Chrome——chrome-devtools-mcp 引擎经环回端口，浏览器出站网络受其 browser-policy 技能的 CLI-first 梯子约束；另有唯一一条带凭证的网络出口：活动 provider 为 openai-codex 时订阅用量查询 GET `https://chatgpt.com/backend-api/wham/usage`，`JERO_PI_USAGE_FETCH=0` 可完全关闭）
+└─ 系统边界（jero 自有代码仅 git / gh(可选) / pi 自身三类外部进程；伴生件 pi-browser-use 在代理调用 browser_* 工具时按需拉起本地 Chrome——chrome-devtools-mcp 引擎经环回端口，浏览器出站网络受 browser-policy 技能的 CLI-first 梯子约束，且可经 `JERO_PI_BROWSER_DOMAINS` 结构门做域名级收窄（tool_call 拦截，allow 模式 fail-closed）；另有唯一一条带凭证的网络出口：活动 provider 为 openai-codex 时订阅用量查询 GET `https://chatgpt.com/backend-api/wham/usage`，`JERO_PI_USAGE_FETCH=0` 可完全关闭）
 ```
 
 - **进程内评审权威** `lib/authority/`：13 个持久状态，15 个 wire 状态投影；不变量——透镜只跑一次、冻结发现与创世范围不变、恰一次有界纠正（预算 `min(200, ceil(原始变更行/2))`）、actor 产物（模型输出）永远是无信托数据。存储在 `.git/jero-review/`（CAS 对象 + lineage 记录 + 候选视图），随仓库走。`scripts/check-authority-boundary.mjs` 结构性强制 authority 不 import 扩展层、不做 IO/env 读取。
@@ -109,7 +109,7 @@ START → 同意（consent 仪式 v3，host 常任权限按 Git 规范身份授�
 | 面 | 值 |
 |---|---|
 | 契约串 | `jero.authority/v1`（协议族）、`jero.authority.review-mode/v1`、`jero.review-assessment-plan/v1`、`jero.lean-mode/v1`、`jero.background-subagents/v1`、`jero.session-change/v1`、`jero.session-worktree/v1`、`jero.child-standing-review-permission/v1`、`jero.agent_model_profiles/v1`、`jero.memory-index/v1`、`jero.remediation-evidence/v1`、`jero.task-reconciliation-lock/v1`、`jero.module-contract/v1`、`jero.module-overlay/v1` |
-| 环境变量 | `JERO_PI_CONFIG_HOME` `JERO_PI_AGENT_HOME`（兼容 `PI_CODING_AGENT_DIR`）`JERO_PI_LEAN_MODE` `JERO_PI_MEMORY` `JERO_PI_MEMORY_ROOT`（显式记忆根覆盖；编排器经它把父会话解析的记忆根下传给子代理，保证"子保存、父检索"同一存储）`JERO_PI_AUTONOMOUS_MODE` `JERO_PI_CONTEXT_MONITOR`（`0` 关闭上下文余量告警）`JERO_PI_USAGE_FETCH`（`0` 关闭 Codex 订阅用量端点外发，自动与手动刷新一并关闭）`JERO_PI_SDD_BREADCRUMB`（`0` 关闭 SDD 状态面包屑）`JERO_PI_SPEC_INDEX`（`0` 关闭已确立规范索引注入）`JERO_PI_BOOTSTRAP_RECEIPT`（`0` 摘除 bootstrap 注入尾的一次性回执行，纪律本体不变） |
+| 环境变量 | `JERO_PI_CONFIG_HOME` `JERO_PI_AGENT_HOME`（兼容 `PI_CODING_AGENT_DIR`）`JERO_PI_LEAN_MODE` `JERO_PI_MEMORY` `JERO_PI_MEMORY_ROOT`（显式记忆根覆盖；编排器经它把父会话解析的记忆根下传给子代理，保证"子保存、父检索"同一存储）`JERO_PI_AUTONOMOUS_MODE` `JERO_PI_CONTEXT_MONITOR`（`0` 关闭上下文余量告警）`JERO_PI_USAGE_FETCH`（`0` 关闭 Codex 订阅用量端点外发，自动与手动刷新一并关闭）`JERO_PI_SDD_BREADCRUMB`（`0` 关闭 SDD 状态面包屑）`JERO_PI_SPEC_INDEX`（`0` 关闭已确立规范索引注入）`JERO_PI_BOOTSTRAP_RECEIPT`（`0` 摘除 bootstrap 注入尾的一次性回执行，纪律本体不变）`JERO_PI_BROWSER_DOMAINS`（浏览器出站结构门：`allow:<域清单>` / `deny:<域清单>`，清单逗号或空白分隔，`example.com` 含子域、`.example.com` 仅子域；只作用于 browser_* 工具携带 url 参数的导航；allow 模式对未命中与无法解析主机名的目标 fail-closed 阻断，配置写错同样阻断而非静默拆门；未设或空白 = 不设门；判定逻辑在 `lib/jero-ai-browser-gate.ts`） |
 | 配置路径 | `~/.pi/jero/`（全局：models.json / persona.json / review-mode.json）、`<repo>/.pi/jero/`（项目覆盖）、`<repo>/.jero/policies/`（评审策略）、`.atl/skill-registry.md`（技能索引）、`.pi/modules/`（项目能力模块）与 `~/.pi/agent/modules/`（全局能力模块）、`.atl/module-overlay.md`（模块派发覆盖层，自动生成） |
 
 ### 兼容白名单（gentle- 残留，2026-09-26 审计；2026-09-27 两批清退后仅剩守卫与历史事实）

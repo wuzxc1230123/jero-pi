@@ -2,6 +2,7 @@
 // SDD 命令与启动流程。评审域实现已拆至 lib/jero-ai-review-*（见 import/re-export）。
 
 import { consumeReviewMutation, pendingReviewMutation, recordReviewMutation } from "../lib/review-reminder-receipt.ts";
+import { evaluateBrowserDomainGate, resolveBrowserDomainPolicy } from "../lib/jero-ai-browser-gate.ts";
 import { resolveSessionWorktree } from "../lib/session-worktree-registry.ts";
 import { renderResearchCapabilities, resolveResearchCapabilities } from "../lib/sdd-research-capabilities.ts";
 import { existsSync, lstatSync, realpathSync } from "node:fs";
@@ -484,6 +485,15 @@ function createJeroAiExtensionForTesting(
 				event.input,
 			);
 			if (sensitivePathDenied) return sensitivePathDenied;
+			// 浏览器出站结构门（JERO_PI_BROWSER_DOMAINS）：对伴生件
+			// pi-browser-use 的 browser_* 导航做域名级 allow/deny；未设
+			// 环境变量时为 ignore 直通，零行为变化。
+			const browserGate = evaluateBrowserDomainGate(
+				resolveBrowserDomainPolicy(),
+				event.toolName,
+				event.input,
+			);
+			if (browserGate.action === "block") return { block: true, reason: browserGate.reason };
 			if (event.toolName === SUBAGENT_RUN_TOOL) {
 				const sddAgent = sddDispatchAgentName(event.input);
 				if (sddAgent === "invalid") {
