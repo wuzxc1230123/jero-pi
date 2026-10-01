@@ -244,7 +244,11 @@ export default function (pi: ExtensionAPI) {
 							? "目录存在但无安装记录（手工安装）"
 							: "未安装";
 					const deps = bundle.dependencies.length > 0 ? bundle.dependencies.join("、") : "无";
-					lines.push(`- ${bundle.token}@${bundle.version}｜${status}｜依赖：${deps}｜${bundle.description ?? ""}`);
+					const mcpServers = bundle.manifest.mcp?.servers ?? [];
+					const mcpLabel = mcpServers.length > 0
+						? `｜MCP：${mcpServers.map((server) => server.name).join("、")}（装时自动并入）`
+						: "";
+					lines.push(`- ${bundle.token}@${bundle.version}｜${status}｜依赖：${deps}${mcpLabel}｜${bundle.description ?? ""}`);
 				}
 				for (const item of broken) {
 					lines.push(`✗ ${item.dirName}：清单解析失败——${item.issues.map((issue) => issue.message).join("；")}`);

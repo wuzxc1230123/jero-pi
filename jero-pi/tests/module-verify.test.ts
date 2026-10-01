@@ -256,6 +256,7 @@ test("命令·module-list：列出包内束与安装状态", async () => {
 		assert.match(message, /godot@/);
 		assert.match(message, /未安装/);
 		assert.match(message, /依赖：无/);
+		assert.match(message, /MCP：godot-ai（装时自动并入）/);
 	} finally {
 		rmSync(cwd, { recursive: true, force: true });
 	}
