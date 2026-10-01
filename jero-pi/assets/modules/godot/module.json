@@ -4,6 +4,15 @@
 	"version": "1.0.0",
 	"description": "Godot 4 游戏开发领域模块：37 个领域技能入口（语言/架构/物理/视听/玩法/平台/工程/验证/godot-ai 活会话）+ 37 篇深知识 references，附评审/设计/测试三角色。",
 	"dependencies": [],
+	"mcp": {
+		"servers": [
+			{
+				"name": "godot-ai",
+				"command": "uvx",
+				"args": ["--from", "godot-ai", "godot-ai", "attach"]
+			}
+		]
+	},
 	"triggers": {
 		"files": ["project.godot", "**/*.tscn", "**/*.tres", "**/*.gd"],
 		"intents": ["Godot", "GDScript", "场景", "节点", "信号", "横版", "游戏开发"]

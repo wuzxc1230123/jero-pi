@@ -29,7 +29,7 @@ import {
 	revokeReviewSessionPermission, revokeReviewSessionPermissionsForSession,
 } from "../lib/review-session-standing-permission.ts";
 import { packageAssetDiagnosticLines } from "../lib/jero-ai-package-assets.ts";
-import { moduleDoctorLines } from "../lib/module-installer.ts";
+import { moduleDoctorLines, moduleMcpDoctorLines } from "../lib/module-installer.ts";
 import {
 	type BackgroundSubagentsPolicy, renderBackgroundSubagentsReport,
 	resolveBackgroundSubagentsPolicy, writeGlobalBackgroundSubagentsPolicy
@@ -698,11 +698,14 @@ function createJeroAiExtensionForTesting(
 				const companionLines = companionDependencyDiagnosticLines();
 				// 项目内模块诊断：已装模块与包内模块束的版本漂移、无记录目录显影。
 				const moduleLines = moduleDoctorLines(ctx.cwd);
+				// 已装模块声明的 MCP 档存在性显影（与模块诊断同屏）。
+				const moduleMcpLines = moduleMcpDoctorLines(ctx.cwd);
 				const lines = [
 					"el Jero doctor",
 					...assetLines,
 					...companionLines,
 					...moduleLines,
+					...moduleMcpLines,
 					`${openspecConfigured ? "pass" : "warn"}: OpenSpec config ${openspecConfigured ? "present" : "missing"}`,
 					`${skillRegistryPresent ? "pass" : "warn"}: Skill registry ${skillRegistryPresent ? "present" : "missing"}`,
 					`${modelConfig.status === "invalid" ? "fail" : "pass"}: Global model config ${modelConfig.status}`,

@@ -23,8 +23,9 @@
   信号接线、UI 配置、材质/动画/粒子/相机/环境、项目资产检索（如
   PackedScene）、编辑器内跑场景测试套件；C# 仅文本写入、无构建/报错回传
   （attach C# 需 .NET 版编辑器）。两跳凭证独立轮换、无未认证回退；工具全量
-  见其 docs/TOOLS.md。对 Pi 系客户端需能读 `~/.pi/agent/mcp.json` 的 MCP
-  扩展（手动配置档）。
+  见其 docs/TOOLS.md。对 Pi 系客户端：`/jero:install-module godot` 会把
+  `godot-ai` 档自动并入 `~/.pi/agent/mcp.json`（幂等、同名用户档不覆盖；
+  声明≠安装——uvx/uv 与编辑器插件仍需自装）。
 - **Godot MCP Pro**（专有，$15）：同类架构，163 工具，收费。
 - **自建插件桥**：往项目暂存一个 EditorPlugin（写入 `project.godot`
   的 `[editor_plugins]` 启用项）→ 启动编辑器握手截屏 → **拆除干净**。

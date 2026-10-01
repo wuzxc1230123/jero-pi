@@ -2,7 +2,7 @@
 
 零代码扩展的机器验证单元：一个模块 = 一个目录 + 一份 `module.json` 清单，声明四个面（触发/知识/角色/接线）。本文是字段与语义的单一事实源；机器面由 `schemas/module.schema.json`（发布形态）与 `lib/module-contract.ts`（执行形态）双钉，`check:module-contract` 门拦截两者漂移。
 
-**v2 = v1 + `dependencies`（模块间依赖自述）**：安装器（`lib/module-installer.ts`）据此做闭包解析与依赖先装，安装验证（`deps-resolve` 查）对缺失/自依赖/成环响亮失败。v1 清单继续通过（向后兼容），`dependencies` 字段仅 v2 可用——封闭契约的演进纪律。
+**v2 = v1 + `dependencies`（模块间依赖自述）+ `mcp`（声明的 MCP 服务器档）**：安装器（`lib/module-installer.ts`）据此做闭包解析与依赖先装，并把声明的 MCP 档**幂等合并**进 Pi 的 agent `mcp.json`（同名用户档不覆盖）；安装验证（`deps-resolve` 查）对缺失/自依赖/成环响亮失败。v1 清单继续通过（向后兼容），`dependencies` 与 `mcp` 字段仅 v2 可用——封闭契约的演进纪律。
 
 与 `docs/extension-guide.md` 的分工：那份管松散资产（`.pi/skills/`、`.pi/agents/`，legacy 路径）的放置与纪律；本文管契约化模块——**判断变数据**：静态触发器由机器对仓库文件树判定，路由规则消费路由单字段，角色档案携带隔离正当性，静默失效族在安装验证时显式失败。
 
@@ -35,6 +35,7 @@
 | `version` | ✓ | 语义化版本 |
 | `description` | | ≤200 字符领域一句话 |
 | `dependencies` | | **仅 v2**：依赖的模块词元数组。安装器闭包解析、依赖先装；安装验证 `deps-resolve` 查缺失/自依赖/成环（fail 响亮，绝不静默半装） |
+| `mcp.servers[]` | | **仅 v2**：声明的 MCP 服务器档（`{name, command, args?, env?}`）。安装时幂等合并进 Pi 的 agent `mcp.json`（`mcpServers` 键）：同名且内容一致跳过、同名不同内容**保留用户档**、既有文件不可解析**保命不动**；同版本跳过路径也做合并回填（装在特性前的模块重跑安装即补档）。声明≠安装工具链——command 可用性由 `/jero:doctor` 显影，安装器不做网络安装 |
 | `triggers.files` | ✓ | **静态 glob，契约的心脏**：`*` 不跨目录、`**` 跨目录、`?` 单字符，机器对仓库树判定 |
 | `triggers.intents` | | 语义兜底词，仅降级使用，每次命中留痕 |
 | `knowledge.entry` | ✓ | 模块相对 `.md` 路径；任何接线注入 `entry` 档时行数 ≤60（`MAX_ENTRY_LINES`） |
@@ -105,7 +106,7 @@ S9（事故诊断）与 S10（继续/恢复）刻意不开放——后者是纯�
 ## 生命周期与工具
 
 - **作用域（项目内 only）**：模块只装在项目 `.pi/modules/{token}/`——**不做全局安装、不全局生效**。全局根（`~/.pi/agent/modules`）已随"项目即边界"的契约收敛移除；技能/代理的全局发现不受影响（那是 legacy 松散资产的路径）。全局生效会让"装了什么"离开项目可见性，与覆盖层/验证的项目内语义冲突；
-- **安装（受支持入口）**：`/jero:install-module <token>... [--force]`——从包内模块库（`assets/modules/`，安装器扫描它即是注册表）安装到项目 `.pi/`：模块本体 → `.pi/modules/{token}/`，束内 `agents/*.md` → `.pi/agents/`，束内 `skills/*/` → `.pi/skills/`；**依赖闭包自动先装**（环/缺失响亮失败）。已装同版本跳过、`--force` 强制重装；安装记录 `.pi/module-installs.json`（版本 + 文件哈希）承载幂等与用户改动保护——记录外文件或哈希漂移即跳过并指名（哲学与受管资产 `managed-assets.json` 一致）。`/jero:module-list` 列可装模块与安装状态；`/jero:doctor` 显影版本漂移与无记录目录；
+- **安装（受支持入口）**：`/jero:install-module <token>... [--force]`——从包内模块库（`assets/modules/`，安装器扫描它即是注册表）安装到项目 `.pi/`：模块本体 → `.pi/modules/{token}/`，束内 `agents/*.md` → `.pi/agents/`，束内 `skills/*/` → `.pi/skills/`；**依赖闭包自动先装**（环/缺失响亮失败）。已装同版本跳过、`--force` 强制重装；安装记录 `.pi/module-installs.json`（版本 + 文件哈希）承载幂等与用户改动保护——记录外文件或哈希漂移即跳过并指名（哲学与受管资产 `managed-assets.json` 一致）。束内声明的 `mcp.servers` 由安装器**幂等合并**进 `<agent home>/mcp.json`（幂等跳过/同名用户档保留/畸形保命三律；同版本跳过路径也回填），`/jero:doctor` 显影在档/缺席/用户改动。`/jero:module-list` 列可装模块与安装状态；`/jero:doctor` 显影版本漂移与无记录目录；
 - **手工放置仍有效**：`/module-creation` 创建器与手工放进 `.pi/modules/` 的目录照常被发现与验证（零代码哲学不变），只是不受安装器管理（doctor 标注 hand-installed）；
 - **验证**：`/jero-module-verify`——安装验证检查集（token 合法/唯一、**deps-resolve**（v2 依赖缺失/自依赖/成环即 fail）、**no-loose-duplicate**（token 与 `.pi/skills/` 松散技能重名即拒——同一知识双源必漂移）、防遮蔽、触发命中、路由解析、隔离正当、entry 行数、命令钉住；`pipeline.gate` 声明以"响亮缺席"语义呈现）+ 编译覆盖层到 `.atl/module-overlay.md`（自动生成物，勿手改）；
 - **会话启动**：模块根存在时**延后**刷新覆盖层（`setImmediate`，启动绝不等待全仓扫描），并对模块根做防抖变更监视（尽力而为）；模块根消失时**删除残留覆盖层**——编排器绝不消费过期接线；
@@ -126,7 +127,7 @@ S9（事故诊断）与 S10（继续/恢复）刻意不开放——后者是纯�
 |---|---|
 | `lib/module-contract.ts` | 类型、清单解析（v1/v2）、安装验证检查集（含 deps-resolve）、glob 语义 |
 | `lib/module-trigger-compiler.ts` | 仓库扫描（TTL 缓存 30s）、静态触发编译、覆盖层渲染、模块发现 |
-| `lib/module-installer.ts` | 包内模块库发现、依赖闭包解析、项目内安装（幂等 + 用户改动保护 + 安装记录）、doctor 诊断行 |
+| `lib/module-installer.ts` | 包内模块库发现、依赖闭包解析、项目内安装（幂等 + 用户改动保护 + 安装记录）、MCP 档合并（三律）、doctor 诊断行 |
 | `extensions/module-verify.ts` | `/jero-module-verify` + `/jero:install-module` + `/jero:module-list` 命令 + session_start 覆盖层刷新 + 模块根监视 |
 | `schemas/module.schema.json` | 清单的发布形态 schema（门钉与 TS 常量零漂移；含"dependencies 仅 v2"的 if/then 分支） |
 | `scripts/check-module-contract.mjs` | CI 门：schema 漂移 + 金样绿灯 + 包内模块库绿灯 |

@@ -119,6 +119,24 @@ export const BUILTIN_AGENT_NAMES = [
 // 深度必须住在 references（L2）。
 export const MAX_ENTRY_LINES = 60;
 
+/**
+ * MCP 服务器名（安装器把它作为 Pi agent mcp.json 的 mcpServers 键合并写入；
+ * 仅 v2 可声明，声明≠安装工具链——command 必须在用户机器上可用）。
+ */
+export const MCP_SERVER_NAME_PATTERN = /^[a-z][a-z0-9-]{1,31}$/;
+
+export interface McpServerSpec {
+	readonly name: string;
+	/** stdio 启动命令（如 uvx）；可用性由宿主/doctor 显影，安装器不做网络安装。 */
+	readonly command: string;
+	readonly args?: readonly string[];
+	readonly env?: Readonly<Record<string, string>>;
+}
+
+export interface McpSpec {
+	readonly servers: readonly McpServerSpec[];
+}
+
 const TOKEN_PATTERN = /^[a-z][a-z0-9-]{1,23}$/;
 const VERSION_PATTERN = /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/;
 
@@ -182,6 +200,8 @@ export interface ModuleManifest {
 	readonly description?: string;
 	/** v2 专属：依赖的模块词元（安装器闭包解析 + 安装验证缺失/成环检查）。 */
 	readonly dependencies?: readonly string[];
+	/** v2 专属：声明的 MCP 服务器档——安装器幂等合并进 Pi 的 agent mcp.json（同名用户档不覆盖）。 */
+	readonly mcp?: McpSpec;
 	readonly triggers: TriggerSpec;
 	readonly knowledge: KnowledgeSpec;
 	readonly roles: readonly RoleSpec[];
@@ -353,7 +373,7 @@ export function parseModuleManifest(raw: string): ParsedManifest {
 	const topLevelKeys = [
 		"schema", "token", "version", "description", "triggers", "knowledge", "roles", "bindings", "routing", "config", "pipeline",
 	];
-	if (contractId === MODULE_CONTRACT_V2) topLevelKeys.splice(4, 0, "dependencies");
+	if (contractId === MODULE_CONTRACT_V2) topLevelKeys.splice(4, 0, "dependencies", "mcp");
 	checkUnknownKeys(data, topLevelKeys, "$", issues);
 
 	if (typeof data.token !== "string" || !TOKEN_PATTERN.test(data.token)) {
@@ -380,6 +400,71 @@ export function parseModuleManifest(raw: string): ParsedManifest {
 				issues.push(issue("duplicate", "$.dependencies", `依赖词元重复：${duplicated.join(", ")}`));
 			}
 			dependencies = list;
+		}
+	}
+
+	// mcp（仅 v2）：模块声明的 MCP 服务器档——安装器据此合并写入 Pi 的
+	// agent mcp.json（见 lib/module-installer.ts 的 mergeModuleMcpServers：
+	// 幂等、同名用户档不覆盖、畸形配置保命不动）。声明≠安装工具链。
+	let mcp: McpSpec | undefined;
+	if (contractId === MODULE_CONTRACT_V2 && data.mcp !== undefined) {
+		if (!isPlainObject(data.mcp)) {
+			issues.push(issue("type", "$.mcp", "必须是对象 {servers}"));
+		} else {
+			checkUnknownKeys(data.mcp, ["servers"], "$.mcp", issues);
+			if (!Array.isArray(data.mcp.servers)) {
+				issues.push(issue("type", "$.mcp.servers", "必须是数组"));
+			} else {
+				const seen = new Set<string>();
+				const servers: McpServerSpec[] = [];
+				for (const [index, raw] of data.mcp.servers.entries()) {
+					const at = `$.mcp.servers[${index}]`;
+					if (!isPlainObject(raw)) {
+						issues.push(issue("type", at, "必须是对象 {name, command, args?, env?}"));
+						continue;
+					}
+					checkUnknownKeys(raw, ["name", "command", "args", "env"], at, issues);
+					const name = typeof raw.name === "string" ? raw.name : "";
+					const nameValid = MCP_SERVER_NAME_PATTERN.test(name);
+					let duplicate = false;
+					if (!nameValid) {
+						issues.push(issue("pattern", `${at}.name`, "name 必须匹配 /^[a-z][a-z0-9-]{1,31}$/"));
+					} else if (seen.has(name)) {
+						duplicate = true;
+						issues.push(issue("duplicate", `${at}.name`, `MCP 服务器名重复：${name}`));
+					} else {
+						seen.add(name);
+					}
+					const commandValid = typeof raw.command === "string" && raw.command.trim().length > 0;
+					if (!commandValid) {
+						issues.push(issue("type", `${at}.command`, "command 必须是非空字符串（stdio 启动命令，如 uvx）"));
+					}
+					const args = raw.args === undefined ? undefined : stringList(raw.args, `${at}.args`, issues);
+					const argsOk = raw.args === undefined || args !== undefined;
+					let env: Record<string, string> | undefined;
+					if (raw.env !== undefined) {
+						if (!isPlainObject(raw.env)) {
+							issues.push(issue("type", `${at}.env`, "env 必须是 string→string 对象"));
+						} else {
+							const flat: Record<string, string> = {};
+							for (const [key, value] of Object.entries(raw.env)) {
+								if (typeof value !== "string") issues.push(issue("type", `${at}.env.${key}`, "env 值必须是字符串"));
+								else flat[key] = value;
+							}
+							env = flat;
+						}
+					}
+					if (nameValid && !duplicate && commandValid && argsOk) {
+						servers.push({
+							name,
+							command: raw.command as string,
+							...(args !== undefined ? { args } : {}),
+							...(env !== undefined ? { env } : {}),
+						});
+					}
+				}
+				mcp = { servers };
+			}
 		}
 	}
 
@@ -566,6 +651,7 @@ export function parseModuleManifest(raw: string): ParsedManifest {
 			version: data.version as string,
 			description: typeof data.description === "string" ? data.description : undefined,
 			dependencies,
+			mcp,
 			triggers,
 			knowledge: knowledge as KnowledgeSpec,
 			roles,

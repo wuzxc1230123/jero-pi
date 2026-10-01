@@ -82,7 +82,7 @@ START → 同意（consent 仪式 v3，host 常任权限按 Git 规范身份授�
 
 ## 能力模块契约（jero.module-contract/v2，兼容 v1）
 
-目标项目的领域扩展（如 go、godot）走机器验证的契约化路径——**模块仅装项目内，不全局生效**；v2 清单可声明 `dependencies`，`/jero:install-module <词元>` 指令从包内模块库（`assets/modules/`，首束 godot 全中文模块）安装并**依赖自动先装**（`/jero:module-list` 查看可装清单）：`.pi/modules/{token}/module.json` 一份清单声明触发（静态 glob）、知识（L0/L1/L2 渐进披露）、角色（隔离正当性必填）、接线（八个编排面）与路由（消费路由单字段）。核心机制：
+目标项目的领域扩展（如 go、godot）走机器验证的契约化路径——**模块仅装项目内，不全局生效**；v2 清单可声明 `dependencies` 与 `mcp`（MCP 服务器档，安装时幂等合并进 `<agent home>/mcp.json`——同名用户档不覆盖，godot 束据此自动接入 godot-ai），`/jero:install-module <词元>` 指令从包内模块库（`assets/modules/`，首束 godot 全中文模块）安装并**依赖自动先装**（`/jero:module-list` 查看可装清单）：`.pi/modules/{token}/module.json` 一份清单声明触发（静态 glob）、知识（L0/L1/L2 渐进披露）、角色（隔离正当性必填）、接线（八个编排面）与路由（消费路由单字段）。核心机制：
 
 - **静态触发编译**：`lib/module-trigger-compiler.ts` 对仓库文件树确定性判定模块激活，产出 `.atl/module-overlay.md`（自动生成物）——各面注入档位、追加角色、Strict TDD 命令（SDD 转发取值链第一级：覆盖层 → config.yaml → 探测）、C 级硬门声明的响亮缺席。
 - **安装验证**：`/jero-module-verify`——token 合法/唯一、deps-resolve（v2 依赖缺失/自依赖/成环即 fail）、双轨（与松散技能重名即拒）、防遮蔽、触发命中、路由解析、隔离正当、entry ≤60 行、命令钉住；`check:module-contract` 门钉 schema 与 TS 常量零漂移（含 v2 枚举与依赖分支）+ 创建器金样绿灯 + 包内模块库绿灯。

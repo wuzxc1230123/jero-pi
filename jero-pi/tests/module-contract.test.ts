@@ -477,3 +477,46 @@ test("deps-resolve：自依赖与成环失败", () => {
 	assert.equal(cycle?.status, "fail");
 	assert.match(cycle?.detail ?? "", /依赖成环：alpha-mod → beta-mod → alpha-mod/);
 });
+
+// —— mcp（v2 专属）：声明的 MCP 服务器档解析与封闭契约纪律 ——
+
+test("mcp：v2 声明的 MCP 服务器档解析进清单", () => {
+	const parsed = parseModuleManifest(mutateGolden((data) => {
+		data.mcp = { servers: [{ name: "godot-ai", command: "uvx", args: ["attach"], env: { FOO: "1" } }] };
+	}));
+	assert.ok(parsed.manifest !== undefined);
+	assert.deepEqual(parsed.manifest.mcp?.servers, [
+		{ name: "godot-ai", command: "uvx", args: ["attach"], env: { FOO: "1" } },
+	]);
+});
+
+test("mcp：名字模式 / 重复名 / 空命令 / args 非串各自报 issue", () => {
+	const bad = parseModuleManifest(mutateGolden((data) => {
+		data.mcp = { servers: [
+			{ name: "Bad_Name", command: "uvx" },
+			{ name: "dup-tool", command: "uvx" },
+			{ name: "dup-tool", command: "uvx" },
+			{ name: "ok-name", command: " " },
+			{ name: "also-ok", command: "uvx", args: [1] },
+		] };
+	}));
+	assert.ok(bad.manifest === undefined, "带 issue 的清单不得产出 manifest");
+	assert.ok(bad.issues.some((item) => item.code === "pattern" && item.path === "$.mcp.servers[0].name"));
+	assert.ok(bad.issues.some((item) => item.code === "duplicate" && item.path === "$.mcp.servers[2].name"));
+	assert.ok(bad.issues.some((item) => item.code === "type" && item.path === "$.mcp.servers[3].command"));
+	assert.ok(bad.issues.some((item) => item.path === "$.mcp.servers[4].args[0]"), "args 非字符串元素要指名到下标");
+});
+
+test("mcp：v1 清单带 mcp → unknown-key 拒绝；servers 非数组 → type", () => {
+	const v1WithMcp = parseModuleManifest(mutateGolden((data) => {
+		data.schema = "jero.module-contract/v1";
+		delete data.dependencies;
+		data.mcp = { servers: [] };
+	}));
+	assert.ok(v1WithMcp.issues.some((item) => item.code === "unknown-key" && item.path === "$.mcp"));
+
+	const notArray = parseModuleManifest(mutateGolden((data) => {
+		data.mcp = { servers: "nope" };
+	}));
+	assert.ok(notArray.issues.some((item) => item.code === "type" && item.path === "$.mcp.servers"));
+});

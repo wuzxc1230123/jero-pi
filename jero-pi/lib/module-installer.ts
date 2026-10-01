@@ -17,8 +17,9 @@ import {
 	existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync,
 } from "node:fs";
 import { dirname, join } from "node:path";
-import { parseModuleManifest, type ModuleManifest } from "./module-contract.ts";
+import { parseModuleManifest, type McpServerSpec, type ModuleManifest } from "./module-contract.ts";
 import { ASSETS_DIR } from "./jero-ai-paths.ts";
+import { resolveJeroPiAgentHome } from "./agent-home.ts";
 
 export const MODULE_INSTALLS_REL_PATH = join(".pi", "module-installs.json");
 export const MODULE_INSTALLS_SCHEMA = "jero.module-installs/v1";
@@ -186,6 +187,86 @@ export function writeModuleInstalls(projectRoot: string, installs: ModuleInstall
 	renameSync(temp, target);
 }
 
+// —— MCP 档合并：模块声明的 MCP 服务器写入 Pi 的 agent mcp.json ——
+
+/** Pi agent mcp.json 路径（JERO_PI_AGENT_HOME / PI_CODING_AGENT_DIR / ~/.pi/agent，与 banner 同源）。 */
+export function agentMcpJsonPath(env: NodeJS.ProcessEnv = process.env): string {
+	return join(resolveJeroPiAgentHome(env), "mcp.json");
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function mcpServerEntry(server: McpServerSpec): Record<string, unknown> {
+	const entry: Record<string, unknown> = { command: server.command };
+	if (server.args !== undefined) entry.args = [...server.args];
+	if (server.env !== undefined) entry.env = { ...server.env };
+	return entry;
+}
+
+/**
+ * 把模块声明的 MCP 服务器档合并进 Pi 的 agent mcp.json（mcpServers 键）。
+ * 用户资产保护三律：同名且内容一致 = 幂等跳过；同名但内容不同 = 保留
+ * 用户档不改（drift 显影）；文件存在但不可解析 = 一律不动（保命）。
+ * 用户已有的其他 server 与顶层键原样保留，原子写回。声明≠安装工具链：
+ * command 的可用性由 /jero:doctor 显影，安装器不做网络安装。
+ */
+export function mergeModuleMcpServers(
+	mcpJsonPath: string,
+	servers: readonly McpServerSpec[],
+): string[] {
+	if (servers.length === 0) return [];
+	let root: Record<string, unknown> | undefined;
+	let existing: Record<string, unknown> | undefined;
+	if (existsSync(mcpJsonPath)) {
+		try {
+			const parsed: unknown = JSON.parse(readFileSync(mcpJsonPath, "utf8"));
+			if (isPlainRecord(parsed)) {
+				root = parsed;
+				if (isPlainRecord(parsed.mcpServers)) existing = parsed.mcpServers;
+			}
+		} catch {
+			// 不可解析：保命不动（下方显影）。
+		}
+	}
+	if (existsSync(mcpJsonPath) && existing === undefined) {
+		return servers.map((server) =>
+			`MCP 档 ${server.name} 未写入：${mcpJsonPath} 已存在但不是可解析的 mcpServers 配置——不覆盖用户文件，请手动并入`,
+		);
+	}
+	root ??= {};
+	existing ??= {};
+	const lines: string[] = [];
+	let changed = false;
+	for (const server of servers) {
+		const entry = mcpServerEntry(server);
+		const current = existing[server.name];
+		if (current === undefined) {
+			existing[server.name] = entry;
+			changed = true;
+			lines.push(`MCP 档 ${server.name} 已并入 ${mcpJsonPath}（command: ${server.command}）——重载会话后生效`);
+		} else if (JSON.stringify(current) === JSON.stringify(entry)) {
+			lines.push(`MCP 档 ${server.name} 已存在且一致，跳过`);
+		} else {
+			lines.push(`MCP 档 ${server.name} 同名但内容不同——保留用户配置未覆盖（模块声明 command: ${server.command}）`);
+		}
+	}
+	if (changed) {
+		root.mcpServers = existing;
+		writeFileAtomic(mcpJsonPath, `${JSON.stringify(root, null, "\t")}\n`);
+	}
+	return lines;
+}
+
+/** 安装明细尾追加 MCP 合并结果（模块未声明 mcp 时为空串）。 */
+function mcpMergeDetail(options: InstallBundleOptions, bundle: BundleModule): string {
+	const servers = bundle.manifest.mcp?.servers ?? [];
+	if (servers.length === 0) return "";
+	const lines = mergeModuleMcpServers(options.agentMcpJson ?? agentMcpJsonPath(), servers);
+	return lines.length > 0 ? `；${lines.join("；")}` : "";
+}
+
 // —— 模块束文件布局与目标映射 ——
 
 interface BundleFileEntry {
@@ -239,6 +320,8 @@ export interface InstallBundleOptions {
 	readonly force?: boolean;
 	/** 预读的安装记录（缺省自读；测试注入用）。 */
 	readonly installs?: ModuleInstallsFile;
+	/** MCP 档合并目标（缺省解析 Pi agent home 的 mcp.json；测试注入用）。 */
+	readonly agentMcpJson?: string;
 }
 
 export type BundleInstallOutcome =
@@ -315,9 +398,14 @@ export function installBundle(
 					detail: `检测到用户改动：${modified}——跳过保护；覆盖请用 --force`,
 				};
 			}
-			if (record.version === bundle.version) {
-				return { kind: "skipped-up-to-date", token: bundle.token, detail: `已装同版本 ${bundle.version}，跳过（--force 重装）` };
-			}
+				if (record.version === bundle.version) {
+					// 同版本跳过也做 MCP 合并回填：装在特性之前的模块重跑安装即补档。
+					return {
+						kind: "skipped-up-to-date",
+						token: bundle.token,
+						detail: `已装同版本 ${bundle.version}，跳过（--force 重装）${mcpMergeDetail(options, bundle)}`,
+					};
+				}
 		}
 	}
 
@@ -357,11 +445,10 @@ export function installBundle(
 	const parts = [`模块本体 ${bodyCount} 文件 → .pi/modules/${bundle.token}/`];
 	if (agentCount > 0) parts.push(`代理 ${agentCount} 文件 → .pi/agents/`);
 	if (skillCount > 0) parts.push(`技能 ${skillCount} 文件 → .pi/skills/`);
-	return { kind: "installed", token: bundle.token, detail: `已安装 ${bundle.token}@${bundle.version}：${parts.join("，")}` };
+	return { kind: "installed", token: bundle.token, detail: `已安装 ${bundle.token}@${bundle.version}：${parts.join("，")}${mcpMergeDetail(options, bundle)}` };
 }
 
 // —— /jero:doctor 诊断行：已装模块与包内模块束的版本漂移显影（只观察，不动手） ——
-
 export function moduleDoctorLines(projectRoot: string): string[] {
 	const installs = readModuleInstalls(projectRoot);
 	const { bundles } = discoverBundles(bundleModulesRoot());
@@ -393,6 +480,43 @@ export function moduleDoctorLines(projectRoot: string): string[] {
 			lines.push(`warn: module ${token} installed ${record.version}, package bundle ${bundle.version} (/jero:install-module ${token} to upgrade)`);
 		} else {
 			lines.push(`pass: module ${token}@${record.version} up to date`);
+		}
+	}
+	return lines;
+}
+
+/**
+ * /jero:doctor 的模块 MCP 诊断行：已装模块声明的 MCP 服务器在 agent
+ * mcp.json 中的存在性显影（缺席→重装回填提示；同内容=pass；同内容不同
+ * =用户改动保留）。只观察，不动手。
+ */
+export function moduleMcpDoctorLines(projectRoot: string, mcpJsonPath: string = agentMcpJsonPath()): string[] {
+	const installs = readModuleInstalls(projectRoot);
+	const { bundles } = discoverBundles(bundleModulesRoot());
+	const declared: { token: string; server: McpServerSpec }[] = [];
+	for (const bundle of bundles) {
+		if (installs.modules[bundle.token] === undefined) continue;
+		for (const server of bundle.manifest.mcp?.servers ?? []) declared.push({ token: bundle.token, server });
+	}
+	if (declared.length === 0) return [];
+	let servers: Record<string, unknown> | undefined;
+	if (existsSync(mcpJsonPath)) {
+		try {
+			const parsed: unknown = JSON.parse(readFileSync(mcpJsonPath, "utf8"));
+			if (isPlainRecord(parsed) && isPlainRecord(parsed.mcpServers)) servers = parsed.mcpServers;
+		} catch {
+			// 不可解析按全体缺席显影。
+		}
+	}
+	const lines: string[] = [];
+	for (const { token, server } of declared) {
+		const current = servers?.[server.name];
+		if (current === undefined) {
+			lines.push(`warn: module ${token} MCP server ${server.name} declared but missing in ${mcpJsonPath} (rerun /jero:install-module ${token})`);
+		} else if (JSON.stringify(current) !== JSON.stringify(mcpServerEntry(server))) {
+			lines.push(`info: module ${token} MCP server ${server.name} present with user-modified config (kept)`);
+		} else {
+			lines.push(`pass: module ${token} MCP server ${server.name} present in mcp.json`);
 		}
 	}
 	return lines;

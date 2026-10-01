@@ -1,22 +1,30 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "jero.module-contract/v2",
-  "description": "Capability module manifest for jero-pi orchestration surfaces. One module = one directory with module.json declaring triggers (static globs judged by machine), knowledge (progressive disclosure), roles (isolation-justified), bindings (which orchestrator dispatch surfaces consume it), routing (structured delegation over routing-slip fields) and config (test command pinning). v2 = v1 + optional dependencies (install-time closure resolution by lib/module-installer.ts); v1 manifests stay valid but cannot declare dependencies. Modules are project-scoped only (.pi/modules). Normative spec: docs/module-contract.md. The enums in $defs are drift-checked against lib/module-contract.ts by scripts/check-module-contract.mjs — edit both or neither.",
+  "description": "Capability module manifest for jero-pi orchestration surfaces. One module = one directory with module.json declaring triggers (static globs judged by machine), knowledge (progressive disclosure), roles (isolation-justified), bindings (which orchestrator dispatch surfaces consume it), routing (structured delegation over routing-slip fields) and config (test command pinning). v2 = v1 + optional dependencies (install-time closure resolution by lib/module-installer.ts) and optional mcp (declared MCP server profiles merged into the Pi agent mcp.json at install time); v1 manifests stay valid but can declare neither. Modules are project-scoped only (.pi/modules). Normative spec: docs/module-contract.md. The enums in $defs are drift-checked against lib/module-contract.ts by scripts/check-module-contract.mjs — edit both or neither.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema", "token", "version", "triggers", "knowledge", "roles", "bindings"],
   "allOf": [
     {
       "if": {"properties": {"schema": {"const": "jero.module-contract/v1"}}, "required": ["schema"]},
-      "then": {"properties": {"dependencies": false}}
+      "then": {"properties": {"dependencies": false, "mcp": false}}
     }
   ],
   "properties": {
-    "schema": {"enum": ["jero.module-contract/v1", "jero.module-contract/v2"], "description": "Contract version. v2 adds optional dependencies; v1 manifests remain valid."},
+    "schema": {"enum": ["jero.module-contract/v1", "jero.module-contract/v2"], "description": "Contract version. v2 adds optional dependencies and mcp; v1 manifests remain valid."},
     "token": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,23}$", "description": "One module one domain token. Must not start with package prefixes jero-/review-/sdd-/jd-."},
     "version": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+([-+][0-9A-Za-z.-]+)?$"},
     "description": {"type": "string", "maxLength": 200},
     "dependencies": {"type": "array", "items": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,23}$", "minLength": 1}, "description": "v2 only: module tokens this module depends on. The installer resolves the dependency closure and installs dependencies first; install verification (deps-resolve) fails loudly on missing dependencies or cycles."},
+    "mcp": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["servers"],
+      "properties": {
+        "servers": {"type": "array", "items": {"$ref": "#/$defs/mcpServer"}, "description": "v2 only: declared MCP server profiles. The installer merges them into the Pi agent mcp.json (idempotent; same-name user entries are never overwritten; declaring is not installing — the command must exist on the user machine)."}
+      }
+    },
     "triggers": {"$ref": "#/$defs/triggerSpec"},
     "knowledge": {"$ref": "#/$defs/knowledgeSpec"},
     "roles": {"type": "array", "items": {"$ref": "#/$defs/role"}},
@@ -132,6 +140,17 @@
       "required": ["gate"],
       "properties": {
         "gate": {"type": "string", "minLength": 1, "description": "C-level hard guarantee: a role that must run mechanically. The only installation path is a package chain; declaring it here makes its absence loud (overlay states it, the orchestrator must not silently skip)."}
+      }
+    },
+    "mcpServer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "command"],
+      "properties": {
+        "name": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,31}$", "description": "Server id; becomes the mcpServers key in the Pi agent mcp.json. Must be unique within the manifest."},
+        "command": {"type": "string", "minLength": 1, "description": "stdio launch command (e.g. uvx). Availability is surfaced by /jero:doctor; the installer never performs network installs."},
+        "args": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "env": {"type": "object", "additionalProperties": {"type": "string"}}
       }
     }
   }

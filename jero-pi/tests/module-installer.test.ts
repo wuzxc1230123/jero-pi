@@ -5,8 +5,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
 	MODULE_INSTALLS_REL_PATH,
+	bundleModulesRoot,
 	discoverBundles,
 	installBundle,
+	moduleMcpDoctorLines,
 	readModuleInstalls,
 	resolveInstallPlan,
 	type BundleModule,
@@ -29,7 +31,13 @@ function cleanup(dir: string): void {
 function makeBundle(
 	root: string,
 	token: string,
-	options: { version?: string; dependencies?: string[]; withAgents?: boolean; withSkills?: boolean } = {},
+	options: {
+		version?: string;
+		dependencies?: string[];
+		withAgents?: boolean;
+		withSkills?: boolean;
+		mcpServers?: { name: string; command: string; args?: string[] }[];
+	} = {},
 ): BundleModule {
 	const dir = join(root, token);
 	mkdirSync(join(dir, "knowledge"), { recursive: true });
@@ -41,6 +49,7 @@ function makeBundle(
 			token,
 			version: options.version ?? "1.0.0",
 			dependencies: options.dependencies ?? [],
+			...(options.mcpServers !== undefined ? { mcp: { servers: options.mcpServers } } : {}),
 			triggers: { files: ["marker.md"], intents: [] },
 			knowledge: { entry: "knowledge/SKILL.md", references: ["references/*.md"] },
 			roles: options.withAgents === false ? [] : [
@@ -283,5 +292,89 @@ test("安装记录：损坏 JSON 按空记录处理，重装即重建", () => {
 		assert.deepEqual(installs.modules, {});
 	} finally {
 		cleanup(project);
+	}
+});
+
+// —— MCP 档合并：声明的 MCP 服务器并入 agent mcp.json（三律：幂等/同名不覆盖/畸形保命） ——
+
+test("mcp 合并：并入 → 幂等一致跳过 → 同名用户档保留未覆盖", () => {
+	const root = makeDir();
+	const project = makeDir();
+	const agentMcp = join(root, "mcp.json");
+	try {
+		const bundle = makeBundle(root, "alpha-mcp", {
+			mcpServers: [{ name: "tool-x", command: "uvx", args: ["tool-x", "attach"] }],
+		});
+		const first = installBundle(project, bundle, { agentMcpJson: agentMcp });
+		assert.equal(first.kind, "installed");
+		assert.match(first.detail, /MCP 档 tool-x 已并入/);
+		assert.deepEqual(JSON.parse(readFileSync(agentMcp, "utf8")).mcpServers["tool-x"], {
+			command: "uvx",
+			args: ["tool-x", "attach"],
+		});
+
+		// 幂等：同版本再装走 up-to-date 跳过路径，档一致 → 跳过且文件不动。
+		const second = installBundle(project, bundle, { agentMcpJson: agentMcp });
+		assert.equal(second.kind, "skipped-up-to-date");
+		assert.match(second.detail, /MCP 档 tool-x 已存在且一致，跳过/);
+
+		// 同名不同内容：用户改动优先，模块声明显影但不覆盖。
+		const userFile = JSON.parse(readFileSync(agentMcp, "utf8"));
+		userFile.mcpServers["tool-x"] = { command: "other" };
+		writeFileSync(agentMcp, JSON.stringify(userFile, null, "\t"));
+		const third = installBundle(project, bundle, { force: true, agentMcpJson: agentMcp });
+		assert.equal(third.kind, "installed");
+		assert.match(third.detail, /同名但内容不同——保留用户配置未覆盖/);
+		assert.deepEqual(JSON.parse(readFileSync(agentMcp, "utf8")).mcpServers["tool-x"], { command: "other" });
+	} finally {
+		cleanup(root);
+		cleanup(project);
+	}
+});
+
+test("mcp 合并：既有 mcp.json 不可解析 → 保命不动 + 逐台显影", () => {
+	const root = makeDir();
+	const project = makeDir();
+	const agentMcp = join(root, "mcp.json");
+	try {
+		writeFileSync(agentMcp, "{not json");
+		const bundle = makeBundle(root, "beta-mcp", { mcpServers: [{ name: "tool-y", command: "uvx" }] });
+		const outcome = installBundle(project, bundle, { agentMcpJson: agentMcp });
+		assert.equal(outcome.kind, "installed");
+		assert.match(outcome.detail, /MCP 档 tool-y 未写入：.*不是可解析的 mcpServers 配置/);
+		assert.equal(readFileSync(agentMcp, "utf8"), "{not json", "畸形用户文件必须原样保留");
+	} finally {
+		cleanup(root);
+		cleanup(project);
+	}
+});
+
+test("mcp：真实 godot 束声明 godot-ai 档，安装并入 + doctor 在档/缺席显影", () => {
+	const project = makeDir();
+	const agentHome = makeDir();
+	const agentMcp = join(agentHome, "mcp.json");
+	try {
+		const { bundles } = discoverBundles(bundleModulesRoot());
+		const godot = bundles.find((item) => item.token === "godot");
+		assert.ok(godot !== undefined, "包内模块库必须含 godot 束");
+		assert.deepEqual(godot.manifest.mcp?.servers.map((server) => server.name), ["godot-ai"]);
+
+		const outcome = installBundle(project, godot, { agentMcpJson: agentMcp });
+		assert.equal(outcome.kind, "installed");
+		assert.match(outcome.detail, /MCP 档 godot-ai 已并入/);
+		assert.deepEqual(JSON.parse(readFileSync(agentMcp, "utf8")).mcpServers["godot-ai"], {
+			command: "uvx",
+			args: ["--from", "godot-ai", "godot-ai", "attach"],
+		});
+
+		const present = moduleMcpDoctorLines(project, agentMcp);
+		assert.ok(present.some((line) => line.startsWith("pass:") && line.includes("godot-ai")));
+
+		rmSync(agentMcp);
+		const missing = moduleMcpDoctorLines(project, agentMcp);
+		assert.ok(missing.some((line) => line.startsWith("warn:") && line.includes("godot-ai") && line.includes("missing")));
+	} finally {
+		cleanup(project);
+		cleanup(agentHome);
 	}
 });

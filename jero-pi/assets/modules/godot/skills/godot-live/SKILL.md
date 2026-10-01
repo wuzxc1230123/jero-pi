@@ -16,7 +16,7 @@ description: 经 godot-ai（MCP 桥）连接正在运行的 Godot 编辑器做�
 ## 接入要点
 
 - attach 链：MCP 客户端 → `godot-ai attach`（stdio）→ 本地服务（127.0.0.1:8000，鉴权 HTTP，Python 侧需 `uv`/uvx）→ 编辑器插件（环回 WebSocket :9500）；要求 Godot 4.7+（4.x 线内）。
-- Pi 系客户端：需能读 `~/.pi/agent/mcp.json` 的 MCP 扩展（手动配置档）；两跳凭证独立轮换、无未认证回退。
+- Pi 侧档：`/jero:install-module godot` 自动把 `godot-ai` 档并入 `~/.pi/agent/mcp.json`（幂等；同名用户档不覆盖；重载会话后生效）；两跳凭证独立轮换、无未认证回退。
 - GDScript 写入即解析校验 + 热重载；C# 脚本仅文本写入、无构建/报错回传（attach C# 需 .NET 版编辑器）。
 - 常用工具面：场景创建/编辑、节点检视与修改、信号接线、UI 配置、材质/动画/粒子/相机/环境、项目资产检索（如 PackedScene）、编辑器内跑场景测试套件；工具全量见 godot-ai 的 docs/TOOLS.md。
 

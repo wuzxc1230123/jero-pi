@@ -203,8 +203,13 @@ test("命令·install-module 未知词元：响亮失败并列出可装词元", 
 	}
 });
 
-test("命令·install-module godot：真实包内束装进项目 + 验证管线联动", async () => {
+test("命令·install-module godot：真实包内束装进项目 + 验证管线联动 + MCP 档自动并入", async () => {
 	const cwd = makeProject();
+	// MCP 档合并目标隔离：束声明了 godot-ai 档，安装会写 agent mcp.json——
+	// 绝不碰真实 home，指到临时 agent home。
+	const agentHome = mkdtempSync(join(tmpdir(), "jero-agent-home-"));
+	const previousAgentHome = process.env.JERO_PI_AGENT_HOME;
+	process.env.JERO_PI_AGENT_HOME = agentHome;
 	try {
 		// 触发命中样本：godot 束的静态触发器需要仓库里有 project.godot。
 		writeFileSync(join(cwd, "project.godot"), "");
@@ -218,16 +223,26 @@ test("命令·install-module godot：真实包内束装进项目 + 验证管线�
 		assert.ok(existsSync(join(cwd, ".pi", "agents", "godot-tester.md")));
 		assert.ok(existsSync(join(cwd, ".pi", "skills", "godot-verify", "SKILL.md")));
 		assert.ok(existsSync(join(cwd, ".pi", "module-installs.json")));
+		// MCP 档自动并入：godot-ai 档写入隔离的 agent mcp.json。
+		assert.match(message, /MCP 档 godot-ai 已并入/);
+		const mcpJson = JSON.parse(readFileSync(join(agentHome, "mcp.json"), "utf8"));
+		assert.deepEqual(mcpJson.mcpServers["godot-ai"], {
+			command: "uvx",
+			args: ["--from", "godot-ai", "godot-ai", "attach"],
+		});
 		// 安装后验证管线跑过：覆盖层含 godot 且八查汇总绿。
 		const overlay = readFileSync(join(cwd, ".atl", "module-overlay.md"), "utf8");
 		assert.match(overlay, /godot/);
 		assert.match(message, /✓ godot：\d+ 项通过/);
-		// 幂等：再装一次同版本 → 跳过。
+		// 幂等：再装一次同版本 → 跳过（MCP 档一致，同样幂等）。
 		const again = fakeCtx(cwd);
 		await assembly.commands.get("jero:install-module")!.handler("godot", again.ctx);
 		assert.match(again.notifications.map((item) => item.message).join("\n"), /= godot：已装同版本/);
 	} finally {
+		if (previousAgentHome === undefined) delete process.env.JERO_PI_AGENT_HOME;
+		else process.env.JERO_PI_AGENT_HOME = previousAgentHome;
 		rmSync(cwd, { recursive: true, force: true });
+		rmSync(agentHome, { recursive: true, force: true });
 	}
 });
 
