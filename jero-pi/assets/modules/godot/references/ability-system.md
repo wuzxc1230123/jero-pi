@@ -14,7 +14,7 @@ class_name AbilityDefinition extends Resource
 @export var display_name: String
 @export var tags: Array[StringName] = [&"attack", &"melee"]   # 分类/互斥/克制判定
 @export var cooldown_ms: int = 500
-@export var cost: Dictionary[String, int] = {&"stamina": 10}   # 资源消耗（键为资源名）
+@export var cost: Dictionary[String, int] = {&"stamina": 10}   # 资源消耗（键为资源名；类型化 Dictionary 需 4.4+）
 @export var cast_time_ms: int = 0                              # 前摇
 @export var effects: Array[AbilityEffect]                      # 命中时应用的效果列表
 ```

@@ -35,7 +35,7 @@ signal line_shown(line: DialogueLine)
 signal finished()
 
 var graph: DialogueGraph
-var blackboard: Dictionary[String, Variant] = {}   # 世界状态镜像（好感度/旗标）
+var blackboard: Dictionary[String, Variant] = {}   # 世界状态镜像（好感度/旗标；类型化 Dictionary 需 4.4+）
 
 func start(graph_: DialogueGraph, bb: Dictionary) -> void:
 	graph = graph_; blackboard = bb

@@ -37,7 +37,7 @@ func tick(delta: float, perception: PerceptionSnapshot) -> State:
 ## Utility AI（评估打分选行为）
 
 ```gdscript
-func choose(scores: Dictionary[String, float]) -> String:
+func choose(scores: Dictionary[String, float]) -> String:   # 类型化 Dictionary 需 4.4+
 	var best := ""; var best_score := -INF
 	for action in scores:
 		if scores[action] > best_score: best_score = scores[action]; best = action

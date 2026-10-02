@@ -15,7 +15,7 @@ description: GDScript 语言规范入口：类型注解、命名、注解顺序�
 
 ## 核心要点
 
-- 公共 API（函数签名/成员变量）显式类型；局部用 `:=` 推断；容器类型化（`Array[Node2D]`、`Dictionary[String, int]`）。
+- 公共 API（函数签名/成员变量）显式类型；局部用 `:=` 推断；容器类型化（`Array[Node2D]` 4.0+、`Dictionary[String, int]` 4.4+——低版本写类型化 Dictionary 直接语法错误）。
 - 注解顺序：`@export` 前置工具注解 `@tool`/`@warning_ignore`；`@onready var x := $Path` 场景引用集中在类顶部。
 - 命名：`snake_case` 函数与变量、`PascalCase` 类、`_` 前缀私有；信号过去式（`died`、`health_changed`）。
 - `static func` 做纯函数（伤害公式/坐标换算），不触节点状态——可测性的来源。

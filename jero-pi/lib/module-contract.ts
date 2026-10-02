@@ -145,7 +145,7 @@ export interface McpSpec {
  */
 export const BUNDLED_MCP_COMMANDS = ["uvx", "npx"] as const;
 
-const MCP_PIN_TOKEN_PATTERN = /^@?[a-z0-9][a-z0-9@/._-]*@\d+\.\d+\.\d+([-+][0-9A-Za-z.-]+)?$/;
+const MCP_PIN_TOKEN_PATTERN = /^@?[a-z0-9][/a-z0-9._-]*@\d+\.\d+\.\d+([-+][0-9A-Za-z.-]+)?$/;
 
 /** 包内束 MCP 档的供应链策略校验：违例返回人话描述，合规返回 undefined。 */
 export function bundledMcpServerViolation(server: McpServerSpec): string | undefined {

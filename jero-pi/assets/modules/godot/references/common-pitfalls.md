@@ -25,6 +25,8 @@
 
 - 4.4：Shader 默认纹理方法签名 `Texture`（非 `Texture2D`）——GDScript
   侧 shader 参数代码注意。
+- 4.4：类型化 Dictionary（`Dictionary[K, V]`）落地——4.0–4.3 项目里写它
+  直接语法错误，跨版本代码用 `Dictionary` + 显式键值类型注释过渡。
 - 4.6：Windows 默认渲染后端从 Vulkan 改为 D3D12——平台差异问题先查
   渲染后端（`--rendering-driver` 可钉）。
 - `RandomNumberGenerator`/`get_gravity()` 等在 4.0→4.3 间有签名微调；

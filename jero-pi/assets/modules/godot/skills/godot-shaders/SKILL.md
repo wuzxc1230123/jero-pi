@@ -17,7 +17,7 @@ description: 编写/调试 gdshader 与 ShaderMaterial、做视觉特效（溶�
 
 - 2D 着色器改 `COLOR`（CanvasItem）；UV 原点左上、y 向下——与 3D（Spatial，UV y 向上语义差异）别混。
 - 参数走 `shader_parameter` uniform（`@export` 热调），常量烧死在着色器里 = 设计不可调。
-- 全屏后处理：`CanvasLayer` + `ColorRect` 全屏 + shader（屏幕纹理 `SCREEN_TEXTURE` 采样）；移动端后处理是第一性能杀手，先预算后上。
+- 全屏后处理：`CanvasLayer` + `ColorRect` 全屏 + shader（屏幕纹理经 `uniform sampler2D screen_tex : hint_screen_texture` 采样——4.x 写法，3.x 的 `SCREEN_TEXTURE` 内建已移除）；移动端后处理是第一性能杀手，先预算后上。
 - 时间 uniform 驱动动画（`TIME`）；帧相关效果用 `TIME * speed` 不用帧数。
 - 粒子材质（ParticleProcessMaterial）与 GPUParticles2D/3D 配套；爆发型 `one_shot` + `restart()`。
 

@@ -536,4 +536,5 @@ test("bundledMcpServerViolation：包内束 MCP 供应链三查（命令白名�
 	assert.match(bundledMcpServerViolation({ name: "x", command: "bash", args: ["-c", "pkg@1.0.0"] })!, /command 必须是 uvx \/ npx/);
 	assert.match(bundledMcpServerViolation({ name: "x", command: "uvx", args: ["godot-ai", "attach"] })!, /必须含 pkg@精确语义化版本/);
 	assert.match(bundledMcpServerViolation({ name: "x", command: "npx", args: ["pkg@1.0.0"], env: { TOKEN: "s" } })!, /禁止携带 env/);
+	assert.match(bundledMcpServerViolation({ name: "x", command: "uvx", args: ["pkg@1@2.0.0"] })!, /必须含 pkg@精确语义化版本/, "怪 spec（包名段夹 @）不得通过钉版正则");
 });
