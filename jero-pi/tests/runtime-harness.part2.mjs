@@ -336,8 +336,8 @@ export async function part2(env) {
 		assert.equal(ctx.ui.selections.length, 1, "resolved preflight must not prompt again in this session");
 		const promptHook = hooks.get("before_agent_start")[0];
 		const promptResult = await promptHook({ systemPrompt: "base" }, ctx);
-		assert.match(promptResult.systemPrompt, /SDD Session Preflight/);
-		assert.match(promptResult.systemPrompt, /Execution mode: auto/);
+		assert.match(promptResult.systemPrompt, /SDD 会话预检/);
+		assert.match(promptResult.systemPrompt, /执行模式：auto/);
 		const workerPromptResult = await promptHook(
 			{ agentName: "worker", systemPrompt: "worker base" },
 			ctx,
@@ -439,7 +439,7 @@ export async function part2(env) {
 		assert.equal(existsSync(join(globalAgentHome, "agents", "sdd-apply.md")), true);
 		assert.equal(existsSync(join(globalAgentHome, "chains", "sdd-full.chain.md")), true);
 		assert.equal(ctx.ui.selections.length, 1, "fresh interactive SDD-agent startup requires confirmation");
-		assert.match(promptResult.systemPrompt, /SDD Session Preflight/);
+		assert.match(promptResult.systemPrompt, /SDD 会话预检/);
 		assert.doesNotMatch(
 			promptResult.systemPrompt,
 			/el Jero Identity and Harness/,
@@ -477,7 +477,7 @@ export async function part2(env) {
 		const result = await hooks.get("before_agent_start")[0]({ agentName: "sdd-explore", systemPrompt: "SDD executor" }, ctx);
 		assert.match(result.systemPrompt, /SDD preflight unresolved/);
 		assert.match(result.systemPrompt, /STOP: Do not initialize/);
-		assert.doesNotMatch(result.systemPrompt, /## SDD Session Preflight/);
+		assert.doesNotMatch(result.systemPrompt, /## SDD 会话预检/);
 		assert.equal(existsSync(join(unresolvedSddCwd, "openspec", "config.yaml")), false);
 		assert.equal(existsSync(join(unresolvedSddCwd, ".pi", "jero", "sdd-preflight.json")), false);
 	} finally {
@@ -495,8 +495,8 @@ export async function part2(env) {
 			},
 			ctx,
 		);
-		assert.match(promptResult.systemPrompt, /SDD Session Preflight/);
-		assert.match(promptResult.systemPrompt, /canonical defaults or persisted choices/);
+		assert.match(promptResult.systemPrompt, /SDD 会话预检/);
+		assert.match(promptResult.systemPrompt, /规范默认值或已持久化的选择/);
 		assert.equal(ctx.ui.selections.length, 0);
 		assert.equal(existsSync(join(noUiSddAgentCwd, ".pi", "agents", "sdd-apply.md")), false);
 		assert.equal(existsSync(join(globalAgentHome, "agents", "sdd-apply.md")), true);

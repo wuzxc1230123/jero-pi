@@ -114,7 +114,7 @@ export async function part3(env) {
 		assert.match(ctx.ui.notifications.at(-1).message, /Wrote openspec\/config\.yaml/);
 		const initializedConfig = await readFile(join(sddCwd, "openspec", "config.yaml"), "utf8");
 		const explore = await hooks.get("before_agent_start")[0]({ agentName: "sdd-explore", systemPrompt: "You are the SDD explore executor for Gentle AI." }, ctx);
-		assert.match(explore.systemPrompt, /explicit current-session choices/);
+		assert.match(explore.systemPrompt, /本次会话的显式选择/);
 		assert.equal(ctx.ui.selections.length, 1, "confirmation -> sdd-init -> explore must reuse the resolved preflight");
 		const nextSession = createCtx(sddCwd, true, "cold-start-with-saved-preferences");
 		await hooks.get("input")[0]({ text: "/sdd", source: "interactive" }, nextSession);

@@ -327,7 +327,7 @@ export async function part1(env) {
 			onboardCtx,
 		);
 		assert.match(onboardPromptResult.systemPrompt, /onboard base/);
-		assert.match(onboardPromptResult.systemPrompt, /## SDD Session Preflight/);
+		assert.match(onboardPromptResult.systemPrompt, /## SDD 会话预检/);
 		assert.equal(existsSync(join(globalAgentHome, "agents", "sdd-onboard.md")), true);
 		await mkdir(join(promptCwd, "openspec", "changes", "status-demo", "specs", "demo"), { recursive: true });
 		await writeFile(join(promptCwd, "openspec", "changes", "status-demo", "proposal.md"), "# Proposal\n");
@@ -463,7 +463,7 @@ export async function part1(env) {
 		);
 		assert.match(
 			interactiveSddDispatch.context,
-			/^## SDD Session Preflight\nThese SDD preferences are explicit current-session choices\./,
+			/^## SDD 会话预检\n这些 SDD 偏好是本次会话的显式选择。除非用户明确变更，直接复用。/,
 			"the parent-confirmed rendered preflight must be transported through the RPC child's context",
 		);
 		const rpcChildCwd = await tempWorkspace();
@@ -476,7 +476,7 @@ export async function part1(env) {
 				{ agentName: "sdd-remediate", systemPrompt: "You are the SDD remediate executor for Gentle AI." },
 				rpcChildCtx,
 			);
-			assert.doesNotMatch(rpcChildPrompt.systemPrompt, /## SDD Session Preflight/);
+			assert.doesNotMatch(rpcChildPrompt.systemPrompt, /## SDD 会话预检/);
 			assert.equal(
 				existsSync(join(rpcChildCwd, ".pi", "jero", "sdd-preflight.json")),
 				false,
