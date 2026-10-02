@@ -174,7 +174,12 @@ export function deps(): { deps: Partial<AgentsDeps>; children: FakeChild[]; spaw
 		deps: {
 			spawn: (command, args) => {
 				spawned.push([command, ...args]);
-				const child = fakeChild();
+				// 真实子进程的 sessionFile 回报在它被启动的 --session-dir 目录内
+				// （runner 有圈定校验）——fake 从自己的启动参数解析该目录，与
+				// 扩展对 home/agentHome 的任何覆盖保持一致。
+				const flag = args.lastIndexOf("--session-dir");
+				const sessionDir = flag >= 0 ? String(args[flag + 1]) : agentRuntimePaths(home).sessions;
+				const child = fakeChild({ sessionFile: join(sessionDir, "child.jsonl") });
 				children.push(child);
 				return child.child;
 			},

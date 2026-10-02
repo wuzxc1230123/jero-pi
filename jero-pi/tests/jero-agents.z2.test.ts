@@ -74,7 +74,10 @@ test("default Node spawn adapter distinguishes IPC-only and permission-capable c
 	};
 	childProcess.spawn = ((command: string, args: readonly string[], options: Record<string, unknown>) => {
 		captured.push({ command, args, options: options as unknown as CapturedSpawnOptions });
-		const child = fakeChild();
+		// 真实子进程的 sessionFile 回报在它被启动的 --session-dir 目录内（runner 圈定校验）。
+		const flag = args.lastIndexOf("--session-dir");
+		const sessionFile = flag >= 0 ? join(String(args[flag + 1]), "child.jsonl") : join(agentRuntimePaths(home).sessions, "child.jsonl");
+		const child = fakeChild({ sessionFile });
 		children.push(child);
 		return child.child;
 	}) as unknown as typeof childProcess.spawn;
@@ -134,7 +137,9 @@ test("native spawn interception restores CommonJS and ESM exports after rejected
 		assert.equal((await import("node:child_process")).spawn, originalSpawn, "ESM spawn is restored");
 	};
 	const installMock = () => {
-		childProcess.spawn = (() => fakeChild().child) as unknown as typeof childProcess.spawn;
+		childProcess.spawn = ((command: string, args: readonly string[]) => fakeChild({
+			sessionFile: join(String(args[args.lastIndexOf("--session-dir") + 1] ?? join(agentRuntimePaths(home).sessions, "child.jsonl")), "child.jsonl"),
+		}).child) as unknown as typeof childProcess.spawn;
 		syncBuiltinESMExports();
 	};
 	const start = async (rejectShutdown: boolean) => {
@@ -502,7 +507,7 @@ test("background runs return at once; status, result, send_message, cancel, and 
 	const resumed = tools.get("subagent_continue")!.execute("c8", { task_id: id, prompt: "Now summarize", mode: "task" }, undefined, undefined, ctx);
 	await tick();
 	const args = harness.spawned[1];
-	assert.equal(args[args.indexOf("--session") + 1], "/sessions/child.jsonl");
+	assert.equal(args[args.indexOf("--session") + 1], join(agentRuntimePaths(home).sessions, "child.jsonl"));
 	await tick();
 	harness.children[1].emit({ type: "agent_end", messages: [{ role: "assistant", content: [{ type: "text", text: "Summary." }] }] });
 	harness.children[1].emit({ type: "agent_settled" });

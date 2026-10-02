@@ -5,6 +5,13 @@ import type { ChildLike } from "../lib/agents-runner.ts";
 // 假的 `pi --mode rpc` 子进程：对所有命令一律返回成功响应，记录宿主
 // 写入的内容，并允许测试注入事件。
 
+export interface FakeChildOptions {
+	exitOnKill?: boolean;
+	pid?: number;
+	/** get_state 回报的会话文件路径——真实子进程总是回报启动时 --session-dir 目录内的路径（runner 有圈定校验），测试按需注入同目录形态。 */
+	sessionFile?: string;
+}
+
 export interface FakeChild {
 	child: ChildLike;
 	written: Array<Record<string, unknown>>;
@@ -17,7 +24,7 @@ export interface FakeChild {
 	message(event: Record<string, unknown>): void;
 }
 
-export function fakeChild(options: { exitOnKill?: boolean; pid?: number } = {}): FakeChild {
+export function fakeChild(options: FakeChildOptions = {}): FakeChild {
 	const emitter = new EventEmitter();
 	const stdin = new PassThrough();
 	const stdout = new PassThrough();
@@ -34,7 +41,7 @@ export function fakeChild(options: { exitOnKill?: boolean; pid?: number } = {}):
 			const command = JSON.parse(line) as Record<string, unknown>;
 			written.push(command);
 			if (command.type === "extension_ui_response") continue;
-			const data = command.type === "get_state" ? { sessionFile: "/sessions/child.jsonl" } : undefined;
+			const data = command.type === "get_state" ? { sessionFile: options.sessionFile ?? "/sessions/child.jsonl" } : undefined;
 			stdout.write(`${JSON.stringify({ type: "response", id: command.id, command: command.type, success: true, data })}\n`);
 		}
 	});
