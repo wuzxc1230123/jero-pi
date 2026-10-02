@@ -55,7 +55,10 @@ function rule(length: number): string {
 
 export function colorDiff(text: string, theme: ChangesViewTheme): string[] {
 	const lines: string[] = [];
-	for (const line of text.split("\n")) {
+	for (const raw of text.split("\n")) {
+		// diff 正文即仓库文件内容——ESC/OSC 序列不经剥离直写 TUI 是终端
+		// 注入面（OSC-52 剪贴板外带/UI 伪造）；与 displayText 同律先剥。
+		const line = sanitizeTerminalText(raw);
 		if (line === "" || HEADER_PREFIXES.some((prefix) => line.startsWith(prefix))) continue;
 		if (line.startsWith("@@")) lines.push(theme.fg(ROLE.HUNK, line));
 		else if (line.startsWith("+")) lines.push(theme.fg("toolDiffAdded", line));

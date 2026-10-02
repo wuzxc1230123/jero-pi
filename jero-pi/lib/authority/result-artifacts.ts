@@ -206,39 +206,43 @@ export function admitJeroReviewerResultV1(context: JeroAuthorityContextV1, input
 	if (input.subjectHash !== expectedSubject.subject_hash) {
 		return { kind: "refused", code: "subject-mismatch", detail: "the offered subject hash does not bind the record's frozen authority" };
 	}
-	const existing = readManifestV1(context, input.lineageId);
-	const prior = existing.find((artifact) => artifact.lens === input.lens);
-	if (prior !== undefined) {
-		if (prior.sha256 === sha256 && prior.subject_hash === expectedSubject.subject_hash) {
-			return { kind: "admitted", artifact: prior, replayed: true };
+	// 清单读改写全程持锁：无锁的并发双受理会各自写只含自己产物的清单
+	// （last-write-wins 丢失更新），冻结台账随后判不完整而拒绝封账。
+	return context.locks.withLock(() => {
+		const existing = readManifestV1(context, input.lineageId);
+		const prior = existing.find((artifact) => artifact.lens === input.lens);
+		if (prior !== undefined) {
+			if (prior.sha256 === sha256 && prior.subject_hash === expectedSubject.subject_hash) {
+				return { kind: "admitted", artifact: prior, replayed: true };
+			}
+			return { kind: "refused", code: "slot-consumed", detail: `lens ${input.lens} already admitted a different result (lenses run exactly once)` };
 		}
-		return { kind: "refused", code: "slot-consumed", detail: `lens ${input.lens} already admitted a different result (lenses run exactly once)` };
-	}
-	const artifact: JeroResultArtifactV1 = {
-		schema: JERO_RESULT_ARTIFACT_SCHEMA,
-		capability: JERO_RESULT_ARTIFACT_CAPABILITY,
-		sha256,
-		lineage_id: input.lineageId,
-		target_identity: state.snapshot.identity,
-		lens: input.lens,
-		selected_order: input.selectedOrder,
-		subject_hash: expectedSubject.subject_hash,
-		admission_decision: "completed",
-		...(input.locator === "path"
-			? { path: join(jeroReviewerResultsDirectoryV1(context.store.store_root, input.lineageId), `${String(input.selectedOrder).padStart(2, "0")}-${input.lens}.json`) }
-			: { reference: jeroResultArtifactReferenceV1(expectedSubject.subject_hash, sha256) }),
-	};
-	try {
-		const directory = jeroReviewerResultsDirectoryV1(context.store.store_root, input.lineageId);
-		mkdirSync(directory, { recursive: true, mode: 0o700 });
-		// 被受理的原始字节，逐字、0o600（上游：result.json/result.raw 纪律）。
-		writeFileSync(join(directory, `${String(input.selectedOrder).padStart(2, "0")}-${input.lens}.json`), Buffer.from(input.rawResultBytes), { mode: 0o600 });
-		context.cas.put(artifact, { schema: JERO_RESULT_ARTIFACT_SCHEMA });
-		writeManifestV1(context, input.lineageId, [...existing, artifact]);
-	} catch (error) {
-		return { kind: "refused", code: "authority-unavailable", detail: error instanceof Error ? error.message : String(error) };
-	}
-	return { kind: "admitted", artifact, replayed: false };
+		const artifact: JeroResultArtifactV1 = {
+			schema: JERO_RESULT_ARTIFACT_SCHEMA,
+			capability: JERO_RESULT_ARTIFACT_CAPABILITY,
+			sha256,
+			lineage_id: input.lineageId,
+			target_identity: state.snapshot.identity,
+			lens: input.lens,
+			selected_order: input.selectedOrder,
+			subject_hash: expectedSubject.subject_hash,
+			admission_decision: "completed",
+			...(input.locator === "path"
+				? { path: join(jeroReviewerResultsDirectoryV1(context.store.store_root, input.lineageId), `${String(input.selectedOrder).padStart(2, "0")}-${input.lens}.json`) }
+				: { reference: jeroResultArtifactReferenceV1(expectedSubject.subject_hash, sha256) }),
+		};
+		try {
+			const directory = jeroReviewerResultsDirectoryV1(context.store.store_root, input.lineageId);
+			mkdirSync(directory, { recursive: true, mode: 0o700 });
+			// 被受理的原始字节，逐字、0o600（上游：result.json/result.raw 纪律）。
+			writeFileSync(join(directory, `${String(input.selectedOrder).padStart(2, "0")}-${input.lens}.json`), Buffer.from(input.rawResultBytes), { mode: 0o600 });
+			context.cas.put(artifact, { schema: JERO_RESULT_ARTIFACT_SCHEMA });
+			writeManifestV1(context, input.lineageId, [...existing, artifact]);
+		} catch (error) {
+			return { kind: "refused", code: "authority-unavailable", detail: error instanceof Error ? error.message : String(error) };
+		}
+		return { kind: "admitted", artifact, replayed: false };
+	});
 }
 
 /** 对单个产物封套的严格解码（合规/清单表面）。 */

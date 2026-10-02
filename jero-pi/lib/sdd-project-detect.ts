@@ -135,8 +135,17 @@ function detectPackageManagerAt(
 	return undefined;
 }
 
+// 目录名里的 shell 元字符（cmd 与 sh 双危险交集）不允许进入持久化命令：
+// 该命令会被 sdd-apply/verify 代理按 Strict TDD 执行。空格不在拒绝集——
+// 走双引号包护（cmd 与 sh 都安全）。
+const UNSAFE_SCOPE = /[;&|`$()<>!^"'\n\r\\]/;
+const SKIPPED_SCOPE_NOTICE = 'echo "SDD: scope skipped (unsafe characters in directory name); configure the command manually"';
+
 function commandInScope(scope: string, command: string): string {
-	return scope === "." ? command : `cd ${scope} && ${command}`;
+	if (UNSAFE_SCOPE.test(scope)) return SKIPPED_SCOPE_NOTICE;
+	if (scope === ".") return command;
+	const cd = /\s/.test(scope) ? `cd "${scope}"` : `cd ${scope}`;
+	return `${cd} && ${command}`;
 }
 
 function runScript(pm: string | undefined, script: string): string {

@@ -41,6 +41,7 @@ export const JERO_ADVISORY_FINDINGS_STATEMENT =
 
 export const JERO_APPROVED_CLOSURE_ACTION = "the approved review completed on the last admitted event and burned; delivery follows ordinary repository policy";
 export const JERO_CORRECTION_REQUIRED_CLOSURE_ACTION = "candidate-caused severe findings require one bounded correction";
+export const JERO_ESCALATED_CLOSURE_ACTION = "the review escalated beyond the in-process scope; the lineage is handed to the human operator";
 
 export interface JeroAdvisoryFindingV1 {
 	readonly id: string;
@@ -175,7 +176,14 @@ export function buildJeroLastEventClosureV1(input: {
 	}
 	return {
 		...base,
-		...(input.state === "approved" || input.state === "correction_required" ? { action: input.state === "approved" ? JERO_APPROVED_CLOSURE_ACTION : JERO_CORRECTION_REQUIRED_CLOSURE_ACTION } : {}),
+		// wire 解码器（wire-contract-last-event 的 nonempty(action)）要求每个
+		// 终局闭包带 action——escalated 也补齐，否则升级态闭包在扩展侧解码
+		// 即拒（fail-closed 互操作地雷：终局无法送达）。
+		...(
+			input.state === "approved" ? { action: JERO_APPROVED_CLOSURE_ACTION } :
+			input.state === "correction_required" ? { action: JERO_CORRECTION_REQUIRED_CLOSURE_ACTION } :
+			input.state === "escalated" ? { action: JERO_ESCALATED_CLOSURE_ACTION } : {}
+		),
 		...(input.state === "approved" && input.advisoryFindings !== undefined ? { advisory_findings: input.advisoryFindings } : {}),
 		...(input.state === "approved" && input.reviewerResults !== undefined ? { reviewer_results: input.reviewerResults } : {}),
 		...(requiresContinuation ? { status_continuation: statusContinuationV1(input.record, input.cwd, input.repositoryContext) } : {}),

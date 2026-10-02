@@ -258,8 +258,13 @@ function countTasks(tasksPath: string | undefined): SddTaskAccounting {
 
 function reportIsClearlyPassing(path: string | undefined): boolean {
 	if (!path || !hasContent(path)) return false;
-	const text = safeRead(path);
-	const hasBlocker = /(^|\b)(FAIL|FAILED|BLOCKED|CRITICAL|PENDING|TODO)(\b|:)|verification blockers?|not\s+(?:pass|passed|passing|successful|complete|completed)|(?:pass|passed|success|successful|complete|completed)\s*:\s*no\b/i.test(text);
+	// NFKC 归一：西里尔/全角同形字（"FАIL"）在词元与 \b 双层面都能绕过
+	// ASCII 词边界——报告文本先折叠同形，再进词匹配。
+	const text = safeRead(path).normalize("NFKC");
+	// blocker 词干扩到整词族（FAILING/FAILURES/BLOCKERS…动名词/名词/复数
+	// 都是失败陈述）；否定缩写与 no/none 冒号形态同样算 blocker——
+	// 报告只要含任一失败陈述，裸 PASS 行不得洗白它。
+	const hasBlocker = /\b(?:FAIL|BLOCK|CRITICAL|PENDING|TODO)\w*|verification blockers?|\bnot\s+(?:pass|passed|passing|successful|complete|completed)\b|\b(?:won't|won’t|can't|can’t|cannot|couldn't|couldn’t)\s+(?:pass|passed|passing|be\s+passing|succeed)\b|(?:pass|passed|success|successful|complete|completed)\s*:\s*(?:no|none)\b/i.test(text);
 	const hasPassSignal = text
 		.split(/\r?\n/)
 		.map((line) => line.trim())

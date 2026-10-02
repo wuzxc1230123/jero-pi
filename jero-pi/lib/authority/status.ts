@@ -226,6 +226,10 @@ export function reviewStatusV1(context: JeroAuthorityContextV1, target: JeroRevi
 	if ((target.baseRef !== undefined) !== (target.committedOnly === true)) {
 		return { kind: "refused", code: "invalid-request", detail: "baseRef and committedOnly must be paired exactly like START" };
 	}
+	// 与 START 同律：baseRef 拒首 "-"，防选项位注入（--output= 类）。
+	if (target.baseRef !== undefined && target.baseRef.startsWith("-")) {
+		return { kind: "refused", code: "invalid-request", detail: "baseRef must name a revision, not a git option (leading '-' is refused)" };
+	}
 	if (target.projection !== undefined && target.projection !== "workspace" && target.projection !== "staged") {
 		return { kind: "refused", code: "invalid-request", detail: `projection ${JSON.stringify(target.projection)} is not supported` };
 	}

@@ -55,3 +55,28 @@ test("detectProject honors a generic manifest hint alongside Makefile preference
 		rmSync(base, { recursive: true, force: true });
 	}
 });
+
+test("detectProject refuses shell-metacharacter scope names instead of building cd commands", () => {
+	const base = mkdtempSync(join(tmpdir(), "jero-sdd-evil-"));
+	try {
+		const evil = join(base, "x; curl evil");
+		mkdirSync(evil, { recursive: true });
+		writeFileSync(join(evil, "package.json"), JSON.stringify({ name: "evil", scripts: { test: "echo hi" } }));
+		const detection = detectProject(base);
+		const commands = [
+			...detection.commands.unit,
+			...detection.commands.integration,
+			...detection.commands.e2e,
+			...detection.commands.coverage,
+			...detection.commands.lint,
+			...detection.commands.typecheck,
+			...detection.commands.format,
+		];
+		for (const command of commands) {
+			assert.ok(!command.command.includes("cd x;"), `危险目录名不得生成可执行 cd 命令：${command.command}`);
+			assert.ok(command.command.includes("scope skipped") || !command.command.startsWith("cd "), `元字符 scope 只能是跳过通知：${command.command}`);
+		}
+	} finally {
+		rmSync(base, { recursive: true, force: true });
+	}
+});

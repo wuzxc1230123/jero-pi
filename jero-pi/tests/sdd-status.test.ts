@@ -256,6 +256,21 @@ test("resolveSddStatus blocks sync when verify report contains critical text", a
 	assert.equal(status.dependencies.archive, "blocked");
 });
 
+test("resolveSddStatus rejects failing word-forms that a bare PASS line would otherwise whitewash", async () => {
+	const cwd = await workspace();
+	const root = seedChange(cwd);
+	write(join(root, "tasks.md"), "# Tasks\n\n- [x] 1.1 Done\n");
+	// 动名词/名词/复数/否定缩写/no-none 冒号形态：旧正则全漏，裸 PASS 行即可洗白。
+	write(join(root, "verify-report.md"), "# Verify\n\nstatus: PASS\n\n2 failing checks\n1 failure detected\nwon't pass until fixed\npassed: none\n");
+	write(join(root, "sync-report.md"), "# Sync\n\nsync completed\n");
+
+	const status = resolveSddStatus({ cwd, changeName: "add-auth" });
+
+	assert.equal(status.dependencies.sync, "blocked");
+	assert.equal(status.dependencies.archive, "blocked");
+	assert.notEqual(status.nextRecommended, "sdd-archive");
+});
+
 test("resolveSddStatus reports same-domain collisions", async () => {
 	const cwd = await workspace();
 	const root = seedChange(cwd, "current");

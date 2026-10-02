@@ -90,6 +90,11 @@ export function assessJeroReviewRiskV1(request: JeroRiskAssessRequestV1): Review
 	if ((request.baseRef !== undefined) !== (request.committedOnly === true)) {
 		return unassessable("baseRef and committedOnly must be paired; the candidate is treated as high risk", candidateKind, request.baseRef);
 	}
+	// baseRef 直接拼进 `git diff ... <baseRef>^{tree}`：拒首 "-"，
+	// 防 "--output=<path>^{tree}" 类选项注入（受限任意写 + 评估面被改）。
+	if (request.baseRef !== undefined && request.baseRef.startsWith("-")) {
+		return unassessable("baseRef must name a revision, not a git option (leading '-' is refused); the candidate is treated as high risk", candidateKind, request.baseRef);
+	}
 	try {
 		const stats = request.committedOnly === true
 			? parseNumstat(runGit(request.cwd, ["diff", "--numstat", "--no-renames", `${request.baseRef}^{tree}`, "HEAD^{tree}"]))

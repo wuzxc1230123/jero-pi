@@ -21,6 +21,7 @@ const rules = [
 	// 展示层依赖是同一种越界。
 	{ pattern: /(?:from\s+"(?:\.\.\/)*extensions\/|import\(\s*["'](?:\.\.\/)*extensions\/)/, message: "imports extensions/ (presentation layer)" },
 	{ pattern: /\bprocess\.env\b/, message: "reads process.env" },
+	{ pattern: /\bprocess\s*\[\s*["']env["']\s*\]/, message: "reads process.env (computed member access)" },
 	{ pattern: /\bdomainHashV1\b/, message: "uses upstream domainHashV1 (gentle-ai identity namespace)" },
 ];
 

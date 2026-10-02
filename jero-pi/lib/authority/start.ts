@@ -211,6 +211,11 @@ function assertPairingRulesV1(target: JeroReviewStartTargetV1, selection: JeroRe
 	if (target.baseRef === undefined && target.committedOnly === true) {
 		throw new TypeError("review start: committedOnly requires baseRef");
 	}
+	// baseRef 会以 argv 元素进 git：拒首 "-"，防 "--output=" 类选项注入
+	// （数组形态不救选项位——那是 git 的解析面，不是 shell 的）。
+	if (target.baseRef !== undefined && target.baseRef.startsWith("-")) {
+		throw new TypeError("review start: baseRef must name a revision, not a git option (leading '-' is refused)");
+	}
 
 	if (target.targetIdentity !== undefined && !/^sha256:[0-9a-f]{64}$/.test(target.targetIdentity)) {
 		throw new TypeError("review start: targetIdentity must be a canonical sha256 identity");

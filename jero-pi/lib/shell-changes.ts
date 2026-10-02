@@ -2,6 +2,7 @@ import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import { execFile } from "node:child_process";
 import { join } from "node:path";
 import { worktreeGitEnvironment } from "./session-worktree-registry.ts";
+import { sanitizeTerminalText } from "./terminal-theme.ts";
 
 // Jero Shell 变更：工作树相对 HEAD 的改动，含新文件。Git 是事实源；
 // 本模块把原始的 `git diff --numstat` 与 `git status --porcelain -z`
@@ -131,7 +132,7 @@ export function renderChangesWidget(model: ChangesModel, theme: ChangesTheme, wi
 	const dot = theme.fg("muted", "·");
 	const head = `${theme.fg("accent", WIDGET_GLYPH)} ${theme.fg("text", `${model.files.length} ${noun}`)} ${dot} ${theme.fg("success", `+${model.added}`)} ${theme.fg("error", `−${model.deleted}`)}${model.files.some(file => file.countsUnavailable) ? " · partial counts" : ""}`;
 	const hint = theme.fg("dim", CHANGES_COMMAND);
-	const list = model.files.map((file) => theme.fg("muted", file.path)).join(` ${dot} `);
+	const list = model.files.map((file) => theme.fg("muted", sanitizeTerminalText(file.path).replace(/[\t\n]/g, " "))).join(` ${dot} `);
 	const left = `${head} ${dot} ${list}`;
 	const gap = width - visibleWidth(left) - visibleWidth(hint);
 	if (gap >= 2) return [`${left}${" ".repeat(gap)}${hint}`];

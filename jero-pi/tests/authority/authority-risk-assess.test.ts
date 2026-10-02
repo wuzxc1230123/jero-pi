@@ -99,3 +99,12 @@ test("verification tier vocabulary includes unassessable and maps the fail-close
 	assert.equal(VERIFICATION_TIER.UNASSESSABLE, "unassessable");
 	assert.equal(VERIFICATION_TIER.HIGH, "high");
 });
+
+test("a baseRef that starts with '-' is refused as unassessable (git option injection face)", () => {
+	// baseRef 以 argv 元素进 `git diff`：选项形态（"--output=..." 类）必须
+	// 按不可评估的高风险拒绝，绝不进 git argv。
+	const outcome = assessJeroReviewRiskV1({ cwd: process.cwd(), baseRef: "--output=/tmp/evil", committedOnly: true });
+	assert.equal(outcome.risk, "high");
+	assert.equal(outcome.reasons[0]?.code, "unassessable");
+	assert.match(outcome.reasons[0]?.detail ?? "", /leading '-' is refused/);
+});

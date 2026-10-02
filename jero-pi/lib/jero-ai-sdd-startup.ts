@@ -1,7 +1,7 @@
 // SDD 启动解析：代理启动事件识别、SDD 变更选择与启动状态解析、内存工具探测。
 // 自 extensions/jero-ai.ts 拆分（机械平移，语义零改动）。
 
-import { realpathSync } from "node:fs";
+import { existsSync, realpathSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import type { ExtensionAPI, ToolCallEventResult } from "@earendil-works/pi-coding-agent";
@@ -252,14 +252,50 @@ export function readSddChangeFlag(pi: ExtensionAPI): unknown {
 
 
 function normalizePolicyPath(value: string): string {
-	return value.trim().replace(/^~(?=\/|$)/, homedir()).replace(/\\/g, "/").toLowerCase();
+	// 段尾的点与空格在 Win32 路径解析时被剥离（".ssh.\id_rsa"、"key.pem."
+	// 等价于无后缀拼写）——词法判定前先剥段尾 [ .]，否则守卫看到的是
+	// 另一种拼写而文件系统打开的是真目标。
+	return value.trim()
+		.replace(/^~(?=\/|$)/, homedir())
+		.replace(/\\/g, "/")
+		.toLowerCase()
+		.split("/")
+		.map((segment) => segment.replace(/[ .]+$/, ""))
+		.join("/");
 }
 
+/**
+ * 解析到最近存在祖先的真实路径（再拼回未存在的尾部）：Windows 8.3 短名
+ * （SSH~1/ENV~1）与符号链接都是"词法不命中、文件系统解析后命中"的等价
+ * 拼写。解析失败（全新文件路径等）返回 undefined，调用方保持纯词法判定。
+ */
+function resolveNearestAncestorPath(normalized: string): string | undefined {
+	let current = normalized;
+	const tail: string[] = [];
+	for (;;) {
+		try {
+			if (existsSync(current)) {
+				const real = realpathSync(current).replace(/\\/g, "/");
+				return normalizePolicyPath(tail.length === 0 ? real : `${real}/${tail.join("/")}`);
+			}
+		} catch {
+			// 不可解析（权限/悬挂链接）：继续向上找更近的祖先。
+		}
+		const cut = current.lastIndexOf("/");
+		if (cut <= 0) return undefined;
+		tail.unshift(current.slice(cut + 1));
+		current = current.slice(0, cut);
+	}
+}
 
-
-function isSensitivePath(value: string): boolean {
+export function isSensitivePath(value: string): boolean {
 	const normalized = normalizePolicyPath(value);
-	return SENSITIVE_PATH_PATTERNS.some((pattern) => pattern.test(normalized));
+	if (SENSITIVE_PATH_PATTERNS.some((pattern) => pattern.test(normalized))) return true;
+	// 第二判定面：文件系统真实拼写（8.3 短名/符号链接/大小写盘符差异都在
+	// 这里还原）；与词法相同则无需重判。
+	const resolved = resolveNearestAncestorPath(normalized);
+	if (resolved === undefined || resolved === normalized) return false;
+	return SENSITIVE_PATH_PATTERNS.some((pattern) => pattern.test(resolved));
 }
 
 

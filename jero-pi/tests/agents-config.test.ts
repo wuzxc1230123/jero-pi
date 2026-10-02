@@ -203,3 +203,12 @@ test("resolveAgentProfile prefers the profile, then the definition, then the def
 	assert.deepEqual(resolveAgentProfile(bare, config), { model: { provider: "openai-codex", id: "gpt-6-astra" }, thinking: "medium", source: { model: "default", thinking: "default" } });
 	assert.deepEqual(resolveAgentProfile(bare, parseAgentsConfig(undefined, undefined)).source, { model: "unresolved", thinking: "unresolved" });
 });
+
+test("parseAgentDefinition rejects control characters in name and model (terminal injection face)", () => {
+	const badName = parseAgentDefinition("---\nname: evil\x1b[31m\n---\nbody", "/x/evil.md", "global");
+	assert.ok("error" in badName && /control characters/.test(String(badName.error)), "name 带控制字符必须解析失败");
+	const badModel = parseAgentDefinition("---\nname: ok\nmodel: p/evil\x07\n---\nbody", "/x/evil.md", "global");
+	assert.ok("error" in badModel && /control characters/.test(String(badModel.error)), "model 带控制字符必须解析失败");
+	const fine = parseAgentDefinition("---\nname: ok\nmodel: p/gpt\n---\nbody", "/x/ok.md", "global");
+	assert.ok(!("error" in fine), "干净定义不受影响");
+});

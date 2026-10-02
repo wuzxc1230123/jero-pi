@@ -264,7 +264,9 @@ function scopeForPath(cwd: string, path: string): string {
 }
 
 function markdownCell(value: string): string {
-	const trimmed = value.replace(/\n/g, " ").replace(/\|/g, "\\|").trim();
+	// 反引号在 inline-code 单元格内无法转义——替换为直引号，堵住技能
+	// frontmatter 经注册表索引的单元格级 markdown 注入（选择期提示面）。
+	const trimmed = value.replace(/\n/g, " ").replace(/\|/g, "\\|").replace(/`+/g, "'").trim();
 	return trimmed.length > 0 ? trimmed : "—";
 }
 

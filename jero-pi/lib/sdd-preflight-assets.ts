@@ -490,6 +490,16 @@ function copyDirectoryFiles(
 				nextSource = migrateLegacyAssetContent(ownershipKey, installedContent, source);
 			}
 		}
+		// 受管写拒绝符号链接目标：悬挂/重定向链接会把写引出受管树——
+		// 与同文件的原子替换纪律一致（跳过计数，安装报告显影）。
+		try {
+			if (lstatSync(targetPath).isSymbolicLink()) {
+				skipped += 1;
+				continue;
+			}
+		} catch {
+			// 目标不存在即正常新建。
+		}
 		writeFileSync(targetPath, nextSource);
 		manifest.assets[ownershipKey] = managedAssetHash(nextSource);
 		copied += 1;

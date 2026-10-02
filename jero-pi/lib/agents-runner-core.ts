@@ -2,8 +2,10 @@
 // 自 lib/agents-runner.ts 拆分（机械平移，语义零改动）。
 
 import { spawnSync } from "node:child_process";
+import { resolve as resolvePath, sep } from "node:path";
 import { isSessionChangeEvidence, type SessionChangeEvidence } from "./session-changes.ts";
 import { type Duplex, type Readable, type Writable } from "node:stream";
+import { sanitizeTerminalText } from "./terminal-theme.ts";
 import { stripVTControlCharacters } from "node:util";
 import { RESEARCH_ARTIFACT_ENV, RESEARCH_SELECTION_ENV, type ResearchArtifactIntent } from "./sdd-research-capabilities.ts";
 import { AGENT_MODE, type AgentDefinition, type AgentMode, formatModelRef, type ModelRef } from "./agents-config.ts";
@@ -517,17 +519,24 @@ export class AgentRunner {
 			if (response.success !== true || live.terminal || this.live.get(id) !== live || !data) return;
 			const resolved: Partial<TaskRecord> = {};
 			if (this.canAdvanceLastStep(id, [TASK_STEP.STARTING])) resolved.lastStep = TASK_STEP.PI_READY;
-			if (typeof data.sessionFile === "string" && data.sessionFile) resolved.sessionPath = data.sessionFile;
+			if (typeof data.sessionFile === "string" && data.sessionFile) {
+				// 子进程回报的会话文件路径只接受位于本任务会话目录内——
+				// 越界路径不得进入后续转录读取（防子进程诱导父进程读任意文件）。
+				const sessionRoot = resolvePath(request.sessionDir);
+				const reported = resolvePath(sessionRoot, data.sessionFile);
+				if (reported === sessionRoot || reported.startsWith(sessionRoot + sep)) resolved.sessionPath = data.sessionFile;
+			}
 			if (data.model === null) resolved.model = "default";
 			else if (typeof data.model?.provider === "string" && data.model.provider && typeof data.model.id === "string" && data.model.id) {
-				resolved.model = formatModelRef({ provider: data.model.provider, id: data.model.id });
+				// 子进程来源的字符串进渲染前剥离终端控制序列（与其余子进程文本同律）。
+				resolved.model = formatModelRef({ provider: sanitizeTerminalText(data.model.provider), id: sanitizeTerminalText(data.model.id) });
 			}
 			if (typeof data.thinkingLevel === "string" && (THINKING_LEVELS as readonly string[]).includes(data.thinkingLevel)) resolved.thinking = data.thinkingLevel;
 			this.store.update(id, resolved);
 		});
 		void this.send(id, { type: "prompt", message: promptText(request) }).then((response) => {
 			if (response.success === false) {
-				this.requestStop(id, TASK_STATUS.FAILED, String(response.error ?? "prompt rejected"));
+				this.requestStop(id, TASK_STATUS.FAILED, sanitizeTerminalText(String(response.error ?? "prompt rejected")));
 				return;
 			}
 			if (!live.terminal && this.live.get(id) === live && this.canAdvanceLastStep(id, [TASK_STEP.STARTING, TASK_STEP.PI_READY])) this.store.update(id, { lastStep: TASK_STEP.PROMPT_ACCEPTED });

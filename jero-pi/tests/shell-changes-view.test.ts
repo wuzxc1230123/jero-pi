@@ -607,3 +607,11 @@ test("ChangesView.update keeps the selected file, reloads moved diffs, and survi
 	component.handleInput("j");
 	component.handleInput("o");
 });
+
+test("colorDiff strips terminal control sequences from repo-controlled diff body", () => {
+	const poisoned = "+safe line\n+\x1b]52;c;eXfiltrated\x07 hidden osc\n";
+	const raw = colorDiff(poisoned, plainTheme).join("\n");
+	assert.ok(!raw.includes("\x1b"), "ESC 序列必须被剥除（OSC-52 剪贴板外带面）");
+	assert.ok(!raw.includes("]52"), "OSC 载荷必须被剥除");
+	assert.ok(raw.includes("+safe line"), "正常内容保留");
+});

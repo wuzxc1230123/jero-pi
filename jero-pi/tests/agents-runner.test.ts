@@ -560,3 +560,14 @@ test("win32 cancellation terminates the process tree; POSIX uses the process gro
 	assert.deepEqual(posix.treeKills, [], "POSIX never uses the Windows tree kill");
 });
 
+
+test("get_state sessionFile outside the task session dir is ignored (containment)", async () => {
+	const outside = harness({ state: { sessionFile: "/etc/passwd" } });
+	const taskOutside = outside.runner.run(request());
+	await new Promise((resolve) => setImmediate(resolve));
+	assert.ok(outside.store.get(taskOutside.id)?.sessionPath == null, "越界会话路径不得采信（防子进程诱导读任意文件）");
+	const inside = harness({ state: { sessionFile: "/sessions/child.jsonl" } });
+	const taskInside = inside.runner.run(request());
+	await new Promise((resolve) => setImmediate(resolve));
+	assert.equal(inside.store.get(taskInside.id)?.sessionPath, "/sessions/child.jsonl", "会话目录内的路径正常采信");
+});

@@ -186,13 +186,21 @@ export function parseAgentDefinition(text: string, filePath: string, scope: Agen
 	if (mode !== undefined && !AGENT_MODES.includes(mode)) return { filePath, error: mode };
 	if (body.length === 0) return { filePath, error: "no instructions after the frontmatter" };
 	const name = scalar(data.name)?.trim() || basename(filePath).replace(/\.md$/i, "");
+	// name/model 是项目可控字符串且直渲染终端（代理卡片/浮层/状态栏）——
+	// 控制字符按解析失败拒绝（终端注入面，与 models.json 的 SAFE 模式同律）。
+	const CONTROL_CHARS = /[\x00-\x1f\x7f]/;
+	if (CONTROL_CHARS.test(name)) return { filePath, error: "name contains control characters" };
+	const model = parseModelRef(data.model);
+	if (model !== undefined && CONTROL_CHARS.test(`${model.provider ?? ""}/${model.id}`)) {
+		return { filePath, error: "model contains control characters" };
+	}
 	return {
 		name,
 		description: scalar(data.description)?.trim() ?? "",
 		filePath,
 		scope,
 		instructions: body,
-		model: parseModelRef(data.model),
+		model,
 		thinking: thinking as ThinkingLevel | undefined,
 		mode: mode as AgentMode | undefined,
 		tools: parseTools(data.tools),
