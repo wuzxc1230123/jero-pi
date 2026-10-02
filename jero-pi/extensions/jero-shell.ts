@@ -265,10 +265,11 @@ export function openInExternalEditor(host: ExternalEditorHost, path: string, env
 	host.stop();
 	try {
 		// 使用 `shell: true` 时，Node 交给 cmd.exe 的是按空格拼接的原始
-		// 命令行，因此任何含空格的参数（带空格的用户目录下的转录文件、
-		// 编辑器标志路径）都会被拆成幻影参数。为 cmd
-		// 给每个参数加引号；双写引号是 cmd 的引号内转义。
-		const argv = [...editorArgs, path].map((arg) => (useShell && /\s/.test(arg) ? `"${arg.replace(/"/g, '""')}"` : arg));
+		// 命令行：含空格的参数会被拆成幻影参数，含 & | < > ^ 的参数（仓库
+		// 可控的文件名是现实输入——恶意克隆或提示注入写出的怪名文件）会被
+		// cmd 当命令分隔/重定向符执行。为 cmd 给含任一元字符的参数整体加
+		// 引号；双写引号是 cmd 的引号内转义。
+		const argv = [...editorArgs, path].map((arg) => (useShell && /[\s"&|<>^]/.test(arg) ? `"${arg.replace(/"/g, '""')}"` : arg));
 		spawn(editor, argv, { cwd, stdio: "inherit", shell: useShell });
 	} finally {
 		host.start();

@@ -797,6 +797,21 @@ test("openInExternalEditor quotes spaced arguments for cmd on Windows and leaves
 	assert.deepEqual(calls[1], { command: "vim", args: ["/home/alan mu/t.md"], shell: false });
 });
 
+test("openInExternalEditor quotes cmd metacharacters in filenames for Windows (injection guard)", () => {
+	const calls: Array<{ command: string; args: string[]; shell: boolean | undefined }> = [];
+	const fakeSpawn = ((command: string, args: string[], options: { shell?: boolean }) => {
+		calls.push({ command, args, shell: options.shell });
+		return { status: 0 };
+	}) as Parameters<typeof openInExternalEditor>[3];
+	const host: ExternalEditorHost = { stop() {}, start() {}, requestRender() {} };
+	assert.equal(openInExternalEditor(host, "notes&calc.exe", { EDITOR: "code -w" }, fakeSpawn, undefined, "win32"), true);
+	assert.deepEqual(calls[0], { command: "code", args: ["-w", `"notes&calc.exe"`], shell: true }, "& 必须被引号罩住（仓库可控文件名是现实输入）");
+	assert.equal(openInExternalEditor(host, "a|b<c>d^e", { EDITOR: "vi" }, fakeSpawn, undefined, "win32"), true);
+	assert.deepEqual(calls[1], { command: "vi", args: [`"a|b<c>d^e"`], shell: true }, "其余 cmd 元字符同样整体加引号");
+	assert.equal(openInExternalEditor(host, "plain.md", { EDITOR: "vi" }, fakeSpawn, undefined, "win32"), true);
+	assert.deepEqual(calls[2], { command: "vi", args: ["plain.md"], shell: true }, "干净参数不加引号（现行为保持）");
+});
+
 test("compactModel takes the last path segment across both separators", () => {
 	const model: ShellBarModel = {
 		cwd: "D:\\jero pi\\repo",
