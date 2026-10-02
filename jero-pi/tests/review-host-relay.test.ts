@@ -35,7 +35,13 @@ test("the central native CLI runner no longer declares any relay contract on gen
 	t.after(() => {
 		if (hadContract) process.env.JERO_PI_REVIEW_RELAY_CONTRACT = previous;
 	});
-	const adapter = createNodeExecFileAdapter();
+	// allowedRoots 白名单：适配器默认拒绝一切，测试把探针所在夹具目录放行。
+	const adapter = createNodeExecFileAdapter({ allowedRoots: [fixture.directory] });
+	await assert.rejects(
+		() => adapter({ file: join(fixture.directory, "..", "escape.sh"), arguments: [], cwd: fixture.directory, timeoutMs: 5_000, maxBufferBytes: 1024 }),
+		/outside every allowed root/,
+		"白名单外的可执行文件必须被拒",
+	);
 	for (const argv of [["version"], ["review", "status", "--cwd", fixture.directory]]) {
 		const result = await adapter({ file: probe, arguments: argv, cwd: fixture.directory, timeoutMs: 10_000, maxBufferBytes: 1024 * 1024 });
 		assert.equal(result.exitCode, 0);

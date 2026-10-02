@@ -11,6 +11,8 @@ import { randomUUID } from "node:crypto";
 export const MEMORY_INDEX_KIND = "jero.memory-index/v1";
 export const MEMORY_ENTRY_GLOB = "*.md";
 export const MAX_MEMORY_CONTENT_BYTES = 64 * 1024;
+/** 条目数上限：失控/被注入的代理反复 mem_save 不应无限撑盘（索引重建成本也随条目数线性涨）。 */
+export const MAX_MEMORY_ENTRIES = 512;
 export const MAX_TOPIC_LENGTH = 128;
 const TOPIC_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*(?:\/[A-Za-z0-9][A-Za-z0-9._-]*)*$/;
 const MAX_TAG_LENGTH = 64;
@@ -282,6 +284,11 @@ export async function saveMemory(root: string, topic: string, content: string, m
 	if (bytes > MAX_MEMORY_CONTENT_BYTES) throw new Error(`memory content is ${bytes} bytes; the limit is ${MAX_MEMORY_CONTENT_BYTES}`);
 	const path = memoryEntryPath(root, topic);
 	const created = !existsSync(path);
+	// 条目数上限（满仓后新主题响亮失败；覆盖既有主题不受限——重写不增条目）。
+	const indexBefore = readIndex(root);
+	if (!indexBefore.has(topic) && indexBefore.size >= MAX_MEMORY_ENTRIES) {
+		throw new Error(`memory store is full: ${indexBefore.size} entries (limit ${MAX_MEMORY_ENTRIES}); remove stale entries before saving new topics`);
+	}
 	const rendered = `${renderFrontmatter({
 		saved_at: meta.saved_at ?? new Date().toISOString(),
 		agent: meta.agent ?? "",

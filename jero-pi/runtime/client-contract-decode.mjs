@@ -13,6 +13,8 @@ import {
 import {
 	isAbsolute,
 	join,
+	resolve,
+	sep,
 	win32
 } from "node:path";
 import {
@@ -61,8 +63,22 @@ function launchableExecFileTarget(file        )                                 
 	return { file, argumentsPrefix: [] };
 }
 
-export function createNodeExecFileAdapter()                  {
+/**
+ * 休眠的 Node execFile 适配器：**必须**显式提供 `allowedRoots`（请求的
+ * file 经 resolve 后必须落在其中之一，否则类型化拒绝）——这是把
+ * "provider/仓库可控路径 → 任意执行"焊死在接线处的白名单；不传即拒绝
+ * 一切，未来任何 transport 接入时无法忘记它。
+ */
+export function createNodeExecFileAdapter(options                                     )                  {
+	const allowed = options.allowedRoots.map((root) => resolve(root));
+	const outsideRoot = (file        )          => {
+		const resolved = resolve(file);
+		return !allowed.some((root) => resolved === root || resolved.startsWith(root + sep));
+	};
 	return async (request) => {
+		if (outsideRoot(request.file)) {
+			throw new Error(`exec file ${request.file} is outside every allowed root; add its directory to createNodeExecFileAdapter({ allowedRoots })`);
+		}
 		try {
 			const target = launchableExecFileTarget(request.file);
 			const output = await execFileAsync(target.file, [...target.argumentsPrefix, ...request.arguments], { cwd: request.cwd, encoding: "utf8", shell: false, windowsHide: true, timeout: request.timeoutMs, maxBuffer: request.maxBufferBytes, signal: request.signal });

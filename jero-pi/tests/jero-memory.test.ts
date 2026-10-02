@@ -10,6 +10,7 @@ import {
 	isValidMemoryTopic,
 	listMemory,
 	MAX_MEMORY_CONTENT_BYTES,
+	MAX_MEMORY_ENTRIES,
 	readMemory,
 	releaseIndexLockIfOwned,
 	resolveMemoryRoot,
@@ -349,6 +350,23 @@ test("a stale index lock directory is taken over instead of blocking saves", asy
 		await saveMemory(root, "c/d", "second");
 		assert.equal(existsSync(lockPath), false);
 		assert.deepEqual(listMemory(root).map((entry) => entry.topic), ["a/b", "c/d"]);
+	} finally {
+		rmSync(root, { recursive: true, force: true });
+	}
+});
+
+test("saveMemory enforces the entry-count cap: new topics fail loud at the cap, overwrites still pass", async () => {
+	const root = mkdtempSync(join(tmpdir(), "jero-mem-cap-"));
+	try {
+		// 用主题层级快速造满：直接写入 entries/ 条目文件 + 重建索引比逐次 saveMemory 快。
+		mkdirSync(join(root, "entries"), { recursive: true });
+		for (let i = 0; i < MAX_MEMORY_ENTRIES; i++) {
+			writeFileSync(join(root, "entries", `cap-${String(i).padStart(3, "0")}.md`), `---\nsaved_at: "2026-01-01T00:00:00Z"\nagent: ""\nsession: ""\nphase: ""\ntags: []\n---\nentry ${i}\n`);
+		}
+		rebuildMemoryIndex(root);
+		await assert.rejects(() => saveMemory(root, "cap/new-topic", "over the cap\n"), /memory store is full: \d+ entries/);
+		// 覆盖既有主题不受限（重写不增条目）。
+		await saveMemory(root, "cap-000", "overwrite is fine\n");
 	} finally {
 		rmSync(root, { recursive: true, force: true });
 	}
