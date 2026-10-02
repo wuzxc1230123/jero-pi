@@ -5,6 +5,7 @@ import { join } from "node:path";
 import {
 	BUILTIN_AGENT_NAMES,
 	MAX_ENTRY_LINES,
+	bundledMcpServerViolation,
 	expandPermissionPreset,
 	globToRegExp,
 	parseModuleManifest,
@@ -519,4 +520,20 @@ test("mcp：v1 清单带 mcp → unknown-key 拒绝；servers 非数组 → type
 		data.mcp = { servers: "nope" };
 	}));
 	assert.ok(notArray.issues.some((item) => item.code === "type" && item.path === "$.mcp.servers"));
+});
+
+test("bundledMcpServerViolation：包内束 MCP 供应链三查（命令白名单/钉版 token/禁 env）", () => {
+	assert.equal(
+		bundledMcpServerViolation({ name: "godot-ai", command: "uvx", args: ["--from", "godot-ai@4.2.3", "godot-ai", "attach"] }),
+		undefined,
+		"白名单命令 + 钉版 token 合规",
+	);
+	assert.equal(
+		bundledMcpServerViolation({ name: "scoped", command: "npx", args: ["@scope/pkg@2.0.1"] }),
+		undefined,
+		"scoped 包名钉版合规",
+	);
+	assert.match(bundledMcpServerViolation({ name: "x", command: "bash", args: ["-c", "pkg@1.0.0"] })!, /command 必须是 uvx \/ npx/);
+	assert.match(bundledMcpServerViolation({ name: "x", command: "uvx", args: ["godot-ai", "attach"] })!, /必须含 pkg@精确语义化版本/);
+	assert.match(bundledMcpServerViolation({ name: "x", command: "npx", args: ["pkg@1.0.0"], env: { TOKEN: "s" } })!, /禁止携带 env/);
 });

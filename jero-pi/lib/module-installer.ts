@@ -154,6 +154,8 @@ export function resolveInstallPlan(
 export interface ModuleInstallRecord {
 	readonly version: string;
 	readonly files: readonly { readonly path: string; readonly hash: string }[];
+	/** 来源账本：安装器实际写入 agent mcp.json 的档（doctor 确定式归因 + 未来卸载回收的依据）。 */
+	readonly mcpWritten?: readonly { readonly name: string; readonly entry: Record<string, unknown> }[];
 }
 
 export interface ModuleInstallsFile {
@@ -208,26 +210,36 @@ function mcpServerEntry(server: McpServerSpec): Record<string, unknown> {
 	return entry;
 }
 
+export interface McpMergeResult {
+	/** 人话披露行（安装消息展示）。 */
+	readonly lines: string[];
+	/** 本次实际写入的档——进安装记录的来源账本（跳过/保留用户档的不计）。 */
+	readonly written: readonly { readonly name: string; readonly entry: Record<string, unknown> }[];
+}
+
 /**
  * 把模块声明的 MCP 服务器档合并进 Pi 的 agent mcp.json（mcpServers 键）。
  * 用户资产保护三律：同名且内容一致 = 幂等跳过；同名但内容不同 = 保留
- * 用户档不改（drift 显影）；文件存在但不可解析 = 一律不动（保命）。
- * 用户已有的其他 server 与顶层键原样保留，原子写回。声明≠安装工具链：
- * command 的可用性由 /jero:doctor 显影，安装器不做网络安装。
+ * 用户档不改（drift 显影）；文件存在但不可解析或超大小上限 = 一律不动
+ * （保命）。用户已有的其他 server 与顶层键原样保留，原子写回。声明≠
+ * 安装工具链：command 的可用性由 /jero:doctor 显影，安装器不做网络安装。
  */
 export function mergeModuleMcpServers(
 	mcpJsonPath: string,
 	servers: readonly McpServerSpec[],
-): string[] {
-	if (servers.length === 0) return [];
+): McpMergeResult {
+	if (servers.length === 0) return { lines: [], written: [] };
 	let root: Record<string, unknown> | undefined;
 	let existing: Record<string, unknown> | undefined;
 	if (existsSync(mcpJsonPath)) {
 		const size = statSync(mcpJsonPath).size;
 		if (size > MCP_JSON_MAX_BYTES) {
-			return servers.map((server) =>
-				`MCP 档 ${server.name} 未写入：${mcpJsonPath} 大小 ${size}B 超过 ${MCP_JSON_MAX_BYTES}B 上限——拒绝解析巨型配置，请手动并入`,
-			);
+			return {
+				lines: servers.map((server) =>
+					`MCP 档 ${server.name} 未写入：${mcpJsonPath} 大小 ${size}B 超过 ${MCP_JSON_MAX_BYTES}B 上限——拒绝解析巨型配置，请手动并入`,
+				),
+				written: [],
+			};
 		}
 		try {
 			const parsed: unknown = JSON.parse(readFileSync(mcpJsonPath, "utf8"));
@@ -240,13 +252,17 @@ export function mergeModuleMcpServers(
 		}
 	}
 	if (existsSync(mcpJsonPath) && existing === undefined) {
-		return servers.map((server) =>
-			`MCP 档 ${server.name} 未写入：${mcpJsonPath} 已存在但不是可解析的 mcpServers 配置——不覆盖用户文件，请手动并入`,
-		);
+		return {
+			lines: servers.map((server) =>
+				`MCP 档 ${server.name} 未写入：${mcpJsonPath} 已存在但不是可解析的 mcpServers 配置——不覆盖用户文件，请手动并入`,
+			),
+			written: [],
+		};
 	}
 	root ??= {};
 	existing ??= {};
 	const lines: string[] = [];
+	const written: { name: string; entry: Record<string, unknown> }[] = [];
 	let changed = false;
 	for (const server of servers) {
 		const entry = mcpServerEntry(server);
@@ -254,6 +270,7 @@ export function mergeModuleMcpServers(
 		if (current === undefined) {
 			existing[server.name] = entry;
 			changed = true;
+			written.push({ name: server.name, entry });
 			lines.push(`MCP 档 ${server.name} 已并入 ${mcpJsonPath}（command: ${server.command}）——重载会话后生效`);
 		} else if (JSON.stringify(current) === JSON.stringify(entry)) {
 			// 键序不同的同语义条目会落到"内容不同"分支——刻意保守：保留用户档优于任何误覆盖。
@@ -266,15 +283,15 @@ export function mergeModuleMcpServers(
 		root.mcpServers = existing;
 		writeFileAtomic(mcpJsonPath, `${JSON.stringify(root, null, "\t")}\n`);
 	}
-	return lines;
+	return { lines, written };
 }
 
-/** 安装明细尾追加 MCP 合并结果（模块未声明 mcp 时为空串）。 */
-function mcpMergeDetail(options: InstallBundleOptions, bundle: BundleModule): string {
+/** 执行束的 MCP 合并（未声明 mcp 时 result 为 undefined），suffix 为安装明细尾。 */
+function runBundleMcpMerge(options: InstallBundleOptions, bundle: BundleModule): { result: McpMergeResult | undefined; suffix: string } {
 	const servers = bundle.manifest.mcp?.servers ?? [];
-	if (servers.length === 0) return "";
-	const lines = mergeModuleMcpServers(options.agentMcpJson ?? agentMcpJsonPath(), servers);
-	return lines.length > 0 ? `；${lines.join("；")}` : "";
+	if (servers.length === 0) return { result: undefined, suffix: "" };
+	const result = mergeModuleMcpServers(options.agentMcpJson ?? agentMcpJsonPath(), servers);
+	return { result, suffix: result.lines.length > 0 ? `；${result.lines.join("；")}` : "" };
 }
 
 // —— 模块束文件布局与目标映射 ——
@@ -410,10 +427,21 @@ export function installBundle(
 			}
 				if (record.version === bundle.version) {
 					// 同版本跳过也做 MCP 合并回填：装在特性之前的模块重跑安装即补档。
+					// 回填写入的档追加进来源账本（已有同名记录不重复）。
+					const backfill = runBundleMcpMerge(options, bundle);
+					if (backfill.result !== undefined && backfill.result.written.length > 0) {
+						const known = new Set((record.mcpWritten ?? []).map((item) => item.name));
+						const appended = [...(record.mcpWritten ?? []), ...backfill.result.written.filter((item) => !known.has(item.name))];
+						const updated: Record<string, ModuleInstallRecord> = {
+							...installs.modules,
+							[bundle.token]: { version: record.version, files: record.files, mcpWritten: appended },
+						};
+						writeModuleInstalls(projectRoot, { schema: MODULE_INSTALLS_SCHEMA, modules: updated });
+					}
 					return {
 						kind: "skipped-up-to-date",
 						token: bundle.token,
-						detail: `已装同版本 ${bundle.version}，跳过（--force 重装）${mcpMergeDetail(options, bundle)}`,
+						detail: `已装同版本 ${bundle.version}，跳过（--force 重装）${backfill.suffix}`,
 					};
 				}
 		}
@@ -448,14 +476,19 @@ export function installBundle(
 		else bodyCount += 1;
 	}
 
+	const mcpMerge = runBundleMcpMerge(options, bundle);
 	const merged: Record<string, ModuleInstallRecord> = { ...installs.modules };
-	merged[bundle.token] = { version: bundle.version, files: recordFiles };
+	merged[bundle.token] = {
+		version: bundle.version,
+		files: recordFiles,
+		...(mcpMerge.result !== undefined && mcpMerge.result.written.length > 0 ? { mcpWritten: mcpMerge.result.written } : {}),
+	};
 	writeModuleInstalls(projectRoot, { schema: MODULE_INSTALLS_SCHEMA, modules: merged });
 
 	const parts = [`模块本体 ${bodyCount} 文件 → .pi/modules/${bundle.token}/`];
 	if (agentCount > 0) parts.push(`代理 ${agentCount} 文件 → .pi/agents/`);
 	if (skillCount > 0) parts.push(`技能 ${skillCount} 文件 → .pi/skills/`);
-	return { kind: "installed", token: bundle.token, detail: `已安装 ${bundle.token}@${bundle.version}：${parts.join("，")}${mcpMergeDetail(options, bundle)}` };
+	return { kind: "installed", token: bundle.token, detail: `已安装 ${bundle.token}@${bundle.version}：${parts.join("，")}${mcpMerge.suffix}` };
 }
 
 // —— /jero:doctor 诊断行：已装模块与包内模块束的版本漂移显影（只观察，不动手） ——
@@ -529,10 +562,20 @@ export function moduleMcpDoctorLines(projectRoot: string, mcpJsonPath: string = 
 		const current = servers?.[server.name];
 		if (current === undefined) {
 			lines.push(`warn: module ${token} MCP server ${server.name} declared but missing in ${mcpJsonPath} (rerun /jero:install-module ${token})`);
-		} else if (JSON.stringify(current) !== JSON.stringify(mcpServerEntry(server))) {
-			lines.push(`info: module ${token} MCP server ${server.name} present with user-modified config (kept)`);
+			continue;
+		}
+		// 来源账本优先：安装器写过的档按账本归因（确定式）；无账本记录的旧装
+		// 回退内容比对（内容同形按在档处理，注明 provenance 未记录）。
+		const ledger = installs.modules[token]?.mcpWritten?.find((item) => item.name === server.name);
+		const ledgerMatches = ledger !== undefined && JSON.stringify(current) === JSON.stringify(ledger.entry);
+		if (ledgerMatches) {
+			lines.push(`pass: module ${token} MCP server ${server.name} module-written in mcp.json (provenance recorded)`);
+		} else if (ledger !== undefined) {
+			lines.push(`info: module ${token} MCP server ${server.name} user-modified since install (kept)`);
+		} else if (JSON.stringify(current) === JSON.stringify(mcpServerEntry(server))) {
+			lines.push(`pass: module ${token} MCP server ${server.name} present in mcp.json (pre-ledger install; rerun install to record provenance)`);
 		} else {
-			lines.push(`pass: module ${token} MCP server ${server.name} present in mcp.json`);
+			lines.push(`info: module ${token} MCP server ${server.name} present with user-modified config (kept)`);
 		}
 	}
 	return lines;

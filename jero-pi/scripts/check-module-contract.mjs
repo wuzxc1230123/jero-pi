@@ -32,6 +32,7 @@ import {
 	SLIP_DELIVERABLES,
 	SLIP_IRREVERSIBILITY,
 	SLIP_UTTERANCE_TYPES,
+	bundledMcpServerViolation,
 	parseModuleManifest,
 	verifyModule,
 } from "../lib/module-contract.ts";
@@ -123,6 +124,15 @@ if (existsSync(bundlesRoot)) {
 		const expectedAgents = manifest.roles.map((role) => `${role.name}.md`).toSorted();
 		if (JSON.stringify(agentFiles) !== JSON.stringify(expectedAgents)) {
 			failures.push(`模块束 ${manifest.token} 的 roles 与 agents/ 文件不一致：清单要 [${expectedAgents.join(", ")}]，目录有 [${agentFiles.join(", ")}]`);
+		}
+		// 包内束 MCP 档供应链策略（BUNDLED_MCP_COMMANDS 白名单 + 钉版 token + 禁 env）：
+		// 安装器会把声明的档写进用户全局 mcp.json——MCP server 启动即代码执行，
+		// 面板在这里收窄（项目内手工模块不受此门约束）。
+		for (const server of manifest.mcp?.servers ?? []) {
+			const violation = bundledMcpServerViolation(server);
+			if (violation !== undefined) {
+				failures.push(`模块束 ${manifest.token} 的 MCP 档 ${server.name}：${violation}`);
+			}
 		}
 		// 触发命中样本：用清单里的非 glob 触发文件作字面量仓库文件（确定性命中）。
 		const literalTriggers = manifest.triggers.files.filter((file) => !file.includes("*"));

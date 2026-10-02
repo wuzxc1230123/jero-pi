@@ -137,6 +137,30 @@ export interface McpSpec {
 	readonly servers: readonly McpServerSpec[];
 }
 
+/**
+ * 包内束（assets/modules/*）允许的 MCP 启动命令白名单：只许解析器代理
+ * （uvx/npx）+ 精确钉版，禁止任意可执行件——把"被投毒包写任意命令"的
+ * 供应链面收窄为"钉一个 registry 包"。项目内手工模块不受此限（自己的
+ * 项目自己负责），门（check-module-contract）只对包内束强制。
+ */
+export const BUNDLED_MCP_COMMANDS = ["uvx", "npx"] as const;
+
+const MCP_PIN_TOKEN_PATTERN = /^@?[a-z0-9][a-z0-9@/._-]*@\d+\.\d+\.\d+([-+][0-9A-Za-z.-]+)?$/;
+
+/** 包内束 MCP 档的供应链策略校验：违例返回人话描述，合规返回 undefined。 */
+export function bundledMcpServerViolation(server: McpServerSpec): string | undefined {
+	if (!(BUNDLED_MCP_COMMANDS as readonly string[]).includes(server.command)) {
+		return `command 必须是 ${BUNDLED_MCP_COMMANDS.join(" / ")} 之一（包内束禁止任意可执行件）`;
+	}
+	if (server.env !== undefined && Object.keys(server.env).length > 0) {
+		return "包内束 MCP 档禁止携带 env（凭证属宿主环境，不进包）";
+	}
+	if (!(server.args ?? []).some((arg) => MCP_PIN_TOKEN_PATTERN.test(arg))) {
+		return "args 必须含 pkg@精确语义化版本 的钉版 token（如 godot-ai@4.2.3）——禁止解析 latest";
+	}
+	return undefined;
+}
+
 const TOKEN_PATTERN = /^[a-z][a-z0-9-]{1,23}$/;
 const VERSION_PATTERN = /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/;
 

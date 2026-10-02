@@ -35,7 +35,7 @@
 | `version` | ✓ | 语义化版本 |
 | `description` | | ≤200 字符领域一句话 |
 | `dependencies` | | **仅 v2**：依赖的模块词元数组。安装器闭包解析、依赖先装；安装验证 `deps-resolve` 查缺失/自依赖/成环（fail 响亮，绝不静默半装） |
-| `mcp.servers[]` | | **仅 v2**：声明的 MCP 服务器档（`{name, command, args?, env?}`）。安装时幂等合并进 Pi 的 agent `mcp.json`（`mcpServers` 键）：同名且内容一致跳过、同名不同内容**保留用户档**、既有文件不可解析**保命不动**；同版本跳过路径也做合并回填（装在特性前的模块重跑安装即补档）。声明≠安装工具链——command 可用性由 `/jero:doctor` 显影，安装器不做网络安装 |
+| `mcp.servers[]` | | **仅 v2**：声明的 MCP 服务器档（`{name, command, args?, env?}`）。安装时幂等合并进 Pi 的 agent `mcp.json`（`mcpServers` 键）：同名且内容一致跳过、同名不同内容**保留用户档**、既有文件不可解析**保命不动**；同版本跳过路径也做合并回填（装在特性前的模块重跑安装即补档）。实际写入的档进安装记录的**来源账本**（`mcpWritten`），doctor 据此确定式归因（模块写入/用户改写/缺席三态）。声明≠安装工具链——command 可用性由 `/jero:doctor` 显影，安装器不做网络安装。**包内束附加供应链策略（CI 门强制）**：command 限 `uvx`/`npx`、args 必须含 `pkg@精确语义化版本` 钉版 token、禁止 env（项目内手工模块不受此限） |
 | `triggers.files` | ✓ | **静态 glob，契约的心脏**：`*` 不跨目录、`**` 跨目录、`?` 单字符，机器对仓库树判定 |
 | `triggers.intents` | | 语义兜底词，仅降级使用，每次命中留痕 |
 | `knowledge.entry` | ✓ | 模块相对 `.md` 路径；任何接线注入 `entry` 档时行数 ≤60（`MAX_ENTRY_LINES`） |
@@ -111,7 +111,7 @@ S9（事故诊断）与 S10（继续/恢复）刻意不开放——后者是纯�
 - **验证**：`/jero-module-verify`——安装验证检查集（token 合法/唯一、**deps-resolve**（v2 依赖缺失/自依赖/成环即 fail）、**no-loose-duplicate**（token 与 `.pi/skills/` 松散技能重名即拒——同一知识双源必漂移）、防遮蔽、触发命中、路由解析、隔离正当、entry 行数、命令钉住；`pipeline.gate` 声明以"响亮缺席"语义呈现）+ 编译覆盖层到 `.atl/module-overlay.md`（自动生成物，勿手改）；
 - **会话启动**：模块根存在时**延后**刷新覆盖层（`setImmediate`，启动绝不等待全仓扫描），并对模块根做防抖变更监视（尽力而为）；模块根消失时**删除残留覆盖层**——编排器绝不消费过期接线；
 - **重编译触发面（盲区须知）**：会话启动 / 手动命令 / 模块根内文件变更。**仓库树变化（如新增 `go.mod`）不会自动重编译**——触发命中条件改变后跑一次 `/jero-module-verify` 或重启会话；扫描超 2 万文件截断时覆盖层与零命中详情都会明示"可能假阴性"；
-- **CI 门**：`pnpm run check:module-contract`——schema 与 TS 常量零漂移（含 v2 枚举与"dependencies 仅 v2"分支）+ 创建器金样绿灯 + **包内模块库绿灯**（`assets/modules/*` 逐束过解析与安装验证，roles 与 `agents/` 文件一一对应，依赖在库内可解析）；
+- **CI 门**：`pnpm run check:module-contract`——schema 与 TS 常量零漂移（含 v2 枚举与"dependencies 仅 v2"分支）+ 创建器金样绿灯 + **包内模块库绿灯**（`assets/modules/*` 逐束过解析与安装验证，roles 与 `agents/` 文件一一对应，依赖在库内可解析，束内 MCP 档过供应链策略：`uvx`/`npx` 白名单 + 钉版 token + 禁 env）；
 - **升级**：重装（`--force` 或库内升版后直接 install）+ 重跑验证；bindings 目标断链显式报错；
 - **移除**：删目录（与安装记录条目）；下次刷新覆盖层与注册表自然收回。
 
