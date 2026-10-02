@@ -24,6 +24,9 @@ import { resolveJeroPiAgentHome } from "./agent-home.ts";
 export const MODULE_INSTALLS_REL_PATH = join(".pi", "module-installs.json");
 export const MODULE_INSTALLS_SCHEMA = "jero.module-installs/v1";
 
+/** agent mcp.json 解析大小上限（1 MiB）：超过按不可处理显影，绝不解析巨型配置（防安装/诊断卡死）。 */
+export const MCP_JSON_MAX_BYTES = 1_048_576;
+
 /** 包内模块库根（assets/modules）——安装器与 /jero:module-list 的注册表来源。 */
 export function bundleModulesRoot(): string {
 	return join(ASSETS_DIR, "modules");
@@ -220,6 +223,12 @@ export function mergeModuleMcpServers(
 	let root: Record<string, unknown> | undefined;
 	let existing: Record<string, unknown> | undefined;
 	if (existsSync(mcpJsonPath)) {
+		const size = statSync(mcpJsonPath).size;
+		if (size > MCP_JSON_MAX_BYTES) {
+			return servers.map((server) =>
+				`MCP 档 ${server.name} 未写入：${mcpJsonPath} 大小 ${size}B 超过 ${MCP_JSON_MAX_BYTES}B 上限——拒绝解析巨型配置，请手动并入`,
+			);
+		}
 		try {
 			const parsed: unknown = JSON.parse(readFileSync(mcpJsonPath, "utf8"));
 			if (isPlainRecord(parsed)) {
@@ -247,6 +256,7 @@ export function mergeModuleMcpServers(
 			changed = true;
 			lines.push(`MCP 档 ${server.name} 已并入 ${mcpJsonPath}（command: ${server.command}）——重载会话后生效`);
 		} else if (JSON.stringify(current) === JSON.stringify(entry)) {
+			// 键序不同的同语义条目会落到"内容不同"分支——刻意保守：保留用户档优于任何误覆盖。
 			lines.push(`MCP 档 ${server.name} 已存在且一致，跳过`);
 		} else {
 			lines.push(`MCP 档 ${server.name} 同名但内容不同——保留用户配置未覆盖（模块声明 command: ${server.command}）`);
@@ -501,6 +511,12 @@ export function moduleMcpDoctorLines(projectRoot: string, mcpJsonPath: string = 
 	if (declared.length === 0) return [];
 	let servers: Record<string, unknown> | undefined;
 	if (existsSync(mcpJsonPath)) {
+		const size = statSync(mcpJsonPath).size;
+		if (size > MCP_JSON_MAX_BYTES) {
+			return declared.map(({ token, server }) =>
+				`warn: module ${token} MCP check skipped: ${mcpJsonPath} is ${size}B (over ${MCP_JSON_MAX_BYTES}B cap) — inspect manually`,
+			);
+		}
 		try {
 			const parsed: unknown = JSON.parse(readFileSync(mcpJsonPath, "utf8"));
 			if (isPlainRecord(parsed) && isPlainRecord(parsed.mcpServers)) servers = parsed.mcpServers;

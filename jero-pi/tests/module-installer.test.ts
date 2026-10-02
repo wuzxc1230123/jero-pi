@@ -332,7 +332,7 @@ test("mcp 合并：并入 → 幂等一致跳过 → 同名用户档保留未覆
 	}
 });
 
-test("mcp 合并：既有 mcp.json 不可解析 → 保命不动 + 逐台显影", () => {
+test("mcp 合并：既有 mcp.json 不可解析 → 保命不动 + 逐台显影；超 1MiB 拒绝解析", () => {
 	const root = makeDir();
 	const project = makeDir();
 	const agentMcp = join(root, "mcp.json");
@@ -343,6 +343,14 @@ test("mcp 合并：既有 mcp.json 不可解析 → 保命不动 + 逐台显影"
 		assert.equal(outcome.kind, "installed");
 		assert.match(outcome.detail, /MCP 档 tool-y 未写入：.*不是可解析的 mcpServers 配置/);
 		assert.equal(readFileSync(agentMcp, "utf8"), "{not json", "畸形用户文件必须原样保留");
+
+		// 巨型配置（>1MiB）：拒绝解析，逐台显影，文件不动。
+		const oversize = "x".repeat(1_048_576 + 1);
+		writeFileSync(agentMcp, oversize);
+		const oversizeOutcome = installBundle(project, bundle, { force: true, agentMcpJson: agentMcp });
+		assert.equal(oversizeOutcome.kind, "installed");
+		assert.match(oversizeOutcome.detail, /超过 1048576B 上限——拒绝解析巨型配置/);
+		assert.equal(readFileSync(agentMcp, "utf8"), oversize, "巨型用户文件必须原样保留");
 	} finally {
 		cleanup(root);
 		cleanup(project);
@@ -364,7 +372,7 @@ test("mcp：真实 godot 束声明 godot-ai 档，安装并入 + doctor 在档/�
 		assert.match(outcome.detail, /MCP 档 godot-ai 已并入/);
 		assert.deepEqual(JSON.parse(readFileSync(agentMcp, "utf8")).mcpServers["godot-ai"], {
 			command: "uvx",
-			args: ["--from", "godot-ai", "godot-ai", "attach"],
+			args: ["--from", "godot-ai@4.2.3", "godot-ai", "attach"],
 		});
 
 		const present = moduleMcpDoctorLines(project, agentMcp);

@@ -9,7 +9,7 @@
 			{
 				"name": "godot-ai",
 				"command": "uvx",
-				"args": ["--from", "godot-ai", "godot-ai", "attach"]
+				"args": ["--from", "godot-ai@4.2.3", "godot-ai", "attach"]
 			}
 		]
 	},

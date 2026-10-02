@@ -228,7 +228,7 @@ test("命令·install-module godot：真实包内束装进项目 + 验证管线�
 		const mcpJson = JSON.parse(readFileSync(join(agentHome, "mcp.json"), "utf8"));
 		assert.deepEqual(mcpJson.mcpServers["godot-ai"], {
 			command: "uvx",
-			args: ["--from", "godot-ai", "godot-ai", "attach"],
+			args: ["--from", "godot-ai@4.2.3", "godot-ai", "attach"],
 		});
 		// 安装后验证管线跑过：覆盖层含 godot 且八查汇总绿。
 		const overlay = readFileSync(join(cwd, ".atl", "module-overlay.md"), "utf8");
