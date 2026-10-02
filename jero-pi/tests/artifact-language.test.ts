@@ -65,7 +65,7 @@ test("orchestrator keeps conversation language separate from generated artifact 
 	);
 });
 
-test("rendered SDD preflight prompt is English artifact copy", () => {
+test("rendered SDD preflight prompt is Chinese prompt copy", () => {
 	const prefs: SddPreflightPreferences = {
 		executionMode: "interactive",
 		artifactStore: "openspec",
@@ -76,26 +76,30 @@ test("rendered SDD preflight prompt is English artifact copy", () => {
 	};
 	const prompt = renderSddPreflightPrompt(prefs);
 
-	assert.match(prompt, /These SDD preferences are explicit current-session choices/);
-	assert.match(prompt, /Delivery strategy: ask-on-risk/);
-	assert.match(prompt, /Review budget: 400 changed lines/);
-	assert.match(prompt, /complete only the current SDD phase/i);
-	assert.match(prompt, /Do not start the next SDD phase/i);
-	assert.match(prompt, /approve only the immediate next phase/i);
-	assert.match(prompt, /offer the user a proposal question round/i);
-	assert.match(prompt, /business rules, implications, impact, edge cases/i);
+	assert.match(prompt, /这些 SDD 偏好是本次会话的显式选择。除非用户明确变更，直接复用。/);
+	assert.match(prompt, /交付策略：ask-on-risk/);
+	assert.match(prompt, /评审预算：400 变更行/);
+	assert.match(prompt, /只完成当前 SDD 阶段/);
+	assert.match(prompt, /不得开始下一阶段/);
+	assert.match(prompt, /只批准紧邻的下一阶段/);
+	assert.match(prompt, /先向用户提供一轮提案问题/);
+	assert.match(prompt, /业务规则、隐含影响、波及面、边界情况/);
 	// 多轮语义与资产文本对齐：持续作答即持续追问、直到用户停止或无开放分支。
-	assert.match(prompt, /another question round/i);
-	assert.match(prompt, /continue question rounds until the user stops/i);
-	assert.match(prompt, /explicit acceptance of `size:exception`/);
-	assert.match(prompt, /human-controlled consent, authorization, security, destructive\/publishing/);
+	assert.match(prompt, /再来一轮/);
+	assert.match(prompt, /直到用户停止或不再存在会改变提案的开放分支/);
+	assert.match(prompt, /对 `size:exception` 的显式接受/);
+	assert.match(prompt, /同意、授权、安全、破坏性\/发布、歧义范围/);
+	// 提示词全面中文化后，旧英文文案与西语仿制品同样不得回流。
+	for (const stale of [/These SDD preferences/, /Execution mode:/, /Delivery strategy:/, /Review budget: 400 changed lines/]) {
+		assert.doesNotMatch(prompt, stale);
+	}
 	for (const pattern of SPANISH_PREFLIGHT_COPY) {
 		assert.doesNotMatch(prompt, pattern);
 	}
 
 	const headless = renderSddPreflightPrompt({ ...prefs, executionMode: "auto", prompted: false });
-	assert.match(headless, /canonical defaults or persisted choices/);
-	assert.match(headless, /ambiguous-scope/);
+	assert.match(headless, /规范默认值或已持久化的选择/);
+	assert.match(headless, /歧义范围/);
 });
 
 test("orchestrator Memory Contract carries the jero-pi memory staleness rule", async () => {
@@ -345,7 +349,7 @@ test("all shipped SDD agents and chains require parent preflight transport", asy
 	assert.equal(chains.length, 3);
 	for (const agent of agents) {
 		const source = await readFile(join(ROOT, "assets", "agents", `${agent}.md`), "utf8");
-		assert.match(source, /## Parent Preflight Transport/);
+		assert.match(source, /## 父会话预检传输/);
 		assert.match(source, /被委托的 RPC 子代理绝不确认或持久化 SDD 选择/);
 		assert.doesNotMatch(source, /(?:infer|synthesize) (?:a )?(?:preflight )?(?:confirmation|defaults?) yourself/i);
 	}
@@ -377,7 +381,7 @@ test("orchestrator lazy-loads detailed SDD workflow", async () => {
 	assert.match(orchestrator, /包资产根目录：`\{\{JERO_PI_ASSETS_ROOT\}\}`。下方懒加载资产路径均相对该根目录。/);
 	assert.match(orchestrator, /`sdd-orchestrator-workflow\.md`/);
 	assert.doesNotMatch(orchestrator, /\{\{JERO_PI_SDD_WORKFLOW_PATH\}\}/);
-	assert.match(orchestrator, /注入的 `## SDD Session Preflight` 块或权威方裁决/);
+	assert.match(orchestrator, /注入的 `## SDD 会话预检` 块或权威方裁决/);
 	assert.match(orchestrator, /默认值与能力约束可以在无确认提示的情况下裁决字段/);
 	assert.doesNotMatch(orchestrator, /or an explicit user answer covering the preflight choices/);
 	assert.doesNotMatch(orchestrator, /## Native SDD Dispatcher/);

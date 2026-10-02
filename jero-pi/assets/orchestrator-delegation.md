@@ -85,7 +85,7 @@
 | bash 取状态（`git`、`gh`） | ✅ | — |
 | 测试、构建或安装 | 允许作为有界动作 | ✅ 每动作全新工作者，不改变路由 |
 
-对委托直做工作，使用平台原生的有界工作者；把 `sdd-*` 代理保留给已选定的 SDD 路由。每次交付 SDD `subagent_run` 派发之前，父运行时——而非短语匹配或子代理——必须解析交互式预检，在取消/失败时保守失败，并把精确渲染的 `## SDD Session Preflight` 块前置到既有的子代 `context`。不要创建第二偏好通道。RPC 子代消费该上下文，绝不发起、确认或持久化默认值。
+对委托直做工作，使用平台原生的有界工作者；把 `sdd-*` 代理保留给已选定的 SDD 路由。每次交付 SDD `subagent_run` 派发之前，父运行时——而非短语匹配或子代理——必须解析交互式预检，在取消/失败时保守失败，并把精确渲染的 `## SDD 会话预检` 块前置到既有的子代 `context`。不要创建第二偏好通道。RPC 子代消费该上下文，绝不发起、确认或持久化默认值。
 
 保持单一写者与简短的综合交接。在映射、写入、准备与广泛研究的边界上，委托是强制的，但它仍是直接实现路由，不得合成 SDD 产物。
 
@@ -185,7 +185,7 @@ path/to/authorized-file.ts
 
 有界写者拒绝在精确允许编辑面之外写入，缺失时以 `status: interaction_required` 停止。该输入由父会话拥有。推导它是规划委托的一部分，不是可以留给写者或人类补足的东西。
 
-启动有界写者（`jero-worker`、用户配置的 `worker` 或原生 `Agent` 回退）之前，从被委托的任务推导允许编辑面——计划变更必须触及的文件，加上任务授权新建文件的目录——并在委托提示中置于 `## Allowed edit surfaces` 标题之下，采用与 `## Skills to load before work` 相同的精确路径形式：
+启动有界写者（`jero-worker`、用户配置的 `worker` 或原生 `Agent` 回退）之前，从被委托的任务推导允许编辑面——计划变更必须触及的文件，加上任务授权新建文件的目录——并在委托提示中置于 `## Allowed edit surfaces` 标题之下，采用与 `## 开工前需加载的技能` 相同的精确路径形式：
 
 - 精确的仓库相对路径或窄 glob，每行一条；绝不使用 `.`，绝不使用裸仓库根；含空白的路径需要整条目的反引号（例如 `` `Directory With Spaces/note.md` `` 或 ``- `Directory With Spaces/note.md` ``）；仅有列表标记不容许空白；
 - 该节只在下一个任意级别的规范 ATX Markdown 标题处结束（零到三个前导 ASCII 空格、一到六个 `#`、然后一个 ASCII 空格）；该标题之前的每个非空行都必须是有效的编辑面条目，因此把解释性散文放到后续标题之下；
@@ -197,9 +197,9 @@ path/to/authorized-file.ts
 
 对写者关于编辑面的 `interaction_required` 负载同样中继：把其推导的候选路径作为选择呈现，仅在人类的显式指示下增删路径。
 
-#### Key Learnings closing block
+#### 关键收获收尾块
 
-When delegating to a generic Explore/general worker (`jero-explore`, `jero-worker`, `jero-verify`) or their native `Agent` fallback, include the same `## Key Learnings` closing instruction in the delegated prompt: after the worker returns its normal result envelope or handoff, it closes its final response text with a `## Key Learnings` block of 1–5 numbered items, each a standalone factual sentence of at least 20 characters and at least 4 words, omitting the block when there is genuinely no reusable learning. The block layers on after the structured Return contract and does not alter its fields. This applies to final response text only — not intermediate tool output. Nothing extracts this block automatically — durable capture happens only through an explicit `mem_save` save that the parent or user directs; the worker does not parse the block itself. This is separate from explicit `mem_save` artifact/decision persistence. Agents that must return strict JSON never receive this closing instruction; their required output shape remains unchanged.
+委托给通用探索/执行代理（`jero-explore`、`jero-worker`、`jero-verify`）或其原生 `Agent` 回退时，在被委托提示中附上同一条 `## 关键收获` 收尾指令：代理返回其常规结果封套或交接后，在最终回应文本末尾附一个 `## 关键收获` 块，含 1–5 条编号条目，每条是至少 20 个字符、至少 4 个词的独立事实句；确实无可复用学习时省略整个块。该块叠加在结构化 Return 契约之后，不改变其字段。仅适用于最终回应文本——不适用于中间工具输出。没有任何机制自动提取该块——持久化只经父会话或用户明确指示的显式 `mem_save` 保存发生；代理本身不解析该块。此收尾块与显式 `mem_save` 的产物/决策持久化相互独立。必须返回严格 JSON 的代理绝不接收此收尾指令；其必需输出形状保持不变。
 
 对有界多文件写入之外的委托，使用通用回退：若 `subagent_*` 工具不可用，回退到 Pi 原生 `Agent` 工具或其他可用的委托机制。委托触发保持强制；回退改变的是运行时，不是委托要求本身。若无委托机制可用，停止复杂工作并说明阻塞，而不是静默继续内联。
 

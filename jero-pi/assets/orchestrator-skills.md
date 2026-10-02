@@ -8,7 +8,7 @@
 
 1. 若存在则读 `.atl/skill-registry.md`。
 2. 把任务上下文与目标文件对照 `Trigger / description` 列匹配。
-3. 只把匹配的 `Path` 值经 `## Skills to load before work` 传给子代理。
+3. 只把匹配的 `Path` 值经 `## 开工前需加载的技能` 传给子代理。
 4. 告知子代理在读、写、评审、测试或创建产物之前先读这些确切的 `SKILL.md` 文件。
 5. 若存在 `.atl/module-overlay.md`，按其各面注入档位收窄：`manifest-only` 面只提示模块存在与触发词（不整注入 entry）；`entry` 面注入该模块知识入口；覆盖层路由表声明的追加角色按 `delegate-role`/`suggest-role` 委派，委派结果以 `module_resolution`（`delegated` / `skipped:<原因>` / `name-unresolved`）回报。
 6. 若注册表缺失，继续但说明项目专属技能路径不可用。
@@ -19,7 +19,7 @@
 
 若子代理报告 `skill_resolution`，将其解读为项目/用户技能解析：
 
-- `paths-injected`：父会话以确切 `SKILL.md` 路径提供了 `## Skills to load before work`。
+- `paths-injected`：父会话以确切 `SKILL.md` 路径提供了 `## 开工前需加载的技能`。
 - `fallback-registry`：因父会话路径缺失，子代理自行从注册表加载技能路径；降级但可审计。
 - `fallback-path`：因父会话路径缺失，子代理加载了显式技能路径；降级但可审计。
 - `none`：未加载任何项目/用户技能。

@@ -122,14 +122,14 @@ export async function collectSddPreflightPreferences(
 
 export function isParentConfirmedSddPreflightContext(context: unknown): context is string {
 	if (typeof context !== "string") return false;
-	return /^## SDD Session Preflight\n(?:These SDD preferences are explicit current-session choices\. Reuse them unless the user explicitly changes them\.|These SDD preferences are canonical defaults or persisted choices\. Treat them as authoritative; do not revisit dependent decisions unless a genuine human-control gate is reached\.)\n- Execution mode: (?:interactive|auto)\n- Artifact store: (?:openspec|engram|hybrid|none)(?: \(Engram unavailable in this session\))?\n- Delivery strategy: (?:ask-on-risk|auto-chain|single-pr|exception-ok)\n- Delivery strategy domain: `ask-on-risk` \| `auto-chain` \| `single-pr` \| `exception-ok`\n- Review budget: [1-9]\d* changed lines \(400 is the canonical threshold unless explicitly changed\)\n- Chain strategy: deferred until chaining is selected\./.test(context);
+	return /^## SDD 会话预检\n(?:这些 SDD 偏好是本次会话的显式选择。除非用户明确变更，直接复用。|这些 SDD 偏好是规范默认值或已持久化的选择。视其为权威；除非到达真正的人工控制门，不要重开关联决策。)\n- 执行模式：(?:interactive|auto)\n- 产物存储：(?:openspec|engram|hybrid|none)（本会话 Engram 不可用）?\n- 交付策略：(?:ask-on-risk|auto-chain|single-pr|exception-ok)\n- 交付策略域：`ask-on-risk` \| `auto-chain` \| `single-pr` \| `exception-ok`\n- 评审预算：[1-9]\d* 变更行（400 为规范阈值，除非显式变更）\n- 链式策略：延迟至选择链式时再定。/.test(context);
 }
 
 /** 探测文本是否含预检块头部行（含仿制品）。派发门用它拒绝调用方
  * 拼写的任何预flight载荷——头部格式必须与上方权威正则同步演进，
  * 因此钉在同一个文件里。 */
 export function containsSddPreflightBlockHeader(text: string): boolean {
-	return /^## SDD Session Preflight[ \t]*$/m.test(text);
+	return /^## SDD 会话预检[ \t]*$/m.test(text);
 }
 
 export function extractParentConfirmedSddPreflightContext(context: unknown): string | undefined {
@@ -143,31 +143,31 @@ export function renderSddPreflightPrompt(prefs: SddPreflightPreferences): string
 		prefs.sizeExceptionAccepted === true,
 	);
 	const sourceLine = prefs.prompted
-		? "These SDD preferences are explicit current-session choices. Reuse them unless the user explicitly changes them."
-		: "These SDD preferences are canonical defaults or persisted choices. Treat them as authoritative; do not revisit dependent decisions unless a genuine human-control gate is reached.";
+		? "这些 SDD 偏好是本次会话的显式选择。除非用户明确变更，直接复用。"
+		: "这些 SDD 偏好是规范默认值或已持久化的选择。视其为权威；除非到达真正的人工控制门，不要重开关联决策。";
 	const interactiveRules =
 		prefs.executionMode === "interactive"
 			? [
-					"- Interactive phase gate: complete only the current SDD phase. Do not start the next SDD phase unless the current user turn explicitly approves that next phase.",
-					"- In interactive mode, words like `continue`, `dale`, or `go on` approve only the immediate next phase, not all remaining phases.",
-					"- Before writing an SDD proposal in interactive mode, offer the user a proposal question round to improve the PRD/proposal by uncovering business rules, implications, impact, edge cases, product tradeoffs, and decision gaps. Prefer 3–5 concrete product questions per round derived from the explore/research evidence and the user's previous answers, prioritizing open branches that would change the proposal; then summarize assumptions (closed vs. still-open branches) and ask whether the user wants corrections or another question round — while the user keeps answering, continue question rounds until the user stops or no proposal-changing open branches remain. Do not ask about test commands, PR shape, changed-line budget, or other harness mechanics at proposal time unless the user explicitly asks to discuss delivery.",
+					"- 交互阶段门：只完成当前 SDD 阶段。除非当前用户轮次明确批准下一阶段，不得开始下一阶段。",
+					"- 交互模式下，`continue`、`dale`、`go on` 这类词只批准紧邻的下一阶段，不是全部剩余阶段。",
+					"- 交互模式下撰写 SDD 提案前，先向用户提供一轮提案问题，通过挖掘业务规则、隐含影响、波及面、边界情况、产品取舍与决策空白来改进 PRD/提案。每轮以 explore/research 证据与用户此前的回答为基础，优先提出 3–5 个具体的产品问题，聚焦会改变提案走向的开放分支；随后总结假设（已闭合与仍开放的分支）并询问用户是要修正还是再来一轮——用户持续作答就持续追问，直到用户停止或不再存在会改变提案的开放分支。提案阶段不主动询问测试命令、PR 形态、变更行预算等 harness 机制问题，除非用户明确要求讨论交付。",
 				]
 			: [
-					"- Auto mode: phases may run back-to-back only because the user chose speed and trusts the flow.",
+					"- 自动模式：阶段可以连续执行，唯一依据是用户选择了速度并信任此流程。",
 				];
 	return [
-		"## SDD Session Preflight",
+		"## SDD 会话预检",
 		sourceLine,
-		`- Execution mode: ${prefs.executionMode}`,
-		`- Artifact store: ${prefs.artifactStore}${prefs.engramAvailable ? "" : " (Engram unavailable in this session)"}`,
-		`- Delivery strategy: ${deliveryStrategy}`,
-		"- Delivery strategy domain: `ask-on-risk` | `auto-chain` | `single-pr` | `exception-ok`",
-		`- Review budget: ${prefs.reviewBudgetLines} changed lines (400 is the canonical threshold unless explicitly changed)`,
-		"- Chain strategy: deferred until chaining is selected.",
-		"- `exception-ok` is never inferred; it requires explicit acceptance of `size:exception`.",
+		`- 执行模式：${prefs.executionMode}`,
+		`- 产物存储：${prefs.artifactStore}${prefs.engramAvailable ? "" : "（本会话 Engram 不可用）"}`,
+		`- 交付策略：${deliveryStrategy}`,
+		"- 交付策略域：`ask-on-risk` | `auto-chain` | `single-pr` | `exception-ok`",
+		`- 评审预算：${prefs.reviewBudgetLines} 变更行（400 为规范阈值，除非显式变更）`,
+		"- 链式策略：延迟至选择链式时再定。",
+		"- `exception-ok` 绝不由推断得出；它要求对 `size:exception` 的显式接受。",
 		...interactiveRules,
-		"- Preserve human-controlled consent, authorization, security, destructive/publishing, ambiguous-scope, and `size:exception` gates.",
-		"- When review-budget risk requires a delivery decision, use `ask-on-risk` to pause and ask; do not invent a chain strategy or an exception.",
+		"- 保留人工控制的同意、授权、安全、破坏性/发布、歧义范围与 `size:exception` 门。",
+		"- 当评审预算风险需要交付决策时，用 `ask-on-risk` 暂停并询问；不得发明链式策略或例外。",
 	].join("\n");
 }
 

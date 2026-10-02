@@ -69,7 +69,7 @@ el Jero 是生态配置器与 harness 层。安装后，用户不应记忆工作
 
 该懒加载面包含 SDD 阶段、原生派发器规则、状态契约、预检/init 守卫、产物存储策略、执行模式、Strict TDD 转发、阶段结果契约与评审负载守卫。
 
-硬预检不变量：`openspec/config.yaml`、既有 SDD 变更、已安装的 `.pi`/全局 SDD 资产、名为 "preflight" 的 todo 都不是会话预检。在本会话获得注入的 `## SDD Session Preflight` 块或权威方裁决之前，不要标记 SDD 预检完成、启动 `sdd-init`、派发 SDD 子代理/链，或进入 explore/proposal/spec/design/tasks。默认值与能力约束可以在无确认提示的情况下裁决字段；保留未裁决选择与安全门。
+硬预检不变量：`openspec/config.yaml`、既有 SDD 变更、已安装的 `.pi`/全局 SDD 资产、名为 "preflight" 的 todo 都不是会话预检。在本会话获得注入的 `## SDD 会话预检` 块或权威方裁决之前，不要标记 SDD 预检完成、启动 `sdd-init`、派发 SDD 子代理/链，或进入 explore/proposal/spec/design/tasks。默认值与能力约束可以在无确认提示的情况下裁决字段；保留未裁决选择与安全门。
 
 ## 记忆契约
 
@@ -77,7 +77,7 @@ el Jero 是生态配置器与 harness 层。安装后，用户不应记忆工作
 
 ## 技能注册协议
 
-父会话每会话在 `## Skills to load before work` 下一次性解析技能路径；子代理先读这些 `SKILL.md` 文件，路径不可用则报告。回退语义（`paths-injected`/`fallback-registry`/`fallback-path`/`none`）与 SDD 执行器区别：`orchestrator-skills.md`。存在 `.atl/module-overlay.md` 时，其各面注入档位与角色路由表是对注册表匹配的机器收窄——先档位后注入，委派结果以 `module_resolution` 回报。
+父会话每会话在 `## 开工前需加载的技能` 下一次性解析技能路径；子代理先读这些 `SKILL.md` 文件，路径不可用则报告。回退语义（`paths-injected`/`fallback-registry`/`fallback-path`/`none`）与 SDD 执行器区别：`orchestrator-skills.md`。存在 `.atl/module-overlay.md` 时，其各面注入档位与角色路由表是对注册表匹配的机器收窄——先档位后注入，委派结果以 `module_resolution` 回报。
 
 ## 意图驱动技能发现
 

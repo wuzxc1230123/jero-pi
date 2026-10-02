@@ -5,7 +5,7 @@ description: Plan an SDD change through proposal, spec, design, and tasks; safe 
 
 ## Parent preflight transport guard
 
-仅在交互式父会话已解析 SDD 预检、并将其精确渲染的 `## SDD Session Preflight` 块注入每个子上下文之后运行。链及其 RPC 子代理必须消费该传输，绝不推断、确认、发起或持久化默认值。Missing or malformed transport blocks the chain before its first phase.
+仅在交互式父会话已解析 SDD 预检、并将其精确渲染的 `## SDD 会话预检` 块注入每个子上下文之后运行。链及其 RPC 子代理必须消费该传输，绝不推断、确认、发起或持久化默认值。Missing or malformed transport blocks the chain before its first phase.
 
 ## 交互模式守卫
 

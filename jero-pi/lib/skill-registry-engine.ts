@@ -330,12 +330,12 @@ function renderRegistry(cwd: string, sources: string[], entries: SkillEntry[]): 
 		lines.push(`| \`${markdownCell(entry.name)}\` | ${markdownCell(entry.description)} | ${markdownCell(entry.scope ?? scopeForPath(cwd, entry.path))} | \`${markdownCell(entry.path)}\` |`);
 	}
 	lines.push("");
-	lines.push("## Loading protocol");
+	lines.push("## 加载协议");
 	lines.push("");
-	lines.push("1. Match task context and target files against the `Trigger / description` column.");
-	lines.push("2. Pass only the matching `Path` values to the subagent under `## Skills to load before work`.");
-	lines.push("3. Instruct the subagent to read those exact `SKILL.md` files before reading, writing, reviewing, testing, or creating artifacts.");
-	lines.push("4. If no matching skill exists, proceed without project skill injection and report `skill_resolution: none`.");
+	lines.push("1. 将任务上下文与目标文件对照 `Trigger / description` 列匹配。");
+	lines.push("2. 只把匹配的 `Path` 值经 `## 开工前需加载的技能` 段传给子代理。");
+	lines.push("3. 指示子代理在读/写/评审/测试/创建产物之前先精确读取这些 `SKILL.md` 文件。");
+	lines.push("4. 无匹配技能时不注入项目技能并报告 `skill_resolution: none`。");
 	return `${lines.join("\n").trimEnd()}\n`;
 }
 

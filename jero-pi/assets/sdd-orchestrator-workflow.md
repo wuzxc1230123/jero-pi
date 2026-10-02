@@ -73,9 +73,9 @@ Before any planning launch, stop for ambiguous change selection, unresolved sess
 
 不要在会话开始时询问 SDD 设置问题。用户在 Pi 会话中首次发起 SDD 流程时，运行一次 SDD 预检，并在该会话余下部分复用这些选择。运行时触发检测有意保持确定性：斜杠 SDD 流程与 `/jero-sdd-init` 自动运行预检；对自然语言请求，由父会话/编排器语义判断是否需要 SDD，并必须在继续之前运行/复用 `/jero:sdd-preflight`。
 
-**硬门：** `openspec/config.yaml`、既有 SDD 变更、已安装的 `.pi`/全局 SDD 资产、名为 "preflight" 的 todo 都不是会话预检，只是项目上下文。在本会话获得注入的 `## SDD Session Preflight` 块或下方权威顺序的等价裁决之前，不要标记 SDD 预检完成、启动 `sdd-init`、派发 SDD 子代理/链，或进入 explore/proposal/spec/design/tasks。
+**硬门：** `openspec/config.yaml`、既有 SDD 变更、已安装的 `.pi`/全局 SDD 资产、名为 "preflight" 的 todo 都不是会话预检，只是项目上下文。在本会话获得注入的 `## SDD 会话预检` 块或下方权威顺序的等价裁决之前，不要标记 SDD 预检完成、启动 `sdd-init`、派发 SDD 子代理/链，或进入 explore/proposal/spec/design/tasks。
 
-每个新交互会话的首次 SDD 调用，即使已保存有效偏好，也要确认预检选择。持久化偏好与权威默认值是预选建议，不是当前会话的同意。提供对分组建议或其变更的确认；取消则预检保持未解析。显式的当前会话选择优先，一经解析即在该会话内复用。若 `/jero:sdd-preflight` 不可用，内联执行同样的确认。父会话的 `subagent_run` 派发边界为每个交付的 SDD 代理解析此门，把精确渲染的 `## SDD Session Preflight` 块前置到既有的子代 `context`，并在取消或失败时阻塞启动。RPC 子代消费该传输，但绝不发起或持久化默认值；缺失或畸形的传输在进程派发之前保守失败。只有可安全区分的独立 headless 父会话，才可在无 UI 的情况下保留权威/持久化默认值。缺少 Engram 会把产物存储限制为 `openspec`，除非不兼容的显式请求需要人类决策。
+每个新交互会话的首次 SDD 调用，即使已保存有效偏好，也要确认预检选择。持久化偏好与权威默认值是预选建议，不是当前会话的同意。提供对分组建议或其变更的确认；取消则预检保持未解析。显式的当前会话选择优先，一经解析即在该会话内复用。若 `/jero:sdd-preflight` 不可用，内联执行同样的确认。父会话的 `subagent_run` 派发边界为每个交付的 SDD 代理解析此门，把精确渲染的 `## SDD 会话预检` 块前置到既有的子代 `context`，并在取消或失败时阻塞启动。RPC 子代消费该传输，但绝不发起或持久化默认值；缺失或畸形的传输在进程派发之前保守失败。只有可安全区分的独立 headless 父会话，才可在无 UI 的情况下保留权威/持久化默认值。缺少 Engram 会把产物存储限制为 `openspec`，除非不兼容的显式请求需要人类决策。
 
 预检权威默认值为：执行 `auto`、产物存储 `openspec`、交付策略 `ask-on-risk`、评审预算 `400`；能力与已选约束可以收窄它们。
 
@@ -189,9 +189,9 @@ module_resolution
 
 父会话应综合这些封套，除非确有必要，不粘贴冗长的原始报告。
 
-### Key Learnings closing block (routing)
+### 关键收获收尾块（路由）
 
-Every installed SDD phase executor agent (`assets/agents/sdd-*.md`) carries the effective `## Key Learnings Closing` contract in its own loaded prompt; this workflow file documents routing only and is not the executor authority. Each phase executor closes its final report text with a `## Key Learnings` block for the orchestrator and user to read; nothing parses it automatically — durable capture happens only through the explicit Memory Contract `mem_save`. Generic delegated workers receive the same closing instruction via `assets/orchestrator-delegation.md`.
+每个已安装的 SDD 阶段执行器代理（`assets/agents/sdd-*.md`）在其自身被加载的提示中携带有效的 `## 关键收获收尾` 契约；本工作流文件只记录路由，不是执行器的权威。每个阶段执行器在最终报告文本末尾附一个 `## 关键收获` 块供编排器与用户阅读；没有任何机制自动解析它——持久化只经显式记忆契约 `mem_save`。通用被委托代理经 `assets/orchestrator-delegation.md` 接收同一条收尾指令。
 
 ## 自动模式守门员
 
@@ -287,11 +287,11 @@ path/to/authorized-file.ts
 
 1. 识别阶段键（`sdd-apply`、`sdd-verify`、`jd-judge-a` 等）。
 2. 按上方的模型分配门确认其模型路由。
-3. 每会话一次从注册表解析匹配的技能路径，并在 `## Skills to load before work` 之下传递精确的 `SKILL.md` 路径。
+3. 每会话一次从注册表解析匹配的技能路径，并在 `## 开工前需加载的技能` 之下传递精确的 `SKILL.md` 路径。
 4. 若被委托结果把 `skill_resolution` 报告为 `fallback-registry`、`fallback-path` 或 `none`，在后续委托之前重读注册表。
 5. 若被委托结果把 `module_resolution.delegation` 报告为 `name-unresolved`，对照 `.atl/module-overlay.md` 的路由表核对目标角色，并在后续委托中纠正；`skipped` 值作为信息报告，不设门。
 
-**Key Learnings closing（通用委托）：**委托给通用代理（`jero-explore`、`jero-worker`、`jero-verify`、scout/worker 角色或原生 `Agent` 回退）时，精确按 `assets/orchestrator-delegation.md` 中 "Key Learnings closing block" 之下的规则原文执行。该文件是该规则的唯一陈述；不要在此重述或转述。SDD 阶段启动提示无需此类注入：每个已安装的 SDD 阶段执行器已在其自身提示中携带有效契约（见上方 "Key Learnings closing block (routing)"）。
+**关键收获收尾（通用委托）：**委托给通用代理（`jero-explore`、`jero-worker`、`jero-verify`、scout/worker 角色或原生 `Agent` 回退）时，精确按 `assets/orchestrator-delegation.md` 中 "关键收获收尾块" 之下的规则原文执行。该文件是该规则的唯一陈述；不要在此重述或转述。SDD 阶段启动提示无需此类注入：每个已安装的 SDD 阶段执行器已在其自身提示中携带有效契约（见上方 "关键收获收尾块（路由）"）。
 
 ## Strict TDD 转发
 
@@ -313,7 +313,7 @@ STRICT TDD MODE IS ACTIVE. Test runner: <command>. Follow RED, GREEN, TRIANGULAT
 
 `sdd-tasks` 完成之后、启动 `sdd-apply` 之前，检查任务输出的 `Review Workload Forecast`。
 
-若它说 `Chained PRs recommended: Yes`、`400-line budget risk: High`、估计变更行数超过 400，或 `Decision needed before apply: Yes`，应用缓存的 `delivery_strategy`：
+若它说 `是否建议链式 PR：Yes`、`400 行预算风险：High`、估计变更行数超过 400，或 `apply 前需要决策: Yes`，应用缓存的 `delivery_strategy`：
 
 - `ask-on-risk`：停止并询问是拆分，还是以 `size:exception` 继续。
 - `auto-chain`：自动拆分；仅在缺失时询问 `chain_strategy`。

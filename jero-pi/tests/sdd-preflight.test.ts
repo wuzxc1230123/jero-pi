@@ -506,8 +506,9 @@ test("the shared shipped SDD inventory includes every executor, including remedi
 test("only a structurally valid parent-rendered preflight block can reach an SDD child", () => {
 	const block = renderSddPreflightPrompt({ ...DEFAULT_SDD_PREFLIGHT, prompted: true });
 	assert.equal(isParentConfirmedSddPreflightContext(block), true);
-	assert.equal(isParentConfirmedSddPreflightContext(block.replace("Review budget: 400", "Review budget: 0")), false);
-	assert.equal(isParentConfirmedSddPreflightContext("## SDD Session Preflight\ncaller-authored defaults"), false);
+	assert.equal(isParentConfirmedSddPreflightContext(block.replace("评审预算：400", "评审预算：0")), false);
+	assert.equal(isParentConfirmedSddPreflightContext("## SDD 会话预检\n调用方自己拼的默认值"), false);
+	assert.equal(isParentConfirmedSddPreflightContext("## SDD Session Preflight\ncaller-authored defaults"), false, "旧英文头部同样不得通过");
 });
 
 test("affirmative natural-language SDD requests trigger preflight without matching a finite phrase list", () => {

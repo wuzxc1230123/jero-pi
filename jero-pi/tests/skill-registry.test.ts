@@ -59,7 +59,7 @@ test("registry renders indexed skill paths instead of compact rules", () => {
 
 	assert.match(registry, /## Skills/);
 	assert.match(registry, /\| Skill \| Trigger \/ description \| Scope \| Path \|/);
-	assert.match(registry, /## Loading protocol/);
+	assert.match(registry, /## 加载协议/);
 	assert.match(registry, /\| `go-testing` \| Trigger: Go tests\. Apply focused testing patterns\. \| project \|/);
 	assert.match(registry, new RegExp(skillPath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
 	assert.doesNotMatch(registry, /Selected skills and compact rules/);
@@ -279,7 +279,7 @@ description: "Trigger: Go tests. Apply focused Go testing patterns."
 
 test("orchestrator documents path injection protocol", () => {
 	const source = readFileSync(join(import.meta.dirname, "..", "assets", "orchestrator.md"), "utf8");
-	assert.match(source, /## Skills to load before work/);
+	assert.match(source, /## 开工前需加载的技能/);
 	assert.match(source, /paths-injected/);
 	assert.doesNotMatch(source, /Use matching compact rules based on code context and task intent/);
 });

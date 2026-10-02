@@ -190,7 +190,7 @@ test("the documented task shape from issue #484 is accepted", async () => {
 			"- `lib/sdd-status.ts`",
 			"- `tests/sdd-status.test.ts`",
 			"",
-			"## Skills to load before work",
+			"## 开工前需加载的技能",
 			"- `skills/typescript/SKILL.md`",
 		].join("\n"),
 	}, "the reported repro shape stays accepted");
@@ -328,7 +328,7 @@ test("out-of-scope and empty surfaces stay rejected", async () => {
 	await assertRejected({
 		agent: "jero-worker",
 		mode: "task",
-		task: ["## Allowed edit surfaces", "", "## Skills to load before work", "- `skills/typescript/SKILL.md`"].join("\n"),
+		task: ["## Allowed edit surfaces", "", "## 开工前需加载的技能", "- `skills/typescript/SKILL.md`"].join("\n"),
 	}, "an empty section is rejected");
 	await assertRejected({
 		agent: "jero-worker",

@@ -13,26 +13,26 @@ const ASSETS = join(ROOT, "assets");
 // Each carries its own effective prompt; none inherits the parent workflow.
 const SDD_PREFIX = "sdd-";
 
-// Strict-output agents that must remain untouched by Key Learnings: the
+// Strict-output agents that must remain untouched by the 关键收获 closing: the
 // Judgment Day roles (`jd-*`) and the review lens roles (`review-*`). Derived
 // from the agents actually on disk rather than hardcoded, so retiring one
 // (as #320 did to `review-refuter.md` and `review-validator.md`) cannot break
 // this guard with an ENOENT instead of a real assertion.
 const STRICT_JSON_PREFIX = /^(jd-|review-)/;
 
-// Canonical semantics every Key Learnings section must encode.
+// Canonical semantics every 关键收获 section must encode (中文契约文案).
 const KL_SEMANTICS: Array<[string, RegExp]> = [
-	["heading `## Key Learnings`", /`## Key Learnings`/],
-	["1–5 numbered items", /1[–-]5 numbered/],
-	["standalone factual sentence", /standalone factual sentence/],
-	["at least 20 characters", /at least 20 characters/],
-	["at least 4 words", /at least 4 words/],
-	["final report text only", /final (?:report|response) text only/],
-	["no automatic extraction", /Nothing extracts this block automatically/],
-	["executor does not parse", /do(?:es)? not parse/],
-	["durable capture only via mem_save", /durable capture happens only through[^\n]*mem_save/],
-	["omit when no reusable learning", /[Oo]mit[^\n]*no reusable learning/],
-	["separate from mem_save", /separate from[^\n]*mem_save/],
+	["标题 `## 关键收获`", /`## 关键收获`/],
+	["1–5 条编号条目", /1–5 条编号条目/],
+	["独立事实句", /独立事实句/],
+	["至少 20 个字符", /至少 20 个字符/],
+	["至少 4 个词", /至少 4 个词/],
+	["仅最终报告/回应文本", /仅适用于最终(?:报告|回应)文本/],
+	["无自动提取", /没有任何机制自动提取该块/],
+	["执行器不解析", /你不解析该块|代理本身不解析该块/],
+	["持久化只经 mem_save", /只经[^\n]*`mem_save`|持久化只经显式[^\n]*`mem_save`/],
+	["无可复用学习时省略", /无可复用学习时省略/],
+	["与 mem_save 相互独立", /相互独立/],
 ];
 
 function readSection(source: string, heading: string): string | null {
@@ -60,35 +60,35 @@ function strictJsonAgents(): string[] {
 	return agentFiles().filter((f) => STRICT_JSON_PREFIX.test(f));
 }
 
-test("every SDD phase executor carries an effective `## Key Learnings Closing` section with full semantics", () => {
+test("every SDD phase executor carries an effective `## 关键收获收尾` section with full semantics", () => {
 	const agents = sddAgents();
 	assert.ok(agents.length >= 12, `expected >=12 SDD agents, found ${agents.length}`);
 	const missing: string[] = [];
 	const failed: string[] = [];
 	for (const file of agents) {
 		const source = readFileSync(join(AGENTS, file), "utf8");
-		const section = readSection(source, "Key Learnings Closing");
+		const section = readSection(source, "关键收获收尾");
 		if (section === null) { missing.push(file); continue; }
 		for (const [label, regex] of KL_SEMANTICS) {
 			if (!regex.test(section)) failed.push(`${file}: ${label}`);
 		}
 	}
-	assert.deepEqual(missing, [], "every SDD agent must carry a `## Key Learnings Closing` section");
+	assert.deepEqual(missing, [], "every SDD agent must carry a `## 关键收获收尾` section");
 	assert.deepEqual(failed, [], "every section must encode all canonical semantics");
 });
 
-test("no SDD phase executor infers Key Learnings through `standard phase envelope` alone", () => {
+test("no SDD phase executor infers the closing through `standard phase envelope` alone", () => {
 	for (const file of sddAgents()) {
 		const source = readFileSync(join(AGENTS, file), "utf8");
-		const section = readSection(source, "Key Learnings Closing");
-		assert.ok(section, `${file} must have a direct Key Learnings Closing section`);
+		const section = readSection(source, "关键收获收尾");
+		assert.ok(section, `${file} must have a direct 关键收获收尾 section`);
 	}
 });
 
 test("SDD executor coverage is exhaustive against actual agent files", () => {
 	const actual = sddAgents();
 	// Allowlist: the 13 known phase executors. A new sdd-*.md without a
-	// Key Learnings Closing section fails the first test; this test proves
+	// 关键收获收尾 section fails the first test; this test proves
 	// the allowlist matches reality so coverage cannot silently drift.
 	const expected = [
 		"sdd-apply.md", "sdd-archive.md", "sdd-design.md", "sdd-explore.md",
@@ -99,30 +99,31 @@ test("SDD executor coverage is exhaustive against actual agent files", () => {
 	assert.deepEqual(actual, expected, "SDD agent set must match the known allowlist");
 });
 
-test("generic delegation contract instructs the same `## Key Learnings` closing block", () => {
+test("generic delegation contract instructs the same `## 关键收获` closing block", () => {
 	const delegation = readFileSync(join(ASSETS, "orchestrator-delegation.md"), "utf8");
-	const section = readSection(delegation, "Key Learnings closing block");
-	assert.ok(section, "orchestrator-delegation.md must have a Key Learnings closing block section");
+	const section = readSection(delegation, "关键收获收尾块");
+	assert.ok(section, "orchestrator-delegation.md must have a 关键收获收尾块 section");
 	for (const [label, regex] of KL_SEMANTICS) {
 		assert.match(section, regex, `delegation missing semantic: ${label}`);
 	}
-	assert.match(section, /native `Agent`/, "must cover native Agent fallback");
-	assert.match(section, /strict JSON/i, "must exclude strict-JSON agents");
-	assert.match(section, /layers on after/, "must state the block layers on after the envelope");
+	assert.match(section, /原生 `Agent`/, "must cover native Agent fallback");
+	assert.match(section, /严格 JSON/, "must exclude strict-JSON agents");
+	assert.match(section, /叠加在结构化 Return 契约之后/, "must state the block layers on after the envelope");
 });
 
 test("sdd-orchestrator-workflow documents routing, not executor authority", () => {
 	const workflow = readFileSync(join(ASSETS, "sdd-orchestrator-workflow.md"), "utf8");
-	const section = readSection(workflow, "Key Learnings closing block (routing)");
-	assert.ok(section, "workflow must document Key Learnings routing");
-	assert.match(section, /installed SDD phase executor agent.*carries the effective.*contract/i);
-	assert.match(section, /documents routing only and is not the executor authority/);
+	const section = readSection(workflow, "关键收获收尾块（路由）");
+	assert.ok(section, "workflow must document 关键收获 routing");
+	assert.match(section, /已安装的 SDD 阶段执行器代理.*携带有效的.*契约/);
+	assert.match(section, /只记录路由，不是执行器的权威/);
 });
 
-test("provider ownership: no Pi TypeScript runtime parses Key Learnings or invokes passive-capture tools", () => {
+test("provider ownership: no Pi TypeScript runtime parses the closing block or invokes passive-capture tools", () => {
 	const roots = ["lib", "extensions", "scripts", "runtime"];
 	const forbidden: Array<[string, RegExp]> = [
 		["Key Learnings parser", /Key Learnings/i],
+		["关键收获 parser", /解析关键收获|关键收获解析/],
 		["key_learnings token", /key_learnings/i],
 		["passive-capture tool invocation", /mem_capture_passive|capture_passive|passive_capture/i],
 	];
@@ -137,7 +138,7 @@ test("provider ownership: no Pi TypeScript runtime parses Key Learnings or invok
 			}
 		}
 	}
-	assert.deepEqual(failures, [], "Pi must not parse Key Learnings or invoke passive-capture tools");
+	assert.deepEqual(failures, [], "Pi must not parse the closing block or invoke passive-capture tools");
 });
 
 // Recursive walker over a provider root. Replaces the previous direct-children
@@ -196,7 +197,7 @@ test("listCodeFiles recurses nested code, ignores non-code files, and skips syml
 	}
 });
 
-test("strict review and Judgment Day agents do not gain Key Learnings or trailing-prose instruction", () => {
+test("strict review and Judgment Day agents do not gain the closing block or trailing-prose instruction", () => {
 	const strict = strictJsonAgents();
 	// A derived list can go empty and pass vacuously, which would assert
 	// nothing. Require both strict-output role families to still be covered
@@ -206,21 +207,21 @@ test("strict review and Judgment Day agents do not gain Key Learnings or trailin
 	const failures: string[] = [];
 	for (const file of strict) {
 		const source = readFileSync(join(AGENTS, file), "utf8");
-		for (const regex of [/Key Learnings/i, /key_learnings/i, /trailing prose/i]) {
+		for (const regex of [/Key Learnings/i, /key_learnings/i, /关键收获收尾/i, /trailing prose/i]) {
 			if (regex.test(source)) failures.push(`${file}: ${regex.source}`);
 		}
 	}
 	assert.deepEqual(failures, [], "strict-JSON/ledger agents must remain untouched");
 });
 
-test("the canonical Key Learnings heading has no trailing colon in any asset", () => {
+test("the canonical 关键收获 heading has no trailing colon in any asset", () => {
 	for (const file of sddAgents()) {
 		const source = readFileSync(join(AGENTS, file), "utf8");
-		assert.match(source, /`## Key Learnings`/, `${file} must reference the canonical heading`);
-		assert.doesNotMatch(source, /`## Key Learnings:`/, `${file} must not use a trailing colon`);
+		assert.match(source, /`## 关键收获`/, `${file} must reference the canonical heading`);
+		assert.doesNotMatch(source, /`## 关键收获:`/, `${file} must not use a trailing colon`);
 	}
 	const delegation = readFileSync(join(ASSETS, "orchestrator-delegation.md"), "utf8");
-	assert.doesNotMatch(delegation, /`## Key Learnings:`/);
+	assert.doesNotMatch(delegation, /`## 关键收获:`/);
 });
 
 test("modified SDD agents are packaged and installed by the existing installer", () => {
