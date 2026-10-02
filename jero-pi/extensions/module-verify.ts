@@ -244,10 +244,20 @@ export default function (pi: ExtensionAPI) {
 							? "目录存在但无安装记录（手工安装）"
 							: "未安装";
 					const deps = bundle.dependencies.length > 0 ? bundle.dependencies.join("、") : "无";
+					// MCP 档披露按账本分层：未装=装时自动并入；已装且来源账本在录=已并入；
+					// 已装但账本缺（装在特性前的旧装）=提示重跑补档（文件在否状态归 doctor）。
 					const mcpServers = bundle.manifest.mcp?.servers ?? [];
-					const mcpLabel = mcpServers.length > 0
-						? `｜MCP：${mcpServers.map((server) => server.name).join("、")}（装时自动并入）`
-						: "";
+					let mcpLabel = "";
+					if (mcpServers.length > 0) {
+						const names = mcpServers.map((server) => server.name).join("、");
+						if (record === undefined) {
+							mcpLabel = `｜MCP：${names}（装时自动并入）`;
+						} else {
+							const ledger = record.mcpWritten ?? [];
+							const allLedgered = mcpServers.every((server) => ledger.some((item) => item.name === server.name));
+							mcpLabel = `｜MCP：${names}（${allLedgered ? "已并入，账本在录" : "未入账本——重跑安装补档"}）`;
+						}
+					}
 					lines.push(`- ${bundle.token}@${bundle.version}｜${status}｜依赖：${deps}${mcpLabel}｜${bundle.description ?? ""}`);
 				}
 				for (const item of broken) {

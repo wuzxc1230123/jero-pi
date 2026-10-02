@@ -238,6 +238,10 @@ test("命令·install-module godot：真实包内束装进项目 + 验证管线�
 		const again = fakeCtx(cwd);
 		await assembly.commands.get("jero:install-module")!.handler("godot", again.ctx);
 		assert.match(again.notifications.map((item) => item.message).join("\n"), /= godot：已装同版本/);
+		// module-list 按账本披露：已装且账本在录 → "已并入，账本在录"。
+		const listCtx = fakeCtx(cwd);
+		await assembly.commands.get("jero:module-list")!.handler({}, listCtx.ctx);
+		assert.match(listCtx.notifications[0].message, /MCP：godot-ai（已并入，账本在录）/);
 	} finally {
 		if (previousAgentHome === undefined) delete process.env.JERO_PI_AGENT_HOME;
 		else process.env.JERO_PI_AGENT_HOME = previousAgentHome;
