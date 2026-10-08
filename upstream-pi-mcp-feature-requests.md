@@ -1,5 +1,13 @@
 # 上游 Pi feature 请求草稿（MCP 作用域）
 
+> **状态（2026-10-06）：两份请求上游均已落地，草稿仅存档，无需发帖。**
+> Issue 1（项目级 `.pi/mcp.json`）→ Pi 0.99.0 落地（"per project once
+> trusted"），1.0.1 增补项目级覆盖用户级服务器的 `enabled`/`exposure`/
+> `toolExposure`；Issue 2（`pi.registerMcpServer()` 会话级运行时注册）→
+> Pi 0.99.0 落地。jero-pi 侧已随 Pi 1.0.0 升级批把模块安装器的 MCP 合并
+> 目标从全局 `<agent home>/mcp.json` 切到项目级 `.pi/mcp.json`（见
+> jero-pi/lib/module-installer.ts 与 docs/module-contract.md）。
+>
 > 用途：粘贴到 https://github.com/earendil-works/pi/issues （monorepo 的
 > packages/coding-agent）。两份草稿独立成帖，互补但不互相依赖。本文件在
 > 仓库根、不随 jero-pi 包发布。验证环境：pi-coding-agent 0.85.1。

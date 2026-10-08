@@ -301,33 +301,33 @@ test("安装记录：损坏 JSON 按空记录处理，重装即重建", () => {
 test("mcp 合并：并入 → 幂等一致跳过 → 同名用户档保留未覆盖", () => {
 	const root = makeDir();
 	const project = makeDir();
-	const agentMcp = join(root, "mcp.json");
+	const projectMcp = join(root, "mcp.json");
 	try {
 		const bundle = makeBundle(root, "alpha-mcp", {
 			mcpServers: [{ name: "tool-x", command: "uvx", args: ["tool-x", "attach"] }],
 		});
-		const first = installBundle(project, bundle, { agentMcpJson: agentMcp });
+		const first = installBundle(project, bundle, { projectMcpJson: projectMcp });
 		assert.equal(first.kind, "installed");
 		assert.match(first.detail, /MCP 档 tool-x 已并入/);
-		assert.deepEqual(JSON.parse(readFileSync(agentMcp, "utf8")).mcpServers["tool-x"], {
+		assert.deepEqual(JSON.parse(readFileSync(projectMcp, "utf8")).mcpServers["tool-x"], {
 			command: "uvx",
 			args: ["tool-x", "attach"],
 		});
 
 		// 幂等：同版本再装走 up-to-date 跳过路径，档一致 → 跳过且文件不动；账本不重复累计。
-		const second = installBundle(project, bundle, { agentMcpJson: agentMcp });
+		const second = installBundle(project, bundle, { projectMcpJson: projectMcp });
 		assert.equal(second.kind, "skipped-up-to-date");
 		assert.match(second.detail, /MCP 档 tool-x 已存在且一致，跳过/);
 		assert.equal(readModuleInstalls(project).modules["alpha-mcp"]?.mcpWritten?.length, 1, "幂等跳过不新增账本条目");
 
 		// 同名不同内容：用户改动优先，模块声明显影但不覆盖。
-		const userFile = JSON.parse(readFileSync(agentMcp, "utf8"));
+		const userFile = JSON.parse(readFileSync(projectMcp, "utf8"));
 		userFile.mcpServers["tool-x"] = { command: "other" };
-		writeFileSync(agentMcp, JSON.stringify(userFile, null, "\t"));
-		const third = installBundle(project, bundle, { force: true, agentMcpJson: agentMcp });
+		writeFileSync(projectMcp, JSON.stringify(userFile, null, "\t"));
+		const third = installBundle(project, bundle, { force: true, projectMcpJson: projectMcp });
 		assert.equal(third.kind, "installed");
 		assert.match(third.detail, /同名但内容不同——保留用户配置未覆盖/);
-		assert.deepEqual(JSON.parse(readFileSync(agentMcp, "utf8")).mcpServers["tool-x"], { command: "other" });
+		assert.deepEqual(JSON.parse(readFileSync(projectMcp, "utf8")).mcpServers["tool-x"], { command: "other" });
 	} finally {
 		cleanup(root);
 		cleanup(project);
@@ -337,22 +337,22 @@ test("mcp 合并：并入 → 幂等一致跳过 → 同名用户档保留未覆
 test("mcp 合并：既有 mcp.json 不可解析 → 保命不动 + 逐台显影；超 1MiB 拒绝解析", () => {
 	const root = makeDir();
 	const project = makeDir();
-	const agentMcp = join(root, "mcp.json");
+	const projectMcp = join(root, "mcp.json");
 	try {
-		writeFileSync(agentMcp, "{not json");
+		writeFileSync(projectMcp, "{not json");
 		const bundle = makeBundle(root, "beta-mcp", { mcpServers: [{ name: "tool-y", command: "uvx" }] });
-		const outcome = installBundle(project, bundle, { agentMcpJson: agentMcp });
+		const outcome = installBundle(project, bundle, { projectMcpJson: projectMcp });
 		assert.equal(outcome.kind, "installed");
 		assert.match(outcome.detail, /MCP 档 tool-y 未写入：.*不是可解析的 mcpServers 配置/);
-		assert.equal(readFileSync(agentMcp, "utf8"), "{not json", "畸形用户文件必须原样保留");
+		assert.equal(readFileSync(projectMcp, "utf8"), "{not json", "畸形用户文件必须原样保留");
 
 		// 巨型配置（>1MiB）：拒绝解析，逐台显影，文件不动。
 		const oversize = "x".repeat(1_048_576 + 1);
-		writeFileSync(agentMcp, oversize);
-		const oversizeOutcome = installBundle(project, bundle, { force: true, agentMcpJson: agentMcp });
+		writeFileSync(projectMcp, oversize);
+		const oversizeOutcome = installBundle(project, bundle, { force: true, projectMcpJson: projectMcp });
 		assert.equal(oversizeOutcome.kind, "installed");
 		assert.match(oversizeOutcome.detail, /超过 1048576B 上限——拒绝解析巨型配置/);
-		assert.equal(readFileSync(agentMcp, "utf8"), oversize, "巨型用户文件必须原样保留");
+		assert.equal(readFileSync(projectMcp, "utf8"), oversize, "巨型用户文件必须原样保留");
 	} finally {
 		cleanup(root);
 		cleanup(project);
@@ -362,17 +362,17 @@ test("mcp 合并：既有 mcp.json 不可解析 → 保命不动 + 逐台显影�
 test("mcp：真实 godot 束声明 godot-ai 档，安装并入 + doctor 在档/缺席显影", () => {
 	const project = makeDir();
 	const agentHome = makeDir();
-	const agentMcp = join(agentHome, "mcp.json");
+	const projectMcp = join(agentHome, "mcp.json");
 	try {
 		const { bundles } = discoverBundles(bundleModulesRoot());
 		const godot = bundles.find((item) => item.token === "godot");
 		assert.ok(godot !== undefined, "包内模块库必须含 godot 束");
 		assert.deepEqual(godot.manifest.mcp?.servers.map((server) => server.name), ["godot-ai"]);
 
-		const outcome = installBundle(project, godot, { agentMcpJson: agentMcp });
+		const outcome = installBundle(project, godot, { projectMcpJson: projectMcp });
 		assert.equal(outcome.kind, "installed");
 		assert.match(outcome.detail, /MCP 档 godot-ai 已并入/);
-		assert.deepEqual(JSON.parse(readFileSync(agentMcp, "utf8")).mcpServers["godot-ai"], {
+		assert.deepEqual(JSON.parse(readFileSync(projectMcp, "utf8")).mcpServers["godot-ai"], {
 			command: "uvx",
 			args: ["--from", "godot-ai@4.2.3", "godot-ai", "attach"],
 		});
@@ -382,11 +382,11 @@ test("mcp：真实 godot 束声明 godot-ai 档，安装并入 + doctor 在档/�
 		assert.equal(record?.mcpWritten?.[0]?.name, "godot-ai");
 		assert.deepEqual(record?.mcpWritten?.[0]?.entry, { command: "uvx", args: ["--from", "godot-ai@4.2.3", "godot-ai", "attach"] });
 
-		const present = moduleMcpDoctorLines(project, agentMcp);
+		const present = moduleMcpDoctorLines(project, projectMcp);
 		assert.ok(present.some((line) => line.startsWith("pass:") && line.includes("godot-ai") && line.includes("module-written")));
 
-		rmSync(agentMcp);
-		const missing = moduleMcpDoctorLines(project, agentMcp);
+		rmSync(projectMcp);
+		const missing = moduleMcpDoctorLines(project, projectMcp);
 		assert.ok(missing.some((line) => line.startsWith("warn:") && line.includes("godot-ai") && line.includes("missing")));
 	} finally {
 		cleanup(project);
@@ -397,18 +397,18 @@ test("mcp：真实 godot 束声明 godot-ai 档，安装并入 + doctor 在档/�
 test("mcp 账本：doctor 归因（改写显影）+ 无账本旧装的同版本回填补账（真实 godot 束）", () => {
 	const project = makeDir();
 	const agentHome = makeDir();
-	const agentMcp = join(agentHome, "mcp.json");
+	const projectMcp = join(agentHome, "mcp.json");
 	try {
 		const { bundles } = discoverBundles(bundleModulesRoot());
 		const godot = bundles.find((item) => item.token === "godot");
 		assert.ok(godot !== undefined, "包内模块库必须含 godot 束");
-		installBundle(project, godot, { agentMcpJson: agentMcp });
+		installBundle(project, godot, { projectMcpJson: projectMcp });
 
 		// 用户改写已写入的档 → doctor 确定式归因（账本比对，非内容猜测）。
-		const userFile = JSON.parse(readFileSync(agentMcp, "utf8"));
+		const userFile = JSON.parse(readFileSync(projectMcp, "utf8"));
 		userFile.mcpServers["godot-ai"] = { command: "other" };
-		writeFileSync(agentMcp, JSON.stringify(userFile, null, "\t"));
-		const modified = moduleMcpDoctorLines(project, agentMcp);
+		writeFileSync(projectMcp, JSON.stringify(userFile, null, "\t"));
+		const modified = moduleMcpDoctorLines(project, projectMcp);
 		assert.ok(modified.some((line) => line.startsWith("info:") && line.includes("godot-ai") && line.includes("user-modified since install")));
 
 		// 模拟无账本的旧装：抹掉记录里的 mcpWritten 并删档，同版本重装走回填路径
@@ -420,12 +420,12 @@ test("mcp 账本：doctor 归因（改写显影）+ 无账本旧装的同版本�
 			schema: installs.schema,
 			modules: { ...installs.modules, godot: { version: legacy.version, files: legacy.files } },
 		});
-		rmSync(agentMcp);
-		const backfill = installBundle(project, godot, { agentMcpJson: agentMcp });
+		rmSync(projectMcp);
+		const backfill = installBundle(project, godot, { projectMcpJson: projectMcp });
 		assert.equal(backfill.kind, "skipped-up-to-date");
 		assert.match(backfill.detail, /MCP 档 godot-ai 已并入/);
 		assert.equal(readModuleInstalls(project).modules["godot"]?.mcpWritten?.length, 1, "回填路径要追加来源账本");
-		const backfilled = moduleMcpDoctorLines(project, agentMcp);
+		const backfilled = moduleMcpDoctorLines(project, projectMcp);
 		assert.ok(backfilled.some((line) => line.startsWith("pass:") && line.includes("godot-ai") && line.includes("module-written")));
 	} finally {
 		cleanup(project);

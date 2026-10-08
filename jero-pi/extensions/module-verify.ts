@@ -8,7 +8,6 @@ import {
 	type VerifyPipelineResult,
 } from "../lib/module-verify-pipeline.ts";
 import {
-	agentMcpJsonPath,
 	bundleModulesRoot,
 	discoverBundles,
 	installBundle,
@@ -202,8 +201,8 @@ export default function (pi: ExtensionAPI) {
 				for (const step of plan.steps) {
 					const bundle = byToken.get(step.token);
 					if (bundle === undefined) continue;
-					// 声明了 mcp 的束在此合并写入 Pi agent mcp.json（幂等、同名用户档不覆盖）。
-					const outcome = installBundle(ctx.cwd, bundle, { force, agentMcpJson: agentMcpJsonPath() });
+					// 声明了 mcp 的束在此合并写入项目级 .pi/mcp.json（幂等、同名用户档不覆盖）。
+					const outcome = installBundle(ctx.cwd, bundle, { force });
 					if (outcome.kind === "installed") {
 						anyInstalled = true;
 						lines.push(`+ ${outcome.detail}`);

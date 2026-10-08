@@ -1,8 +1,8 @@
 # jero-pi 技术参考
 
-本文档由当前代码状态生成（2026-09，对应 `refactor/jero-ai-split` 分支）。jero-pi 是面向 Pi coding-agent 的扩展包：评审权威、SDD/OpenSpec 编排、子代理、持久记忆、精益纪律与 shell 层——全部进程内 Node 实现，零原生二进制、零安装期网络。
+本文档由当前代码状态生成（2026-10，对应 `refactor/jero-ai-split` 分支；已随 Pi 1.0.2 升级批同步）。jero-pi 是面向 Pi coding-agent 的扩展包：评审权威、SDD/OpenSpec 编排、子代理、持久记忆、精益纪律与 shell 层——全部进程内 Node 实现，零原生二进制、零安装期网络。
 
-要求 Pi ≥ 0.85.1（`peerDependencies` 钉定；0.85.1 为 `agent_settled` 事件经测试验证的最低版本）。
+要求 Pi ≥ 0.85.1（`peerDependencies` 钉定；0.85.1 为 `agent_settled` 事件经测试验证的最低版本）。当前开发与全量测试随 Pi 1.0.2（全家族对齐）进行；模块 MCP 自动并入依赖宿主 ≥0.99 的项目级 `.pi/mcp.json`（更早宿主忽略该档，安装文案明示）。
 
 ## 架构分层
 
@@ -82,7 +82,7 @@ START → 同意（consent 仪式 v3，host 常任权限按 Git 规范身份授�
 
 ## 能力模块契约（jero.module-contract/v2，兼容 v1）
 
-目标项目的领域扩展（如 go、godot）走机器验证的契约化路径——**模块仅装项目内，不全局生效**；v2 清单可声明 `dependencies` 与 `mcp`（MCP 服务器档，安装时幂等合并进 `<agent home>/mcp.json`——同名用户档不覆盖，godot 束据此自动接入 godot-ai），`/jero:install-module <词元>` 指令从包内模块库（`assets/modules/`，首束 godot 全中文模块）安装并**依赖自动先装**（`/jero:module-list` 查看可装清单）：`.pi/modules/{token}/module.json` 一份清单声明触发（静态 glob）、知识（L0/L1/L2 渐进披露）、角色（隔离正当性必填）、接线（八个编排面）与路由（消费路由单字段）。核心机制：
+目标项目的领域扩展（如 go、godot）走机器验证的契约化路径——**模块仅装项目内，不全局生效**；v2 清单可声明 `dependencies` 与 `mcp`（MCP 服务器档，安装时幂等合并进项目级 `.pi/mcp.json`——同名用户档不覆盖，godot 束据此自动接入 godot-ai；Pi 0.99.0 起生效，旧宿主忽略该档），`/jero:install-module <词元>` 指令从包内模块库（`assets/modules/`，首束 godot 全中文模块）安装并**依赖自动先装**（`/jero:module-list` 查看可装清单）：`.pi/modules/{token}/module.json` 一份清单声明触发（静态 glob）、知识（L0/L1/L2 渐进披露）、角色（隔离正当性必填）、接线（八个编排面）与路由（消费路由单字段）。核心机制：
 
 - **静态触发编译**：`lib/module-trigger-compiler.ts` 对仓库文件树确定性判定模块激活，产出 `.atl/module-overlay.md`（自动生成物）——各面注入档位、追加角色、Strict TDD 命令（SDD 转发取值链第一级：覆盖层 → config.yaml → 探测）、C 级硬门声明的响亮缺席。
 - **安装验证**：`/jero-module-verify`——token 合法/唯一、deps-resolve（v2 依赖缺失/自依赖/成环即 fail）、双轨（与松散技能重名即拒）、防遮蔽、触发命中、路由解析、隔离正当、entry ≤60 行、命令钉住；`check:module-contract` 门钉 schema 与 TS 常量零漂移（含 v2 枚举与依赖分支）+ 创建器金样绿灯 + 包内模块库绿灯。
@@ -131,7 +131,7 @@ START → 同意（consent 仪式 v3，host 常任权限按 Git 规范身份授�
 
 ## 测试与打包门
 
-- 201 个测试文件（node:test，并发 12）+ runtime harness（真实扩展装配 × 假宿主端到端，三段场景）。**行覆盖以 `pnpm run test:coverage` 为准**（NODE_V8_COVERAGE 跨进程归并，含 harness 与 CLI 子进程）；Node 内置 `--experimental-test-coverage` 在全量多子进程场景对同文件的合并会失真（实测同一文件 19% vs 真值 87%），勿直接采信内置全量表。
+- 214 个测试文件（node:test，并发 12）+ runtime harness（真实扩展装配 × 假宿主端到端，三段场景）。**行覆盖以 `pnpm run test:coverage` 为准**（NODE_V8_COVERAGE 跨进程归并，含 harness 与 CLI 子进程）；Node 内置 `--experimental-test-coverage` 在全量多子进程场景对同文件的合并会失真（实测同一文件 19% vs 真值 87%），勿直接采信内置全量表。
 - CI（GitHub Actions）：Ubuntu 全量测试 + 类型诊断棘轮（`scripts/types-baseline.json`）+ runtime 模块一致性（`runtime/*.mjs` 由 lib 再生成）+ 权威边界检查 + 测试质量棘轮（`scripts/check-test-quality.mjs`，5 条反模式只降不升，含分片互 import）+ 空 catch 卫生门（`scripts/check-empty-catch.mjs`，空块必须带注释或语句）+ 文档清单同步门（`scripts/check-docs-manifest.mjs`，从注册点派生命令/工具/技能清单并钉住本文件的生成块）+ 评审域命名棘轮（`scripts/check-review-naming.mjs`，外围前缀只降不升）+ 模块契约门（`scripts/check-module-contract.mjs`，schema 与 lib 常量零漂移（含 v2）+ 创建器金样绿灯 + 包内模块库绿灯）+ 断网测试门（代理黑洞 + `NODE_OFFLINE=1`）；Windows 权威探测、候选视图回归与符号链接夹具回归（`sdd-research-capabilities` / `review-candidate-view.z2`——钉住「Windows 上 rmSync 对悬垂符号链接是静默 no-op，夹具须用 unlinkSync」的语义）。套件级挂起兜底：全部 `--test` 入口带 `--test-timeout=300000`。
-- 打包门 `prepack`/`prepublishOnly`：全量测试 → runtime 一致性 → 权威边界 → 测试质量棘轮 → 空 catch 卫生门 → `verify-package-files.mjs`（当前钉 176 个必需文件 = 108 条直接断言 + 68 个字节钉住向量，另 25 条禁带路径）→ 文档清单同步门 → 评审域命名棘轮 → 模块契约门 → packed tarball 分发链校验（`test-packed-runner.mjs`，仅 publish 链）。
-- 供应链：10 个伴生依赖精确钉版；`pnpm-workspace.yaml` 强制发布龄期 / 信任不降级 / 无非常规子依赖来源；CI 重跑 `pnpm audit --prod --audit-level=high` 与 npm publish provenance；`/jero:doctor` 内置伴生依赖健康审计（钉版安装 + pi 清单入口解析，处置指引见 `docs/dependency-exit-plan.md`）。
+- 打包门 `prepack`/`prepublishOnly`：全量测试 → runtime 一致性 → 权威边界 → 测试质量棘轮 → 空 catch 卫生门 → `verify-package-files.mjs`（当前钉 241 个必需文件，内含 68 个字节钉住黄金向量，另 25 条禁带路径）→ 文档清单同步门 → 评审域命名棘轮 → 模块契约门 → packed tarball 分发链校验（`test-packed-runner.mjs`，仅 publish 链）。
+- 供应链：9 个伴生依赖精确钉版；`pnpm-workspace.yaml` 强制发布龄期 / 信任不降级 / 无非常规子依赖来源；CI 重跑 `pnpm audit --prod --audit-level=high` 与 npm publish provenance；`/jero:doctor` 内置伴生依赖健康审计（钉版安装 + pi 清单入口解析，处置指引见 `docs/dependency-exit-plan.md`）。

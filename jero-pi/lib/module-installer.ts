@@ -19,12 +19,11 @@ import {
 import { dirname, join } from "node:path";
 import { parseModuleManifest, type McpServerSpec, type ModuleManifest } from "./module-contract.ts";
 import { ASSETS_DIR } from "./jero-ai-paths.ts";
-import { resolveJeroPiAgentHome } from "./agent-home.ts";
 
 export const MODULE_INSTALLS_REL_PATH = join(".pi", "module-installs.json");
 export const MODULE_INSTALLS_SCHEMA = "jero.module-installs/v1";
 
-/** agent mcp.json 解析大小上限（1 MiB）：超过按不可处理显影，绝不解析巨型配置（防安装/诊断卡死）。 */
+/** 项目级 mcp.json 解析大小上限（1 MiB）：超过按不可处理显影，绝不解析巨型配置（防安装/诊断卡死）。 */
 export const MCP_JSON_MAX_BYTES = 1_048_576;
 
 /** 包内模块库根（assets/modules）——安装器与 /jero:module-list 的注册表来源。 */
@@ -154,7 +153,7 @@ export function resolveInstallPlan(
 export interface ModuleInstallRecord {
 	readonly version: string;
 	readonly files: readonly { readonly path: string; readonly hash: string }[];
-	/** 来源账本：安装器实际写入 agent mcp.json 的档（doctor 确定式归因 + 未来卸载回收的依据）。 */
+	/** 来源账本：安装器实际写入项目级 .pi/mcp.json 的档（doctor 确定式归因 + 未来卸载回收的依据）。 */
 	readonly mcpWritten?: readonly { readonly name: string; readonly entry: Record<string, unknown> }[];
 }
 
@@ -192,11 +191,11 @@ export function writeModuleInstalls(projectRoot: string, installs: ModuleInstall
 	renameSync(temp, target);
 }
 
-// —— MCP 档合并：模块声明的 MCP 服务器写入 Pi 的 agent mcp.json ——
+// —— MCP 档合并：模块声明的 MCP 服务器写入项目级 .pi/mcp.json ——
 
-/** Pi agent mcp.json 路径（JERO_PI_AGENT_HOME / PI_CODING_AGENT_DIR / ~/.pi/agent，与 banner 同源）。 */
-export function agentMcpJsonPath(env: NodeJS.ProcessEnv = process.env): string {
-	return join(resolveJeroPiAgentHome(env), "mcp.json");
+/** 项目级 Pi MCP 档路径：Pi 0.99.0 起支持 `.pi/mcp.json`（按项目信任），与 `.pi/agents`/`.pi/skills` 同作用域。 */
+export function projectMcpJsonPath(projectRoot: string): string {
+	return join(projectRoot, ".pi", "mcp.json");
 }
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
@@ -218,11 +217,13 @@ export interface McpMergeResult {
 }
 
 /**
- * 把模块声明的 MCP 服务器档合并进 Pi 的 agent mcp.json（mcpServers 键）。
+ * 把模块声明的 MCP 服务器档合并进项目级 Pi MCP 档 `.pi/mcp.json`（mcpServers 键）。
  * 用户资产保护三律：同名且内容一致 = 幂等跳过；同名但内容不同 = 保留
  * 用户档不改（drift 显影）；文件存在但不可解析或超大小上限 = 一律不动
- * （保命）。用户已有的其他 server 与顶层键原样保留，原子写回。声明≠
- * 安装工具链：command 的可用性由 /jero:doctor 显影，安装器不做网络安装。
+ * （保命）。用户已有的其他 server 与顶层键原样保留，原子写回。作用域
+ * 对齐：模块仅项目内，MCP 档也只写项目（Pi 0.99.0 起支持，更早宿主
+ * 忽略该文件——安装文案明示）。声明≠安装工具链：command 的可用性由
+ * /jero:doctor 显影，安装器不做网络安装。
  */
 export function mergeModuleMcpServers(
 	mcpJsonPath: string,
@@ -271,7 +272,7 @@ export function mergeModuleMcpServers(
 			existing[server.name] = entry;
 			changed = true;
 			written.push({ name: server.name, entry });
-			lines.push(`MCP 档 ${server.name} 已并入 ${mcpJsonPath}（command: ${server.command}）——重载会话后生效`);
+			lines.push(`MCP 档 ${server.name} 已并入 ${mcpJsonPath}（command: ${server.command}）——项目级档需 Pi ≥0.99（首用有项目信任确认），重载会话后生效`);
 		} else if (JSON.stringify(current) === JSON.stringify(entry)) {
 			// 键序不同的同语义条目会落到"内容不同"分支——刻意保守：保留用户档优于任何误覆盖。
 			lines.push(`MCP 档 ${server.name} 已存在且一致，跳过`);
@@ -287,10 +288,10 @@ export function mergeModuleMcpServers(
 }
 
 /** 执行束的 MCP 合并（未声明 mcp 时 result 为 undefined），suffix 为安装明细尾。 */
-function runBundleMcpMerge(options: InstallBundleOptions, bundle: BundleModule): { result: McpMergeResult | undefined; suffix: string } {
+function runBundleMcpMerge(projectRoot: string, options: InstallBundleOptions, bundle: BundleModule): { result: McpMergeResult | undefined; suffix: string } {
 	const servers = bundle.manifest.mcp?.servers ?? [];
 	if (servers.length === 0) return { result: undefined, suffix: "" };
-	const result = mergeModuleMcpServers(options.agentMcpJson ?? agentMcpJsonPath(), servers);
+	const result = mergeModuleMcpServers(options.projectMcpJson ?? projectMcpJsonPath(projectRoot), servers);
 	return { result, suffix: result.lines.length > 0 ? `；${result.lines.join("；")}` : "" };
 }
 
@@ -347,8 +348,8 @@ export interface InstallBundleOptions {
 	readonly force?: boolean;
 	/** 预读的安装记录（缺省自读；测试注入用）。 */
 	readonly installs?: ModuleInstallsFile;
-	/** MCP 档合并目标（缺省解析 Pi agent home 的 mcp.json；测试注入用）。 */
-	readonly agentMcpJson?: string;
+	/** MCP 档合并目标（缺省项目级 <projectRoot>/.pi/mcp.json；测试注入用）。 */
+	readonly projectMcpJson?: string;
 }
 
 export type BundleInstallOutcome =
@@ -428,7 +429,7 @@ export function installBundle(
 				if (record.version === bundle.version) {
 					// 同版本跳过也做 MCP 合并回填：装在特性之前的模块重跑安装即补档。
 					// 回填写入的档追加进来源账本（已有同名记录不重复）。
-					const backfill = runBundleMcpMerge(options, bundle);
+					const backfill = runBundleMcpMerge(projectRoot, options, bundle);
 					if (backfill.result !== undefined && backfill.result.written.length > 0) {
 						const known = new Set((record.mcpWritten ?? []).map((item) => item.name));
 						const appended = [...(record.mcpWritten ?? []), ...backfill.result.written.filter((item) => !known.has(item.name))];
@@ -476,7 +477,7 @@ export function installBundle(
 		else bodyCount += 1;
 	}
 
-	const mcpMerge = runBundleMcpMerge(options, bundle);
+	const mcpMerge = runBundleMcpMerge(projectRoot, options, bundle);
 	const merged: Record<string, ModuleInstallRecord> = { ...installs.modules };
 	merged[bundle.token] = {
 		version: bundle.version,
@@ -529,11 +530,11 @@ export function moduleDoctorLines(projectRoot: string): string[] {
 }
 
 /**
- * /jero:doctor 的模块 MCP 诊断行：已装模块声明的 MCP 服务器在 agent
- * mcp.json 中的存在性显影（缺席→重装回填提示；同内容=pass；同内容不同
+ * /jero:doctor 的模块 MCP 诊断行：已装模块声明的 MCP 服务器在项目级
+ * .pi/mcp.json 中的存在性显影（缺席→重装回填提示；同内容=pass；同内容不同
  * =用户改动保留）。只观察，不动手。
  */
-export function moduleMcpDoctorLines(projectRoot: string, mcpJsonPath: string = agentMcpJsonPath()): string[] {
+export function moduleMcpDoctorLines(projectRoot: string, mcpJsonPath: string = projectMcpJsonPath(projectRoot)): string[] {
 	const installs = readModuleInstalls(projectRoot);
 	const { bundles } = discoverBundles(bundleModulesRoot());
 	const declared: { token: string; server: McpServerSpec }[] = [];

@@ -205,8 +205,8 @@ test("命令·install-module 未知词元：响亮失败并列出可装词元", 
 
 test("命令·install-module godot：真实包内束装进项目 + 验证管线联动 + MCP 档自动并入", async () => {
 	const cwd = makeProject();
-	// MCP 档合并目标隔离：束声明了 godot-ai 档，安装会写 agent mcp.json——
-	// 绝不碰真实 home，指到临时 agent home。
+	// MCP 档合并目标已切项目级 .pi/mcp.json——agent home 隔离仍保留：
+	// 断言安装绝不触碰 agent home（作用域收口的项目级写入面）。
 	const agentHome = mkdtempSync(join(tmpdir(), "jero-agent-home-"));
 	const previousAgentHome = process.env.JERO_PI_AGENT_HOME;
 	process.env.JERO_PI_AGENT_HOME = agentHome;
@@ -223,13 +223,14 @@ test("命令·install-module godot：真实包内束装进项目 + 验证管线�
 		assert.ok(existsSync(join(cwd, ".pi", "agents", "godot-tester.md")));
 		assert.ok(existsSync(join(cwd, ".pi", "skills", "godot-verify", "SKILL.md")));
 		assert.ok(existsSync(join(cwd, ".pi", "module-installs.json")));
-		// MCP 档自动并入：godot-ai 档写入隔离的 agent mcp.json。
+		// MCP 档自动并入：godot-ai 档写入项目级 .pi/mcp.json，agent home 保持原样。
 		assert.match(message, /MCP 档 godot-ai 已并入/);
-		const mcpJson = JSON.parse(readFileSync(join(agentHome, "mcp.json"), "utf8"));
+		const mcpJson = JSON.parse(readFileSync(join(cwd, ".pi", "mcp.json"), "utf8"));
 		assert.deepEqual(mcpJson.mcpServers["godot-ai"], {
 			command: "uvx",
 			args: ["--from", "godot-ai@4.2.3", "godot-ai", "attach"],
 		});
+		assert.ok(!existsSync(join(agentHome, "mcp.json")), "项目级作用域：安装不得写 agent home 的 mcp.json");
 		// 安装后验证管线跑过：覆盖层含 godot 且八查汇总绿。
 		const overlay = readFileSync(join(cwd, ".atl", "module-overlay.md"), "utf8");
 		assert.match(overlay, /godot/);
