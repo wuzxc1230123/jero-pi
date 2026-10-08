@@ -5,6 +5,15 @@ jero-pi 尚未发布到 npm（版本停在 0.1.0 基线），本文件自重构�
 
 ## [Unreleased]
 
+### Pi 1.0.0 升级 + 遗留清账批（2026-10-06）
+
+**宿主从 Pi 0.85.1 升到 1.0.2（全家族对齐；1.0.0 与 1.0.2 两个门内版本先后全量验证），peer 下限保持 ≥0.85.1；模块 MCP 合并目标从全局 agent `mcp.json` 收口到项目级 `.pi/mcp.json`（上游 Pi 0.99.0 落地项目作用域后的既定方向）。** 供应链 3 天发布龄期门决定跳过未满龄期的 1.0.3 与 1.1.0。
+
+- **Pi 1.0.0 适配**：工具执行上下文 `ExtensionToolContext`（0.99.0 起要求 `tools`/`executeTool`）——测试假 ctx 补桩；stock bash 错误语义变更钉进测试（非零数字退出码从抛错改为 resolve 出 `isError` 结构化结果、无退出码反向变抛错），生产失败判定读 exec 包装捕获的 exitCode、不受影响；`tuiMode` 后装脚本语义反转——从"强制扳成 fullscreen"改为"仅在键缺席时补默认"（Pi 1.0 起全屏本是宿主默认，旧逻辑会覆盖用户显式选择的 `regular`）。
+- **伴生九件升级**（全部升到龄期门内最新版）：pi-pretty 0.6.30、rpiv 两件 2.12.0、billion-context-pi 0.1.83、pi-cache-optimizer 2.8.16、pi-fovea 0.31.3、pi-hashline-edit-pro 5.1.0、pi-lens 4.3.0、pi-web-access 0.35.0；入口面两处随版迁移（pi-pretty `dist/index.js`→`src/index.ts`、pi-web-access `index.ts`→`dist`）；pi-lens peer 仍钉旧 pi-tui（上游未适配 1.x），按真机冒烟接受运行时兼容并登记退出预案。
+- **MCP 项目级收口**：`agentMcpJsonPath()`（agent home）→ `projectMcpJsonPath()`（`<项目>/.pi/mcp.json`），合并三律/来源账本/doctor 三态归因原样保留；安装文案明示"项目级档需 Pi ≥0.99（首用有项目信任确认）"；实装测试反向断言 agent home 不被触碰；godot 束技能与参考文档、module-contract/jero-reference/exit-plan 措辞同步；上游 feature 请求草稿（项目级 `.pi/mcp.json` + `pi.registerMcpServer()`）标注已落地存档。
+- **验证**：全量 2558 测（2546 过/0 败）+ runtime harness + 真机启动冒烟（真实 Pi 宿主按 pi.extensions 全量加载扩展层）+ 八道质量门 + `pnpm audit --prod` 零漏洞；`pnpm-workspace.yaml` 发布龄期豁免清单随 1.0.0 家族更新（含新增 pi-mcp/pi-codemode）。
+
 ### 伴生插件撞名消解批（2026-09-28）
 
 **修复真实宿主启动阻断：`pi-pretty` 与 `pi-hashline-edit-pro` 都注册 `read`/`grep`，宿主（peer 0.85.1）对扩展间同名工具是硬冲突，按发布配置启动会话直接失败（`Tool "read" conflicts`）。** 单测与 runtime harness 用假宿主加载不到这一层；发现路径：隔离 Pi home `pi install` → 裸 `pi -p` 启动实测。上游 pi-pretty 最新 0.6.29 仍默认注册 `read`，升级钉版不解决。

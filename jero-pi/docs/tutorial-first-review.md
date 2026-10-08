@@ -7,7 +7,7 @@
 
 ## 0. 前置
 
-- Pi coding-agent ≥ 0.85.1。
+- Pi coding-agent ≥ 0.85.1（peer 下限；当前随 1.0.2 测试）。
 - 一个 git 仓库（评审状态存放在 `<git-common-dir>/jero-review/`，随仓库走）。
 
 ## 1. 安装与体检

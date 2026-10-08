@@ -2,7 +2,7 @@
 
 面向 [Pi coding-agent](https://github.com/earendil-works) 的扩展包（pi-package）：把评审权威、SDD/OpenSpec 流程、子代理编排、持久记忆与精益纪律全部收进一个进程内 Node 包——零原生二进制、零安装期网络。
 
-要求 Pi ≥ 0.85.1（经测试验证的最低版本）。
+要求 Pi ≥ 0.85.1（peer 声明的功能下限，`agent_settled` 事件的最低支持版本）；当前开发与全量测试随 Pi 1.0.0 进行（模块 MCP 自动并入需宿主 ≥0.99，安装文案会明示）。
 
 ## 核心能力
 
@@ -11,7 +11,7 @@
 - **SDD/OpenSpec**：`/jero-sdd-init` 探测技术栈并落配置；确定性阶段状态引擎（proposal/spec/design/tasks/apply/verify/sync/archive）；严格 TDD 证据（RED/GREEN/TRIANGULATE/REFACTOR）。
 - **持久记忆**：`mem_save` / `mem_read` / `mem_list` / `mem_search`，topic 键 Markdown 文件 + 轻量索引，零数据库、零原生模块。
 - **精益纪律**（借自 ponytail 的"懒惰资深工程师"）：七级梯子写入节制 + `/jero:lean` 分档（off/lite/full/ultra，会话条目持久化，`stop lean` 一句话关闭）+ `jero:` 简化标记与 `/jero:debt` 债务台账 + `jero-lean-review` 独立精益评审。纯提示词层增强，`off` 完全还原历史行为。
-- **能力模块契约**（`jero.module-contract/v2`，兼容 v1）：目标项目的领域扩展（Go/Godot/Unity…）一个目录一份 `module.json` 声明触发/知识/角色/接线（v2 另可声明 `dependencies`，安装时依赖自动先装）——**只装项目内不全局生效**，`/jero:install-module <词元>` 指令安装（包内模块库 `assets/modules/` 首束为全中文 godot 模块，附三子代理与验证技能），静态触发机器判定、安装验证、派发覆盖层自动接线；规范见 [docs/module-contract.md](docs/module-contract.md)。
+- **能力模块契约**（`jero.module-contract/v2`，兼容 v1）：目标项目的领域扩展（Go/Godot/Unity…）一个目录一份 `module.json` 声明触发/知识/角色/接线（v2 另可声明 `dependencies` 与 `mcp` MCP 服务器档——安装时依赖自动先装、MCP 档幂等并入项目级 `.pi/mcp.json`）——**只装项目内不全局生效**，`/jero:install-module <词元>` 指令安装（包内模块库 `assets/modules/` 首束为全中文 godot 模块，附三子代理与验证技能），静态触发机器判定、安装验证、派发覆盖层自动接线；规范见 [docs/module-contract.md](docs/module-contract.md)。
 - **Shell 层**：底部状态栏（git / 模型 / 上下文窗口 / 会话成本）、侧栏、变更小部件与 diff 视图、订阅用量窗口、主题（Jero / Jero-Cute / Jero-Sexy）。
 
 ## 安装与使用
@@ -26,7 +26,7 @@ pi install <本包来源>        # 首次安装
 
 评审生命周期动词（`inspect` / `start` / `answer-consent` / `assess` / `finalize` / `validate`）是 `jero_review` 工具的操作，不是斜杠命令。
 
-> 安装须知：本包的 postinstall 会在**自有全局安装位**（`~/.pi/agent/npm|git` 下的 jero-pi 本体）把 Pi 的 `settings.json` 中 `tuiMode` 设为 `fullscreen`（原子写 + 锁，失败安全跳过）；项目内安装不做任何写入。订阅用量窗口在活动 provider 为 openai-codex 时会请求 Codex CLI 自用的用量端点（携带宿主 OAuth 令牌），`JERO_PI_USAGE_FETCH=0` 可完全关闭。
+> 安装须知：本包的 postinstall 只在**自有全局安装位**（`~/.pi/agent/npm|git` 下的 jero-pi 本体）且 `settings.json` **未显式设置** `tuiMode` 时，补写默认值 `fullscreen`（原子写 + 锁，失败安全跳过）——用户已选的任何值（含 `regular`）一律尊重不改；Pi 1.0 起全屏本就是宿主默认，该写入只对更早宿主有实际效果；项目内安装不做任何写入。订阅用量窗口在活动 provider 为 openai-codex 时会请求 Codex CLI 自用的用量端点（携带宿主 OAuth 令牌），`JERO_PI_USAGE_FETCH=0` 可完全关闭。
 
 ## 开发
 
@@ -43,10 +43,10 @@ pnpm run check:runtime-modules
 
 文档：
 
-- 技术参考：[docs/jero-reference.md](docs/jero-reference.md)——由当前代码状态生成的单一合并文档：架构分层、26 个命令、工具清单、评审生命周期、精益纪律、SDD/编排、契约与环境、测试与打包门。
+- 技术参考：[docs/jero-reference.md](docs/jero-reference.md)——由当前代码状态生成的单一合并文档：架构分层、28 个命令、工具清单、评审生命周期、精益纪律、SDD/编排、契约与环境、测试与打包门。
 - 入门教程：[docs/tutorial-first-review.md](docs/tutorial-first-review.md)——从安装到第一次通过评审的最小闭环。
 - How-to：[docs/how-to-choose-discipline.md](docs/how-to-choose-discipline.md)——评审 / SDD / 精益三根轴怎么选档，以及轻量出口（assess、triviality_hint、RDD 开关）。
 - 扩展：[docs/extension-guide.md](docs/extension-guide.md)——零代码扩展（目标项目技能 / 子代理 / 语言包）的放置机制、错误避免与升级路径；机器验证的契约化模块见 [docs/module-contract.md](docs/module-contract.md)（`/jero:install-module` 指令安装 + `/jero-module-verify` 安装验证 + 派发覆盖层）；自动创建入口 `/module-creation` `/agent-creation`。
-- 供应链：[docs/dependency-exit-plan.md](docs/dependency-exit-plan.md)——10 个伴生依赖逐项的失效信号与退出预案。
+- 供应链：[docs/dependency-exit-plan.md](docs/dependency-exit-plan.md)——9 个伴生依赖逐项的失效信号与退出预案。
 
 > 移植纪律：包身份从出生即 `jero-pi`；上游命名仅存于白名单（wire 金向量词汇、外来存储探测名、legacy 回退读、历史 fixture、上游参考文档）。
