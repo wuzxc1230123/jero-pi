@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { join } from "node:path";
 import test from "node:test";
-import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
+import type { ExtensionContext, ExtensionToolContext } from "@earendil-works/pi-coding-agent";
 import { parseRemediationPlan, remediationEvidence, observeRemediationTool, type RemediationObservations, type RemediationPlan, type RemediationScope, type TaskRequest } from "../lib/agents-runner.ts";
 import { NATIVE_REVIEW_ERROR_CODE, NATIVE_REVIEW_OPERATION, NativeReviewCliError, type NativeReviewCli, type NativeSddAcquireRequest, type NativeSddSettleRequest } from "../lib/authority/client-contract.ts";
 import { remediationUnresolved } from "../lib/agents-history.ts";
@@ -55,8 +55,16 @@ test("remediation shell captures numeric exit, preserves stock errors and execut
 			calls++; assert.equal(command, "pnpm test"); assert.equal(cwd, testCwd);
 			options.onData(Buffer.from("real output")); return { exitCode };
 		} }, shellScope(testCwd, ["pnpm test"]));
-		const run = shell.definition.execute("call", { command: "pnpm test" }, undefined, undefined, undefined as unknown as ExtensionContext);
-		if (exitCode === 7) await assert.rejects(run, /code 7/); else await run;
+		const run = shell.definition.execute("call", { command: "pnpm test" }, undefined, undefined, undefined as unknown as ExtensionToolContext);
+		// Pi 1.0.0 起 stock bash 错误语义变了：非零数字退出码不再抛错，改为 resolve 出
+		// isError 结构化结果（文案含 "code N"）；无退出码（信号终止）从 resolve 变为抛错。
+		// 包装层的契约是透传 stock 行为，此处按新语义钉住。
+		if (exitCode === 7) {
+			const outcome = await run;
+			assert.equal(outcome?.isError, true);
+			assert.match(JSON.stringify(outcome?.content ?? []), /code 7/);
+		} else if (exitCode === null) await assert.rejects(run, /without an exit code/);
+		else await run;
 		const patch = shell.result({ toolCallId: "call", details: { fullOutputPath: "/retained", remediationCommand: { exitCode: 99 } } } as unknown as Parameters<typeof shell.result>[0]);
 		assert.ok(patch !== undefined);
 		const details = patch.details as typeof patch.details & { fullOutputPath?: string };
@@ -163,14 +171,14 @@ test("stock local shell wrapper observes real exit zero and preserves cancellati
 	const { createBashToolDefinition } = await import("@earendil-works/pi-coding-agent");
 	const shell = remediationBash(process.cwd(), undefined, shellScope(process.cwd(), ["printf wrapper-proof", "sleep 30"]));
 	assert.deepEqual(shell.definition.parameters, createBashToolDefinition(process.cwd()).parameters);
-	const result = await shell.definition.execute("real", { command: "printf wrapper-proof" }, undefined, undefined, undefined as unknown as ExtensionContext);
+	const result = await shell.definition.execute("real", { command: "printf wrapper-proof" }, undefined, undefined, undefined as unknown as ExtensionToolContext);
 	const [content] = result.content;
 	assert.ok(content?.type === "text");
 	assert.equal(content.text, "wrapper-proof");
 	assert.equal(shell.result({ toolCallId: "real", details: result.details })!.details.remediationCommand.exitCode, 0);
 	const controller = new AbortController();
 	const timeout = setTimeout(() => controller.abort(), 30);
-	try { await assert.rejects(shell.definition.execute("cancel", { command: "sleep 30" }, controller.signal, undefined, undefined as unknown as ExtensionContext), /aborted/); }
+	try { await assert.rejects(shell.definition.execute("cancel", { command: "sleep 30" }, controller.signal, undefined, undefined as unknown as ExtensionToolContext), /aborted/); }
 	finally { clearTimeout(timeout); controller.abort(); }
 	assert.equal(shell.result({ toolCallId: "cancel" }), undefined);
 });
@@ -339,7 +347,7 @@ test("R1 child invokes only the exact confirmed command/cwd/count with distinct 
 	const { remediationBash } = await import("../extensions/jero-agents.ts");
 	let executions = 0;
 	const shell = remediationBash(testCwd, { exec: async () => { executions++; return { exitCode: 0 }; } }, shellScope(testCwd, ["pnpm test", "pnpm test"]));
-	const execute = (id: string, command: string, cwd = testCwd) => shell.definition.execute(id, { command }, undefined, undefined, (cwd === testCwd ? undefined : { cwd }) as unknown as ExtensionContext);
+	const execute = (id: string, command: string, cwd = testCwd) => shell.definition.execute(id, { command }, undefined, undefined, (cwd === testCwd ? undefined : { cwd }) as unknown as ExtensionToolContext);
 	await assert.rejects(execute("outside", "pnpm test; touch outside"), /authorization/);
 	await assert.rejects(execute("cwd", "pnpm test", "/other"), /authorization/);
 	assert.equal(executions, 0);

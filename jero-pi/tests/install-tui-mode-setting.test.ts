@@ -28,26 +28,29 @@ for (const [name, packagePath] of [
 	["npm", ["npm", "node_modules", "jero-pi"]],
 	["Pi Git", ["git", "github.com", "jero-pi", "jero-pi"]],
 ] as const) {
-	test(`recognized global ${name} installation persists fullscreen and preserves other settings`, async (t) => {
+	test(`recognized global ${name} installation fills fullscreen only when absent and preserves other settings`, async (t) => {
 		const f = fixture(t, packagePath);
-		writeFileSync(f.settings, JSON.stringify({ tuiMode: "regular", theme: "rose", nested: { enabled: false } }));
+		writeFileSync(f.settings, JSON.stringify({ theme: "rose", nested: { enabled: false } }));
 		assert.deepEqual(await installTuiModeSetting(f.options), { changed: true, recognized: true });
 		assert.deepEqual(JSON.parse(readFileSync(f.settings, "utf8")), { tuiMode: "fullscreen", theme: "rose", nested: { enabled: false } });
 	});
 }
 
-for (const initial of [undefined, '{ "tuiMode": "regular", "packages": ["npm:example"] }']) {
-	test(`creates or resets fullscreen: ${initial ?? "missing"}`, async (t) => {
+for (const initial of [undefined, '{ "packages": ["npm:example"] }']) {
+	test(`creates fullscreen when tuiMode is absent: ${initial ?? "missing"}`, async (t) => {
 		const f = fixture(t);
 		if (initial) writeFileSync(f.settings, initial);
 		assert.equal((await installTuiModeSetting(f.options)).changed, true);
 		assert.equal(JSON.parse(readFileSync(f.settings, "utf8")).tuiMode, "fullscreen");
-		writeFileSync(f.settings, '{ "tuiMode": "regular", "theme": "custom" }');
-		await installTuiModeSetting(f.options);
-		assert.equal(JSON.parse(readFileSync(f.settings, "utf8")).theme, "custom");
-		assert.equal(JSON.parse(readFileSync(f.settings, "utf8")).tuiMode, "fullscreen");
 	});
 }
+
+test("explicit regular tuiMode is the user's choice and is never overwritten", async (t) => {
+	const f = fixture(t);
+	writeFileSync(f.settings, '{ "tuiMode": "regular", "theme": "custom" }');
+	assert.deepEqual(await installTuiModeSetting(f.options), { changed: false, recognized: true });
+	assert.equal(readFileSync(f.settings, "utf8"), '{ "tuiMode": "regular", "theme": "custom" }');
+});
 
 test("already fullscreen preserves bytes and inode", async (t) => {
 	const f = fixture(t);
@@ -196,7 +199,7 @@ test("Pi proper-lockfile contention is bounded and never steals the lock", async
 
 test("Pi's later packages-only save retains persisted fullscreen", async (t) => {
 	const f = fixture(t);
-	writeFileSync(f.settings, '{"tuiMode":"regular"}');
+	writeFileSync(f.settings, "{}");
 	const { SettingsManager } = await import("@earendil-works/pi-coding-agent");
 	const manager = SettingsManager.create(f.root, f.home);
 	await installTuiModeSetting(f.options);

@@ -98,7 +98,9 @@ export async function installTuiModeSetting(options = {}) {
 	try {
 		assertDirectories(installation.paths);
 		const original = readSettings(settingsPath);
-		if (original.value.tuiMode === "fullscreen") return { changed: false, recognized: true };
+		// 尊重用户的显式选择（含 "regular"）：仅在 tuiMode 键缺席时补默认全屏。
+		// Pi 1.0 起全屏已是宿主默认，此写入只对更早的宿主有实际效果。
+		if (original.value.tuiMode !== undefined) return { changed: false, recognized: true };
 		staging = join(home, `.settings-fullscreen-${randomUUID()}.tmp`);
 		const fd = openSync(staging, "wx", original.stat ? original.stat.mode & 0o777 : 0o600);
 		try {

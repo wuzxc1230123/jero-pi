@@ -216,7 +216,7 @@ export function assertWorkerFallbackRouting(section: string, sectionName: string
 // 即"依赖存在即用"。禁止 bundledDependencies：pi-pretty/pi-lens 含平台
 // 特定原生依赖，必须由宿主安装时的 npm install 按用户平台解析。
 export const COMPANION_EXTENSION_REFS: Record<string, string> = {
-	"@heyhuynhgiabuu/pi-pretty": "node_modules/@heyhuynhgiabuu/pi-pretty/dist/index.js",
+	"@heyhuynhgiabuu/pi-pretty": "node_modules/@heyhuynhgiabuu/pi-pretty/src/index.ts",
 	"@juicesharp/rpiv-ask-user-question": "node_modules/@juicesharp/rpiv-ask-user-question/index.ts",
 	"@juicesharp/rpiv-todo": "node_modules/@juicesharp/rpiv-todo/index.ts",
 	"billion-context-pi": "node_modules/billion-context-pi/dist/index.js",
@@ -224,7 +224,7 @@ export const COMPANION_EXTENSION_REFS: Record<string, string> = {
 	"pi-fovea": "node_modules/pi-fovea/src/index.ts",
 	"pi-hashline-edit-pro": "node_modules/pi-hashline-edit-pro/index.ts",
 	"pi-lens": "node_modules/pi-lens/dist/index.js",
-	"pi-web-access": "node_modules/pi-web-access/index.ts",
+	"pi-web-access": "node_modules/pi-web-access/dist",
 };
 export const COMPANION_SKILL_REFS = [
 	"node_modules/pi-fovea/skills",
