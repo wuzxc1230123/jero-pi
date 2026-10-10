@@ -24,11 +24,11 @@ jero-pi 的 G4/D5 决策把 9 个生态插件升级为**强制依赖**（精确�
 | `@juicesharp/rpiv-ask-user-question` 2.12.0 | 封闭选项询问工具（替代自研 ask-user-choice） | 工具缺席/签名变更/停更 | 从 git 历史（jero-todo 退役同批次）恢复自研 `ask-user-choice.ts`；评审同意 UI 本就是独立组件，不受影响 | 中——实现已在历史中，需恢复 + 测试改写 |
 | `@juicesharp/rpiv-todo` 2.12.0 | todo 工具（Q1 裁决：jero-todo 退役换此件） | 同上 | 从 git 历史恢复 jero-todo（退役于同一裁决，恢复路径对称） | 中 |
 | `billion-context-pi` 0.1.83 | 模型驱动的上下文管理（压缩/整理） | 压缩质量劣化、与宿主 compact 冲突 | 直接移除：宿主 Pi 自带 compaction；jero-pi 的记忆工具（`mem_*`）已承载跨压缩的状态保全，不构成硬依赖 | 低 |
-| `pi-cache-optimizer` 2.8.19 | 提示/KV 缓存命中率优化（稳定提示、缓存键、页脚统计） | 缓存统计错乱、代理请求被改写出错 | 直接移除：纯优化项，无功能面依赖它；唯一接线是其页脚统计与 shell 层并存的显示问题 | 低 |
+| `pi-cache-optimizer` 2.8.21 | 提示/KV 缓存命中率优化（稳定提示、缓存键、页脚统计） | 缓存统计错乱、代理请求被改写出错 | 直接移除：纯优化项，无功能面依赖它；唯一接线是其页脚统计与 shell 层并存的显示问题 | 低 |
 | `pi-fovea` 0.31.3 | 仓库代码图/符号地图（每次提示注入 repo map） | 图谱错乱、停更 | 无胶水依赖：SDD explore 资产提示词只说"如有代码图工具优先用之"；移除后 explore 退化为普通检索，无需代码改动 | 低 |
-| `pi-hashline-edit-pro` 5.1.0 | 哈希锚定的 read/replace/insert/grep 编辑工具（陈旧锚拒绝、不模糊匹配） | 编辑工具缺席/锚语义变更 | 移除后子代理回退宿主内建 edit/write；哈希锚定的"防错位编辑"是增强而非契约，SDD 的 TDD 证据与评审权威不依赖它 | 低-中 |
+| `pi-hashline-edit-pro` 6.2.0 | 哈希锚定的 read/replace/insert/grep 编辑工具（陈旧锚拒绝、不模糊匹配） | 编辑工具缺席/锚语义变更 | 移除后子代理回退宿主内建 edit/write；哈希锚定的"防错位编辑"是增强而非契约，SDD 的 TDD 证据与评审权威不依赖它 | 低-中 |
 | `pi-lens` 4.3.0 | 编辑时语言感知快速反馈（LSP/lint/格式化），评审透镜的非权威辅证 | 误报淹没会话、停更 | 直接移除：设计 §5.3 已声明其反馈"非权威、不阻塞流程"；透镜权威在 `lib/authority/` | 低 |
-| `pi-web-access` 0.35.0 | web_search / fetch_content 等研究工具；SDD 研究准入按其四个精确工具名授 `open-web`/`documentation` | 工具名变更/停更/成本问题（社区反馈约 $0.012/请求） | 准入机制是 fail-closed 的：工具不全 → 研究能力不授予、SDD 预检明示，MCP 网关与 Bash 兜底仍禁止。移除即"无研究能力"，无需代码改动；如需恢复研究，另选提供同形工具的插件并把准入表指过去 | 低 |
+| `pi-web-access` 0.37.0 | web_search / fetch_content 等研究工具；SDD 研究准入按其四个精确工具名授 `open-web`/`documentation` | 工具名变更/停更/成本问题（社区反馈约 $0.012/请求） | 准入机制是 fail-closed 的：工具不全 → 研究能力不授予、SDD 预检明示，MCP 网关与 Bash 兜底仍禁止。移除即"无研究能力"，无需代码改动；如需恢复研究，另选提供同形工具的插件并把准入表指过去 | 低 |
 
 ## 行动顺序（依赖实际出事时）
 
@@ -99,3 +99,11 @@ gentle-ai 字样全部是**守卫对象或历史事实**（外来存储守卫、
   不修；pi-lens 上游适配 pi-tui 1.x 后随下次例行评审消除。三家当天
   最新版（cache-optimizer 2.8.19 / hashline 6.0.1 / web-access 0.36.0）
   未满龄期门，按门取门内最新；后续例行评审可跟进。
+
+- **2026-10-10 例行跟进批**（攒批升级,与 Pi 1.0.2→1.0.4 宿主跟进同批）：
+  pi-coding-agent/pi-tui 1.0.2→1.0.4（1.1.0 未满龄期门）、pi-cache-optimizer
+  2.8.19→2.8.21、pi-hashline-edit-pro 5.1.0→6.2.0（跨 6.0/6.1 两个主版本,
+  真机冒烟含 pi-pretty×hashline 撞名消解面全绿）、pi-web-access 0.35.0→
+  0.37.0；入口面零迁移（伴生自带 pi 清单入口与本仓引用全一致）；其余六件
+  已是门内最新。验证:全量 2558 测 0 败 + harness + 真机冒烟 + 八门 +
+  packed E2E 全绿。

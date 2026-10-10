@@ -1,8 +1,8 @@
 # jero-pi 技术参考
 
-本文档由当前代码状态生成（2026-10，对应 `refactor/jero-ai-split` 分支；已随 Pi 1.0.2 升级批同步）。jero-pi 是面向 Pi coding-agent 的扩展包：评审权威、SDD/OpenSpec 编排、子代理、持久记忆、精益纪律与 shell 层——全部进程内 Node 实现，零原生二进制、零安装期网络。
+本文档由当前代码状态生成（2026-10，对应 `refactor/jero-ai-split` 分支；已随 Pi 1.0.4 升级批同步）。jero-pi 是面向 Pi coding-agent 的扩展包：评审权威、SDD/OpenSpec 编排、子代理、持久记忆、精益纪律与 shell 层——全部进程内 Node 实现，零原生二进制、零安装期网络。
 
-要求 Pi ≥ 0.85.1（`peerDependencies` 钉定；0.85.1 为 `agent_settled` 事件经测试验证的最低版本）。当前开发与全量测试随 Pi 1.0.2（全家族对齐）进行；模块 MCP 自动并入依赖宿主 ≥0.99 的项目级 `.pi/mcp.json`（更早宿主忽略该档，安装文案明示）。
+要求 Pi ≥ 0.85.1（`peerDependencies` 钉定；0.85.1 为 `agent_settled` 事件经测试验证的最低版本）。当前开发与全量测试随 Pi 1.0.4（全家族对齐）进行；模块 MCP 自动并入依赖宿主 ≥0.99 的项目级 `.pi/mcp.json`（更早宿主忽略该档，安装文案明示）。
 
 ## 架构分层
 

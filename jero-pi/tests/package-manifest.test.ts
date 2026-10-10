@@ -23,7 +23,7 @@ import {
 test("package manifest declares the tested Pi minimum required for agent_settled", () => {
 	const manifest = readPackageJson();
 	assert.equal(manifest.peerDependencies?.["@earendil-works/pi-coding-agent"], ">=0.85.1");
-	assert.equal(manifest.devDependencies?.["@earendil-works/pi-coding-agent"], "1.0.2");
+	assert.equal(manifest.devDependencies?.["@earendil-works/pi-coding-agent"], "1.0.4");
 });
 
 test("package manifest has no obsolete native activation build surface", () => {
@@ -218,7 +218,7 @@ test("companion dependencies are exact-pinned and pi-tui stays a host-provided p
 	}
 	assert.equal(packageJson.dependencies?.["@earendil-works/pi-tui"], undefined, "the host bundles pi-tui; jero-pi must not install its own copy");
 	assert.equal(packageJson.peerDependencies?.["@earendil-works/pi-tui"], "*", "pi-tui belongs to the host-provided core peer family");
-	assert.equal(packageJson.devDependencies?.["@earendil-works/pi-tui"], "1.0.2", "tests pin pi-tui to the tested host version");
+	assert.equal(packageJson.devDependencies?.["@earendil-works/pi-tui"], "1.0.4", "tests pin pi-tui to the tested host version");
 });
 
 test("package verification pins the relocated golden vectors as the behavioral spec", () => {

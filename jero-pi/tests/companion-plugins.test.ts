@@ -16,11 +16,11 @@ const AUDITED_COMPANION_PINS: Record<string, string> = {
 	"@juicesharp/rpiv-ask-user-question": "2.12.0",
 	"@juicesharp/rpiv-todo": "2.12.0",
 	"billion-context-pi": "0.1.83",
-	"pi-cache-optimizer": "2.8.19",
+	"pi-cache-optimizer": "2.8.21",
 	"pi-fovea": "0.31.3",
-	"pi-hashline-edit-pro": "5.1.0",
+	"pi-hashline-edit-pro": "6.2.0",
 	"pi-lens": "4.3.0",
-	"pi-web-access": "0.35.0",
+	"pi-web-access": "0.37.0",
 };
 
 test("pi manifest node_modules references are exactly the declared companions (no stale refs)", () => {
