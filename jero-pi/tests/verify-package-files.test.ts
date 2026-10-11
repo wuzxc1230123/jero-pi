@@ -207,6 +207,13 @@ test("每个技能的 SKILL.md 与 references/assets 文件都在打包门清单
 	for (const entry of readdirSync(join(PACKAGE_ROOT, "skills"), { withFileTypes: true })) {
 		if (!entry.isDirectory() || entry.name === "_shared") continue;
 		assertListed(`skills/${entry.name}/SKILL.md`);
+		// 技能目录顶层只许 SKILL.md 与 references//assets/ 两子目录（仓库技能
+		// 骨架契约）：游离文件既不该存在，也不会被下面的子目录扫描覆盖——
+		// 顶层形状本身就是不变量。
+		const unexpected = readdirSync(join(PACKAGE_ROOT, "skills", entry.name), { withFileTypes: true })
+			.filter((child) => (child.isFile() && child.name !== "SKILL.md") || (child.isDirectory() && child.name !== "references" && child.name !== "assets"))
+			.map((child) => child.name);
+		assert.deepEqual(unexpected, [], `skills/${entry.name} 顶层出现骨架外条目`);
 		for (const sub of ["references", "assets"]) {
 			const directory = join(PACKAGE_ROOT, "skills", entry.name, sub);
 			if (!existsSync(directory)) continue;
