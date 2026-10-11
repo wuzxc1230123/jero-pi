@@ -100,8 +100,11 @@ export function auditBundleContent(input: BundleContentInput): BundleContentFind
 		findings.push({ file: "module.json", message: `description 称 ${skillClaim} 技能，束内实为 ${skillNames.length}` });
 	}
 	const refClaim = /(\d+) 篇深知识/.exec(description)?.[1];
-	if (refClaim !== undefined && Number(refClaim) !== input.referenceNames.length) {
-		findings.push({ file: "module.json", message: `description 称 ${refClaim} 篇 references，束内实为 ${input.referenceNames.length}` });
+	// `_sources` 是出处账本（元），不是深知识篇目——description 的
+	// "N 篇深知识"按内容篇计，账本另述。
+	const deepKnowledgeCount = input.referenceNames.filter((name) => name !== "_sources").length;
+	if (refClaim !== undefined && Number(refClaim) !== deepKnowledgeCount) {
+		findings.push({ file: "module.json", message: `description 称 ${refClaim} 篇 references，束内实为 ${deepKnowledgeCount}` });
 	}
 
 	return findings;

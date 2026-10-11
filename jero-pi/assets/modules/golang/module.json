@@ -2,7 +2,7 @@
 	"schema": "jero.module-contract/v2",
 	"token": "golang",
 	"version": "0.1.0",
-	"description": "Go 工程领域模块：21 个领域技能入口（风格/命名/声明/错误/防御/并发/context/接口/泛型/数据结构/测试/基准/性能/排障/安全/slog/项目布局/依赖/CLI/现代化/gopls MCP 接线）+ 28 篇深知识 references，附评审/测试/架构三角色，知识锚定 Go 1.25/1.26。",
+	"description": "Go 工程领域模块：21 个领域技能入口（风格/命名/声明/错误/防御/并发/context/接口/泛型/数据结构/测试/基准/性能/排障/安全/slog/项目布局/依赖/CLI/现代化/gopls MCP 接线）+ 27 篇深知识 references 与 1 篇出处账本，附评审/测试/架构三角色，知识锚定 Go 1.25/1.26。",
 	"dependencies": [],
 	"triggers": {
 		"files": ["go.mod", "**/*.go"],

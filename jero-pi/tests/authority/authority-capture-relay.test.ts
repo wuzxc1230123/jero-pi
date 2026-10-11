@@ -143,6 +143,32 @@ test("P4b: fenced or prose-wrapped reviewer envelopes admit via deterministic ex
 	}
 });
 
+// 边角回归：信封的 JSON 字符串值本身含 ``` 时，非贪婪围栏提取会在串内
+// 提前截断——围栏候选不可解析必须回落花括号跨距取完整对象，而不是把
+// 截断体交出去吃一个可避免的拒收。
+test("P4b: a fenced envelope whose string values contain ``` falls back to brace extraction", async (t) => {
+	const harness = reviewHarness(t, "medium", 4);
+	const context = harness.context;
+	const tricky = Buffer.from(JSON.stringify({
+		review_result: { lens_results: [{ lens: "review-readability", findings: [], evidence: ["fence marker ``` inside a string value"] }] },
+	}), "utf8");
+	const start = reviewStartV1(context, { cwd: harness.repo }, { consent: "granted" });
+	if (start.kind !== "created") return;
+	const status = reviewStatusV1(context, { cwd: harness.repo });
+	if (status.kind !== "status") return;
+	const collectInput = status.next_transition.collect?.inputs[0];
+	if (collectInput === undefined) throw new Error("no collect input");
+	const request = relayRequestFromCollectInput(collectInput, harness.repo);
+	const fencedTricky = Buffer.from(`\`\`\`json\n${tricky.toString("utf8")}\n\`\`\``, "utf8");
+	const result = await submitReviewHostRelayPreparedResult(
+		await prepareReviewHostRelaySlot(request, async (promptBytes: Buffer) => ({ stdout: fencedTricky, promptByteLength: promptBytes.length, stdoutByteLength: fencedTricky.length }), renderJeroCaptureSlotForRelayV1),
+		admitJeroCaptureResultForRelayV1,
+	);
+	const closure = JSON.parse(result.submission) as { state?: string };
+	assert.equal(closure.state, "approved");
+	assert.deepEqual(readFileSync(join(jeroReviewerResultsDirectoryV1(context.store.store_root, start.lineage_id), "00-review-readability.json")), tricky);
+});
+
 test("P4b: pure-prose reviewer output still refuses — no JSON to extract", async (t) => {
 	const harness = reviewHarness(t, "medium", 4);
 	const start = reviewStartV1(harness.context, { cwd: harness.repo }, { consent: "granted" });

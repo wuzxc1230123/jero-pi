@@ -196,7 +196,16 @@ function extractReviewerEnvelopeBytesV1(raw: Buffer): Buffer {
 		// 直通失败，继续容器剥离。
 	}
 	const fenced = /```(?:json)?[ \t]*\r?\n?([\s\S]*?)[ \t]*\r?\n?```/.exec(text);
-	if (fenced !== null && fenced[1]!.trim().startsWith("{")) return Buffer.from(fenced[1]!.trim(), "utf8");
+	if (fenced !== null && fenced[1]!.trim().startsWith("{")) {
+		const candidate = fenced[1]!.trim();
+		try {
+			JSON.parse(candidate);
+			return Buffer.from(candidate, "utf8");
+		} catch {
+			// 围栏候选不可解析（如信封字符串值内本身含 ``` 致非贪婪提前
+			// 截断）——回落花括号跨距，由字符串感知扫描取完整对象。
+		}
+	}
 	const start = text.indexOf("{");
 	if (start >= 0) {
 		let inString = false;
