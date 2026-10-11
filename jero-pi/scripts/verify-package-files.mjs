@@ -268,6 +268,7 @@ const requiredPaths = [
 	"scripts/test-packed-runner.mjs",
 	"scripts/host-boot-smoke.mjs",
 	"scripts/smoke-real-pi.mjs",
+	"scripts/test-fast.mjs",
 ];
 
 // jero-pi P1/P4 gate: none of the deleted distribution-chain files may

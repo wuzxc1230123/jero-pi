@@ -41,6 +41,7 @@ import { CandidateViewRegistry } from "../lib/authority/review-candidate-view.ts
 import "./review-candidate-view-shared.ts";
 import { NATIVE_REVIEW_ERROR_CODE, type NativeReviewCli, NativeReviewCliError, NativeReviewConsentRequiredError } from "../lib/authority/client-contract.ts";
 import { decodeReviewConsentV3, decodeReviewStatusV3, type ReviewCollectInputV3, type ReviewStatusV3 } from "../lib/authority/wire-contract.ts";
+import { REVIEW_PROJECTION_SCHEMA } from "../lib/authority/wire-contract-enums.ts";
 
 
 export const SHA = `sha256:${"a".repeat(64)}`;
@@ -95,7 +96,7 @@ export function status(
 		replayability: "not_replayable",
 		targetIdentity: SHA,
 		projection: {
-			schema: "jero-ai.review-integration.projection/v1",
+			schema: REVIEW_PROJECTION_SCHEMA,
 			kind: "current-changes",
 			projection: "workspace",
 			baseTree: TREE,
@@ -204,7 +205,7 @@ export function startStatus(cwd: string, baseRef?: string, intendedUntracked: re
 			replayability: "not_replayable",
 			targetIdentity: SHA,
 			projection: {
-				schema: "jero-ai.review-integration.projection/v1",
+				schema: REVIEW_PROJECTION_SCHEMA,
 				kind: "current-changes",
 				projection: "workspace",
 				baseTree: view.baseTree,

@@ -107,6 +107,7 @@ export const FAILURE_OPERATIONS = Object.freeze([
 	"review.capture-validation",
 ] as const);
 export const REQUIRED_GATES = Object.freeze(["post-apply", "pre-commit", "pre-push", "pre-pr", "release"] as const);
+export const REVIEW_PROJECTION_SCHEMA = "jero-ai.review-integration.projection/v1" as const;
 export const REQUIRED_PROJECTIONS = Object.freeze(Object.values(REVIEW_PROJECTION));
 // 每个被接受的 capabilities 身份共享的 schema 下限。各次版本再在下面
 // 添加自己的 capabilities/consent/status 身份：提供方随协议次版本推进
@@ -123,7 +124,7 @@ const REQUIRED_SCHEMAS_COMMON = Object.freeze([
 	"jero-ai.review-integration.failure/v2",
 	"jero-ai.review-final-verification-incident/v1",
 	"jero-ai.review-integration.operation/v2",
-	"jero-ai.review-integration.projection/v1",
+	REVIEW_PROJECTION_SCHEMA,
 	"jero-ai.review-integration.repair/v2",
 	"jero-ai.review-receipt/v1",
 	"jero-ai.review-receipt/v2",

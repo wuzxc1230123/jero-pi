@@ -22,6 +22,7 @@
 - 新增/改名斜杠命令、工具、技能后：`pnpm run fix:docs-manifest`（再生成 `docs/jero-reference.md` 的 manifest 块）。
 - 全量：`pnpm test`（全部测试文件并发 12 + 顺序 harness）。慢文件定位：`pnpm run test:timed`（单文件预算 300s）。
 - 质量门（被 `prepack` 串联，可单独跑）：`check:test-quality`（5 条反模式，含分片互 import + `// allow-test-rule:<name>` 逃逸阀）· `check:empty-catch`（空 catch 必须带注释或语句，`// allow-empty-catch` 逃逸阀）· `check:authority-boundary` · `check:docs-manifest` · `check:review-naming` · `check:module-contract`（模块 schema 与 lib 常量零漂移 + 创建器金样绿灯）· `verify-package-files.mjs`（必需文件 + 68 个黄金向量字节钉住）。
+- 局部快速回路（迭代用，不替代全量）：`pnpm run test:fast`——按改动路径映射最小相关测试集（保守过选），prepack 前仍须全量。
 - 真机冒烟（手动/按需，不进 prepack）：`JERO_PI_SMOKE_PROVIDER=<provider> JERO_PI_SMOKE_MODEL=<model> pnpm run smoke:pi`——本地 Pi 宿主 + 包本体在一次性沙箱仓库过六面（装载/模型/模块安装/触发编译/记忆/评审全生命周期）；单测+门全测不到的集成缝只有这层能抓（三缺陷修复批为实证）。
 
 ## 已知约束

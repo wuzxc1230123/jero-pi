@@ -3,6 +3,7 @@ import type { ReviewStatusAuthorityV1, ReviewStatusFrozenV1 } from "./wire-contr
 import type { JeroReviewStatusResultV1 } from "./status.ts";
 import type { JeroReviewStartResultV1 } from "./start.ts";
 import { type JeroSnapshotDerivationV1, jeroUntrackedInventoryDigestV1 } from "./snapshots.ts";
+import { REVIEW_PROJECTION_SCHEMA } from "./wire-contract-enums.ts";
 
 // P4d：jero→线上投影层。扩展的评审控制器机制
 // （negotiatedStatusForHostTransport、mapNativeTargetStatus、collect 绑定
@@ -16,7 +17,7 @@ const WIRE_CONTRACT = "jero-ai.review-integration/v2" as const;
 // 正典投影 schema id（解码器 wire-contract-decode-start 强制
 // integration.projection/v1；曾经的 candidate-projection 是被外层强转
 // 掩护的漂移，连测试夹具都复制了错值——类型化后由编译器钉住）。
-const PROJECTION_SCHEMA = "jero-ai.review-integration.projection/v1" as const;
+const PROJECTION_SCHEMA = REVIEW_PROJECTION_SCHEMA;
 const REPAIR_SCHEMA = "jero-ai.review-authority-repair-assessment/v1" as const;
 
 interface WireArgument {

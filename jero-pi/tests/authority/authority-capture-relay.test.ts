@@ -187,3 +187,27 @@ test("P4b: pure-prose reviewer output still refuses — no JSON to extract", asy
 		/capture admission failed.*not valid JSON/,
 	);
 });
+
+// 真机复跑回归：评审者散文前言先出现与信封无关的花括号（{the candidate}
+// 类）时，旧提取器取首个平衡跨距即交出垃圾、吃 "Expected property name"
+// 拒收——多跨距试解析必须跳过垃圾跨距、取到真正可解析的信封本体。
+test("P4b: prose braces before the envelope are skipped by multi-span extraction", async (t) => {
+	const harness = reviewHarness(t, "medium", 4);
+	const context = harness.context;
+	const envelope = reviewerEnvelope("review-readability");
+	const wrapped = Buffer.from(`I checked {the candidate} and found it clean.\n\nHere is my envelope: ${envelope.toString("utf8")}`, "utf8");
+	const start = reviewStartV1(context, { cwd: harness.repo }, { consent: "granted" });
+	if (start.kind !== "created") return;
+	const status = reviewStatusV1(context, { cwd: harness.repo });
+	if (status.kind !== "status") return;
+	const collectInput = status.next_transition.collect?.inputs[0];
+	if (collectInput === undefined) throw new Error("no collect input");
+	const request = relayRequestFromCollectInput(collectInput, harness.repo);
+	const result = await submitReviewHostRelayPreparedResult(
+		await prepareReviewHostRelaySlot(request, async (promptBytes: Buffer) => ({ stdout: wrapped, promptByteLength: promptBytes.length, stdoutByteLength: wrapped.length }), renderJeroCaptureSlotForRelayV1),
+		admitJeroCaptureResultForRelayV1,
+	);
+	const closure = JSON.parse(result.submission) as { state?: string };
+	assert.equal(closure.state, "approved");
+	assert.deepEqual(readFileSync(join(jeroReviewerResultsDirectoryV1(context.store.store_root, start.lineage_id), "00-review-readability.json")), envelope);
+});

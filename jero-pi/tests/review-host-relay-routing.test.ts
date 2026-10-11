@@ -8,6 +8,7 @@ import { __testing } from "../lib/jero-ai-testing-exports.ts";
 import type { NativeReviewCli, NativeReviewUnachievableLensCaptureArtifact, NativeReviewUnachievableLensCaptureRequest } from "../lib/authority/client-contract.ts";
 import { REVIEW_HOST_RELAY_FAILURE, REVIEW_HOST_RELAY_PI_TIMEOUT_ENV, REVIEW_HOST_RELAY_PI_TIMEOUT_MAX_MS, REVIEW_HOST_RELAY_SUBMISSION_MISSING_MESSAGE, REVIEW_HOST_RELAY_UNAVAILABLE_MESSAGE, ReviewHostRelayError, type ReviewHostRelayRequest } from "../lib/review-host-relay.ts";
 import { decodeReviewNextTransitionV3, decodeReviewStatusV3, type ReviewArtifactSubjectV2, type ReviewCaptureSubmissionV1, type ReviewCollectInputV3, type ReviewStatusV3 } from "../lib/authority/wire-contract.ts";
+import { REVIEW_PROJECTION_SCHEMA } from "../lib/authority/wire-contract-enums.ts";
 
 // One-slot capture routing: the host relay runs only when the selected
 // provider-returned collect input carries the --materialize token. Every
@@ -122,7 +123,7 @@ function finalizeStatus(lineageId: string, inputs?: readonly ReviewCollectInputV
 		replayability: "unknown",
 		targetIdentity: SHA,
 		projection: {
-			schema: "jero-ai.review-integration.projection/v1",
+			schema: REVIEW_PROJECTION_SCHEMA,
 			kind: "current-changes",
 			projection: "workspace",
 			baseTree: TREE,

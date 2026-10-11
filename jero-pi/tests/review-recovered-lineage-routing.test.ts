@@ -12,6 +12,7 @@ import { CandidateViewRegistry, injectReviewCandidateView } from "../lib/authori
 // 验证候选视图之上的业务语义，打桩避免每个创建/清理周期数十次秒级子进程。
 import "./review-candidate-view-shared.ts";
 import type { ReviewCollectInputV3, ReviewStatusV3 } from "../lib/authority/wire-contract.ts";
+import { REVIEW_PROJECTION_SCHEMA } from "../lib/authority/wire-contract-enums.ts";
 
 // Live-confirmed adapter defects (2026-08-16, gentle-ai 2.4.0-main, Engram
 // #12461/#12466), both around a lineage recovered EXTERNALLY through native
@@ -88,7 +89,7 @@ function recoveredStatus(shape: StatusFixtureShape): ReviewStatusV3 {
 		replayability: "not_replayable",
 		targetIdentity: SHA,
 		projection: {
-			schema: "jero-ai.review-integration.projection/v1",
+			schema: REVIEW_PROJECTION_SCHEMA,
 			kind: "current-changes",
 			projection: "workspace",
 			baseTree: shape.baseTree,

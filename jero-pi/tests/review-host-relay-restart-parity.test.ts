@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { REVIEW_PROJECTION_SCHEMA } from "../lib/authority/wire-contract-enums.ts";
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -116,7 +117,7 @@ function collectStatus(lineageId: string, inputs: ReturnType<typeof relayCollect
 		replayability: "not_replayable",
 		targetIdentity: SHA,
 		projection: {
-			schema: "jero-ai.review-integration.projection/v1", kind: "current-changes", projection: "workspace",
+			schema: REVIEW_PROJECTION_SCHEMA, kind: "current-changes", projection: "workspace",
 			baseTree: TREE, initialReviewTree: TREE, currentCandidateTree: TREE,
 			pathsDigest: SHA, paths: ["app.ts"], intendedUntracked: [], intendedUntrackedProof: SHA,
 			initialSnapshotIdentity: SHA, currentSnapshotIdentity: SHA,

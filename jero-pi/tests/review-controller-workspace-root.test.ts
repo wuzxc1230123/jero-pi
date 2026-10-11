@@ -14,6 +14,7 @@ import { CandidateViewRegistry } from "../lib/authority/review-candidate-view.ts
 // 验证候选视图之上的业务语义，打桩避免每个创建/清理周期数十次秒级子进程。
 import "./review-candidate-view-shared.ts";
 import { decodeReviewFailureV2, type AuthorityRepairAssessmentV1, type ReviewStatusV3 } from "../lib/authority/wire-contract.ts";
+import { REVIEW_PROJECTION_SCHEMA } from "../lib/authority/wire-contract-enums.ts";
 
 interface RegisteredTool {
 	execute: (
@@ -125,7 +126,7 @@ function targetStatusFixture(options: {
 	const paths = options.paths ?? ["app.ts"];
 	const intendedUntracked = options.intendedUntracked ?? [];
 	const projection = {
-		schema: "jero-ai.review-integration.projection/v1" as const,
+		schema: REVIEW_PROJECTION_SCHEMA,
 		kind: "current-changes" as const,
 		projection: "workspace" as const,
 		baseTree,

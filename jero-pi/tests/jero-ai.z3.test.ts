@@ -26,6 +26,7 @@ import {
 	startedReviewResult, writeMarkdown,
 	routingConsumerFixture,
 } from "./jero-ai-shared.ts";
+import { REVIEW_PROJECTION_SCHEMA } from "../lib/authority/wire-contract-enums.ts";
 
 test("agent discovery skips skills directories", async (t) => {
 	const root = mkdtempSync(join(tmpdir(), "gentle-pi-agents-"));
@@ -198,7 +199,7 @@ test("ordinary native capture exposes a registered schema and STATUS binding cop
 		replayability: "not_replayable",
 		targetIdentity: sha,
 		projection: {
-			schema: "jero-ai.review-integration.projection/v1",
+			schema: REVIEW_PROJECTION_SCHEMA,
 			kind: "current-changes",
 			projection: "workspace",
 			baseTree: "b".repeat(40),
@@ -297,7 +298,7 @@ test("ordinary START reports candidate-owner preparation failure as pre-native n
 		replayability: "not_replayable",
 		targetIdentity: "a".repeat(64),
 		projection: {
-			schema: "jero-ai.review-integration.projection/v1",
+			schema: REVIEW_PROJECTION_SCHEMA,
 			kind: "current-changes",
 			projection: "workspace",
 			baseTree: "b".repeat(40),

@@ -12,6 +12,7 @@ import {
 	type ReviewCollectInputV3,
 	type ReviewStatusV3,
 } from "../lib/authority/wire-contract.ts";
+import { REVIEW_PROJECTION_SCHEMA } from "../lib/authority/wire-contract-enums.ts";
 
 const SHA = `sha256:${"a".repeat(64)}`;
 const TREE = "b".repeat(40);
@@ -113,7 +114,7 @@ function status(lineageId: string, inputs: readonly ReviewCollectInputV3[]): Rev
 		replayability: "not_replayable",
 		targetIdentity: SHA,
 		projection: {
-			schema: "jero-ai.review-integration.projection/v1",
+			schema: REVIEW_PROJECTION_SCHEMA,
 			kind: "current-changes",
 			projection: "workspace",
 			baseTree: TREE,

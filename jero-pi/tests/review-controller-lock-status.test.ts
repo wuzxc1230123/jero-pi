@@ -7,6 +7,7 @@ import test from "node:test";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { createJeroAiExtension } from "../extensions/jero-ai.ts";
 import type { NativeReviewCli } from "../lib/authority/client-contract.ts";
+import { REVIEW_PROJECTION_SCHEMA } from "../lib/authority/wire-contract-enums.ts";
 
 // The lock surface rides the negotiated target-status raw payload; the
 // retired inventory verb is gone from the client contract.
@@ -75,7 +76,7 @@ function fakeNative(status: LockStatusFixture, onStart?: (request: Parameters<Na
 	const tree = execFileSync("git", ["rev-parse", "HEAD^{tree}"], { cwd: status.repository, encoding: "utf8" }).trim();
 	const targetIdentity = `sha256:${"a".repeat(64)}`;
 	const projection = {
-		schema: "jero-ai.review-integration.projection/v1",
+		schema: REVIEW_PROJECTION_SCHEMA,
 		kind: "current-changes",
 		projection: "workspace",
 		baseTree: tree,

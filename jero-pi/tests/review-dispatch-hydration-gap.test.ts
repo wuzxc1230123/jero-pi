@@ -12,6 +12,7 @@ import { CandidateViewError, CandidateViewRegistry, injectReviewCandidateView } 
 // 验证候选视图之上的业务语义，打桩避免每个创建/清理周期数十次秒级子进程。
 import "./review-candidate-view-shared.ts";
 import type { ReviewCollectInputV3, ReviewStatusV3 } from "../lib/authority/wire-contract.ts";
+import { REVIEW_PROJECTION_SCHEMA } from "../lib/authority/wire-contract-enums.ts";
 
 // Field report (2026-08-16, gentle-pi main 402f9f77 + gentle-ai
 // 2.4.0-main.20278905): after #340 the FINALIZE routing defect was fixed but
@@ -89,7 +90,7 @@ function successorStatus(lineageId: string, projection: { baseTree: string; curr
 		replayability: "not_replayable",
 		targetIdentity: SHA,
 		projection: {
-			schema: "jero-ai.review-integration.projection/v1",
+			schema: REVIEW_PROJECTION_SCHEMA,
 			kind: "current-changes",
 			projection: "workspace",
 			baseTree: projection.baseTree,

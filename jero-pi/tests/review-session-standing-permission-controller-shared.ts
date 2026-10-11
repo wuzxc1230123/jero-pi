@@ -25,6 +25,7 @@ import {
 	formatReviewConsentUi,
 	presentReviewConsentUi,
 } from "../lib/review-consent-ui.ts";
+import { REVIEW_PROJECTION_SCHEMA } from "../lib/authority/wire-contract-enums.ts";
 
 export function consentFixture(): Record<string, unknown> {
 	const path = join(process.cwd(), "tests", "fixtures", "devbinary", "consent-v3.captured.json");
@@ -108,7 +109,7 @@ export function startStatus(cwd: string, intendedUntracked: readonly string[] = 
 			replayability: "not_replayable",
 			targetIdentity: `sha256:${"a".repeat(64)}`,
 			projection: {
-				schema: "jero-ai.review-integration.projection/v1",
+				schema: REVIEW_PROJECTION_SCHEMA,
 				kind: "current-changes",
 				projection: "workspace",
 				baseTree: candidate.baseTree,

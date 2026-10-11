@@ -13,6 +13,7 @@ import { CandidateViewRegistry } from "../lib/authority/review-candidate-view.ts
 import "./review-candidate-view-shared.ts";
 import type { ReviewCollectInputV3, ReviewStatusV3 } from "../lib/authority/wire-contract.ts";
 import type { ReviewHostRelayRequest } from "../lib/review-host-relay.ts";
+import { REVIEW_PROJECTION_SCHEMA } from "../lib/authority/wire-contract-enums.ts";
 
 // recovered-lineage 缺陷的第三字段失败复现锚点（2026-08-16，jero-pi
 // main 402f9f77 + gentle-ai 2.4.0-main.20278905）：STATUS 识别该
@@ -99,7 +100,7 @@ function recoveredStatus(lineageId: string, materialize: boolean): ReviewStatusV
 		replayability: "not_replayable",
 		targetIdentity: SHA,
 		projection: {
-			schema: "jero-ai.review-integration.projection/v1",
+			schema: REVIEW_PROJECTION_SCHEMA,
 			kind: "current-changes",
 			projection: "workspace",
 			baseTree: "3".repeat(40),

@@ -206,12 +206,16 @@ function extractReviewerEnvelopeBytesV1(raw: Buffer): Buffer {
 			// 截断）——回落花括号跨距，由字符串感知扫描取完整对象。
 		}
 	}
-	const start = text.indexOf("{");
-	if (start >= 0) {
+	// 多跨距试解析：散文前言里可能先出现与信封无关的花括号（真机实证
+	// "Expected property name" 类拒收的形态来源）——从首个 '{' 起逐个
+	// 收集顶层平衡跨距，返回第一个能通过 JSON.parse 的；全部失败才按
+	// 原始字节交回（原生解析错误照常拒收）。
+	let searchFrom = text.indexOf("{");
+	while (searchFrom >= 0) {
 		let inString = false;
 		let escaped = false;
 		let depth = 0;
-		for (let index = start; index < text.length; index += 1) {
+		for (let index = searchFrom; index < text.length; index += 1) {
 			const character = text[index];
 			if (escaped) {
 				escaped = false;
@@ -229,9 +233,18 @@ function extractReviewerEnvelopeBytesV1(raw: Buffer): Buffer {
 			if (character === "{") depth += 1;
 			else if (character === "}") {
 				depth -= 1;
-				if (depth === 0) return Buffer.from(text.slice(start, index + 1), "utf8");
+				if (depth === 0) {
+					const candidate = text.slice(searchFrom, index + 1);
+					try {
+						JSON.parse(candidate);
+						return Buffer.from(candidate, "utf8");
+					} catch {
+						break;
+					}
+				}
 			}
 		}
+		searchFrom = text.indexOf("{", searchFrom + 1);
 	}
 	return raw;
 }

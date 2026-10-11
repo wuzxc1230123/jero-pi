@@ -45,6 +45,7 @@
 		"test:sdd": "node --require ./scripts/test-env.cjs --experimental-strip-types --test --test-concurrency=12 --test-timeout=300000 \"tests/sdd-*.test.ts\"",
 		"test:timed": "node scripts/test-timed.mjs",
 		"smoke:pi": "node scripts/smoke-real-pi.mjs",
+		"test:fast": "node scripts/test-fast.mjs",
 		"test:coverage": "node scripts/test-coverage.mjs",
 		"test:packed-package": "node scripts/test-packed-runner.mjs",
 		"test:host-boot-smoke": "node scripts/host-boot-smoke.mjs",

@@ -5,6 +5,7 @@ import test from "node:test";
 import { __testing } from "../lib/jero-ai-testing-exports.ts";
 import type { NativeReviewCli } from "../lib/authority/client-contract.ts";
 import { assertReviewLastEventClosureBinding, decodeReviewLastEventClosureV1, type ReviewStatusV3 } from "../lib/authority/wire-contract.ts";
+import { REVIEW_PROJECTION_SCHEMA } from "../lib/authority/wire-contract-enums.ts";
 
 const CAPTURED_FIXTURES = join(process.cwd(), "tests", "fixtures", "devbinary");
 
@@ -119,7 +120,7 @@ test("current capture fails closed when fresh STATUS no longer offers the correc
 			action: "stop",
 			replayability: "not_replayable",
 			targetIdentity: sha,
-			projection: { schema: "jero-ai.review-integration.projection/v1", kind: "current-changes", projection: "workspace", baseTree: "b".repeat(40), initialReviewTree: "b".repeat(40), currentCandidateTree: "c".repeat(40), pathsDigest: sha, paths: ["corrected.ts"], intendedUntracked: [], intendedUntrackedProof: sha, initialSnapshotIdentity: sha, currentSnapshotIdentity: sha },
+			projection: { schema: REVIEW_PROJECTION_SCHEMA, kind: "current-changes", projection: "workspace", baseTree: "b".repeat(40), initialReviewTree: "b".repeat(40), currentCandidateTree: "c".repeat(40), pathsDigest: sha, paths: ["corrected.ts"], intendedUntracked: [], intendedUntrackedProof: sha, initialSnapshotIdentity: sha, currentSnapshotIdentity: sha },
 			repair: { schema: "jero-ai.review-authority-repair-assessment/v1", status: "unsupported", counts: { lineages: 0, compactLineages: 0, legacyLineages: 0, events: 0, bytes: 0, eligibleCandidates: 0, unsupportedLineages: 0, conflicts: 0 }, supportedOperations: [], authorizationSchema: "jero-ai.review-repair-authorization/v1" },
 			candidates: [],
 			nextTransition: { kind: "stop", reasonCode: "corrected_candidate_unavailable" },
