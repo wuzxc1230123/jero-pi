@@ -1,6 +1,6 @@
 ---
 name: jero-worker
-description: Scoped package-owned implementation writer for bounded non-SDD work. Edits code, runs focused tests, and returns review-ready evidence without committing.
+description: 范围受限的包自有实现写者，面向有界的非 SDD 工作。编辑代码、运行聚焦测试并返回可评审的证据，不提交。
 tools:
   - read
   - grep

@@ -99,29 +99,29 @@ test("canonical contract defines compact risk, causal admission, correction, CAS
 		/`low`[\s\S]*`medium`[\s\S]*`high`/,
 		/min\(200, ceil\(original_changed_lines \/ 2\)\)/,
 		/testdata\/golden\/\*\*/,
-		/`reviewing`, `correction_required`, `validating`, `approved`, and `escalated`/,
-		/`evidence_class`, `causal_disposition`, and concrete proof/,
+		/`reviewing`, `correction_required`, `validating`, `approved`, and `escalated`|五个状态是 `reviewing`、`correction_required`、`validating`、`approved` 与 `escalated`/,
+		/`evidence_class`, `causal_disposition`, and concrete proof|每个发现都给出 `evidence_class`、`causal_disposition` 与具体证明/,
 		/`changed-hunk`[\s\S]*`candidate-created-path`[\s\S]*`differential-test`[\s\S]*`before-after`/,
-		/Only severe `introduced`, `behavior-activated`, or `worsened` findings with valid proof can enter `correction_ids`/,
-		/`pre-existing` and `base-only` findings become non-blocking follow-ups/,
-		/one correction transaction/i,
-		/original budget/i,
-		/frozen findings and genesis scope/i,
-		/content-derived revisions, compare-and-swap replacement, exact retry idempotency/i,
-		/graph-v1 ordinary lineages remain readable for compatibility but reject new mutation/i,
-		/Legacy graph bundle export\/import is retired/i,
-		/Judgment Day remains mutable on graph-v1/i,
+		/Only severe `introduced`, `behavior-activated`, or `worsened` findings with valid proof can enter `correction_ids`|只有带有效证明的严重 `introduced`、`behavior-activated` 或 `worsened` 发现才能进入 `correction_ids`/,
+		/`pre-existing` and `base-only` findings become non-blocking follow-ups|`pre-existing` 与 `base-only` 发现转为非阻塞跟进/,
+		/one correction transaction|一次纠正事务/i,
+		/original budget|原始预算/i,
+		/frozen findings and genesis scope|冻结发现与创世范围/i,
+		/content-derived revisions, compare-and-swap replacement, exact retry idempotency|内容推导修订、比较交换替换、精确重试幂等/i,
+		/graph-v1 ordinary lineages remain readable for compatibility but reject new mutation|既存的 graph-v1 普通谱系保持可读以兼容，但拒绝新变更/i,
+		/Legacy graph bundle export\/import is retired|遗留的 graph bundle 导出\/导入已退役/i,
+		/Judgment Day remains mutable on graph-v1|Judgment Day 在 graph-v1 上保持可变/i,
 		/--agent=pi --materialize=true/,
 		/provider-owned submission form/i,
 		/self-contained authority-advancing vectors/i,
-		/Commit, push, pull-request creation, and release creation are not RDD gates/i,
-		/Review outcomes and receipt state are informational and never authorize, consume, rewrite, or block a Bash delivery command/i,
-		/Pi does not inspect RDD mode or native authority for those commands/i,
-		/Review transactions, validation, and SDD never perform delivery commands themselves/i,
-		/local orchestrator and same-user process are trusted/i,
-		/reviewer and validator outputs remain semantically untrusted/i,
-		/do not report.*trusted local orchestrator.*security finding/i,
-		/untrusted repository content.*malformed inputs.*stale authority.*path drift.*external callers/i,
+		/Commit, push, pull-request creation, and release creation are not RDD gates|提交、推送、创建 PR 与创建 release 不是 RDD 门/i,
+		/Review outcomes and receipt state are informational and never authorize, consume, rewrite, or block a Bash delivery command|评审结果与回执状态只作信息展示，绝不授权、消费、改写或阻塞 Bash 交付命令/i,
+		/Pi does not inspect RDD mode or native authority for those commands|Pi 不为这些命令检查 RDD 模式或原生权威/i,
+		/Review transactions, validation, and SDD never perform delivery commands themselves|评审事务、验证与 SDD 绝不自行执行交付命令/i,
+		/local orchestrator and same-user process are trusted|本地编排器与同用户进程受信任/i,
+		/reviewer and validator outputs remain semantically untrusted|评审者与验证者的输出仍是语义上不可信/i,
+		/do not report.*trusted local orchestrator.*security finding|不要把受信任的本地编排器.*报告为安全发现/i,
+		/untrusted repository content.*malformed inputs.*stale authority.*path drift.*external callers|不可信的仓库内容.*格式错误的输入.*陈旧的权威.*路径漂移.*外部调用者/i,
 		...JUDGMENT_DAY_DISCOVERY_PATTERNS,
 	]);
 	assert.match(read(README), /评审结果与回执状态只作信息展示|Review outcomes and receipt state are informational/);
@@ -314,7 +314,7 @@ test("Judgment Day judge prompts contain distinct graph-v1 discovery and re-judg
 	}
 	const judgePrompt = fencedBlock(JD_PROMPTS, "## Judge Prompt");
 	assert.match(judgePrompt, /```json\n\{\n  "rows":/);
-	assert.match(judgePrompt, /Do not put `summary`, `skill_resolution`, prose, or orchestration metadata inside or beside the native JSON result/);
+	assert.match(judgePrompt, /不要把 `summary`、`skill_resolution`、散文或编排元数据放进任一原生 JSON 结果之内或旁边/);
 	assert.doesNotMatch(judgePrompt, /End with `Skill Resolution:/);
 });
 
@@ -374,8 +374,8 @@ test("orchestrator and injected skill defer RDD lifecycle ownership to Jero", ()
 		[GENTLE_SKILL, read(GENTLE_SKILL)],
 	] as const) {
 		assertMatches(label, content, [
-			/jero-pi dynamically supplies runtime-specific RDD instructions/i,
-			/(?:sole lifecycle authority|does not define an RDD lifecycle)/i,
+			/jero-pi 在运行时动态提供运行时特定的 RDD 指令/i,
+			/唯一的生命周期权威|绝不定义评审路由/i,
 		]);
 	}
 

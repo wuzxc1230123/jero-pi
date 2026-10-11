@@ -455,5 +455,5 @@ test("shipped controller fails closed while static prompts defer RDD lifecycle o
 		const contract = readFileSync(path, "utf8");
 		assert.doesNotMatch(contract, /INSPECT before START|start -> finalize -> validate|next_transition|review\.capture-result/is, path);
 	}
-	assert.match(readFileSync("skills/jero-ai/SKILL.md", "utf8"), /sole lifecycle authority/i);
+	assert.match(readFileSync("skills/jero-ai/SKILL.md", "utf8"), /唯一的生命周期权威/);
 });

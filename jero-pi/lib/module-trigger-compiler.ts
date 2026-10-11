@@ -6,6 +6,7 @@
 // （自动生成物，勿手改——与 .atl/skill-registry.md 同纪律）。
 
 import { readdirSync, readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import {
 	BINDING_SURFACES,
@@ -44,7 +45,7 @@ export function clearRepoWalkCache(): void {
 	repoWalkCache.clear();
 }
 
-/** 递归收集仓库相对路径（正斜杠），忽略依赖/VCS 目录，超限截断。结果按 cwd 做 TTL 缓存；自定义忽略集不缓存（缓存键不含忽略集，避免串味）。 */
+/** 递归收集仓库相对路径（正斜杠），忽略依赖/VCS 目录，超限截断；结果经一次批量 git check-ignore 剔除被忽略文件（git 缺席/非仓库/失败时回退为不过滤的旧语义）。结果按 cwd 做 TTL 缓存；自定义忽略集不缓存（缓存键不含忽略集，避免串味）。 */
 export function walkRepoFiles(cwd: string, ignoredDirs: Set<string> = OVERLAY_IGNORED_DIRS): WalkedRepo {
 	const cacheable = ignoredDirs === OVERLAY_IGNORED_DIRS;
 	const cached = cacheable ? repoWalkCache.get(cwd) : undefined;
@@ -81,9 +82,37 @@ export function walkRepoFiles(cwd: string, ignoredDirs: Set<string> = OVERLAY_IG
 		}
 	};
 	visit(cwd, "");
-	const walked: WalkedRepo = { files, truncated };
+	// .gitignore 感知：一次批量 check-ignore 剔除被忽略文件。防两件事——
+	// 构建产物拖慢扫描与撑爆截断预算，以及被忽略目录里的文件伪命中
+	// 静态触发器（如忽略目录下的 go.mod 会在非 Go 项目激活 golang 束）。
+	// git 的完整忽略语义（嵌套 .gitignore/infoexclude/全局档）不自行复刻。
+	const walked = filterGitIgnoredFiles(cwd, { files, truncated });
 	if (cacheable) repoWalkCache.set(cwd, { walked, at: Date.now() });
 	return walked;
+}
+
+function filterGitIgnoredFiles(cwd: string, walked: WalkedRepo): WalkedRepo {
+	if (walked.files.length === 0) return walked;
+	const result = (() => {
+		try {
+			return spawnSync("git", ["check-ignore", "--stdin"], {
+				cwd,
+				input: `${walked.files.join("\n")}\n`,
+				encoding: "utf8",
+				timeout: 10_000,
+			});
+		} catch {
+			return undefined;
+		}
+	})();
+	if (result === undefined || result.error !== undefined || (result.status !== 0 && result.status !== 1)) {
+		// 非 git 仓库（128）/git 缺席/超时：保持不过滤的旧语义，宁可多扫
+		// 不可漏扫——触发判定是保守面。
+		return walked;
+	}
+	const ignored = new Set((result.stdout ?? "").split(/\r?\n/).filter((line: string) => line.length > 0));
+	if (ignored.size === 0) return walked;
+	return { files: walked.files.filter((file) => !ignored.has(file)), truncated: walked.truncated };
 }
 
 export interface ActiveModule {

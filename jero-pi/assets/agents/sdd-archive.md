@@ -1,6 +1,6 @@
 ---
 name: sdd-archive
-description: Archive a verified SDD change into OpenSpec source specs.
+description: 把已验证的 SDD 变更归档进 OpenSpec 源规格。
 tools:
   - read
   - grep

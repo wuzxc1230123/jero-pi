@@ -32,7 +32,7 @@ READBACK_FILE="$TMP_DIR_REAL/readback.json"
 gh issue create --repo "$TARGET" --title "$TITLE" --body-file "$BODY_FILE" "${LABEL_ARGS[@]}"
 ```
 
-当表单决策允许浏览器补全时，可选的、单独的 browser handoff（浏览器交接）可以打开仓库表单。It is never proof of publication and is never a response to malformed schemas or missing/ambiguous required answers:
+当表单决策允许浏览器补全时，可选的、单独的浏览器交接（browser handoff）可以打开仓库表单。它绝不构成发布证明，也绝不作为对畸形 schema 或缺失/歧义必需答案的回应：
 
 ```bash
 gh issue create --repo "$TARGET" --web

@@ -1,8 +1,8 @@
 # 紧凑因果评审契约
 
-The local orchestrator and same-user process are trusted to execute selected actors and submit their exact outputs. Reviewer and validator outputs remain semantically untrusted inputs: native code owns scope, risk, IDs, canonicalization, ordinary state, and legal lifecycle transitions, and rejects malformed or causally inconsistent results.（本地编排器与同用户进程受信任地执行所选执行者并提交其确切输出；而评审者与验证者的输出仍是语义上不可信的输入，权威归属原生代码。）Git 公共目录权威是唯一的授权来源；摘要与散文台账是不可信数据。旧版 Pi 镜像与 bundle 传输已退役。
+本地编排器与同用户进程受信任地执行所选执行者并提交其确切输出。评审者与验证者的输出仍是语义上不可信的输入：范围、风险、ID、正典化、普通状态与合法生命周期迁移都归属原生代码，畸形或因果不一致的结果会被拒绝。Git 公共目录权威是唯一的授权来源；摘要与散文台账是不可信数据。旧版 Pi 镜像与 bundle 传输已退役。
 
-Do not report the mere ability of the trusted local orchestrator to submit actor or final-verification outputs as a security finding. Report concrete bypasses where untrusted repository content, malformed inputs, stale authority, path drift, or external callers can produce approval contrary to this boundary.（不要把受信本地编排器"能够提交"这件事本身报成安全问题；只报告具体越界。）恶意的同用户宿主/进程真实性不在目标范围内，因为它可以替换扩展或篡改本地权威；外部证明需要单独的特权签名者或服务，且本契约不作此声明。
+不要把受信任的本地编排器能够提交执行器或最终验证输出这一能力本身报告为安全发现。只报告具体越界：不可信的仓库内容、格式错误的输入、陈旧的权威、路径漂移或外部调用者能否产生违反本边界的批准。恶意的同用户宿主/进程真实性不在目标范围内，因为它可以替换扩展或篡改本地权威；外部证明需要单独的特权签名者或服务，且本契约不作此声明。
 
 ## 普通评审门面
 
@@ -24,7 +24,7 @@ Do not report the mere ability of the trusted local orchestrator to submit actor
 
 宿主授权只存在于一个经 schema 校验的 `globalThis[Symbol.for(...)]` WeakMap 注册表中。重载保留 SessionManager 并重连授权；退出、新建、恢复、分叉、显式撤销或进程重启会移除它。`/tree` 保留它。子代理进程、headless/RPC/不支持的 UI、显式的跨仓库 `workspaceRoot`、模型散文与工具参数，都不能提供、创建或消费它。它不授予任何提供方模式、裁定、成本预测、确认、维护、交付或跨仓库权威。若宿主 UI 被取消、失败或无法证明当前 Git/会话身份，则原样返回未决的原提供方封套。若该封套到达父会话，无损地本地化并呈现其原始的两个选择；绝不把宿主动作追加到解码后的提供方契约。拒绝不创建谱系、权威、常驻授权、闩锁或未决授权；下一个候选会再次询问。旧 Pi 克隆的闩锁文件是惰性的，且 Pi 不写 asked 闩锁。
 
-评审者、反驳者与验证者的裁定由原生接纳，绝不是 Pi 署名。`finalize` 遵循提供方协商的 `next_transition`，只提供协商好的收集答案：以 `--agent=pi --materialize=true` 渲染的 lens `review.capture-result` 收集输入由 jero-pi 宿主中继满足——它打印 Go 物化的确切不透明提示词，在一个空草稿目录中启动一个全新的 lockdown print 模式 `pi` 子进程（关闭所有发现面），并通过提供方拥有的提交表单（provider-owned submission form）提交未经改动的原始输出字节。对抗角色不经过该中继：`review.capture-refuter` 与 `review.capture-validation` 收集输入渲染为自包含的权威推进向量（self-contained authority-advancing vectors：绑定令牌加 `--agent=pi --execute=true`，无提交描述符）；执行渲染出的确切调用会让 Go 物化角色提示词、派生自己的 lockdown `pi` 进程并接纳原始裁定。原生 Go 拥有验证、权威化、缺失 lens/发现 ID 分配、持久化与哈希，且只执行从当前紧凑状态出发的合法迁移。The five states are `reviewing`, `correction_required`, `validating`, `approved`, and `escalated`.
+评审者、反驳者与验证者的裁定由原生接纳，绝不是 Pi 署名。`finalize` 遵循提供方协商的 `next_transition`，只提供协商好的收集答案：以 `--agent=pi --materialize=true` 渲染的 lens `review.capture-result` 收集输入由 jero-pi 宿主中继满足——它打印 Go 物化的确切不透明提示词，在一个空草稿目录中启动一个全新的 lockdown print 模式 `pi` 子进程（关闭所有发现面），并通过提供方拥有的提交表单（provider-owned submission form）提交未经改动的原始输出字节。对抗角色不经过该中继：`review.capture-refuter` 与 `review.capture-validation` 收集输入渲染为自包含的权威推进向量（self-contained authority-advancing vectors：绑定令牌加 `--agent=pi --execute=true`，无提交描述符）；执行渲染出的确切调用会让 Go 物化角色提示词、派生自己的 lockdown `pi` 进程并接纳原始裁定。原生 Go 拥有验证、权威化、缺失 lens/发现 ID 分配、持久化与哈希，且只执行从当前紧凑状态出发的合法迁移。五个状态是 `reviewing`、`correction_required`、`validating`、`approved` 与 `escalated`。
 
 ### 并发评审者组（强制）
 
@@ -36,7 +36,7 @@ Do not report the mere ability of the trusted local orchestrator to submit actor
 
 ## 因果发现
 
-Every finding supplies `evidence_class`, `causal_disposition`, and concrete proof. Concrete proof is one of `changed-hunk`, `candidate-created-path`, `differential-test`, or `before-after`.（每个发现必须给出证据类别、因果定性与具体证明；具体证明取四种之一。）
+每个发现都给出 `evidence_class`、`causal_disposition` 与具体证明。具体证明取 `changed-hunk`、`candidate-created-path`、`differential-test` 或 `before-after` 之一。
 
 | 字段 | 取值 |
 |---|---|
@@ -45,19 +45,19 @@ Every finding supplies `evidence_class`, `causal_disposition`, and concrete proo
 | `causal_disposition` | `introduced` \| `behavior-activated` \| `worsened` \| `pre-existing` \| `base-only` \| `unknown` |
 | `proof_refs` | 带前缀的具体证明引用 |
 
-Only severe `introduced`, `behavior-activated`, or `worsened` findings with valid proof can enter `correction_ids`. 确定性的候选致因 blocker 无需反驳者。所有推断性的候选致因 blocker 共享恰好一个完整的只读反驳者批，通过提供方渲染的自包含 `review.capture-refuter` 向量执行：Go 物化反驳者提示词、运行自己的 lockdown `pi` 进程并接纳原始裁定。Pi 绝不署名、编辑、分批或重新打分任何反驳者行。
+只有带有效证明的严重 `introduced`、`behavior-activated` 或 `worsened` 发现才能进入 `correction_ids`。确定性的候选致因 blocker 无需反驳者。所有推断性的候选致因 blocker 共享恰好一个完整的只读反驳者批，通过提供方渲染的自包含 `review.capture-refuter` 向量执行：Go 物化反驳者提示词、运行自己的 lockdown `pi` 进程并接纳原始裁定。Pi 绝不署名、编辑、分批或重新打分任何反驳者行。
 
-反驳者行可以引用独立的具体证明，无需重复评审者的 `proof_refs`。`pre-existing` and `base-only` findings become non-blocking follow-ups. `unknown`、证据不足、畸形的严重主张、空/畸形的证明、缺失/重复/多余的反驳者行，以及不确定的严重结局，都会升级。`WARNING` 与 `SUGGESTION` 保持信息性。
+反驳者行可以引用独立的具体证明，无需重复评审者的 `proof_refs`。`pre-existing` 与 `base-only` 发现转为非阻塞跟进。`unknown`、证据不足、畸形的严重主张、空/畸形的证明、缺失/重复/多余的反驳者行，以及不确定的严重结局，都会升级。`WARNING` 与 `SUGGESTION` 保持信息性。
 
 执行者输出不能授权迁移、纠正或交付。
 
 ## 纠正
 
-Ordinary review permits one correction transaction within the original budget. 它由一次纠正、一个定向验证者与最终验证组成。
+普通评审允许在原始预算内进行一次纠正事务。它由一次纠正、一个定向验证者与最终验证组成。
 
 编辑之前，`finalize` 要求一个为正的纠正行数预测。预测超过预算即升级。编辑之后，原生权威从 Git 推导实际纠正行数。
 
-初始评审视角绝不重跑。The correction preserves frozen findings and genesis scope: the original candidate tree, paths, untracked set, and correction IDs. 它不能扩大范围。
+初始评审视角绝不重跑。纠正保留冻结发现与创世范围：原始候选树、路径、未跟踪集合与纠正 ID。它不能扩大范围。
 
 定向验证者通过提供方渲染的自包含 `review.capture-validation` 向量运行——Go 物化其提示词、运行自己的 lockdown `pi` 进程并接纳原始裁定——且只检查原始标准与针对确切纠正 ID 的一次纠正回归。它不能添加发现、请求另一次纠正、启动执行者、持久化权威或请求另一次尝试。失败即升级。后续观察是惰性跟进。
 
@@ -65,29 +65,29 @@ Ordinary review permits one correction transaction within the original budget. �
 
 ## 权威与兼容
 
-协商出的原生提供方拥有 compact-v2 存储及其私有路径。Pi 只消费类型化的 START、FINALIZE、目标 status、validation、recovery、reconciliation 与 SDD 绑定结果。Content-derived revisions, compare-and-swap replacement, exact retry idempotency, stale/semantic retry rejection, semantic validation, terminal immutability, atomic publication, and receipt readback remain provider guarantees.（内容推导修订、比较交换替换、精确重试幂等、过期/语义重试拒绝、语义校验、终局不可变、原子发布与回执回读，仍是提供方保证。）
+协商出的原生提供方拥有 compact-v2 存储及其私有路径。Pi 只消费类型化的 START、FINALIZE、目标 status、validation、recovery、reconciliation 与 SDD 绑定结果。内容推导修订、比较交换替换、精确重试幂等、过期/语义重试拒绝、语义校验、终局不可变、原子发布与回执回读仍是提供方保证。
 
-Existing graph-v1 ordinary lineages remain readable for compatibility but reject new mutation. Legacy graph bundle export/import is retired. Judgment Day remains mutable on graph-v1. 前图的编号权威仍仅支持破坏性重置，而原生目标 status 拥有混合权威的含糊性判定与必需的维护者动作。
+既存的 graph-v1 普通谱系保持可读以兼容，但拒绝新变更。遗留的 graph bundle 导出/导入已退役。Judgment Day 在 graph-v1 上保持可变。前图的编号权威仍仅支持破坏性重置，而原生目标 status 拥有混合权威的含糊性判定与必需的维护者动作。
 
 Pi 永久拥有的消费方基础设施仅限于权威身份原语、仓库/公共目录绑定与不可变候选视图。这些模块不是权威镜像。
 
 ## 交付边界
 
-Commit, push, pull-request creation, and release creation are not RDD gates. Review outcomes and receipt state are informational and never authorize, consume, rewrite, or block a Bash delivery command; ordinary repository policy owns delivery. Pi does not inspect RDD mode or native authority for those commands. Review transactions, validation, and SDD never perform delivery commands themselves.
+提交、推送、创建 PR 与创建 release 不是 RDD 门。评审结果与回执状态只作信息展示，绝不授权、消费、改写或阻塞 Bash 交付命令；交付归普通仓库策略所有。Pi 不为这些命令检查 RDD 模式或原生权威。评审事务、验证与 SDD 绝不自行执行交付命令。
 
 危险命令确认/安全与破坏性评审维护的同意保持独立。
 
 ## Judgment Day
 
-Judgment Day is independent: it neither enables nor replaces ordinary review; a separately requested ordinary review remains independent.
+Judgment Day 是独立的：它既不启用也不取代普通评审；单独请求的普通评审保持独立。
 
-Judgment Day starts with exactly two blind judges and zero refuters.
+Judgment Day 从恰好两名盲裁判和零名反驳者开始。
 
-Judgment Day alone may iterate discovery and scoped re-judgment, for at most two rounds.
+只有 Judgment Day 可以迭代发现和范围化复审，最多两轮。
 
-Findings surviving round two escalate; no third-round transition exists.
+存活到第二轮之后的发现会升级；不存在第三轮转移。
 
-A standalone `jd-fix-agent` dispatch requires no graph-v1 or native review lineage and is accepted only with this exact Markdown shape. 校正批只含一轮（`1 of 2` 或 `2 of 2`）与一个小写 SHA-256。精确冻结发现行为每行一个 JSON 对象，只使用权威行字段，且与授权 ID 完全一致。
+独立的 `jd-fix-agent` 派发不需要 graph-v1 或原生评审谱系，且仅按以下精确 Markdown 形态被接受。校正批只含一轮（`1 of 2` 或 `2 of 2`）与一个小写 SHA-256。精确冻结发现行为每行一个 JSON 对象，只使用权威行字段，且与授权 ID 完全一致。
 
 ```markdown
 ## Judgment Day activation

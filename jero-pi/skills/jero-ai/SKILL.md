@@ -71,6 +71,6 @@ clarify → scout/context-builder when context-heavy → one worker → verify
 
 ## Jero RDD 归属
 
-jero-pi dynamically supplies runtime-specific RDD instructions at runtime. Treat them as the sole lifecycle authority.（jero-pi 在运行时动态提供运行时特定的 RDD 指令，将其视为唯一的生命周期权威。）本技能绝不定义评审路由、命令序列、状态机、审批或门控策略、恢复路径或回退；当没有原生指令可用时，遵循普通仓库策略，不得自行发明。
+jero-pi 在运行时动态提供运行时特定的 RDD 指令，将其视为唯一的生命周期权威。本技能绝不定义评审路由、命令序列、状态机、审批或门控策略、恢复路径或回退；当没有原生指令可用时，遵循普通仓库策略，不得自行发明。
 
 危险命令安全保持独立且权威。

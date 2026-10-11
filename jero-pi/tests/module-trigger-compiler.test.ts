@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -69,6 +70,42 @@ test("walkRepoFiles：正斜杠相对路径、忽略 node_modules/.git", () => {
 		const walked = walkRepoFiles(dir);
 		assert.deepEqual([...walked.files].sort(), ["cmd/main.go", "go.mod"]);
 		assert.equal(walked.truncated, false);
+	} finally {
+		rmSync(dir, { recursive: true, force: true });
+	}
+});
+
+test("walkRepoFiles：git 仓库内剔除被 .gitignore 忽略的文件（伪触发防线）", () => {
+	const dir = mkdtempSync(join(tmpdir(), "jero-module-walk-git-"));
+	try {
+		const git = (...args: string[]) => spawnSync("git", ["-c", "user.name=t", "-c", "user.email=t@t", ...args], { cwd: dir, encoding: "utf8", timeout: 30_000 });
+		git("init", "-b", "main");
+		// 构建产物目录里的 go.mod/*.go 被忽略——它们不得把 golang 束伪激活。
+		writeFileSync(join(dir, ".gitignore"), "build/\n*.log\n");
+		writeFileSync(join(dir, "README.md"), "# x\n");
+		mkdirSync(join(dir, "build", "vendor"), { recursive: true });
+		writeFileSync(join(dir, "build", "vendor", "go.mod"), "module ignored.example\n");
+		writeFileSync(join(dir, "build", "noise.log"), "x");
+		git("add", ".gitignore", "README.md");
+		git("commit", "-m", "init");
+
+		clearRepoWalkCache();
+		const walked = walkRepoFiles(dir);
+		assert.deepEqual([...walked.files].sort(), [".gitignore", "README.md"]);
+		assert.equal(walked.truncated, false);
+	} finally {
+		rmSync(dir, { recursive: true, force: true });
+	}
+});
+
+test("walkRepoFiles：git 缺席/非仓库时回退为不过滤的旧语义", () => {
+	const dir = mkdtempSync(join(tmpdir(), "jero-module-walk-nogit-"));
+	try {
+		writeFileSync(join(dir, "go.mod"), "");
+		// 无 .git、无 .gitignore——非仓库环境必须保持全部可见（宁可多扫）。
+		clearRepoWalkCache();
+		const walked = walkRepoFiles(dir);
+		assert.deepEqual([...walked.files].sort(), ["go.mod"]);
 	} finally {
 		rmSync(dir, { recursive: true, force: true });
 	}

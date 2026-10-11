@@ -1,6 +1,6 @@
 ---
 name: sdd-explore
-description: Explore an SDD change idea before proposal.
+description: 在提案之前探索 SDD 变更想法。
 tools:
   - read
   - grep

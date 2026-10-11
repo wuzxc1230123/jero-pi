@@ -86,6 +86,32 @@ test("the sdd attempt pair serves acquire/settle over the store ledger", async (
 // retainNativeCaptureRoutes 读驼峰 lineageId 恒 undefined → 路由表恒空 →
 // jero_review_capture 在任何会话都被 capture-binding-rejected。单元测试
 // 注入的 stub CLI 返回手工驼峰形状，测不出这条真 CLI → 真注册的缝。
+// 续跑提示（P0 优化）：台账是状态机唯一事实源——活谱系中段的 STATUS/
+// INSPECT 信封必须携带确定性的"下一步做什么"提示，驱动方（脚本/断线
+// 会话/人工）逐段续跑而不依赖模型记忆（真机实证：大候选单发编排必死，
+// 分段续走全程贯通）。
+test("mid-flight STATUS envelope carries the deterministic continuation prompt", async (t) => {
+	const { repo, cli } = harness(t);
+	let consentEnvelope: NativeReviewConsentRequiredError["consent"];
+	try {
+		await cli.start({ cwd: repo });
+		assert.fail("mode-on 的中风险 START 必须先要同意");
+	} catch (error) {
+		if (!(error instanceof NativeReviewConsentRequiredError)) throw error;
+		consentEnvelope = error.consent;
+	}
+	const granted = await cli.answerConsent!({ cwd: repo, consent: consentEnvelope, answer: "granted" });
+	assert.equal(granted.kind, "started");
+	if (granted.kind !== "started") return;
+	const envelope = await __testing.executeReviewControllerOperation({ operation: "status" }, repo, cli);
+	assert.equal(envelope.status, "blocked");
+	const prompt = (envelope as Record<string, unknown>).continuation_prompt;
+	assert.equal(typeof prompt, "string", "活谱系中段的 STATUS 必须携带续跑提示");
+	assert.match(String(prompt), new RegExp(granted.start.lineageId ?? "review-"));
+	assert.match(String(prompt), /jero_review_capture/);
+	assert.match(String(prompt), /collectBindings 原文精确取用/);
+});
+
 test("granted lineage STATUS registers capture routes over the typed projection", async (t) => {
 	const { repo, cli } = harness(t);
 	let consentEnvelope: NativeReviewConsentRequiredError["consent"];

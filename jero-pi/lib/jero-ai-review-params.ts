@@ -880,12 +880,31 @@ function withoutRawCollectInputs(raw: Record<string, unknown>): Record<string, u
 	return { ...raw, next_transition: transition };
 }
 
+// 台账是评审状态机的唯一事实源，模型上下文不是——任意中断（宿主会话
+// 死亡/上下文超限/人工接管）后，由 STATUS/INSPECT 封套直接携带"下一步
+// 做什么"的确定性提示，驱动方逐段续跑而非依赖模型记忆（真机实证：大
+// 候选单发编排必死，两段式续走可全程贯通）。提示只引用本封套自带的
+// 权威产物（collectBindings/next_transition），不发明任何参数。
+export function renderReviewContinuationPrompt(status: ReviewStatusV3): string | undefined {
+	const lineageId = status.authority?.lineageId;
+	if (lineageId === undefined || status.applicability !== "current_target") return undefined;
+	const next = status.nextTransition;
+	if (next?.kind === "collect") {
+		return `评审谱系 ${lineageId} 处于 ${status.authority?.state ?? "reviewing"}。续跑：对本次 STATUS 下发的每个收集槽位完成该透镜评审，然后用 jero_review_capture 提交（collectBinding 从本封套 collectBindings 原文精确取用，绝不自行构造）；全部槽位闭合后权威自动结算。任何权威拒绝原样贴出。`;
+	}
+	if (next?.kind === "execute" && next.execute !== undefined) {
+		return `评审谱系 ${lineageId} 处于 ${status.authority?.state ?? "进行中"}。续跑：按 next_transition 的 execute（${next.execute.operation}）继续——jero_review 只接受权威下发的操作与参数，不得自行发明。`;
+	}
+	return undefined;
+}
+
 export function mapNativeTargetStatus(operation: ReviewControllerOperation, status: ReviewStatusV3, requestedLineageId?: string): Record<string, unknown> {
 	if (
 		status.nextTransition?.kind === "collect" &&
 		(operation === REVIEW_CONTROLLER_OPERATION.START || operation === REVIEW_CONTROLLER_OPERATION.INSPECT || operation === REVIEW_CONTROLLER_OPERATION.STATUS)
 	) {
 		const selection = reviewIntendedUntrackedInput(status);
+		const continuation = renderReviewContinuationPrompt(status);
 		return {
 			operation,
 			status: "blocked",
@@ -893,6 +912,7 @@ export function mapNativeTargetStatus(operation: ReviewControllerOperation, stat
 			...(selection === undefined
 				? { collectBindings: publicReviewCaptureBindings(status) }
 				: { selectionBinding: canonicalReviewCaptureBinding(selection) }),
+			...(continuation === undefined ? {} : { continuation_prompt: continuation }),
 		};
 	}
 	if (status.action === "recover") {
@@ -936,5 +956,8 @@ export function mapNativeTargetStatus(operation: ReviewControllerOperation, stat
 		status: status.action === "start" ? "ready" : "blocked",
 		result: status.raw,
 		...(requestedLineageId === undefined ? {} : { requested_lineage_id: requestedLineageId }),
+		// 活谱系中段的 execute 转换（如 acknowledge-approved）同样携带续跑
+		// 提示；未启动/终态无提示。
+		...(renderReviewContinuationPrompt(status) === undefined ? {} : { continuation_prompt: renderReviewContinuationPrompt(status) }),
 	};
 }

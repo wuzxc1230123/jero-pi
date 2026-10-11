@@ -37,7 +37,7 @@ function readTools(path: string): string[] {
 }
 
 function assertGenericRoleBody(fileName: string, source: string): void {
-	assert.match(source, /generic non-SDD work/);
+	assert.match(source, /通用非 SDD 工作/);
 	assert.match(source, /不(?:修复发现、不委托子代理|委托子代理、不提交)/);
 	assert.match(source, /不编辑、不写入/);
 	assert.match(source, /压缩的(?:交接|证据交接)/);

@@ -19,8 +19,8 @@ test("Judgment Day 双盲契约在技能、共享正典与法官代理三处措�
 		"skills/_shared/review-ledger-contract.md": read("skills/_shared/review-ledger-contract.md"),
 	};
 	const invariants: [string, RegExp][] = [
-		["双盲起点", /exactly two blind judges and zero refuters/],
-		["至多两轮", /at most two rounds/],
+		["双盲起点", /从恰好两名盲裁判和零名反驳者/],
+		["至多两轮", /最多两轮/],
 		["轮次标记", /Round: 1 of 2\./],
 	];
 	for (const [label, pattern] of invariants) {

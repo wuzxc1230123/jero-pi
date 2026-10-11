@@ -5,6 +5,15 @@ jero-pi 尚未发布到 npm（版本停在 0.1.0 基线），本文件自重构�
 
 ## [Unreleased]
 
+### P0 优化批：投影类型化 + 扫描 gitignore 感知 + 续跑提示（2026-10-11）
+
+**三项 P0 优化落地；第一项的编译器一接管就揪出三处被双重强转掩护的活漂移，当场修复。**
+
+- **wire 投影消灭外层双重强转**（`lib/authority/wire.ts`）：`projectJeroStatusToWireV1` 曾以 `as unknown as ReviewStatusV3` 收尾，缺陷 2（捕获路由蛇形漂移）正是被它掩护的。类型化过程中编译器再揪出三处同族活漂移一并修复——①repair 小节蛇形键（supported_operations/authorization_schema/counts.*）且授权串误用 abandon-authorization；②projection.schema 用错 id（candidate-projection，正典是 integration.projection/v1，解码器强制），错值已被九个测试夹具复制，全部同步正典；③authority.version/action/applicability/replayability/frozen.tier/forecast/repositoryContext 为 jero 词表向线上词表的逐字透传双轨，转换显式收拢到字段级并注释。接口对齐三处：`consumed?: true` 入 ReviewStatusAuthorityV1、repair 状态联合补 `"not_required"`、supportedOperations 由定长元组放宽为联合数组。顶层键漂移从此编译期报错。
+- **仓库扫描 gitignore 感知**（`lib/module-trigger-compiler.ts`）：walkRepoFiles 经一次批量 `git check-ignore --stdin` 剔除被忽略文件（spawn 带 timeout，git 缺席/非仓库/失败回退为不过滤的旧语义——触发判定宁可多扫不可漏扫）。防两件事：构建产物拖慢扫描与撑爆 2 万截断预算；被忽略目录里的文件伪命中静态触发器（真机实例：忽略目录下的 go.mod 会在非 Go 项目激活 golang 束）。回归钉测两向：git 仓库内剔除、非仓库回退。
+- **评审续跑提示**（`lib/jero-ai-review-params.ts` 的 `renderReviewContinuationPrompt`）：台账是评审状态机的唯一事实源，模型上下文不是——活谱系中段的 STATUS/INSPECT 信封携带确定性 `continuation_prompt`（只引用本封套自带的 collectBindings/next_transition，不发明参数），驱动方（脚本/断线会话/人工）逐段续跑。真机实证的动机：大候选单发编排必死，两段式续走全程贯通——本机制把两段式产品化为任意段。钉测：granted 谱系 STATUS 信封必带提示且引用真实谱系 id。
+- 验证：typecheck 0 诊；目标测（wiring 6/触发编译 16/捕获中继 5/模块库 40）全绿；review 域 732 零失败；authority 全回路 295 测 0 败 + runtime 一致 + 边界干净；全量与七道门见本批提交记录。
+
 ### 收尾打磨批：真机冒烟 harness + 提取回落 + 深知识计数口径（2026-10-11）
 
 **把"只有真机能抓的缝"从人工实践变成一键脚本（真跑 8/8 全绿含评审全生命周期），连带两处可选打磨落地。**

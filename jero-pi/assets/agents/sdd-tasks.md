@@ -1,6 +1,6 @@
 ---
 name: sdd-tasks
-description: Break SDD design/specs into implementation tasks with review workload forecast.
+description: 把 SDD 设计/规格拆解为带评审负载预测的实现任务。
 tools:
   - read
   - grep

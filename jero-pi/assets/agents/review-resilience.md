@@ -1,6 +1,6 @@
 ---
 name: review-resilience
-description: R4 Resilience reviewer — fallbacks, retry/backoff, graceful degradation, observability, load, rollback, and SLO risks.
+description: R4 韧性评审者——回退、重试/退避、优雅降级、可观测性、负载、回滚与 SLO 风险。
 tools:
   - "*": false
   - read

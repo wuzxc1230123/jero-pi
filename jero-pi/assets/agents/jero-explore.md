@@ -1,6 +1,6 @@
 ---
 name: jero-explore
-description: Read-only exploration and mapping for generic non-SDD work.
+description: 面向通用非 SDD 工作的只读探索与映射。
 tools:
   - read
   - grep

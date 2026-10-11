@@ -26,22 +26,22 @@ proposal → design ┘
 
 `/jero-sdd-status` 只检查并渲染该投影。仅显式授权的 `/jero-sdd-continue` 可以解析延续；它按同一投影路由，且不授予任何源根。原生状态不可用、畸形或不匹配时，停止并报告失败。
 
-## Bounded Planning Routing
+## 有界规划路由
 
-For authoritative native status, route only by the bounded `nextRecommended` token and dependency states; never infer a route from prose. Keep genuine blockers in `blockedReasons` and non-blocking diagnostics in `notes`, never in `nextRecommended`, and report them without discarding them to enable a route.
+对权威原生状态，只按有界的 `nextRecommended` 令牌与依赖状态路由；绝不从散文推断路由。真正的阻塞项保持在 `blockedReasons`、非阻塞诊断保持在 `notes`，绝不放进 `nextRecommended`，并且报告它们、绝不为了凑出一条路由而丢弃它们。
 
-| `nextRecommended` | Planning route |
+| `nextRecommended` | 规划路由 |
 | --- | --- |
 | `propose` | `sdd-proposal` |
 | `spec` | `sdd-spec` |
 | `design` | `sdd-design` |
 | `tasks` | `sdd-tasks` |
 
-Native unprefixed tokens are the only automatic planning routes. Prefixed or locally derived status tokens never authorize a phase.
+原生无前缀令牌是仅有的自动规划路由。带前缀或本地推导的状态令牌绝不授权任何阶段。
 
-These planning routes remain runnable when missing planning artifacts leave `dependencies.apply: blocked`; do not require apply readiness to produce those artifacts. This is a planning-only exception, not permission to run apply or another blocked non-planning phase.
+缺失规划产物令 `dependencies.apply: blocked` 时，这些规划路由仍可运行；不要为产出这些产物而要求 apply 就绪。这是仅限规划的例外，不是运行 apply 或任何其他被阻塞的非规划阶段的许可。
 
-Before any planning launch, stop for ambiguous change selection, unresolved session preflight, or unsafe action context. Carry `actionContext` and prove planned writes are within the authoritative workspace or allowed edit roots; workspace-planning without allowed edit roots remains read-only. Planning does not bypass the init guard, pre-proposal gate, or phase approval requirements.
+任何规划启动之前，对歧义的变更选择、未解析的会话预检或不安全的动作上下文停止。携带 `actionContext` 并证明计划的写入位于权威工作区或允许编辑根之内；无允许编辑根的 workspace-planning 保持只读。规划不绕过 init 守卫、提案前门或阶段批准要求。
 
 ## 有界执行路由
 

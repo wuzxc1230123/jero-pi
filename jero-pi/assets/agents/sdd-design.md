@@ -1,6 +1,6 @@
 ---
 name: sdd-design
-description: Design the technical approach for an SDD change.
+description: 为 SDD 变更设计技术方案。
 tools:
   - read
   - grep

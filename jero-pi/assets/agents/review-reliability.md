@@ -1,6 +1,6 @@
 ---
 name: review-reliability
-description: R3 Reliability reviewer — behavior-first tests, coverage value, edge cases, determinism, contracts, and regressions.
+description: R3 可靠性评审者——行为优先测试、覆盖价值、边界情形、确定性、契约与回归。
 tools:
   - "*": false
   - read

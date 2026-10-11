@@ -1,6 +1,6 @@
 ---
 name: sdd-sync
-description: Sync verified SDD delta specs into OpenSpec canonical specs without archiving the change.
+description: 把已验证的 SDD 增量规格同步进 OpenSpec 正典规格，不归档变更。
 tools:
   - read
   - grep

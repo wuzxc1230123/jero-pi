@@ -1,6 +1,6 @@
 ---
 name: sdd-proposal
-description: Write an SDD proposal for an approved change idea.
+description: 为已批准的变更想法撰写 SDD 提案。
 tools:
   - read
   - grep

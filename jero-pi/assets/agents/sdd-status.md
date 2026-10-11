@@ -1,6 +1,6 @@
 ---
 name: sdd-status
-description: Show read-only structured SDD status for an active change.
+description: 展示活动变更的只读结构化 SDD 状态。
 tools:
   - read
   - grep

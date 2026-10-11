@@ -113,7 +113,7 @@ function status(lineageId: string, inputs: readonly ReviewCollectInputV3[]): Rev
 		replayability: "not_replayable",
 		targetIdentity: SHA,
 		projection: {
-			schema: "jero-ai.review-candidate-projection/v1",
+			schema: "jero-ai.review-integration.projection/v1",
 			kind: "current-changes",
 			projection: "workspace",
 			baseTree: TREE,

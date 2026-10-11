@@ -1,6 +1,6 @@
 ---
 name: sdd-remediate
-description: Correct bound failed SDD evidence under one host-owned native attempt.
+description: 在一次宿主所有的原生尝试内纠正有界失败的 SDD 证据。
 tools:
   - read
   - grep

@@ -1,6 +1,6 @@
 ---
 name: sdd-verify
-description: Verify implementation against SDD specs, tasks, strict TDD evidence, and review workload boundaries.
+description: 对照 SDD 规格、任务、strict TDD 证据与评审负载边界验证实现。
 tools:
   - read
   - grep

@@ -1,6 +1,6 @@
 ---
 name: sdd-research
-description: Collect auditable external evidence for a selected SDD research lane.
+description: 为选定的 SDD 研究车道收集可审计的外部证据。
 tools:
   - read
   - grep

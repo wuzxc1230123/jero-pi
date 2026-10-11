@@ -491,6 +491,7 @@ test("unowned legacy research migrates by exact normalized hash, preserving rout
 	const packaged = readFileSync(join(PACKAGE_ROOT, "assets", "agents", "sdd-research.md"), "utf8");
 	const oldAdmission = "- Evidence grants for this runtime are `documentation=[]; open-web=[]`. Never infer evidence capability from bash, persistence tools, or any inherited tool; persistence tools are not evidence grants. Unsupported or undeclared classes deny admission and emit no claims.\n- Because this runtime declares no evidence grants, retain the selected request, persist a `blocked` outcome with no claims, and stop.\n";
 	const legacy = packaged
+		.replace("description: 为选定的 SDD 研究车道收集可审计的外部证据。", "description: Collect auditable external evidence for a selected SDD research lane.")
 		.replace("你是 Jero 的 SDD research executor。", "You are the SDD research executor for Gentle AI.")
 		.replace("  - mem_read" + String.fromCharCode(10), "  - mem_get_observation" + String.fromCharCode(10))
 		.replace("OpenSpec 要求其确切的变更本地绝对 `.md` 路径。记忆要求确切的 `topic_key`（`sdd/<change>/<artifact>`）。", "OpenSpec requires its exact absolute change-local `.md` path. Engram requires exact observation `id`, `project`, `topic_key`, and positive `revision_count`.")

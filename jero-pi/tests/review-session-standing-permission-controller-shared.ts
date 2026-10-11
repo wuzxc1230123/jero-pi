@@ -108,7 +108,7 @@ export function startStatus(cwd: string, intendedUntracked: readonly string[] = 
 			replayability: "not_replayable",
 			targetIdentity: `sha256:${"a".repeat(64)}`,
 			projection: {
-				schema: "jero-ai.review-candidate-projection/v1",
+				schema: "jero-ai.review-integration.projection/v1",
 				kind: "current-changes",
 				projection: "workspace",
 				baseTree: candidate.baseTree,

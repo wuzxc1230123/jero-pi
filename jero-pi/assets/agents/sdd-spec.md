@@ -1,6 +1,6 @@
 ---
 name: sdd-spec
-description: Write SDD delta specs with requirements and scenarios.
+description: 撰写含需求与场景的 SDD 增量规格。
 tools:
   - read
   - grep

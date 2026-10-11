@@ -1,6 +1,6 @@
 ---
 name: sdd-init
-description: Initialize project SDD context, testing capabilities, and skill registry.
+description: 初始化项目 SDD 上下文、测试能力与技能注册表。
 model: openai-codex/gpt-5.3-codex
 tools:
   - read

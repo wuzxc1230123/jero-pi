@@ -116,7 +116,7 @@ function collectStatus(lineageId: string, inputs: ReturnType<typeof relayCollect
 		replayability: "not_replayable",
 		targetIdentity: SHA,
 		projection: {
-			schema: "jero-ai.review-candidate-projection/v1", kind: "current-changes", projection: "workspace",
+			schema: "jero-ai.review-integration.projection/v1", kind: "current-changes", projection: "workspace",
 			baseTree: TREE, initialReviewTree: TREE, currentCandidateTree: TREE,
 			pathsDigest: SHA, paths: ["app.ts"], intendedUntracked: [], intendedUntrackedProof: SHA,
 			initialSnapshotIdentity: SHA, currentSnapshotIdentity: SHA,

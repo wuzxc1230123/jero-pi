@@ -1,6 +1,6 @@
 ---
 name: sdd-onboard
-description: Guide a user through a complete SDD cycle on a small real project change.
+description: 引导用户在一个小型真实项目变更上走完完整的 SDD 周期。
 tools:
   - read
   - grep

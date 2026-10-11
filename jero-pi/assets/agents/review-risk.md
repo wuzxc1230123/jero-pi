@@ -1,6 +1,6 @@
 ---
 name: review-risk
-description: R1 Risk reviewer — security, privilege boundaries, data exposure, dependency risks, and merge-blocking vulnerabilities.
+description: R1 风险评审者——安全、权限边界、数据暴露、依赖风险与可阻断合并的漏洞。
 tools:
   - "*": false
   - read

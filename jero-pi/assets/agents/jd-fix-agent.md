@@ -1,6 +1,6 @@
 ---
 name: jd-fix-agent
-description: Judgment Day surgical fix agent for confirmed findings. Can edit code and run focused tests.
+description: Judgment Day 外科手术式修复代理，面向已确认发现。可编辑代码并运行聚焦测试。
 tools:
   - read
   - grep

@@ -76,7 +76,7 @@ export function offeredCommittedRangeStatus(baseRef: string, baseTree: string, c
 		replayability: "not_replayable",
 		targetIdentity,
 		projection: {
-			schema: "jero-ai.review-candidate-projection/v1",
+			schema: "jero-ai.review-integration.projection/v1",
 			kind: "base-diff",
 			projection: "workspace",
 			baseTree,
@@ -124,7 +124,7 @@ export function cleanWorkspaceStatus(headTree: string, nextTransition?: ReviewSt
 		replayability: "not_replayable",
 		targetIdentity,
 		projection: {
-			schema: "jero-ai.review-candidate-projection/v1",
+			schema: "jero-ai.review-integration.projection/v1",
 			kind: "current-changes",
 			projection: "workspace",
 			baseTree: headTree,

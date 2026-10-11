@@ -432,9 +432,9 @@ test("SDD assets route completed implementation directly through verify, sync, a
 	assert.match(tasks, /<!-- sdd-owner: implementation -->/);
 	assert.match(apply, /next_recommended: "sdd-verify"/);
 	assert.match(status, /jero-ai\.sdd-status.*v2/i);
-	assert.match(status, /read-only/i);
+	assert.match(status, /只读/);
 	assert.match(contract, /(?:sdd-apply|sdd-verify)[\s\S]*归档/);
-	assert.match(contract, /Manual `sdd-sync` remains its intentional local resolver/);
+	assert.match(contract, /手工 `sdd-sync` 有意保留其本地解析器/);
 	assert.match(chain, /apply -> verify -> sync -> archive/);
 	assert.doesNotMatch(assets, /<!-- sdd-owner: parent -->/);
 	assert.doesNotMatch(assets, /parent-lifecycle/);

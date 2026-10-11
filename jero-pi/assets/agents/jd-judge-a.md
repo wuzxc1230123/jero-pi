@@ -1,6 +1,6 @@
 ---
 name: jd-judge-a
-description: Judgment Day blind adversarial reviewer A. Read-only; reports findings and does not fix code.
+description: Judgment Day 盲对抗评审者 A。只读；报告发现，不修复代码。
 tools:
   - "*": false
   - read

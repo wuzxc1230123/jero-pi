@@ -1,6 +1,6 @@
 ---
 name: jero-verify
-description: Read-only technical verification for generic non-SDD work.
+description: 面向通用非 SDD 工作的只读技术验证。
 tools:
   - read
   - grep

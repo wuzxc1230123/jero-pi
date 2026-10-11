@@ -18,46 +18,46 @@ test("preserves the prefixed skill identity and complete Issue Form metadata", (
 });
 
 test("makes YAML Issue Forms the deterministic automated format authority", () => {
-	assert.match(skill, /YAML Issue Forms are the format authority/i);
-	assert.match(skill, /`input`, `textarea`, `dropdown`, and `checkboxes`/);
+	assert.match(skill, /以 YAML Issue 表单（YAML Issue Forms）为格式权威/);
+	assert.match(skill, /`input`、`textarea`、`dropdown` 与 `checkboxes`/);
 	assert.match(skill, /declared order/i);
-	assert.match(skill, /visible labels and options/i);
-	assert.match(skill, /multi-select.*declared options order/i);
-	assert.match(skill, /optional dropdown[\s\S]{0,180}_No response_/i);
-	assert.match(skill, /Markdown controls are non-answer guidance/i);
-	assert.match(skill, /visible instructions[\s\S]{0,180}adjacent answers/i);
-	assert.match(skill, /do not render them as response sections/i);
-	assert.match(skill, /individually required checkbox/i);
-	assert.match(skill, /explicit first-person affirmation/i);
+	assert.match(skill, /保留可见标签与选项/);
+	assert.match(skill, /多选按声明选项顺序保留所选/);
+	assert.match(skill, /可选 dropdown[\s\S]{0,180}_No response_/i);
+	assert.match(skill, /Markdown 控件是非作答指引/);
+	assert.match(skill, /相邻答案[\s\S]{0,180}可见指示/);
+	assert.match(skill, /不把它们渲染为回答小节/);
+	assert.match(skill, /逐项强制必填复选框/);
+	assert.match(skill, /显式的第一人称确认/);
 	assert.match(skill, /textarea\.attributes\.render/);
-	assert.match(skill, /fence the answer with the declared language/i);
+	assert.match(skill, /用声明的语言为答案加栅栏/);
 });
 
 test("fails closed before publication for invalid required Issue Form data", () => {
-	assert.match(skill, /Fail closed before mutation/i);
-	assert.match(skill, /malformed, unsupported, missing, or ambiguous required structure or answers/i);
-	assert.match(skill, /malformed schema[\s\S]{0,200}do not open a browser/i);
-	assert.match(skill, /Never invent answers, selections, confirmations, or labels/i);
+	assert.match(skill, /在变更前保守失败/);
+	assert.match(skill, /畸形、不支持、缺失或歧义的必需结构或答案/);
+	assert.match(skill, /畸形的 schema[\s\S]{0,200}不打开浏览器/);
+	assert.match(skill, /绝不虚构答案、选择、确认或标签/);
 });
 
 function assertCheckboxAttestationContract(candidate: string) {
-	assert.match(candidate, /agent must complete.*duplicate search.*retain evidence/i);
-	assert.match(candidate, /agent must complete.*privacy scan\/redaction.*exact body.*retain evidence/i);
-	assert.match(candidate, /may explicitly attest.*own evidence-backed work.*must not attribute.*user/i);
-	assert.match(candidate, /personal facts, consent, legal declarations.*explicit user affirmation/i);
-	assert.match(candidate, /Do not blanket.*check(?:box|boxes)/i);
-	assert.match(candidate, /request to publish.*does not.*affirm/i);
+	assert.match(candidate, /代理必须主动完成查重搜索.*保留.*证据/);
+	assert.match(candidate, /代理必须.*确切正文.*隐私扫描\/脱敏.*保留/);
+	assert.match(candidate, /只能显式证明自己有证据支撑的工作.*绝不把其行动归到用户名下/);
+	assert.match(candidate, /个人事实、同意、法律声明.*显式的用户确认/);
+	assert.match(candidate, /绝不批量勾选复选框/);
+	assert.match(candidate, /发布请求不确认任何复选框/);
 }
 
 test("attests only agent-verifiable checkbox work and preserves human declarations", () => {
 	assertCheckboxAttestationContract(skill);
 
-	const missingEvidence = skill.replace(/retain evidence/gi, "skip evidence");
+	const missingEvidence = skill.replace(/保留/g, "跳过");
 	assert.throws(() => assertCheckboxAttestationContract(missingEvidence));
 
 	const userOnlyDeclaration = skill.replace(
-		/personal facts, consent, legal declarations.*explicit user affirmation/i,
-		"personal facts, consent, legal declarations may be inferred from a request to publish",
+		/个人事实、同意、法律声明.*显式的用户确认/,
+		"个人事实、同意、法律声明可以从发布请求中推断",
 	);
 	assert.throws(() => assertCheckboxAttestationContract(userOnlyDeclaration));
 });
@@ -67,7 +67,7 @@ test("publishes reviewed Issue Form bodies through a private body file", () => {
 	assert.match(skill, /gh issue create --repo "\$TARGET" --title "\$TITLE" --body-file "\$BODY_FILE"/);
 	assert.match(skill, /target verification/i);
 	assert.match(skill, /duplicate search/i);
-	assert.match(skill, /Before commenting on a confirmed duplicate[\s\S]{0,250}privacy scan\/redaction[\s\S]{0,250}exact comment body/i);
+	assert.match(skill, /对已确认重复项评论之前[\s\S]{0,250}确切评论正文[\s\S]{0,250}隐私扫描\/脱敏/);
 	assert.match(skill, /privacy scan/i);
 	assert.match(skill, /permitted labels/i);
 	assert.match(skill, /one mutation attempt/i);
@@ -78,11 +78,11 @@ function assertBrowserContract(candidate: string) {
 	assert.match(candidate, /gh issue create --repo "\$TARGET" --title "\$TITLE" --body-file "\$BODY_FILE"/);
 	assert.match(
 		candidate,
-		/user explicitly requests browser completion[\s\S]{0,350}syntactically valid selected form cannot safely\/faithfully be represented by the automated path/i,
+		/用户显式要求浏览器补全[\s\S]{0,350}无法被自动化路径安全\/忠实地表示/,
 	);
-	assert.match(candidate, /malformed schema[\s\S]{0,200}do not open a browser/i);
-	assert.match(candidate, /missing or ambiguous required[\s\S]{0,200}fail closed[\s\S]{0,200}do not open a browser/i);
-	assert.match(candidate, /browser handoff[\s\S]{0,160}never proof of publication/i);
+	assert.match(candidate, /畸形的 schema[\s\S]{0,200}不打开浏览器/);
+	assert.match(candidate, /缺失\/歧义的必需答案[\s\S]{0,200}保守失败[\s\S]{0,200}不打开浏览器/);
+	assert.match(candidate, /browser handoff[\s\S]{0,160}绝不构成发布证明/);
 	assert.doesNotMatch(candidate, /Do not parse or render[\s\S]{0,300}stop for human completion/i);
 	assert.doesNotMatch(candidate, /(?:always|must|only)\s+(?:open|use|route to)\s+(?:the )?browser(?:\s+for)?\s+(?:Issue Forms?|YAML)/i);
 	assert.doesNotMatch(candidate, /YAML Issue Forms require human completion in the web issue chooser\./i);
@@ -110,7 +110,7 @@ test("discovers support routing and keeps all issue files private until cleanup"
 	assert.match(skill, /README\.md/);
 	assert.match(skill, /\.github\/ISSUE_TEMPLATE\/config\.yml/);
 	assert.match(skill, /Discussions\/contact routing/i);
-	assert.match(skill, /questions\/support[\s\S]{0,250}(?:Discussions|contact)[\s\S]{0,250}otherwise ask or stop/i);
+	assert.match(skill, /questions\/support[\s\S]{0,250}Discussions[\s\S]{0,250}否则询问或停止/);
 	assert.doesNotMatch(skill, /TMP_DIR="\$\(mktemp -d\)"/);
 	assert.match(skill, /TMPDIR=\/tmp mktemp -d/);
 	assert.match(skill, /REPO_ROOT="\$\(git rev-parse --show-toplevel\)"/);

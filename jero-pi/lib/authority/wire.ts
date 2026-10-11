@@ -1,4 +1,5 @@
-import type { ReviewConsentChoiceV2, ReviewConsentV3, ReviewStatusV3 } from "./wire-contract.ts";
+import type { ReviewConsentChoiceV2, ReviewConsentV3, ReviewNextTransitionExecuteV3, ReviewStatusV3 } from "./wire-contract.ts";
+import type { ReviewStatusAuthorityV1, ReviewStatusFrozenV1 } from "./wire-contract-interfaces.ts";
 import type { JeroReviewStatusResultV1 } from "./status.ts";
 import type { JeroReviewStartResultV1 } from "./start.ts";
 import { type JeroSnapshotDerivationV1, jeroUntrackedInventoryDigestV1 } from "./snapshots.ts";
@@ -12,7 +13,10 @@ import { type JeroSnapshotDerivationV1, jeroUntrackedInventoryDigestV1 } from ".
 // （jero-authority/v1 版本标记）作为非路由元数据逐字透传。
 
 const WIRE_CONTRACT = "jero-ai.review-integration/v2" as const;
-const PROJECTION_SCHEMA = "jero-ai.review-candidate-projection/v1" as const;
+// 正典投影 schema id（解码器 wire-contract-decode-start 强制
+// integration.projection/v1；曾经的 candidate-projection 是被外层强转
+// 掩护的漂移，连测试夹具都复制了错值——类型化后由编译器钉住）。
+const PROJECTION_SCHEMA = "jero-ai.review-integration.projection/v1" as const;
 const REPAIR_SCHEMA = "jero-ai.review-authority-repair-assessment/v1" as const;
 
 interface WireArgument {
@@ -78,10 +82,12 @@ export function projectJeroStatusToWireV1(status: Extract<JeroReviewStatusResult
 	const record = derivation.record;
 	const wire = {
 		contract: WIRE_CONTRACT,
-		applicability: status.applicability,
+		// action/applicability/replayability/receipt 与 authority.version 同族：
+		// jero 词表向线上词表的逐字透传（非路由元数据），转换收在字段级。
+		applicability: status.applicability as ReviewStatusV3["applicability"],
 		targetIdentity: status.target_identity,
-		action: status.action,
-		replayability: status.replayability,
+		action: status.action as ReviewStatusV3["action"],
+		replayability: status.replayability as ReviewStatusV3["replayability"],
 		// P4d-g 同族修复：authority/frozen 是扩展消费面（类型化 ReviewStatusV3
 		// 为驼峰——retainNativeCaptureRoutes 读 authority.lineageId）。此处是
 		// 进程内适配器的唯一生产投影点，蛇形透传会让捕获路由永不注册、
@@ -89,18 +95,20 @@ export function projectJeroStatusToWireV1(status: Extract<JeroReviewStatusResult
 		// 外部 wire 输入仍由 decodeReviewStatusV3 独立解码，两个方向互不越界。
 		...(status.authority === undefined ? {} : {
 			authority: {
-				version: status.authority.version,
+				// version 是文件头注记的“非路由元数据逐字透传”双轨
+				// （jero-authority/v1 vs 线上版本词表），转换收在字段级。
+				version: status.authority.version as unknown as ReviewStatusAuthorityV1["version"],
 				lineageId: status.authority.lineage_id,
 				state: status.authority.state,
 				generation: status.authority.generation,
 				revision: status.authority.revision,
-				...(status.authority.consumed === true ? { consumed: true } : {}),
+				...(status.authority.consumed === true ? { consumed: true as const } : {}),
 			},
 		}),
 		receipt: { status: status.receipt.status },
 		...(status.frozen === undefined ? {} : {
 			frozen: {
-				tier: status.frozen.tier,
+				tier: status.frozen.tier as ReviewStatusFrozenV1["tier"],
 				originalChangedLines: status.frozen.original_changed_lines,
 				correctionBudget: status.frozen.correction_budget,
 				...(status.frozen.changed_path_manifest_sha256 === undefined ? {} : { changedPathManifestSha256: status.frozen.changed_path_manifest_sha256 }),
@@ -108,7 +116,7 @@ export function projectJeroStatusToWireV1(status: Extract<JeroReviewStatusResult
 		}),
 		projection: {
 			schema: PROJECTION_SCHEMA,
-			kind: "current-changes",
+			kind: "current-changes" as const,
 			projection: status.projection,
 			baseTree: record.base_tree,
 			initialReviewTree: record.initial_review_tree,
@@ -127,21 +135,32 @@ export function projectJeroStatusToWireV1(status: Extract<JeroReviewStatusResult
 			initialSnapshotIdentity: `sha256:${derivation.snapshot_id}`,
 			currentSnapshotIdentity: `sha256:${derivation.snapshot_id}`,
 		},
-		repair: { schema: REPAIR_SCHEMA, status: "not_required", counts: { lineages: 0, compact_lineages: 0, legacy_lineages: 0, events: 0, bytes: 0, eligible_candidates: 0, unsupported_lineages: 0, conflicts: 0 }, supported_operations: [], authorization_schema: "jero-ai.review-abandon-authorization/v2" },
+		// repair 投影按类型面驼峰输出（曾经的蛇形键+abandon 授权串是缺陷 2
+		// 同族的隐性漂移，被外层双重强转掩护——修键并对齐 repair 授权 schema）。
+		repair: { schema: REPAIR_SCHEMA, status: "not_required" as const, counts: { lineages: 0, compactLineages: 0, legacyLineages: 0, events: 0, bytes: 0, eligibleCandidates: 0, unsupportedLineages: 0, conflicts: 0 }, supportedOperations: [], authorizationSchema: "jero-ai.review-repair-authorization/v1" as const },
 		candidates: [...(status.candidates ?? [])],
 		...(next === undefined ? {} : {
+			// 转换的顶层键（kind/reasonCode）受编译器检查；execute/collect
+			// 载荷构建器仍产出 Record 形态的线上双轨（见 projectJeroExecute
+			// ToWireV1/projectCollectInputsV1），强转只收拢到载荷级——顶层
+			// 字段改名从此在编译期报错，不再靠人眼。
 			nextTransition: {
 				kind: next.kind,
 				reasonCode: next.reason_code,
-				...(next.kind === "execute" && next.execute !== undefined ? { execute: projectJeroExecuteToWireV1(next.execute) } : {}),
-				...(next.kind === "collect" && next.collect !== undefined ? { collect: { inputs: projectCollectInputsV1(next.collect.inputs as never) } } : {}),
+				...(next.kind === "execute" && next.execute !== undefined ? { execute: projectJeroExecuteToWireV1(next.execute) as unknown as ReviewNextTransitionExecuteV3 } : {}),
+				...(next.kind === "collect" && next.collect !== undefined ? { collect: { inputs: projectCollectInputsV1(next.collect.inputs as never) as never } } : {}),
 			},
 		}),
-		...(status.forecast === undefined ? {} : { forecast: status.forecast }),
-		...(status.repository_context === undefined ? {} : { repositoryContext: status.repository_context }),
+		// forecast/repositoryContext 是 jero 记录向线上型的逐字透传双轨
+		// （内容不经路由），转换收在字段级。
+		...(status.forecast === undefined ? {} : { forecast: status.forecast as unknown as ReviewStatusV3["forecast"] }),
+		...(status.repository_context === undefined ? {} : { repositoryContext: status.repository_context as unknown as ReviewStatusV3["repositoryContext"] }),
 		raw: status as unknown as Record<string, unknown>,
 	};
-	return wire as unknown as ReviewStatusV3;
+	// 顶层不再双重强转：本对象字面量必须结构化满足 ReviewStatusV3，缺陷 2
+	// 一类的顶层键漂移由编译器接管。raw 的宽转换保留（源本是权威侧蛇形
+	// 记录，仅作诊断透传，不作路由）。
+	return wire;
 }
 
 // P4d-e：START 同意门的线上封套。权威发出类型化的 `consent_required`

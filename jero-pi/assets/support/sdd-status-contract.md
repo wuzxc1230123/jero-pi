@@ -21,22 +21,22 @@
 - 运行时尝试权威独立于状态：托管修复启动由包运行时在进程内以 acquire/settle 方式包裹（按 `proceed`、`blocked` 或 `complete` 路由）；apply/verify 的单飞（single-flight）经由同一权威投影强制执行。
 - 仅显式授权的 `/jero-sdd-continue` 可以解决继续流程；它按同一投影路由，且不授予任何源码根权限。
 
-## Bounded Planning Routing
+## 有界规划路由
 
-For authoritative native status, route only by the bounded `nextRecommended` token and dependency states; never infer a route from prose. Keep genuine blockers in `blockedReasons` and non-blocking diagnostics in `notes`, never in `nextRecommended`, and report them without discarding them to enable a route.
+对权威原生状态，只按有界的 `nextRecommended` 令牌与依赖状态路由；绝不从散文推断路由。真正的阻塞项保持在 `blockedReasons`、非阻塞诊断保持在 `notes`，绝不放进 `nextRecommended`，并且报告它们、绝不为了凑出一条路由而丢弃它们。
 
-| `nextRecommended` | Planning route |
+| `nextRecommended` | 规划路由 |
 | --- | --- |
 | `propose` | `sdd-proposal` |
 | `spec` | `sdd-spec` |
 | `design` | `sdd-design` |
 | `tasks` | `sdd-tasks` |
 
-Native unprefixed tokens are the only automatic planning routes. Prefixed or locally derived status tokens never authorize a phase.
+原生无前缀令牌是仅有的自动规划路由。带前缀或本地推导的状态令牌绝不授权任何阶段。
 
-These planning routes remain runnable when missing planning artifacts leave `dependencies.apply: blocked`; do not require apply readiness to produce those artifacts. This is a planning-only exception, not permission to run apply or another blocked non-planning phase.
+缺失规划产物令 `dependencies.apply: blocked` 时，这些规划路由仍可运行；不要为产出这些产物而要求 apply 就绪。这是仅限规划的例外，不是运行 apply 或任何其他被阻塞的非规划阶段的许可。
 
-Before any planning launch, stop for ambiguous change selection, unresolved session preflight, or unsafe action context. Carry `actionContext` and prove planned writes are within the authoritative workspace or allowed edit roots; workspace-planning without allowed edit roots remains read-only. Planning does not bypass the init guard, pre-proposal gate, or phase approval requirements.
+任何规划启动之前，对歧义的变更选择、未解析的会话预检或不安全的动作上下文停止。携带 `actionContext` 并证明计划的写入位于权威工作区或允许编辑根之内；无允许编辑根的 workspace-planning 保持只读。规划不绕过 init 守卫、提案前门或阶段批准要求。
 
 ## 有界执行路由
 
@@ -47,7 +47,7 @@ Before any planning launch, stop for ambiguous change selection, unresolved sess
 | `remediate` | `sdd-remediate` |
 | `archive` | `sdd-archive` |
 
-仅执行依赖与 `actionContext` 均已允许的原生选中动作。未知、格式错误、阻塞或不支持的动作在工作开始前停止；任何本地路由、带前缀 token 或自然语言描述都不能替代它们。`notes` 独立于 `blockedReasons` 且绝不充当门控：将非空 `notes` 值作为信息性内容报告，并在依赖与 `blockedReasons` 门控允许时继续。Manual `sdd-sync` remains its intentional local resolver，且绝不由原生状态自动派发。
+仅执行依赖与 `actionContext` 均已允许的原生选中动作。未知、格式错误、阻塞或不支持的动作在工作开始前停止；任何本地路由、带前缀 token 或自然语言描述都不能替代它们。`notes` 独立于 `blockedReasons` 且绝不充当门控：将非空 `notes` 值作为信息性内容报告，并在依赖与 `blockedReasons` 门控允许时继续。手工 `sdd-sync` 有意保留其本地解析器，且绝不由原生状态自动派发。
 
 ## 状态 Schema
 

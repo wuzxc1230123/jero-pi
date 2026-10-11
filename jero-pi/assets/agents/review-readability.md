@@ -1,6 +1,6 @@
 ---
 name: review-readability
-description: R2 Readability reviewer — naming, complexity, intention, maintainability, review size, and context clarity.
+description: R2 可读性评审者——命名、复杂度、意图、可维护性、评审体量与上下文清晰度。
 tools:
   - "*": false
   - read

@@ -95,7 +95,7 @@ export function status(
 		replayability: "not_replayable",
 		targetIdentity: SHA,
 		projection: {
-			schema: "jero-ai.review-candidate-projection/v1",
+			schema: "jero-ai.review-integration.projection/v1",
 			kind: "current-changes",
 			projection: "workspace",
 			baseTree: TREE,
@@ -204,7 +204,7 @@ export function startStatus(cwd: string, baseRef?: string, intendedUntracked: re
 			replayability: "not_replayable",
 			targetIdentity: SHA,
 			projection: {
-				schema: "jero-ai.review-candidate-projection/v1",
+				schema: "jero-ai.review-integration.projection/v1",
 				kind: "current-changes",
 				projection: "workspace",
 				baseTree: view.baseTree,

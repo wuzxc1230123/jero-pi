@@ -1,6 +1,6 @@
 ---
 name: sdd-apply
-description: Implement SDD tasks with strict TDD evidence and review workload guard.
+description: 以 strict TDD 证据与评审负载守卫实现 SDD 任务。
 tools:
   - read
   - grep

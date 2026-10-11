@@ -198,7 +198,7 @@ test("ordinary native capture exposes a registered schema and STATUS binding cop
 		replayability: "not_replayable",
 		targetIdentity: sha,
 		projection: {
-			schema: "jero-ai.review-candidate-projection/v1",
+			schema: "jero-ai.review-integration.projection/v1",
 			kind: "current-changes",
 			projection: "workspace",
 			baseTree: "b".repeat(40),
@@ -297,7 +297,7 @@ test("ordinary START reports candidate-owner preparation failure as pre-native n
 		replayability: "not_replayable",
 		targetIdentity: "a".repeat(64),
 		projection: {
-			schema: "jero-ai.review-candidate-projection/v1",
+			schema: "jero-ai.review-integration.projection/v1",
 			kind: "current-changes",
 			projection: "workspace",
 			baseTree: "b".repeat(40),

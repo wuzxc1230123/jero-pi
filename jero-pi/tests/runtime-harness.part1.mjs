@@ -73,7 +73,7 @@ export async function part1(env) {
 			replayability: "not_replayable",
 			targetIdentity: sha,
 			projection: {
-				schema: "jero-ai.review-candidate-projection/v1",
+				schema: "jero-ai.review-integration.projection/v1",
 				kind: "current-changes",
 				projection: "workspace",
 				baseTree: tree,

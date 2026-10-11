@@ -143,6 +143,8 @@ export interface ReviewStatusAuthorityV1 {
 	state: string;
 	generation: number;
 	revision: string;
+	/** 进程内投影的加性标记：谱系经 acknowledge 烧毁后置 true（消费面只作展示，不作路由）。 */
+	consumed?: true;
 }
 
 export interface ReviewStatusReceiptV1 {
@@ -577,14 +579,16 @@ export interface AuthorityRepairAssessmentCountsV1 {
 
 export interface AuthorityRepairAssessmentV1 {
 	schema: "jero-ai.review-authority-repair-assessment/v1";
-	status: "eligible" | "unsupported" | "ambiguous" | "conflicting" | "truncated";
+	/** "not_required"：健康谱系的进程内投影态（外部 wire 解码面不产生该值）。 */
+	status: "eligible" | "unsupported" | "ambiguous" | "conflicting" | "truncated" | "not_required";
 	class?: "legacy_v1_historical_alias";
 	cause?: "unsupported_historical_v1_operation_alias";
 	disposition?: "quarantine-approved-historical-alias";
 	repositoryBinding?: string;
 	candidate?: AuthorityRepairAssessmentCandidateV1;
 	counts: AuthorityRepairAssessmentCountsV1;
-	supportedOperations: readonly ["review/complete-fix", "review/validate-fix"];
+	/** eligible 态携带完整修复操作集，not_required 态为空数组（原定长元组类型与投影现实不符）。 */
+	supportedOperations: readonly ("review/complete-fix" | "review/validate-fix")[];
 	authorizationSchema: "jero-ai.review-repair-authorization/v1";
 }
 

@@ -5,21 +5,21 @@
 ## 表单选择与 schema 读取
 
 - 仅当仓库自带表单的声明用途匹配时才选择它。若多个表单都匹配且策略无法区分，停下来请求该决策。
-- 对 YAML 表单，读取其 schema 并按声明顺序（declared order）建立控件。仅支持 `input`, `textarea`, `dropdown`, and `checkboxes`。
-- Markdown controls are non-answer guidance: honor their visible instructions when collecting and materializing adjacent answers, but do not render them as response sections.
-- Fail closed before mutation on malformed, unsupported, missing, or ambiguous required structure or answers. A malformed schema, or missing or ambiguous required answers, fail closed: do not open a browser or mutate.
-- A browser handoff is available only when the user explicitly requests browser completion or a syntactically valid selected form cannot safely/faithfully be represented by the automated path; otherwise report why automation is unsafe and stop.
+- 对 YAML 表单，读取其 schema 并按声明顺序（declared order）建立控件。仅支持 `input`、`textarea`、`dropdown` 与 `checkboxes`。
+- Markdown 控件是非作答指引：收集与物化相邻答案时遵循其可见指示，但不把它们渲染为回答小节。
+- 对畸形、不支持、缺失或歧义的必需结构或答案，在变更前保守失败。畸形的 schema，或缺失/歧义的必需答案，都保守失败：不打开浏览器、不做任何变更。
+- 浏览器交接（browser handoff）仅当用户显式要求浏览器补全，或语法有效的所选表单无法被自动化路径安全/忠实地表示时才可用；否则报告自动化为何不安全并停止。
 
 ## 控件处理表
 
 | 控件 | 必需的处理 |
 | --- | --- |
-| `input` / `textarea` | Preserve the visible label. Require an answer when `validations.required` is true; otherwise render `_No response_`. |
-| `dropdown` | Preserve visible labels and options. Require exact selected option text; single-select has one selection, and multi-select preserves selections in declared options order. A required dropdown needs at least one valid selection; an optional dropdown with no selection renders `_No response_`. |
-| `checkboxes` | Preserve the visible label and every option as `- [x]` or `- [ ]` in declared order. Enforce individually required checkboxes. For agent-verifiable operational options, proactively complete the action and mark it only with retained evidence; the agent may explicitly attest only its own evidence-backed work and must not attribute its actions to the user. Personal facts, consent, legal declarations, and other first-person user assertions require explicit user affirmation; require explicit first-person affirmation for such user declarations. Do not blanket-check checkboxes: a request to publish does not affirm any checkbox. |
+| `input` / `textarea` | 保留可见标签。`validations.required` 为 true 时要求作答；否则渲染 `_No response_`。 |
+| `dropdown` | 保留可见标签与选项。要求精确的所选选项文本；单选只有一个选择，多选按声明选项顺序保留所选。必填 dropdown 至少需要一个有效选择；无可选中的可选 dropdown 渲染 `_No response_`。 |
+| `checkboxes` | 保留可见标签，并把每个选项按声明顺序渲染为 `- [x]` 或 `- [ ]`。逐项强制必填复选框。对代理可验证的操作性选项，主动完成该动作并只以保留的证据标记它；代理只能显式证明自己有证据支撑的工作，绝不把其行动归到用户名下。个人事实、同意、法律声明及其他第一人称用户断言需要显式的用户确认；此类用户声明必须要求显式的第一人称确认。绝不批量勾选复选框：发布请求不确认任何复选框。 |
 
 ## 渲染
 
-For each answer, render `### <visible label>` followed by its materialized value. For `textarea.attributes.render`, fence the answer with the declared language and a fence long enough for its content. Never invent answers, selections, confirmations, or labels.
+对每个答案，渲染 `### <可见标签>` 及其物化值。对 `textarea.attributes.render`，用声明的语言为答案加栅栏，且栅栏标记长度足以容纳其内容。绝不虚构答案、选择、确认或标签。
 
 Markdown 模板只能基于已知证据填入同一个 private `BODY_FILE`。若无匹配模板，仅当空白 issue 被显式启用时才使用审阅过的结构化空白回退；否则不发布并停止。
