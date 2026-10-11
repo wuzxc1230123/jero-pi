@@ -24,7 +24,7 @@
 
 知识入口经技能注册表被宿主（S1 内联触发）与编排器（S2–S6 注册表注入协议）消费——模块知识与松散技能共用同一注册表，无新协议。
 
-束内 `skills/*/SKILL.md` 与 `agents/*.md` 对齐 gamedev 技能生态（awesome-gamedev-agent-skills / GD-Agentic-Skills / GodotPrompter）的通用骨架：frontmatter 只有 `name`（= 目录/角色名）与 `description`（职责 → 何时使用 → 触发词，代理可另带 `tools`），正文按「H1 + 一句结果 → `> **相关技能：**` 交接块 → 何时使用 → 要点 → 红线 → 深读指路（references 链接尾置）」组织；**交接指针必须落在束内真实存在的技能、角色或 references 上**——指向不存在的名字即悬空债。
+束内 `skills/*/SKILL.md` 与 `agents/*.md` 对齐 gamedev 技能生态（awesome-gamedev-agent-skills / GD-Agentic-Skills / GodotPrompter）的通用骨架：frontmatter 只有 `name`（= 目录/角色名）与 `description`（职责 → 何时使用 → 触发词，代理可另带 `tools`），正文按「H1 + 一句结果 → `> **相关技能：**` 交接块 → 何时使用 → 要点 → 红线 → 深读指路（references 链接尾置）」组织；**交接指针必须落在束内真实存在的技能、角色或 references 上**——指向不存在的名字即悬空债，由安装验证 `bundle-content` 检查项与 CI 库门双重机器拦截（判定体 `lib/module-bundle-content.ts`，三方共用的单一事实源）。
 
 ## 清单字段
 
@@ -108,10 +108,10 @@ S9（事故诊断）与 S10（继续/恢复）刻意不开放——后者是纯�
 - **作用域（项目内 only）**：模块只装在项目 `.pi/modules/{token}/`——**不做全局安装、不全局生效**。全局根（`~/.pi/agent/modules`）已随"项目即边界"的契约收敛移除；技能/代理的全局发现不受影响（那是 legacy 松散资产的路径）。全局生效会让"装了什么"离开项目可见性，与覆盖层/验证的项目内语义冲突；
 - **安装（受支持入口）**：`/jero:install-module <token>... [--force]`——从包内模块库（`assets/modules/`，安装器扫描它即是注册表）安装到项目 `.pi/`：模块本体 → `.pi/modules/{token}/`，束内 `agents/*.md` → `.pi/agents/`，束内 `skills/*/` → `.pi/skills/`；**依赖闭包自动先装**（环/缺失响亮失败）。已装同版本跳过、`--force` 强制重装；安装记录 `.pi/module-installs.json`（版本 + 文件哈希）承载幂等与用户改动保护——记录外文件或哈希漂移即跳过并指名（哲学与受管资产 `managed-assets.json` 一致）。束内声明的 `mcp.servers` 由安装器**幂等合并**进项目级 `.pi/mcp.json`（幂等跳过/同名用户档保留/畸形保命三律；同版本跳过路径也回填），`/jero:doctor` 显影在档/缺席/用户改动。`/jero:module-list` 列可装模块与安装状态；`/jero:doctor` 显影版本漂移与无记录目录；
 - **手工放置仍有效**：`/module-creation` 创建器与手工放进 `.pi/modules/` 的目录照常被发现与验证（零代码哲学不变），只是不受安装器管理（doctor 标注 hand-installed）；
-- **验证**：`/jero-module-verify`——安装验证检查集（token 合法/唯一、**deps-resolve**（v2 依赖缺失/自依赖/成环即 fail）、**no-loose-duplicate**（token 与 `.pi/skills/` 松散技能重名即拒——同一知识双源必漂移）、防遮蔽、触发命中、路由解析、隔离正当、entry 行数、命令钉住；`pipeline.gate` 声明以"响亮缺席"语义呈现）+ 编译覆盖层到 `.atl/module-overlay.md`（自动生成物，勿手改）；
+- **验证**：`/jero-module-verify`——安装验证检查集（token 合法/唯一、**deps-resolve**（v2 依赖缺失/自依赖/成环即 fail）、**no-loose-duplicate**（token 与 `.pi/skills/` 松散技能重名即拒——同一知识双源必漂移）、防遮蔽、触发命中、路由解析、隔离正当、entry 行数、命令钉住、**bundle-content**（束内内容机检：悬空交接指针/技能与角色骨架同名/孤儿 reference/清单手写计数——手工模块与安装束同受其律；判定体 `lib/module-bundle-content.ts`，读取面 `readBundleTexts` 双布局兼容：源布局读模块束目录，安装布局经安装记录恢复拆到 `.pi/skills/`、`.pi/agents/` 的伴生资产））；`pipeline.gate` 声明以"响亮缺席"语义呈现）+ 编译覆盖层到 `.atl/module-overlay.md`（自动生成物，勿手改）；
 - **会话启动**：模块根存在时**延后**刷新覆盖层（`setImmediate`，启动绝不等待全仓扫描），并对模块根做防抖变更监视（尽力而为）；模块根消失时**删除残留覆盖层**——编排器绝不消费过期接线；
 - **重编译触发面（盲区须知）**：会话启动 / 手动命令 / 模块根内文件变更。**仓库树变化（如新增 `go.mod`）不会自动重编译**——触发命中条件改变后跑一次 `/jero-module-verify` 或重启会话；扫描超 2 万文件截断时覆盖层与零命中详情都会明示"可能假阴性"；
-- **CI 门**：`pnpm run check:module-contract`——schema 与 TS 常量零漂移（含 v2 枚举与"dependencies 仅 v2"分支）+ 创建器金样绿灯 + **包内模块库绿灯**（`assets/modules/*` 逐束过解析与安装验证，roles 与 `agents/` 文件一一对应，依赖在库内可解析，束内 MCP 档过供应链策略：`uvx`/`npx` 白名单 + 钉版 token + 禁 env）；
+- **CI 门**：`pnpm run check:module-contract`——schema 与 TS 常量零漂移（含 v2 枚举与"dependencies 仅 v2"分支）+ 创建器金样绿灯 + **包内模块库绿灯**（`assets/modules/*` 逐束过解析与安装验证——含 bundle-content 内容机检（与安装管线共用 `readBundleTexts` 读取面，交接指针悬空/孤儿 reference 在库门即拦），roles 与 `agents/` 文件一一对应，依赖在库内可解析，束内 MCP 档过供应链策略：`uvx`/`npx` 白名单 + 钉版 token + 禁 env）；
 - **升级**：重装（`--force` 或库内升版后直接 install）+ 重跑验证；bindings 目标断链显式报错；
 - **移除**：删目录（与安装记录条目）；下次刷新覆盖层与注册表自然收回。
 
@@ -125,13 +125,14 @@ S9（事故诊断）与 S10（继续/恢复）刻意不开放——后者是纯�
 
 | 文件 | 职责 |
 |---|---|
-| `lib/module-contract.ts` | 类型、清单解析（v1/v2）、安装验证检查集（含 deps-resolve）、glob 语义 |
+| `lib/module-contract.ts` | 类型、清单解析（v1/v2）、安装验证检查集（含 deps-resolve 与 bundle-content）、glob 语义 |
+| `lib/module-bundle-content.ts` | 束内内容机检判定体（悬空交接指针/骨架同名/孤儿 reference/手写计数）——安装验证、CI 库门与库内容测试三方共用的单一事实源 |
 | `lib/module-trigger-compiler.ts` | 仓库扫描（TTL 缓存 30s）、静态触发编译、覆盖层渲染、模块发现 |
 | `lib/module-installer.ts` | 包内模块库发现、依赖闭包解析、项目内安装（幂等 + 用户改动保护 + 安装记录）、MCP 档合并（三律）、doctor 诊断行 |
 | `extensions/module-verify.ts` | `/jero-module-verify` + `/jero:install-module` + `/jero:module-list` 命令 + session_start 覆盖层刷新 + 模块根监视 |
 | `schemas/module.schema.json` | 清单的发布形态 schema（门钉与 TS 常量零漂移；含"dependencies 仅 v2"的 if/then 分支） |
 | `scripts/check-module-contract.mjs` | CI 门：schema 漂移 + 金样绿灯 + 包内模块库绿灯 |
-| `assets/modules/` | 包内模块库（安装器的注册表；首束：godot 全中文模块） |
+| `assets/modules/` | 包内模块库（安装器的注册表；库内束：godot、golang 全中文模块） |
 | `lib/skill-registry-engine.ts` | 注册表把项目模块根的 `knowledge/SKILL.md` 纳入发现 |
 | `assets/orchestrator-skills.md` | 注册协议第 5 步：按覆盖层档位收窄注入、委派按路由表 |
 | `assets/orchestrator-delegation.md` | 「自然语言路由单」：R1–R4 路由函数与 slip 字段 |

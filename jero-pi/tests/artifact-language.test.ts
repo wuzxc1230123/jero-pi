@@ -305,6 +305,13 @@ test("architecture patrol skill and router entry stay pinned", async () => {
 	assert.match(skill, /幂等纪律/);
 	assert.match(skill, /openspec\/specs\/glossary\//);
 	assert.match(skill, /绝不自我触发/);
+	// 可视化批（借鉴 mattpocock HTML-REPORT）：发现 ≥3 或用户要求时另产自包含 HTML 报告。
+	assert.match(skill, /references\/html-report\.md/);
+	const htmlReport = await readFile(join(ROOT, "skills/jero-architecture-patrol/references/html-report.md"), "utf8");
+	assert.match(htmlReport, /前\/后对比图/);
+	assert.match(htmlReport, /质量图/);
+	assert.match(htmlReport, /调用图坍缩/);
+	assert.match(htmlReport, /词汇纪律/);
 
 	const router = await readFile(join(ROOT, "skills/jero-skills/SKILL.md"), "utf8");
 	assert.match(router, /jero-architecture-patrol/);
@@ -464,4 +471,60 @@ test("comment-writer is context-reactive and neutral by default for Chinese comm
 	]) {
 		assert.match(skill, new RegExp(englishExample.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
 	}
+});
+
+test("skills-main 借鉴批：拷问前沿/推荐答案、红回路、非目标概念键、项目规范优先、合并危险、issue 耐用性", async () => {
+	// 保持 SDD 流程结构不变的纯文本强化批。六个落点：
+	// 拷问术三机制（前沿轮次 + 推荐答案 + 事实/决策分工）、紧反馈回路前置、
+	// 非目标概念键去重（sync 写侧 + 提案前门读侧）、评审透镜消费项目声明规范、
+	// PR 合并危险段（单向/双向门 + 爆炸半径）、issue 正文耐用性。
+	const workflow = await readFile(join(ROOT, "assets/sdd-orchestrator-workflow.md"), "utf8");
+	assert.match(workflow, /每轮只问前沿/);
+	assert.match(workflow, /推荐答案，措辞让"同意"即采纳推荐/);
+	assert.match(workflow, /绝不当作产品问题抛给用户/);
+	assert.match(workflow, /按概念相似度匹配/);
+	assert.match(workflow, /已拒绝的方向绝不静默重启/);
+	// 上下文卫生批（借鉴 mattpocock PHASE-BOUNDARIES）：五选一有序决策树只在阶段边界裁决。
+	assert.match(workflow, /## 阶段边界与上下文预算/);
+	assert.match(workflow, /压缩是\*\*兜底不是首选\*\*/);
+	assert.match(workflow, /绝不在阶段中段压缩/);
+
+	const proposalAgent = await readFile(join(ROOT, "assets/agents/sdd-proposal.md"), "utf8");
+	assert.match(proposalAgent, /每轮只问前沿/);
+	assert.match(proposalAgent, /推荐答案，措辞让"同意"即采纳推荐/);
+	assert.match(proposalAgent, /绝不当作产品问题抛给用户/);
+
+	const designAgent = await readFile(join(ROOT, "assets/agents/sdd-design.md"), "utf8");
+	assert.match(designAgent, /契约描述写类型与行为约束/);
+	assert.match(designAgent, /行号与易变路径会让沉淀过期/);
+
+	const remediate = await readFile(join(ROOT, "assets/agents/sdd-remediate.md"), "utf8");
+	assert.match(remediate, /紧反馈回路纪律/);
+	assert.match(remediate, /跑红过至少一次/);
+	assert.match(remediate, /没有红回路不开始修复/);
+
+	const sync = await readFile(join(ROOT, "assets/agents/sdd-sync.md"), "utf8");
+	assert.match(sync, /kebab-case 概念键/);
+	assert.match(sync, /不重复开条/);
+
+	for (const lens of ["review-readability", "review-reliability", "review-resilience", "review-risk"]) {
+		const agent = await readFile(join(ROOT, `assets/agents/${lens}.md`), "utf8");
+		assert.match(agent, /项目声明规范优先/, `${lens} must prefer declared repo standards`);
+		assert.match(agent, /rules\.review/);
+	}
+
+	const prTemplate = await readFile(join(ROOT, "skills/branch-pr/references/pr-template.md"), "utf8");
+	assert.match(prTemplate, /### 7\. 合并危险（必填）/);
+	assert.match(prTemplate, /\*\*合并门：\*\*单向 \/ 双向/);
+	assert.match(prTemplate, /\*\*爆炸半径：\*\*/);
+	assert.match(prTemplate, /PR 正文七段格式/);
+
+	const chainDetails = await readFile(join(ROOT, "skills/chained-pr/references/chaining-details.md"), "utf8");
+	assert.match(chainDetails, /\| Merge door \|/);
+	assert.match(chainDetails, /\| Blast radius \|/);
+
+	const issueSkill = await readFile(join(ROOT, "skills/issue-creation/SKILL.md"), "utf8");
+	assert.match(issueSkill, /## 正文耐用性/);
+	assert.match(issueSkill, /不引用行号/);
+	assert.match(issueSkill, /独立可核验/);
 });

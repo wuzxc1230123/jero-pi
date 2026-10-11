@@ -12,6 +12,8 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { verifyModule, type ModuleManifest, type ModuleVerifyReport } from "./module-contract.ts";
+import { readModuleInstalls } from "./module-installer.ts";
+import { ASSETS_DIR } from "./jero-ai-paths.ts";
 import {
 	compileDispatchOverlay,
 	discoverModules,
@@ -99,6 +101,69 @@ function readEntryText(root: string, dirName: string, manifest: ModuleManifest):
 	}
 }
 
+/**
+ * 读取束内内容机检素材（bundle-content 检查项的数据源）：技能/角色文本、
+ * references 名单与宿主随包代理名。读取面单一——安装管线与 CI 库门
+ * （scripts/check-module-contract.mjs）共用本函数，读取语义永不漂移。
+ * 双布局：源布局（模块束目录内 skills//agents/，手工放置与库束皆此形态）
+ * 优先；安装布局（installer 把 skills/ 拆到 .pi/skills/、agents/ 拆到
+ * .pi/agents/）回退——技能名从安装记录的落盘清单恢复，agents 按角色名
+ * 直读。技能缺 SKILL.md 时传空串：同名检查会把缺失响亮拒绝，不静默放行。
+ */
+export function readBundleTexts(
+	moduleDir: string,
+	manifest: ModuleManifest,
+	projectRoot?: string,
+): { skillTexts: Record<string, string>; agentTexts: Record<string, string>; referenceNames: string[]; hostAgentNames: string[] } {
+	const skillTexts: Record<string, string> = {};
+	const skillsDir = join(moduleDir, "skills");
+	if (existsSync(skillsDir)) {
+		for (const name of readdirSync(skillsDir, { withFileTypes: true })) {
+			if (!name.isDirectory()) continue;
+			try {
+				skillTexts[name.name] = readFileSync(join(skillsDir, name.name, "SKILL.md"), "utf8");
+			} catch {
+				skillTexts[name.name] = "";
+			}
+		}
+	} else if (projectRoot !== undefined) {
+		const record = readModuleInstalls(projectRoot).modules[manifest.token];
+		for (const file of record?.files ?? []) {
+			const match = /^\.pi\/skills\/([^/]+)\/SKILL\.md$/.exec(file.path);
+			if (match === null) continue;
+			try {
+				skillTexts[match[1]!] = readFileSync(join(projectRoot, file.path), "utf8");
+			} catch {
+				skillTexts[match[1]!] = "";
+			}
+		}
+	}
+	const agentTexts: Record<string, string> = {};
+	for (const role of manifest.roles) {
+		const candidates = [join(moduleDir, "agents", `${role.name}.md`)];
+		if (projectRoot !== undefined) candidates.push(join(projectRoot, ".pi", "agents", `${role.name}.md`));
+		for (const candidate of candidates) {
+			try {
+				agentTexts[role.name] = readFileSync(candidate, "utf8");
+				break;
+			} catch {
+				// 缺文件由库门/安装路径的 roles↔agents 一一对应检查负责，这里跳过文本检查。
+			}
+		}
+	}
+	const referencesDir = join(moduleDir, "references");
+	const referenceNames = existsSync(referencesDir)
+		? readdirSync(referencesDir).filter((name) => name.endsWith(".md")).map((name) => name.replace(/\.md$/, ""))
+		: [];
+	let hostAgentNames: string[] = [];
+	try {
+		hostAgentNames = readdirSync(join(ASSETS_DIR, "agents")).filter((name) => name.endsWith(".md")).map((name) => name.replace(/\.md$/, ""));
+	} catch {
+		// 宿主代理名单不可读（打包形态异常）：空名单 = 交接块只认束内名字，收紧不放松。
+	}
+	return { skillTexts, agentTexts, referenceNames, hostAgentNames };
+}
+
 export interface VerifyPipelineOptions {
 	/** 覆盖模块根（测试注入用）；缺省 = 项目根 .pi/modules。 */
 	readonly roots?: readonly string[];
@@ -146,15 +211,17 @@ export function runModuleVerifyPipeline(cwd: string, options: VerifyPipelineOpti
 		}
 		const manifest = found.manifest;
 		const needsEntry = Object.values(manifest.bindings).some((binding) => binding?.inject === "entry");
+		const entryText = needsEntry ? readEntryText(root, found.dirName, manifest) : undefined;
 		reports.push(
 			verifyModule({
 				manifest,
-				entryText: needsEntry ? readEntryText(root, found.dirName, manifest) : undefined,
+				entryText,
 				repoFiles: walked.files,
 				repoFilesTruncated: walked.truncated,
 				otherTokens: allTokens.filter((token) => token !== manifest.token),
 				looseSkillTokens: loose,
 				installedModules,
+				bundleTexts: readBundleTexts(join(root, found.dirName), manifest, cwd),
 			}),
 		);
 		manifests.push(manifest);

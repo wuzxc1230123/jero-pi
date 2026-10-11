@@ -251,6 +251,46 @@ test("命令·install-module godot：真实包内束装进项目 + 验证管线�
 	}
 });
 
+test("命令·install-module golang：真实包内束装进项目（无 MCP 档面）+ 验证管线联动", async () => {
+	const cwd = makeProject();
+	try {
+		// 触发命中样本：golang 束的静态触发器需要仓库里有 go.mod。
+		writeFileSync(join(cwd, "go.mod"), "module example.com/demo\n\ngo 1.26\n");
+		const { ctx, notifications } = fakeCtx(cwd);
+		await assembly.commands.get("jero:install-module")!.handler("golang", ctx);
+		const message = notifications.map((item) => item.message).join("\n");
+		assert.match(message, /\+ 已安装 golang@/);
+		// 三类落盘面：模块本体 / 代理（三角色）/ 技能 + 安装记录。
+		assert.ok(existsSync(join(cwd, ".pi", "modules", "golang", "module.json")));
+		assert.ok(existsSync(join(cwd, ".pi", "agents", "golang-reviewer.md")));
+		assert.ok(existsSync(join(cwd, ".pi", "agents", "golang-tester.md")));
+		assert.ok(existsSync(join(cwd, ".pi", "agents", "golang-architect.md")));
+		assert.ok(existsSync(join(cwd, ".pi", "skills", "golang-testing", "SKILL.md")));
+		assert.ok(existsSync(join(cwd, ".pi", "skills", "golang-concurrency", "SKILL.md")));
+		assert.ok(existsSync(join(cwd, ".pi", "module-installs.json")));
+		// 无 MCP 声明：不写项目级 .pi/mcp.json，汇总不带 MCP 并入文案。
+		assert.ok(!existsSync(join(cwd, ".pi", "mcp.json")), "无 MCP 档：安装不得创建 .pi/mcp.json");
+		assert.doesNotMatch(message, /MCP 档/);
+		// 安装后验证管线跑过：覆盖层含 golang，Strict TDD 钉住的测试命令随面注入。
+		const overlay = readFileSync(join(cwd, ".atl", "module-overlay.md"), "utf8");
+		assert.match(overlay, /golang/);
+		assert.match(overlay, /go test \.\/\.\.\./);
+		assert.match(message, /✓ golang：\d+ 项通过/);
+		// 幂等：再装一次同版本 → 跳过。
+		const again = fakeCtx(cwd);
+		await assembly.commands.get("jero:install-module")!.handler("golang", again.ctx);
+		assert.match(again.notifications.map((item) => item.message).join("\n"), /= golang：已装同版本/);
+		// module-list：无依赖、无 MCP 的束披露形态（对比 godot 行的 MCP 标签）。
+		const listCtx = fakeCtx(cwd);
+		await assembly.commands.get("jero:module-list")!.handler({}, listCtx.ctx);
+		const listMessage = listCtx.notifications[0].message;
+		assert.match(listMessage, /golang@[\d.]+｜已装 [\d.]+｜依赖：无｜/);
+		assert.doesNotMatch(listMessage, /MCP：[^\n]*golang/);
+	} finally {
+		rmSync(cwd, { recursive: true, force: true });
+	}
+});
+
 test("命令·module-list：列出包内束与安装状态", async () => {
 	const cwd = makeProject();
 	try {

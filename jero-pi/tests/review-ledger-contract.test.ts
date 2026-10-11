@@ -169,10 +169,17 @@ function packagedOrdinaryReviewLenses(): string[] {
 
 const MARKDOWN_FILE_REFERENCE = /(?:https?:\/\/[^\s)`\]]+|(?:\.{1,2}\/)?[A-Za-z0-9][A-Za-z0-9_./-]*)\.md\b/g;
 
+// 目标仓库引用标记：带此标记的行点名的 .md 是目标仓库的可选约定文件
+// （如 CODING_STANDARDS.md、CONTRIBUTING.md），不是本包依赖——门只守包内指针，
+// 显式标记让两者可区分，而不是逼措辞去扩展名。
+const TARGET_REPO_MD_LINE = /<!--\s*target-repo-md-refs?\s*-->/;
+
 function assertMarkdownFileDependenciesResolve(path: string, content: string, packageRoots: readonly string[]): void {
 	const sourceDirectory = dirname(join(ROOT, path));
-	const unresolved = [...content.matchAll(MARKDOWN_FILE_REFERENCE)]
-		.map((match) => match[0])
+	const unresolved = content
+		.split(/\r?\n/)
+		.filter((line) => !TARGET_REPO_MD_LINE.test(line))
+		.flatMap((line) => [...line.matchAll(MARKDOWN_FILE_REFERENCE)].map((match) => match[0]))
 		.filter((reference) => {
 			if (reference.startsWith("http://") || reference.startsWith("https://")) return true;
 			return ![resolve(ROOT, reference), resolve(sourceDirectory, reference)].some((candidate) => {
@@ -196,6 +203,23 @@ test("ordinary review dependencies allow packaged files and reject unresolved pa
 	assert.throws(
 		() => assertMarkdownFileDependenciesResolve("assets/agents/review-risk.md", "Sources: docs/nonexistent/security.md", packageRoots),
 		/unavailable Markdown dependencies: docs\/nonexistent\/security\.md/,
+	);
+	// target-repo 标记行豁免：点名的 .md 属于目标仓库的可选约定文件，不是包内依赖。
+	assert.doesNotThrow(() =>
+		assertMarkdownFileDependenciesResolve(
+			"assets/agents/review-risk.md",
+			"- 项目声明规范优先：目标仓库存在 `CODING_STANDARDS.md` 时先按其评审。 <!-- target-repo-md-refs -->",
+			packageRoots,
+		),
+	);
+	// 同一行没有标记仍然拦——标记是显式 opt-out，不是全局放松。
+	assert.throws(() =>
+		assertMarkdownFileDependenciesResolve(
+			"assets/agents/review-risk.md",
+			"- 项目声明规范优先：目标仓库存在 `CODING_STANDARDS.md` 时先按其评审。",
+			packageRoots,
+		),
+		/unavailable Markdown dependencies: CODING_STANDARDS\.md/,
 	);
 });
 

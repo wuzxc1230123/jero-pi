@@ -33,6 +33,7 @@ license: MIT
 | 体检 / 状态诊断 | `/jero:doctor` `/jero:status` `/jero:guard` |
 | 编排停滞 / 空转（阶段不推进、子代理悬挂、门反复失败） | `jero-diagnose-stall` 技能（只读六类分诊：状态投影/门失败停链/等人确认丢失/子代未结算/修复循环/预算停） |
 | 仓库结构体检（模块变浅、接口臃肿、重复、命名漂移） | `jero-architecture-patrol` 技能（只读幂等六轴巡检，发现走 SDD 立变更） |
+| 设计问题纸上谈不拢（状态机手感 / UI 该长什么样，需要可运行答案） | `jero-prototype` 技能（LOGIC 单 HTML / UI 多变体；结论回流 design 契约，原型存 `prototype/<name>` 分支，不进 main） |
 | 跨会话记忆 | `mem_save/mem_read/mem_list/mem_search` 工具 |
 | 评审会话常任权限 / RDD 开关 | `/jero:review-session-permission` `/jero:review-mode` |
 

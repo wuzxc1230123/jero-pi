@@ -18,6 +18,12 @@
 /GodotPrompter-master/
 /awesome-gamedev-agent-skills-main/
 /act-combat-design-main/
+/cc-skills-golang-main/
+/golang-skills-main/
+
+# golang-skills 快照复制时泄漏到根的外来插件元数据（与 golang-skills-main/.claude-plugin/
+# 逐字节一致，owner=cxuu，非本仓产物）——不入库；如需清理可直接删（快照内仍有原件）
+/.claude-plugin/
 
 # ZCode 会话工具产物（plans 等），不入库
 /.zcode/

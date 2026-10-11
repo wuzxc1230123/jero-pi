@@ -4,7 +4,7 @@ description: "创建带 issue 先行检查的 Jero 拉取请求。触发词：�
 license: Apache-2.0
 metadata:
   author: jero-pi
-  version: "2.1"
+  version: "2.2"
 ---
 
 ## 何时使用
@@ -38,4 +38,4 @@ metadata:
 
 提交信息必须匹配 `^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([a-z0-9\._-]+\))?!?: .+`。
 
-分支模式表、提交类型 → PR 标签映射与示例见 `references/branch-and-commits.md`；PR 正文六段模板、贡献者检查清单、CI 检查表与命令见 `references/pr-template.md`。
+分支模式表、提交类型 → PR 标签映射与示例见 `references/branch-and-commits.md`；PR 正文七段模板（含合并危险段）、贡献者检查清单、CI 检查表与命令见 `references/pr-template.md`。

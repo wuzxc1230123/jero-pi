@@ -10,6 +10,10 @@
 // v2 = v1 + dependencies（模块间依赖自述）：安装器（lib/module-installer.ts）
 // 据此做闭包解析与依赖先装，安装验证做缺失/成环的响亮失败。
 
+// 束内内容机检判定体（bundle-content 检查项）：纯函数住隔壁文件，
+// 与库门/测试三方共用；本文件对其只有值导入（对方对本文件是纯类型导入，无环）。
+import { auditBundleContent } from "./module-bundle-content.ts";
+
 export const MODULE_CONTRACT_V1 = "jero.module-contract/v1";
 export const MODULE_CONTRACT_V2 = "jero.module-contract/v2";
 // 发布面接受两个契约版本；v1 清单继续通过（向后兼容），dependencies
@@ -647,7 +651,10 @@ export function parseModuleManifest(raw: string): ParsedManifest {
 			const gitignore = data.config.gitignore === undefined
 				? undefined
 				: stringList(data.config.gitignore, "$.config.gitignore", issues);
-			if (gitignore !== undefined) config = { testCommand, gitignore };
+			// 两键皆可选（schema/configSpec 无 required）：只声明 testCommand（无 gitignore）
+			// 也必须物化——曾经的 `gitignore !== undefined` 条件会静默丢弃整段 config，
+			// Strict TDD 钉住的命令随之失联（静默失效族，golang 束触发修复）。
+			if (testCommand !== undefined || gitignore !== undefined) config = { testCommand, gitignore };
 		}
 	}
 
@@ -714,6 +721,13 @@ export interface ModuleVerifyInput {
 	readonly looseSkillTokens?: readonly string[];
 	/** 项目模块根内全部已装模块的 {token, dependencies}（含本模块）；提供时执行 deps-resolve 检查。 */
 	readonly installedModules?: readonly { readonly token: string; readonly dependencies: readonly string[] }[];
+	/** 束内内容机检素材；提供时执行 bundle-content 检查（悬空交接指针/孤儿 reference/骨架同名/手写计数）。 */
+	readonly bundleTexts?: {
+		readonly skillTexts: Readonly<Record<string, string>>;
+		readonly agentTexts?: Readonly<Record<string, string>>;
+		readonly referenceNames: readonly string[];
+		readonly hostAgentNames?: readonly string[];
+	};
 }
 
 function check(
@@ -928,6 +942,24 @@ export function verifyModule(input: ModuleVerifyInput): ModuleVerifyReport {
 			status: "pass",
 			detail: `已声明硬门 "${manifest.pipeline.gate}"——机制性必跑须进包加链安装；覆盖层将明示，缺席时编排器不得静默跳过`,
 		});
+	}
+
+	if (input.bundleTexts === undefined) {
+		checks.push({ id: "bundle-content", status: "skip", detail: "未提供束内文本，跳过内容机检（交接指针/骨架同名/孤儿 reference）" });
+	} else {
+		const findings = auditBundleContent({
+			manifest,
+			entryText: input.entryText ?? "",
+			...input.bundleTexts,
+		});
+		checks.push(
+			check(
+				"bundle-content",
+				findings.length === 0,
+				`束内内容机检零发现（${Object.keys(input.bundleTexts.skillTexts).length} 技能 / ${input.bundleTexts.referenceNames.length} 篇 references）`,
+				findings.map((finding) => `${finding.file}：${finding.message}`).join("；"),
+			),
+		);
 	}
 
 	return { token: manifest.token, ok: checks.every((item) => item.status !== "fail"), checks };

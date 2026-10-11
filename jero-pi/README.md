@@ -11,7 +11,7 @@
 - **SDD/OpenSpec**：`/jero-sdd-init` 探测技术栈并落配置；确定性阶段状态引擎（proposal/spec/design/tasks/apply/verify/sync/archive）；严格 TDD 证据（RED/GREEN/TRIANGULATE/REFACTOR）。
 - **持久记忆**：`mem_save` / `mem_read` / `mem_list` / `mem_search`，topic 键 Markdown 文件 + 轻量索引，零数据库、零原生模块。
 - **精益纪律**（借自 ponytail 的"懒惰资深工程师"）：七级梯子写入节制 + `/jero:lean` 分档（off/lite/full/ultra，会话条目持久化，`stop lean` 一句话关闭）+ `jero:` 简化标记与 `/jero:debt` 债务台账 + `jero-lean-review` 独立精益评审。纯提示词层增强，`off` 完全还原历史行为。
-- **能力模块契约**（`jero.module-contract/v2`，兼容 v1）：目标项目的领域扩展（Go/Godot/Unity…）一个目录一份 `module.json` 声明触发/知识/角色/接线（v2 另可声明 `dependencies` 与 `mcp` MCP 服务器档——安装时依赖自动先装、MCP 档幂等并入项目级 `.pi/mcp.json`）——**只装项目内不全局生效**，`/jero:install-module <词元>` 指令安装（包内模块库 `assets/modules/` 首束为全中文 godot 模块，附三子代理与验证技能），静态触发机器判定、安装验证、派发覆盖层自动接线；规范见 [docs/module-contract.md](docs/module-contract.md)。
+- **能力模块契约**（`jero.module-contract/v2`，兼容 v1）：目标项目的领域扩展（Go/Godot/Unity…）一个目录一份 `module.json` 声明触发/知识/角色/接线（v2 另可声明 `dependencies` 与 `mcp` MCP 服务器档——安装时依赖自动先装、MCP 档幂等并入项目级 `.pi/mcp.json`）——**只装项目内不全局生效**，`/jero:install-module <词元>` 指令安装（包内模块库 `assets/modules/` 现有全中文 godot 与 golang 两束，各附子代理与领域技能；golang 束知识锚定 Go 1.25/1.26），静态触发机器判定、安装验证、派发覆盖层自动接线；规范见 [docs/module-contract.md](docs/module-contract.md)。
 - **Shell 层**：底部状态栏（git / 模型 / 上下文窗口 / 会话成本）、侧栏、变更小部件与 diff 视图、订阅用量窗口、主题（Jero / Jero-Cute / Jero-Sexy）。
 
 ## 安装与使用

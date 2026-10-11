@@ -36,6 +36,7 @@ import {
 	parseModuleManifest,
 	verifyModule,
 } from "../lib/module-contract.ts";
+import { readBundleTexts } from "../lib/module-verify-pipeline.ts";
 
 const root = join(fileURLToPath(new URL("..", import.meta.url)));
 const failures = [];
@@ -136,11 +137,15 @@ if (existsSync(bundlesRoot)) {
 		}
 		// 触发命中样本：用清单里的非 glob 触发文件作字面量仓库文件（确定性命中）。
 		const literalTriggers = manifest.triggers.files.filter((file) => !file.includes("*"));
+		// 束内内容机检与安装管线同源（readBundleTexts 单一读取面 + verifyModule
+		// bundle-content 检查项）：库门不只查契约面，交接指针悬空/孤儿 reference
+		// 在这里同样拦截。
 		const report = verifyModule({
 			manifest,
 			entryText: readFileSync(join(dir, manifest.knowledge.entry), "utf8"),
 			repoFiles: literalTriggers.length > 0 ? literalTriggers : [".keep"],
 			otherTokens: bundleTokens.filter((token) => token !== manifest.token),
+			bundleTexts: readBundleTexts(dir, manifest),
 		});
 		const failed = report.checks.filter((item) => item.status === "fail");
 		if (failed.length > 0) {

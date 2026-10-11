@@ -15,6 +15,7 @@ tools:
 
 ## 评审规则
 
+- 项目声明规范优先：目标仓库存在编码规范声明（根目录 `CODING_STANDARDS.md`、`CONTRIBUTING.md` 的编码章节，或 `openspec/config.yaml` 的 `rules.review` 段）时，先按其明文规则评审；本透镜的通用启发只覆盖规范未涉及之处，规范明确背书的模式不按通用启发标记。 <!-- target-repo-md-refs -->
 - 当密钥、令牌、API key、JWT secret 或 DB URL 被硬编码在代码或提交的示例中时，标记。
 - 当授权只在 frontend 强制执行时，阻塞；要求每个请求都有 backend 验证。
 - 当用户输入未经转义/消毒到达 HTML/DOM 汇点时，标记。

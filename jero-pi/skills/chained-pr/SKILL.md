@@ -4,7 +4,7 @@ description: "触发词：超过 400 行的 PR、堆叠 PR、评审切片。把�
 license: Apache-2.0
 metadata:
   author: jero-pi
-  version: "1.0"
+  version: "1.1"
 ---
 
 ## 激活契约

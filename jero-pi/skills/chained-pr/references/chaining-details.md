@@ -62,6 +62,8 @@ main <- PR 1: foundation
 | Review budget | <changed lines> / 400 |
 | Starts at | <branch, PR, or state this builds on> |
 | Ends with | <standalone result delivered by this PR> |
+| Merge door | <one-way or two-way; one-way = hard to reverse> |
+| Blast radius | <one-word potential impact scope> |
 
 ### Chain Overview
 

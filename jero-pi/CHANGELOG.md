@@ -5,6 +5,50 @@ jero-pi 尚未发布到 npm（版本停在 0.1.0 基线），本文件自重构�
 
 ## [Unreleased]
 
+### 设计文档 v2.0 重建批（2026-10-11）
+
+**`JERO-PI-DESIGN.md` 按现行代码整体重写（v1.0 的重构设计已全部实现，原文进 git 历史）；仓库根 `upstream-pi-mcp-feature-requests.md` 确认删除（两份上游工单草稿均被 Pi 0.99 项目作用域满足，处置记录进新设计文档附录 C）。**
+
+- **v2.0 结构**：背景与 G1–G6 达成状态（附验收现行值）+ 追加目标 G7 中文化/G8 模块契约/G9 知识飞轮 · 现行分层架构图（9 extensions/authority 51 文件/模块执行面/注入面第四层）· D1–D9 决策现行重述 · 子系统现行状态（权威/SDD 编排全机制清单/知识飞轮/记忆/模块契约/遥测/安装）· 身份迁移终态核销 · 依赖与供应链（9 伴生现行钉版 + 龄期门 + 退出预案）· 安全信任模型现行版 · **v1.0 之后追加决策记录九条**（gentle- 清退/中文化/宿主升级策略/模块 v2/项目级 MCP/SDD 运行时强化/知识飞轮/能力路由技能族/外部借鉴纪律）· 风险开放问题更新（新增 Q1 第三束、Q2 rules.review 覆盖度）。
+- **分工固化**：设计文档答"为什么"，jero-reference 答"是什么"（计数/路径/版本以 reference 为准）；AGENTS.md 指引行同步。
+- 验证：测试/脚本零处钉住旧文档内容（grep 核实）；文档变更不触代码面，既有全绿状态维持（此前全量 2570 测 + harness 退出码 0）。
+
+### skills-main 借鉴批二：巡检可视化 / 阶段边界与上下文预算 / 门标记豁免（2026-10-10）
+
+**第三批零流程改动：巡检报告可视化、编排器上下文卫生、依赖门语义区分；预检瘦身经评估撤回（与"必需步骤每回合可见"的 bootstrap/面包屑立论冲突，不做）。**
+
+- **巡检可视化**（借鉴 mattpocock HTML-REPORT）：`jero-architecture-patrol` 发现 ≥3 条或用户要求时，另产自包含 HTML 报告到系统临时目录（Tailwind+Mermaid CDN、每条发现带前/后对比图）——新增 `references/html-report.md`（骨架/发现卡片/五种图模式按发现形状配图/顶部建议节/深模块词汇纪律），SKILL.md 版本 1.0→1.1；打包门收录两路径。
+- **阶段边界与上下文预算**（借鉴 mattpocock PHASE-BOUNDARIES）：sdd-orchestrator-workflow 新增节——smart zone（~150k）有限预算，上下文决策只在阶段边界按序五问（继续先排除 → 无关则开新会话 → 移交仅四情形 → 可 AFK 则派子代理 → 压缩是兜底不是首选），一手/二手来源损失框架；守门员在阶段间隙自查余量、绝不在阶段中段压缩，压缩后由 bootstrap/面包屑重建必需上下文；措辞 harness 中立（不点名宿主斜杠命令）。orchestrator.md 核心 8192B 预算不动（7422B），新节进懒加载 workflow 文件。
+- **依赖门语义区分**：review-ledger 契约的 Markdown 依赖门新增 `<!-- target-repo-md-refs -->` 行级显式豁免——带标记行点名的 `.md`（如 `CODING_STANDARDS.md`/`CONTRIBUTING.md`）是目标仓库可选约定文件而非包内依赖；四个评审透镜恢复精确 `.md` 文件名并打标记（上一批为过门去扩展名的措辞规避就此结构性解决）；单元钉测双向锁定（有标记豁免、无标记仍拦）。
+- 验证：typecheck 0 诊；打包门 300 文件过；docs-manifest 同步（22 技能）；目标钉测 213 全绿；test:sdd 184 / test:review 732 / test:agents 275 零失败。
+
+### skills-main 借鉴批：拷问术/红回路/概念去重/项目规范优先/合并危险/正文耐用性 + `jero-prototype`（2026-10-10）
+
+**两批零流程改动的纯文本强化：第一批判改既有资产与技能，第二批新增 `jero-prototype` 技能（技能数 21→22）。SDD 阶段链、状态权威、依赖图全部不动。**
+
+- **拷问术三机制**（借鉴 mattpocock grilling）：sdd-orchestrator-workflow 提案提问节与 sdd-proposal 同步——每轮只问前沿（被未决答案挂起的问题留后续轮）、每问附推荐答案（措辞让"同意"即采纳）、事实/决策分工（可查证事实先自查，绝不当作产品问题抛给用户）。
+- **紧反馈回路**（借鉴 mattpocock diagnosing-bugs）：sdd-remediate 新增前置纪律——没有一条已在本缺陷上跑红过的命令不进入假设与修复（优先复用任务行 `verify:` 命令），修后同命令转绿、前后退出码入证据；非确定性行为先提高复现率，仍不可复现即如实停止。
+- **非目标概念键去重**（借鉴 mattpocock out-of-scope KB）：sdd-sync 非目标记录加 kebab-case 概念键（同概念再拒追加不重开条）；提案前门新增按概念相似度匹配历史拒绝的读取步骤（命中即向用户呈现，已拒方向绝不静默重启）。
+- **评审消费项目规范**（借鉴 mattpocock code-review Standards 轴）：四个 review 透镜各加一条——目标仓库存在 `CODING_STANDARDS`/`CONTRIBUTING` 编码章节或 `openspec/config.yaml` 的 `rules.review` 段时，明文规范优先于透镜通用启发；`rules.review` 与既有 `rules.spec` 一并补档 jero-reference 契约与环境表（此前两者都是无文档的提示词约定）。
+- **PR 合并危险段**（借鉴 mattpocock pr/Humanlayer show-me）：branch-pr PR 正文模板六段升七段（**合并门**单向/双向 + **爆炸半径**一词概括），chained-pr Chain Context 表加 `Merge door`/`Blast radius` 两行；两技能版本随升（2.2/1.1）。
+- **正文耐用性**（借鉴 mattpocock agent-brief 耐用性四原则）：issue-creation 新增"正文耐用性"节（禁行号、行为契约而非实现位置、验收标准独立可核验、显式范围外），版本 1.4→1.5；sdd-design 契约段同步吸收（契约写类型与行为约束，行号与易变路径会让 sync 沉淀过期）。
+- **技能写作规范增补**（借鉴 mattpocock writing-for-agents）：skill-authoring §3 增引导词（leading words）/no-op 猎杀/防腐（沉积）三条。
+- **`jero-prototype` 技能**（借鉴 mattpocock prototype）：一次性原型裁决"纸上谈不拢"的设计问题——LOGIC 分支单文件 HTML（纯模块可整体吊走、自由按钮+引导走查、写给领域专家），UI 分支同路由 `?variant=` 三个结构迥异变体（浮动条切换、生产构建隐藏）；纪律：默认无持久化、零打磨、一条命令可跑；结论回收——验证过的 reducer/状态机/schema/类型形状回流 design 契约段，原型全量存 `prototype/<name>` 分支当一手来源，绝不进 main；**不是 SDD 阶段**、不进 `jero-ai.sdd-status/v2`；路由表/参考文档/打包门 requiredPaths/钉测（jero-prototype-skill.test.ts，含路由器不许撒谎钉）四线同步。
+- 行为验证说明：本批技能文本变更沿用仓库借鉴批先例（grilling/bigpowers 批同此）以契约钉测锁定，未附 `pressure/` 微测记录——预防性强化而非对观察到的失败做修复，豁免理由随本条目留档。
+- 验证：typecheck 0 诊；test:sdd 184 / test:review 732 / test:agents 275 零失败；artifact-language 借鉴批断言 + jero-prototype-skill + skill-collision（前向棘轮自动收录）全绿；docs-manifest 同步（28 命令 / 19 工具 / 22 技能）。
+
+### golang 能力模块束批（2026-10-10）
+
+**包内模块库第二束：`golang` 全中文模块（21 技能 + 28 篇 references + 评审/测试/架构三角色，知识锚定 Go 1.25/1.26），素材派生自 samber/cc-skills-golang（MIT）与 cxuu/golang-skills（Apache-2.0）两套快照重蒸馏（非逐句翻译，`references/_sources.md` 逐篇登记出处与授权）；伴生修复契约库 config 物化缺陷。**
+
+- **模块本体**（53 文件）：`module.json`（v2、触发器 `go.mod`/`**/*.go`、Strict TDD 钉 `go test ./...`、零依赖、**不声明 MCP**——束内供应链门限 uvx/npx 钉版，gopls 形态装不下，决策记入 `_sources.md` 与 `tooling-guide.md`）+ 知识入口 42 行（≤60 门内）+ 三角色（golang-reviewer 对抗之眼只读 / golang-tester 有界写者跑三道门 / golang-architect 深推理设计提案）；内容面吸收两套素材的四机制：原子归属交接块、触发式描述、出处块（来源/权威级/最低 Go 版本/核验日期）、确定性验证命令（三道门协议 `verification-gates.md` 对齐 godot 束 verification.md）；1.26 勘误贯穿（wg.Go、B.Loop 不再阻内联、go fix 体系、Green Tea GC、errors.AsType、slog.NewMultiHandler、os.Root、goroutine 泄漏剖析）。
+- **gopls MCP 接线技能（golang-mcp，官方 MCP 事实核验后的补偿面）**：golang/tools 源码直查确认 Go 官方 MCP 服务器存在（`gopls mcp` 子命令，2025 年内置，stdio/SSE，八工具 `go_workspace`/`go_search`/`go_file_context`/`go_package_api`/`go_symbol_references`/`go_rename_symbol`/`go_diagnostics`/`go_vulncheck`，基于 MCP 官方 Go SDK）——但其分发形态（本地二进制/`go run`）过不了束内供应链门（uvx/npx 钉版白名单），故以**技能**形态补偿：接线两种形态样例（本地 gopls / `go run` 钉版）+ 官方 Read/Edit 工作流 + 工具缺席降级纪律；`tooling-guide.md` gopls 段升级为核验事实（含成熟度注记），`_sources.md` 登记核验；模块清单仍零 MCP 声明（契约豁免的是项目内手工接线）。
+- **契约库缺陷修复**：`lib/module-contract.ts` 的 config 物化条件原挂在 gitignore 上——只声明 `testCommand`（两键按 schema/configSpec 皆可选）的清单 config 整段被**静默丢弃**，Strict TDD 取值链第一级随之失联；改为任一键存在即物化，`module-contract.test.ts` 补回归钉住（发现路径：golang 束安装后覆盖层报"无模块钉测试命令"）。
+- **束内内容机检升级为契约面（模块库全面审核批复落地）**：判定体抽成 `lib/module-bundle-content.ts` 纯函数（悬空交接指针/技能与角色骨架同名/孤儿 reference/清单手写计数），`verifyModule` 新增 **bundle-content** 检查项（未提供素材 skip）——手工模块经 `/jero-module-verify` 与安装束同受其律；读取面 `readBundleTexts`（管线导出）双布局兼容：源布局直读模块束目录，安装布局经安装记录恢复拆到 `.pi/skills/`、`.pi/agents/` 的伴生资产（发现路径：首版接线后安装 E2E 报"束内实为 0"——安装器把 skills/ 拆走，源布局假设不成立）；CI 库门 `check-module-contract.mjs` 与库内容测试改吃同一判定体/读取面，三方判定永不漂移。
+- **新增测试**：`tests/module-library-content.test.ts`（束内容机检——交接指针可解析含宿主代理豁免/references 指路无悬空无孤儿/frontmatter 同名/全中文，两束同检防再生束绕过）+ `module-verify.test.ts` 增 golang 真实束安装全链（无 MCP 档面：不创建 `.pi/mcp.json`、覆盖层含钉住命令、幂等重装、module-list 无 MCP 披露形态）。
+- **集成面**：`verify-package-files.mjs` 逐个登记 55 个新文件（54 束文件 + lib/module-bundle-content.ts 判定体；打包门总数随并行批合计 301）；README/docs（module-contract、jero-reference）与根 AGENTS.md 的"首束 godot"表述拨正为两束；jero-reference 打包门计数行同步。
+- **验证**：全量 2564 测 0 败（含新增 4 测）+ 八道质量门全绿（module-contract 库绿灯覆盖新束/schema 漂移/authority 边界/test-quality/empty-catch/review-naming/docs-manifest/runtime 一致性）+ typecheck 0 诊断。
+
 ### Pi 1.0.0 升级 + 遗留清账批（2026-10-06）
 
 **宿主从 Pi 0.85.1 升到 1.0.4（全家族对齐；1.0.0/1.0.2/1.0.4 三个门内版本先后全量验证），peer 下限保持 ≥0.85.1；模块 MCP 合并目标从全局 agent `mcp.json` 收口到项目级 `.pi/mcp.json`（上游 Pi 0.99.0 落地项目作用域后的既定方向）。** 供应链 3 天发布龄期门内逐批跟进(1.1.0 未满门继续跳过)。

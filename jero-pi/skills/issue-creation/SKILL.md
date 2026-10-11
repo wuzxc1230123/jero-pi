@@ -4,7 +4,7 @@ description: "基于仓库证据创建并分诊 GitHub issue。触发词：创�
 license: Apache-2.0
 metadata:
   author: jero-pi
-  version: "1.4"
+  version: "1.5"
 ---
 
 # Issue 创建
@@ -54,6 +54,15 @@ LABEL_ARGS+=(--label "$LABEL") # Repeat only for each permitted discovered label
 在唯一一次创建尝试之前，审阅目标、标题、所选表单或允许的回退、确切正文与 permitted labels（允许的标签）。The agent must complete the privacy scan/redaction of the exact body immediately before publication and retain evidence of it: replace private project names, usernames, hostnames, home paths, credentials, and private network addresses with useful placeholders without removing reproduction structure.
 
 临时目录纪律、发布命令与 target-host read-back（目标宿主回读）按 `references/private-body-files.md` 执行；只有完成回读后才报告 `confirmed`。
+
+## 正文耐用性
+
+Issue 正文会在数天或数周后被维护者或代理消费，代码在此期间会漂移。撰写正文时：
+
+- 描述行为契约与观察到的症状，不描述实现位置——不引用行号；文件路径仅在复现步骤必需时给出。
+- 验收/完成标准写成独立可核验的条目（可运行命令或可观察行为），不写"修复后应正常工作"这类无法判定的说法。
+- 显式列出范围外：明确不要求处理的相关问题，防止接手方顺带扩面。
+- 以上与 `references/yaml-forms.md` 的控件物化叠加适用，不替代表单结构。
 
 ## 分诊
 

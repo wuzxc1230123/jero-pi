@@ -159,6 +159,50 @@ test("config 的 testCommand 不接受空白串", () => {
 	assert.ok(blank.issues.some((item) => item.path === "$.config.testCommand"));
 });
 
+test("config 只声明 testCommand（无 gitignore）也物化——静默丢弃即契约违背", () => {
+	// 两键皆可选（schema/configSpec 无 required）：曾经的物化条件挂在内层
+	// gitignore 上，只钉测试命令的清单（如 golang 束）config 整段被静默
+	// 丢弃，Strict TDD 取值链第一级随之失联——这里钉住修复语义。
+	const parsed = parseModuleManifest(mutateGolden((data) => {
+		delete (data.config as Record<string, unknown>).gitignore;
+	}));
+	assert.equal(parsed.issues.length, 0);
+	assert.equal(parsed.manifest?.config?.testCommand, "dotnet test", "只声明 testCommand 的 config 必须物化");
+	assert.equal(parsed.manifest?.config?.gitignore, undefined);
+});
+
+test("verifyModule：bundle-content——无素材跳过；悬空指针/骨架同名/孤儿 reference 显形；干净束通过", () => {
+	const manifest = parseModuleManifest(goldenManifestJson()).manifest!;
+	const entryText = "---\nname: e\ndescription: d\n---\n\n# E\n\n## 知识指路\n\n- `real`（x）\n";
+	// 未提供束内文本 → skip（直调 verifyModule 的最小用法不强制机检）。
+	assert.equal(
+		verifyModule({ manifest, repoFiles: ["project.godot"] }).checks.find((item) => item.id === "bundle-content")?.status,
+		"skip",
+	);
+	const skillText = (name: string, handoff: string): string =>
+		`---\nname: ${name}\ndescription: d。当 x 时使用。触发词：x。\n---\n\n# T\n\n> **相关技能：** ${handoff}\n\n## 何时使用\n\nx。\n\n## 要点\n\n- y。\n\n## 红线\n\n- 无。\n\n## 深读指路（references/）\n\n见 \`references/real.md\`。\n`;
+	// 干净束：交接指针落本束角色、references 指路齐全 → pass。
+	const clean = verifyModule({
+		manifest,
+		entryText,
+		repoFiles: ["project.godot"],
+		bundleTexts: { skillTexts: { webapi: skillText("webapi", "`godot-reviewer`") }, referenceNames: ["real"] },
+	});
+	assert.equal(clean.checks.find((item) => item.id === "bundle-content")?.status, "pass");
+	// 三类发现逐一显形：悬空指针 + frontmatter 同名 + 孤儿 reference。
+	const dirty = verifyModule({
+		manifest,
+		entryText,
+		repoFiles: ["project.godot"],
+		bundleTexts: { skillTexts: { webapi: skillText("wrong-name", "`no-such-skill`") }, referenceNames: ["real", "orphan-ref"] },
+	});
+	const detail = dirty.checks.find((item) => item.id === "bundle-content")?.detail ?? "";
+	assert.equal(dirty.checks.find((item) => item.id === "bundle-content")?.status, "fail");
+	assert.match(detail, /`no-such-skill` 悬空/);
+	assert.match(detail, /「wrong-name」≠ 目录名 webapi/);
+	assert.match(detail, /孤儿 reference `orphan-ref`/);
+});
+
 test("权限预设展开", () => {
 	assert.deepEqual(expandPermissionPreset("read-only"), ["read", "grep", "find"]);
 	assert.deepEqual(expandPermissionPreset("scan"), ["read", "grep"]);

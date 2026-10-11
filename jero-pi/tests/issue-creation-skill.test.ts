@@ -14,7 +14,7 @@ const skill = [
 test("preserves the prefixed skill identity and complete Issue Form metadata", () => {
 	assert.match(skill, /^name: jero-issue-creation$/m);
 	assert.match(skill, /^description: ".+"$/m);
-	assert.match(skill, /^  version: "1\.4"$/m);
+	assert.match(skill, /^  version: "1\.5"$/m);
 });
 
 test("makes YAML Issue Forms the deterministic automated format authority", () => {
