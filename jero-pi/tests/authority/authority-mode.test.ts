@@ -133,3 +133,31 @@ test("the cli seam honors JERO_PI_CONFIG_HOME for the global mode record", async
 	assert.equal(result.status.effective, "off");
 	assert.equal(result.status.source, "global");
 });
+
+test("set 之后的 get 走真文件往返：写入必须是读侧接受的正典字节（无尾随换行）", async (t) => {
+	const repo = repository(t);
+	const globalPath = join(repo, "..", "global-mode.json");
+	t.after(() => rmSync(globalPath, { force: true }));
+	// 回归钉住（真机冒烟发现）：写侧曾追加 "\n" 而读侧 parseCanonicalJsonV1
+	// 逐字节比对——set 一次后每次 get 都判 mode-record-corrupted，START 的
+	// 模式门随之 fail-closed。此前的持久化测试用宽容的 JSON.parse 读文件，
+	// 从未走过"权威写 → 权威读"的真往返，故全绿共存。
+	assert.equal(setJeroReviewModeV1(repo, "on", { globalModePath: globalPath }).kind, "ok");
+	const afterOn = getJeroReviewModeV1(repo, { globalModePath: globalPath });
+	assert.equal(afterOn.kind, "ok", `set(on) 后 get 必须可读（曾判损坏:${afterOn.kind === "refused" ? String(afterOn.detail) : ""}）`);
+	if (afterOn.kind === "ok") {
+		assert.equal(afterOn.result.status.effective, "on");
+		assert.equal(afterOn.result.status.source, "clone_local");
+	}
+	assert.equal(setJeroReviewModeV1(repo, "off", { globalModePath: globalPath }).kind, "ok");
+	const afterOff = getJeroReviewModeV1(repo, { globalModePath: globalPath });
+	assert.equal(afterOff.kind, "ok");
+	if (afterOff.kind === "ok") {
+		assert.equal(afterOff.result.status.effective, "off");
+		assert.equal(afterOff.result.status.source, "clone_local");
+	}
+	// CLI 缝同律：命令路径的 status 读的正是同一份落盘记录。
+	const cli = createJeroAuthorityReviewCli();
+	const cliStatus = await cli.reviewMode!({ cwd: repo, operation: "status" });
+	assert.equal(cliStatus.status.effective, "off");
+});

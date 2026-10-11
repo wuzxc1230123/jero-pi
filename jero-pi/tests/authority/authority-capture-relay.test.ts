@@ -105,3 +105,59 @@ test("P4b: a stale binding revision refuses [invalid_request] before any reviewe
 	);
 	assert.equal(reviewerRan, false, "a drifted binding never reaches a reviewer process");
 });
+
+// 真机冒烟回归：评审者是自由生成的模型，且权威提示词的输出契约样例
+// 本身以 ```json 围栏展示——真实中继的评审输出会带回围栏或散文前言
+// （冒烟实测两类形态都发生），曾经的逐字节严格 JSON.parse 在信封解码
+// 之前就把它们拒成 submission-refused。受理面现在做确定性的运输容器
+// 提取，信封严格解码原样保留：围栏体、散文前言+围栏、散文+裸 JSON
+// 三种容器形态都必须受理，且暂存字节是提取出的 JSON 本体（组合面的
+// 严格重解析保持自洽）；纯散文（提不出任何 JSON）仍照常拒收。
+test("P4b: fenced or prose-wrapped reviewer envelopes admit via deterministic extraction", async (t) => {
+	const envelope = reviewerEnvelope("review-readability");
+	const envelopeText = envelope.toString("utf8");
+	const shapes: readonly { readonly label: string; readonly stdout: Buffer }[] = [
+		{ label: "```json 围栏体", stdout: Buffer.from(`\`\`\`json\n${envelopeText}\n\`\`\``, "utf8") },
+		{ label: "散文前言 + 围栏", stdout: Buffer.from(`I'll review this candidate now.\n\n\`\`\`json\n${envelopeText}\n\`\`\`\n`, "utf8") },
+		{ label: "散文 + 裸 JSON", stdout: Buffer.from(`Here is my envelope: ${envelopeText}`, "utf8") },
+	];
+	for (const shape of shapes) {
+		const harness = reviewHarness(t, "medium", 4);
+		const context = harness.context;
+		const start = reviewStartV1(context, { cwd: harness.repo }, { consent: "granted" });
+		assert.equal(start.kind, "created", shape.label);
+		if (start.kind !== "created") continue;
+		const status = reviewStatusV1(context, { cwd: harness.repo });
+		assert.equal(status.kind, "status", shape.label);
+		if (status.kind !== "status") continue;
+		const collectInput = status.next_transition.collect?.inputs[0];
+		if (collectInput === undefined) throw new Error("no collect input");
+		const request = relayRequestFromCollectInput(collectInput, harness.repo);
+		const prepared = await prepareReviewHostRelaySlot(request, async (promptBytes: Buffer) => ({ stdout: shape.stdout, promptByteLength: promptBytes.length, stdoutByteLength: shape.stdout.length }), renderJeroCaptureSlotForRelayV1);
+		const result = await submitReviewHostRelayPreparedResult(prepared, admitJeroCaptureResultForRelayV1);
+		// 干净单透镜产物集在受理内闭环节点：提交串即 approved 闭包。
+		const closure = JSON.parse(result.submission) as { state?: string };
+		assert.equal(closure.state, "approved", shape.label);
+		// 暂存的是提取出的 JSON 本体，不是运输容器。
+		assert.deepEqual(readFileSync(join(jeroReviewerResultsDirectoryV1(context.store.store_root, start.lineage_id), "00-review-readability.json")), envelope, shape.label);
+	}
+});
+
+test("P4b: pure-prose reviewer output still refuses — no JSON to extract", async (t) => {
+	const harness = reviewHarness(t, "medium", 4);
+	const start = reviewStartV1(harness.context, { cwd: harness.repo }, { consent: "granted" });
+	if (start.kind !== "created") return;
+	const status = reviewStatusV1(harness.context, { cwd: harness.repo });
+	if (status.kind !== "status") return;
+	const collectInput = status.next_transition.collect?.inputs[0];
+	if (collectInput === undefined) throw new Error("no collect input");
+	const request = relayRequestFromCollectInput(collectInput, harness.repo);
+	const prose = Buffer.from("I looked at the diff and it all seems fine to me. Nothing to report.", "utf8");
+	await assert.rejects(
+		submitReviewHostRelayPreparedResult(
+			await prepareReviewHostRelaySlot(request, async (promptBytes: Buffer) => ({ stdout: prose, promptByteLength: promptBytes.length, stdoutByteLength: prose.length }), renderJeroCaptureSlotForRelayV1),
+			admitJeroCaptureResultForRelayV1,
+		),
+		/capture admission failed.*not valid JSON/,
+	);
+});

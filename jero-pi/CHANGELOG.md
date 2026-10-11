@@ -5,6 +5,17 @@ jero-pi 尚未发布到 npm（版本停在 0.1.0 基线），本文件自重构�
 
 ## [Unreleased]
 
+### 真机冒烟修复批：评审权威三缺陷（2026-10-11）
+
+**Pi 1.0.4 真机全功能冒烟（项目级路径安装 + `pi -p` 驱动 GLM-5.3）发现评审链路三处包级缺陷，全部修复并以"目标回归 → authority 全回路 → 全量 → 真机复验"四层验证闭环；其余功能面（模块契约/记忆/SDD/技能/受管资产/精益/装载）真机全绿。**
+
+- **缺陷 1（mode 写读漂移）**：`lib/authority/mode.ts` 克隆模式记录写入曾追加尾随 `\n`，而读侧 `parseCanonicalJsonV1` 逐字节比对正典形态——执行过 `/jero:review-mode enable|disable` 后每次读取判 `mode-record-corrupted`，START 模式门 fail-closed。修为与 `lineage-store` 同律（正典字节直写）。测试缺口同因：持久化测试用宽容 `JSON.parse` 读文件、CLI 测试夹具自写正典（无 LF），从未走过"权威写→权威读"真往返；补 `authority-mode.test.ts` 往返钉测。
+- **缺陷 2（捕获路由永不注册）**：`lib/authority/wire.ts` 的 `projectJeroStatusToWireV1` 是 `targetStatus` 唯一生产投影点，其 `authority.lineage_id`/`frozen.*` 蛇形透传 + 尾部 `as unknown as` 双重强转掩盖了与类型化 `ReviewStatusV3`（驼峰）的漂移——扩展 `retainNativeCaptureRoutes` 读 `lineageId` 恒 undefined → 路由表恒空 → `jero_review_capture` 在任何会话都被 `capture-binding-rejected` 拒绝。修为驼峰（P4d-g execute 绑定同族修复的漏网两小节）；外部 wire 输入仍由 `decodeReviewStatusV3` 独立解码，两方向不越界。测试缺口同因：扩展单测注入的 stub CLI 返回手工驼峰形状，真 CLI→真注册的缝从未被测；补 `authority-controller-wiring.test.ts` 集成钉测（granted 谱系 STATUS → `syncRetainedNativeStatusSelections` → 每个收集槽位注册出捕获路由）。
+- **缺陷 3（中继提交容器不容忍）**：权威提示词的输出契约样例本身以 \`\`\`json 围栏展示，真机评审模型（opaque 隔离子进程）如实带回围栏或散文前言，而 `lib/authority/capture-relay.ts` 受理面逐字节严格 `JSON.parse` 在信封解码之前就拒成 `submission-refused`（同契约自相矛盾）。修为确定性运输容器提取（直通解析 → 首个围栏块 → 字符串感知花括号跨距；两条提不出 JSON 仍按原生解析错误拒收），信封严格解码原样保留，暂存提取后字节使组合面严格重解析自洽；补 `authority-capture-relay.test.ts` 三容器形态受理 + 纯散文照拒钉测。
+- **连带诊断性观察（未改）**：`nativeStatusFailed` 通用分支丢弃原始异常文本（真机零提交仓的"Repository root commit anchors are required"到代理侧只剩无 cause 封套），排障需旁路复现——留作后续批。
+- **真机验证**：缺陷 1/2 修复后 capture 穿透路由与同意层（暴露缺陷 3）；三修齐后新会话续跑谱系 `review-c9383b872955116f` 一次通过全生命周期——捕获受理 → 台账四段流转（capture-result→freeze-ledger→resolve-evidence→verify）→ 终态 approved → acknowledge 烧毁 → 回执铸造（receipt/ledger/evidence 三哈希 + counters 齐全）；隔离评审者无文件工具时诚实提交零发现而非编造（对抗之眼纪律实证）。另证 ABANDON 的 UI 门与 headless fail-closed、medium 档透镜集由权威冻结等均为设计行为。
+- 验证：typecheck 0 诊；目标回归（mode 4/捕获中继 4/接线缝 5）全绿；authority 全回路 293 测 0 败 + runtime 一致 + 边界干净；review 域 732 测零败；全量与七道门见本批提交记录。
+
 ### 设计文档 v2.0 重建批（2026-10-11）
 
 **`JERO-PI-DESIGN.md` 按现行代码整体重写（v1.0 的重构设计已全部实现，原文进 git 历史）；仓库根 `upstream-pi-mcp-feature-requests.md` 确认删除（两份上游工单草稿均被 Pi 0.99 项目作用域满足，处置记录进新设计文档附录 C）。**

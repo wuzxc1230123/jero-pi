@@ -121,9 +121,13 @@ export function setJeroReviewModeV1(cwd: string, value: JeroReviewModeValue, opt
 		// 原子的临时文件+重命名：写入中途崩溃绝不会留下撕裂或空的
 		// 模式记录（撕裂的记录会被读成损坏并保守失败到模式开启，
 		// 但用户意图是显式关闭）。
-		const staging = join(dirname(path), `.${basename(path)}.${randomUUID()}.tmp`);
-		try {
-			writeFileSync(staging, `${canonicalJsonV1(record)}\n`, { mode: 0o600 });
+			const staging = join(dirname(path), `.${basename(path)}.${randomUUID()}.tmp`);
+			try {
+				// 读侧 parseCanonicalJsonV1 逐字节比对正典形态，写入不得追加任何
+				// 字节（含换行）——曾经的尾随 "\n" 使 set 之后的每次 get 都判
+				// mode-record-corrupted，START 的模式门随之 fail-closed。与
+				// lineage-store 的状态写入同律。
+				writeFileSync(staging, canonicalJsonV1(record), { mode: 0o600 });
 			renameSync(staging, path);
 		} finally {
 			rmSync(staging, { force: true });

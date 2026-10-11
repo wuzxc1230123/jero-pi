@@ -82,10 +82,15 @@ export function projectJeroStatusToWireV1(status: Extract<JeroReviewStatusResult
 		targetIdentity: status.target_identity,
 		action: status.action,
 		replayability: status.replayability,
+		// P4d-g 同族修复：authority/frozen 是扩展消费面（类型化 ReviewStatusV3
+		// 为驼峰——retainNativeCaptureRoutes 读 authority.lineageId）。此处是
+		// 进程内适配器的唯一生产投影点，蛇形透传会让捕获路由永不注册、
+		// jero_review_capture 在任何会话都被 capture-binding-rejected 拒绝；
+		// 外部 wire 输入仍由 decodeReviewStatusV3 独立解码，两个方向互不越界。
 		...(status.authority === undefined ? {} : {
 			authority: {
 				version: status.authority.version,
-				lineage_id: status.authority.lineage_id,
+				lineageId: status.authority.lineage_id,
 				state: status.authority.state,
 				generation: status.authority.generation,
 				revision: status.authority.revision,
@@ -96,9 +101,9 @@ export function projectJeroStatusToWireV1(status: Extract<JeroReviewStatusResult
 		...(status.frozen === undefined ? {} : {
 			frozen: {
 				tier: status.frozen.tier,
-				original_changed_lines: status.frozen.original_changed_lines,
-				correction_budget: status.frozen.correction_budget,
-				...(status.frozen.changed_path_manifest_sha256 === undefined ? {} : { changed_path_manifest_sha256: status.frozen.changed_path_manifest_sha256 }),
+				originalChangedLines: status.frozen.original_changed_lines,
+				correctionBudget: status.frozen.correction_budget,
+				...(status.frozen.changed_path_manifest_sha256 === undefined ? {} : { changedPathManifestSha256: status.frozen.changed_path_manifest_sha256 }),
 			},
 		}),
 		projection: {

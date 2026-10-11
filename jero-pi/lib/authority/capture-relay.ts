@@ -180,6 +180,53 @@ function closureSubmissionV1(context: import("./review.ts").JeroAuthorityContext
 	return { kind: "closure", closure_json: JSON.stringify({ ...closure, schema: "jero-ai.review-last-event-closure/v1", operation: wireOperation }) };
 }
 
+// 评审者是自由生成的模型，而权威提示词的输出契约本身以 ```json 围栏
+// 展示信封样例——真机中继的评审输出会带回围栏或散文前言（冒烟实测
+// 两类形态都发生），逐字节严格 JSON.parse 在信封解码之前就把它们拒了。
+// 提取是确定性的运输容器剥离，信封的严格解码原样保留：直通解析失败后
+// 依次尝试首个围栏块、字符串感知的首个 '{' 到配对 '}' 跨距；两条都
+// 提不出可解析 JSON 时按原始字节交回，由原生解析错误照常拒收。暂存
+// 提取后的字节——组合面对已受理产物的严格重解析语义不变。
+function extractReviewerEnvelopeBytesV1(raw: Buffer): Buffer {
+	const text = raw.toString("utf8").replace(/^\uFEFF/, "");
+	try {
+		JSON.parse(text);
+		return Buffer.from(text, "utf8");
+	} catch {
+		// 直通失败，继续容器剥离。
+	}
+	const fenced = /```(?:json)?[ \t]*\r?\n?([\s\S]*?)[ \t]*\r?\n?```/.exec(text);
+	if (fenced !== null && fenced[1]!.trim().startsWith("{")) return Buffer.from(fenced[1]!.trim(), "utf8");
+	const start = text.indexOf("{");
+	if (start >= 0) {
+		let inString = false;
+		let escaped = false;
+		let depth = 0;
+		for (let index = start; index < text.length; index += 1) {
+			const character = text[index];
+			if (escaped) {
+				escaped = false;
+				continue;
+			}
+			if (inString && character === "\\") {
+				escaped = true;
+				continue;
+			}
+			if (character === "\"") {
+				inString = !inString;
+				continue;
+			}
+			if (inString) continue;
+			if (character === "{") depth += 1;
+			else if (character === "}") {
+				depth -= 1;
+				if (depth === 0) return Buffer.from(text.slice(start, index + 1), "utf8");
+			}
+		}
+	}
+	return raw;
+}
+
 export async function admitJeroCaptureResultForRelayV1(request: { readonly captureArgumentTokens: readonly string[]; readonly targetCwd?: string }, operationToken: string, submitTokens: readonly string[], resultFile: string): Promise<string> {
 	if (operationToken !== "capture-result") {
 		throw new Error(`[invalid_request] the in-process admission supports capture-result, not ${JSON.stringify(operationToken)}`);
@@ -193,14 +240,15 @@ export async function admitJeroCaptureResultForRelayV1(request: { readonly captu
 	}
 	const context = contextForRelayV1(request.targetCwd);
 	const raw = readFileSync(resultFile);
-	decodeJeroReviewerResultEnvelopeV1(JSON.parse(raw.toString("utf8")));
+	const envelopeBytes = extractReviewerEnvelopeBytesV1(raw);
+	decodeJeroReviewerResultEnvelopeV1(JSON.parse(envelopeBytes.toString("utf8")));
 	try {
 		const admitted = admitJeroReviewerResultV1(context, {
 			lineageId: tokens.lineage,
 			lens: tokens.lens as JeroLensName,
 			selectedOrder: tokens.order,
 			subjectHash: tokens.subjectHash,
-			rawResultBytes: raw,
+			rawResultBytes: envelopeBytes,
 			locator: tokens.repositoryContext === undefined ? "path" : "reference",
 		});
 		if (admitted.kind === "refused") {

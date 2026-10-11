@@ -6,6 +6,10 @@ import test from "node:test";
 import { execFileSync } from "node:child_process";
 import { __testing } from "../../lib/jero-ai-testing-exports.ts";
 import { createJeroAuthorityReviewCli } from "../../lib/jero-authority-cli.ts";
+import { NativeReviewConsentRequiredError } from "../../lib/authority/client-contract.ts";
+import { syncRetainedNativeStatusSelections, readRetainedNativeCaptureRoute } from "../../lib/jero-ai-review-native-ops.ts";
+import { canonicalReviewCaptureBinding } from "../../lib/jero-ai-review-select.ts";
+import type { RetainedNativeStatusSelection } from "../../lib/jero-ai-review-consent.ts";
 import { tempRoot } from "./fixtures.ts";
 
 // P4d E2E: the REAL controller machinery (extensions/jero-ai.ts
@@ -74,4 +78,42 @@ test("the sdd attempt pair serves acquire/settle over the store ledger", async (
 	assert.match(acquired.token ?? "", /^jero-attempt-/);
 	const settled = await cli.sddAttemptSettle!({ workspaceRoot: repo, changeName: "add-login", requestId: "p4d-s", token: acquired.token!, outcome: "failed", evidenceRevision: `sha256:${"a".repeat(64)}`, diagnosis: "d", harnessDisposition: "reused", cleanupEvidence: "c", processEvidence: "p" });
 	assert.ok(settled.state === "proceed" || settled.state === "complete");
+});
+
+// 真机冒烟回归（capture 永拒缺陷）：granted 谱系的 STATUS 必须经类型化
+// 驼峰投影喂进扩展的真实路由注册面并注册出捕获路由。曾经
+// projectJeroStatusToWireV1 蛇形透传 authority.lineage_id，
+// retainNativeCaptureRoutes 读驼峰 lineageId 恒 undefined → 路由表恒空 →
+// jero_review_capture 在任何会话都被 capture-binding-rejected。单元测试
+// 注入的 stub CLI 返回手工驼峰形状，测不出这条真 CLI → 真注册的缝。
+test("granted lineage STATUS registers capture routes over the typed projection", async (t) => {
+	const { repo, cli } = harness(t);
+	let consentEnvelope: NativeReviewConsentRequiredError["consent"];
+	try {
+		await cli.start({ cwd: repo });
+		assert.fail("mode-on 的中风险 START 必须先要同意");
+	} catch (error) {
+		if (!(error instanceof NativeReviewConsentRequiredError)) throw error;
+		consentEnvelope = error.consent;
+	}
+	const granted = await cli.answerConsent!({ cwd: repo, consent: consentEnvelope, answer: "granted" });
+	assert.equal(granted.kind, "started");
+	if (granted.kind !== "started") return;
+	assert.equal(granted.start.state, "reviewing");
+
+	const status = await cli.targetStatus!({ cwd: repo });
+	assert.equal(status.applicability, "current_target");
+	assert.equal(typeof status.authority?.lineageId, "string", "投影必须是类型化驼峰（蛇形 lineage_id = 路由永不注册）");
+	const lineageId = status.authority?.lineageId;
+
+	const selections = new Map<string, RetainedNativeStatusSelection>();
+	syncRetainedNativeStatusSelections(selections, repo, status, undefined);
+	const collect = status.nextTransition?.kind === "collect" ? status.nextTransition.collect : undefined;
+	assert.ok(collect !== undefined && collect.inputs.length > 0, "reviewing 谱系必须下发 collect 转换与槽位");
+	for (const input of collect!.inputs) {
+		const binding = canonicalReviewCaptureBinding(input);
+		const route = readRetainedNativeCaptureRoute(selections, binding);
+		assert.ok(route !== undefined, `collect 槽位必须注册捕获路由（binding ${binding.slice(0, 60)}…）`);
+		assert.equal(route?.lineageId, lineageId);
+	}
 });
