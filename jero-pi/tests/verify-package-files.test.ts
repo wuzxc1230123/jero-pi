@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, relative, sep } from "node:path";
 import test from "node:test";
 // .mjs 脚本无类型声明；行为测试只依赖这几个纯函数签名（经动态导入显式标注）。
 const packageFilesSpecifier: string = "../scripts/verify-package-files.mjs";
@@ -197,14 +197,21 @@ test("每个扩展入口都在打包门清单", () => {
 });
 
 test("每个技能的 SKILL.md 与 references/assets 文件都在打包门清单", () => {
+	// 递归扫描 + .md/.yaml/.json 全扩展：首版棘轮只扫一层且只滤 .md/.yaml，
+	// 把 module-manifest.template.json 漏在了清单外（审计盲区遗传给棘轮的
+	// 实例）——结构不变量必须比人工清单的既有习惯更宽，不能复刻它的盲区。
+	const collectListableFiles = (directory: string): string[] => readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+		if (entry.isDirectory()) return collectListableFiles(join(directory, entry.name));
+		return /\.(?:md|yaml|json)$/.test(entry.name) ? [join(directory, entry.name)] : [];
+	});
 	for (const entry of readdirSync(join(PACKAGE_ROOT, "skills"), { withFileTypes: true })) {
 		if (!entry.isDirectory() || entry.name === "_shared") continue;
 		assertListed(`skills/${entry.name}/SKILL.md`);
 		for (const sub of ["references", "assets"]) {
 			const directory = join(PACKAGE_ROOT, "skills", entry.name, sub);
 			if (!existsSync(directory)) continue;
-			for (const file of readdirSync(directory).filter((name) => name.endsWith(".md") || name.endsWith(".yaml"))) {
-				assertListed(`skills/${entry.name}/${sub}/${file}`);
+			for (const file of collectListableFiles(directory)) {
+				assertListed(`skills/${entry.name}/${sub}/${relative(join(PACKAGE_ROOT, "skills", entry.name, sub), file).split(sep).join("/")}`);
 			}
 		}
 	}

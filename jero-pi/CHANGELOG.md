@@ -12,6 +12,7 @@ jero-pi 尚未发布到 npm（版本停在 0.1.0 基线），本文件自重构�
 - **真机冒烟 harness（`pnpm run smoke:pi`）**：新增 `scripts/smoke-real-pi.mjs`（零依赖，入打包门清单）——本地 Pi 宿主 + 包本体在一次性沙箱仓库过八面：根提交前提 → 项目级装载 → 模型探针 → install-module golang 全链落盘（含无 MCP 声明面） → 静态触发编译（种 go.mod 命中） → 记忆四工具（隔离记忆根，经真实模型调用） → 评审·同意与 START → 评审·捕获与结算（断言 approved+final_verifications）。模型指向经 `JERO_PI_SMOKE_PROVIDER/MODEL`（缺省按面跳过并说明）；失败打印 pi 输出尾部、`JERO_PI_SMOKE_KEEP=1` 保留现场；评审面刻意两段式（单发 mega-prompt 在 START 后的编排阶段会被 pi 一次性吞掉，真机实证两次）。**建 harness 过程中再抓两个真机事实并当场消化**：伴生扩展 pi-lens 在工作树持续追加探针日志会令 START 后目标身份漂移（控制器判谱系 unrelated 不下发收集槽位）——沙箱预置 .gitignore 排除扰动源即稳；pi 包装进程可能在 START 已成功后异常退出——断言以盘面谱系真相为准。AGENTS 验证回路与 jero-reference 环境变量表同步收录。**验证：真跑 8/8 全绿、退出码 0,评审谱系一次结算 approved。**
 - **中继提取回落（capture-relay）**：围栏候选解析失败（如信封字符串值内本身含 ``` 致非贪婪提前截断）时回落花括号跨距取完整对象，而非把截断体交出去吃可避免的拒收；边角回归钉测（围栏内含围栏标记的信封受理且暂存完整本体）。
 - **深知识计数口径（module-bundle-content）**：description 的"N 篇深知识"按内容篇计，`_sources` 出处账本（元）不再计入对照；golang 束 description 同步为"27 篇深知识 references 与 1 篇出处账本"（godot 无账本不受影响，两束库门绿灯维持）。
+- **终审自查再修一处棘轮盲区**：首版清单完备性棘轮只扫一层且只滤 .md/.yaml——与人工审计同盲区，把 `skills/jero-module-creator/assets/module-manifest.template.json` 漏在打包门外（322 号补录）；棘轮升级为递归扫描 + .md/.yaml/.json 全扩展（注释留档"结构不变量不得复刻人工清单的习惯盲区"）。
 - 验证：typecheck 0 诊；目标测（捕获中继 5/5、模块库 40/40）；全量与七道门见本批提交记录（打包门 321 文件）。
 
 ### 质量门体系加固批：打包门清单完备化 + 诊断透出（2026-10-11）

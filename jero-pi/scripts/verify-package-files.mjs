@@ -116,6 +116,7 @@ const requiredPaths = [
 	"skills/jero-module-creator/assets/interview.md",
 	"skills/jero-module-creator/assets/module-skill.template.md",
 	"skills/jero-module-creator/assets/module-entry.template.md",
+	"skills/jero-module-creator/assets/module-manifest.template.json",
 	"skills/jero-module-creator/assets/config-pins.template.yaml",
 	"skills/jero-prototype/SKILL.md",
 	"skills/jero-prototype/references/LOGIC.md",
