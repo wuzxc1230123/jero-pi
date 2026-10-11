@@ -110,7 +110,7 @@ S9（事故诊断）与 S10（继续/恢复）刻意不开放——后者是纯�
 - **手工放置仍有效**：`/module-creation` 创建器与手工放进 `.pi/modules/` 的目录照常被发现与验证（零代码哲学不变），只是不受安装器管理（doctor 标注 hand-installed）；
 - **验证**：`/jero-module-verify`——安装验证检查集（token 合法/唯一、**deps-resolve**（v2 依赖缺失/自依赖/成环即 fail）、**no-loose-duplicate**（token 与 `.pi/skills/` 松散技能重名即拒——同一知识双源必漂移）、防遮蔽、触发命中、路由解析、隔离正当、entry 行数、命令钉住、**bundle-content**（束内内容机检：悬空交接指针/技能与角色骨架同名/孤儿 reference/清单手写计数——手工模块与安装束同受其律；判定体 `lib/module-bundle-content.ts`，读取面 `readBundleTexts` 双布局兼容：源布局读模块束目录，安装布局经安装记录恢复拆到 `.pi/skills/`、`.pi/agents/` 的伴生资产））；`pipeline.gate` 声明以"响亮缺席"语义呈现）+ 编译覆盖层到 `.atl/module-overlay.md`（自动生成物，勿手改）；
 - **会话启动**：模块根存在时**延后**刷新覆盖层（`setImmediate`，启动绝不等待全仓扫描），并对模块根做防抖变更监视（尽力而为）；模块根消失时**删除残留覆盖层**——编排器绝不消费过期接线；
-- **重编译触发面（盲区须知）**：会话启动 / 手动命令 / 模块根内文件变更。**仓库树变化（如新增 `go.mod`）不会自动重编译**——触发命中条件改变后跑一次 `/jero-module-verify` 或重启会话；扫描经一次批量 `git check-ignore` 剔除被忽略文件（防构建产物伪命中触发器，如忽略目录下的 `go.mod`；git 缺席/非仓库回退为不过滤）；扫描超 2 万文件截断时覆盖层与零命中详情都会明示"可能假阴性"；
+- **重编译触发面（盲区须知）**：会话启动 / 手动命令 / 模块根内文件变更。**仓库树变化（如新增 `go.mod`）不会自动重编译**——触发命中条件改变后跑一次 `/jero-module-verify` 或重启会话；扫描经一次批量 `git check-ignore -z` 剔除被忽略文件（防构建产物伪命中触发器，如忽略目录下的 `go.mod`；git 缺席/非仓库回退为不过滤），剔除先于 2 万结果预算截断（被忽略文件不占预算槽位）；真实文件超预算截断时覆盖层与零命中详情都会明示"可能假阴性"；
 - **CI 门**：`pnpm run check:module-contract`——schema 与 TS 常量零漂移（含 v2 枚举与"dependencies 仅 v2"分支）+ 创建器金样绿灯 + **包内模块库绿灯**（`assets/modules/*` 逐束过解析与安装验证——含 bundle-content 内容机检（与安装管线共用 `readBundleTexts` 读取面，交接指针悬空/孤儿 reference 在库门即拦），roles 与 `agents/` 文件一一对应，依赖在库内可解析，束内 MCP 档过供应链策略：`uvx`/`npx` 白名单 + 钉版 token + 禁 env）；
 - **升级**：重装（`--force` 或库内升版后直接 install）+ 重跑验证；bindings 目标断链显式报错；
 - **移除**：删目录（与安装记录条目）；下次刷新覆盖层与注册表自然收回。

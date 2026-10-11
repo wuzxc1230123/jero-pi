@@ -211,3 +211,53 @@ test("P4b: prose braces before the envelope are skipped by multi-span extraction
 	assert.equal(closure.state, "approved");
 	assert.deepEqual(readFileSync(join(jeroReviewerResultsDirectoryV1(context.store.store_root, start.lineage_id), "00-review-readability.json")), envelope);
 });
+
+// 残余弱面回归：散文前言先出现"可解析但不是信封"的 JSON（{} 或
+// {"note":…}）时，只按 JSON.parse 过滤的跨距会把它当候选交出、在下游
+// 信封解码吃一个可避免的拒收——试解析的判据必须包含信封严格解码，
+// 跳过可解析的异物、取到真正的信封本体。
+test("P4b: parseable-but-not-envelope JSON in prose is skipped by multi-span extraction", async (t) => {
+	const harness = reviewHarness(t, "medium", 4);
+	const context = harness.context;
+	const envelope = reviewerEnvelope("review-readability");
+	const wrapped = Buffer.from(`Placeholder {} and notes {"note":"irrelevant"} above.\n\nEnvelope: ${envelope.toString("utf8")}`, "utf8");
+	const start = reviewStartV1(context, { cwd: harness.repo }, { consent: "granted" });
+	assert.equal(start.kind, "created");
+	if (start.kind !== "created") return;
+	const status = reviewStatusV1(context, { cwd: harness.repo });
+	assert.equal(status.kind, "status");
+	if (status.kind !== "status") return;
+	const collectInput = status.next_transition.collect?.inputs[0];
+	if (collectInput === undefined) throw new Error("no collect input");
+	const request = relayRequestFromCollectInput(collectInput, harness.repo);
+	const result = await submitReviewHostRelayPreparedResult(
+		await prepareReviewHostRelaySlot(request, async (promptBytes: Buffer) => ({ stdout: wrapped, promptByteLength: promptBytes.length, stdoutByteLength: wrapped.length }), renderJeroCaptureSlotForRelayV1),
+		admitJeroCaptureResultForRelayV1,
+	);
+	const closure = JSON.parse(result.submission) as { state?: string };
+	assert.equal(closure.state, "approved");
+	assert.deepEqual(readFileSync(join(jeroReviewerResultsDirectoryV1(context.store.store_root, start.lineage_id), "00-review-readability.json")), envelope);
+});
+
+// 病态输入回归：全 '{' 无配对的散文让多跨距扫描最坏退化为 O(n²)——
+// 字符预算耗尽后必须按原始字节交回（原生解析错误照常拒收），不给
+// 权威进程无限同步阻塞的敞口。10 万个 '{' 无预算时约 5×10⁹ 次字符
+// 比较（分钟级），预算内毫秒级放弃。
+test("P4b: pathological unbalanced-brace prose bails within the scan budget and still refuses", async (t) => {
+	const harness = reviewHarness(t, "medium", 4);
+	const start = reviewStartV1(harness.context, { cwd: harness.repo }, { consent: "granted" });
+	if (start.kind !== "created") return;
+	const status = reviewStatusV1(harness.context, { cwd: harness.repo });
+	if (status.kind !== "status") return;
+	const collectInput = status.next_transition.collect?.inputs[0];
+	if (collectInput === undefined) throw new Error("no collect input");
+	const request = relayRequestFromCollectInput(collectInput, harness.repo);
+	const pathological = Buffer.from(`conclusion follows and never closes: ${"{".repeat(100_000)}`, "utf8");
+	await assert.rejects(
+		submitReviewHostRelayPreparedResult(
+			await prepareReviewHostRelaySlot(request, async (promptBytes: Buffer) => ({ stdout: pathological, promptByteLength: promptBytes.length, stdoutByteLength: pathological.length }), renderJeroCaptureSlotForRelayV1),
+			admitJeroCaptureResultForRelayV1,
+		),
+		/capture admission failed.*not valid JSON/,
+	);
+});

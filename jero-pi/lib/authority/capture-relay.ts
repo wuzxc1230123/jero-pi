@@ -208,14 +208,21 @@ function extractReviewerEnvelopeBytesV1(raw: Buffer): Buffer {
 	}
 	// 多跨距试解析：散文前言里可能先出现与信封无关的花括号（真机实证
 	// "Expected property name" 类拒收的形态来源）——从首个 '{' 起逐个
-	// 收集顶层平衡跨距，返回第一个能通过 JSON.parse 的；全部失败才按
-	// 原始字节交回（原生解析错误照常拒收）。
+	// 收集顶层平衡跨距，返回第一个能通过 JSON.parse 且通过信封严格解码
+	// 的；"可解析但不是信封"的散文 JSON（如 {} 或 {"note":…}）同样必须
+	// 跳过，否则会在下游解码吃一个可避免的拒收。全部失败才按原始字节
+	// 交回（原生解析错误照常拒收）。扫描有字符预算：全 '{' 无配对的
+	// 病态输入最坏是 O(n²)，预算耗尽即按原始字节交回，不给权威进程
+	// 无限同步阻塞的敞口。
 	let searchFrom = text.indexOf("{");
+	let scanBudget = 4_000_000;
 	while (searchFrom >= 0) {
 		let inString = false;
 		let escaped = false;
 		let depth = 0;
 		for (let index = searchFrom; index < text.length; index += 1) {
+			scanBudget -= 1;
+			if (scanBudget <= 0) return raw;
 			const character = text[index];
 			if (escaped) {
 				escaped = false;
@@ -236,7 +243,7 @@ function extractReviewerEnvelopeBytesV1(raw: Buffer): Buffer {
 				if (depth === 0) {
 					const candidate = text.slice(searchFrom, index + 1);
 					try {
-						JSON.parse(candidate);
+						decodeJeroReviewerResultEnvelopeV1(JSON.parse(candidate));
 						return Buffer.from(candidate, "utf8");
 					} catch {
 						break;

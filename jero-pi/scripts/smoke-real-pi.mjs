@@ -9,9 +9,11 @@
 // 用法（包目录内）：
 //   JERO_PI_SMOKE_PROVIDER=cc-switch-zhipu-glm JERO_PI_SMOKE_MODEL=GLM-5.3 \
 //     pnpm run smoke:pi
-// 两个环境变量缺省时，依赖模型的面按面跳过并说明理由（装载/安装面
-// 仍跑）。沙箱在系统临时目录创建，结束即删；GIT_* 环境不设置。
-// 沙箱必须先落根提交——评审权威要求仓库根提交锚定身份（真机教训）。
+// 两个环境变量缺省时，依赖模型的六个面逐面记跳过（装载面仍跑），汇总
+// 与退出码如实反映"跑了几个面"。沙箱在系统临时目录创建，结束即删。
+// GIT_* 环境全剥（继承的 GIT_DIR 等会毒化沙箱 git 与权威存储的身份
+// 解析——与测试纪律同向）；沙箱必须先落根提交——评审权威要求仓库根
+// 提交锚定身份（真机教训）。
 
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
@@ -30,6 +32,10 @@ if (!existsSync(piEntry)) {
 	process.exit(1);
 }
 
+// 环境消毒：剥掉继承的 GIT_*——沙箱 git 与权威存储的仓库身份解析都不
+// 受宿主残留 GIT_DIR/GIT_WORK_TREE 等影响（测试进程同款纪律）。
+const cleanEnv = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith("GIT_")));
+
 const results = [];
 function record(name, ok, detail) {
 	results.push({ name, ok, detail });
@@ -41,17 +47,18 @@ function runPi(args, cwd, extraEnv = {}, timeoutMs = 300_000) {
 		cwd,
 		encoding: "utf8",
 		timeout: timeoutMs,
-		env: { ...process.env, ...extraEnv },
+		env: { ...cleanEnv, ...extraEnv },
 	});
 }
 
 const sandbox = mkdtempSync(join(tmpdir(), "jero-pi-smoke-"));
+let crashed = false;
 try {
 	// —— 沙箱仓库：根提交是评审权威的身份前提（零提交仓会被 fail-closed 拒绝）。
 	// .gitignore 先行排除伴生扩展的运行时扰动（pi-lens 探针日志每轮工具调用
 	// 都在追加——真机实证：这类漂移会让 START 后的工作区目标身份持续变化，
 	// 控制器判谱系 unrelated、不下发收集槽位，捕获无从发生）。
-	const git = (...args) => spawnSync("git", ["-c", "user.name=smoke", "-c", "user.email=smoke@smoke", ...args], { cwd: sandbox, encoding: "utf8" });
+	const git = (...args) => spawnSync("git", ["-c", "user.name=smoke", "-c", "user.email=smoke@smoke", ...args], { cwd: sandbox, encoding: "utf8", env: cleanEnv, timeout: 60_000 });
 	mkdirSync(join(sandbox, "src"), { recursive: true });
 	writeFileSync(join(sandbox, ".gitignore"), ".pi-lens-probe-home/\n*.log\n");
 	writeFileSync(join(sandbox, "README.md"), "# smoke\n");
@@ -67,7 +74,10 @@ try {
 	record("扩展装载（pi install -l）", installed.status === 0 && existsSync(settingsPath));
 
 	if (!modelReady) {
-		record("模型回复探针", undefined, "JERO_PI_SMOKE_PROVIDER/MODEL 未设，跳过模型相关面");
+		const reason = "JERO_PI_SMOKE_PROVIDER/MODEL 未设";
+		for (const name of ["模型回复探针", "install-module golang 全链落盘", "触发编译命中（种 go.mod → 覆盖层）", "记忆四工具（写/读/列/搜）", "评审·同意与 START（谱系建成 reviewing）", "评审·捕获与结算（capture→终局→回执）"]) {
+			record(name, undefined, `${reason}，跳过模型相关面`);
+		}
 	} else {
 		const baseArgs = ["-p", "-a", "--no-session", "--provider", provider, "--model", model];
 
@@ -84,20 +94,37 @@ try {
 		const noMcp = !existsSync(join(sandbox, ".pi", "mcp.json"));
 		record("install-module golang 全链落盘", installModule.status === 0 && moduleLanded && noMcp, moduleLanded && noMcp ? undefined : `落盘=${moduleLanded} mcp缺席=${noMcp}`);
 
-		// —— 面四：静态触发编译（种 go.mod 后覆盖层必须命中）。
-		writeFileSync(join(sandbox, "go.mod"), "module example.com/smoke\n\ngo 1.26\n");
-		const verify = runPi([...baseArgs, "/jero-module-verify"], sandbox);
-		const overlay = readFileSync(join(sandbox, ".atl", "module-overlay.md"), "utf8");
-		record("触发编译命中（种 go.mod → 覆盖层）", verify.status === 0 && overlay.includes("命中 `go.mod`"));
+			// —— 面四：静态触发编译（种 go.mod 后覆盖层必须命中）。
+			writeFileSync(join(sandbox, "go.mod"), "module example.com/smoke\n\ngo 1.26\n");
+			const verify = runPi([...baseArgs, "/jero-module-verify"], sandbox);
+			// 覆盖层读取带守卫：verify 在写覆盖层之前就失败时，这里抛
+			// ENOENT 会击穿整个 harness（汇总不打印、KEEP 留不住现场）。
+			let overlay = "";
+			let overlayReadable = true;
+			try {
+				overlay = readFileSync(join(sandbox, ".atl", "module-overlay.md"), "utf8");
+			} catch {
+				overlayReadable = false;
+			}
+			const overlayHit = verify.status === 0 && overlayReadable && overlay.includes("命中 `go.mod`");
+			record("触发编译命中（种 go.mod → 覆盖层）", overlayHit, overlayHit ? undefined : `退出码 ${verify.status} 覆盖层可读=${overlayReadable} stderr尾:${(verify.stderr ?? "").slice(-300)}`);
 
 		// —— 面五：记忆四工具（隔离记忆根，经真实模型调用）。
 		const memoryRoot = join(sandbox, "memroot");
 		const memory = runPi([...baseArgs, "请依次使用记忆工具:1) mem_save 保存 topic=smoke-test,content='真机冒烟第一条:记忆链路验证';2) mem_read 读回 topic=smoke-test;3) mem_list 列出;4) mem_search 搜'冒烟'。逐步汇报每个工具的原始返回,最后一行总结四步成败。"], sandbox, { JERO_PI_MEMORY_ROOT: memoryRoot });
-		const memoryLanded = existsSync(join(memoryRoot, "entries", "smoke-test.md")) && existsSync(join(memoryRoot, "index.json"));
-		// 盘面真相优先：落盘 + 零退出即过——模型汇报措辞有方差，信文本
-		// 不信盘面只会制造假红（真机实证）。
-		const memoryOk = memory.status === 0 && memoryLanded;
-		record("记忆四工具（写/读/列/搜）", memoryOk, memoryOk ? undefined : `退出码 ${memory.status} 落盘=${memoryLanded} 输出=${(memory.stdout ?? "").length} 字节;尾部:${(memory.stdout ?? "").slice(-300)}`);
+			const memoryLanded = existsSync(join(memoryRoot, "entries", "smoke-test.md")) && existsSync(join(memoryRoot, "index.json"));
+			// 盘面真相优先：落盘 + 索引含该主题 + 零退出即过——模型汇报措辞
+			// 有方差，信文本不信盘面只会制造假红（真机实证）。索引行把证明
+			// 面从"写发生了"收紧到"写被索引"；读/列/搜是纯读零盘面足迹，
+			// 只能经模型汇报覆盖，不做退出码级断言。
+			let indexHasTopic = false;
+			try {
+				indexHasTopic = JSON.parse(readFileSync(join(memoryRoot, "index.json"), "utf8"))?.entries?.["smoke-test"] !== undefined;
+			} catch {
+				indexHasTopic = false;
+			}
+			const memoryOk = memory.status === 0 && memoryLanded && indexHasTopic;
+			record("记忆四工具（写/读/列/搜）", memoryOk, memoryOk ? undefined : `退出码 ${memory.status} 落盘=${memoryLanded} 索引含主题=${indexHasTopic} 输出=${(memory.stdout ?? "").length} 字节;尾部:${(memory.stdout ?? "").slice(-300)}`);
 
 		// —— 面六：小候选评审全生命周期（本层存在的理由——单测+门测不到的缝）。
 		// 两段式镜像真实 TUI 用法（跨回合续跑）：单发 mega-prompt 在 START 后的
@@ -117,28 +144,48 @@ try {
 				}
 			});
 		};
-		const startPhase = runPi([...baseArgs, "对工作区候选(src/calc.ts 的 6 行小变更)发起 jero 评审:1) jero_review {\"operation\":\"inspect\"};2) {\"operation\":\"start\"}——出现同意封套直接以 granted 应答(操作员已在指令中预授权本次冒烟,无需再问)。谱系建成 reviewing 即停,不要跑透镜。一行报告谱系 id 与状态。"], sandbox, {}, 600_000);
-		const reviewing = readLineageStates().find((state) => state.state?.state === "reviewing");
-		// 盘面真相优先：pi 包装进程可能在 START 已成功后异常退出（真机实证），
-		// 谱系建成 reviewing 即算本面通过；退出码与输出长度只作附注。
-		record("评审·同意与 START（谱系建成 reviewing）", reviewing !== undefined, reviewing === undefined ? `终态=${readLineageStates().map((s) => s.state?.state).join(",") || "无"} / 退出码 ${startPhase.status} / 输出=${(startPhase.stdout ?? "").length} 字节` : `谱系 ${reviewing.state?.lineage_id?.slice(0, 24)}…(pi 退出码 ${startPhase.status})`);
-		if (reviewing !== undefined) {
-			const settlePhase = runPi([...baseArgs, `评审谱系 ${reviewing.state?.lineage_id} 处于 reviewing。请续走完成捕获与结算:1) jero_review {"operation":"inspect"} 取最新 STATUS;2) 按 STATUS 下发的收集槽位完成该透镜评审并用 jero_review_capture 提交(collectBinding 从 STATUS 原文精确取用);3) 结算谱系。完成后一行总结:capture 成败、谱系终态、回执状态。任何权威拒绝原样贴出。`], sandbox, {}, 900_000);
-			// 终局判据是"生命周期正确闭合"而非"候选必须获批准"：approved 与
-			// escalated 都是契约合法终态（评审者对不确定严重度的发现按台账
-			// 契约升级，系统行为正确——真机三轮实证三种结局全部是模型产物
-			// 方差，不是系统故障）。
-			const terminal = readLineageStates().find((state) => (state.state?.state === "approved" || state.state?.state === "escalated"));
-			if (terminal === undefined) {
-				console.error(`--- 结算段失败,pi 输出尾部 ---\n${(settlePhase.stdout ?? "").slice(-2400)}\n--- stderr 尾部 ---\n${(settlePhase.stderr ?? "").slice(-600)}`);
-				if (process.env.JERO_PI_SMOKE_KEEP === "1") console.error(`现场保留：${sandbox}`);
+			const startPhase = runPi([...baseArgs, "对工作区候选(src/calc.ts 的 6 行小变更)发起 jero 评审:1) jero_review {\"operation\":\"inspect\"};2) {\"operation\":\"start\"}——出现同意封套直接以 granted 应答(操作员已在指令中预授权本次冒烟,无需再问)。谱系建成 reviewing 即停,不要跑透镜。一行报告谱系 id 与状态。"], sandbox, {}, 600_000);
+			const reviewing = readLineageStates().find((state) => state.state?.state === "reviewing");
+			// 盘面真相优先：pi 包装进程可能在 START 已成功后异常退出（真机实证），
+			// 谱系建成 reviewing 即算本面通过；退出码与输出长度只作附注。
+			record("评审·同意与 START（谱系建成 reviewing）", reviewing !== undefined, reviewing === undefined ? `终态=${readLineageStates().map((s) => s.state?.state).join(",") || "无"} / 退出码 ${startPhase.status} / 输出=${(startPhase.stdout ?? "").length} 字节;尾部:${(startPhase.stdout ?? "").slice(-300)}` : `谱系 ${reviewing.state?.lineage_id?.slice(0, 24)}…(pi 退出码 ${startPhase.status})`);
+			if (reviewing !== undefined) {
+				const settlePhase = runPi([...baseArgs, `评审谱系 ${reviewing.state?.lineage_id} 处于 reviewing。请续走完成捕获与结算:1) jero_review {"operation":"inspect"} 取最新 STATUS;2) 按 STATUS 下发的收集槽位完成该透镜评审并用 jero_review_capture 提交(collectBinding 从 STATUS 原文精确取用);3) 结算谱系。完成后一行总结:capture 成败、谱系终态、回执状态。任何权威拒绝原样贴出。`], sandbox, {}, 900_000);
+				// 终局判据是"目标谱系的生命周期正确闭合"，且必须锚定 START 段
+				// 建成的那条谱系——零透镜 START 创建即 approved（start 零透镜
+				// 低风险闭合），结算段模型若跑偏另起谱系，扫全谱系的 find 会被
+				// 新生 approved 假绿放行（真谱系仍卡 reviewing、捕获路径全程
+				// 未被行使）。approved 与 escalated 都是契约合法终态（评审者对
+				// 不确定严重度的发现按台账契约升级，系统行为正确——真机三轮
+				// 实证三种结局全部是模型产物方差，不是系统故障）；两个终态
+				// 都必须落回执（回执只从终局状态签发）。
+				const targetLineageId = reviewing.state?.lineage_id;
+				const finalState = readLineageStates().find((state) => state.state?.lineage_id === targetLineageId)?.state?.state;
+				const receiptLanded = targetLineageId !== undefined && existsSync(join(sandbox, ".git", "jero-review", "lineages", targetLineageId, "review-receipt.json"));
+				const terminalOk = (finalState === "approved" || finalState === "escalated") && receiptLanded;
+				if (!terminalOk) {
+					console.error(`--- 结算段失败,pi 输出尾部 ---\n${(settlePhase.stdout ?? "").slice(-2400)}\n--- stderr 尾部 ---\n${(settlePhase.stderr ?? "").slice(-600)}`);
+				}
+				record("评审·捕获与结算（capture→终局→回执）", terminalOk, terminalOk ? `谱系 ${String(targetLineageId).slice(0, 24)}… ${finalState}` : `谱系 ${targetLineageId} 终态=${finalState ?? "无"} 回执=${receiptLanded} 全谱系=${readLineageStates().map((s) => `${String(s.state?.lineage_id).slice(0, 8)}:${s.state?.state}`).join(",") || "无"}`);
 			}
-			record("评审·捕获与结算（capture→终局→回执）", terminal !== undefined, terminal === undefined ? `终态=${readLineageStates().map((s) => s.state?.state).join(",")}` : `谱系 ${terminal.state?.lineage_id?.slice(0, 24)}… ${terminal.state?.state}`);
+	}
+} catch (error) {
+	// 崩溃路径也要让 KEEP 有据可依：异常逃逸时 results 里可能还没有
+	// 任何失败面，只按失败面判断会把现场删掉。
+	crashed = true;
+	throw error;
+} finally {
+	// JERO_PI_SMOKE_KEEP=1 且有失败面（或异常逃逸）时保留现场，供排障后手动清理。
+	if (process.env.JERO_PI_SMOKE_KEEP === "1" && (crashed || results.some((result) => result.ok === false))) {
+		console.error(`现场保留：${sandbox}`);
+	} else {
+		try {
+			rmSync(sandbox, { recursive: true, force: true });
+		} catch (error) {
+			// Windows 残留句柄（pi 子进程/AV 扫描）可能 EBUSY/EPERM——汇总比清理重要，失败只提示手动删，不许吞掉汇总输出。
+			console.error(`沙箱清理失败，请手动删除：${sandbox}（${error instanceof Error ? error.message : String(error)}）`);
 		}
 	}
-} finally {
-	// JERO_PI_SMOKE_KEEP=1 且有失败面时保留现场，供排障后手动清理。
-	if (!(process.env.JERO_PI_SMOKE_KEEP === "1" && results.some((result) => result.ok === false))) rmSync(sandbox, { recursive: true, force: true });
 }
 
 const failed = results.filter((result) => result.ok === false);

@@ -111,6 +111,80 @@ test("walkRepoFiles：git 缺席/非仓库时回退为不过滤的旧语义", ()
 	}
 });
 
+// 预算交互回归：忽略剔除必须先于结果预算截断——否则被忽略文件先占槽
+// 位再被移除，字典序靠前的构建产物会把真实文件挤出预算（假阴性的
+// 来源；"防撑爆预算"的承诺只有剔除在前才成立）。
+test("walkRepoFiles：忽略剔除先于预算截断——被忽略文件不占槽位", () => {
+	const dir = mkdtempSync(join(tmpdir(), "jero-module-walk-budget-"));
+	try {
+		const git = (...args: string[]) => spawnSync("git", ["-c", "user.name=t", "-c", "user.email=t@t", ...args], { cwd: dir, encoding: "utf8", timeout: 30_000 });
+		git("init", "-b", "main");
+		writeFileSync(join(dir, ".gitignore"), "ignored-*.txt\n");
+		// 字典序上被忽略文件排在真实文件之前：若截断发生在剔除之前，
+		// 预算会被 ignored-* 吃光、真实文件从未进入列表。
+		writeFileSync(join(dir, "ignored-a.txt"), "");
+		writeFileSync(join(dir, "ignored-b.txt"), "");
+		writeFileSync(join(dir, "ignored-c.txt"), "");
+		writeFileSync(join(dir, "real-1.txt"), "");
+		writeFileSync(join(dir, "real-2.txt"), "");
+		git("add", ".gitignore", "real-1.txt", "real-2.txt");
+		git("commit", "-m", "init");
+
+		clearRepoWalkCache();
+		// 预算 3 恰好覆盖全部真实文件（.gitignore + 两个 real）：
+		// 剔除在前后者的差别就是 real-* 是否幸存。
+		const walked = walkRepoFiles(dir, undefined, { maxFiles: 3, walkCeiling: 100 });
+		assert.deepEqual([...walked.files].sort(), [".gitignore", "real-1.txt", "real-2.txt"]);
+		assert.equal(walked.truncated, false);
+
+		// 真实文件超预算时诚实置 truncated，且槽位只给真实文件。
+		const tight = walkRepoFiles(dir, undefined, { maxFiles: 2, walkCeiling: 100 });
+		assert.equal(tight.files.length, 2);
+		assert.equal(tight.truncated, true);
+		assert.ok(tight.files.every((file) => [".gitignore", "real-1.txt", "real-2.txt"].includes(file)));
+	} finally {
+		rmSync(dir, { recursive: true, force: true });
+		clearRepoWalkCache();
+	}
+});
+
+// 转义失配回归：core.quotePath 默认 true 时 check-ignore 把非 ASCII
+// 路径 C 风格转义输出（"\344\270\255…"），与原名永不相等——被忽略的
+// 中文文件名曾被静默放行。-z 双向 NUL 分隔后不再发生。
+test("walkRepoFiles：被忽略的非 ASCII 文件名同样剔除", () => {
+	const dir = mkdtempSync(join(tmpdir(), "jero-module-walk-unicode-"));
+	try {
+		const git = (...args: string[]) => spawnSync("git", ["-c", "user.name=t", "-c", "user.email=t@t", ...args], { cwd: dir, encoding: "utf8", timeout: 30_000 });
+		git("init", "-b", "main");
+		writeFileSync(join(dir, ".gitignore"), "*.log\n");
+		writeFileSync(join(dir, "README.md"), "# x\n");
+		writeFileSync(join(dir, "构建日志.log"), "");
+		git("add", ".gitignore", "README.md");
+		git("commit", "-m", "init");
+
+		clearRepoWalkCache();
+		const walked = walkRepoFiles(dir);
+		assert.deepEqual([...walked.files].sort(), [".gitignore", "README.md"]);
+	} finally {
+		rmSync(dir, { recursive: true, force: true });
+		clearRepoWalkCache();
+	}
+});
+
+test("walkRepoFiles：走查条目硬上限兜底并诚实置 truncated", () => {
+	const dir = mkdtempSync(join(tmpdir(), "jero-module-walk-ceiling-"));
+	try {
+		for (let index = 0; index < 4; index += 1) writeFileSync(join(dir, `f-${index}.txt`), "");
+		clearRepoWalkCache();
+		const walked = walkRepoFiles(dir, undefined, { maxFiles: 100, walkCeiling: 2 });
+		assert.equal(walked.files.length, 2);
+		assert.equal(walked.truncated, true);
+	} finally {
+		rmSync(dir, { recursive: true, force: true });
+		clearRepoWalkCache();
+	}
+});
+
 test("compileDispatchOverlay：活动/未触发分流与各面计划", () => {
 	const active = manifestFrom(goModuleJson());
 	const dormant = manifestFrom(

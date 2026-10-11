@@ -23,7 +23,22 @@ export const MODULE_OVERLAY_ID = "jero.module-overlay/v1";
 export const OVERLAY_IGNORED_DIRS = new Set(["node_modules", ".git"]);
 
 // 扫描上限：与 sdd-project-detect 的两万文件预算同量级，防超大仓库拖垮启动。
+// 预算对"忽略剔除后的真实文件"成立——被忽略文件先被剔除、不占槽位。
 export const MAX_REPO_FILES = 20000;
+
+// 走查条目硬上限：walk 阶段最多收集的路径数（含随后会被忽略剔除的）。
+// 忽略剔除先于预算截断，走查因此必须看得比预算远；硬上限只兜"无界
+// 递归"的最坏形态——命中即诚实置 truncated（宁可明示截断不可静默漏扫）。
+export const MAX_REPO_WALK_ENTRIES = 200_000;
+
+export interface RepoWalkLimits {
+	/** 结果预算：忽略剔除后最多返回的文件数。 */
+	readonly maxFiles: number;
+	/** 走查硬上限：walk 阶段最多收集的路径数（含将被剔除的忽略文件）。 */
+	readonly walkCeiling: number;
+}
+
+export const DEFAULT_REPO_WALK_LIMITS: Readonly<RepoWalkLimits> = Object.freeze({ maxFiles: MAX_REPO_FILES, walkCeiling: MAX_REPO_WALK_ENTRIES });
 
 export interface WalkedRepo {
 	readonly files: readonly string[];
@@ -45,9 +60,9 @@ export function clearRepoWalkCache(): void {
 	repoWalkCache.clear();
 }
 
-/** 递归收集仓库相对路径（正斜杠），忽略依赖/VCS 目录，超限截断；结果经一次批量 git check-ignore 剔除被忽略文件（git 缺席/非仓库/失败时回退为不过滤的旧语义）。结果按 cwd 做 TTL 缓存；自定义忽略集不缓存（缓存键不含忽略集，避免串味）。 */
-export function walkRepoFiles(cwd: string, ignoredDirs: Set<string> = OVERLAY_IGNORED_DIRS): WalkedRepo {
-	const cacheable = ignoredDirs === OVERLAY_IGNORED_DIRS;
+/** 递归收集仓库相对路径（正斜杠），忽略依赖/VCS 目录，走查条目受硬上限兜底；结果经一次批量 git check-ignore 剔除被忽略文件（git 缺席/非仓库/失败时回退为不过滤的旧语义），剔除先于结果预算截断——被忽略文件不占预算槽位；结果按 cwd 做 TTL 缓存；自定义忽略集/限额不缓存（缓存键不含二者，避免串味）。 */
+export function walkRepoFiles(cwd: string, ignoredDirs: Set<string> = OVERLAY_IGNORED_DIRS, limits: RepoWalkLimits = DEFAULT_REPO_WALK_LIMITS): WalkedRepo {
+	const cacheable = ignoredDirs === OVERLAY_IGNORED_DIRS && limits === DEFAULT_REPO_WALK_LIMITS;
 	const cached = cacheable ? repoWalkCache.get(cwd) : undefined;
 	if (cached !== undefined && Date.now() - cached.at < REPO_WALK_CACHE_TTL_MS) {
 		repoWalkStats.hits += 1;
@@ -57,7 +72,7 @@ export function walkRepoFiles(cwd: string, ignoredDirs: Set<string> = OVERLAY_IG
 	const files: string[] = [];
 	let truncated = false;
 	const visit = (dir: string, prefix: string): void => {
-		if (files.length >= MAX_REPO_FILES) {
+		if (files.length >= limits.walkCeiling) {
 			truncated = true;
 			return;
 		}
@@ -69,7 +84,7 @@ export function walkRepoFiles(cwd: string, ignoredDirs: Set<string> = OVERLAY_IG
 			return;
 		}
 		for (const entry of entries) {
-			if (files.length >= MAX_REPO_FILES) {
+			if (files.length >= limits.walkCeiling) {
 				truncated = true;
 				return;
 			}
@@ -82,11 +97,15 @@ export function walkRepoFiles(cwd: string, ignoredDirs: Set<string> = OVERLAY_IG
 		}
 	};
 	visit(cwd, "");
-	// .gitignore 感知：一次批量 check-ignore 剔除被忽略文件。防两件事——
-	// 构建产物拖慢扫描与撑爆截断预算，以及被忽略目录里的文件伪命中
-	// 静态触发器（如忽略目录下的 go.mod 会在非 Go 项目激活 golang 束）。
-	// git 的完整忽略语义（嵌套 .gitignore/infoexclude/全局档）不自行复刻。
-	const walked = filterGitIgnoredFiles(cwd, { files, truncated });
+	// .gitignore 感知：一次批量 check-ignore 剔除被忽略文件，且剔除先于
+	// 结果预算截断——防两件事：构建产物把真实文件挤出预算（忽略文件不
+	// 占槽位），以及被忽略目录里的文件伪命中静态触发器（如忽略目录下的
+	// go.mod 会在非 Go 项目激活 golang 束）。git 的完整忽略语义（嵌套
+	// .gitignore/infoexclude/全局档）不自行复刻。
+	const ignoredStripped = filterGitIgnoredFiles(cwd, { files, truncated });
+	const walked = ignoredStripped.files.length > limits.maxFiles
+		? { files: ignoredStripped.files.slice(0, limits.maxFiles), truncated: true }
+		: ignoredStripped;
 	if (cacheable) repoWalkCache.set(cwd, { walked, at: Date.now() });
 	return walked;
 }
@@ -95,22 +114,27 @@ function filterGitIgnoredFiles(cwd: string, walked: WalkedRepo): WalkedRepo {
 	if (walked.files.length === 0) return walked;
 	const result = (() => {
 		try {
-			return spawnSync("git", ["check-ignore", "--stdin"], {
+			// -z 双向 NUL 分隔：core.quotePath 的 C 风格转义（中文/引号
+			// 路径）与文件名含换行都不再失配。maxBuffer 兜走查上限对应的
+			// 输出量级（20 万条深路径可达十余 MB）——默认 1MB 会在恰好
+			// 瞄准的病态仓上把子进程杀掉、静默退回不过滤。
+			return spawnSync("git", ["check-ignore", "-z", "--stdin"], {
 				cwd,
-				input: `${walked.files.join("\n")}\n`,
+				input: `${walked.files.join("\0")}\0`,
 				encoding: "utf8",
 				timeout: 10_000,
+				maxBuffer: 1024 * 1024 * 64,
 			});
 		} catch {
 			return undefined;
 		}
 	})();
 	if (result === undefined || result.error !== undefined || (result.status !== 0 && result.status !== 1)) {
-		// 非 git 仓库（128）/git 缺席/超时：保持不过滤的旧语义，宁可多扫
-		// 不可漏扫——触发判定是保守面。
+		// 非 git 仓库（128）/git 缺席/超时/输出超限：保持不过滤的旧语义，
+		// 宁可多扫不可漏扫——触发判定是保守面。
 		return walked;
 	}
-	const ignored = new Set((result.stdout ?? "").split(/\r?\n/).filter((line: string) => line.length > 0));
+	const ignored = new Set((result.stdout ?? "").split("\0").filter((line: string) => line.length > 0));
 	if (ignored.size === 0) return walked;
 	return { files: walked.files.filter((file) => !ignored.has(file)), truncated: walked.truncated };
 }
