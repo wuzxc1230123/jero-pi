@@ -5,6 +5,16 @@ jero-pi 尚未发布到 npm（版本停在 0.1.0 基线），本文件自重构�
 
 ## [Unreleased]
 
+### 质量门体系加固批：打包门清单完备化 + 诊断透出（2026-10-11）
+
+**对全部八项质量检查做注入式变异测试（注入真违规验证变红，8/8 机制有效）后修复两处体系缺口；另修复一起变异探针期间的外部中断导致的金样 fixture 清零（git 恢复，门复绿）。**
+
+- **打包门清单缺口（审计发现 19 个漏录路径）**：`verify-package-files.mjs` 的 requiredPaths 手工清单缺 5 个扩展入口（jero-agents/jero-shell/module-verify/runtime-metrics/startup-banner——9 个扩展只收录 4 个）、5 个技能 SKILL.md（jero-skills 运行时路由表/jero-lean/jero-lean-review/jero-debt/jero-diagnose-stall）、8 个技能参考件（branch-pr×2/chained-pr/issue-creation×2/jero-module-creator 模板/judgment-day/release）与 `schemas/module.schema.json`——prepack 链会放行缺这些文件的残包。全部补录（清单 301→320），jero-reference 打包门计数行同步。
+- **清单完备性棘轮（堵住整类缺口）**：既有 `tests/verify-package-files.test.ts` 只在合成夹具上测门函数，从未拿真清单对真盘面。新增 4 条结构不变量：每个扩展入口/每个技能 SKILL.md 及其 references+assets/每个提示词模板与发布 schema/每个模块束的 module.json+知识入口必须被清单收录——忘登记先红测试，不再依赖人工记清单。
+- **nativeStatusFailed 通用分支诊断透出**：裸 Error（真机实证：零提交仓预检的 "Repository root commit anchors are required"）曾被整体吞掉，代理只拿到无 cause 的 `native-status-unavailable` 封套，排障需旁路复现。封套加性新增 `authority_error` 字段携带拒绝原因，fail-closed 语义不变；`jero-ai.test.ts` 补回归钉测。
+- **变异测试结论（留档）**：八项检查对各自规约的违规 100% 精确拦截（带定位与修复指引）；12 处平台条件跳过全部有理由且被 test-quality 门禁止空理由；GIT_* fail-closed 与 headless TUI 面为设计行为/固有限制，不改。
+- 验证：typecheck 0 诊；目标测（打包门棘轮 12 + 诊断透出钉测）全绿；全量与七道门见本批提交记录。
+
 ### 真机冒烟修复批：评审权威三缺陷（2026-10-11）
 
 **Pi 1.0.4 真机全功能冒烟（项目级路径安装 + `pi -p` 驱动 GLM-5.3）发现评审链路三处包级缺陷，全部修复并以"目标回归 → authority 全回路 → 全量 → 真机复验"四层验证闭环；其余功能面（模块契约/记忆/SDD/技能/受管资产/精益/装载）真机全绿。**

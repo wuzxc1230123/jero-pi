@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -173,5 +173,56 @@ test("both walks report no drift when sources, runtime/*.mjs, requiredPaths, and
 		assert.deepEqual(sourcesResult, { drifted: [] });
 	} finally {
 		rmSync(fixtureRoot, { recursive: true, force: true });
+	}
+});
+
+// 清单完备性棘轮：上面的函数测试全部跑在合成夹具上，从未拿真
+// requiredPaths 对真盘面——历史两批缺口（5 个扩展入口、5 个技能
+// SKILL.md、8 个技能参考件与 schemas/module.schema.json）正是从这个
+// 缝里静默漏过的（真机冒烟批审计发现）。以下把"盘面承重面必须被
+// 清单收录"钉成结构不变量：新增扩展/技能/提示词模板/schema/模块束
+// 心而忘了登记打包门，测试先红，不再依赖人工记清单。
+
+const PACKAGE_ROOT = join(import.meta.dirname, "..");
+const GATE_SOURCE = readFileSync(join(PACKAGE_ROOT, "scripts", "verify-package-files.mjs"), "utf8");
+
+function assertListed(relativePath: string): void {
+	assert.ok(GATE_SOURCE.includes(`"${relativePath}"`), `打包门 requiredPaths 缺录：${relativePath}`);
+}
+
+test("每个扩展入口都在打包门清单", () => {
+	for (const name of readdirSync(join(PACKAGE_ROOT, "extensions")).filter((file) => file.endsWith(".ts"))) {
+		assertListed(`extensions/${name}`);
+	}
+});
+
+test("每个技能的 SKILL.md 与 references/assets 文件都在打包门清单", () => {
+	for (const entry of readdirSync(join(PACKAGE_ROOT, "skills"), { withFileTypes: true })) {
+		if (!entry.isDirectory() || entry.name === "_shared") continue;
+		assertListed(`skills/${entry.name}/SKILL.md`);
+		for (const sub of ["references", "assets"]) {
+			const directory = join(PACKAGE_ROOT, "skills", entry.name, sub);
+			if (!existsSync(directory)) continue;
+			for (const file of readdirSync(directory).filter((name) => name.endsWith(".md") || name.endsWith(".yaml"))) {
+				assertListed(`skills/${entry.name}/${sub}/${file}`);
+			}
+		}
+	}
+});
+
+test("每个提示词模板与发布 schema 都在打包门清单", () => {
+	for (const name of readdirSync(join(PACKAGE_ROOT, "prompts")).filter((file) => file.endsWith(".md"))) {
+		assertListed(`prompts/${name}`);
+	}
+	for (const name of readdirSync(join(PACKAGE_ROOT, "schemas")).filter((file) => file.endsWith(".json"))) {
+		assertListed(`schemas/${name}`);
+	}
+});
+
+test("每个模块束的清单与知识入口都在打包门清单", () => {
+	for (const entry of readdirSync(join(PACKAGE_ROOT, "assets", "modules"), { withFileTypes: true })) {
+		if (!entry.isDirectory()) continue;
+		assertListed(`assets/modules/${entry.name}/module.json`);
+		assertListed(`assets/modules/${entry.name}/knowledge/SKILL.md`);
 	}
 });

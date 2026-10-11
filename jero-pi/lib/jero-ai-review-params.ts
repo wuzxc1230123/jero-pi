@@ -681,10 +681,15 @@ export function nativeStatusFailed(operation: ReviewControllerOperation, error: 
 			inventory_complete: false,
 		};
 	}
+	// 真机冒烟教训：普通 Error（如零提交仓预检的 "Repository root commit
+	// anchors are required"）在此分支曾被整体吞掉，代理只拿到无 cause 的
+	// 封套，排障要靠旁路复现。fail-closed 语义不变，但权威拒绝的原因必须
+	// 随封套透出——诊断字段加性出现，消费面按需读取。
 	return {
 		operation,
 		status: "blocked",
 		outcome: "native-status-unavailable",
+		authority_error: error instanceof Error ? error.message : String(error),
 		lineage_created: false,
 		mutation_performed: false,
 		mutation_outcome: "none",

@@ -51,6 +51,29 @@ test("authority unavailability fails closed without installer recovery or lifecy
 	assert.doesNotMatch(JSON.stringify(result), /JERO_PI_SKIP_GENTLE_AI_INSTALL/);
 });
 
+test("plain authority errors carry their refusal reason through the unavailable envelope", async () => {
+	// 真机冒烟回归：零提交仓预检拒绝（"Repository root commit anchors are
+	// required"）曾被通用分支整体吞掉——封套无 cause，排障只能旁路复现。
+	// fail-closed 语义不变，拒绝原因必须随 authority_error 透出。
+	const result = await __testing.executeReviewControllerOperation(
+		{ operation: "inspect" },
+		process.cwd(),
+		{
+			reviewMode: async () => ({ operation: "status", status: { effective: "on" } }),
+			targetStatus: async () => {
+				throw new Error("authority-unavailable: review mode refused: authority-unavailable (Repository root commit anchors are required)");
+			},
+		} as unknown as NativeReviewCli,
+	);
+
+	assert.equal(result.outcome, "native-status-unavailable");
+	assert.equal(result.status, "blocked");
+	assert.equal(
+		result.authority_error,
+		"authority-unavailable: review mode refused: authority-unavailable (Repository root commit anchors are required)",
+	);
+});
+
 test("registered Jero Review tools render reusable rose lifecycle call rows", () => {
 	const tools = registeredJeroTools();
 	const cases = [
