@@ -132,7 +132,7 @@ S9（事故诊断）与 S10（继续/恢复）刻意不开放——后者是纯�
 | `extensions/module-verify.ts` | `/jero-module-verify` + `/jero:install-module` + `/jero:module-list` 命令 + session_start 覆盖层刷新 + 模块根监视 |
 | `schemas/module.schema.json` | 清单的发布形态 schema（门钉与 TS 常量零漂移；含"dependencies 仅 v2"的 if/then 分支） |
 | `scripts/check-module-contract.mjs` | CI 门：schema 漂移 + 金样绿灯 + 包内模块库绿灯 |
-| `assets/modules/` | 包内模块库（安装器的注册表；库内束：godot、golang、dotnet 全中文模块） |
+| `assets/modules/` | 包内模块库（安装器的注册表；库内束：godot、golang、dotnet、vue 全中文模块） |
 | `lib/skill-registry-engine.ts` | 注册表把项目模块根的 `knowledge/SKILL.md` 纳入发现 |
 | `assets/orchestrator-skills.md` | 注册协议第 5 步：按覆盖层档位收窄注入、委派按路由表 |
 | `assets/orchestrator-delegation.md` | 「自然语言路由单」：R1–R4 路由函数与 slip 字段 |

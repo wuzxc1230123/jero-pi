@@ -1,0 +1,69 @@
+{
+	"schema": "jero.module-contract/v2",
+	"token": "vue",
+	"version": "0.1.0",
+	"description": "Vue 3 前端领域模块：22 个领域技能入口（风格/命名/组合式 API/响应式/组件契约/注入/自写 composable/VueUse/Pinia/路由/TS/Vite/测试/Nuxt/性能/SSR/表单/过渡/指令/项目/升级/安全）+ 24 篇深知识 references 与 1 篇出处账本，附评审/测试/架构三角色，知识锚定 Vue 3.5/3.6 + Nuxt 4 + Vite 7。",
+	"dependencies": [],
+	"triggers": {
+		"files": ["**/*.vue", "nuxt.config.ts", "**/nuxt.config.*", "vue.config.js", "**/vue.config.*"],
+		"intents": ["Vue", "vue3", "Nuxt", "Pinia", "Vite", "VueUse", "组合式", "响应式", "组件"]
+	},
+	"knowledge": {
+		"entry": "knowledge/SKILL.md",
+		"references": ["references/*.md"]
+	},
+	"roles": [
+		{
+			"name": "vue-reviewer",
+			"isolation": ["adversarial-eyes", "least-privilege"],
+			"permission": "read-only",
+			"model": "balanced",
+			"output": "findings-report"
+		},
+		{
+			"name": "vue-tester",
+			"isolation": ["least-privilege"],
+			"permission": "write-bounded",
+			"model": "fast",
+			"output": "verification-report"
+		},
+		{
+			"name": "vue-architect",
+			"isolation": ["least-privilege"],
+			"permission": "read-only",
+			"model": "deep-reasoning",
+			"output": "design-proposal"
+		}
+	],
+	"bindings": {
+		"inline": { "inject": "entry" },
+		"explore": { "inject": "manifest-only" },
+		"worker": { "inject": "entry" },
+		"verify": { "inject": "entry", "appendRoles": ["vue-tester"] },
+		"sdd-planning": { "inject": "entry" },
+		"sdd-execution": { "inject": "entry" },
+		"review": { "inject": "entry", "appendRoles": ["vue-reviewer"] },
+		"answer": { "inject": "entry" }
+	},
+	"routing": [
+		{
+			"when": { "surface": "review" },
+			"action": "delegate-role",
+			"target": "vue-reviewer"
+		},
+		{
+			"when": { "surface": "verify" },
+			"action": "delegate-role",
+			"target": "vue-tester"
+		},
+		{
+			"when": { "slip": { "utteranceType": "design-request", "crossModule": true } },
+			"action": "suggest-role",
+			"target": "vue-architect"
+		}
+	],
+	"config": {
+		"testCommand": "vitest run",
+		"gitignore": ["node_modules/", "dist/"]
+	}
+}
