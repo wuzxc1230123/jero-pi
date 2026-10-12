@@ -14,7 +14,7 @@ description: Vue 3 前端领域知识入口：组合式 API 与响应式纪律�
 - 组件与复用：`component-contracts`（props/emits/插槽/v-model）、`provide-inject`（依赖注入）、`composables-authoring`（自写 composable 纪律）、`vueuse-utilities`（VueUse 全谱与调用策略）、`vueuse-patterns`（VueUse 高频模式）
 - 状态与路由：`pinia-state`（Pinia store 设计）、`routing-patterns`（Vue Router 守卫与数据预取）
 - 工程与验证：`vite-toolchain`（Vite 配置与插件）、`testing-practices`（Vitest + Vue Test Utils）、`verification-gates`（三道门协议）、`project-structure`（src 布局与 auto-import）
-- 应用与专题：`nuxt-framework`（Nuxt 4 约定与数据获取）、`performance-optimization`（虚拟列表/懒加载/keep-alive）、`ssr-hydration`（SSR 与水合）、`forms-validation`（表单与校验）、`transitions-animation`（过渡动画）、`directives-usage`（内置与自定义指令）、`security-practices`（XSS/注入红线）、`upgrade-migrations`（2→3 与版本谱系）、`_sources`（出处账本）
+- 应用与专题：`nuxt-framework`（Nuxt 4 约定与数据获取）、`performance-optimization`（虚拟列表/懒加载/keep-alive）、`ssr-hydration`（SSR 与水合）、`forms-validation`（表单与校验）、`i18n-vue-i18n`（国际化）、`transitions-animation`（过渡动画）、`directives-usage`（内置与自定义指令）、`security-practices`（XSS/注入红线）、`upgrade-migrations`（2→3 与版本谱系）、`_sources`（出处账本）
 
 ## 硬约束
 

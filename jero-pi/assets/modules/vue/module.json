@@ -2,7 +2,7 @@
 	"schema": "jero.module-contract/v2",
 	"token": "vue",
 	"version": "0.1.0",
-	"description": "Vue 3 前端领域模块：22 个领域技能入口（风格/命名/组合式 API/响应式/组件契约/注入/自写 composable/VueUse/Pinia/路由/TS/Vite/测试/Nuxt/性能/SSR/表单/过渡/指令/项目/升级/安全）+ 24 篇深知识 references 与 1 篇出处账本，附评审/测试/架构三角色，知识锚定 Vue 3.5/3.6 + Nuxt 4 + Vite 7。",
+	"description": "Vue 3 前端领域模块：22 个领域技能入口（风格/命名/组合式 API/响应式/组件契约/注入/自写 composable/VueUse/Pinia/路由/TS/Vite/测试/Nuxt/性能/SSR/表单/过渡/指令/项目/升级/安全）+ 25 篇深知识 references 与 1 篇出处账本，附评审/测试/架构三角色，知识锚定 Vue 3.5/3.6 + Nuxt 4 + Vite 7。",
 	"dependencies": [],
 	"triggers": {
 		"files": ["**/*.vue", "nuxt.config.ts", "**/nuxt.config.*", "vue.config.js", "**/vue.config.*"],
