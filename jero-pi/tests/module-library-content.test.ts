@@ -9,7 +9,7 @@ import type { ModuleManifest } from "../lib/module-contract.ts";
 
 // 包内模块库（assets/modules/*）的内容纪律机检。判定体在 lib
 // （module-bundle-content.ts 的 auditBundleContent——安装验证 bundle-content
-// 检查项与 CI 库门三方共用），本文件只做库级断言：两束零发现、全中文、
+// 检查项与 CI 库门三方共用），本文件只做库级断言：逐束零发现、全中文、
 // golang 束清单钉住。手工模块走 /jero-module-verify 时由管线吃同一判定体。
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
