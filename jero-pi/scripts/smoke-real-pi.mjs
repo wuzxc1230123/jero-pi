@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // 真机冒烟 harness（手动/按需运行，不进 pnpm test 与 prepack）：
 // 用仓库本地的 Pi 宿主 + 包本体，在一次性沙箱仓库里把只有真机能抓的
-// 集成缝过一遍——扩展装载、命令分发、模块安装全链、静态触发编译、
+// 集成缝过一遍——扩展装载、命令分发、模块安装全链（库内三束齐装 +
+// godot 束 v2 MCP 档合并面）、静态触发编译（三束触发文件齐射）、
 // 记忆四工具（经真实模型调用）、小候选评审全生命周期（同意→START→
 // 捕获→结算→回执）。三缺陷修复批（mode 写读漂移/捕获路由蛇形/中继
 // 容器）正是全部单测+七门全绿下只有这层能抓的，故把它脚本化。
@@ -73,9 +74,9 @@ try {
 	const settingsPath = join(sandbox, ".pi", "settings.json");
 	record("扩展装载（pi install -l）", installed.status === 0 && existsSync(settingsPath));
 
-	if (!modelReady) {
-		const reason = "JERO_PI_SMOKE_PROVIDER/MODEL 未设";
-		for (const name of ["模型回复探针", "install-module golang 全链落盘", "触发编译命中（种 go.mod → 覆盖层）", "记忆四工具（写/读/列/搜）", "评审·同意与 START（谱系建成 reviewing）", "评审·捕获与结算（capture→终局→回执）"]) {
+		if (!modelReady) {
+			const reason = "JERO_PI_SMOKE_PROVIDER/MODEL 未设";
+			for (const name of ["模型回复探针", "install-module 三束全链落盘（含 godot MCP 档合并）", "触发编译命中（种 go.mod/global.json/project.godot → 覆盖层三束齐射）", "记忆四工具（写/读/列/搜）", "评审·同意与 START（谱系建成 reviewing）", "评审·捕获与结算（capture→终局→回执）"]) {
 			record(name, undefined, `${reason}，跳过模型相关面`);
 		}
 	} else {
@@ -85,29 +86,45 @@ try {
 		const probe = runPi([...baseArgs, "回复两个字：就绪"], sandbox);
 		record("模型回复探针", probe.status === 0 && (probe.stdout ?? "").includes("就绪"), probe.status === 0 ? undefined : `退出码 ${probe.status}`);
 
-		// —— 面三：模块安装全链（命令分发 + 落盘 + 无 MCP 声明面）。
-		const installModule = runPi([...baseArgs, "/jero:install-module golang"], sandbox);
-		const moduleLanded = existsSync(join(sandbox, ".pi", "modules", "golang", "module.json"))
+		// —— 面三：模块安装全链（命令分发 + 三束落盘 + v2 MCP 档合并面）。
+		// 库内三束一次装齐：多 token 命令 + 依赖闭包（三束零依赖直装）+
+		// godot 束的 v2 特性面——声明的 godot-ai 档被幂等合并进项目级
+		// .pi/mcp.json（安装器只写配置不启动服务；真机连接属宿主首用
+		// 信任确认域，不在本面断言——uvx 缺席时连接快速失败非挂死）。
+		const installModule = runPi([...baseArgs, "/jero:install-module godot golang dotnet"], sandbox);
+		const bundleLanded = (token) => existsSync(join(sandbox, ".pi", "modules", token, "module.json"));
+		const moduleLanded = bundleLanded("godot") && bundleLanded("golang") && bundleLanded("dotnet")
 			&& existsSync(join(sandbox, ".pi", "agents", "golang-reviewer.md"))
+			&& existsSync(join(sandbox, ".pi", "agents", "dotnet-reviewer.md"))
 			&& existsSync(join(sandbox, ".pi", "skills", "golang-testing", "SKILL.md"))
+			&& existsSync(join(sandbox, ".pi", "skills", "dotnet-testing", "SKILL.md"))
+			&& existsSync(join(sandbox, ".pi", "skills", "godot-verify", "SKILL.md"))
 			&& existsSync(join(sandbox, ".pi", "module-installs.json"));
-		const noMcp = !existsSync(join(sandbox, ".pi", "mcp.json"));
-		record("install-module golang 全链落盘", installModule.status === 0 && moduleLanded && noMcp, moduleLanded && noMcp ? undefined : `落盘=${moduleLanded} mcp缺席=${noMcp}`);
+		let mcpMerged = false;
+		try {
+			mcpMerged = JSON.parse(readFileSync(join(sandbox, ".pi", "mcp.json"), "utf8"))?.mcpServers?.["godot-ai"]?.command === "uvx";
+		} catch {
+			mcpMerged = false;
+		}
+		record("install-module 三束全链落盘（含 godot MCP 档合并）", installModule.status === 0 && moduleLanded && mcpMerged, moduleLanded && mcpMerged ? undefined : `落盘=${moduleLanded} mcp合并=${mcpMerged} 退出码=${installModule.status} stderr尾:${(installModule.stderr ?? "").slice(-300)}`);
 
-			// —— 面四：静态触发编译（种 go.mod 后覆盖层必须命中）。
-			writeFileSync(join(sandbox, "go.mod"), "module example.com/smoke\n\ngo 1.26\n");
-			const verify = runPi([...baseArgs, "/jero-module-verify"], sandbox);
-			// 覆盖层读取带守卫：verify 在写覆盖层之前就失败时，这里抛
-			// ENOENT 会击穿整个 harness（汇总不打印、KEEP 留不住现场）。
-			let overlay = "";
-			let overlayReadable = true;
-			try {
-				overlay = readFileSync(join(sandbox, ".atl", "module-overlay.md"), "utf8");
-			} catch {
-				overlayReadable = false;
-			}
-			const overlayHit = verify.status === 0 && overlayReadable && overlay.includes("命中 `go.mod`");
-			record("触发编译命中（种 go.mod → 覆盖层）", overlayHit, overlayHit ? undefined : `退出码 ${verify.status} 覆盖层可读=${overlayReadable} stderr尾:${(verify.stderr ?? "").slice(-300)}`);
+			// —— 面四：静态触发编译（每束种一个触发文件，覆盖层逐一命中）。
+		writeFileSync(join(sandbox, "go.mod"), "module example.com/smoke\n\ngo 1.26\n");
+		writeFileSync(join(sandbox, "global.json"), "{\n\t\"sdk\": { \"version\": \"10.0.100\", \"rollForward\": \"latestPatch\" }\n}\n");
+		writeFileSync(join(sandbox, "project.godot"), "; Engine configuration file.\n[application]\nconfig/name=\"smoke\"\n");
+		const verify = runPi([...baseArgs, "/jero-module-verify"], sandbox);
+		// 覆盖层读取带守卫：verify 在写覆盖层之前就失败时，这里抛
+		// ENOENT 会击穿整个 harness（汇总不打印、KEEP 留不住现场）。
+		let overlay = "";
+		let overlayReadable = true;
+		try {
+			overlay = readFileSync(join(sandbox, ".atl", "module-overlay.md"), "utf8");
+		} catch {
+			overlayReadable = false;
+		}
+		const expectedHits = ["命中 `go.mod`", "命中 `global.json`", "命中 `project.godot`"];
+		const overlayHit = verify.status === 0 && overlayReadable && expectedHits.every((needle) => overlay.includes(needle));
+		record("触发编译命中（种 go.mod/global.json/project.godot → 覆盖层三束齐射）", overlayHit, overlayHit ? undefined : `退出码 ${verify.status} 覆盖层可读=${overlayReadable} 缺失:${expectedHits.filter((needle) => !overlay.includes(needle)).join("/") || "无"} stderr尾:${(verify.stderr ?? "").slice(-300)}`);
 
 		// —— 面五：记忆四工具（隔离记忆根，经真实模型调用）。
 		const memoryRoot = join(sandbox, "memroot");
