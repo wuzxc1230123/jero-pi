@@ -1,6 +1,6 @@
 ---
 name: dotnet-benchmark
-description: 基准取证：BenchmarkDotNet 方法论（Release/JIT 预热/多次迭代）、内存诊断与分配率判读、statistical rigor（误差与分布）、微基准 vs 宏观测量。当声称性能变化或评审优化声明时使用。触发词：基准、benchmark、BenchmarkDotNet、性能对比、优化证据。
+description: 基准取证：BenchmarkDotNet 方法论（Release/JIT 预热/多次迭代）、内存诊断与分配率判读、统计严谨性（误差与分布）、微基准与宏观测量。当声称性能变化或评审优化声明时使用。触发词：基准、benchmark、BenchmarkDotNet、性能对比、优化证据。
 ---
 
 # 基准取证（BenchmarkDotNet）

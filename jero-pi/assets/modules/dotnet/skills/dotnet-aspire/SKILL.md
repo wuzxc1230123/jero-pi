@@ -17,7 +17,7 @@ Aspire 把"本地起一串依赖服务"变成代码：AppHost 描述拓扑，Ser
 
 - **AppHost 是拓扑代码**：`DockerComposeEnvironment` 的等价物 `builder.AddProject<…>("api")` + `AddContainer("db", "postgres")`；`WithReference` 流转连接串/服务发现——端口与环境变量不手写。
 - **ServiceDefaults 一处钉**：`builder.AddServiceDefaults()` 进每个服务——OTel（traces/metrics/logs）、健康检查端点、`HttpClient` 弹性（重试/超时/断路，标准钩子）统一装配；项目模板自带，不散装复制。
-- **资源依赖**：`WaitFor` 显式依赖顺序（DB ready 才起迁移者）；`WithReplicas` 本地扩容验证并发；外部端点 `WithExternalHttpEndpoints`。
+- **资源依赖**：`WaitFor` 显式依赖顺序（数据库就绪才起迁移者）；`WithReplicas` 本地扩容验证并发；外部端点 `WithExternalHttpEndpoints`。
 - **集成包**：`Aspire.Hosting.PostgreSQL`/`Redis`…连接串+健康检查+OTel 一条龙（`AddRedisClient` 谱系）；与手写 `AddConnectionString` 二选一，不双层。
 - **配置分层**：AppHost 的 `builder.Configuration` 管拓扑参数；服务自身配置仍走 `dotnet-configuration` 纪律——两层不混。
 - **DistributedApplication.Run 的生命周期**：开发态起停即拓扑；`aspire run`/`dotnet run AppHost` 同义；CI 里 `DistributedApplicationTestingBuilder` 驱动集成测试（见 `dotnet-testing`）。

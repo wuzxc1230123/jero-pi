@@ -17,7 +17,7 @@ csproj 是代码：属性求值顺序、目标钩子与增量检查决定构建�
 
 - **SDK 风格是唯一形态**：`<Project Sdk="Microsoft.NET.Sdk">`；默认通配含 `.cs`，显式 `<Compile Include>` 列表是旧时代残留。
 - **Directory.Build.props/targets 分层**：解决方案级公共属性（TFM/`TreatWarningsAsErrors`/nullable）进 props 一处钉；`.targets` 走构建钩子；子目录文件覆盖父级——层级即配置面。
-- **属性求值序**：props（求值早期，全局默认）vs targets（执行期）；`Condition` 判断可用属性的阶段差是经典坑。
+- **属性求值序**：props（求值早期，全局默认）与 targets（执行期）的阶段分界；`Condition` 判断可用属性的阶段差是经典坑。
 - **增量构建**：目标声明 `Inputs`/`Outputs` 才增量；自定义目标缺输入输出声明 = 每次全跑；`dotnet build` 二次跑应秒级（验证增量的土法）。
 - **restore 边界**：`dotnet restore` 独立可跑（CI 分层缓存）；`PackageReference` 锁版本走 `packages.lock.json`（`RestorePackagesWithLockFile`）。
 - **警告即待办**：新警告 `<WarningsAsErrors>` 收编；`NoWarn` 压制要有注释与期限。

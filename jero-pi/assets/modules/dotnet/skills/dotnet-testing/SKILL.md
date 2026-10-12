@@ -1,6 +1,6 @@
 ---
 name: dotnet-testing
-description: 测试实践：框架选型不混用、AAA 结构、测试命名即文档、Test Driven 的 RED-GREEN 节奏、依赖注入化可测性、快照与集成测试的边界。当写测试或评审测试质量时使用。触发词：测试、xUnit、NUnit、MSTest、单元测试、断言、测试反模式、覆盖率。
+description: 测试实践：框架选型不混用、AAA 结构、测试命名即文档、测试驱动（TDD）的 RED-GREEN 节奏、依赖注入化可测性、快照与集成测试的边界。当写测试或评审测试质量时使用。触发词：测试、xUnit、NUnit、MSTest、单元测试、断言、测试反模式、覆盖率。
 ---
 
 # 测试实践

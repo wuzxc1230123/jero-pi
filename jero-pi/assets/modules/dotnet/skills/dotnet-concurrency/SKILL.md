@@ -1,6 +1,6 @@
 ---
 name: dotnet-concurrency
-description: 并发原语选型：System.Threading.Channels 生产者/消费者、System.Threading.Lock（.NET 9+）、Interlocked、Parallel.ForEachAsync、无锁与有锁的边界。当设计并发结构或评审共享状态时使用。触发词：并发、Channel、锁、线程安全、race condition、并行。
+description: 并发原语选型：System.Threading.Channels 生产者/消费者、System.Threading.Lock（.NET 9+）、Interlocked、Parallel.ForEachAsync、无锁与有锁的边界。当设计并发结构或评审共享状态时使用。触发词：并发、Channel、锁、线程安全、数据竞争、并行。
 ---
 
 # 并发原语选型

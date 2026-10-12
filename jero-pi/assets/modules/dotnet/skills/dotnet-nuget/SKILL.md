@@ -1,6 +1,6 @@
 ---
 name: dotnet-nuget
-description: 包管理与发布：Central Package Management（Directory.Packages.props）、锁文件与还原可复现、私有源与trusted publishing、打包元数据与符号。当管理依赖版本或发布包时使用。触发词：NuGet、包管理、PackageReference、CPM、Directory.Packages.props、nuget.config、发布包。
+description: 包管理与发布：中央包管理（CPM，Directory.Packages.props）、锁文件与还原可复现、私有源与受信发布（trusted publishing）、打包元数据与符号。当管理依赖版本或发布包时使用。触发词：NuGet、包管理、PackageReference、CPM、Directory.Packages.props、nuget.config、发布包。
 ---
 
 # 包管理（NuGet）
@@ -17,8 +17,8 @@ description: 包管理与发布：Central Package Management（Directory.Package
 
 - **CPM 是默认形态**：根 `Directory.Packages.props` 声明 `<PackageVersion Include="x" Version="y" />`；csproj 只写 `<PackageReference Include="x" />` 不带版本——版本一处可查可升。
 - **可复现还原**：`RestorePackagesWithLockFile` + `packages.lock.json` 提交——CI 按 lock 还原（`--locked-mode`），构建不受传递依赖漂移影响。
-- **源与凭据**：`nuget.config` 分层（提交的仓库级声明源；凭据走环境/凭据管理器不进文件）；私有源走 PAT/credential provider；`packageSourceMapping` 防依赖混淆（哪个包来自哪个源显式映射）。
-- **发布面**：trusted publishing（NuGet.org 的 OIDC 无 PAT 流）或 API key 最小作用域；`dotnet pack -c Release` + 符号包（`.snupkg`）；`RepositoryUrl`/`License`/`PackageId` 元数据齐——SBOM/来源审计的地基。
+- **源与凭据**：`nuget.config` 分层（提交的仓库级声明源；凭据走环境/凭据管理器不进文件）；私有源走 PAT/凭据提供器（credential provider）；`packageSourceMapping` 防依赖混淆（哪个包来自哪个源显式映射）。
+- **发布面**：受信发布（trusted publishing——NuGet.org 的 OIDC 无 PAT 流）或 API key 最小作用域；`dotnet pack -c Release` + 符号包（`.snupkg`）；`RepositoryUrl`/`License`/`PackageId` 元数据齐——SBOM/来源审计的地基。
 - **审计**：`dotnet list package --vulnerable --outdated` 进 CI 定期任务；弃用包治理（`Microsoft.AspNetCore.*` 谱系更替）跟 `dotnet-upgrade`。
 - **传递面审读**：新增依赖看传递闭包体积与许可；`dotnet nuget why <pkg>` 查引入链。
 

@@ -1,6 +1,6 @@
 ---
 name: dotnet-upgrade
-description: 版本升级与迁移：目标框架阶梯（8→9→10→11）、upgrade assistant 与分析器驱动、弃用 API 治理、NRT 存量迁移剧本、运行时配置开关核对。当升 .NET 版本或迁移存量代码时使用。触发词：升级、迁移、TargetFramework、net9.0、net10.0、net11.0、弃用、obsolete、upgrade。
+description: 版本升级与迁移：目标框架阶梯（8→9→10→11）、升级助手（upgrade-assistant）与分析器驱动、弃用 API 治理、NRT 存量迁移剧本、运行时配置开关核对。当升 .NET 版本或迁移存量代码时使用。触发词：升级、迁移、TargetFramework、net9.0、net10.0、net11.0、弃用、obsolete、upgrade。
 ---
 
 # 版本升级与迁移

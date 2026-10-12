@@ -19,7 +19,7 @@ description: async/await 纪律：Task 与 ValueTask 取舍、ConfigureAwait 分
 - **库代码 `ConfigureAwait(false)`**：类库（无同步上下文假设）逐 await 加；应用层（ASP.NET Core 无同步上下文）不加是惯例——分层规则写进团队约定。
 - **取消传播**：公共异步 API 首参或次参收 `CancellationToken`；逐层传递不半路丢弃；CPU 密集循环内 `token.ThrowIfCancellationRequested()` 分段检查。
 - **ValueTask 的窄面**：高频同步完成路径（缓存命中/缓冲有货）才用 `ValueTask<T>`——只能 await 一次、不能多次存储；默认仍是 `Task<T>`。
-- **异常观察**：fire-and-forget 必须兜底（`_ = SafeAsync().ContinueWith(t => Log(t.Exception), OnlyOnFaulted)` 或包装助手）；`Task.WhenAll` 聚合后逐异常处理。
+- **异常观察**：发后不管（fire-and-forget）必须兜底（`_ = SafeAsync().ContinueWith(t => Log(t.Exception), OnlyOnFaulted)` 或包装助手）；`Task.WhenAll` 聚合后逐异常处理。
 - **`Task.Run` 只做 CPU 卸载**：包同步 IO 伪装异步是反模式；`Task.Yield()` 重排队是气味。
 
 ## 红线
