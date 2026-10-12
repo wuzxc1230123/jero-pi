@@ -1,6 +1,6 @@
 ---
 name: godot-gdscript
-description: GDScript 语言规范入口：类型注解、命名、注解顺序、typed 容器、静态纯函数与 NEVER 清单。当编写/评审 .gd 脚本、纠结命名/类型/注解惯例或排查 3.x 遗留写法时使用。触发词：GDScript 规范、GDScript 写法、脚本风格、类型注解、typed array、@onready、@export、静态函数、循环与容器写法。
+description: GDScript 语言规范入口：类型注解、命名、注解顺序、类型化容器、静态纯函数与 NEVER 清单。当编写/评审 .gd 脚本、纠结命名/类型/注解惯例或排查 3.x 遗留写法时使用。触发词：GDScript 规范、GDScript 写法、脚本风格、类型注解、typed array、@onready、@export、静态函数、循环与容器写法。
 ---
 
 # GDScript 语言规范（Godot 4.x）

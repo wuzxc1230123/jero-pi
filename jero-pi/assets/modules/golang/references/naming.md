@@ -60,7 +60,7 @@ usersOnlineCount := ...          // 包级/长作用域，名字自带上下文
 - 实现命名：`Xxx` 接口的默认实现 `xxxImpl` 是弱命名；更常见的是直接
   以存储/协议命名（`diskStore`、`memoryCache`）。
 
-## doc comment 与命名联动
+## 文档注释（doc comment）与命名联动
 
 - `// Name does something`——名字开头、第三人称单数、句号结尾。
 - 名字难写注释 = 名字没起好：`LoadBalanceV2` 需要一段注释解释 V2，

@@ -59,8 +59,8 @@ public static class OrdersTracing
 
 ## tag 纪律（基数与敏感）
 
-- **高基是账单炸弹**：metric tag 的取值空间必须有限——`orderId`/
-  `userId`/URL 全路径不进 metric tag（进 trace 的 span 属性）；
+- **高基是账单炸弹**：指标标签（tag）的取值空间必须有限——`orderId`/
+  `userId`/URL 全路径不进指标标签（进 trace 的 span 属性）；
   要分布用 histogram 的显式 bucket。
 - 敏感值禁入：密钥/令牌/PII 不进 span 属性与日志属性（脱敏中间
   件统一处理入站头）。
@@ -107,7 +107,7 @@ public static class OrdersTracing
 
 ## 红线
 
-- tag/日志属性放密钥与无界标识符；metric tag 放 orderId。
+- tag/日志属性放密钥与无界标识符；指标标签放 orderId。
 - 生产全量采样 + 全属性收集（成本失控）。
 - 手工 Stopwatch 日志冒充 trace（无因果传播、无跨进程关联）；
   硬编码后端地址（env `OTEL_EXPORTER_OTLP_ENDPOINT` 驱动，

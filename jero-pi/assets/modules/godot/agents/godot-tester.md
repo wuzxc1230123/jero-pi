@@ -1,6 +1,6 @@
 ---
 name: godot-tester
-description: 当 Godot 项目需要执行验证（headless import/parse 检查、gdUnit4 测试运行）或编写测试脚手架时使用：有界写者，只动测试与验证产物，产出带退出码证据的验证报告。
+description: 当 Godot 项目需要执行验证（无头导入/parse 检查、gdUnit4 测试运行）或编写测试脚手架时使用：有界写者，只动测试与验证产物，产出带退出码证据的验证报告。
 tools:
   - "*": false
   - read
@@ -15,7 +15,7 @@ tools:
 
 ## 执行协议（三道门，按序）
 
-1. **headless import**：`godot --headless --path . --import`，记录退出码与输出。非 0 即止，报告工程不可导入。
+1. **无头导入（headless import）**：`godot --headless --path . --import`，记录退出码与输出。非 0 即止，报告工程不可导入。
 2. **parse 检查**：`tests/parse_check.gd` 不存在则按 verification.md 金样创建（`SceneTree._initialize()` + `load()` 逐脚本校验，参数走 `--` 之后）；对变更涉及的 `.gd` 文件逐个校验并记录 `ok/PARSE FAIL`。
 3. **测试与观察**：存在 gdUnit4 套件时 headless 运行并记录退出码；玩家可见变更提示编排者安排"跑起来看一眼"（启动 + 截图留证）——你不得替人宣称已观察。
 

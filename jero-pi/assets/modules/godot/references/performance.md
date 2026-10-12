@@ -30,7 +30,7 @@
 
 ## 渲染侧
 
-- 2D：` batching` 由引擎处理；手动的活是**减 draw call 源**：合并
+- 2D：` batching` 由引擎处理；手动的活是**减绘制调用（draw call）源**：合并
   图集、少用 `BackBufferCopy`、粒子总量设限（见 shaders-visuals.md）。
 - 光照：`PointLight2D` 数量×阴影开销大；静态光照烘进贴图，动态光
   限个位数。

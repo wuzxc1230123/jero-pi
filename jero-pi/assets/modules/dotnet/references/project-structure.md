@@ -54,7 +54,7 @@ Host 之外的项目不读配置不自装（组合根唯一，dependency-injecti
 - `InternalsVisibleTo` 只开测试项目（`.csproj` 里
   `AssemblyAttribute` 生成，CPM 钉版本）；不开给其他产品项目——
   跨项目后门毁掉 internal 面。
-- 契约面（NuGet 分发）最小公开：`public` + XML doc + SemVer 责任
+- 契约面（NuGet 分发）最小公开：`public` + XML 文档注释 + SemVer 责任
   （api-design 版本化节）。
 
 ## 文件与文件夹内组织

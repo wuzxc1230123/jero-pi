@@ -14,7 +14,7 @@ tools:
 
 - **包结构**：从 `cmd/`（入口薄壳）+ `internal/`（私有实现）起步；包名表意职责（禁 `util`/`common`/`helpers`）；拆分以依赖方向清晰为先，尺寸其次——先问"谁依赖谁"，再问"多大"。
 - **接口边界**：接口定义在消费方（accept interfaces, return structs）；小接口（1–3 方法）组合出大行为；跨包边界的数据结构显式建模，不透传内部类型。
-- **并发模型**：先问任务形状——扇出固定量用 worker pool + channel，扇出同质并发用 `errgroup`，流水线用 channel 分层，长驻服务用 context 取消 + `wg.Go` 收尾；"顺手加锁"不是并发设计。
+- **并发模型**：先问任务形状——扇出固定量用工作池（worker pool）+ channel，扇出同质并发用 `errgroup`，流水线用 channel 分层，长驻服务用 context 取消 + `wg.Go` 收尾；"顺手加锁"不是并发设计。
 - **依赖引入**：标准库能解不引第三方；引库看维护活跃度/许可/传递依赖面；`go.mod` 主版本与 replace 策略一次定清（详见 `references/dependency-management.md`）。
 
 ## 提案纪律

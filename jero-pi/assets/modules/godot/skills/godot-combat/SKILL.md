@@ -20,7 +20,7 @@ description: 战斗设计（ACT 方法论）：招式集设计法（普攻连段
 - 招式类型手艺：普攻 3–5 段末段最重带位移；蓄力拆 pre/charge/release/recover 且蓄力期不能纯等待；弹反拆 start/success/attack/end。
 - 打击感有参数基线（5 攻击类型 × hitstop/震动/VFX 层数/泛白目标值），设计时定档、实现时落地。
 - Boss：16 范式选型（A 型 HP 阶段化起步），每阶段教一个机制，转换触发三分（血线/韧性/玩家行为）。
-- 配队：一个 win condition + 三角色围绕；Driver + Sub-DPS + Support×2 最稳；脱手是灵魂。
+- 配队：一个胜负条件 + 三角色围绕；Driver + Sub-DPS + Support×2 最稳；脱手是灵魂。
 
 ## 红线
 

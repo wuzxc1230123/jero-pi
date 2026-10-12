@@ -9,7 +9,7 @@
 要解决什么？
 ├─ 数据载体 + 值语义 → record（positional 或 init 集）
 ├─ 封闭分类多分支 → switch 表达式 + 模式匹配
-├─ 注入/简单初始化样板 → primary constructor（C# 12）
+├─ 注入/简单初始化样板 → 主构造函数（C# 12）
 ├─ 集合初始化统一 → collection expressions [..]（C# 12）
 ├─ 强制初始化不变式 → required 成员（C# 11）
 ├─ 属性支撑字段带校验 → field 关键字（C# 14）
@@ -45,7 +45,7 @@ var rate = subscriber switch
 - `is` 声明模式收窄：`if (shape is Circle { Radius: > 10 } big)`。
 - 列表模式（`[1, .. var rest, 5]`）解序列头尾。
 
-## primary constructor（C# 12）
+## 主构造函数（primary constructor，C# 12）
 
 ```csharp
 public sealed class OrderValidator(IInventory inventory, TimeProvider clock)
@@ -95,6 +95,6 @@ ReadOnlySpan<int> zs = [1, 2];
 
 ## 红线
 
-- 为尝鲜重写稳定代码；`partial` 类拆散 primary constructor。
-- 用反射/表达式树模拟已有语言特性（source generator 才是正道，
+- 为尝鲜重写稳定代码；`partial` 类拆散主构造函数。
+- 用反射/表达式树模拟已有语言特性（源生成器才是正道，
   见 aot-trimming）。

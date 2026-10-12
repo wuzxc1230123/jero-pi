@@ -1,6 +1,6 @@
 ---
 name: golang-naming
-description: 命名决策树：包名表职责、接口 -er 后缀、短接收者、MixedCaps、无 Get 前缀、变量长度与作用域成比例。当命名标识符、包、接口或写 doc comment 时使用。触发词：命名、包名、接口名、接收者、缩写、驼峰。
+description: 命名决策树：包名表职责、接口 -er 后缀、短接收者、MixedCaps、无 Get 前缀、变量长度与作用域成比例。当命名标识符、包、接口或写文档注释（doc comment）时使用。触发词：命名、包名、接口名、接收者、缩写、驼峰。
 ---
 
 # 命名（Go）
@@ -11,7 +11,7 @@ description: 命名决策树：包名表职责、接口 -er 后缀、短接收�
 
 ## 何时使用
 
-新建包/类型/函数、命名接收者与常量、写导出符号的 doc comment 时使用；评审命名一致性时同样适用。
+新建包/类型/函数、命名接收者与常量、写导出符号的文档注释时使用；评审命名一致性时同样适用。
 
 ## 核心要点
 
@@ -22,8 +22,8 @@ description: 命名决策树：包名表职责、接口 -er 后缀、短接收�
 - **无 Get 前缀**：`user.Name()` 不是 `user.GetName()`；布尔用 `Is/Has/Can` 开头。
 - **缩略词全大写或全小写**：`URL`/`id`、`HTTPServer`/`httpServer`，绝不 `Url`。
 - **长度与作用域成比例**：循环计数 `i`、方法内局部 `n`、包级导出名写全；名字带上下文（`usersCount` 优于全局 `count`）。
-- **错误值** `ErrXxx`、**错误类型** `XxxError`；哨兵错误的 doc comment 说明调用方如何匹配。
-- **doc comment 以名字开头**：`// Name does ...`；包文档放任一文件的 `package xxx` 上方。
+- **错误值** `ErrXxx`、**错误类型** `XxxError`；哨兵错误的文档注释说明调用方如何匹配。
+- **文档注释以名字开头**：`// Name does ...`；包文档放任一文件的 `package xxx` 上方。
 
 ## 红线
 

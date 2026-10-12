@@ -27,7 +27,7 @@ XR 是 3D 的严格子集外加两套新纪律：**性能预算减半**（VR 双
 ## 性能预算
 
 - VR 单帧预算 = 目标刷新率的一半渲染量（双目）：90Hz VR ≈ 11ms 总
-  预算——比 60fps 桌面紧得多；draw call/Lod/光照纪律按 `performance.md`
+  预算——比 60fps 桌面紧得多；绘制调用/Lod/光照纪律按 `performance.md`
   再收紧一档。
 - 注视点渲染/动态分辨率按 runtime 能力开；移动 XR（一体机）再降档。
 - 物理与逻辑 tick 与渲染解耦（固定步长，`physics-gameplay.md`）——

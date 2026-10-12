@@ -7,7 +7,7 @@ description: 存档与持久化：显式版本 + 原子写 + 校验和 + 迁移�
 
 管"怎么存才不坏"：存档是最容易写坏的系统。深度知识住模块 references（L2，路径经模块知识入口注入，按需读）。
 
-> **相关技能：** 数据层 Resource 化 → `godot-resources`；纯逻辑可测性 → `godot-gdscript`（static func）；能力数值入档 → 深读 `references/ability-system.md`。
+> **相关技能：** 数据层 Resource 化 → `godot-resources`；纯逻辑可测性 → `godot-gdscript`（`static func`）；能力数值入档 → 深读 `references/ability-system.md`。
 
 ## 何时使用
 

@@ -16,7 +16,7 @@ description: XR 开发（VR/AR，OpenXR）：XROrigin3D 骨架、相机控制权
 ## 核心要点
 
 - 骨架：`XROrigin3D` + `XRCamera3D` + `XRController3D`，世界用真实米制；**移动玩家 = 移 Origin**，XR 相机由系统驱动。
-- 性能预算减半：双目渲染，90Hz ≈ 11ms 总预算——draw call/光照按 `godot-performance` 再收紧一档。
+- 性能预算减半：双目渲染，90Hz ≈ 11ms 总预算——绘制调用/光照按 `godot-performance` 再收紧一档。
 - 舒适度即功能：移动给玩家选择（瞬移/平滑转向），**绝不脚本夺镜头**；UI 跟头不跟世界。
 - XR 是模块边界：`OS.has_feature("xr")` 分层隔离，桌面构建不带 XR 路径。
 

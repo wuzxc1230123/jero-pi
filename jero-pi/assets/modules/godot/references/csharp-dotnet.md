@@ -45,7 +45,7 @@ public partial class Player : CharacterBody2D
 ## 测试与验证
 
 - `dotnet test`（纯逻辑）+ `godot --headless`（引擎面 GdUnit4Sharp/集成脚本）双轨；模块 `config.testCommand` 按项目主语言二选一钉住（模块清单 config 字段，装进 `.pi/modules/` 后生效）。
-- CI：`dotnet build` 零告警 + `dotnet test` + headless import 三道（`verification.md` 同构）。
+- CI：`dotnet build` 零告警 + `dotnet test` + 无头导入三道（`verification.md` 同构）。
 - 导出：C# 项目需 .NET 工具链在导出机（CI 镜像带 SDK，见 `export-publishing.md`）。
 
 ## 选型判断

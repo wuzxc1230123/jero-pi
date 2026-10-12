@@ -29,7 +29,7 @@ if perr, ok := errors.AsType[*fs.PathError](err); ok { ... }
 ```
 
 - `err.Error()` 字符串比较/`strings.Contains` 永不（错误文案不是 API）。
-- 哨兵错误的 doc comment 写明匹配方式：`// ErrClosed 匹配已关闭的连接`。
+- 哨兵错误的文档注释写明匹配方式：`// ErrClosed 匹配已关闭的连接`。
 
 ## 只处理一次（handle errors once）
 

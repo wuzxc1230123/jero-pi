@@ -4,7 +4,7 @@ Godot 侧一切可回归的验证结论都必须能从**退出码与磁盘产物
 开着编辑器、不依赖肉眼盯着、不依赖任何活连接。三道门按序执行，上一道
 不过不进下一道。
 
-## 第一道门：headless import（类缓存 + 工程完整性）
+## 第一道门：无头导入（headless import——类缓存 + 工程完整性）
 
 ```bash
 godot --headless --path . --import

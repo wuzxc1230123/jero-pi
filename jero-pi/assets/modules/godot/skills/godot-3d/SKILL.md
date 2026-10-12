@@ -19,7 +19,7 @@ description: Godot 4 3D 开发基础：节点族与变换、glTF 模型导入、
 - glTF 2.0 为交换首选；模型比例错回 DCC 修（米制对米制），场景里 scale 硬补是债。
 - 光照预算：移动端 LightmapGI（静态烘焙）+ 少量实时光；SDFGI/VoxelGI 属桌面档；点光阴影默认关。
 - 物理同 2D 纪律（`physics-gameplay.md`）：CharacterBody3D 玩家、刚体信力；**ConcavePolygonShape3D 只给 StaticBody3D**。
-- 中远景上 LOD（`visibility_range`）+ OccluderInstance；静态网格合并控制 draw call。
+- 中远景上 LOD（`visibility_range`）+ OccluderInstance；静态网格合并控制绘制调用（draw call）。
 
 ## 红线
 

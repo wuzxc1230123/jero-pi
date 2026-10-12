@@ -50,7 +50,7 @@ func Process(r *Request) error {
 ## 注释纪律
 
 - 注释给"为什么"：约束、权衡、坑；不复述"做什么"（代码自己会说）。
-- doc comment 以名字开头：`// Name does ...`（导出符号必写）。
+- 文档注释（doc comment）以名字开头：`// Name does ...`（导出符号必写）。
 - 注释掉的代码删除（git 记得）；`// TODO(user):` 带责任人与 issue。
 - 包注释 `// Package foo ...` 放任一文件，一个包只一处。
 

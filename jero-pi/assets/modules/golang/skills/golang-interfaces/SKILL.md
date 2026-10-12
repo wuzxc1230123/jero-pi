@@ -1,6 +1,6 @@
 ---
 name: golang-interfaces
-description: 接口设计：接口定义在消费方、accept interfaces return structs、小接口组合、编译期断言 var _ I = (*T)(nil)、嵌入扩展。当设计接口、决定抽象边界或消除 mock 痛苦时使用。触发词：接口、interface、抽象、实现断言、mock、依赖倒置。
+description: 接口设计：接口定义在消费方（accept interfaces, return structs）、小接口组合、编译期断言 var _ I = (*T)(nil)、嵌入扩展。当设计接口、决定抽象边界或消除 mock 痛苦时使用。触发词：接口、interface、抽象、实现断言、mock、依赖倒置。
 ---
 
 # 接口（Go）
@@ -15,7 +15,7 @@ description: 接口设计：接口定义在消费方、accept interfaces return 
 
 ## 核心要点
 
-- **消费方定义**：接口写在用它的人旁边（`consumer.go` 里），不写在实现者旁边；producer 返回具体类型，consumer 参数收接口——accept interfaces, return structs。
+- **消费方定义**：接口写在用它的人旁边（`consumer.go` 里），不写在实现者旁边；生产方返回具体类型，消费方参数收接口——accept interfaces, return structs。
 - **隐式满足是设计工具**：实现方不 import 消费方的接口包（无编译耦合）；跨包编译期断言 `var _ Consumer = (*Impl)(nil)` 兜住"以为实现了"。
 - **小接口**：1–3 方法；大接口用组合（`type ReadWriter interface { Reader; Writer }`）；标准库的 `io` 家族是范本。接口越大，mock 越痛，误用面越宽。
 - **不要提前抽象**：第二个实现出现之前不抽接口（YAGNI 的 Go 形态）；为一个实现造接口 + 一个 mock 是双重税。

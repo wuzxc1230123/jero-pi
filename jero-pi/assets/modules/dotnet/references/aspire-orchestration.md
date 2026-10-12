@@ -83,7 +83,7 @@ public async Task Order_flow_persists()
 
 - `DistributedApplicationTestingBuilder` 起**真拓扑**（容器+服务）
   跑集成测试——测试面与开发面同一 AppHost 定义，不二写。
-- 容器依赖的测试 formerly Testcontainers 手拼（testing-practices）；
+- 容器依赖的测试此前由 Testcontainers 手拼（testing-practices）；
   有 Aspire 后统一走此面。
 
 ## 分层边界

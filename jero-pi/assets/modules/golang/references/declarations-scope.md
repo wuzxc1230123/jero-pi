@@ -3,7 +3,7 @@
 > 来源：Effective Go / Go Wiki CodeReviewComments（经 golang-skills 快照派生）；权威级：规范
 > 最低 Go 版本：1.22 ｜ 核验日期：2026-10 ｜ 授权账本：`_sources.md`
 
-## var vs := 决策树
+## var 与 := 决策树
 
 ```
 在函数外？

@@ -1,6 +1,6 @@
 ---
 name: godot-performance
-description: 性能预算与反模式：先测量后优化、帧预算表、profiler/monitor 定位、draw call/物理/实例化热点、对象池。当游戏卡顿、掉帧或要做性能优化时使用。触发词：性能、优化、卡顿、掉帧、profiler、帧率、FPS、draw call、对象池、内存、瓶颈。
+description: 性能预算与反模式：先测量后优化、帧预算表、profiler/monitor 定位、绘制调用（draw call）/物理/实例化热点、对象池。当游戏卡顿、掉帧或要做性能优化时使用。触发词：性能、优化、卡顿、掉帧、profiler、帧率、FPS、draw call、对象池、内存、瓶颈。
 ---
 
 # 性能预算与反模式（Godot 4.x）
@@ -17,7 +17,7 @@ description: 性能预算与反模式：先测量后优化、帧预算表、prof
 
 - **先测量后优化**：Godot profiler（脚本）/monitor（引擎指标）拿数字，没有热点证据不动手。
 - 预算起点（60FPS 帧 = 16.6ms）：逻辑全体 ≤4ms、渲染 ≤8ms、留给引擎与余量——预算表立项时写下来。
-- 三大常见热点：每帧 `instantiate/find_child/字符串拼接`（改池化 + 缓存引用）；物理过载（碰撞形状/层规划）；draw call（合批/LOD/剔除）。
+- 三大常见热点：每帧 `instantiate/find_child/字符串拼接`（改池化 + 缓存引用）；物理过载（碰撞形状/层规划）；绘制调用（合批/LOD/剔除）。
 - 对象池：高频生成/销毁（子弹/特效）必池化；池上限显式声明，无上限生成是红线。
 - 优化只在真实目标硬件上验证（移动端 ≠ 桌面），验证留证走 `godot-verify`。
 

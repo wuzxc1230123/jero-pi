@@ -42,7 +42,7 @@
 
 ## 性能红线（详见 `performance.md`）
 
-- 顶点预算与 draw call：合并静态网格（`MeshInstance3D` 的 `Cast Shadow` 关闭的遍地理由不存在——按需）。
+- 顶点预算与绘制调用（draw call）：合并静态网格（`MeshInstance3D` 的 `Cast Shadow` 关闭的遍地理由不存在——按需）。
 - LOD（`LOD` 组或 `visibility_range`）给中远景；`OccluderInstance` 挡视锥外大宗。
 - 每帧 `get_node`/动态 `instantiate`（对象池纪律同 2D）。
 - 未设 `visibility_range` 的粒子/装饰铺满全图。

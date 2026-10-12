@@ -59,14 +59,14 @@ rpc_id(target_peer, "chat_message", multiplayer.get_remote_sender_id(), msg)
 
 ## 状态同步（SceneMultiplayer 高层件）
 
-- `MultiplayerSpawner`：server spawn 的场景自动复制到 client（敌人生成走它，手动 rpc 同步 spawn 是重复造轮子）。
+- `MultiplayerSpawner`：服务器端 spawn 的场景自动复制到客户端（敌人生成走它，手动 rpc 同步 spawn 是重复造轮子）。
 - `MultiplayerSynchronizer`：勾选同步属性（`position` 等），`delta_interval` 降频（0.05–0.1s 起步）；**只同步权威端拥有的属性**。
 - 玩家实体：client 本地预测输入（本地立即动）+ server 权威校正（`sync_state` 差值插值）——先做"server 权威 + client 插值呈现"，预测回滚是后期优化。
 
 ## 常见坑
 
 - 多人改动单机逻辑：所有玩法入口先问"这是谁的 authority"——单机逻辑直接搬进联机 = 幽灵模拟（双端都跑物理）。
-- scene tree 不同步：client 也要加载同场景（`change_scene` 各端各自执行）；专用服务器裁剪：`--server` 头less 跑（无渲染，见 `export-publishing.md`）。
+- 场景树（scene tree）不同步：客户端也要加载同场景（`change_scene` 各端各自执行）；专用服务器裁剪：`--server` 头less 跑（无渲染，见 `export-publishing.md`）。
 - rpc 打点风暴：每帧全属性 reliable 同步（带宽炸）——`MultiplayerSynchronizer` 不可靠通道 + dirty 位。
 - 玩家退出：`peer_disconnected` 里清理实体（queue_free 由 server 走 spawner 反向复制），直接不管 = 幽灵节点。
 - 测试：`--headless` 起多进程（server + N client）跑通脚本（见 `testing.md` 多进程节）；CI 里两进程握手即冒烟。

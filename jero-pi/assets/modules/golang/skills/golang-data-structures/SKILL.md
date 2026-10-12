@@ -1,6 +1,6 @@
 ---
 name: golang-data-structures
-description: 切片与映射底层机制：选型决策树、append 别名、nil vs 空、map 迭代随机性、map set、泛型容器。当选择容器、排查切片别名 bug 或优化容器用法时使用。触发词：切片、slice、数组、映射、map、append、别名、底层数组、set。
+description: 切片与映射底层机制：选型决策树、append 别名、nil 与空之分、map 迭代随机性、map set、泛型容器。当选择容器、排查切片别名 bug 或优化容器用法时使用。触发词：切片、slice、数组、映射、map、append、别名、底层数组、set。
 ---
 
 # 数据结构（Go）
@@ -19,7 +19,7 @@ description: 切片与映射底层机制：选型决策树、append 别名、nil
 - **slice 三元组**：指针+len+cap；`append` 可能原地写（cap 足够）或新分配（cap 不够）——两个切片共享底层数组时，一方的 append 写穿另一方；结果必须回赋：`s = append(s, x)`。
 - **子切片是视图**：`s[a:b]` 共享底层数组；持有小尾巴会钉住整个大数组（内存泄漏形态），要释放用 `slices.Clone(s[a:b])`。
 - **map**：迭代顺序随机（语言规范级随机，绝不依赖）；并发读写直接 panic（fatal，recover 不了）；删除不缩容；预知大小 `make(map[K]V, n)` 减少再哈希。
-- **nil vs 空**：nil slice/map 读操作安全（len=0、查找返回零值）、写操作 map panic；函数返回"无结果"用 nil、字段"空集合"用初始化空——项目内选定一种并一致。
+- **nil 与空**：nil slice/map 读操作安全（len=0、查找返回零值）、写操作 map panic；函数返回"无结果"用 nil、字段"空集合"用初始化空——项目内选定一种并一致。
 - **new vs make**：make 只给 slice/map/channel（初始化内部结构）；new(T) 给 T 的指针。容器结构 `var s []T` 零值即可用，不需要 `make([]T, 0)` 起手。
 
 ## 红线

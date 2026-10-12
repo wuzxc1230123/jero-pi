@@ -1,6 +1,6 @@
 ---
 name: golang-style
-description: 风格核心：清晰优先于简洁、gofmt 无例外、guard clause 降嵌套、行宽软限。当写 Go 代码、做风格决策或评审可读性时使用。触发词：风格、可读性、嵌套、gofmt、代码风格。
+description: 风格核心：清晰优先于简洁、gofmt 无例外、守卫子句（guard clause）降嵌套、行宽软限。当写 Go 代码、做风格决策或评审可读性时使用。触发词：风格、可读性、嵌套、gofmt、代码风格。
 ---
 
 # 风格核心（Go）
@@ -17,10 +17,10 @@ description: 风格核心：清晰优先于简洁、gofmt 无例外、guard clau
 
 - **gofmt 无例外**：格式争论零容忍，`gofmt -l .` 输出必须为空；团队风格差异用 gofmt 结束讨论。
 - **优先级序**：清晰 > 简单 > 简洁；"聪明"的代码（非显然的短路、嵌套三元式逻辑、隐式接口满足）默认重写为显然。
-- **guard clause 早返回**：错误/边界条件先处理后返回，主路径不缩进；嵌套超过 2–3 层是抽函数信号。
+- **守卫子句（guard clause）早返回**：错误/边界条件先处理后返回，主路径不缩进；嵌套超过 2–3 层是抽函数信号。
 - **行宽软限 ~99**：超出先考虑拆行或抽中间变量，不为折行而折行。
 - **包级声明分组**：import 按 标准库/第三方/本项目 三组；const/var 按语义分组，不为排序牺牲分组。
-- 注释解释"为什么"，不复述代码"做什么"；导出符号的 doc comment 以名字开头（细节归 `golang-naming` 的文档面）。
+- 注释解释"为什么"，不复述代码"做什么"；导出符号的文档注释以名字开头（细节归 `golang-naming` 的文档面）。
 
 ## 红线
 
@@ -30,4 +30,4 @@ description: 风格核心：清晰优先于简洁、gofmt 无例外、guard clau
 
 ## 深读指路（references/）
 
-风格全文（优先级论证/guard clause 样例/分组惯例）：`references/style-and-formatting.md`。
+风格全文（优先级论证/守卫子句样例/分组惯例）：`references/style-and-formatting.md`。

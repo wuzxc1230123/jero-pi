@@ -17,7 +17,7 @@ description: 设计碰撞层与物理交互、选择物理节点类型（Charact
 
 - 碰撞层开局命名（world/player/enemy/hazard/projectile/trigger…）：`collision_layer` = 我是什么，`collision_mask` = 我检测什么。
 - 感知/触发用 `Area2D`（只发 overlap 信号），物理主体用 body；`body_entered` 入口先判组/层掩码再处理。
-- 刚体信力不信位置：`apply_impulse`/施力/关节；绝不每帧 set position——要么纯 CharacterBody，要么信刚体。
+- 刚体信力不信位置：`apply_impulse`/施力/关节；绝不每帧直写位置——要么纯 CharacterBody，要么信刚体。
 - 物理回调里不 instantiate/改树/文件 IO（deferred 一律）。
 - 唤醒/睡眠：静止堆叠靠 `sleeping` 零成本；传送 RigidBody 后 `sleeping = false`。
 

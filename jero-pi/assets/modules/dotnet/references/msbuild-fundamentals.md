@@ -75,7 +75,7 @@ repo/
 | `ServerGarbageCollection` | Server GC 开关（性能面） |
 | `PublishTrimmed` / `PublishAot` | 裁剪/AOT（aot-trimming） |
 | `RestorePackagesWithLockFile` | 锁文件还原（nuget-packaging） |
-| `GenerateDocumentationFile` | XML doc 产物（公共库开） |
+| `GenerateDocumentationFile` | XML 文档注释产物（公共库开） |
 
 ## restore 边界
 

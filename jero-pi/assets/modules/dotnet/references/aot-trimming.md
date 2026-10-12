@@ -75,7 +75,7 @@ public static object Create(Type t) => Activator.CreateInstance(t)!;
 | 配置绑定 | 源生成 binder（configuration-options） |
 | 访问私有成员 | `UnsafeAccessor`（窄、显式） |
 | 类型系统注册（DI 化工厂） | 源生成注册表 / 显式注册 |
-| 动态代理 | 编译期生成（source generator）或设计消除 |
+| 动态代理 | 编译期生成（源生成器）或设计消除 |
 
 `UnsafeAccessor` 样例（跨私有边界的显式契约）：
 

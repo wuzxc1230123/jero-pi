@@ -18,7 +18,7 @@ description: 版本现代化：go fix 现代化器（1.26 全面改版）、逐�
 - **`go fix` 是默认入口**（1.26 全面改版）：内置现代化器目录（如 `loopclosure`→1.22 语义适配、`waitgroup`→`wg.Go` 建议、`builders`/`efaceany`/`slicescontains` 等机械改进），`go fix ./...` 应用，改动走评审与测试；`//go:fix inline` 标记的可内联 API 会被就地展开。**迁移顺序：升工具链 → go fix → go vet → 全量测试 → 基准对比**。
 - **1.22**：for 循环变量每轮独立（`tc := tc` 消亡）；`math/rand/v2`；range over int（`for i := range n`）。
 - **1.23**：range over function（自定义迭代器）；`unique` 包（interning）；timer 语义变更（无引用可回收）。
-- **1.24**：泛型别名；`b.Loop` 基准；`os.Root` 路径锚定；`testing.T.Context()`；weak pointer。
+- **1.24**：泛型别名；`b.Loop` 基准；`os.Root` 路径锚定；`testing.T.Context()`；弱指针（`weak.Pointer`）。
 - **1.25**：`wg.Go`（启动即计数）；`(spec, err) := testing.Synthesize[T]()`；编码解码 textproto 进标准库。
 - **1.26**：`new(expr)` 表达式形式；自引用类型约束解禁；Green Tea GC 默认；`errors.AsType[T]`；`slog.NewMultiHandler`；`go fix` 现代化器体系；`B.Loop` 不再阻内联（基准结论可迁移重验）。
 - **go.mod 版本策略**：`go` 指令升到团队最低可接受版本；工具链 `toolchain` 指令与 CI 镜像同步升；升级批次小步走（一次一个 minor），每步全量测试 + 关键基准。
