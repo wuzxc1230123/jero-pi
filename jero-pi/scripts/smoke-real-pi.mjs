@@ -77,7 +77,7 @@ try {
 
 		if (!modelReady) {
 			const reason = "JERO_PI_SMOKE_PROVIDER/MODEL 未设";
-			for (const name of ["模型回复探针", "SDD 强制初始化（首次会话自动落 openspec/config.yaml）", "install-module 四束全链落盘（含 godot MCP 档合并）", "触发编译命中（种 go.mod/global.json/project.godot/App.vue → 覆盖层四束齐射）", "记忆四工具（写/读/列/搜）", "评审·同意与 START（谱系建成 reviewing）", "评审·捕获与结算（capture→终局→回执）"]) {
+			for (const name of ["模型回复探针", "SDD 强制初始化（首次会话自动落 openspec/config.yaml）", "install-module 四束全链落盘（含 godot-ai 与 playwright 双 MCP 档合并）", "触发编译命中（种 go.mod/global.json/project.godot/App.vue → 覆盖层四束齐射）", "记忆四工具（写/读/列/搜）", "评审·同意与 START（谱系建成 reviewing）", "评审·捕获与结算（capture→终局→回执）"]) {
 			record(name, undefined, `${reason}，跳过模型相关面`);
 		}
 	} else {
@@ -110,11 +110,15 @@ try {
 			&& existsSync(join(sandbox, ".pi", "module-installs.json"));
 		let mcpMerged = false;
 		try {
-			mcpMerged = JSON.parse(readFileSync(join(sandbox, ".pi", "mcp.json"), "utf8"))?.mcpServers?.["godot-ai"]?.command === "uvx";
+			const servers = JSON.parse(readFileSync(join(sandbox, ".pi", "mcp.json"), "utf8"))?.mcpServers;
+			// 双档并存：godot-ai（uvx）与 vue 束的 playwright（npx 钉版）都合并落盘。
+			mcpMerged = servers?.["godot-ai"]?.command === "uvx"
+				&& servers?.["playwright"]?.command === "npx"
+				&& JSON.stringify(servers?.["playwright"]?.args).includes("@playwright/mcp@");
 		} catch {
 			mcpMerged = false;
 		}
-		record("install-module 四束全链落盘（含 godot MCP 档合并）", installModule.status === 0 && moduleLanded && mcpMerged, moduleLanded && mcpMerged ? undefined : `落盘=${moduleLanded} mcp合并=${mcpMerged} 退出码=${installModule.status} stderr尾:${(installModule.stderr ?? "").slice(-300)}`);
+		record("install-module 四束全链落盘（含 godot-ai 与 playwright 双 MCP 档合并）", installModule.status === 0 && moduleLanded && mcpMerged, moduleLanded && mcpMerged ? undefined : `落盘=${moduleLanded} mcp合并=${mcpMerged} 退出码=${installModule.status} stderr尾:${(installModule.stderr ?? "").slice(-300)}`);
 
 			// —— 面四：静态触发编译（每束种一个触发文件，覆盖层逐一命中）。
 		writeFileSync(join(sandbox, "go.mod"), "module example.com/smoke\n\ngo 1.26\n");
@@ -155,6 +159,17 @@ try {
 		// —— 面六：小候选评审全生命周期（本层存在的理由——单测+门测不到的缝）。
 		// 两段式镜像真实 TUI 用法（跨回合续跑）：单发 mega-prompt 在 START 后的
 		// 编排阶段会被 pi 一次性吞掉（真机实证两次），分两段各自稳定。
+		// 评审面跑在零模块激活态：触发验证面完成后移除四种子触发文件——
+		// 覆盖层随评审会话的 session_start 重编译为零命中，不再钉住任何
+		// testCommand。真机实证（2026-10）：四束齐射令字典序第一的 dotnet 束
+		// 钉住 `dotnet test`，结算段模型幻视发现触发纠正路径后，定向验证的
+		// 原生执行 spawn 缺席的 dotnet → native-operation-failed ×2，谱系卡
+		// fix_validating 无回执。评审候选是 6 行 TS diff，本就不属任何域——
+		// 移除触发既修工具链缺席卡死，也去四域注入对评审面的噪音。
+		rmSync(join(sandbox, "go.mod"));
+		rmSync(join(sandbox, "global.json"));
+		rmSync(join(sandbox, "project.godot"));
+		rmSync(join(sandbox, "src", "App.vue"));
 		git("add", "-A");
 		git("commit", "-m", "smoke artifacts");
 		writeFileSync(join(sandbox, "src", "calc.ts"), "export function add(a: number, b: number): number {\n\treturn a + b;\n}\n\n// TODO: smoke tiny candidate\nexport function mul(a: number, b: number): number {\n\treturn a * b;\n}\n");

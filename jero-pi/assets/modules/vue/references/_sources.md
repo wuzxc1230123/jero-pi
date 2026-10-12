@@ -42,6 +42,7 @@
 | ssr-hydration | Vue 官方 SSR 指南 + Nuxt 水合文档 | 规范+建议 |
 | forms-validation | Vue 官方表单绑定指南 + VeeValidate 惯例 | 建议 |
 | i18n-vue-i18n | vue-i18n 官方文档 + @nuxtjs/i18n 文档 | 建议 |
+| live-preview | @playwright/mcp 官方仓库文档（微软）+ Playwright MCP 工作流惯例 | 建议 |
 | transitions-animation | Vue 官方过渡指南 + Web 动画性能惯例 | 规范+建议 |
 | directives-usage | Vue 官方模板语法参考（指令全集） | 规范 |
 | project-structure | Vue 官方规模化指南 + create-vue 模板惯例 | 建议 |
@@ -52,12 +53,15 @@
 
 ## 引用上游时的红线
 
-- **MCP 事实核验（2026-10）**：Vue 生态无可接线的官方编码代理 MCP
-  服务器——Volar（vue-language-server）是 LSP 非 MCP；VueUse 的
-  `useWebMCP` 是浏览器侧 WebMCP 运行时工具，非代理侧服务器。故
-  vue 束零 MCP 声明、无 vue-mcp 接线技能（对照 golang/dotnet 的
-  补偿模式：无官方 MCP 即无补偿面——"没有"是核验过的决策）；官方
-  MCP 若出现，按 dotnet-mcp 先例补接线技能并更新本红线。
+- **MCP 决策（2026-10 复核更新）**：Vue 生态仍无可接线的官方编码代理 MCP
+  （Volar/vue-language-server 是 LSP 非 MCP；VueUse 的 `useWebMCP` 是浏览器侧
+  WebMCP 运行时工具，非代理侧服务器）——故无 vue-mcp 接线技能的结论不变。
+  本束另声明 **playwright MCP 档**（微软官方 `@playwright/mcp`，浏览器自动化
+  服务前端视觉验证，见 `vue-live` 技能与 `live-preview` 篇）：npx 白名单 +
+  `@playwright/mcp@0.0.83` 精确钉版 + 零 env，全合规包内供应链门——与"Vue 无
+  官方编码 MCP"不冲突（它是通用浏览器面，非 Vue 专属）；声明≠装工具链，
+  浏览器二进制（`npx playwright install chromium`）与首用项目信任确认是用户
+  侧前置。
 - 快照（vueuse-skills）的知识锚定 VueUse 当前谱系；本模块按
   Vue 3.5/3.6 配套核对（3.5 的响应式 props 解构/useTemplateRef、
   3.6 的 Vapor 语义以官方迁移指南为准——upgrade-migrations 的
