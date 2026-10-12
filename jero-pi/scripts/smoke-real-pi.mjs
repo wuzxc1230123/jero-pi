@@ -191,7 +191,7 @@ try {
 			// 谱系建成 reviewing 即算本面通过；退出码与输出长度只作附注。
 			record("评审·同意与 START（谱系建成 reviewing）", reviewing !== undefined, reviewing === undefined ? `终态=${readLineageStates().map((s) => s.state?.state).join(",") || "无"} / 退出码 ${startPhase.status} / 输出=${(startPhase.stdout ?? "").length} 字节;尾部:${(startPhase.stdout ?? "").slice(-300)}` : `谱系 ${reviewing.state?.lineage_id?.slice(0, 24)}…(pi 退出码 ${startPhase.status})`);
 			if (reviewing !== undefined) {
-				const settlePhase = runPi([...baseArgs, `评审谱系 ${reviewing.state?.lineage_id} 处于 reviewing。请续走完成捕获与结算:1) jero_review {"operation":"inspect"} 取最新 STATUS;2) 按 STATUS 下发的收集槽位完成该透镜评审并用 jero_review_capture 提交(collectBinding 从 STATUS 原文精确取用);3) 结算谱系。完成后一行总结:capture 成败、谱系终态、回执状态。任何权威拒绝原样贴出。`], sandbox, {}, 900_000);
+				const settlePhase = runPi([...baseArgs, `评审谱系 ${reviewing.state?.lineage_id} 处于 reviewing。请续走完成捕获与结算:1) jero_review {"operation":"inspect"} 取最新 STATUS;2) 按 STATUS 下发的收集槽位完成该透镜评审并用 jero_review_capture 提交(collectBinding 从 STATUS 原文精确取用;capture 载荷必须是 STATUS 绑定的原始 JSON 信封逐字提交——绝不包 \`\`\` 代码围栏、绝不经 bash echo 或任何 shell 中转,真机实证围栏化载荷会被权威 submit 拒收);3) 结算谱系。完成后一行总结:capture 成败、谱系终态、回执状态。任何权威拒绝原样贴出。`], sandbox, {}, 900_000);
 				// 终局判据是"目标谱系的生命周期正确闭合"，且必须锚定 START 段
 				// 建成的那条谱系——零透镜 START 创建即 approved（start 零透镜
 				// 低风险闭合），结算段模型若跑偏另起谱系，扫全谱系的 find 会被
