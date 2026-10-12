@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import extension from "../extensions/sdd-init.ts";
 import {
+	runSddAutoInit,
 	runSddInitCommand,
 	type SddInitCtx,
 	type SddInitPrefs,
@@ -144,14 +145,21 @@ test("扩展装配：注册命令；真预检走沙箱 HOME 确认后写盘", as
 		writeFileSync(join(project, "package.json"), JSON.stringify({ name: "demo", scripts: { test: "node --test" } }));
 
 		const commands = new Map<string, { description: string; handler: (args: string, ctx: unknown) => Promise<void> }>();
+		const sessionHooks: string[] = [];
 		const fakePi = {
 			registerCommand(name: string, def: { description: string; handler: (args: string, ctx: unknown) => Promise<void> }) {
 				commands.set(name, def);
 				return fakePi;
 			},
+			on(event: string, handler: never) {
+				sessionHooks.push(event);
+				void handler;
+				return fakePi;
+			},
 		};
 		extension(fakePi as never);
 		assert.ok(commands.has("jero-sdd-init"));
+		assert.ok(sessionHooks.includes("session_start"), "扩展应注册 session_start 强制初始化钩子");
 
 		const notifications: string[] = [];
 		const selections: string[] = [];
@@ -184,5 +192,68 @@ test("扩展装配：注册命令；真预检走沙箱 HOME 确认后写盘", as
 		rmSync(agentHome, { recursive: true, force: true });
 		rmSync(configHome, { recursive: true, force: true });
 		rmSync(home, { recursive: true, force: true });
+	}
+});
+
+// —— 会话启动强制初始化（runSddAutoInit）：缺席执行/已就位跳过/退出阀 ——
+
+test("自动初始化：脚手架缺席时执行完整 init 并返回 true", async () => {
+	const cwd = makeProject();
+	try {
+		const { ctx, notifications } = fakeCtx(cwd);
+		const ran = await runSddAutoInit(ctx, { ensureSddPreflight: preflight("openspec") }, true);
+		assert.equal(ran, true);
+		assert.ok(existsSync(join(cwd, "openspec", "config.yaml")), "应写入脚手架");
+		assert.equal(notifications.length, 1, "与命令主体同款一次通知");
+	} finally {
+		rmSync(cwd, { recursive: true, force: true });
+	}
+});
+
+test("自动初始化：脚手架已就位时零成本跳过（不触碰预检）", async () => {
+	const cwd = makeProject();
+	try {
+		mkdirSync(join(cwd, "openspec"), { recursive: true });
+		writeFileSync(join(cwd, "openspec", "config.yaml"), "# existing\n");
+		const { ctx, notifications } = fakeCtx(cwd);
+		let preflightCalled = false;
+		const ran = await runSddAutoInit(
+			ctx,
+			{
+				ensureSddPreflight: async () => {
+					preflightCalled = true;
+					return { artifactStore: "openspec" } satisfies SddInitPrefs;
+				},
+			},
+			true,
+		);
+		assert.equal(ran, false);
+		assert.equal(preflightCalled, false, "已就位时不应触碰预检（资产安装与扫描都不发生）");
+		assert.equal(notifications.length, 0);
+	} finally {
+		rmSync(cwd, { recursive: true, force: true });
+	}
+});
+
+test("自动初始化：退出阀 enabled=false 直接跳过且不落盘", async () => {
+	const cwd = makeProject();
+	try {
+		const { ctx } = fakeCtx(cwd);
+		let preflightCalled = false;
+		const ran = await runSddAutoInit(
+			ctx,
+			{
+				ensureSddPreflight: async () => {
+					preflightCalled = true;
+					return { artifactStore: "openspec" } satisfies SddInitPrefs;
+				},
+			},
+			false,
+		);
+		assert.equal(ran, false);
+		assert.equal(preflightCalled, false, "退出阀应在预检之前生效");
+		assert.ok(!existsSync(join(cwd, "openspec", "config.yaml")));
+	} finally {
+		rmSync(cwd, { recursive: true, force: true });
 	}
 });

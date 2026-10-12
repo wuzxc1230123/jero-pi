@@ -55,8 +55,10 @@ test("production callers distinguish first-session confirmation from explicit fi
 	const root = join(import.meta.dirname, ".."), jeroAi = readFileSync(join(root, "extensions", "jero-ai.ts"), "utf8"), sddInit = readFileSync(join(root, "extensions", "sdd-init.ts"), "utf8");
 	assert.match(jeroAi, /function runSddPreflight\(\s*ctx: ExtensionContext,\s*promptFields: readonly SddPreflightField\[\] = \[\]\s*\)/s); assert.match(jeroAi, /if \(isSddAgent && !getSddPreflightPreferences\(ctx\) && ctx\.mode !== "rpc"\) \{\s*await runSddPreflight\(ctx\);/s); assert.match(jeroAi, /applyModelConfig: async \(\) => applySavedModelConfig\(ctx\)\s*\},\s*\{\s*promptFields\s*\}\s*\);/s); assert.ok(jeroAi.includes('await runSddPreflight(ctx, args.trim() === "--edit" ? SDD_PREFLIGHT_FIELDS : []);'));
 	// sdd-init 编排已下沉 lib/sdd-init-command.ts；钉住点保持原意图——
-	// 生产调用必须绑定 applySavedModelConfig(ctx) 且显式传 promptFields: []。
-	assert.match(sddInit, /applyModelConfig: \(\) => applySavedModelConfig\(ctx as never\),\s*\},\s*\{\s*promptFields: \[\]\s*\},?\s*\)?/s);
+	// 生产调用必须绑定 applySavedModelConfig 且显式传 promptFields: []。
+	// makeDeps 是命令与 session_start 强制初始化共用的单一装配点——钉住
+	// 它即同时钉住两条生产路径（首次会话确认语义不因自动初始化而漂移）。
+	assert.match(sddInit, /applyModelConfig: \(\) => applySavedModelConfig\(commandCtx as never\),\s*\},\s*\{\s*promptFields: \[\]\s*\},?\s*\)?/s);
 });
 test("capability-constrained artifact selector elision", async () => {
 	const calls: string[] = [], prefs = await collectSddPreflightPreferences(preflightContext(await workspace(), true, calls), false, { promptFields: ["artifactStore"] });

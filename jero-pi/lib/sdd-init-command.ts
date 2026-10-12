@@ -66,3 +66,18 @@ export async function runSddInitCommand(ctx: SddInitCtx, deps: SddInitDeps): Pro
 		"info",
 	);
 }
+
+/**
+ * 会话启动的 SDD 强制初始化：脚手架（openspec/config.yaml）缺席时自动
+ * 跑完整 init 流水（预检资产安装 + 探测 + 写盘），已就位时零成本跳过。
+ * 返回是否执行了初始化。退出阀（JERO_PI_SDD_AUTOINIT=0）由扩展层判定
+ * 后以 enabled 传入——本模块不读 process.env（与命令主体同纪律）。
+ * 注意偏好存储为 engram/none 时 init 流水不落 config，此时返回 true 但
+ * 无脚手架——预检偏好已持久化，属用户显式选择而非未初始化。
+ */
+export async function runSddAutoInit(ctx: SddInitCtx, deps: SddInitDeps, enabled: boolean): Promise<boolean> {
+	if (!enabled) return false;
+	if (existsSync(join(ctx.cwd, CONFIG_REL_PATH))) return false;
+	await runSddInitCommand(ctx, deps);
+	return true;
+}

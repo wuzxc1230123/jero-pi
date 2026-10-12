@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // 真机冒烟 harness（手动/按需运行，不进 pnpm test 与 prepack）：
 // 用仓库本地的 Pi 宿主 + 包本体，在一次性沙箱仓库里把只有真机能抓的
-// 集成缝过一遍——扩展装载、命令分发、模块安装全链（库内四束齐装 +
+// 集成缝过一遍——扩展装载、命令分发、SDD 强制初始化（首次会话自动
+// 脚手架）、模块安装全链（库内四束齐装 +
 // godot 束 v2 MCP 档合并面）、静态触发编译（四束触发文件齐射）、
 // 记忆四工具（经真实模型调用）、小候选评审全生命周期（同意→START→
 // 捕获→结算→回执）。三缺陷修复批（mode 写读漂移/捕获路由蛇形/中继
@@ -76,15 +77,20 @@ try {
 
 		if (!modelReady) {
 			const reason = "JERO_PI_SMOKE_PROVIDER/MODEL 未设";
-			for (const name of ["模型回复探针", "install-module 四束全链落盘（含 godot MCP 档合并）", "触发编译命中（种 go.mod/global.json/project.godot/App.vue → 覆盖层四束齐射）", "记忆四工具（写/读/列/搜）", "评审·同意与 START（谱系建成 reviewing）", "评审·捕获与结算（capture→终局→回执）"]) {
+			for (const name of ["模型回复探针", "SDD 强制初始化（首次会话自动落 openspec/config.yaml）", "install-module 四束全链落盘（含 godot MCP 档合并）", "触发编译命中（种 go.mod/global.json/project.godot/App.vue → 覆盖层四束齐射）", "记忆四工具（写/读/列/搜）", "评审·同意与 START（谱系建成 reviewing）", "评审·捕获与结算（capture→终局→回执）"]) {
 			record(name, undefined, `${reason}，跳过模型相关面`);
 		}
 	} else {
 		const baseArgs = ["-p", "-a", "--no-session", "--provider", provider, "--model", model];
 
-		// —— 面二：模型就绪（后续一切模型面的前置）。
-		const probe = runPi([...baseArgs, "回复两个字：就绪"], sandbox);
+		// —— 面二：模型就绪（后续一切模型面的前置）+ SDD 强制初始化。
+		// 探针是沙箱首次会话——session_start 钩子应自动落 SDD 脚手架
+		// （openspec/config.yaml）；预检资产落点用 JERO_PI_AGENT_HOME 隔离
+		// 进沙箱，防写真实 agent home。
+		const probe = runPi([...baseArgs, "回复两个字：就绪"], sandbox, { JERO_PI_AGENT_HOME: join(sandbox, "jero-agent-home") });
 		record("模型回复探针", probe.status === 0 && (probe.stdout ?? "").includes("就绪"), probe.status === 0 ? undefined : `退出码 ${probe.status}`);
+		const sddScaffold = existsSync(join(sandbox, "openspec", "config.yaml"));
+		record("SDD 强制初始化（首次会话自动落 openspec/config.yaml）", sddScaffold, sddScaffold ? undefined : "脚手架未落——session_start 强制初始化未生效（JERO_PI_SDD_AUTOINIT 未设应为开）");
 
 		// —— 面三：模块安装全链（命令分发 + 四束落盘 + v2 MCP 档合并面）。
 		// 库内四束一次装齐：多 token 命令 + 依赖闭包（四束零依赖直装）+

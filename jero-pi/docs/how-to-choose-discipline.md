@@ -19,8 +19,12 @@ on-path 只在"本候选评审已关闭（closed）"时成立；评审被拒绝�
 
 ## SDD 轴：阶段数跟着不可逆性走
 
+> 脚手架已强制就位：项目首次会话自动跑 SDD 初始化（`openspec/config.yaml`
+> + 管理资产，`JERO_PI_SDD_AUTOINIT=0` 可退出）——**装是强制的，用仍按本轴
+> 选**：脚手架在场不等于每个变更都要走 SDD。
+
 - **单文件、可逆、一分钟重做**：不用 SDD。写码 → 视风险选评审轴。
-- **跨文件但方向明确**：`/jero-sdd-init` 落 tasks.md 即可，design/proposal 从简。
+- **跨文件但方向明确**：`/jero-sdd-status` 起 change、落 tasks.md 即可，design/proposal 从简（初始化已自动完成，无需再跑 init）。
 - **方向未定或多人/多次会话推进**：完整七阶段（proposal → spec → design →
   tasks → apply → verify → sync）。阶段引擎的 `next_recommended` 是确定性的，
   不靠模型自觉；`/jero-sdd-continue` 推进时有工件收缩守卫兜底。

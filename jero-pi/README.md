@@ -26,6 +26,8 @@ pi install <本包来源>        # 首次安装
 
 评审生命周期动词（`inspect` / `start` / `answer-consent` / `assess` / `finalize` / `validate`）是 `jero_review` 工具的操作，不是斜杠命令。
 
+> SDD 强制初始化：每个项目的**首次会话**自动完成 SDD 初始化（技术栈探测 → 落 `openspec/config.yaml` + `specs/` 脚手架 + 管理资产；已就位零成本跳过，幂等；不阻塞会话启动）。脚手架在场不强制使用——变更要不要走 SDD 仍按 [docs/how-to-choose-discipline.md](docs/how-to-choose-discipline.md) 选档。`JERO_PI_SDD_AUTOINIT=0` 显式退出，`/jero-sdd-init` 手动路径不受影响。
+
 > 安装须知：本包的 postinstall 只在**自有全局安装位**（`~/.pi/agent/npm|git` 下的 jero-pi 本体）且 `settings.json` **未显式设置** `tuiMode` 时，补写默认值 `fullscreen`（原子写 + 锁，失败安全跳过）——用户已选的任何值（含 `regular`）一律尊重不改；Pi 1.0 起全屏本就是宿主默认，该写入只对更早宿主有实际效果；项目内安装不做任何写入。订阅用量窗口在活动 provider 为 openai-codex 时会请求 Codex CLI 自用的用量端点（携带宿主 OAuth 令牌），`JERO_PI_USAGE_FETCH=0` 可完全关闭。
 
 ## 开发
