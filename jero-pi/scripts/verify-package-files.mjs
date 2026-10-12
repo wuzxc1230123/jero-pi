@@ -167,6 +167,7 @@ const requiredPaths = [
 	"assets/modules/dotnet/skills/dotnet-diagnostics/SKILL.md",
 	"assets/modules/dotnet/skills/dotnet-efcore/SKILL.md",
 	"assets/modules/dotnet/skills/dotnet-language/SKILL.md",
+	"assets/modules/dotnet/skills/dotnet-mcp/SKILL.md",
 	"assets/modules/dotnet/skills/dotnet-msbuild/SKILL.md",
 	"assets/modules/dotnet/skills/dotnet-naming/SKILL.md",
 	"assets/modules/dotnet/skills/dotnet-nuget/SKILL.md",

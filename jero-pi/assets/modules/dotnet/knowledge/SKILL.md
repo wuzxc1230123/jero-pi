@@ -12,7 +12,7 @@ description: .NET/C# 工程领域知识入口：语言与异步纪律、构建�
 
 - 语言与类型：`style-and-formatting`（风格与表达式体）、`naming-conventions`（命名决策树）、`modern-csharp`（C# 12–14 特性选型）、`nullable-reference-types`（可空引用标注与迁移）、`api-design`（面向领域的强类型 API）
 - 并发与性能：`async-patterns`（async/await 纪律与取消传播）、`concurrency-primitives`（Channel/锁/并行选型）、`performance-engineering`（分配削减与 Span/Memory）、`benchmark-measurement`（BenchmarkDotNet 取证）、`diagnostics-tools`（dotnet-trace/dump/counters）
-- 测试与构建：`testing-practices`（框架选型与反模式）、`verification-gates`（三道门协议）、`msbuild-fundamentals`（项目系统与属性）、`binlog-analysis`（二进制日志排障）
+- 测试与构建：`testing-practices`（框架选型与反模式）、`verification-gates`（三道门协议）、`msbuild-fundamentals`（项目系统与属性）、`binlog-analysis`（二进制日志排障——binlog MCP 接线见 `dotnet-mcp` 技能）
 - 数据与配置：`efcore-patterns`（查询/追踪/迁移）、`dependency-injection`（生命周期与注册纪律）、`configuration-options`（配置绑定与 Options）、`serialization-json`（System.Text.Json 契约）
 - 应用与栈：`aspnet-webapi`（Minimal API/Web API 纪律）、`aspire-orchestration`（Aspire 编排与服务默认值）、`akka-patterns`（Akka.NET actor 模式）、`observability-opentelemetry`（OTel 接线）、`aot-trimming`（裁剪与 Native AOT 兼容）
 - 工程面：`nuget-packaging`（包管理与 CPM）、`project-structure`（解决方案布局）、`upgrade-migrations`（版本升级与 NRT 迁移）、`_sources`（出处账本）

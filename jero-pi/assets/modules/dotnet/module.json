@@ -2,7 +2,7 @@
 	"schema": "jero.module-contract/v2",
 	"token": "dotnet",
 	"version": "0.1.0",
-	"description": ".NET 工程领域模块：24 个领域技能入口（风格/命名/现代 C#/可空/异步/并发/API 设计/性能/基准/诊断/测试/MSBuild/EF Core/DI/配置/序列化/AOT/Aspire/Akka/Web API/NuGet/项目/升级/可观测）+ 26 篇深知识 references 与 1 篇出处账本，附评审/测试/架构三角色，知识锚定 .NET 10/C# 14。",
+	"description": ".NET 工程领域模块：25 个领域技能入口（风格/命名/现代 C#/可空/异步/并发/API 设计/性能/基准/诊断/测试/MSBuild/EF Core/DI/配置/序列化/AOT/Aspire/Akka/Web API/NuGet/项目/升级/可观测/MCP 接线）+ 26 篇深知识 references 与 1 篇出处账本，附评审/测试/架构三角色，知识锚定 .NET 10/C# 14。",
 	"dependencies": [],
 	"triggers": {
 		"files": ["**/*.sln", "**/*.csproj", "**/*.cs", "global.json"],

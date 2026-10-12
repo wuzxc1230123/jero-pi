@@ -53,6 +53,11 @@
 
 ## 引用上游时的红线
 
+- **binlog MCP 事实核验（2026-10）**：dotnet/skills 官方插件以
+  `dotnet dnx Microsoft.AITools.BinlogMcp --yes --prerelease` 形态内嵌
+  该 MCP 服务器（stdio，binlog 命名空间）——`dotnet dnx` 不在包内供应链
+  白名单且 prerelease 浮动不钉版，故模块清单不声明；接线纪律与降级面
+  见束内 `dotnet-mcp` 技能（项目级手工 .pi/mcp.json 形态）。
 - 上游素材的知识锚点（.NET 8/9/10 分散）低于或异于本模块锚点
   （.NET 10 LTS）——从快照取材时必须过 .NET 10 勘误（upgrade-
   migrations 的版本谱系表是勘误清单；例：`System.Threading.Lock`
