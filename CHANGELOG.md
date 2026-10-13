@@ -5,6 +5,15 @@ jero-pi 尚未发布到 npm（版本停在 0.1.0 基线），本文件自重构�
 
 ## [Unreleased]
 
+### git: 源安装端到端实证 + npm 侧供应链暴露修补（2026-10-13）
+
+**扁平化后的 `pi install git:` 首次真源端到端实证（克隆 → 根清单解析 → npm 装依赖 → 注册 `.pi/agent/settings.json`，exit 0）；实证同时暴露 npm 路径的 override 盲区并修补。**
+
+- **git: 真源安装实证**：隔离 agent home（USERPROFILE 重定向）下 `pi install git:github.com/wuzxc1230123/jero-pi` 全链通过——仓库根即 pi 清单的扁平化主张经真传输层验证。此前该缝的唯一样本（本地路径装载、干净克隆装载）均不覆盖 pi 的 git 传输与依赖安装面。
+- **npm 路径 override 盲区（实证发现）**：git: 源安装走 **npm** 装依赖，npm 不读 `pnpm-workspace.yaml` 的 overrides——`pi-web-access@0.37.0` 把 `@modelcontextprotocol/sdk` **精确钉死** 1.27.1（GHSA-6qxp-vccf-f47h，high），终端用户经 git:/npm 安装即落入易感版（克隆内 `npm audit` 实测 2 high）。0.40.0 带修复版 SDK 1.32.1 但发布当日（0 天龄过不了 3 天门）且跨主版本。修法：package.json 增补 **npm 顶层 `overrides`** 钉 `@modelcontextprotocol/sdk: 1.31.0`——npm 以安装根 overrides 强制全树（pnpm 侧不受影响：pnpm 11 忽略 manifest 的 npm overrides 字段，冻结安装实证无漂移）；与 yaml override 同值，两侧防护面一致。pi-web-access 0.40.0 升级另批评估（过龄期门后）。
+- 验证：package.json JSON 合法；`pnpm install --frozen-lockfile` 无漂移；`pnpm audit --prod` 无已知漏洞；git: 探针复跑确认克隆内 0 high（见推送后复验）。
+- 连带：Dependabot 首批 8 个升级 PR 全部 rebase 到修复后 main 重触发 CI（此前全红是分支基于修复前 main 撞旧缺陷，非升级本身问题）；rebase 时锁文件文本自动合并经逐分支冻结安装校验（4/5/6/7 实证自洽，8 由 CI 首步同门校验）。
+
 ### CI 首启修复批：工作流级双缺陷 + 供应链审计门首启暴露 MCP SDK high（2026-10-13）
 
 **CI 在本仓历史上第一次真正运行（此前工作流藏于 `jero-pi/.github/` 子目录，GitHub 不读），一次暴露三个潜伏缺陷，逐一修复。**
