@@ -1,0 +1,9 @@
+{
+	"name": "jero-pi-workspace",
+	"version": "0.0.0",
+	"private": true,
+	"description": "git 安装编排壳（勿在开发仓根跑包管理器）：pi 的 git 源安装只在克隆根执行依赖安装，而真正的包在 jero-pi/ 子目录——postinstall 由 .pi-git-install.mjs 把生产依赖装进子包，其 pi.extensions 清单里的 node_modules/* 扩展路径才能解析。npm 发布与本地路径安装（pi install jero-pi/）不经过此壳。",
+	"scripts": {
+		"postinstall": "node .pi-git-install.mjs"
+	}
+}
