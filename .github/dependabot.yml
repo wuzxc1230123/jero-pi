@@ -15,9 +15,7 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    cooldown:
-      default-days: 7
-      semver-major-days: 14
-      semver-minor-days: 7
-      semver-patch-days: 3
     open-pull-requests-limit: 5
+    # 注：cooldown 的 semver-* 键仅对 npm 等生态合法，github-actions
+    # 生态不支持（Dependabot 校验失败会在提交上挂红检查，2026-10-13
+    # 首次触发的实证）——勿在此项回加 cooldown。

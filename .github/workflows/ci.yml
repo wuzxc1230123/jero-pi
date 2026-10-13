@@ -99,14 +99,13 @@ jobs:
       # Design §5.5: the suite must pass with every network route blackholed —
       # jero-pi has no install-time or test-time network dependency. Node's
       # fetch only honors the proxy envs when NODE_USE_ENV_PROXY is set.
+      # （大小写各一份会被 GitHub 判为重复 env 键拒绝解析——工作流校验
+      # 不区分大小写；Node/undici 对两种大小写等价识别，只留大写。）
       - name: Offline test gate (design §5.5)
         env:
           HTTP_PROXY: http://127.0.0.1:9
           HTTPS_PROXY: http://127.0.0.1:9
-          http_proxy: http://127.0.0.1:9
-          https_proxy: http://127.0.0.1:9
           NO_PROXY: ""
-          no_proxy: ""
           NODE_OFFLINE: "1"
           NODE_USE_ENV_PROXY: "1"
         run: pnpm test
