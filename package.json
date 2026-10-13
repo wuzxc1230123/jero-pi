@@ -2,8 +2,34 @@
 	"name": "jero-pi-workspace",
 	"version": "0.0.0",
 	"private": true,
-	"description": "git 安装编排壳（勿在开发仓根跑包管理器）：pi 的 git 源安装只在克隆根执行依赖安装，而真正的包在 jero-pi/ 子目录——postinstall 由 .pi-git-install.mjs 把生产依赖装进子包，其 pi.extensions 清单里的 node_modules/* 扩展路径才能解析。npm 发布与本地路径安装（pi install jero-pi/）不经过此壳。",
+	"description": "git 安装编排壳（勿在开发仓根跑包管理器）：pi 的 git/本地安装只在安装根解析 pi 清单与执行依赖安装，而真正的包在 jero-pi/ 子目录——本壳镜像子包的 pi 清单（路径加 jero-pi/ 前缀）并由 postinstall（.pi-git-install.mjs）把生产依赖装进子包，node_modules/* 扩展路径才能解析。npm 发布与 pi install jero-pi/ 本地安装不经过此壳。",
 	"scripts": {
 		"postinstall": "node .pi-git-install.mjs"
+	},
+	"pi": {
+		"image": "jero-pi/assets/jero-logo.png",
+		"extensions": [
+			"jero-pi/extensions",
+			"jero-pi/node_modules/@heyhuynhgiabuu/pi-pretty/src/index.ts",
+			"jero-pi/node_modules/@juicesharp/rpiv-ask-user-question/index.ts",
+			"jero-pi/node_modules/@juicesharp/rpiv-todo/index.ts",
+			"jero-pi/node_modules/billion-context-pi/dist/index.js",
+			"jero-pi/node_modules/pi-cache-optimizer/index.ts",
+			"jero-pi/node_modules/pi-fovea/src/index.ts",
+			"jero-pi/node_modules/pi-hashline-edit-pro/index.ts",
+			"jero-pi/node_modules/pi-lens/dist/index.js",
+			"jero-pi/node_modules/pi-web-access/dist"
+		],
+		"themes": [
+			"jero-pi/themes"
+		],
+		"prompts": [
+			"jero-pi/prompts"
+		],
+		"skills": [
+			"jero-pi/skills",
+			"jero-pi/node_modules/pi-fovea/skills",
+			"jero-pi/node_modules/pi-lens/skills"
+		]
 	}
 }
