@@ -11,6 +11,12 @@ permissions:
 
 jobs:
   verify:
+    # checks:write 仅供失败诊断——Run tests/断网门失败时把输出尾部 POST 成
+    # check run 摘要（匿名可读的 API 通道；Actions 日志与摘要页都有登录
+    # 墙，2026-10-13 首启排障三轮实证）。
+    permissions:
+      contents: read
+      checks: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -42,17 +48,30 @@ jobs:
       # 的登录墙（2026-10-13 首启排障实证：102 秒早崩但日志不可匿名读）。
       - name: Run tests
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -o pipefail
           status=0
           pnpm test 2>&1 | tee test-output.log || status=$?
           if [ "$status" -ne 0 ]; then
+            tail -n 250 test-output.log > test-output-tail.txt || true
             {
               echo "## \`pnpm test\` 失败（exit $status）——输出尾部 250 行"
               echo '```'
-              tail -n 250 test-output.log
+              cat test-output-tail.txt
               echo '```'
-            } >> "$GITHUB_STEP_SUMMARY"
+            } >> "$GITHUB_STEP_SUMMARY" || true
+            jq -Rs --arg name "diagnostics-run-tests" --arg sha "$GITHUB_SHA" \
+              '{name: $name, head_sha: $sha, status: "completed", conclusion: "failure",
+                output: {title: "pnpm test failure output (tail 250)", summary: .}}' \
+              test-output-tail.txt > /tmp/check-payload.json \
+            && curl -sf -X POST \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/check-runs" \
+              -d @/tmp/check-payload.json > /dev/null \
+            || echo "check-run diagnostics upload failed (non-fatal)"
             exit "$status"
           fi
 
