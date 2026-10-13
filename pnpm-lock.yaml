@@ -26,8 +26,8 @@ importers:
         specifier: 0.1.83
         version: 0.1.83(@earendil-works/pi-coding-agent@1.0.4(@aws-sdk/credential-provider-node@3.972.84)(@modelcontextprotocol/sdk@1.31.0(zod@4.6.5))(@smithy/signature-v4@5.7.4)(ws@8.22.0)(zod@4.6.5))(typebox@1.3.34)
       pi-cache-optimizer:
-        specifier: 2.8.21
-        version: 2.8.21(@earendil-works/pi-coding-agent@1.0.4(@aws-sdk/credential-provider-node@3.972.84)(@modelcontextprotocol/sdk@1.31.0(zod@4.6.5))(@smithy/signature-v4@5.7.4)(ws@8.22.0)(zod@4.6.5))
+        specifier: 2.8.24
+        version: 2.8.24(@earendil-works/pi-coding-agent@1.0.4(@aws-sdk/credential-provider-node@3.972.84)(@modelcontextprotocol/sdk@1.31.0(zod@4.6.5))(@smithy/signature-v4@5.7.4)(ws@8.22.0)(zod@4.6.5))
       pi-fovea:
         specifier: 0.31.3
         version: 0.31.3(@earendil-works/pi-coding-agent@1.0.4(@aws-sdk/credential-provider-node@3.972.84)(@modelcontextprotocol/sdk@1.31.0(zod@4.6.5))(@smithy/signature-v4@5.7.4)(ws@8.22.0)(zod@4.6.5))(@earendil-works/pi-tui@1.0.4)(typebox@1.3.34)
@@ -1634,8 +1634,8 @@ packages:
   path-to-regexp@8.4.2:
     resolution: {integrity: sha512-qRcuIdP69NPm4qbACK+aDogI5CBDMi1jKe0ry5rSQJz8JVLsC7jV8XpiJjGRLLol3N+R5ihGYcrPLTno6pAdBA==}
 
-  pi-cache-optimizer@2.8.21:
-    resolution: {integrity: sha512-x1MAQ5bXi6v1xFsMXVqyLDPpSV2q6W0EdOQ8O6NJJLf5yCxcVME2QuOMSSFjf+8GPa3YdoaZCfFWyLPa2JqDjg==}
+  pi-cache-optimizer@2.8.24:
+    resolution: {integrity: sha512-a++KD9YEMn4bwlPiR7dKmHvNtv97ZZ/l+RCdOrwRSn4gUrGSU6QKwW77T+y2tYbszdhF0S6vyeL79Jy4Q1u3vA==}
     peerDependencies:
       '@earendil-works/pi-coding-agent': '>=0.82.0'
 
@@ -3855,7 +3855,7 @@ snapshots:
 
   path-to-regexp@8.4.2: {}
 
-  pi-cache-optimizer@2.8.21(@earendil-works/pi-coding-agent@1.0.4(@aws-sdk/credential-provider-node@3.972.84)(@modelcontextprotocol/sdk@1.31.0(zod@4.6.5))(@smithy/signature-v4@5.7.4)(ws@8.22.0)(zod@4.6.5)):
+  pi-cache-optimizer@2.8.24(@earendil-works/pi-coding-agent@1.0.4(@aws-sdk/credential-provider-node@3.972.84)(@modelcontextprotocol/sdk@1.31.0(zod@4.6.5))(@smithy/signature-v4@5.7.4)(ws@8.22.0)(zod@4.6.5)):
     dependencies:
       '@earendil-works/pi-coding-agent': 1.0.4(@aws-sdk/credential-provider-node@3.972.84)(@modelcontextprotocol/sdk@1.31.0(zod@4.6.5))(@smithy/signature-v4@5.7.4)(ws@8.22.0)(zod@4.6.5)
 
