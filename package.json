@@ -1,35 +1,117 @@
 {
-	"name": "jero-pi-workspace",
-	"version": "0.0.0",
-	"private": true,
-	"description": "git 安装编排壳（勿在开发仓根跑包管理器）：pi 的 git/本地安装只在安装根解析 pi 清单与执行依赖安装，而真正的包在 jero-pi/ 子目录——本壳镜像子包的 pi 清单（路径加 jero-pi/ 前缀）并由 postinstall（.pi-git-install.mjs）把生产依赖装进子包，node_modules/* 扩展路径才能解析。npm 发布与 pi install jero-pi/ 本地安装不经过此壳。",
+	"name": "jero-pi",
+	"version": "0.1.0",
+	"description": "Pi coding-agent harness rebuilt on jero-pi: SDD/OpenSpec, subagents, strict TDD evidence, in-process review authority, persistent memory, zero native binaries.",
+	"license": "MIT",
+	"engines": {
+		"node": ">=22.6.0"
+	},
+	"type": "module",
+	"keywords": [
+		"pi-package",
+		"pi",
+		"pi-coding-agent",
+		"jero-pi",
+		"sdd",
+		"openspec",
+		"subagents",
+		"tdd",
+		"code-review",
+		"ai-coding-agent",
+		"agent-harness"
+	],
+	"files": [
+		"assets/",
+		"docs/",
+		"extensions/",
+		"lib/",
+		"prompts/",
+		"runtime/",
+		"skills/",
+		"scripts/",
+		"themes/",
+		"CHANGELOG.md",
+		"README.md",
+		"schemas/"
+	],
 	"scripts": {
-		"postinstall": "node .pi-git-install.mjs"
+		"postinstall": "node scripts/install-tui-mode-setting.mjs",
+		"test": "node --require ./scripts/test-env.cjs --experimental-strip-types --test --test-concurrency=12 --test-timeout=300000 \"tests/*.test.ts\" \"tests/authority/*.test.ts\" \"tests/authority/conformance/*.test.ts\" && pnpm run test:harness",
+		"test:harness": "node --experimental-strip-types tests/runtime-harness.mjs",
+		"test:authority": "node --require ./scripts/test-env.cjs --experimental-strip-types --test --test-concurrency=12 --test-timeout=300000 \"tests/authority/*.test.ts\" \"tests/authority/conformance/*.test.ts\"",
+		"test:authority:full": "pnpm run build:runtime-modules && pnpm run test:authority && pnpm run check:runtime-modules && pnpm run check:authority-boundary",
+		"test:agents": "node --require ./scripts/test-env.cjs --experimental-strip-types --test --test-concurrency=12 --test-timeout=300000 \"tests/agents-*.test.ts\" \"tests/jero-agents*.test.ts\"",
+		"test:review": "node --require ./scripts/test-env.cjs --experimental-strip-types --test --test-concurrency=12 --test-timeout=300000 \"tests/review-*.test.ts\"",
+		"test:sdd": "node --require ./scripts/test-env.cjs --experimental-strip-types --test --test-concurrency=12 --test-timeout=300000 \"tests/sdd-*.test.ts\"",
+		"test:timed": "node scripts/test-timed.mjs",
+		"smoke:pi": "node scripts/smoke-real-pi.mjs",
+		"test:fast": "node scripts/test-fast.mjs",
+		"test:coverage": "node scripts/test-coverage.mjs",
+		"test:packed-package": "node scripts/test-packed-runner.mjs",
+		"test:host-boot-smoke": "node scripts/host-boot-smoke.mjs",
+		"build:runtime-modules": "node scripts/build-runtime-modules.mjs --write",
+		"check:runtime-modules": "node scripts/build-runtime-modules.mjs --check",
+		"typecheck": "node scripts/check-types.mjs",
+		"prepack": "pnpm run typecheck && pnpm test && pnpm run check:runtime-modules && pnpm run check:authority-boundary && pnpm run check:test-quality && pnpm run check:empty-catch && node scripts/verify-package-files.mjs && pnpm run check:docs-manifest && pnpm run check:review-naming && pnpm run check:module-contract",
+		"prepublishOnly": "pnpm run typecheck && pnpm test && pnpm run check:runtime-modules && pnpm run check:authority-boundary && pnpm run check:test-quality && pnpm run check:empty-catch && node scripts/verify-package-files.mjs && pnpm run test:packed-package && pnpm run check:docs-manifest && pnpm run check:review-naming && pnpm run check:module-contract",
+		"check:authority-boundary": "node scripts/check-authority-boundary.mjs",
+		"check:test-quality": "node scripts/check-test-quality.mjs",
+		"check:empty-catch": "node scripts/check-empty-catch.mjs",
+		"check:docs-manifest": "node scripts/check-docs-manifest.mjs",
+		"fix:docs-manifest": "node scripts/check-docs-manifest.mjs --write",
+		"check:review-naming": "node scripts/check-review-naming.mjs",
+		"check:module-contract": "node --experimental-strip-types scripts/check-module-contract.mjs"
 	},
 	"pi": {
-		"image": "jero-pi/assets/jero-logo.png",
+		"image": "assets/jero-logo.png",
 		"extensions": [
-			"jero-pi/extensions",
-			"jero-pi/node_modules/@heyhuynhgiabuu/pi-pretty/src/index.ts",
-			"jero-pi/node_modules/@juicesharp/rpiv-ask-user-question/index.ts",
-			"jero-pi/node_modules/@juicesharp/rpiv-todo/index.ts",
-			"jero-pi/node_modules/billion-context-pi/dist/index.js",
-			"jero-pi/node_modules/pi-cache-optimizer/index.ts",
-			"jero-pi/node_modules/pi-fovea/src/index.ts",
-			"jero-pi/node_modules/pi-hashline-edit-pro/index.ts",
-			"jero-pi/node_modules/pi-lens/dist/index.js",
-			"jero-pi/node_modules/pi-web-access/dist"
+			"./extensions",
+			"node_modules/@heyhuynhgiabuu/pi-pretty/src/index.ts",
+			"node_modules/@juicesharp/rpiv-ask-user-question/index.ts",
+			"node_modules/@juicesharp/rpiv-todo/index.ts",
+			"node_modules/billion-context-pi/dist/index.js",
+			"node_modules/pi-cache-optimizer/index.ts",
+			"node_modules/pi-fovea/src/index.ts",
+			"node_modules/pi-hashline-edit-pro/index.ts",
+			"node_modules/pi-lens/dist/index.js",
+			"node_modules/pi-web-access/dist"
 		],
 		"themes": [
-			"jero-pi/themes"
+			"./themes"
 		],
 		"prompts": [
-			"jero-pi/prompts"
+			"./prompts"
 		],
 		"skills": [
-			"jero-pi/skills",
-			"jero-pi/node_modules/pi-fovea/skills",
-			"jero-pi/node_modules/pi-lens/skills"
+			"./skills",
+			"node_modules/pi-fovea/skills",
+			"node_modules/pi-lens/skills"
 		]
+	},
+	"dependencies": {
+		"@heyhuynhgiabuu/pi-pretty": "0.6.30",
+		"@juicesharp/rpiv-ask-user-question": "2.12.0",
+		"@juicesharp/rpiv-todo": "2.12.0",
+		"billion-context-pi": "0.1.83",
+		"pi-cache-optimizer": "2.8.21",
+		"pi-fovea": "0.31.3",
+		"pi-hashline-edit-pro": "6.2.0",
+		"pi-lens": "4.3.0",
+		"pi-web-access": "0.37.0"
+	},
+	"peerDependencies": {
+		"@earendil-works/pi-coding-agent": ">=0.85.1",
+		"@earendil-works/pi-tui": "*"
+	},
+	"devDependencies": {
+		"@earendil-works/pi-coding-agent": "1.0.4",
+		"@earendil-works/pi-tui": "1.0.4",
+		"@types/node": "^24.13.3",
+		"typescript": "^5.9.3"
+	},
+	"packageManager": "pnpm@11.1.1",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/wuzxc1230123/jero-pi.git"
 	}
 }

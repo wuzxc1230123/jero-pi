@@ -56,7 +56,7 @@ git fetch --no-tags origin "refs/tags/${tag}"
 test "$(git rev-parse 'FETCH_HEAD^{commit}')" = "${release_sha}"
 
 gh release create "${tag}" \
-  --repo jero-pi/jero-pi \
+  --repo wuzxc1230123/jero-pi \
   --verify-tag \
   --title "jero-pi ${tag}" \
   --notes "<release notes>"
@@ -70,7 +70,7 @@ gh release create "${tag}" \
 version="$(node -p "require('./package.json').version")"
 tag="v${version}"
 gh workflow run publish.yml \
-  --repo jero-pi/jero-pi \
+  --repo wuzxc1230123/jero-pi \
   --ref main \
   -f tag="${tag}"
 ```
@@ -80,8 +80,8 @@ gh workflow run publish.yml \
 观察运行过程，失败则宣告发布失败：
 
 ```bash
-gh run list --repo jero-pi/jero-pi --workflow publish.yml --limit 3
-gh run watch <run-id> --repo jero-pi/jero-pi --exit-status
+gh run list --repo wuzxc1230123/jero-pi --workflow publish.yml --limit 3
+gh run watch <run-id> --repo wuzxc1230123/jero-pi --exit-status
 ```
 
 ## 7. 验证 npm
@@ -99,7 +99,7 @@ npm dist-tag ls jero-pi --registry=https://registry.npmjs.org/
 - 若工作流失败，用以下命令查看日志：
 
   ```bash
-  gh run view <run-id> --repo jero-pi/jero-pi --log
+  gh run view <run-id> --repo wuzxc1230123/jero-pi --log
   ```
 
 - 若工作流成功后 npm 验证短暂滞后，先检查确切版本（`npm view jero-pi@<version> version`），再假定发布失败。

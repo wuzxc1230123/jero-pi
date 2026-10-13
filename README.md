@@ -2,7 +2,7 @@
 
 面向 [Pi coding-agent](https://github.com/earendil-works) 的扩展包（pi-package）：把评审权威、SDD/OpenSpec 流程、子代理编排、持久记忆与精益纪律全部收进一个进程内 Node 包——零原生二进制、零安装期网络。
 
-要求 Pi ≥ 0.85.1（peer 声明的功能下限，`agent_settled` 事件的最低支持版本）；当前开发与全量测试随 Pi 1.0.0 进行（模块 MCP 自动并入需宿主 ≥0.99，安装文案会明示）。
+要求 Pi ≥ 0.85.1（peer 声明的功能下限，`agent_settled` 事件的最低支持版本）；当前开发与全量测试随 Pi 1.0.4 进行（模块 MCP 自动并入需宿主 ≥0.99，安装文案会明示）。
 
 ## 核心能力
 
@@ -11,14 +11,14 @@
 - **SDD/OpenSpec**：`/jero-sdd-init` 探测技术栈并落配置；确定性阶段状态引擎（proposal/spec/design/tasks/apply/verify/sync/archive）；严格 TDD 证据（RED/GREEN/TRIANGULATE/REFACTOR）。
 - **持久记忆**：`mem_save` / `mem_read` / `mem_list` / `mem_search`，topic 键 Markdown 文件 + 轻量索引，零数据库、零原生模块。
 - **精益纪律**（借自 ponytail 的"懒惰资深工程师"）：七级梯子写入节制 + `/jero:lean` 分档（off/lite/full/ultra，会话条目持久化，`stop lean` 一句话关闭）+ `jero:` 简化标记与 `/jero:debt` 债务台账 + `jero-lean-review` 独立精益评审。纯提示词层增强，`off` 完全还原历史行为。
-- **能力模块契约**（`jero.module-contract/v2`，兼容 v1）：目标项目的领域扩展（Go/Godot/Unity…）一个目录一份 `module.json` 声明触发/知识/角色/接线（v2 另可声明 `dependencies` 与 `mcp` MCP 服务器档——安装时依赖自动先装、MCP 档幂等并入项目级 `.pi/mcp.json`）——**只装项目内不全局生效**，`/jero:install-module <词元>` 指令安装（包内模块库 `assets/modules/` 现有全中文 godot 与 golang 两束，各附子代理与领域技能；golang 束知识锚定 Go 1.25/1.26），静态触发机器判定、安装验证、派发覆盖层自动接线；规范见 [docs/module-contract.md](docs/module-contract.md)。
+- **能力模块契约**（`jero.module-contract/v2`，兼容 v1）：目标项目的领域扩展（Go/Godot/Unity…）一个目录一份 `module.json` 声明触发/知识/角色/接线（v2 另可声明 `dependencies` 与 `mcp` MCP 服务器档——安装时依赖自动先装、MCP 档幂等并入项目级 `.pi/mcp.json`）——**只装项目内不全局生效**，`/jero:install-module <词元>` 指令安装（包内模块库 `assets/modules/` 现有全中文 godot / golang / dotnet / vue 四束，各附子代理与领域技能；golang 束知识锚定 Go 1.25/1.26，vue 束锚定 Vue 3.5/3.6 + Nuxt 4 + Vite 7 + Pinia 3），静态触发机器判定、安装验证、派发覆盖层自动接线；规范见 [docs/module-contract.md](docs/module-contract.md)。
 - **Shell 层**：底部状态栏（git / 模型 / 上下文窗口 / 会话成本）、侧栏、变更小部件与 diff 视图、订阅用量窗口、主题（Jero / Jero-Cute / Jero-Sexy）。
 
 ## 安装与使用
 
 ```sh
-pi install git:github.com/wuzxc1230123/jero-pi   # 首次安装（git 源：仓库根编排壳自动装子包依赖并镜像 pi 清单）
-# 或 pi install npm:jero-pi（发布后）/ pi install <本仓库 jero-pi/ 目录>（本地）
+pi install git:github.com/wuzxc1230123/jero-pi   # 首次安装（git 源：仓库根即包清单，pi 直接解析装依赖）
+# 或 pi install npm:jero-pi（发布后）/ pi install <本仓库根目录>（本地）
 /jero:doctor                 # 体检：资产、OpenSpec、技能注册表、模型配置、精益档位
 /jero:status                 # 包状态总览
 /jero:sdd-preflight          # 会话 SDD 预检
@@ -27,7 +27,7 @@ pi install git:github.com/wuzxc1230123/jero-pi   # 首次安装（git 源：仓�
 
 评审生命周期动词（`inspect` / `start` / `answer-consent` / `assess` / `finalize` / `validate`）是 `jero_review` 工具的操作，不是斜杠命令。
 
-> git 源安装说明：pi 只在安装根解析 pi 清单与执行依赖安装，而本仓包本体在 `jero-pi/` 子目录——仓库根的 `package.json`（pi 清单镜像，路径加 `jero-pi/` 前缀）+ `.pi-git-install.mjs`（postinstall 把生产依赖装进子包，pnpm/npm 按锁文件自选；开发仓检测到既有 node_modules 即跳过）构成编排壳。镜像等价性由 `tests/git-install-orchestrator.test.ts` 钉住防漂移。
+> git 源安装说明：仓库根即 npm 包本体——根 `package.json` 就是 pi 清单，pi 在安装根直接解析清单与依赖，无任何编排壳。（2026-10-13 仓库扁平化之前的 `jero-pi/` 子目录 + 根壳镜像方案见 `JERO-PI-DESIGN.md` 决策记录。）
 
 > SDD 强制初始化：每个项目的**首次会话**自动落 SDD 脚手架（技术栈探测 → `openspec/config.yaml` + `specs/`；已就位零成本跳过，幂等）；SDD 管理资产保持按需懒装（首次 SDD 使用时安装）。脚手架在场不强制使用——变更要不要走 SDD 仍按 [docs/how-to-choose-discipline.md](docs/how-to-choose-discipline.md) 选档。`JERO_PI_SDD_AUTOINIT=0` 显式退出，`/jero-sdd-init` 手动路径不受影响。
 

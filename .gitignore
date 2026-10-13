@@ -1,31 +1,11 @@
-################################################################################
-# 工作区根忽略：本仓库是 jero-pi 的开发仓库，父目录同时承载若干
-# 只读参考库。参考库与扫描/临时产物一律不入库（jero-pi#仓库卫生）。
-################################################################################
+node_modules/
 
-/.vs
-.mimosa/
-/*.log
-/tmp/
-
-# 只读参考库快照——一律不提交（历史教训：.mimosa 曾误提交 563 个文件）
-/gsd-core-next/
-/Trellis-main/
-/skills-main/
-/superpowers-main/
-/ponytail-main/
-/GD-Agentic-Skills-main/
-/GodotPrompter-master/
-/awesome-gamedev-agent-skills-main/
-/act-combat-design-main/
-/cc-skills-golang-main/
-/golang-skills-main/
-/dotnet-skills-master/
-/vue-skills-main/
-
-# golang-skills 快照复制时泄漏到根的外来插件元数据（与 golang-skills-main/.claude-plugin/
-# 逐字节一致，owner=cxuu，非本仓产物）——不入库；如需清理可直接删（快照内仍有原件）
-/.claude-plugin/
+# 覆盖率聚合产物（NODE_V8_COVERAGE 原始 profile 与合并报告）
+.coverage-raw/
+.coverage-merged.txt
 
 # ZCode 会话工具产物（plans 等），不入库
 /.zcode/
+
+# 临时产物
+/tmp/

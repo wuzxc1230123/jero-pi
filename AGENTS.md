@@ -1,12 +1,12 @@
 # AGENTS.md — jero-pi 仓库导航（给 AI 编码代理）
 
-本文件是后续编码代理的最小缓存：布局、铁律、标准验证回路。细节以 `jero-pi/docs/jero-reference.md`（机器钉住的单一参考）为准。
+本文件是后续编码代理的最小缓存：布局、铁律、标准验证回路。细节以 `docs/jero-reference.md`（机器钉住的单一参考）为准。
 
 ## 布局
 
-- 仓库根 = 本文件所在目录（`AGENTS.md` 旁）；npm 包本体在 `jero-pi/` 子目录（所有命令在包目录内执行）。根的 `package.json` + `.pi-git-install.mjs` 是 **git 源安装编排壳**（pi 只在安装根解析清单与装依赖——壳镜像子包 pi 清单并由 postinstall 装子包依赖，等价性由 `tests/git-install-orchestrator.test.ts` 钉住）；勿在开发仓根跑包管理器（守卫会跳过，但保持根无 node_modules）。
-- `JERO-PI-DESIGN.md`：项目设计文档（决策记录与演化终态；v2.0 起按现行代码重建——"为什么这样设计"在此，"现在是什么"在 `jero-pi/docs/jero-reference.md`）；`_tools/`：实现期的分阶段分析文档——**lib 代码注释中引用的 `_tools/*.md` 相对仓库根解析**（包目录内没有这个目录）。
-- 包内：`extensions/`（Pi 注册层，9 文件）· `lib/`（领域层；`lib/module-contract.ts` + `lib/module-bundle-content.ts`（束内内容机检判定体） + `lib/module-trigger-compiler.ts` + `lib/module-verify-pipeline.ts` + `lib/module-installer.ts` 是能力模块契约 v2 的执行面——模块仅项目内、`/jero:install-module` 指令安装、依赖自动先装）· `lib/authority/`（进程内评审权威，信任边界核心）· `assets/`（24 代理 + 4 链 + orchestrator 文档，被安装/转录/渲染的活资产；`assets/modules/` 为包内模块库——安装器注册表，现有 godot、golang、dotnet、vue 四束全中文模块）· `skills/` · `prompts/` · `docs/` · `schemas/`（含 `module.schema.json`，与 lib 常量由门钉零漂移）· `scripts/`（质量门）· `tests/` · `runtime/`（生成物）· `benchmarks/`（不随包发布）。
+- 仓库根 = npm 包本体（本文件与 `package.json` 同级，所有命令直接在仓库根执行）。`pi install git:` 在安装根直接解析根 `package.json`（即 pi 清单）并装依赖——仓库扁平化后无编排壳、无子目录。
+- `JERO-PI-DESIGN.md`：项目设计文档（决策记录与演化终态；v2.0 起按现行代码重建——"为什么这样设计"在此，"现在是什么"在 `docs/jero-reference.md`）；`_tools/`：实现期的分阶段分析文档，**lib 代码注释中引用的 `_tools/*.md` 就在包根，相对仓库根直接解析**。
+- 包根：`extensions/`（Pi 注册层，9 文件）· `lib/`（领域层；`lib/module-contract.ts` + `lib/module-bundle-content.ts`（束内内容机检判定体） + `lib/module-trigger-compiler.ts` + `lib/module-verify-pipeline.ts` + `lib/module-installer.ts` 是能力模块契约 v2 的执行面——模块仅项目内、`/jero:install-module` 指令安装、依赖自动先装）· `lib/authority/`（进程内评审权威，信任边界核心）· `assets/`（24 代理 + 4 链 + orchestrator 文档，被安装/转录/渲染的活资产；`assets/modules/` 为包内模块库——安装器注册表，现有 godot、golang、dotnet、vue 四束全中文模块）· `skills/` · `prompts/` · `docs/` · `schemas/`（含 `module.schema.json`，与 lib 常量由门钉零漂移）· `scripts/`（质量门）· `tests/` · `runtime/`（生成物）· `benchmarks/`（不随包发布）。
 
 ## 三条铁律
 
@@ -40,4 +40,4 @@
 
 ## 入口文档链
 
-`jero-pi/README.md` → `docs/jero-reference.md`（架构/命令/工具/生命周期总表）→ `docs/tutorial-first-review.md`（第一次评审最小闭环）· `docs/how-to-choose-discipline.md`（评审/SDD/精益选档）· `docs/extension-guide.md`（零代码扩展：技能/子代理/语言包，自动创建走 `/module-creation` `/agent-creation`；机器验证的契约化模块见 `docs/module-contract.md` + `/jero-module-verify`）· `docs/dependency-exit-plan.md`（9 个伴生依赖退出预案）。运行时技能路由表：`skills/jero-skills/SKILL.md`。
+`README.md` → `docs/jero-reference.md`（架构/命令/工具/生命周期总表）→ `docs/tutorial-first-review.md`（第一次评审最小闭环）· `docs/how-to-choose-discipline.md`（评审/SDD/精益选档）· `docs/extension-guide.md`（零代码扩展：技能/子代理/语言包，自动创建走 `/module-creation` `/agent-creation`；机器验证的契约化模块见 `docs/module-contract.md` + `/jero-module-verify`）· `docs/dependency-exit-plan.md`（9 个伴生依赖退出预案）。运行时技能路由表：`skills/jero-skills/SKILL.md`。

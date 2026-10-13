@@ -1,10 +1,10 @@
 # jero-pi 项目设计文档
 
-> 版本：v2.0（2026-10-11，按当前代码重建）
-> 基线：本仓库 `jero-pi/` 包当前工作树——Pi 宿主家族随 1.0.4 全量验证（peer 下限仍 ≥0.85.1），伴生九件钉版，模块库 godot + golang 两束
+> 版本：v2.1（2026-10-13，随仓库扁平化更新基线）
+> 基线：本仓库（包根 = 仓库根，2026-10-13 扁平化）当前工作树——Pi 宿主家族随 1.0.4 全量验证（peer 下限仍 ≥0.85.1），伴生九件钉版，模块库 godot / golang / dotnet / vue 四束
 > 状态：v1.0（2026-09-15，gentle-pi 重构设计）已全部实现并经三批宿主/生态升级稳定运行；本文档按现行代码重述决策，v1.0 之后的演进以追加决策记录收录
 >
-> **分工**：本文档回答"为什么这样设计"（决策记录与迁移终态）；`jero-pi/docs/jero-reference.md` 回答"现在是什么"（机器钉住的单一参考——计数、路径、版本以它为准）。v1.0 原文见 git 历史（本文件 2026-10-11 重建提交的父提交）。
+> **分工**：本文档回答"为什么这样设计"（决策记录与迁移终态）；`docs/jero-reference.md` 回答"现在是什么"（机器钉住的单一参考——计数、路径、版本以它为准）。v1.0 原文见 git 历史（本文件 2026-10-11 重建提交的父提交）。
 
 ---
 
@@ -129,7 +129,7 @@ v2.0 追加目标（均达成）：**G7 提示词全面中文化**（生成式�
 
 ### 5.7 安装与分发（现行）
 
-纯 npm 安装；postinstall 仅本地写 tuiMode 设置且**仅在键缺席时补默认**（Pi 1.0 起全屏已是宿主默认，旧逻辑会覆盖用户显式选择的 regular——语义反转有钉测）。质量门由 prepack 串联八道：test-quality（5 反模式）/empty-catch/authority-boundary/docs-manifest/review-naming/module-contract/verify-package-files（300 必需文件 + 68 黄金向量字节钉住 + 25 禁止路径）/packed E2E（397 文件）。
+纯 npm 安装；postinstall 仅本地写 tuiMode 设置且**仅在键缺席时补默认**（Pi 1.0 起全屏已是宿主默认，旧逻辑会覆盖用户显式选择的 regular——语义反转有钉测）。git 源安装：仓库根即包清单（2026-10-13 扁平化），pi 在安装根直接解析并装依赖——此前的 `jero-pi/` 子目录 + 根壳镜像 + postinstall 编排方案随之退役（决策见 §9）。质量门由 prepack 串联八道：test-quality（5 反模式）/empty-catch/authority-boundary/docs-manifest/review-naming/module-contract/verify-package-files（300 必需文件 + 68 黄金向量字节钉住 + 25 禁止路径）/packed E2E（397 文件）。
 
 ## 6. 身份迁移终态（§8 v1.0 迁移表的核销）
 
@@ -174,6 +174,7 @@ v2.0 追加目标（均达成）：**G7 提示词全面中文化**（生成式�
 | 2026-10 上旬 | 能力路由技能族 | jero-diagnose-stall（编排停滞六类只读分诊）、jero-architecture-patrol（六轴只读巡检 + 可视化 HTML 报告）、jero-debt、jero-lean/-review、jero-prototype（一次性原型裁决设计问题：LOGIC 单 HTML/UI 多变体，结论回流 design 契约，不是 SDD 阶段） |
 | 2026-10-10/11 | 外部借鉴纪律成型 | 借鉴批模式=**零流程改动纯文本强化 + 契约钉测锁定 + CHANGELOG 留档**（豁免 pressure 微测的理由随条目记录）；来源 mattpocock/skills（拷问术/红回路/概念去重/Standards 轴/合并危险/正文耐用性/阶段边界）、bigpowers（verify 命令/风险分级/威胁建模）、Trellis（上下文清单/每回合可见不变量）；门演化一例：Markdown 依赖门加 `<!-- target-repo-md-refs -->` 显式豁免区分包内依赖与目标仓库引用 |
 | 2026-10-11 | 设计文档 v2.0 重建 | 本文档：按现行代码重述决策，v1.0 原文进 git 历史；与 jero-reference 分工固化（为什么 vs 是什么） |
+| 2026-10-13 | 仓库扁平化 | 包本体从 `jero-pi/` 子目录平移至仓库根（根 `package.json` 即 pi 清单），git 源安装编排壳（根壳清单镜像 + `.pi-git-install.mjs` postinstall + 等价性钉测）整体退役——pi 在安装根直接解析，静默半装载问题不复存在；`.github/` CI 工作流随扁平化回到仓库根首次真正生效（旧布局下 GitHub 不读子目录工作流）；连带清除无关残留（根 `插件.md` 草稿笔记、空 `tmp/`），`_tools/` 与包同根 |
 
 ## 10. 风险与开放问题（现行）
 
@@ -203,4 +204,4 @@ v2.0 追加目标（均达成）：**G7 提示词全面中文化**（生成式�
 
 ### D. 事实来源
 
-现行事实（计数/路径/版本/环境变量）：`jero-pi/docs/jero-reference.md`（机器钉住）。v1.0 设计原文与决策细节：git 历史（2026-10-11 重建提交的父提交树）。CHANGELOG：每批演进的完整验证记录。
+现行事实（计数/路径/版本/环境变量）：`docs/jero-reference.md`（机器钉住）。v1.0 设计原文与决策细节：git 历史（2026-10-11 重建提交的父提交树）。CHANGELOG：每批演进的完整验证记录。

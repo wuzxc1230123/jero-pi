@@ -5,6 +5,17 @@ jero-pi 尚未发布到 npm（版本停在 0.1.0 基线），本文件自重构�
 
 ## [Unreleased]
 
+### 仓库扁平化批：包本体平移至仓库根 + 编排壳退役 + 无关残留清除（2026-10-13）
+
+**git 源安装从"编排壳"回到直装；文档按扁平布局重建。**
+
+- **仓库扁平化**：包本体从 `jero-pi/` 子目录平移至仓库根——根 `package.json` 即 pi 清单，所有命令直接在仓库根执行。git 源安装编排壳整体退役：根壳清单镜像、`.pi-git-install.mjs`（postinstall 装子包依赖）、`tests/git-install-orchestrator.test.ts`（镜像等价性钉测）一并删除——pi 在安装根直接解析清单与依赖，git: 安装的静默半装载问题在结构上不复存在（决策记录见 `JERO-PI-DESIGN.md` §9）。
+- **`.github/` 回归仓库根**：CI（ci.yml 断网门 + Windows 权威回归）、publish、dependabot、issue 模板从 `jero-pi/.github/` 恢复至根——旧两级布局下 GitHub 根本不读子目录工作流，扁平化后首次真正生效；工作流命令本就是根相对路径，零适配。
+- **无关残留清除**：根 `插件.md`（依赖选型草稿，内容已被 package.json 吸收）、空 `tmp/` 删除；`.gitignore` 收敛为包级规则并补 `/.zcode/`、`/tmp/`。
+- **文档依据代码重建**：`AGENTS.md`（布局节重写：包根 = 仓库根、无壳）、`README.md`（安装段改直装说明；模块库计数两束→四束 godot/golang/dotnet/vue；宿主版本 1.0.0→1.0.4 对齐 devDependencies）、`JERO-PI-DESIGN.md`（v2.1：基线刷新 + §5.7 安装节 + §9 追加扁平化决策行 + 路径引用去子目录前缀）。
+- **连带修正**：`skills/release/references/runbook.md` 的 `--repo jero-pi/jero-pi` 占位仓 slug 更正为 `wuzxc1230123/jero-pi`（上一批改了 package.json/publish.yml，runbook 漏网）。
+- 验证：typecheck 0 诊；全量 2593 测（2581 过 / 12 例卫跳过 / 0 失败，~13.8 分钟）+ 顺序 runtime harness 全绿；门禁全绿——test-quality（0 命中）、empty-catch、authority-boundary（51 模块）、docs-manifest（28 命令/19 工具/22 技能同步）、review-naming、module-contract、verify-package-files（436 文件 + 68 金向量 + 25 禁止路径）、runtime-modules（13 生成模块一致）。
+
 ### 深挖修复批：test:fast 选择器缺陷 + harness 假绿通路 + 扫描剔除次序 + 提取器残余弱面（2026-10-12）
 
 **四组问题全部经深挖证实后修复；机械回路（typecheck/全量/七门）本就全绿，本批修的是门看不见的逻辑缺口。**
