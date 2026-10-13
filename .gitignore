@@ -14,6 +14,11 @@ check-payload.json
 
 # ZCode 会话工具产物（plans 等），不入库
 /.zcode/
+/.zcodeignore
+
+# 开发辅助目录——本地保留、不入库（用户裁决 2026-10-14）
+/_tools/
+/benchmarks/
 
 # 临时产物
 /tmp/

@@ -44,7 +44,7 @@ pnpm run check:runtime-modules
 
 打包门：`prepack` 依次跑全量测试、runtime 模块一致性、权威边界检查、打包文件核验；`prepublishOnly` 追加 packed-tarball 分发链校验。CI 另有断网测试门与 Windows 权威回归。
 
-基准工具（不随包发布）：`benchmarks/` 以多臂对照度量精益纪律对真实 agent 产出的影响，含安全对抗任务层。
+基准工具：`benchmarks/`（本地目录，不入库）以多臂对照度量精益纪律对真实 agent 产出的影响，含安全对抗任务层。
 
 文档：
 

@@ -5,8 +5,8 @@
 ## 布局
 
 - 仓库根 = npm 包本体（本文件与 `package.json` 同级，所有命令直接在仓库根执行）。`pi install git:` 在安装根直接解析根 `package.json`（即 pi 清单）并装依赖——仓库扁平化后无编排壳、无子目录。
-- `JERO-PI-DESIGN.md`：项目设计文档（决策记录与演化终态；v2.0 起按现行代码重建——"为什么这样设计"在此，"现在是什么"在 `docs/jero-reference.md`）；`_tools/`：实现期的分阶段分析文档，**lib 代码注释中引用的 `_tools/*.md` 就在包根，相对仓库根直接解析**。
-- 包根：`extensions/`（Pi 注册层，9 文件）· `lib/`（领域层；`lib/module-contract.ts` + `lib/module-bundle-content.ts`（束内内容机检判定体） + `lib/module-trigger-compiler.ts` + `lib/module-verify-pipeline.ts` + `lib/module-installer.ts` 是能力模块契约 v2 的执行面——模块仅项目内、`/jero:install-module` 指令安装、依赖自动先装）· `lib/authority/`（进程内评审权威，信任边界核心）· `assets/`（24 代理 + 4 链 + orchestrator 文档，被安装/转录/渲染的活资产；`assets/modules/` 为包内模块库——安装器注册表，现有 godot、golang、dotnet、vue 四束全中文模块）· `skills/` · `prompts/` · `docs/` · `schemas/`（含 `module.schema.json`，与 lib 常量由门钉零漂移）· `scripts/`（质量门）· `tests/` · `runtime/`（生成物）· `benchmarks/`（不随包发布）。
+- `JERO-PI-DESIGN.md`：项目设计文档（决策记录与演化终态；v2.0 起按现行代码重建——"为什么这样设计"在此，"现在是什么"在 `docs/jero-reference.md`）。`_tools/`（实现期分析文档，lib 注释仍引用其路径）与 `benchmarks/`（基准工具）为**本地目录、不入库**——git 里没有它们，克隆后 lib 注释中的 `_tools/*.md` 引用按历史事实理解即可。
+- 包根：`extensions/`（Pi 注册层，9 文件）· `lib/`（领域层；`lib/module-contract.ts` + `lib/module-bundle-content.ts`（束内内容机检判定体） + `lib/module-trigger-compiler.ts` + `lib/module-verify-pipeline.ts` + `lib/module-installer.ts` 是能力模块契约 v2 的执行面——模块仅项目内、`/jero:install-module` 指令安装、依赖自动先装）· `lib/authority/`（进程内评审权威，信任边界核心）· `assets/`（24 代理 + 4 链 + orchestrator 文档，被安装/转录/渲染的活资产；`assets/modules/` 为包内模块库——安装器注册表，现有 godot、golang、dotnet、vue 四束全中文模块）· `skills/` · `prompts/` · `docs/` · `schemas/`（含 `module.schema.json`，与 lib 常量由门钉零漂移）· `scripts/`（质量门）· `tests/` · `runtime/`（生成物）。
 
 ## 三条铁律
 

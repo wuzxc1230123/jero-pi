@@ -5,6 +5,12 @@ jero-pi 尚未发布到 npm（版本停在 0.1.0 基线），本文件自重构�
 
 ## [Unreleased]
 
+### 仓库瘦身：开发辅助目录出库（2026-10-14，用户裁决）
+
+- `_tools/`（实现期分析文档）、`benchmarks/`（基准工具）、`.zcodeignore`（VS 自动生成）**停跟踪、本地保留**——git 里只留包本体与承重基础设施（tests/CI/文档）；.gitignore 增补对应规则防回潮。lib 注释中的 `_tools/*.md` 引用按历史事实保留（纯注释，无门禁依赖——verify-package-files/docs-manifest/typecheck 实证零影响）。AGENTS/README/skill-authoring 三处提及同步改写为"本地目录、不入库"。
+- 连带：.gitignore 增补调试产物防护（*.log、test-output、pack-listing、ci-diag*、check-payload——CI 排障与本地复现会在根生成，结构性挡在库外）。
+- 验证：verify-package-files（436 文件 + 68 金向量）、docs-manifest、typecheck 全绿。
+
 ### 伴生补丁攒批 + Dependabot 首批 PR 收编（2026-10-13）
 
 **仓库历史上第一批 Dependabot PR（8 个）全部处置：7 个收编合入、1 个缓办。**
