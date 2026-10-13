@@ -206,7 +206,15 @@ export async function part1(env) {
 		gitSync(promptCwd, "init", "-b", "main");
 		await writeFile(join(promptCwd, "tracked.txt"), "base\n");
 		gitSync(promptCwd, "add", "tracked.txt");
-		gitSync(promptCwd, "commit", "-m", "harness workspace root");
+		// 身份随命令显式给出：夹具不依赖机器的全局 git 配置——CI runner
+		// 无 user.name/user.email，裸 commit 直接 fatal（2026-10-13 CI 首启
+		// 实证；与下方 candidate 漂移段的同一范式）。
+		gitSync(
+			promptCwd,
+			"-c", "user.name=Runtime Harness",
+			"-c", "user.email=runtime-harness@example.invalid",
+			"commit", "-m", "harness workspace root",
+		);
 		const promptHook = hooks.get("before_agent_start")[0];
 		const promptResult = await promptHook({ systemPrompt: "base" }, createCtx(promptCwd));
 		assert.match(promptResult.systemPrompt, /base/);
