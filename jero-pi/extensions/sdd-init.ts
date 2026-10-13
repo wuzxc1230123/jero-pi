@@ -1,5 +1,6 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { applySavedModelConfig } from "../lib/jero-ai-model-routing-apply.ts";
+import { readSddPreflightFromDisk } from "../lib/sdd-preflight.ts";
 import { ensureSddPreflight, installPackageAssets } from "../lib/sdd-preflight.ts";
 import { runSddAutoInit, runSddInitCommand, type SddInitCtx, type SddInitDeps, type SddInitPrefs } from "../lib/sdd-init-command.ts";
 
@@ -30,22 +31,29 @@ export default function (pi: ExtensionAPI) {
 		},
 	});
 
-	// SDD 强制档：每个项目的首次会话自动初始化（openspec/config.yaml
-	// 缺席即跑完整 init：预检资产安装 + 技术栈探测 + 写盘）；已就位时
-	// 零成本跳过，幂等。JERO_PI_SDD_AUTOINIT=0 显式退出（清单见
-	// jero-reference「契约与环境」）。延后执行（setImmediate）——启动
-	// 绝不等待仓库扫描，与模块覆盖层的 session_start 刷新同纪律。
+	// SDD 强制档（脚手架专用面）：项目首次会话自动落 openspec/config.yaml
+	// + specs/ 脚手架（缺席才执行，幂等；已就位零成本）。SDD 管理资产保持
+	// 懒加载不变量（新会话不预装——首次 SDD 使用经预检安装，SDK 懒发现
+	// 测试钉住的行为），因此此处只做文件系统操作：在 session_start 内同步
+	// await、绝不延后触碰会话 ctx（SDK 会话替换后延后闭包访问 stale ctx
+	// 会崩溃——全量测试实证）。JERO_PI_SDD_AUTOINIT=0 显式退出（清单见
+	// jero-reference「契约与环境」）。
 	pi.on("session_start", async (_event, ctx) => {
 		if (process.env.JERO_PI_SDD_AUTOINIT === "0") return;
-		setImmediate(() => {
-			runSddAutoInit(ctx, makeDeps(pi), true).catch((error) => {
-				if (ctx.hasUI) {
-					ctx.ui.notify(
-						`SDD 自动初始化失败（可用 /jero-sdd-init 手动重试）：${error instanceof Error ? error.message : String(error)}`,
-						"warning",
-					);
-				}
-			});
-		});
+		try {
+			await runSddAutoInit(
+				ctx,
+				{ readArtifactStore: (cwd) => readSddPreflightFromDisk(cwd)?.artifactStore ?? "openspec" },
+				true,
+			);
+		} catch (error) {
+			if (ctx.hasUI) {
+				ctx.ui.notify(
+					`SDD 自动初始化失败（可用 /jero-sdd-init 手动重试）：${error instanceof Error ? error.message : String(error)}`,
+					"warning",
+				);
+			}
+		}
 	});
 }
+

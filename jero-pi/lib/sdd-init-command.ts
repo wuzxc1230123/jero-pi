@@ -68,16 +68,34 @@ export async function runSddInitCommand(ctx: SddInitCtx, deps: SddInitDeps): Pro
 }
 
 /**
- * 会话启动的 SDD 强制初始化：脚手架（openspec/config.yaml）缺席时自动
- * 跑完整 init 流水（预检资产安装 + 探测 + 写盘），已就位时零成本跳过。
- * 返回是否执行了初始化。退出阀（JERO_PI_SDD_AUTOINIT=0）由扩展层判定
- * 后以 enabled 传入——本模块不读 process.env（与命令主体同纪律）。
- * 注意偏好存储为 engram/none 时 init 流水不落 config，此时返回 true 但
- * 无脚手架——预检偏好已持久化，属用户显式选择而非未初始化。
+ * 会话启动的 SDD 强制初始化（脚手架专用面）：openspec/config.yaml 缺席
+ * 时探测技术栈并落项目脚手架，已就位时零成本跳过。**只动项目侧文件**——
+ * SDD 管理资产（代理/链/支撑）保持懒加载不变量（新会话不预装，首次
+ * SDD 使用经预检安装——asset-installation-runtime 测试钉住的行为），
+ * 故本函数不触碰会话 ctx 的生命周期面（可在 session_start 同步 await，
+ * 无 stale-ctx 风险）。偏好存储为 engram/none 时尊重用户显式选择不落
+ * 脚手架（持久化偏好经 deps 注入读取——本模块不读盘不读环境）。
  */
-export async function runSddAutoInit(ctx: SddInitCtx, deps: SddInitDeps, enabled: boolean): Promise<boolean> {
+export interface SddAutoInitDeps {
+	/** 读持久化的工件存储偏好（无记录时调用方决定缺省，通常 openspec）。 */
+	readonly readArtifactStore: (cwd: string) => SddInitPrefs["artifactStore"];
+}
+
+export async function runSddAutoInit(ctx: SddInitCtx, deps: SddAutoInitDeps, enabled: boolean): Promise<boolean> {
 	if (!enabled) return false;
-	if (existsSync(join(ctx.cwd, CONFIG_REL_PATH))) return false;
-	await runSddInitCommand(ctx, deps);
+	const configPath = join(ctx.cwd, CONFIG_REL_PATH);
+	if (existsSync(configPath)) return false;
+	const store = deps.readArtifactStore(ctx.cwd);
+	if (store !== "openspec" && store !== "hybrid") return false;
+	const detection = detectProject(ctx.cwd);
+	ensureOpenSpecDirs(ctx.cwd);
+	mkdirSync(dirname(configPath), { recursive: true });
+	writeFileSync(configPath, renderConfig(detection));
+	if (ctx.hasUI) {
+		ctx.ui.notify(
+			`Wrote ${CONFIG_REL_PATH}: detected ${detection.stack.join(", ") || "project"}; strict TDD ${detection.testCommand ? `enabled with \`${detection.testCommand}\`` : "disabled because no test runner was detected"}.`,
+			"info",
+		);
+	}
 	return true;
 }

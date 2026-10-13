@@ -195,40 +195,41 @@ test("扩展装配：注册命令；真预检走沙箱 HOME 确认后写盘", as
 	}
 });
 
-// —— 会话启动强制初始化（runSddAutoInit）：缺席执行/已就位跳过/退出阀 ——
+// —— 会话启动强制初始化（runSddAutoInit，脚手架专用面）：缺席执行/已就位
+// 跳过/退出阀/偏好尊重。不触碰预检与资产安装（懒加载不变量由
+// asset-installation-runtime.test.ts 在 SDK 层钉住）。 ——
 
-test("自动初始化：脚手架缺席时执行完整 init 并返回 true", async () => {
+const autoDeps = (store: SddInitPrefs["artifactStore"], calls: string[] = []) => ({
+	readArtifactStore: (cwd: string) => {
+		calls.push(cwd);
+		return store;
+	},
+});
+
+test("自动初始化：脚手架缺席时落盘并返回 true", async () => {
 	const cwd = makeProject();
 	try {
 		const { ctx, notifications } = fakeCtx(cwd);
-		const ran = await runSddAutoInit(ctx, { ensureSddPreflight: preflight("openspec") }, true);
+		const ran = await runSddAutoInit(ctx, autoDeps("openspec"), true);
 		assert.equal(ran, true);
 		assert.ok(existsSync(join(cwd, "openspec", "config.yaml")), "应写入脚手架");
-		assert.equal(notifications.length, 1, "与命令主体同款一次通知");
+		assert.match(readFileSync(join(cwd, "openspec", "config.yaml"), "utf8"), /Node\.js/);
+		assert.equal(notifications.length, 1, "写盘后一次通知");
 	} finally {
 		rmSync(cwd, { recursive: true, force: true });
 	}
 });
 
-test("自动初始化：脚手架已就位时零成本跳过（不触碰预检）", async () => {
+test("自动初始化：脚手架已就位时零成本跳过（不读偏好不写盘）", async () => {
 	const cwd = makeProject();
 	try {
 		mkdirSync(join(cwd, "openspec"), { recursive: true });
 		writeFileSync(join(cwd, "openspec", "config.yaml"), "# existing\n");
 		const { ctx, notifications } = fakeCtx(cwd);
-		let preflightCalled = false;
-		const ran = await runSddAutoInit(
-			ctx,
-			{
-				ensureSddPreflight: async () => {
-					preflightCalled = true;
-					return { artifactStore: "openspec" } satisfies SddInitPrefs;
-				},
-			},
-			true,
-		);
+		const calls: string[] = [];
+		const ran = await runSddAutoInit(ctx, autoDeps("openspec", calls), true);
 		assert.equal(ran, false);
-		assert.equal(preflightCalled, false, "已就位时不应触碰预检（资产安装与扫描都不发生）");
+		assert.equal(calls.length, 0, "已就位时连偏好读取都不发生（零成本守卫在最前）");
 		assert.equal(notifications.length, 0);
 	} finally {
 		rmSync(cwd, { recursive: true, force: true });
@@ -239,21 +240,27 @@ test("自动初始化：退出阀 enabled=false 直接跳过且不落盘", async
 	const cwd = makeProject();
 	try {
 		const { ctx } = fakeCtx(cwd);
-		let preflightCalled = false;
-		const ran = await runSddAutoInit(
-			ctx,
-			{
-				ensureSddPreflight: async () => {
-					preflightCalled = true;
-					return { artifactStore: "openspec" } satisfies SddInitPrefs;
-				},
-			},
-			false,
-		);
+		const calls: string[] = [];
+		const ran = await runSddAutoInit(ctx, autoDeps("openspec", calls), false);
 		assert.equal(ran, false);
-		assert.equal(preflightCalled, false, "退出阀应在预检之前生效");
+		assert.equal(calls.length, 0, "退出阀应在偏好读取之前生效");
 		assert.ok(!existsSync(join(cwd, "openspec", "config.yaml")));
 	} finally {
 		rmSync(cwd, { recursive: true, force: true });
+	}
+});
+
+test("自动初始化：偏好 engram/none 尊重用户显式选择不落脚手架", async () => {
+	for (const store of ["engram", "none"] as const) {
+		const cwd = makeProject();
+		try {
+			const { ctx, notifications } = fakeCtx(cwd);
+			const ran = await runSddAutoInit(ctx, autoDeps(store), true);
+			assert.equal(ran, false, `${store} 偏好不应落脚手架`);
+			assert.ok(!existsSync(join(cwd, "openspec", "config.yaml")), `${store} 偏好不应写盘`);
+			assert.equal(notifications.length, 0, "无 UI 仪式静默尊重");
+		} finally {
+			rmSync(cwd, { recursive: true, force: true });
+		}
 	}
 });
