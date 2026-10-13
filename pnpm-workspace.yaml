@@ -29,11 +29,17 @@ trustPolicy: no-downgrade
 # Block transitive dependencies from using git: or tarball sources.
 blockExoticSubdeps: true
 
-# 供应链 overrides（2026-10-01 例行处置 + 当日回退事故修正）：对既有钉版
+# 供应链 overrides（2026-10-01 例行处置 + 当日回退事故修正；2026-10-13 增补）：对既有钉版
 # 树的传递依赖 advisory 做最小增量修补——undici 8.9.0 → 8.10.2
 # （GHSA-rfgv-xxqx-mfg5 DoS / GHSA-w293-vg96-wgc3 TLS 校验绕过）、
 # brace-expansion 5.0.9 → 5.0.12（GHSA-qhr7-859c-m2p7 /
-# GHSA-8436-99hf-9mmv 栈耗尽 + moderate 级 GHSA-8436 后续修补）。两版本均在依赖方声明的 semver 区间内且
+# GHSA-8436-99hf-9mmv 栈耗尽 + moderate 级 GHSA-8436 后续修补）。
+# @modelcontextprotocol/sdk 1.27.1 → 1.31.0（GHSA-6qxp-vccf-f47h high：
+# OAuth 客户端可向 MCP 服务器指定的授权服务器发送凭据；经 pi-pretty →
+# pi-coding-agent/pi-ai → @google/genai 可选 peer ^1.25.2 进入生产图，
+# CI 首次真跑 Dependency audit 门时暴露）。目标版本在依赖方 peer 区间
+# 内、zod peer ^3.25||^4.0 由树中 4.6.5 满足、发布 2026-09-28 过 3 天
+# 龄期门。两版本均在依赖方声明的 semver 区间内且
 # 满足 ≥3 天龄期门。**生效位置就是本文件**：本仓 pnpm 11.1.1 存在本
 # workspace 文件时忽略 package.json 的 pnpm.overrides（2026-10-01 以
 # 删净 node_modules 的全新解析实验证实——manifest overrides 完全不被
@@ -42,6 +48,7 @@ blockExoticSubdeps: true
 overrides:
   undici: 8.10.2
   brace-expansion: 5.0.12
+  '@modelcontextprotocol/sdk': 1.31.0
 
 allowBuilds:
   '@ast-grep/cli': false

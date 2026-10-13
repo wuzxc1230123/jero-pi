@@ -5,6 +5,16 @@ jero-pi 尚未发布到 npm（版本停在 0.1.0 基线），本文件自重构�
 
 ## [Unreleased]
 
+### CI 首启修复批：工作流级双缺陷 + 供应链审计门首启暴露 MCP SDK high（2026-10-13）
+
+**CI 在本仓历史上第一次真正运行（此前工作流藏于 `jero-pi/.github/` 子目录，GitHub 不读），一次暴露三个潜伏缺陷，逐一修复。**
+
+- **ci.yml env 键大小写重复（工作流级致命）**：断网测试门同时定义 `HTTP_PROXY`/`http_proxy`、`HTTPS_PROXY`/`https_proxy`、`NO_PROXY`/`no_proxy`——GitHub 工作流校验不区分大小写，直接判工作流文件无效（首个推送 9f1a42a 的运行零 job 瞬时失败，报错即 L106/107/109 重复键）。收敛为仅大写：Node/undici 对两种大小写等价识别（`NODE_USE_ENV_PROXY` 生效），语义不变。
+- **dependabot.yml `github-actions` 生态 cooldown 非法**：`semver-major/minor/patch-days` 三键仅对 npm 等生态合法，github-actions 生态不支持——Dependabot 校验失败在提交上挂红检查。移除该项的 cooldown 块（npm 项保留）并留注释防回加。配置转正后 Dependabot 随即开出本仓首批 7 个更新 PR（actions 三件套 + pi-pretty/pi-cache-optimizer/@types/node/typescript）。
+- **Dependency audit 门首启即红：GHSA-6qxp-vccf-f47h（high）**：`@modelcontextprotocol/sdk` 1.27.1（易感区间 ≥1.12.0 <1.31.0）——OAuth 客户端可向 MCP 服务器指定的授权服务器发送凭据；经 `pi-pretty → pi-coding-agent/pi-ai → @google/genai` 可选 peer（`^1.25.2`）进入生产依赖图。按 2026-10-01 确立的 overrides 最小增量修补纪律处置：`pnpm-workspace.yaml` 增补 `'@modelcontextprotocol/sdk': 1.31.0`——修复下限版本、在依赖方 peer 区间内、zod peer `^3.25||^4.0` 由树中 4.6.5 满足、发布 2026-09-28 过 3 天龄期门。
+- 验证：`pnpm audit --prod --audit-level=high` 无已知漏洞；typecheck 0 诊；真宿主启动冒烟通过（扩展层装载、无凭据达 provider auth 终点——依赖树变更的最敏感面）；全量 2593 测（2581 过 / 12 例卫跳过 / 0 失败）+ 顺序 runtime harness 全绿。
+- 遗留观察：Windows job（review-repository 权威探针 + candidate view + 符号链接夹具回归）在 81510b3 的 CI 上已全绿——GitHub runner 与本地 Windows 结果互证。
+
 ### 仓库扁平化批：包本体平移至仓库根 + 编排壳退役 + 无关残留清除（2026-10-13）
 
 **git 源安装从"编排壳"回到直装；文档按扁平布局重建。**
