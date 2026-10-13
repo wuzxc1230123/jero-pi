@@ -5,6 +5,14 @@ jero-pi 尚未发布到 npm（版本停在 0.1.0 基线），本文件自重构�
 
 ## [Unreleased]
 
+### 伴生补丁攒批 + Dependabot 首批 PR 收编（2026-10-13）
+
+**仓库历史上第一批 Dependabot PR（8 个）全部处置：7 个收编合入、1 个缓办。**
+
+- **收编（7 PR）**：pi-pretty 0.6.30→0.6.31、pi-cache-optimizer 2.8.21→2.8.24、pi-fovea 0.31.3→0.31.4（三件补丁版、过 3 天龄期门、入口面零迁移；钉版守卫 `tests/companion-plugins.test.ts` 的 `AUDITED_COMPANION_PINS` 与 `docs/dependency-exit-plan.md` 版本列/批次记录同步——守卫按设计拦下了漂移，本地 worktree 复现定性：2593 测仅钉版 1 红）；@types/node 24→26（devDep）；actions/checkout v4→v7、actions/setup-node v4→v7.1.0、pnpm/action-setup v4→v6.1.0（三件 CI 实证绿，publish.yml 同步受惠）。全部 PR 先 rebase 到修复后 main 再验证（此前 8 PR 全红是分支基于修复前 main 撞旧缺陷，非升级问题）；rebase 锁文件文本自动合并经逐分支冻结安装校验。
+- **缓办（1 PR）**：typescript 5.9.3→7.0.2——TS7 原生编译器内核与诊断棘轮（`scripts/check-types.mjs` 基线 0）不兼容，CI 在 Type check 步实证红；跨大版本需专门适配批（棘轮基线重建 + 全量复测），保持 PR 开放待专项。
+- 验证：本地 install/typecheck/audit 过 + 全量 2581 测 0 败 + harness 绿（合入后终态）；CI 终态见推送记录。
+
 ### git: 源安装端到端实证 + npm 侧供应链暴露修补（2026-10-13）
 
 **扁平化后的 `pi install git:` 首次真源端到端实证（克隆 → 根清单解析 → npm 装依赖 → 注册 `.pi/agent/settings.json`，exit 0）；实证同时暴露 npm 路径的 override 盲区并修补。**

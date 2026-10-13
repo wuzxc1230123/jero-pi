@@ -12,12 +12,12 @@ import { COMPANION_EXTENSION_REFS, COMPANION_SKILL_REFS, PACKAGE_ROOT, readPacka
 // 审计过的伴生供应链面（设计 D5/R3：升级走单独 PR 全量测试）。任何版本
 // 漂移都会在此失败，迫使升级连同本清单一起过评审，防止顺手漂浮升级。
 const AUDITED_COMPANION_PINS: Record<string, string> = {
-	"@heyhuynhgiabuu/pi-pretty": "0.6.30",
+	"@heyhuynhgiabuu/pi-pretty": "0.6.31",
 	"@juicesharp/rpiv-ask-user-question": "2.12.0",
 	"@juicesharp/rpiv-todo": "2.12.0",
 	"billion-context-pi": "0.1.83",
-	"pi-cache-optimizer": "2.8.21",
-	"pi-fovea": "0.31.3",
+	"pi-cache-optimizer": "2.8.24",
+	"pi-fovea": "0.31.4",
 	"pi-hashline-edit-pro": "6.2.0",
 	"pi-lens": "4.3.0",
 	"pi-web-access": "0.37.0",
