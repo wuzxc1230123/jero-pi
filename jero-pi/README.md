@@ -17,7 +17,8 @@
 ## 安装与使用
 
 ```sh
-pi install <本包来源>        # 首次安装
+pi install git:github.com/wuzxc1230123/jero-pi   # 首次安装（git 源：仓库根编排壳自动装子包依赖并镜像 pi 清单）
+# 或 pi install npm:jero-pi（发布后）/ pi install <本仓库 jero-pi/ 目录>（本地）
 /jero:doctor                 # 体检：资产、OpenSpec、技能注册表、模型配置、精益档位
 /jero:status                 # 包状态总览
 /jero:sdd-preflight          # 会话 SDD 预检
@@ -25,6 +26,8 @@ pi install <本包来源>        # 首次安装
 ```
 
 评审生命周期动词（`inspect` / `start` / `answer-consent` / `assess` / `finalize` / `validate`）是 `jero_review` 工具的操作，不是斜杠命令。
+
+> git 源安装说明：pi 只在安装根解析 pi 清单与执行依赖安装，而本仓包本体在 `jero-pi/` 子目录——仓库根的 `package.json`（pi 清单镜像，路径加 `jero-pi/` 前缀）+ `.pi-git-install.mjs`（postinstall 把生产依赖装进子包，pnpm/npm 按锁文件自选；开发仓检测到既有 node_modules 即跳过）构成编排壳。镜像等价性由 `tests/git-install-orchestrator.test.ts` 钉住防漂移。
 
 > SDD 强制初始化：每个项目的**首次会话**自动落 SDD 脚手架（技术栈探测 → `openspec/config.yaml` + `specs/`；已就位零成本跳过，幂等）；SDD 管理资产保持按需懒装（首次 SDD 使用时安装）。脚手架在场不强制使用——变更要不要走 SDD 仍按 [docs/how-to-choose-discipline.md](docs/how-to-choose-discipline.md) 选档。`JERO_PI_SDD_AUTOINIT=0` 显式退出，`/jero-sdd-init` 手动路径不受影响。
 
