@@ -312,6 +312,10 @@ test("architecture patrol skill and router entry stay pinned", async () => {
 	assert.match(htmlReport, /质量图/);
 	assert.match(htmlReport, /调用图坍缩/);
 	assert.match(htmlReport, /词汇纪律/);
+	// 优化批一（2026-10-14）：报告生成后三道自检断言，不带病交付。
+	assert.match(htmlReport, /## 生成后自检/);
+	assert.match(htmlReport, /不带病交付/);
+	assert.match(htmlReport, /锚点可达/);
 
 	const router = await readFile(join(ROOT, "skills/jero-skills/SKILL.md"), "utf8");
 	assert.match(router, /jero-architecture-patrol/);
@@ -322,7 +326,8 @@ test("architecture patrol skill and router entry stay pinned", async () => {
 
 test("cross-surface conflict fixes stay pinned", async () => {
 	// 四代理评审的交叉面修复批：P2 复核量词收窄、轻量归档豁免、
-	// 威胁建模真实消费者、四类回顾、P0+manual 提前拦截、`?` 行双侧规则。
+	// 威胁建模真实消费者、回顾五类（2026-10-14 增漂移遥测实效）、
+	// P0+manual 提前拦截、`?` 行双侧规则。
 	const verify = await readFile(join(ROOT, "assets/agents/sdd-verify.md"), "utf8");
 	assert.match(verify, /重跑范围由「风险感知复核深度」节裁定/);
 	assert.match(verify, /apply 进度的 `Task Verify Evidence` 表是其执行证据，仅抽查存疑项/);
@@ -330,8 +335,9 @@ test("cross-surface conflict fixes stay pinned", async () => {
 
 	const archive = await readFile(join(ROOT, "assets/agents/sdd-archive.md"), "utf8");
 	assert.match(archive, /「不适用」的 `not_applicable` sync-report 即满足本条件/);
-	assert.match(archive, /提取四类回顾/);
-	assert.match(archive, /周期与估点校准）；/);
+	assert.match(archive, /提取五类回顾/);
+	assert.match(archive, /漂移遥测实效）；/);
+	assert.match(archive, /绝不倒推补造/);
 	assert.match(archive, /轻量路径下术语沉淀的唯一兜底/);
 
 	const apply = await readFile(join(ROOT, "assets/agents/sdd-apply.md"), "utf8");

@@ -15,6 +15,7 @@ import {
 	emptyChanges,
 	parseNumstat,
 	parsePorcelain,
+	projectFindingsOntoDiff,
 	renderChangesWidget,
 	changesModel,
 	snapshotChanges,
@@ -347,4 +348,58 @@ test("ChangesTracker counts the lines of untracked files, which git numstat leav
 	assert.deepEqual(model.files, [file("empty.md", 0, 0, CHANGE_STATUS.UNTRACKED), file("notes.md", 3, 0, CHANGE_STATUS.UNTRACKED)]);
 	assert.equal(model.added, 3);
 	assert.deepEqual(counted, ["notes.md", "empty.md"]);
+});
+
+// —— 发现→diff 内联投影（纯展示层）：冻结发现行号命中处插标记行，
+// 范围外发现汇入文末小节；无命中路径逐字节恒等。 ——
+test("projectFindingsOntoDiff: 无该路径发现时逐字节恒等", () => {
+	const diff = "@@ -1,2 +1,2 @@\n context\n-old\n+new\n";
+	assert.equal(projectFindingsOntoDiff(diff, [{ id: "RISK-001", location: "other.ts:1", severity: "CRITICAL", claim: "x" }], "src/a.ts"), diff);
+	assert.equal(projectFindingsOntoDiff(diff, [], "src/a.ts"), diff);
+});
+
+test("projectFindingsOntoDiff: hunk 内行号命中在目标行后插标记，删除行不推进新行号", () => {
+	const diff = [
+		"@@ -10,3 +10,4 @@",
+		" context",
+		"-removed",
+		"+added",
+		"+tail",
+	].join("\n");
+	const out = projectFindingsOntoDiff(diff, [{ id: "RISK-001", location: "src/a.ts:12", severity: "CRITICAL", claim: "注入风险" }], "src/a.ts");
+	assert.deepEqual(out.split("\n"), [
+		"@@ -10,3 +10,4 @@",
+		" context",      // 新行号 10
+		"-removed",      // 不推进
+		"+added",        // 新行号 11
+		"+tail",         // 新行号 12 —— 命中
+		"⚠ 评审发现 RISK-001 [CRITICAL] 注入风险",
+	]);
+});
+
+test("projectFindingsOntoDiff: 范围外与无行号发现按 id 排序汇入文末小节", () => {
+	const diff = "@@ -1 +1 @@\n ctx\n";
+	const out = projectFindingsOntoDiff(diff, [
+		{ id: "RISK-002", location: "src/a.ts:99", severity: "WARNING", claim: "b" },
+		{ id: "RISK-001", location: "src/a.ts", severity: "CRITICAL", claim: "a" },
+	], "src/a.ts");
+	assert.deepEqual(out.split("\n").slice(1), [
+		" ctx",
+		"",
+		"⚠ 评审发现（不在本 diff 行范围内的发现）",
+		"⚠ 评审发现 RISK-001 [CRITICAL] a",
+		"⚠ 评审发现 RISK-002 [WARNING] b",
+	]);
+});
+
+test("projectFindingsOntoDiff: 新文件 diff（@@ -0,0 +1,N）首行命中", () => {
+	const diff = "@@ -0,0 +1,2 @@\n+one\n+two\n";
+	const out = projectFindingsOntoDiff(diff, [{ id: "RELIABILITY-001", location: "new.ts:1", severity: "BLOCKER", claim: "缺测试" }], "new.ts");
+	assert.deepEqual(out.split("\n"), [
+		"@@ -0,0 +1,2 @@",
+		"+one",
+		"⚠ 评审发现 RELIABILITY-001 [BLOCKER] 缺测试",
+		"+two",
+		"",
+	]);
 });

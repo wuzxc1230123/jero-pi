@@ -325,3 +325,59 @@ export async function loadFileDiff(git: GitRunner, file: ChangedFile): Promise<s
 	const result = await git(args);
 	return result.code === 0 || result.code === 1 ? result.stdout : "";
 }
+
+/** 冻结评审发现的展示投影输入（纯数据；由调用方从权威台账读取，本层不触文件系统）。 */
+export interface DiffFindingMarker {
+	readonly id: string;
+	/** 权威台账的 location 形如 `path/to/file.ts:123`。 */
+	readonly location: string;
+	readonly severity: string;
+	readonly claim: string;
+}
+
+const FINDING_MARKER_PREFIX = "⚠ 评审发现";
+const HUNK_HEADER_PATTERN = /^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/;
+
+/** 把冻结评审发现投影进统一 diff 文本——纯展示层，绝不改写权威数据。
+ * hunk 内行号命中的发现插在该行之后的标记行；不在 diff 范围内的发现
+ * 汇入文末独立小节（评审者仍可见全量）；无命中发现时返回原文（逐字节恒等）。 */
+export function projectFindingsOntoDiff(diff: string, findings: ReadonlyArray<DiffFindingMarker>, path: string): string {
+	const forPath = findings.filter((finding) => finding.location === path || finding.location.startsWith(`${path}:`));
+	if (forPath.length === 0) return diff;
+	const lineOf = (finding: DiffFindingMarker): number | undefined => {
+		const line = Number.parseInt(finding.location.slice(finding.location.lastIndexOf(":") + 1), 10);
+		return Number.isInteger(line) && line > 0 ? line : undefined;
+	};
+	const pending = new Map<number, DiffFindingMarker[]>();
+	const outOfRange: DiffFindingMarker[] = [];
+	for (const finding of forPath) {
+		const line = lineOf(finding);
+		if (line === undefined) outOfRange.push(finding);
+		else pending.set(line, [...(pending.get(line) ?? []), finding]);
+	}
+	const marker = (finding: DiffFindingMarker): string => `${FINDING_MARKER_PREFIX} ${finding.id} [${finding.severity}] ${finding.claim}`;
+	const lines = diff.split("\n");
+	const output: string[] = [];
+	let newLineNumber = 0;
+	for (const line of lines) {
+		output.push(line);
+		const hunk = HUNK_HEADER_PATTERN.exec(line);
+		if (hunk) {
+			newLineNumber = Number.parseInt(hunk[1]!, 10);
+			continue;
+		}
+		if (newLineNumber === 0) continue;
+		if (line.startsWith("-") || line.startsWith("\\")) continue;
+		const hits = pending.get(newLineNumber);
+		if (hits !== undefined && hits.length > 0) {
+			pending.delete(newLineNumber);
+			for (const finding of hits) output.push(marker(finding));
+		}
+		newLineNumber += 1;
+	}
+	const leftovers = [...outOfRange, ...[...pending.values()].flat()];
+	if (leftovers.length === 0) return output.join("\n");
+	output.push(`${FINDING_MARKER_PREFIX}（不在本 diff 行范围内的发现）`);
+	for (const finding of leftovers.toSorted((a, b) => a.id.localeCompare(b.id))) output.push(marker(finding));
+	return output.join("\n");
+}
