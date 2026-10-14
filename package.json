@@ -106,7 +106,7 @@
 	"devDependencies": {
 		"@earendil-works/pi-coding-agent": "1.0.4",
 		"@earendil-works/pi-tui": "1.0.4",
-		"@types/node": "^26.6.3",
+		"@types/node": "^26.6.5",
 		"typescript": "^5.9.3"
 	},
 	"overrides": {
