@@ -5,6 +5,18 @@ jero-pi 尚未发布到 npm（版本停在 0.1.0 基线），本文件自重构�
 
 ## [Unreleased]
 
+### 优化批一 + 批二轻量件（2026-10-14）
+
+**四项中等优化 + 两项轻量件，全部零流程改动。**
+
+- **遥测实效回路**：归档回顾四类升五类——新增「漂移遥测实效」（三档阈值触发次数/动作/事后是否对应真实偏差），只服务阈值校准，绝不倒推补造台账。
+- **巡检 HTML 报告生成后自检**：节点可解析 / 引用自包含（除 Tailwind+Mermaid CDN 外零外链）/ 锚点可达，三道断言不带病交付，自检结论随路径告知。
+- **review 域再平衡**：`review-candidate-view.z2` 单文件实测 102.6s 是并行链天花板（node:test 只在文件间并行），按 z4 重平衡先例对半平移后半 18 测至新 `z5`——36 测守恒，天花板降至 53.8s。
+- **发现→diff 投影纯函数**：`lib/shell-changes.ts` 新增 `projectFindingsOntoDiff`——冻结发现按 location 行号在 diff 目标行后插 ⚠ 标记行（删除行不推进新行号、新文件 hunk 正确映射），范围外/无行号发现按 id 排序汇入文末小节，无命中路径逐字节恒等；纯展示零 IO，不碰权威与 wire；TUI 接线待渲染路径确认后跟进。
+- **交付入口统一**：jero-skills 路由表交付行明确 SDD 交付策略先行（四域已定 PR 形状按它走），branch-pr/chained-pr/work-unit-commits 只补执行细节——入口消歧，零机制合并。
+- **4R 体量分级准入轻提示**：小 diff（≤3 文件局部化）readability 候选可按 SUGGESTION 汇报；中大型/高危四透镜全量，绝不因体量缩水覆盖——提示层轻版，不替代控制器调度。
+- 验证：typecheck 0；artifact-language 21 过；shell-changes(+view) 53 过；test-quality 门 0 命中；test:sdd 187 过 0 败；z2/z5 实测守恒。
+
 ### spec_driven_develop 借鉴批三连 + 编排提示词上下文经济批（2026-10-14）
 
 **外部插件 spec_driven_develop（MIT，纯 Markdown 工作流插件）评估裁决"整体不上"——与本仓 SDD 状态机/评审生命周期/PR 技能族功能全面重叠、模块契约装不下流程型包（无文件触发签名、task-executor 属被拒的孤儿代理形态）、纯提示层保证与机检哲学错位；点子级吸收七机制，顺带修出编排提示词的上下文经济三件。**
