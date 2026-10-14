@@ -19,7 +19,7 @@ license: MIT
 | diff 写完，要做精益评审 | `jero-lean-review`（delete/stdlib/native/yagni/shrink 标签） |
 | 正式评审生命周期 | `jero_review` 工具（inspect/start/assess/finalize/validate/recover） |
 | 发布前双盲终审 | `judgment-day`（显式触发词激活） |
-| 提交切分 / 分支 PR / 大变更链式 PR | `jero-work-unit-commits` · `jero-branch-pr` · `jero-chained-pr` |
+| 提交切分 / 分支 PR / 大变更链式 PR | `jero-work-unit-commits` · `jero-branch-pr` · `jero-chained-pr`（SDD 变更先看其交付策略——`ask-on-risk`/`auto-chain`/`single-pr`/`exception-ok` 已定 PR 形状时按它走，技能只补执行细节） |
 | 查当前工作树改动与用量 | `/jero:changes` `/jero:usage` |
 | 缺陷工作流（复现→根因→修复→回归） | `jero-rdd-defect-workflow` |
 | 有意的妥协要登记债务 | `jero-debt`（`jero:` 注释：`ceiling:` + `upgrade:`） |

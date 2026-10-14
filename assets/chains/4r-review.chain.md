@@ -5,6 +5,8 @@ description: One-shot lens-only 4R discovery against a supplied initial review t
 
 > 仅限手动/兼容通道：提供方宿主中继捕获路径绝不加载此链；其存在仅为显式的手动 4R 调用。
 
+体量分级准入（轻版提示，不替代控制器调度）：评审树为小 diff（≤3 文件且改动局部化）时，readability 的候选可按 SUGGESTION 汇报、聚焦正确性与测试面；中大型或高危 diff（认证/迁移/并发/资金/公共契约）四透镜全量跑，绝不因体量缩水覆盖。
+
 ## review-risk
 
 output: review-risk-report.md

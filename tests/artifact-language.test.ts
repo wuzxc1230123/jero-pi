@@ -582,3 +582,15 @@ test("spec_driven_develop borrow batch round 3 stays pinned: remediate verdict, 
 	assert.match(delegation, /不成立时直说并给理由/);
 	assert.match(delegation, /最终选择权留给用户/);
 });
+
+test("optimization batch two stays pinned: delivery-entry unification and lens size admission hint", async () => {
+	// 优化批二（轻量件）：交付类任务入口统一（SDD 交付策略先行）+
+	// 4R 链体量分级准入轻提示（小 diff readability 降权，覆盖不缩水）。
+	const router = await readFile(join(ROOT, "skills/jero-skills/SKILL.md"), "utf8");
+	assert.match(router, /SDD 变更先看其交付策略/);
+	assert.match(router, /技能只补执行细节/);
+
+	const chain = await readFile(join(ROOT, "assets/chains/4r-review.chain.md"), "utf8");
+	assert.match(chain, /体量分级准入（轻版提示，不替代控制器调度）/);
+	assert.match(chain, /绝不因体量缩水覆盖/);
+});
