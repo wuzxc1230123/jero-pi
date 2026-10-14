@@ -16,9 +16,28 @@
 
 ## 安装与使用
 
+**装包**（任选一源，升级 = 重跑同一命令）：
+
 ```sh
-pi install git:github.com/wuzxc1230123/jero-pi   # 首次安装（git 源：仓库根即包清单，pi 直接解析装依赖）
-# 或 pi install npm:jero-pi（发布后）/ pi install <本仓库根目录>（本地）
+pi install git:github.com/wuzxc1230123/jero-pi   # git 源（仓库根即包清单，pi 直接解析装依赖）
+pi install npm:jero-pi                            # npm 源（发布后）
+pi install <本仓库根目录>                          # 本地路径 · 全局
+pi install <本仓库根目录> -l                       # 本地路径 · 项目级（装进 <项目>/.pi/，仅该项目生效）
+```
+
+**装领域模块**（可选；在目标项目会话内执行，只装项目内不全局生效）：
+
+```
+/jero:module-list                                 # 查看包内可装模块（godot/golang/dotnet/vue 四束）
+/jero:install-module godot golang dotnet vue      # 安装（依赖自动先装；MCP 档幂等并入项目级 .pi/mcp.json）
+/jero-module-verify                               # 安装验证 + 编译派发覆盖层
+```
+
+模块升级 = 重跑 install（`--force` 强制重装）；移除 = 删 `.pi/modules/{词元}/` 目录与安装记录条目。规范见 [docs/module-contract.md](docs/module-contract.md)。
+
+**装完先跑**：
+
+```sh
 /jero:doctor                 # 体检：资产、OpenSpec、技能注册表、模型配置、精益档位
 /jero:status                 # 包状态总览
 /jero:sdd-preflight          # 会话 SDD 预检
