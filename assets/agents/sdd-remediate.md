@@ -33,6 +33,8 @@ tools:
 
 重复 offender 纪律：修正开始前用 `mem_search`/`mem_read` 查本文件、符号或缺陷类别此前是否已被修正过。同一类别第二次及以后出现时，除按上述证据纪律修复外：(1) 把该 offender 类别（文件、模式、触发条件、已尝试的修复）经 `mem_save` 合并持久化到项目级记忆主题 `project/repeat-offenders`——先读后写，避免覆盖既有条目；(2) 在报告的 `## 重复 offender` 一节提议一个具体的可执行检查（测试用例、静态检查或基准任务，含放置位置与断言内容），供父会话/编排器决定是否采纳为任务——绝不自行向项目测试套件添加检查。
 
+结果裁决：报告携带一行裁决 `remediate_verdict: fixed | verified-clean | escalate`——`fixed` = 红回路已转绿且前后退出码证据在案；`verified-clean` = 复核证明失败证据系误报或陈旧，未做改动即澄清；`escalate` = 超出本次尝试边界（编辑根/命令槽位之外、复现失败、需要产品决策），如实说明阻塞并交父会话/用户裁决。仅 `fixed` 与 `verified-clean` 可继续归档路径；`escalate` 不是失败证据，是显式上交。该裁决是报告级结论，从属于宿主尝试权威的结算字段，绝不取代或预示 settle 结果。
+
 返回 status、executive_summary、artifacts、next_recommended、risks 和 skill_resolution。开工前加载父会话注入的阶段/项目技能路径；报告 paths-injected 或所用的显式回退。绝不声称执行了未实际发生的持久化或验证。
 
 ## 关键收获收尾

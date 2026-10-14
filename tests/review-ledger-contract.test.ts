@@ -354,11 +354,15 @@ test("Judgment Day fix routing has one canonical shape and never falls back to g
 		[JD_SKILL, read(JD_SKILL)],
 		[JD_PROMPTS, fencedBlock(JD_PROMPTS, "## Fix Agent Prompt")],
 		["assets/orchestrator-delegation.md", read("assets/orchestrator-delegation.md")],
-		[SDD_WORKFLOW, read(SDD_WORKFLOW)],
 	] as const) {
 		assert.ok(content.includes(canonicalShape), `${path} must carry the canonical Judgment Day fix shape`);
 		assert.match(content, /(?:requires no graph-v1 or native review lineage|(?:不要求|不需要) graph-v1 或原生评审 ?(?:谱系|lineage))/i);
 	}
+	// 2026-10-14 单一来源化：SDD 工作流面只携带框架句与指针，完整模板的唯一
+	// 文档陈述在委派文档——防重述回潮由下方 doesNotMatch 钉住。
+	assert.match(read(SDD_WORKFLOW), /`#### Judgment Day 修复派发`/);
+	assert.match(read(SDD_WORKFLOW), /(?:不要求|不需要) graph-v1 或原生评审 ?(?:谱系|lineage)/i);
+	assert.doesNotMatch(read(SDD_WORKFLOW), /## Judgment Day correction batch/);
 	const routing = `${read("assets/orchestrator-delegation.md")}\n${read(SDD_WORKFLOW)}`;
 	assert.match(routing, /Judgment Day 阶段角色绝不是通用回退。/);
 	assert.match(routing, /若通用写者链不可用，使用文档记载的原生通用回退或停止。/);

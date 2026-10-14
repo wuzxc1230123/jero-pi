@@ -5,6 +5,16 @@ jero-pi 尚未发布到 npm（版本停在 0.1.0 基线），本文件自重构�
 
 ## [Unreleased]
 
+### spec_driven_develop 借鉴批三连 + 编排提示词上下文经济批（2026-10-14）
+
+**外部插件 spec_driven_develop（MIT，纯 Markdown 工作流插件）评估裁决"整体不上"——与本仓 SDD 状态机/评审生命周期/PR 技能族功能全面重叠、模块契约装不下流程型包（无文件触发签名、task-executor 属被拒的孤儿代理形态）、纯提示层保证与机检哲学错位；点子级吸收七机制，顺带修出编排提示词的上下文经济三件。**
+
+- **借鉴批（七机制，零流程改动——advisory 层不触碰原生权威路由/结算）**：执行漂移遥测（apply 期三信号台账：工作量档位差/未规划依赖/承诺未兑现，20/40/60 三档阈值停链映射既有 tasks/proposal 重入）；并行车道四硬准入（编辑面零重叠/体量达预算一半/可独立验证/≤4）+ 单一写者纪律；sdd-verify 结构二值清单九项（不打分、与架构巡检正交；1–2 失败 WARNING、3+ 失败 CRITICAL 建议回 design）；四评审透镜共享降噪下限（纯文档/格式化/生成物/锁文件扰动不报）；sdd-remediate 裁决三态 `fixed|verified-clean|escalate`（报告级结论从属尝试权威结算）；路由单 R1 回答纪律问题审查门（成立性/信息充足度/隐藏问题/置信度）；sdd-tasks 拆分边界四维裁切（依赖/共享契约/验证范围/回滚边界，冲突时回滚优先）。钉测两块入 artifact-language（沿用本仓借鉴批模式）。
+- **上下文经济批（量化结论：常驻面 ~9.8KB ≈ smart zone 2–3%，压力不在提示词面；修的是防回潮缺口）**：罕见协议下沉——Provider Defect Handoff 与 SDD 编辑权限同意中继逐字迁入新深懒文件 `orchestrator-rare-protocols.md`，委派文档（最宽触发的懒资产）37257→29408 字节（-21%），原位留中继判定规则 + 指针；JD 派发模板单一来源化（完整模板仅存委派文档，工作流留框架句 + 指针，`doesNotMatch` 钉防重述回潮）；懒资产字节棘轮——六懒文件上限入 orchestrator-budget 测试（核心 8KB 门之外此前无任何约束）。
+- **测试改造（强度不降）**：provider-defect 24 断言块改指不放松（判定级留 DELEGATION、协议级改指 RARE、四个陈旧规则负向守卫升双文件联合）；review-ledger JD 测试改单一源语义。
+- 连带：.gitignore 挡借鉴源快照 `spec_driven_develop-main/`（本地保留不入库）；jero-reference 补借鉴批条目；选档文档补漂移遥测出处。
+- 验证：typecheck 0 诊断；全量套件（174 文件分域逐一）0 败（跳过 12 = 既有基线）；预算门/打包门（437 文件 + 68 金向量）/docs-manifest/顺序 runtime-harness 全过。
+
 ### 仓库瘦身：开发辅助目录出库（2026-10-14，用户裁决）
 
 - `_tools/`（实现期分析文档）、`benchmarks/`（基准工具）、`.zcodeignore`（VS 自动生成）**停跟踪、本地保留**——git 里只留包本体与承重基础设施（tests/CI/文档）；.gitignore 增补对应规则防回潮。lib 注释中的 `_tools/*.md` 引用按历史事实保留（纯注释，无门禁依赖——verify-package-files/docs-manifest/typecheck 实证零影响）。AGENTS/README/skill-authoring 三处提及同步改写为"本地目录、不入库"。

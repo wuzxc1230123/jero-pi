@@ -228,6 +228,26 @@ module_resolution
 
 守门员是叠加性的：它不放宽评审负载守卫、Strict TDD 转发、原生状态依赖检查或强制委托规则。它绝不创建 SDD 之后的评审轮。
 
+## 执行漂移遥测
+
+守门员的「无范围漂移」查的是产物与依赖图的一致性；本节补执行期的任务级量化信号：实跑比计划难多少。遥测是任务产物（`openspec` 存储即 tasks.md）内的 advisory 台账——不是状态机状态、不是路由权威、也不是运行时尝试权威的镜像；绝不据此持久化尝试计数、令牌或任何 Pi 所有的状态。
+
+启动 `sdd-apply` 之前，从状态投影的未勾选实现任务行数计算本变更的三档阈值，连同遥测指令一并写入启动提示：标注 `ceil(任务数 × 0.20)`、重分解 `ceil(任务数 × 0.40)`、重定范围 `ceil(任务数 × 0.60)`。指令 `sdd-apply` 在勾选每个任务时向漂移台账追加一行，只采三个信号，缺省为零：
+
+| 信号 | 计法 |
+| --- | --- |
+| 工作量档位差 | 预估档与实跑档（S/M/L/XL）之差，只计正向（实跑更重） |
+| 未规划依赖 | 任务依赖之外真实冒出的依赖（未列出的文件改动、前置任务），每任务上限计 2 |
+| 承诺未兑现 | 任务分解依据声明要消除的债务/风险未消除，计 1 |
+
+`sdd-apply` 返回后，父会话回读台账的累计信号数（各任务三信号之和）。达到阈值时的响应全部经由原生状态机与用户决定，编排器绝不因遥测自行改路由：
+
+- **≥ 标注档**：在下一个未勾选任务的台账行附警示注记，继续执行。
+- **≥ 重分解档**：停止 apply 自动链，把累计遥测作为重估输入，建议用户对剩余任务重入 `sdd-tasks` 分解（已完成任务与既有遥测保留；重分解段的阈值按剩余任务数重建）。重入经 `/jero-sdd-continue` 或用户显式授权进行。
+- **≥ 重定范围档**：停止 apply 自动链并呈报累计遥测摘要，建议回 proposal 重新确认范围；是否回炉由用户决定。
+
+interactive 模式在阶段摘要中一并呈报台账。遥测不放宽任何门——Strict TDD、评审负载守卫、原生依赖检查原样生效。台账随 sync 归档，作为变更复盘的输入。
+
 ## 原生运行时尝试权威
 
 进程内的 Jero 权威（`lib/authority/`，存储于 Git common dir 之下）拥有紧凑的 SDD 尝试台账。它是 Pi 上 OpenSpec 与 Engram 流程唯一的尝试与变更行预算权威。Pi 不得实现本地的尝试镜像、计数器、令牌存储、状态机或扩展拦截层；此类代码会复制提供方权威，且无法真实地结算所有运行。jero-pi 不发布尝试 CLI——acquire/settle 是由包自身运行时调用的内部类型化操作，绝不由散文或 shell 命令调用。
@@ -274,21 +294,7 @@ module_resolution
 
 ## Judgment Day 修复路由
 
-Judgment Day 阶段角色绝不是通用回退。若通用写者链不可用，使用文档记载的原生通用回退或停止。Judgment Day 独立：它既不启用也不替代普通评审；单独请求的普通评审保持独立。独立的 Judgment Day 修复不需要 graph-v1 或原生评审 lineage。仅为显式的 Judgment Day 修复批次启动 `jd-fix-agent`，携带此精确的运行时接受 Markdown 形状：`## Judgment Day activation` 只含 `User explicitly requested Judgment Day.`。用控制器授权的值替换示例 ID、冻结台账哈希、行数据与编辑面。纠正批次只含一轮（`1 of 2` 或 `2 of 2`）与一个小写 SHA-256。精确冻结发现行为每行一个 JSON 对象，仅使用权威行字段，并与授权 ID 精确匹配。
-
-```markdown
-## Judgment Day activation
-User explicitly requested Judgment Day.
-## Exact authorized severe IDs
-- `JD-A-001`
-## Judgment Day correction batch
-Round: 1 of 2.
-Frozen ledger SHA-256: `aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`
-## Exact frozen finding rows
-{"id":"JD-A-001","lens":"judgment-day","location":"path/to/authorized-file.ts:1","severity":"CRITICAL","status_at_freeze":"open","evidence_class":"deterministic","evidence_claim":"Concrete user-impact claim supported by the frozen location."}
-## Allowed edit surfaces
-path/to/authorized-file.ts
-```
+Judgment Day 阶段角色绝不是通用回退。若通用写者链不可用，使用文档记载的原生通用回退或停止。Judgment Day 独立：它既不启用也不替代普通评审；单独请求的普通评审保持独立。独立的 Judgment Day 修复不需要 graph-v1 或原生评审 lineage。仅为显式的 Judgment Day 修复批次启动 `jd-fix-agent`；派发的精确运行时接受 Markdown 形状（`## Judgment Day activation` 起、冻结发现行 JSON 与允许编辑面的完整模板）单一来源于 `orchestrator-delegation.md` 的 `#### Judgment Day 修复派发`——启动前读该节原文执行，本文件不重述。
 
 ## 子代理启动去重
 
@@ -347,4 +353,4 @@ STRICT TDD MODE IS ACTIVE. Test runner: <command>. Follow RED, GREEN, TRIANGULAT
 
 ## Provider Defect Handoff
 
-当 SDD 任务遇到疑似 Jero 提供方缺陷时，完整契约位于 `assets/orchestrator-delegation.md` 的 `#### Jero Provider Defect Handoff (MANDATORY)`。本工作流有意不提供摘要、替代报告路由或 RDD 生命周期指令。
+当 SDD 任务遇到疑似 Jero 提供方缺陷时，完整契约位于 `assets/orchestrator-rare-protocols.md` 的 `#### Jero Provider Defect Handoff (MANDATORY)`。本工作流有意不提供摘要、替代报告路由或 RDD 生命周期指令。

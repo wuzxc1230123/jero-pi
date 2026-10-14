@@ -489,3 +489,34 @@ test("every compressed lazy-file pointer in the core still names the material it
 		/SDD 阶段、原生派发器规则、状态契约、预检\/init 守卫、产物存储策略、执行模式、Strict TDD 转发、阶段结果契约与评审负载守卫/,
 	);
 });
+
+// ---------------------------------------------------------------------------
+// 2.6 — Lazy reference asset byte ratchet (2026-10-14)
+//
+// The always-on core is byte-budgeted above; the lazy reference files had no
+// gate and accreted to 37 KB (delegation) unchecked. Pin each lazy asset's
+// current size as a ceiling: growing one requires an explicit ratchet bump
+// with a recorded decision — same discipline as review-naming-baseline.
+// `orchestrator-rare-protocols.md` is the deep-lazy sink created by the
+// 2026-10-14 diet (provider-defect handoff + SDD edit-authority consent relay
+// moved verbatim out of the broadly-triggered delegation doc).
+// ---------------------------------------------------------------------------
+
+const LAZY_BYTE_CEILINGS: Readonly<Record<string, number>> = {
+	"orchestrator.md": 7422,
+	"orchestrator-delegation.md": 29408,
+	"orchestrator-memory.md": 3124,
+	"orchestrator-rare-protocols.md": 9060,
+	"orchestrator-skills.md": 3447,
+	"sdd-orchestrator-workflow.md": 32061,
+};
+
+test("lazy reference assets stay under their byte ceilings (ratchet: only explicit bumps)", () => {
+	for (const [name, ceiling] of Object.entries(LAZY_BYTE_CEILINGS)) {
+		const bytes = Buffer.byteLength(readRealAsset(name), "utf8");
+		assert.ok(
+			bytes <= ceiling,
+			`${name} is ${bytes} B, exceeds the ${ceiling} B ratchet ceiling — shrink it elsewhere or bump the ceiling with a recorded decision`,
+		);
+	}
+});

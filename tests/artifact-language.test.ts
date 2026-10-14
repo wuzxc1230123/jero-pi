@@ -528,3 +528,51 @@ test("skills-main 借鉴批：拷问前沿/推荐答案、红回路、非目标�
 	assert.match(issueSkill, /不引用行号/);
 	assert.match(issueSkill, /独立可核验/);
 });
+
+test("spec_driven_develop borrow batch stays pinned: drift telemetry, lane admission, structural checklist, lens noise floor", async () => {
+	// spec_driven_develop 借鉴批（执行遥测与评审降噪）：
+	// apply 期三档漂移阈值停链、并行车道四条硬准入与单一写者、
+	// verify 结构二值清单（不打分）、四透镜共享降噪下限。
+	const workflow = await readFile(join(ROOT, "assets/sdd-orchestrator-workflow.md"), "utf8");
+	assert.match(workflow, /## 执行漂移遥测/);
+	assert.match(workflow, /`ceil\(任务数 × 0\.20\)`/);
+	assert.match(workflow, /编排器绝不因遥测自行改路由/);
+
+	const delegation = await readFile(join(ROOT, "assets/orchestrator-delegation.md"), "utf8");
+	assert.match(delegation, /### 并行车道准入与单一写者/);
+	assert.match(delegation, /车道数 ≤ 4/);
+	assert.match(delegation, /车道代理绝不写共享状态/);
+
+	const verify = await readFile(join(ROOT, "assets/agents/sdd-verify.md"), "utf8");
+	assert.match(verify, /## 结构二值清单/);
+	assert.match(verify, /只记二值结果，不打分、不排名/);
+	assert.match(verify, /3\+ 项失败/);
+
+	for (const lens of ["review-readability", "review-reliability", "review-resilience", "review-risk"]) {
+		const agent = await readFile(join(ROOT, `assets/agents/${lens}.md`), "utf8");
+		assert.match(agent, /纯文档、仅格式化、生成物或锁文件扰动/, `${lens} must keep the shared noise floor`);
+		assert.match(agent, /宁可一条确定性发现，不要多条弱建议/);
+	}
+
+	const discipline = await readFile(join(ROOT, "docs/how-to-choose-discipline.md"), "utf8");
+	assert.match(discipline, /执行漂移遥测兜底/);
+	assert.match(discipline, /计划跟不上现实时/);
+});
+
+test("spec_driven_develop borrow batch round 3 stays pinned: remediate verdict, answer audit gate, chain split dimensions", async () => {
+	// spec_driven_develop 借鉴批第三轮（修复闭环与回答纪律）：
+	// remediate 结果裁决三态、R1 问题审查门、链式拆分四维裁切。
+	const remediate = await readFile(join(ROOT, "assets/agents/sdd-remediate.md"), "utf8");
+	assert.match(remediate, /`remediate_verdict: fixed \| verified-clean \| escalate`/);
+	assert.match(remediate, /从属于宿主尝试权威的结算字段/);
+	assert.match(remediate, /不是失败证据，是显式上交/);
+
+	const tasks = await readFile(join(ROOT, "assets/agents/sdd-tasks.md"), "utf8");
+	assert.match(tasks, /拆分边界按四个维度裁切/);
+	assert.match(tasks, /回滚边界优先/);
+
+	const delegation = await readFile(join(ROOT, "assets/orchestrator-delegation.md"), "utf8");
+	assert.match(delegation, /##### R1 回答纪律（问题审查门）/);
+	assert.match(delegation, /不成立时直说并给理由/);
+	assert.match(delegation, /最终选择权留给用户/);
+});

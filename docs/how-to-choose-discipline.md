@@ -28,6 +28,9 @@ on-path 只在"本候选评审已关闭（closed）"时成立；评审被拒绝�
 - **方向未定或多人/多次会话推进**：完整七阶段（proposal → spec → design →
   tasks → apply → verify → sync）。阶段引擎的 `next_recommended` 是确定性的，
   不靠模型自觉；`/jero-sdd-continue` 推进时有工件收缩守卫兜底。
+- 完整七阶段的 apply 期另有执行漂移遥测兜底：任务实跑偏差累计达阈值
+  （20%/40%/60%）即停链，建议重分解剩余任务或重定范围——计划跟不上现实时
+  改计划，不硬推（见 `assets/sdd-orchestrator-workflow.md`「执行漂移遥测」）。
 
 领域能力（Go/Godot 等语言包）经能力模块自动生效：知识按编排面注入各阶段代理，
 测试命令走取值链（模块覆盖层 → `openspec/config.yaml` → 探测兜底）——选档时

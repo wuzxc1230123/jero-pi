@@ -17,6 +17,7 @@ const requiredPaths = [
 	"assets/orchestrator.md",
 	"assets/orchestrator-delegation.md",
 	"assets/orchestrator-memory.md",
+	"assets/orchestrator-rare-protocols.md",
 	"assets/orchestrator-skills.md",
 	"assets/sdd-orchestrator-workflow.md",
 	"assets/agents/jero-explore.md",

@@ -20,5 +20,8 @@ check-payload.json
 /_tools/
 /benchmarks/
 
+# 外部借鉴源码快照——本地保留、不入库（借鉴批已吸收进资产与钉测，2026-10-14）
+/spec_driven_develop-main/
+
 # 临时产物
 /tmp/
