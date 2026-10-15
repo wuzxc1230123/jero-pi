@@ -93,7 +93,11 @@ export function evaluateBrowserDomainGate(
 	let hostname: string | null = null;
 	try {
 		const parsed = new URL(url);
-		hostname = parsed.hostname === "" ? null : parsed.hostname.toLowerCase();
+		// 尾点 FQDN（"evil.example.com."）被浏览器解析到与裸域相同的主机，
+		// WHATWG URL 原样保留尾点——先剥掉再匹配，否则 deny 清单可被尾点
+		// 形态绕过（allow 模式 fail-closed 不受影响，deny 模式是 fail-open）。
+		const normalized = parsed.hostname.replace(/\.+$/, "").toLowerCase();
+		hostname = normalized === "" ? null : normalized;
 	} catch {
 		hostname = null;
 	}

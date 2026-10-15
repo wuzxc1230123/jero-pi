@@ -20,9 +20,9 @@ import {
 	type NativeCandidateProjectionDescriptor, readCandidateContextManifestPage
 } from "../lib/authority/review-candidate-view.ts";
 import {
-	assertCandidateOwnerParent, assertTrustedWindowsOwner, prepareCandidateOwnerParent,
-	setWindowsAclAuthorityForTesting, validatePrivateWindowsDacl, validatePrivateWindowsOwner,
-	WindowsDaclValidationError, WindowsOwnerValidationError
+	alignWindowsOwnerBatchLines, assertCandidateOwnerParent, assertTrustedWindowsOwner,
+	prepareCandidateOwnerParent, setWindowsAclAuthorityForTesting, validatePrivateWindowsDacl,
+	validatePrivateWindowsOwner, WindowsDaclValidationError, WindowsOwnerValidationError
 } from "../lib/review-candidate-view-owner.ts";
 import {
 	git, mockOwnerProbe, mockWindowsAcl, noopWindowsAclAuthority, orphanFixture, ownerMarker,
@@ -464,4 +464,17 @@ test("materialization rejects a symlinked owner ancestor without creating an ext
 	symlinkSync(outside, join(cwd, ".git", "jero-review"));
 	assert.throws(() => new CandidateViewRegistry().create({ contributorRoot: cwd }));
 	assert.equal(existsSync(join(outside, "candidate-views")), false);
+});
+
+test("windows owner batch alignment discards the whole batch when line count diverges", () => {
+	// `;` 是 NTFS 路径合法字符：含分号路径经 PowerShell Split(';') 多切出片段，
+	// 行数与路径数不一致 == 行序错位，整批必须作废（全 ERROR 回退单路径读取），
+	// 不能把错位的"合法 SID"记到别的路径头上。
+	const paths = ["F:\\work;x\\repo\\.git", "F:\\other\\.git"];
+	const misaligned = ["S-1-5-32-544", "S-1-5-18", "S-1-5-18"];
+	assert.deepEqual(alignWindowsOwnerBatchLines(paths, misaligned), ["ERROR", "ERROR"]);
+	// 行数一致的正常批次照常逐位对齐；行数不足（片段缺失）同样整批作废。
+	const aligned = ["S-1-5-32-544", "S-1-5-18"];
+	assert.deepEqual(alignWindowsOwnerBatchLines(paths, aligned), aligned);
+	assert.deepEqual(alignWindowsOwnerBatchLines(paths, aligned.slice(0, 1)), ["ERROR", "ERROR"]);
 });

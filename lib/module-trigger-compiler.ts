@@ -10,7 +10,7 @@ import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import {
 	BINDING_SURFACES,
-	globToRegExp,
+	globMatches,
 	parseModuleManifest,
 	type BindingSurface,
 	type InjectLevel,
@@ -194,8 +194,7 @@ export function compileDispatchOverlay(
 	for (const manifest of manifests) {
 		const matchedBy: string[] = [];
 		for (const glob of manifest.triggers.files) {
-			const re = globToRegExp(glob);
-			if (repoFiles.some((file) => re.test(file))) matchedBy.push(glob);
+			if (repoFiles.some((file) => globMatches(glob, file))) matchedBy.push(glob);
 		}
 		if (matchedBy.length > 0) active.push({ token: manifest.token, matchedBy, manifest });
 		else inactive.push(manifest.token);

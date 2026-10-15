@@ -171,7 +171,8 @@ export interface VerifyPipelineOptions {
 
 /**
  * 全流程。无模块根时短路（只清理残留覆盖层，不扫仓库）；有根时总是重写
- * 覆盖层——零模块写空态，坏清单不进编译但报给用户，绝不留陈旧接线。
+ * 覆盖层——零模块写空态，坏清单与语义验证失败的模块不进编译但报给用户，
+ * 绝不留陈旧接线。
  */
 export function runModuleVerifyPipeline(cwd: string, options: VerifyPipelineOptions = {}): VerifyPipelineResult {
 	const roots = options.roots ?? moduleRoots(cwd);
@@ -183,10 +184,12 @@ export function runModuleVerifyPipeline(cwd: string, options: VerifyPipelineOpti
 
 	const discovered: { root: string; found: DiscoveredModule }[] = [];
 	for (const root of roots) {
-		// 根内按目录名字典序稳定化——覆盖层优先序契约（根内 token 字典序）
-		// 在这里钉死；readdir 顺序不做任何假设。
+		// 根内按 token 码点序稳定化——覆盖层优先序契约（根内 token 字典序）
+		// 在这里钉死；readdir 顺序不做任何假设。手工模块目录名 ≠ token 时
+		// 也按 token 排（契约说的是 token 序，不是目录名序）。
 		const foundInRoot = discoverModules(root).toSorted((left, right) =>
-			left.dirName.localeCompare(right.dirName),
+			(left.manifest?.token ?? left.dirName) < (right.manifest?.token ?? right.dirName) ? -1
+				: (left.manifest?.token ?? left.dirName) > (right.manifest?.token ?? right.dirName) ? 1 : 0,
 		);
 		for (const found of foundInRoot) discovered.push({ root, found });
 	}
@@ -212,19 +215,21 @@ export function runModuleVerifyPipeline(cwd: string, options: VerifyPipelineOpti
 		const manifest = found.manifest;
 		const needsEntry = Object.values(manifest.bindings).some((binding) => binding?.inject === "entry");
 		const entryText = needsEntry ? readEntryText(root, found.dirName, manifest) : undefined;
-		reports.push(
-			verifyModule({
-				manifest,
-				entryText,
-				repoFiles: walked.files,
-				repoFilesTruncated: walked.truncated,
-				otherTokens: allTokens.filter((token) => token !== manifest.token),
-				looseSkillTokens: loose,
-				installedModules,
-				bundleTexts: readBundleTexts(join(root, found.dirName), manifest, cwd),
-			}),
-		);
-		manifests.push(manifest);
+		const report = verifyModule({
+			manifest,
+			entryText,
+			repoFiles: walked.files,
+			repoFilesTruncated: walked.truncated,
+			otherTokens: allTokens.filter((token) => token !== manifest.token),
+			looseSkillTokens: loose,
+			installedModules,
+			bundleTexts: readBundleTexts(join(root, found.dirName), manifest, cwd),
+		});
+		reports.push(report);
+		// 语义验证失败与坏清单同律：不进覆盖层编译。契约承诺"任何 fail 即
+		// 模块未过门"——token 遮蔽炸弹之类的失败模块若照常注入角色路由，
+		// 机检就没有牙齿；报告仍完整呈现，修复后下次验证自然回编译。
+		if (report.ok) manifests.push(manifest);
 	}
 
 	const overlay = compileDispatchOverlay(manifests, walked.files);

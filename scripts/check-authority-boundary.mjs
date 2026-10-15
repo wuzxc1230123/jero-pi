@@ -18,10 +18,15 @@ const files = readdirSync(root).filter((name) => name.endsWith(".ts")).sort();
 
 const rules = [
 	// 静态与动态 import 都算：经 `await import("../extensions/x")` 夹带的
-	// 展示层依赖是同一种越界。
-	{ pattern: /(?:from\s+"(?:\.\.\/)*extensions\/|import\(\s*["'](?:\.\.\/)*extensions\/)/, message: "imports extensions/ (presentation layer)" },
-	{ pattern: /\bprocess\.env\b/, message: "reads process.env" },
+	// 展示层依赖是同一种越界。静态分支必须同时接受单双引号——仓库无 lint
+	// 钉引号风格，只认双引号就是构造性绕过面。
+	{ pattern: /(?:from\s*["'](?:\.\.\/)*extensions\/|import\(\s*["'](?:\.\.\/)*extensions\/)/, message: "imports extensions/ (presentation layer)" },
+	{ pattern: /\bprocess\s*\.\s*env\b/, message: "reads process.env" },
 	{ pattern: /\bprocess\s*\[\s*["']env["']\s*\]/, message: "reads process.env (computed member access)" },
+	// 解构别名（`const { env } = process` / `const { env: e } = process`）
+	// 与整对象别名（`const p = process; … p.env`）绕不开前两条正则，单独堵。
+	{ pattern: /\b(?:const|let|var)\s*\{[^}]*\benv\b[^}]*\}\s*=\s*process\b/, message: "reads process.env (destructuring alias)" },
+	{ pattern: /\b(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*process\s*[,;]/, message: "aliases the process object (enables deferred env access)" },
 	{ pattern: /\bdomainHashV1\b/, message: "uses upstream domainHashV1 (gentle-ai identity namespace)" },
 ];
 

@@ -194,9 +194,14 @@ export function parseAgentDefinition(text: string, filePath: string, scope: Agen
 	if (model !== undefined && CONTROL_CHARS.test(`${model.provider ?? ""}/${model.id}`)) {
 		return { filePath, error: "model contains control characters" };
 	}
+	// description 同为项目可控字符串，且经 subagent_list_agents 的工具结果
+	// 原样直落终端——与 name/model 同律拒绝，否则克隆恶意仓库后模型一调
+	// 列表工具即可注入 ESC/CSI 终端控制序列。
+	const description = scalar(data.description)?.trim() ?? "";
+	if (CONTROL_CHARS.test(description)) return { filePath, error: "description contains control characters" };
 	return {
 		name,
-		description: scalar(data.description)?.trim() ?? "",
+		description,
 		filePath,
 		scope,
 		instructions: body,

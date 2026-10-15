@@ -165,8 +165,11 @@ export function bundledMcpServerViolation(server: McpServerSpec): string | undef
 	return undefined;
 }
 
-const TOKEN_PATTERN = /^[a-z][a-z0-9-]{1,23}$/;
-const VERSION_PATTERN = /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/;
+export const TOKEN_PATTERN = /^[a-z][a-z0-9-]{1,23}$/;
+export const VERSION_PATTERN = /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/;
+/** 角色名字符集（与 schema $defs.role.properties.name.pattern 零漂移，门钉住）：
+ * lib 侧解析也必须检查——否则含空格/斜杠的角色名可过门进覆盖层路由表。 */
+export const ROLE_NAME_PATTERN = /^[a-z][a-z0-9-]*-[a-z][a-z0-9-]*$/;
 
 export interface TriggerSpec {
 	readonly files: readonly string[];
@@ -548,6 +551,9 @@ export function parseModuleManifest(raw: string): ParsedManifest {
 			}
 			checkUnknownKeys(raw, ["name", "isolation", "permission", "model", "output"], path, issues);
 			const name = typeof raw.name === "string" ? raw.name : undefined;
+			if (name !== undefined && !ROLE_NAME_PATTERN.test(name)) {
+				issues.push(issue("pattern", `${path}.name`, `角色名必须是 {token}-{角色} 的小写连字符形态（匹配 ${ROLE_NAME_PATTERN.source}）`));
+			}
 			const isolation = stringList(raw.isolation, `${path}.isolation`, issues);
 			if (isolation !== undefined) {
 				for (const [reasonIndex, reason] of isolation.entries()) {
@@ -854,9 +860,8 @@ export function verifyModule(input: ModuleVerifyInput): ModuleVerifyReport {
 	} else {
 		const matched = new Set<string>();
 		for (const glob of manifest.triggers.files) {
-			const re = globToRegExp(glob);
 			for (const file of input.repoFiles) {
-				if (re.test(file)) matched.add(`${glob} → ${file}`);
+				if (globMatches(glob, file)) matched.add(`${glob} → ${file}`);
 			}
 		}
 		const truncationNote = input.repoFilesTruncated ? "（样本已被扫描上限截断，可能是假阴性——先确认触发文件未被截掉）" : "";
@@ -991,4 +996,44 @@ export function globToRegExp(glob: string): RegExp {
 		}
 	}
 	return new RegExp(`${source}$`);
+}
+
+/**
+ * glob 线性匹配器：与 globToRegExp 完全同语言（`*` 不跨 `/`；`**` 连同紧随
+ * 的 `/` 一起视作"任意字符序列"，与旧正则的 `.*` 吞斜杠语义一致；`?` 匹配
+ * 单个非 `/` 字符），但用 (glob 位 × 路径位) 的表推进，最坏
+ * O(|glob|×|path|)、零回溯。生产路径（session_start 同步装配、安装管线、
+ * 覆盖层编译——对最多 2 万个仓库文件逐个匹配）必须用本匹配器：多个贪婪
+ * 通配符 + 长字面量结尾的 glob 经 RegExp 编译是指数级回溯（实测 20 个 `*`
+ * 对 120 字符路径同步挂死分钟级），而模块随仓库分发，触发 glob 是不可信
+ * 输入。globToRegExp 仅保留作语义参照与对照测试。
+ */
+export function globMatches(glob: string, path: string): boolean {
+	const g = glob.length;
+	const p = path.length;
+	const table = new Uint8Array((g + 1) * (p + 1));
+	const at = (i: number, j: number): number => i * (p + 1) + j;
+	table[at(g, p)] = 1;
+	for (let i = g - 1; i >= 0; i -= 1) {
+		const ch = glob[i]!;
+		const doubleStar = ch === "*" && glob[i + 1] === "*";
+		// `**` 连带被吞的紧随 `/`：下一个 glob 位直接跳到 i2。
+		const i2 = doubleStar ? (glob[i + 2] === "/" ? i + 3 : i + 2) : i + 1;
+		for (let j = p; j >= 0; j -= 1) {
+			let ok = 0;
+			if (doubleStar) {
+				// 任意序列（含空、含 `/`）：零字符推进，或吃一个任意字符后原地重试。
+				ok = table[at(i2, j)] === 1 || (j < p && table[at(i, j + 1)] === 1) ? 1 : 0;
+			} else if (ch === "*") {
+				// 段内通配：零字符推进，或吃一个非 `/` 字符后原地重试。
+				ok = table[at(i + 1, j)] === 1 || (j < p && path[j] !== "/" && table[at(i, j + 1)] === 1) ? 1 : 0;
+			} else if (ch === "?") {
+				ok = j < p && path[j] !== "/" && table[at(i + 1, j + 1)] === 1 ? 1 : 0;
+			} else {
+				ok = j < p && path[j] === ch && table[at(i + 1, j + 1)] === 1 ? 1 : 0;
+			}
+			table[at(i, j)] = ok;
+		}
+	}
+	return table[at(0, 0)] === 1;
 }

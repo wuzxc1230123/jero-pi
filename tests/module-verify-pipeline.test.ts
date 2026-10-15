@@ -143,6 +143,30 @@ test("双轨查集成：token 与 .pi/skills/ 松散技能重名 → no-loose-du
 	}
 });
 
+test("语义验证失败的模块不进覆盖层（任何 fail 即未过门，遮蔽角色不得被委派）", () => {
+	const cwd = makeProject();
+	const root = makeProject();
+	try {
+		// 触发器命中但语义验证失败（no-loose-duplicate）的模块 + 一个干净模块：
+		// 失败者必须被隔离在覆盖层编译之外，干净模块照常接线。
+		writeModule(root, "gogame");
+		writeModule(root, "cleantool");
+		writeFileSync(join(cwd, "go.mod"), "");
+		mkdirSync(join(cwd, ".pi", "skills", "gogame"), { recursive: true });
+
+		const result = runModuleVerifyPipeline(cwd, { roots: [root] });
+		const byToken = new Map(result.reports.map((report) => [report.token, report]));
+		assert.equal(byToken.get("gogame")?.ok, false);
+		assert.equal(byToken.get("cleantool")?.ok, true);
+		const overlay = readFileSync(join(cwd, OVERLAY_REL_PATH), "utf8");
+		assert.doesNotMatch(overlay, /`gogame`：命中/);
+		assert.match(overlay, /`cleantool`：命中 `go\.mod`/);
+	} finally {
+		cleanup(cwd);
+		cleanup(root);
+	}
+});
+
 test("entry 读取走模块根：entry 缺失时 entry-size 失败", () => {
 	const cwd = makeProject();
 	const root = makeProject();

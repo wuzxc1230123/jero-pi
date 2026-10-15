@@ -7,6 +7,7 @@ import {
 	MAX_ENTRY_LINES,
 	bundledMcpServerViolation,
 	expandPermissionPreset,
+	globMatches,
 	globToRegExp,
 	parseModuleManifest,
 	verifyModule,
@@ -258,6 +259,9 @@ test("pipeline 硬门：解析、非法拒绝与验证语义（响亮的缺席�
 	}));
 	assert.ok(unknownExtra.issues.some((item) => item.code === "unknown-key"));
 
+	// 显式断言而非静默早退：若上游断言被调整导致 manifest 缺席，本测试
+	// 不应静默截断为通过。
+	assert.ok(withGate.manifest !== undefined, "带 pipeline 的金样必须解析成功");
 	if (withGate.manifest === undefined) return;
 	const declared = verifyModule({ manifest: withGate.manifest, repoFiles: ["project.godot"] });
 	const gateCheck = declared.checks.find((item) => item.id === "pipeline-gate-loud");
@@ -416,6 +420,49 @@ test("glob 语义：* 不跨目录、** 跨目录、? 单字符、字面量转�
 	assert.equal(globToRegExp("a?c.md").test("ac.md"), false);
 
 	assert.equal(globToRegExp("v1.0.txt").test("v1x0.txt"), false);
+});
+
+test("globMatches 与 globToRegExp 同语言：全部既有语义用例逐条对齐", () => {
+	const cases: Array<[glob: string, path: string, expected: boolean]> = [
+		["project.godot", "project.godot", true],
+		["project.godot", "src/project.godot", false],
+		["**/*.tscn", "main.tscn", true],
+		["**/*.tscn", "scenes/ui/main.tscn", true],
+		["**/*.tscn", "main.tscn.bak", false],
+		["src/*.go", "src/main.go", true],
+		["src/*.go", "src/cmd/main.go", false],
+		["a?c.md", "abc.md", true],
+		["a?c.md", "ac.md", false],
+		["v1.0.txt", "v1x0.txt", false],
+		// `**` 吞紧随 `/` 的旧语义：`**/x` ≡ 以 x 结尾（不强求分隔符）。
+		["**/x", "x", true],
+		["**/x", "dir/x", true],
+		["**/x", "ax", true],
+		["**", "any/thing/at/all", true],
+		["a**/b", "axb", true],
+		["a**/b", "a/x/b", true],
+		["*", "", true],
+		["*", "a", true],
+		["*", "a/b", false],
+		["?/*", "a/b", true],
+		["?/*", "ab/b", false],
+	];
+	for (const [glob, path, expected] of cases) {
+		assert.equal(globMatches(glob, path), expected, `globMatches(${JSON.stringify(glob)}, ${JSON.stringify(path)})`);
+		assert.equal(globToRegExp(glob).test(path), expected, `globToRegExp 参照一致：${glob} vs ${path}`);
+	}
+});
+
+test("globMatches 对多贪婪通配符是线性的（旧 RegExp 编译可挂死分钟级的病态模式）", () => {
+	// 20 个 `*` + 长字面量结尾：RegExp 回溯实测 179s；线性匹配器应为毫秒级。
+	// 若实现退回正则路径，本用例会撞 300s 测试超时而非缓慢通过。
+	const glob = "a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*z";
+	const path = "a".repeat(100) + "b".repeat(20);
+	assert.equal(globMatches(glob, path), false);
+	assert.equal(globMatches(glob, "a".repeat(19) + "z"), true);
+	// `**` 连打 + 长路径同样无回溯爆炸。
+	const deepGlob = "**/**/**/**/**/**/**/**/*.deep.ts";
+	assert.equal(globMatches(deepGlob, "a/b/c/d/e/f/g/h/i/j/k/l/m/n.deep.ts"), true);
 });
 
 // —— v2 契约：dependencies 字段解析与 deps-resolve 安装验证 ——

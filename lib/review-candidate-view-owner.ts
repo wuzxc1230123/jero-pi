@@ -164,12 +164,24 @@ function windowsAclIdentity(): WindowsAclIdentity {
 
 const windowsOwnerSidMemo = new Map<string, string>();
 const windowsOwnerBatchEnv = "JERO_PI_CANDIDATE_OWNER_PATHS";
+
+/**
+ * 批量 owner 探测的行对齐：`;` 是 NTFS 路径的合法字符，任一路径含分号时
+ * PowerShell 按分号多切出片段、行序整体错位——错位产生的"合法 SID"会被
+ * 记到别的路径头上，真实路径的 owner 永不被校验（fail-open）。每个片段
+ * 恰好产出一行，因此行数与路径数不一致 == 发生过错位，整批不可信：全部
+ * 标 ERROR，由调用方回退到逐路径单读（单读经独立 env 变量传路径，无此缺陷）。
+ */
+export function alignWindowsOwnerBatchLines(paths: readonly string[], lines: readonly string[]): string[] {
+	if (lines.length !== paths.length) return paths.map(() => "ERROR");
+	return paths.map((_, index) => (lines[index] ?? "ERROR").trim());
+}
+
 function windowsOwnerSidsBatch(paths: readonly string[]): string[] {
 	const script = "$ErrorActionPreference='Continue';$paths=$env:JERO_PI_CANDIDATE_OWNER_PATHS.Split(';');foreach($p in $paths){try{$item=Get-Item -LiteralPath $p -Force;$sec=$item.GetAccessControl([System.Security.AccessControl.AccessControlSections]::Owner);$sid=$sec.GetOwner([System.Security.Principal.SecurityIdentifier]);Write-Output $sid.Value}catch{Write-Output 'ERROR'}}" ;
 	const systemRoot = dirname(dirname(windowsSystemExecutable("whoami.exe")));
 	const output = execFileSync(windowsSystemExecutable("WindowsPowerShell\\v1.0\\powershell.exe"), ["-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand", Buffer.from(script, "utf16le").toString("base64")], { encoding: "utf8", timeout: 60000, maxBuffer: 64 * 1024, stdio: ["ignore", "pipe", "pipe"], windowsHide: true, env: canonicalSystemRootEnv(systemRoot, { [windowsOwnerBatchEnv]: paths.join(";") }) });
-	const lines = output.split(/\r?\n/).filter((line) => line.trim() !== "");
-	return paths.map((_, index) => (lines[index] ?? "ERROR").trim());
+	return alignWindowsOwnerBatchLines(paths, output.split(/\r?\n/).filter((line) => line.trim() !== ""));
 }
 
 function windowsOwnerSid(path: string, kind: WindowsObjectKind): string {

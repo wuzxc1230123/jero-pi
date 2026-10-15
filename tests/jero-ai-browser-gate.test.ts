@@ -109,3 +109,16 @@ test("hostnames are compared case-insensitively through URL parsing", () => {
 	const decision = evaluateBrowserDomainGate(deny, "browser_navigate_page", { url: "https://SUB.EVIL.EXAMPLE/x" });
 	assert.equal(decision.action, "block");
 });
+
+test("trailing-dot FQDN forms cannot bypass the deny list", () => {
+	// WHATWG URL 保留主机名尾点，浏览器把 "evil.example." 解析到与裸域相同
+	// 的主机——deny 模式必须先剥尾点再匹配，否则拒绝清单被尾点形态绕过。
+	const deny = parseBrowserDomainPolicy("deny:evil.example,.tracker.net")!;
+	assert.equal(evaluateBrowserDomainGate(deny, "browser_navigate_page", { url: "https://evil.example./payload" }).action, "block");
+	assert.equal(evaluateBrowserDomainGate(deny, "browser_navigate_page", { url: "https://sub.evil.example./payload" }).action, "block");
+	assert.equal(evaluateBrowserDomainGate(deny, "browser_new_page", { url: "https://sub.tracker.net./pixel" }).action, "block");
+	// allow 模式同样按剥尾点后的主机匹配：命中放行、未命中照旧阻断。
+	const allow = parseBrowserDomainPolicy("allow:good.example")!;
+	assert.equal(evaluateBrowserDomainGate(allow, "browser_navigate_page", { url: "https://good.example./x" }).action, "ignore");
+	assert.equal(evaluateBrowserDomainGate(allow, "browser_navigate_page", { url: "https://evil.example./x" }).action, "block");
+});

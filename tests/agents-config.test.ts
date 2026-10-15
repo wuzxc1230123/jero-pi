@@ -204,11 +204,13 @@ test("resolveAgentProfile prefers the profile, then the definition, then the def
 	assert.deepEqual(resolveAgentProfile(bare, parseAgentsConfig(undefined, undefined)).source, { model: "unresolved", thinking: "unresolved" });
 });
 
-test("parseAgentDefinition rejects control characters in name and model (terminal injection face)", () => {
+test("parseAgentDefinition rejects control characters in name, model, and description (terminal injection face)", () => {
 	const badName = parseAgentDefinition("---\nname: evil\x1b[31m\n---\nbody", "/x/evil.md", "global");
 	assert.ok("error" in badName && /control characters/.test(String(badName.error)), "name 带控制字符必须解析失败");
 	const badModel = parseAgentDefinition("---\nname: ok\nmodel: p/evil\x07\n---\nbody", "/x/evil.md", "global");
 	assert.ok("error" in badModel && /control characters/.test(String(badModel.error)), "model 带控制字符必须解析失败");
-	const fine = parseAgentDefinition("---\nname: ok\nmodel: p/gpt\n---\nbody", "/x/ok.md", "global");
+	const badDescription = parseAgentDefinition("---\nname: ok\ndescription: looks fine\x1b]0;pwned\x07\n---\nbody", "/x/evil.md", "global");
+	assert.ok("error" in badDescription && /control characters/.test(String(badDescription.error)), "description 带控制字符必须解析失败（list_agents 直落终端）");
+	const fine = parseAgentDefinition("---\nname: ok\nmodel: p/gpt\ndescription: 正常描述 with spaces\n---\nbody", "/x/ok.md", "global");
 	assert.ok(!("error" in fine), "干净定义不受影响");
 });
