@@ -419,6 +419,23 @@ function collectProviderProcess(
 		});
 		const stdout: Buffer[] = [];
 		const stderr: Buffer[] = [];
+		// 失控/恶意的 provider 可执行文件可在超时窗口内输出任意字节——
+		// 与同步路径的 maxBuffer 同律设上限：超限即杀，按类型化输出上限
+		// 错误拒绝，不让累积缓冲耗尽宿主内存。
+		const MAX_CAPTURED_OUTPUT_BYTES = 64 * 1024 * 1024;
+		let outputLimitExceeded = false;
+		let capturedBytes = 0;
+		const captureChunk = (chunks: Buffer[], chunk: Buffer): void => {
+			capturedBytes += chunk.length;
+			if (capturedBytes > MAX_CAPTURED_OUTPUT_BYTES) {
+				if (!outputLimitExceeded) {
+					outputLimitExceeded = true;
+					child.kill("SIGKILL");
+				}
+				return;
+			}
+			chunks.push(chunk);
+		};
 		let timedOut = false;
 		let settled = false;
 		const timer = options.timeoutMs > 0
@@ -428,8 +445,8 @@ function collectProviderProcess(
 			}, options.timeoutMs)
 			: undefined;
 		timer?.unref();
-		child.stdout.on("data", (chunk: Buffer) => stdout.push(chunk));
-		child.stderr.on("data", (chunk: Buffer) => stderr.push(chunk));
+		child.stdout.on("data", (chunk: Buffer) => captureChunk(stdout, chunk));
+		child.stderr.on("data", (chunk: Buffer) => captureChunk(stderr, chunk));
 		child.on("error", (error) => {
 			if (settled) return;
 			settled = true;
@@ -440,6 +457,10 @@ function collectProviderProcess(
 			if (settled) return;
 			settled = true;
 			if (timer !== undefined) clearTimeout(timer);
+			if (outputLimitExceeded) {
+				reject(new Error(`provider process exceeded the ${MAX_CAPTURED_OUTPUT_BYTES}-byte captured output limit and was killed`));
+				return;
+			}
 			resolve({ stdout: Buffer.concat(stdout), stderr: Buffer.concat(stderr), exitCode: code, timedOut, elapsedMs: Date.now() - startedAt });
 		});
 		if (options.stdin === undefined) {

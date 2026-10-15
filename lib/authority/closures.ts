@@ -279,7 +279,8 @@ export function decodeJeroLastEventClosureV1(value: unknown, label = "last_event
 		if (typeof parsed.correction_lines !== "number" || !Number.isSafeInteger(parsed.correction_lines) || parsed.correction_lines < 1 || parsed.correction_lines > 200) {
 			throw new TypeError(`${label}.correction_lines must be an integer in 1..200`);
 		}
-		return { ...shared, target_identity: parsed.target_identity as string, request_hash: parsed.request_hash, correction_lines: parsed.correction_lines };
+		if (typeof parsed.target_identity !== "string" || !/^sha256:[0-9a-f]{64}$/.test(parsed.target_identity)) throw new TypeError(`${label}.target_identity is malformed`);
+		return { ...shared, target_identity: parsed.target_identity, request_hash: parsed.request_hash, correction_lines: parsed.correction_lines };
 	}
 	if (parsed.target_identity !== undefined || parsed.request_hash !== undefined || parsed.correction_lines !== undefined) {
 		throw new TypeError(`${label}: terminal capture cannot carry correction-plan fields`);

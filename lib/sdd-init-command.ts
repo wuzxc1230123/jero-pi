@@ -59,7 +59,17 @@ export async function runSddInitCommand(ctx: SddInitCtx, deps: SddInitDeps): Pro
 
 	ensureOpenSpecDirs(ctx.cwd);
 	mkdirSync(dirname(configPath), { recursive: true });
-	writeFileSync(configPath, renderConfig(detection));
+	// `wx` 排他创建：existsSync 与写入之间的窗口里并发会话/用户手工创建的
+	// 配置不被覆盖（失败 = 有人先到，按已存在处理）。
+	try {
+		writeFileSync(configPath, renderConfig(detection), { flag: "wx" });
+	} catch (error) {
+		if ((error as NodeJS.ErrnoException).code === "EEXIST") {
+			notify(`${CONFIG_REL_PATH} already exists; leaving it untouched.`, "warning");
+			return;
+		}
+		throw error;
+	}
 
 	notify(
 		`Wrote ${CONFIG_REL_PATH}: detected ${detection.stack.join(", ") || "project"}; ${testSummary}; tests found: ${layerSummary}.`,
@@ -90,7 +100,14 @@ export async function runSddAutoInit(ctx: SddInitCtx, deps: SddAutoInitDeps, ena
 	const detection = detectProject(ctx.cwd);
 	ensureOpenSpecDirs(ctx.cwd);
 	mkdirSync(dirname(configPath), { recursive: true });
-	writeFileSync(configPath, renderConfig(detection));
+	// `wx` 排他创建天然幂等：并发会话启动双写只有一个成功，失败方零成本
+	// 跳过（内容除日期外相同，良性竞争）。
+	try {
+		writeFileSync(configPath, renderConfig(detection), { flag: "wx" });
+	} catch (error) {
+		if ((error as NodeJS.ErrnoException).code === "EEXIST") return false;
+		throw error;
+	}
 	if (ctx.hasUI) {
 		ctx.ui.notify(
 			`Wrote ${CONFIG_REL_PATH}: detected ${detection.stack.join(", ") || "project"}; strict TDD ${detection.testCommand ? `enabled with \`${detection.testCommand}\`` : "disabled because no test runner was detected"}.`,

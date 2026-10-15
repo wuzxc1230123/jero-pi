@@ -15,6 +15,7 @@ import {
 	type JeroTargetedValidationRequestV1,
 } from "./collect-inputs.ts";
 import { mintJeroRepositoryContextV1 } from "./repository-context.ts";
+import { capturedJeroArtifactsCompleteV1 } from "./result-artifacts.ts";
 import { canonicalJsonV1 } from "../review-canonical.ts";
 
 // `authority.capture.renderBinding`（spec §A/§I.1）：在进程内渲染的四个
@@ -422,7 +423,16 @@ export function nextJeroCaptureSlotsV1(context: JeroAuthorityContextV1, lineageI
 	if (isJeroOrdinaryModeV1(state.mode)) {
 		switch (state.state) {
 			case "reviewing": {
-				const admitted = new Set((state.lens_results ?? []).map(({ lens }) => lens));
+				// 与 STATUS 的 MA4 语义同源：已受理视角同时派生自记录与磁盘
+				// 产物发现（已受理但 freeze-ledger 前崩溃的产物在磁盘上），
+				// 磁盘校验不过的视角重新提供槽位——两个进程内表面的观测
+				// 不再互相矛盾（重受理由受理侧重放/slot-consumed 纪律兜底）。
+				const discovery = capturedJeroArtifactsCompleteV1(context, loaded.record);
+				const unverified = new Set(discovery.missing.map(({ lens }) => lens));
+				const admitted = new Set([
+					...(state.lens_results ?? []).map(({ lens }) => lens),
+					...discovery.artifacts.map(({ lens }) => lens).filter((lens) => !unverified.has(lens)),
+				]);
 				return { kind: "ok", slots: (state.selected_lenses ?? []).map((lens, order) => ({ kind: "reviewer" as const, context, lineageId, lens, selectedOrder: order })).filter(({ lens }) => !admitted.has(lens)) };
 			}
 			case "findings_frozen":

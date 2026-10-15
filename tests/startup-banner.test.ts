@@ -17,7 +17,7 @@ test("startup branch lookup uses direct git argv and hides its Windows child", a
 	assert.deepEqual(calls, [{
 		command: "git",
 		args: ["-C", "/repo with spaces & metacharacters", "branch", "--show-current"],
-		options: { encoding: "utf8", shell: false, windowsHide: true },
+		options: { encoding: "utf8", shell: false, windowsHide: true, timeout: 5_000 },
 	}]);
 });
 

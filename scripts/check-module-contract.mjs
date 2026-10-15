@@ -24,14 +24,18 @@ import {
 	BINDING_SURFACES,
 	INJECT_LEVELS,
 	ISOLATION_REASONS,
+	MCP_SERVER_NAME_PATTERN,
 	MODEL_TIERS,
 	MODULE_CONTRACT_IDS,
 	MODULE_CONTRACT_V2,
 	PERMISSION_PRESETS,
+	ROLE_NAME_PATTERN,
 	ROUTING_ACTIONS,
 	SLIP_DELIVERABLES,
 	SLIP_IRREVERSIBILITY,
 	SLIP_UTTERANCE_TYPES,
+	TOKEN_PATTERN,
+	VERSION_PATTERN,
 	bundledMcpServerViolation,
 	parseModuleManifest,
 	verifyModule,
@@ -65,10 +69,28 @@ if (schema.title !== MODULE_CONTRACT_V2) {
 	failures.push(`schema.title 与契约串不一致：${schema.title} vs ${MODULE_CONTRACT_V2}`);
 }
 expectList("properties.schema.enum", schema.properties?.schema?.enum, MODULE_CONTRACT_IDS);
-// "dependencies 仅 v2 可用"的 schema 侧钉子：v1 分支必须显式禁止该键。
+// "dependencies/mcp 仅 v2 可用"的 schema 侧钉子：v1 分支必须显式禁止两键。
+// mcp 的禁止分支此前不在门内——删掉它门仍绿灯，发布面开始接受 v1+mcp
+// 而 lib 拒绝（topLevelKeys 不含 mcp），两侧静默漂移。
 if (schema.allOf?.[0]?.then?.properties?.dependencies !== false) {
 	failures.push("schema.allOf 缺少 v1 禁止 dependencies 的分支（then.properties.dependencies === false）");
 }
+if (schema.allOf?.[0]?.then?.properties?.mcp !== false) {
+	failures.push("schema.allOf 缺少 v1 禁止 mcp 的分支（then.properties.mcp === false）");
+}
+// 模式串零漂移：schema 的 pattern 与 lib 的正则比较（语言级——捕获组与
+// 非捕获组视为等价，JSON 转义归一后），未来单侧改动静默漂移会被门拦下。
+function expectPattern(label, schemaPattern, regex) {
+	const normalizedSchema = typeof schemaPattern === "string" ? schemaPattern : undefined;
+	const normalizedSource = regex.source.replaceAll("(?:", "(");
+	if (normalizedSchema !== normalizedSource) {
+		failures.push(`${label} 模式漂移：schema=${String(schemaPattern)}，TS 正则=${regex.source}`);
+	}
+}
+expectPattern("properties.token.pattern", schema.properties?.token?.pattern, TOKEN_PATTERN);
+expectPattern("properties.version.pattern", schema.properties?.version?.pattern, VERSION_PATTERN);
+expectPattern("$defs.role.properties.name.pattern", defs.role?.properties?.name?.pattern, ROLE_NAME_PATTERN);
+expectPattern("$defs.mcpServer.properties.name.pattern", defs.mcpServer?.properties?.name?.pattern, MCP_SERVER_NAME_PATTERN);
 
 // —— 2. 模板清单必须绿灯 ——
 const templateRaw = readFileSync(
@@ -116,6 +138,11 @@ if (existsSync(bundlesRoot)) {
 			continue;
 		}
 		const manifest = parsedBundle.manifest;
+		// 束目录名必须等于 token：安装器与覆盖层序按 token 寻址，目录名
+		// 漂移会让同 token 双束在 byToken 映射里静默坍缩（后者覆盖前者）。
+		if (dirName !== manifest.token) {
+			failures.push(`模块束目录名 ${dirName} 与清单 token ${manifest.token} 不一致`);
+		}
 		bundleTokens.push(manifest.token);
 		// roles 与包内 agents/ 一一对应：安装器照此拷贝 .pi/agents/，缺文件即断链。
 		const agentsDir = join(dir, "agents");
@@ -160,6 +187,12 @@ if (existsSync(bundlesRoot)) {
 		if (missing.length > 0) {
 			failures.push(`模块束 ${parsedBundle.manifest?.token ?? dirName} 依赖了库内不存在的词元：${missing.join("、")}`);
 		}
+	}
+	// 库内 token 跨目录唯一：同 token 双束会在安装器的 byToken 映射里
+	// 静默坍缩（后者覆盖前者），必须显式拒绝。
+	const duplicates = bundleTokens.filter((token, index) => bundleTokens.indexOf(token) !== index);
+	if (duplicates.length > 0) {
+		failures.push(`模块库内 token 重复：${[...new Set(duplicates)].join("、")}`);
 	}
 }
 

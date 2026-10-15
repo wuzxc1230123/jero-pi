@@ -60,7 +60,9 @@ async function acquireLock(path) {
 export async function installTuiModeSetting(options = {}) {
 	const env = options.env ?? process.env;
 	const requestedHome = resolve(env.JERO_PI_AGENT_HOME || env.PI_CODING_AGENT_DIR || join(options.home ?? homedir(), ".pi", "agent"));
-	const packageRoot = resolve(options.packageRoot ?? dirname(dirname(fileURLToPath(import.meta.url))));
+	// 命名为 callerRoot（调用方包根）以区别于候选安装位的 packageRoot：
+	// 谓词比较的两侧是"调用方根解析结果"与"自有安装位字面值"。
+	const callerRoot = resolve(options.packageRoot ?? dirname(dirname(fileURLToPath(import.meta.url))));
 	let home;
 	try { home = realpathSync(requestedHome); }
 	catch (error) { if (error.code === "ENOENT") return { changed: false, recognized: false }; throw error; }
@@ -85,7 +87,7 @@ export async function installTuiModeSetting(options = {}) {
 	// （如安装目录已消失的残留 postinstall）按不匹配处理，走
 	// recognized: false，而不是让裸 ENOENT 冒泡打断探测。
 	const installation = installations.find(({ packageRoot: expected }) => {
-		try { return realpathSync(packageRoot) === expected; }
+		try { return realpathSync(callerRoot) === expected; }
 		catch { return false; }
 	});
 	if (!installation) return { changed: false, recognized: false };

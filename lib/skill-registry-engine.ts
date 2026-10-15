@@ -442,8 +442,13 @@ export async function regenerateRegistry(
 	});
 	const md = renderRegistry(cwd, sources, deduped);
 	await mkdir(join(cwd, ".atl"), { recursive: true });
-	await writeFile(registryPath, md);
-	await writeFile(cachePath, JSON.stringify({ fingerprint: fp }, null, 2));
+	// tmp+rename 原子写：session_start、watcher 防抖与 legacy 自愈三个并发
+	// 触发源的 writeFile O_TRUNC 交错会产出损坏的 registry.md，而 cache 完好
+	// 时 cache-hit 直接返回、损坏可持久。
+	await writeFile(`${registryPath}.${process.pid}.tmp`, md);
+	await rename(`${registryPath}.${process.pid}.tmp`, registryPath);
+	await writeFile(`${cachePath}.${process.pid}.tmp`, JSON.stringify({ fingerprint: fp }, null, 2));
+	await rename(`${cachePath}.${process.pid}.tmp`, cachePath);
 	return {
 		regenerated: true,
 		skillCount: deduped.length,

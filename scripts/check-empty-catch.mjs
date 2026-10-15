@@ -15,16 +15,19 @@ import { fileURLToPath } from "node:url";
 const root = join(fileURLToPath(new URL("..", import.meta.url)));
 // fileURLToPath 对目录 URL 保留尾部分隔符，统一去掉以保证相对路径裁剪对齐。
 const rootDir = root.endsWith("\\") || root.endsWith("/") ? root.slice(0, -1) : root;
-const SCANNED = ["lib", "extensions", "tests"];
+const SCANNED = ["lib", "extensions", "tests", "scripts"];
 const SKIPPED_DIRS = new Set(["node_modules", "runtime"]);
 const CATCH = /catch(?:\s*\([^)]*\))?\s*\{/g;
+// promise 形态的空回调：`.catch(() => {})` 与 try/catch 是同一种"吞掉异常"，
+// 门必须同样看守，否则两句换写法就绕过（逃逸阀同用 allow-empty-catch）。
+const PROMISE_CATCH = /\.catch\(\s*(?:\([^)]*\)|[A-Za-z_$][\w$]*)\s*=>\s*\{\s*\}\s*\)/g;
 const ALLOW = "allow-empty-catch";
 
 function* walk(dir) {
 	for (const entry of readdirSync(dir, { withFileTypes: true })) {
 		const path = join(dir, entry.name);
 		if (entry.isDirectory()) { if (!SKIPPED_DIRS.has(entry.name)) yield* walk(path); }
-		else if (entry.name.endsWith(".ts")) yield path;
+		else if (entry.name.endsWith(".ts") || entry.name.endsWith(".mjs") || entry.name.endsWith(".cjs")) yield path;
 	}
 }
 
@@ -59,6 +62,17 @@ for (const base of SCANNED) {
 			const line = source.slice(lineStart, lineEnd === -1 ? undefined : lineEnd);
 			if (line.includes(ALLOW)) continue;
 			failures.push(`${path.slice(rootDir.length + 1).split("\\").join("/")}:${lineOf(source, match.index)}: empty catch block without a why-comment`);
+		}
+		PROMISE_CATCH.lastIndex = 0;
+		let promiseMatch;
+		while ((promiseMatch = PROMISE_CATCH.exec(source)) !== null) {
+			// `.catch(() => {})` 是真空回调：同行必须携带 allow 逃逸阀或
+			// why 注释，否则与真空 try/catch 同罪。
+			const lineStart = source.lastIndexOf("\n", promiseMatch.index) + 1;
+			const lineEnd = source.indexOf("\n", promiseMatch.index + promiseMatch[0].length);
+			const line = source.slice(lineStart, lineEnd === -1 ? undefined : lineEnd);
+			if (line.includes(ALLOW) || line.includes("//")) continue;
+			failures.push(`${path.slice(rootDir.length + 1).split("\\").join("/")}:${lineOf(source, promiseMatch.index)}: empty promise catch without a why-comment`);
 		}
 	}
 }

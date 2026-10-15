@@ -133,5 +133,11 @@ export function readJeroSddBindingV1(context: JeroAuthorityContextV1, lineageId:
 	if (loaded.kind === "ok" && loaded.record.revision !== binding.authority_revision) {
 		return quarantine("stale-binding", `binding authority revision ${binding.authority_revision} does not match the current revision ${loaded.record.revision}`);
 	}
+	// 权威记录 corrupted 时不得把绑定当有效证据放行：无法证明修订号时效
+	// 就按陈旧隔离（missing 是目录整体挪走的无害形态，保持 ok）——与全库
+	// fail-closed 姿态一致。
+	if (loaded.kind === "corrupted") {
+		return quarantine("stale-binding", `the authority lineage record is corrupted, binding currency cannot be proven: ${loaded.detail ?? "unreadable"}`);
+	}
 	return { kind: "ok", binding };
 }

@@ -123,7 +123,14 @@ export function reviewValidateV1(context: JeroAuthorityContextV1, input: JeroRev
 		return { kind: "refused", code: "cross-mode-operation-refused", detail: "the ordinary targeted validation is not a Judgment Day operation" };
 	}
 	// 证据先行顺序（spec §E / openspec review-correction-lifecycle :9-11）。
-	const step = resolveCorrectionStep(correctionStatusOfV1(state), evidenceOfV1(input.evidence));
+	// 畸形 outcome 在类型化拒绝里收敛，不让 CorrectionOutcomeError 裸逃出
+	// 可辨识联合出参契约。
+	let step: ReturnType<typeof resolveCorrectionStep>;
+	try {
+		step = resolveCorrectionStep(correctionStatusOfV1(state), evidenceOfV1(input.evidence));
+	} catch (error) {
+		return { kind: "refused", code: "invalid-request", detail: `correction evidence is malformed: ${error instanceof Error ? error.message : String(error)}` };
+	}
 	if (state.state !== "fix_validating") {
 		return { kind: "refused", code: "evidence-first-required", detail: `targeted validation requires fix_validating (lineage is in ${state.state}); record correction evidence first` };
 	}

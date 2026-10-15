@@ -203,7 +203,13 @@ export function acquireJeroSddAttemptV1(context: JeroAuthorityContextV1, input: 
 			if (input.expectedRevision !== undefined && input.expectedRevision !== current) {
 				return { kind: "refused", code: "stale-expected-revision", detail: `expected ${input.expectedRevision}, ledger is ${current}` } as const;
 			}
-			if (read.ledger.attempts.length >= (input.maxAttempts ?? 100)) {
+			// 预算以台账钉住的 max_attempts 上确界为准（无记录时才用本次
+			// 入参/缺省）：先前的 acquire 已把预算钉进记录，后续 acquire 不得
+			// 用更大的本次入参把它抬高——"每变更尝试预算"是权威不变量，
+			// 不是调用方纪律。畸形行按 0 计（保守耗尽方向）。
+			const pinnedBudget = read.ledger.attempts.reduce((sup, attempt) => Math.max(sup, Number.isSafeInteger(attempt.max_attempts) ? attempt.max_attempts : 0), 0);
+			const budget = read.ledger.attempts.length > 0 ? pinnedBudget : (input.maxAttempts ?? 100);
+			if (read.ledger.attempts.length >= budget) {
 				return { kind: "result", state: "complete", reason: "attempt budget exhausted" } as const;
 			}
 		} else if (input.expectedRevision !== undefined && input.expectedRevision !== "") {

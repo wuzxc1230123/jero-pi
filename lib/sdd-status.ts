@@ -263,8 +263,11 @@ function reportIsClearlyPassing(path: string | undefined): boolean {
 	const text = safeRead(path).normalize("NFKC");
 	// blocker 词干扩到整词族（FAILING/FAILURES/BLOCKERS…动名词/名词/复数
 	// 都是失败陈述）；否定缩写与 no/none 冒号形态同样算 blocker——
-	// 报告只要含任一失败陈述，裸 PASS 行不得洗白它。
-	const hasBlocker = /\b(?:FAIL|BLOCK|CRITICAL|PENDING|TODO)\w*|verification blockers?|\bnot\s+(?:pass|passed|passing|successful|complete|completed)\b|\b(?:won't|won’t|can't|can’t|cannot|couldn't|couldn’t)\s+(?:pass|passed|passing|be\s+passing|succeed)\b|(?:pass|passed|success|successful|complete|completed)\s*:\s*(?:no|none)\b/i.test(text);
+	// 报告只要含任一失败陈述，裸 PASS 行不得洗白它。否定性的清洁陈述
+	// （"No TODOs remain"/"no pending work"）不是失败陈述，剥离后再匹配，
+	// 否则已通过的 verify-report 被误判含 blocker、sync/archive 误阻塞。
+	const negated = text.replace(/\b(?:no|none|zero|without)\s+(?:\w+\s+)?(?:FAIL|FAILED|FAILING|FAILURES|BLOCK|BLOCKED|BLOCKERS|BLOCKING|CRITICAL|CRITICALS|PENDING|TODO|TODOs)\w*\b/gi, " ");
+	const hasBlocker = /\b(?:FAIL|BLOCK|CRITICAL|PENDING|TODO)\w*|verification blockers?|\bnot\s+(?:pass|passed|passing|successful|complete|completed)\b|\b(?:won't|won’t|can't|can’t|cannot|couldn't|couldn’t)\s+(?:pass|passed|passing|be\s+passing|succeed)\b|(?:pass|passed|success|successful|complete|completed)\s*:\s*(?:no|none)\b/i.test(negated);
 	const hasPassSignal = text
 		.split(/\r?\n/)
 		.map((line) => line.trim())

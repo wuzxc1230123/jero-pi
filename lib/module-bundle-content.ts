@@ -24,9 +24,21 @@ export interface BundleContentFinding {
 	readonly message: string;
 }
 
-const HANDOFF_PATTERN = /^> \*\*相关技能：\*\*[\s\S]*?(?=\n\n|\n## )/m;
+const HANDOFF_ANCHOR = /^> \*\*相关技能：\*\*/m;
 /** 名字形态（小写词元/连字符）——只对这类交接 token 做解析判定，其余（`.godot/` 类行内代码）视为散文。 */
 const NAME_LIKE = /^[a-z][a-z0-9-]+$/;
+/** references 提及形态：文件名允许大写与点/连字符（与 references/ 真实文件名对齐）。 */
+const REFERENCE_MENTION = /references\/([A-Za-z0-9_.-]+)\.md/g;
+
+/** 交接块的完整文本：锚点到下一个 Markdown 标题为止（此前止于首个空行，
+ * 块中段插一个空行就能让其后的悬空指针逃逸检查）。 */
+function handoffBlockOf(text: string): string | undefined {
+	const anchor = HANDOFF_ANCHOR.exec(text);
+	if (anchor === null) return undefined;
+	const rest = text.slice(anchor.index + anchor[0].length);
+	const headingAt = rest.search(/\n#{1,6} /);
+	return anchor[0] + (headingAt === -1 ? rest : rest.slice(0, headingAt));
+}
 
 /** 审计束内文本纪律；零发现 = 干净。发现的 file 前缀已含束内位置，可直接拼进检查详情。 */
 export function auditBundleContent(input: BundleContentInput): BundleContentFinding[] {
@@ -47,11 +59,11 @@ export function auditBundleContent(input: BundleContentInput): BundleContentFind
 		const name = /^name:\s*(.+)$/m.exec(frontmatter)?.[1]?.trim();
 		if (name !== skill) findings.push({ file, message: `frontmatter name「${name}」≠ 目录名 ${skill}` });
 		if (!/^description:\s*\S/m.test(frontmatter)) findings.push({ file, message: "缺 description" });
-		const handoff = text.match(HANDOFF_PATTERN);
-		if (handoff === null) {
+		const handoff = handoffBlockOf(text);
+		if (handoff === undefined) {
 			findings.push({ file, message: "缺「> **相关技能：**」交接块" });
 		} else {
-			for (const [, token] of handoff[0].matchAll(/`([^`]+)`/g)) {
+			for (const [, token] of handoff.matchAll(/`([^`]+)`/g)) {
 				if (token.startsWith("references/")) {
 					const stem = token.replace(/^references\//, "").replace(/\.md$/, "");
 					if (!refSet.has(stem)) findings.push({ file, message: `交接指向的 ${token} 不存在` });
@@ -60,7 +72,7 @@ export function auditBundleContent(input: BundleContentInput): BundleContentFind
 				}
 			}
 		}
-		for (const [, ref] of text.matchAll(/references\/([a-z0-9_-]+)\.md/g)) {
+		for (const [, ref] of text.matchAll(REFERENCE_MENTION)) {
 			if (!refSet.has(ref)) findings.push({ file, message: `references/${ref}.md 不存在` });
 		}
 	}
@@ -72,7 +84,7 @@ export function auditBundleContent(input: BundleContentInput): BundleContentFind
 		const frontmatter = /^---\r?\n([\s\S]*?)\r?\n---/.exec(text)?.[1] ?? "";
 		const name = /^name:\s*(.+)$/m.exec(frontmatter)?.[1]?.trim();
 		if (name !== role.name) findings.push({ file, message: `frontmatter name「${name}」≠ 角色名 ${role.name}` });
-		for (const [, ref] of text.matchAll(/references\/([a-z0-9_-]+)\.md/g)) {
+		for (const [, ref] of text.matchAll(REFERENCE_MENTION)) {
 			if (!refSet.has(ref)) findings.push({ file, message: `references/${ref}.md 不存在` });
 		}
 	}
@@ -85,10 +97,12 @@ export function auditBundleContent(input: BundleContentInput): BundleContentFind
 		}
 	}
 
-	// 反向孤儿：每个 reference 至少被入口或某个技能提到（L2 必须有指路）。
+	// 反向孤儿：每个 reference 至少被入口或某个技能指路（L2 必须有指路）。
+	// 整词判定：反引号包裹的裸名或完整 references/<name>.md 路径才算——
+	// 此前的子串包含会把 `api` 算作被 `api-design` 指路。
 	const allText = input.entryText + Object.values(input.skillTexts).join("");
 	for (const ref of input.referenceNames) {
-		if (!allText.includes(ref)) {
+		if (!allText.includes(`\`${ref}\``) && !allText.includes(`references/${ref}.md`)) {
 			findings.push({ file: "module.json", message: `孤儿 reference \`${ref}\`（入口与技能均无指路）` });
 		}
 	}

@@ -845,7 +845,22 @@ export function checkoutMaterializedEntries(root: string, entries: readonly Cand
 // 因而不依赖 user.name/user.email 或
 // 当前日期。贡献者的 HEAD、分支、引用与索引绝不被触碰。
 export function addUnbornWorktree(cwd: string, root: string, branch: string, env: NodeJS.ProcessEnv, executor: CandidateGitExecutor): void {
-	const primary = probeCandidateGit(cwd, ["worktree", "add", "--orphan", "-b", branch, root], env, executor);
+	// 主路径注入 canonical 配置（与 candidateGit 同律）：候选 worktree 与其
+	// admin 目录位于 .git 深层，叠加长文件名在 Windows 上轻易超过 MAX_PATH
+	// ——probeCandidateGit 透传 env 不注入 core.longpaths，深路径 + 未诞生
+	// 仓库在 Windows 上创建候选视图必败（退出码非 0/129，按不可回退的
+	// git-failure 保守失败）。
+	const primaryEnv = {
+		...env,
+		GIT_CONFIG_COUNT: "3",
+		GIT_CONFIG_KEY_0: "core.autocrlf",
+		GIT_CONFIG_VALUE_0: "false",
+		GIT_CONFIG_KEY_1: "core.eol",
+		GIT_CONFIG_VALUE_1: "lf",
+		GIT_CONFIG_KEY_2: "core.longpaths",
+		GIT_CONFIG_VALUE_2: "true",
+	};
+	const primary = probeCandidateGit(cwd, ["worktree", "add", "--orphan", "-b", branch, root], primaryEnv, executor);
 	if (primary.status === 0) return;
 	// 只有 unsupported-option 用法状态（129，缺 --orphan 的
 	// 2.42 之前 Git）才触发回退。其他状态一律作为 git-failure 传播。

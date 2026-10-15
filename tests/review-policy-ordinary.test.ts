@@ -396,14 +396,16 @@ test("ordinary fixes require exact genesis-scoped IDs and targeted validation ev
 		fixDiff: "bounded fix",
 		changedPaths: ["src/auth.ts"],
 	});
-	const request = ordinaryValidatorRequest(fixed, validationProof(["RISK-001"]));
-	assert.throws(() => recordOrdinaryValidation(fixed, {
+	// 验收未过不再抛错（旧语义会楔死 FIX_COMPLETE）：转终局验证相位并记因。
+	const acceptanceFailed = recordOrdinaryValidation(fixed, {
 		results: [{ id: "RISK-001", outcome: RESOLUTION_OUTCOME.VERIFIED }],
 		request: ordinaryValidatorRequest(fixed, {
 			...validationProof(["RISK-001"]),
 			originalAcceptanceTests: { passed: false, evidenceHash: "a".repeat(64) },
 		}),
-	}), /original acceptance/i);
+	});
+	assert.equal(acceptanceFailed.phase, REVIEW_PHASE.FINAL_VERIFICATION);
+	assert.match((acceptanceFailed.escalation_reasons ?? []).join("\n"), /Original acceptance tests did not pass/);
 	const validated = recordOrdinaryValidation(fixed, {
 		results: [{ id: "RISK-001", outcome: RESOLUTION_OUTCOME.VERIFIED }],
 		request: ordinaryValidatorRequest(fixed, {
@@ -466,13 +468,21 @@ test("targeted validation requires one passing regression proof for every frozen
 		}),
 		/Correction regressions must pass once for every frozen finding ID/,
 	);
-	assert.throws(
-		() => record({
-			...validationProof(["RISK-001"]),
-			correctionRegressions: [{ findingId: "RISK-001", evidenceHash: "b".repeat(64), passed: false }],
-		}),
-		/Correction regressions must pass once for every frozen finding ID/,
-	);
+	// 证据层失败（回归未过）不再抛错楔死 FIX_COMPLETE：记因 + 落证据 +
+	// 转终局验证相位（最终以 ESCALATED 收场，快照清理可触发）。
+	const regressed = record({
+		...validationProof(["RISK-001"]),
+		correctionRegressions: [{ findingId: "RISK-001", evidenceHash: "b".repeat(64), passed: false }],
+	});
+	assert.equal(regressed.phase, REVIEW_PHASE.FINAL_VERIFICATION);
+	assert.match((regressed.escalation_reasons ?? []).join("\n"), /Correction regression did not pass for RISK-001/);
+	// 原始验收未过同律：不抛错，转终局验证相位。
+	const acceptanceFailed = record({
+		...validationProof(["RISK-001"]),
+		originalAcceptanceTests: { passed: false, evidenceHash: "c".repeat(64) },
+	});
+	assert.equal(acceptanceFailed.phase, REVIEW_PHASE.FINAL_VERIFICATION);
+	assert.match((acceptanceFailed.escalation_reasons ?? []).join("\n"), /Original acceptance tests did not pass/);
 });
 
 test("targeted validation rejects action-bearing follow-ups and preserves sorted inert records", () => {

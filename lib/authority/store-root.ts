@@ -301,11 +301,23 @@ export function resolveJeroAuthorityStoreV1(cwd: string): JeroAuthorityStoreReso
 			}
 			repository_identity = pinned;
 		} else {
-			repository_identity = writePinnedIdentity(probe.storeRoot, {
+			const written = writePinnedIdentity(probe.storeRoot, {
 				schema: JERO_REPOSITORY_IDENTITY_SCHEMA,
 				object_format: probe.objectFormat,
 				root_commit_ids: probe.liveAnchors,
 			});
+			// EEXIST 竞态读回的身份（并发方钉下的）与竞态文件又消失时的本地
+			// 回退都未经上面的校验——与 pinned 分支同律复检 object_format 与
+			// 根提交子集：并发方在根提交重写期间钉下的、含已消失根提交的
+			// 身份必须保守失败，绝不铸出与磁盘钉扎漂移的 repository_id。
+			if (written.object_format !== probe.objectFormat) {
+				throw new JeroAuthorityProbeError("authority-unavailable", "Concurrently pinned repository identity object format no longer matches this repository");
+			}
+			const writtenLive = new Set(probe.liveAnchors);
+			if (!written.root_commit_ids.every((anchor) => writtenLive.has(anchor))) {
+				throw new JeroAuthorityProbeError("authority-unavailable", "Concurrently pinned repository identity root commit authority no longer matches this repository");
+			}
+			repository_identity = written;
 		}
 		const repository_id = jeroDomainHash("repository", repository_identity);
 		return Object.freeze({

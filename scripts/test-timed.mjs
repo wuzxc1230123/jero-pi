@@ -6,9 +6,12 @@
 import { execFileSync } from "node:child_process";
 import { readdirSync, statSync } from "node:fs";
 import { availableParallelism } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const root = process.cwd();
+// 包根从脚本自身位置锚定（与其他脚本一致）：从子目录直接 node 调用时
+// process.cwd() 会指向错误位置。
+const root = dirname(dirname(fileURLToPath(import.meta.url)));
 
 const files = [];
 for (const dir of ["tests", join("tests", "authority"), join("tests", "authority", "conformance")]) {

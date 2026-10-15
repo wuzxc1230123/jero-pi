@@ -58,9 +58,15 @@ export function resolveGuardrailsStatus(
 	let modeSource: "project" | "global" | "default" = "default";
 	const overrides: Partial<Record<string, { action: GuardActionView; source: "project" | "global" }>> = {};
 	if (globalFileExists) {
-		const parsed = parseGuardrailsConfigFile(readFileSync(globalFile, "utf8"));
-		if (!parsed) parseError = `全局配置不是合法的 runtime-guardrails.json：${globalFile}`;
-		else {
+		let text: string | undefined;
+		try {
+			text = readFileSync(globalFile, "utf8");
+		} catch (error) {
+			parseError = `全局配置不可读：${globalFile}（${error instanceof Error ? error.message : String(error)}）`;
+		}
+		const parsed = text === undefined ? undefined : parseGuardrailsConfigFile(text);
+		if (text !== undefined && !parsed) parseError = `全局配置不是合法的 runtime-guardrails.json：${globalFile}`;
+		if (parsed) {
 			autonomousMode = parsed.autonomousMode;
 			modeSource = "global";
 			for (const key of Object.values(GUARDED_COMMAND_KEY)) {
@@ -70,9 +76,15 @@ export function resolveGuardrailsStatus(
 		}
 	}
 	if (projectFileExists) {
-		const parsed = parseGuardrailsConfigFile(readFileSync(projectFile, "utf8"));
-		if (!parsed) parseError = parseError ?? `项目配置不是合法的 runtime-guardrails.json：${projectFile}`;
-		else {
+		let text: string | undefined;
+		try {
+			text = readFileSync(projectFile, "utf8");
+		} catch (error) {
+			parseError = parseError ?? `项目配置不可读：${projectFile}（${error instanceof Error ? error.message : String(error)}）`;
+		}
+		const parsed = text === undefined ? undefined : parseGuardrailsConfigFile(text);
+		if (text !== undefined && !parsed) parseError = parseError ?? `项目配置不是合法的 runtime-guardrails.json：${projectFile}`;
+		if (parsed) {
 			autonomousMode = parsed.autonomousMode;
 			modeSource = "project";
 			for (const key of Object.values(GUARDED_COMMAND_KEY)) {

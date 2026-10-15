@@ -644,9 +644,23 @@ export class CandidateViewRegistry {
 			// unborn HEAD（孤儿 worktree 主路径）或仓库不可读：绝不缓存。
 			return undefined;
 		}
-		const patch = git(root, ["diff", "HEAD", "--no-renames", "--binary"], process.env, this.gitExecutor);
-		const untracked = (record.intendedUntracked ?? []).map((path) =>
-			git(root, ["hash-object", "--", path], process.env, this.gitExecutor));
+		// 探测不可用时同样返回 undefined、保守落回全量对账（本函数的自述
+		// 契约）：`--binary` 全量补丁超出 maxBuffer（大 blob 仓库）时若直接
+		// 抛错，每次派发都会失败——而全量对账路径用的 --name-status 输出
+		// 小得多、本可成功。
+		let patch: string;
+		try {
+			patch = git(root, ["diff", "HEAD", "--no-renames", "--binary"], process.env, this.gitExecutor);
+		} catch {
+			return undefined;
+		}
+		let untracked: string[];
+		try {
+			untracked = (record.intendedUntracked ?? []).map((path) =>
+				git(root, ["hash-object", "--", path], process.env, this.gitExecutor));
+		} catch {
+			return undefined;
+		}
 		return JSON.stringify([record.token, record.baseCommit, record.baseTree, record.candidateTree, record.committedOnly, headTree, patch, untracked]);
 	}
 

@@ -32,14 +32,11 @@ export interface SpecIndex {
 
 function safeDirectories(path: string): string[] {
 	try {
-		return readdirSync(path)
-			.filter((entry) => {
-				try {
-					return statSync(join(path, entry)).isDirectory();
-				} catch {
-					return false;
-				}
-			})
+		// Dirent 判定不跟随符号链接（对照 statSync 会跟随）：指回祖先目录的
+		// 链接会让上游遍历无限递归。链接既非目录也非文件，直接排除。
+		return readdirSync(path, { withFileTypes: true })
+			.filter((entry) => entry.isDirectory())
+			.map((entry) => entry.name)
 			.sort();
 	} catch {
 		return [];

@@ -3,7 +3,7 @@
 
 import { join } from "node:path";
 import type { ExtensionContext, Theme, ThemeColor } from "@earendil-works/pi-coding-agent";
-import { matchesKey, truncateToWidth } from "@earendil-works/pi-tui";
+import { matchesKey, truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import { normalizeModelId, readSavedModelConfigAsync as readModelRoutingAuthorityAsync, type AgentModelConfig, type ThinkingLevel } from "./model-routing-authority.ts";
 import { sanitizeTerminalText, stripAnsi } from "./terminal-theme.ts";
 
@@ -139,10 +139,14 @@ class SddModelPanel implements OverlayComponent {
 
 	private fitStyledLine(line: string, width: number): string {
 		const visible = stripAnsi(line);
-		if (visible.length > width) {
+		// 判定与补空格都按显示宽度而非 UTF-16 码元：宽字符（CJK）行码元数
+		// ≤ width 但显示宽度可超出，右边框会被推出错位（截断分支本就是
+		// 宽度感知的，两个分支必须同尺度）。
+		const display = visibleWidth(visible);
+		if (display > width) {
 			return truncateToWidth(visible, Math.max(1, width), "…", true);
 		}
-		return `${line}${" ".repeat(Math.max(0, width - visible.length))}`;
+		return `${line}${" ".repeat(Math.max(0, width - display))}`;
 	}
 
 	private renderLine(text = "", width: number, tone?: PanelTone): string {
@@ -666,17 +670,22 @@ export async function handleModelsCommand(ctx: ExtensionContext): Promise<void> 
 		}
 		result = await showSddModelPanel(ctx, config);
 	}
-	if (result.type !== "save") return;
-	writeModelConfig(ctx.cwd, result.config);
-	const applyResult = await applyModelConfigAsync(ctx.cwd, result.config);
-	ctx.ui.notify(
-		[
-			"el Jero 全局模型配置已保存。",
-			`全局配置：${modelConfigPath(ctx.cwd)}`,
-			`已更新代理数：${applyResult.updated}`,
-			...describeModelConfig(ctx.cwd, result.config),
-		].join("\n"),
-		"info",
-	);
+		if (result.type !== "save") return;
+		// 最终保存路径与 export/restore 同律包异常：配置目录不可写
+		// （EACCES/只读）时 notify 报告，不把裸异常抛给命令层。
+		try {
+			writeModelConfig(ctx.cwd, result.config);
+			const applyResult = await applyModelConfigAsync(ctx.cwd, result.config);
+			ctx.ui.notify(
+				[
+					"el Jero 全局模型配置已保存。",
+					`全局配置：${modelConfigPath(ctx.cwd)}`,
+					`已更新代理数：${applyResult.updated}`,
+					...describeModelConfig(ctx.cwd, result.config),
+				].join("\n"),
+				"info",
+			);
+		} catch (error) {
+			ctx.ui.notify(`模型配置保存失败：${error instanceof Error ? error.message : String(error)}`, "error");
+		}
 }
-

@@ -97,6 +97,17 @@ function renderFrontmatter(meta: MemoryEntryMeta): string {
 	return lines.join("\n");
 }
 
+/** 单个 frontmatter meta 字段的长度上限：内容有 64KB 上限，meta 字段此前
+ * 没有上限——被注入的代理可用超大 agent/session 字段把单条目撑到任意体积。 */
+const MAX_MEMORY_META_FIELD_CHARS = 256;
+
+function sanitizeMemoryMetaField(value: string): string {
+	// frontmatter 值是单行槽位：换行会在读回时伪造额外字段（agent:
+	// "x\nsession: fake" 覆盖真实归因/过滤），控制字符一并剥离。
+	const flattened = value.replace(/[\r\n]+/g, " ").replace(/[\x00-\x1f\x7f]/g, "");
+	return flattened.length > MAX_MEMORY_META_FIELD_CHARS ? flattened.slice(0, MAX_MEMORY_META_FIELD_CHARS) : flattened;
+}
+
 interface ParsedEntry {
 	meta: MemoryEntryMeta;
 	body: string;
@@ -190,6 +201,17 @@ export function releaseIndexLockIfOwned(lockPath: string, token: string | undefi
 			if (readFileSync(join(lockPath, INDEX_LOCK_HOLDER), "utf8") !== token) return;
 		} catch {
 			return;
+		}
+	} else {
+		// 令牌缺失（写 holder 失败）不等于锁无人认领：锁内动作耗时超过
+		// 陈旧窗口时他方已按陈旧锁接管并写入自己的令牌——无条件删除会
+		// 误删接管者的新锁、重开双持有窗口。holder 可读且非空即视为他人
+		// 持有，跳过删除（残留锁走陈旧接管路径自愈）。
+		try {
+			const holder = readFileSync(join(lockPath, INDEX_LOCK_HOLDER), "utf8");
+			if (holder.trim().length > 0) return;
+		} catch {
+			// holder 不可读：保持"无标记即自己"的既有语义（不会误删可识别的他人锁）。
 		}
 	}
 	rmSync(lockPath, { recursive: true, force: true });
@@ -290,10 +312,10 @@ export async function saveMemory(root: string, topic: string, content: string, m
 		throw new Error(`memory store is full: ${indexBefore.size} entries (limit ${MAX_MEMORY_ENTRIES}); remove stale entries before saving new topics`);
 	}
 	const rendered = `${renderFrontmatter({
-		saved_at: meta.saved_at ?? new Date().toISOString(),
-		agent: meta.agent ?? "",
-		session: meta.session ?? "",
-		phase: meta.phase ?? "",
+		saved_at: sanitizeMemoryMetaField(meta.saved_at ?? new Date().toISOString()),
+		agent: sanitizeMemoryMetaField(meta.agent ?? ""),
+		session: sanitizeMemoryMetaField(meta.session ?? ""),
+		phase: sanitizeMemoryMetaField(meta.phase ?? ""),
 		tags,
 	})}${content.endsWith("\n") ? content : `${content}\n`}`;
 	atomicWrite(path, rendered);
@@ -317,9 +339,15 @@ export interface MemoryRecord extends MemoryEntryMeta {
 export function readMemory(root: string, topic: string): MemoryRecord | undefined {
 	if (!isValidMemoryTopic(topic)) return undefined;
 	const path = memoryEntryPath(root, topic);
-	if (!existsSync(path) || !statSync(path).isFile()) return undefined;
-	const parsed = parseEntry(readFileSync(path, "utf8"));
-	return { topic, ...parsed.meta, content: parsed.body.replace(/\n$/, "") };
+	// 读路径整体容错：exists/stat 与 read 之间的竞态（文件被并发删除）或
+	// 读取权限问题按"条目不存在"呈现，不让原始异常从工具面逃逸。
+	try {
+		if (!statSync(path).isFile()) return undefined;
+		const parsed = parseEntry(readFileSync(path, "utf8"));
+		return { topic, ...parsed.meta, content: parsed.body.replace(/\n$/, "") };
+	} catch {
+		return undefined;
+	}
 }
 
 export interface MemoryListOptions {
@@ -374,7 +402,15 @@ function indexIsStale(root: string, entries: Map<string, MemoryIndexEntry>): boo
 	const entriesDir = join(root, "entries");
 	const onDisk = new Set<string>();
 	const walk = (directory: string, prefix: string): void => {
-		for (const entry of readdirSync(directory, { withFileTypes: true })) {
+		// entries 目录存在但不可读（EACCES）按"无法判定过期"处理：读路径
+		// 的工具不得因探测 IO 异常直接逃逸（与 mem_save 的容错同形）。
+		let entriesList: import("node:fs").Dirent[];
+		try {
+			entriesList = readdirSync(directory, { withFileTypes: true });
+		} catch {
+			return;
+		}
+		for (const entry of entriesList) {
 			if (entry.isDirectory()) {
 				walk(join(directory, entry.name), `${prefix}${entry.name}/`);
 				continue;

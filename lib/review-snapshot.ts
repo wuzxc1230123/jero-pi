@@ -220,14 +220,17 @@ function resolveTree(root: string, value: string, environment: GitEnvironment = 
 
 function parseNumstat(value: string): { changedPaths: string[]; stats: ReviewDiffStat[] } {
 	const stats: ReviewDiffStat[] = [];
-	for (const line of value.split(/\r?\n/)) {
-		if (line.length === 0) continue;
-		const [added, deleted, path] = line.split("\t");
-		if (path === undefined) continue;
+	// 记录以 NUL 分隔（调用侧配 `-z`）：非 ASCII/特殊字符路径不再被
+	// core.quotepath 的 C 转义改写，与 genesis_paths 的 -z 字面值同形态——
+	// isGeneratedGoldenPath 等路径模式匹配与证据哈希不再吃进转义形式。
+	for (const record of value.split("\0")) {
+		if (record.length === 0) continue;
+		const [added, deleted, path] = record.split("\t");
+		if (path === undefined) throw new Error(`Git returned an invalid numstat record: ${record.slice(0, 80)}`);
 		const binary = added === "-" || deleted === "-";
 		const additions = binary ? 0 : Number.parseInt(added ?? "", 10);
 		const deletions = binary ? 0 : Number.parseInt(deleted ?? "", 10);
-		if (!Number.isSafeInteger(additions) || !Number.isSafeInteger(deletions)) {
+		if (!Number.isSafeInteger(additions) || !Number.isSafeInteger(deletions) || additions < 0 || deletions < 0) {
 			throw new Error(`Git returned an invalid numstat for ${path}`);
 		}
 		stats.push({ path, additions, deletions, binary, mode_only: additions + deletions === 0 });
@@ -373,7 +376,7 @@ export function captureReviewSnapshot(
 		const diff = parseNumstat(
 			runGit(
 				root,
-				["diff", "--numstat", "--no-renames", baseTree, completeSnapshotTree],
+				["diff", "--numstat", "-z", "--no-renames", baseTree, completeSnapshotTree],
 				gitEnvironment,
 			),
 		);

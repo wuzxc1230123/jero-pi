@@ -47,8 +47,14 @@ export function deriveJeroFixApplicationV1(context: JeroAuthorityContextV1, line
 		const paths: string[] = [];
 		for (const line of numstat.split(/\r?\n/).filter(Boolean)) {
 			const [added, deleted, path] = line.split("\t");
-			lines += Number.parseInt(added ?? "0", 10) + Number.parseInt(deleted ?? "0", 10);
-			if (path !== undefined) paths.push(path);
+			if (path === undefined) throw new Error(`numstat line is malformed: ${line}`);
+			// 二进制变更行是 `-\t-\tpath`：行数按 0 计——NaN 会以 kind:"ok"
+			// 返回，违反 actual_correction_lines 的非负整数契约。
+			const additions = added === "-" ? 0 : Number.parseInt(added ?? "", 10);
+			const deletions = deleted === "-" ? 0 : Number.parseInt(deleted ?? "", 10);
+			if (!Number.isSafeInteger(additions) || !Number.isSafeInteger(deletions) || additions < 0 || deletions < 0) throw new Error(`numstat line is malformed: ${line}`);
+			lines += additions + deletions;
+			paths.push(path);
 		}
 		return {
 			kind: "ok",

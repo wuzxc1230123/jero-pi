@@ -12,6 +12,7 @@ import {
 	ReviewGraphObjectStoreV1
 } from "./review-object-store.ts";
 import { reviewGitEnvironment } from "./review-repository.ts";
+import { compareCodepointsV1 } from "./review-canonical.ts";
 import {
 	REVIEW_MODE
 } from "./review-snapshot.ts";
@@ -125,8 +126,10 @@ export function createFrozenLedger(
 				: EVIDENCE_CLASS.INFO,
 		};
 	});
+	// 码点序：frozen_ledger_hash 进回执哈希，collation 序随 locale/ICU 漂移
+	// 会在跨环境校验时产生假完整性错误。
 	const canonicalRows = normalizedRows.toSorted((left, right) =>
-		left.id.localeCompare(right.id),
+		compareCodepointsV1(left.id, right.id),
 	);
 	for (let index = 1; index < canonicalRows.length; index += 1) {
 		if (canonicalRows[index - 1]!.id === canonicalRows[index]!.id) {

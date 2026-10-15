@@ -41,25 +41,33 @@ const statusCache = new Map<string, { fingerprint: string; status: SddStatus }>(
 function openspecFingerprint(cwd: string): string {
 	const parts: string[] = [];
 	const walk = (dir: string): void => {
-		let entries: string[];
+		let entries: import("node:fs").Dirent[];
 		try {
-			entries = readdirSync(dir).sort();
+			entries = readdirSync(dir, { withFileTypes: true }).sort((left, right) => (left.name < right.name ? -1 : left.name > right.name ? 1 : 0));
 		} catch {
 			parts.push("!");
 			return;
 		}
 		for (const entry of entries) {
-			const path = join(dir, entry);
+			// Dirent 判定不跟随符号链接：openspec/ 下指回祖先目录的链接会让
+			// 每次 LLM 请求都跑的指纹扫描无限递归（对照 sdd-guard 的同防线）。
+			if (entry.isSymbolicLink()) {
+				parts.push(`l:${entry.name}`);
+				continue;
+			}
+			const path = join(dir, entry.name);
 			try {
 				const stat = statSync(path);
-				if (stat.isDirectory()) {
-					parts.push(`d:${entry}:${stat.mtimeMs}`);
+				if (entry.isDirectory()) {
+					parts.push(`d:${entry.name}:${stat.mtimeMs}`);
 					walk(path);
+				} else if (entry.isFile()) {
+					parts.push(`f:${entry.name}:${stat.mtimeMs}:${stat.size}`);
 				} else {
-					parts.push(`f:${entry}:${stat.mtimeMs}:${stat.size}`);
+					parts.push(`x:${entry.name}`);
 				}
 			} catch {
-				parts.push(`x:${entry}`);
+				parts.push(`x:${entry.name}`);
 			}
 		}
 	};

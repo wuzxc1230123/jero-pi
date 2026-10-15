@@ -32,6 +32,13 @@ export function canonicalJsonV1(value: CanonicalValue | unknown): string {
 	return canonicalize(value);
 }
 
+/** 码点序字符串比较：与 locale/ICU 构建无关。凡排序结果进入哈希或完整性
+ * 校验的比较一律用它——localeCompare 的 collation 序随进程默认 locale 与
+ * CLDR 版本漂移，写入环境与校验环境不一致时会产生假完整性错误。 */
+export function compareCodepointsV1(left: string, right: string): number {
+	return left < right ? -1 : left > right ? 1 : 0;
+}
+
 export function canonicalBytesV1(value: CanonicalValue | unknown): Uint8Array {
 	return new TextEncoder().encode(canonicalJsonV1(value));
 }

@@ -4,7 +4,7 @@
 	"description": "Pi coding-agent harness rebuilt on jero-pi: SDD/OpenSpec, subagents, strict TDD evidence, in-process review authority, persistent memory, zero native binaries.",
 	"license": "MIT",
 	"engines": {
-		"node": ">=22.6.0"
+		"node": ">=22.7.0"
 	},
 	"type": "module",
 	"keywords": [

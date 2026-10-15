@@ -698,14 +698,37 @@ export function decodeJeroSddAttemptLedgerV1(value: unknown, label = JERO_SDD_AT
 	const seen = new Set<string>();
 	const attempts = record.attempts.map((raw, index) => {
 		const attempt = exactObject(raw, ["request_id", "acquired_at_revision", "token_hash", "work_unit", "evidence_goal", "max_attempts", "max_changed_lines", "expected_revision", "untracked_scope", "intended_untracked"], ["remediates_evidence_revision", "expected_untracked_inventory", "settlement"], `${label}.attempts[${index}]`);
-		const requestId = requiredString(attempt.request_id, `${label}.attempts[${index}].request_id`);
-		if (!/^[a-z0-9][a-z0-9._-]{0,127}$/.test(requestId)) throw new JeroAuthorityProtocolError(`${label}.attempts[${index}].request_id: malformed`);
-		if (seen.has(requestId)) throw new JeroAuthorityProtocolError(`${label}.attempts[${index}].request_id: duplicate`);
+		const entryLabel = `${label}.attempts[${index}]`;
+		const requestId = requiredString(attempt.request_id, `${entryLabel}.request_id`);
+		if (!/^[a-z0-9][a-z0-9._-]{0,127}$/.test(requestId)) throw new JeroAuthorityProtocolError(`${entryLabel}.request_id: malformed`);
+		if (seen.has(requestId)) throw new JeroAuthorityProtocolError(`${entryLabel}.request_id: duplicate`);
 		seen.add(requestId);
+		// 兑现模块头的"精确键集、封闭枚举与类型化字段"承诺：字段级校验
+		// 此前直通断言——损坏值可以未解码形态回流入 settle 记录。
+		requiredSha256Identity(attempt.acquired_at_revision, `${entryLabel}.acquired_at_revision`);
+		if (typeof attempt.token_hash !== "string" || !/^[0-9a-f]{64}$/.test(attempt.token_hash)) throw new JeroAuthorityProtocolError(`${entryLabel}.token_hash: expected a 64-hex digest`);
+		requiredString(attempt.work_unit, `${entryLabel}.work_unit`);
+		requiredString(attempt.evidence_goal, `${entryLabel}.evidence_goal`);
+		if (typeof attempt.max_attempts !== "number" || !Number.isSafeInteger(attempt.max_attempts) || attempt.max_attempts < 1 || attempt.max_attempts > 1_000) throw new JeroAuthorityProtocolError(`${entryLabel}.max_attempts: expected an integer in 1..1000`);
+		if (typeof attempt.max_changed_lines !== "number" || !Number.isSafeInteger(attempt.max_changed_lines) || attempt.max_changed_lines < 1) throw new JeroAuthorityProtocolError(`${entryLabel}.max_changed_lines: expected a positive integer`);
+		if (attempt.expected_revision !== "" ) requiredSha256Identity(attempt.expected_revision, `${entryLabel}.expected_revision`);
+		if (attempt.remediates_evidence_revision !== undefined) requiredSha256Identity(attempt.remediates_evidence_revision, `${entryLabel}.remediates_evidence_revision`);
+		requiredEnum(attempt.untracked_scope, ["exclude", "select"] as const, `${entryLabel}.untracked_scope`);
+		if (attempt.expected_untracked_inventory !== undefined) requiredSha256Identity(attempt.expected_untracked_inventory, `${entryLabel}.expected_untracked_inventory`);
+		stringArray(attempt.intended_untracked, `${entryLabel}.intended_untracked`);
 		if (attempt.settlement !== undefined) {
-			const settlement = exactObject(attempt.settlement, ["request_id", "outcome", "diagnosis", "harness_disposition", "cleanup_evidence", "process_evidence", "settled_untracked"], ["evidence_revision", "remediation_evidence"], `${label}.attempts[${index}].settlement`);
-			const outcome = requiredEnum(settlement.outcome, JERO_SDD_ATTEMPT_OUTCOMES, `${label}.attempts[${index}].settlement.outcome`);
-			const evidenceRevision = settlement.evidence_revision === undefined ? undefined : requiredSha256Identity(settlement.evidence_revision, `${label}.attempts[${index}].settlement.evidence_revision`);
+			const settlement = exactObject(attempt.settlement, ["request_id", "outcome", "diagnosis", "harness_disposition", "cleanup_evidence", "process_evidence", "settled_untracked"], ["evidence_revision", "remediation_evidence"], `${entryLabel}.settlement`);
+			const outcome = requiredEnum(settlement.outcome, JERO_SDD_ATTEMPT_OUTCOMES, `${entryLabel}.settlement.outcome`);
+			const evidenceRevision = settlement.evidence_revision === undefined ? undefined : requiredSha256Identity(settlement.evidence_revision, `${entryLabel}.settlement.evidence_revision`);
+			// settlement.request_id 是 settle 请求自身的幂等键（与 acquire 行的
+			// request_id 不同源，settle 重放按它查找），同形校验即可。
+			if (!/^[a-z0-9][a-z0-9._-]{0,127}$/.test(requiredString(settlement.request_id, `${entryLabel}.settlement.request_id`))) throw new JeroAuthorityProtocolError(`${entryLabel}.settlement.request_id: malformed`);
+			requiredString(settlement.diagnosis, `${entryLabel}.settlement.diagnosis`);
+			requiredEnum(settlement.harness_disposition, ["reused", "invalidated"] as const, `${entryLabel}.settlement.harness_disposition`);
+			requiredString(settlement.cleanup_evidence, `${entryLabel}.settlement.cleanup_evidence`);
+			requiredString(settlement.process_evidence, `${entryLabel}.settlement.process_evidence`);
+			stringArray(settlement.settled_untracked, `${entryLabel}.settlement.settled_untracked`);
+			if (settlement.remediation_evidence !== undefined) requiredString(settlement.remediation_evidence, `${entryLabel}.settlement.remediation_evidence`);
 			// 上游的证据配对（native-review-cli.ts:2173-2174），读取与写入
 			// 双向强制：interrupted 不携带证据，failed 需要
 			// evidence_revision，passed 需要两个证据字段之一。

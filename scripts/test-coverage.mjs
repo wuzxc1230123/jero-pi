@@ -49,7 +49,7 @@ export function innermostCovered(ranges, offset) {
 	return best === null ? undefined : best.count > 0;
 }
 
-/** 每行起始 offset 表（source 长度上限保护：超大文件跳过）。 */
+/** 每行起始 offset 表。 */
 export function lineStartOffsets(text) {
 	const offsets = [0];
 	for (let i = 0; i < text.length; i++) {

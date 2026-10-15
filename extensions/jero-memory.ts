@@ -156,7 +156,15 @@ export default function jeroMemory(pi: ExtensionAPI, env: NodeJS.ProcessEnv = pr
 			if (!isValidMemoryTopic(topic)) {
 				return { content: [{ type: "text", text: `mem_read: invalid topic "${topic}".` }], details: { error: "invalid-topic" } };
 			}
-			const record = readMemory(rootFor(ctx, env), topic);
+			// 读路径与 mem_save 同形容错：IO 异常以工具结果呈现，不以原始
+			// 异常形态从工具 execute 逃逸。
+			let record: ReturnType<typeof readMemory>;
+			try {
+				record = readMemory(rootFor(ctx, env), topic);
+			} catch (error) {
+				const message = error instanceof Error ? error.message : String(error);
+				return { content: [{ type: "text", text: `mem_read failed: ${message}` }], details: { error: "read-failed" } };
+			}
 			if (record === undefined) {
 				return { content: [{ type: "text", text: `mem_read: no entry for "${topic}".` }], details: { error: "not-found" } };
 			}
@@ -183,11 +191,18 @@ export default function jeroMemory(pi: ExtensionAPI, env: NodeJS.ProcessEnv = pr
 		},
 		async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
 			const args = params as MemoryToolParams;
-			const entries = listMemory(rootFor(ctx, env), {
-				prefix: typeof args.prefix === "string" ? args.prefix : undefined,
-				tag: typeof args.tag === "string" ? args.tag : undefined,
-				limit: asPositiveInt(args.limit),
-			});
+			// 读路径与 mem_save 同形容错（listMemory 内含陈旧探测的 readdir）。
+			let entries: ReturnType<typeof listMemory>;
+			try {
+				entries = listMemory(rootFor(ctx, env), {
+					prefix: typeof args.prefix === "string" ? args.prefix : undefined,
+					tag: typeof args.tag === "string" ? args.tag : undefined,
+					limit: asPositiveInt(args.limit),
+				});
+			} catch (error) {
+				const message = error instanceof Error ? error.message : String(error);
+				return { content: [{ type: "text", text: `mem_list failed: ${message}` }], details: { error: "list-failed" } };
+			}
 			if (entries.length === 0) {
 				return { content: [{ type: "text", text: "mem_list: no matching entries." }], details: { count: 0 } };
 			}
@@ -216,7 +231,14 @@ export default function jeroMemory(pi: ExtensionAPI, env: NodeJS.ProcessEnv = pr
 		async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
 			const args = params as MemoryToolParams;
 			const query = typeof args.query === "string" ? args.query : "";
-			const hits = searchMemory(rootFor(ctx, env), query, { limit: asPositiveInt(args.limit) });
+			// 读路径与 mem_save 同形容错（searchMemory 遍历条目目录）。
+			let hits: ReturnType<typeof searchMemory>;
+			try {
+				hits = searchMemory(rootFor(ctx, env), query, { limit: asPositiveInt(args.limit) });
+			} catch (error) {
+				const message = error instanceof Error ? error.message : String(error);
+				return { content: [{ type: "text", text: `mem_search failed: ${message}` }], details: { error: "search-failed" } };
+			}
 			if (hits.length === 0) {
 				return { content: [{ type: "text", text: `mem_search: no entries match "${query}".` }], details: { count: 0 } };
 			}

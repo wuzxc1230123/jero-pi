@@ -28,11 +28,14 @@ function parseNumstat(value: string): ReviewDiffStat[] {
 	for (const line of value.split(/\r?\n/)) {
 		if (line.length === 0) continue;
 		const [added, deleted, path] = line.split("\t");
-		if (path === undefined) continue;
+		if (path === undefined) throw new Error(`numstat line is malformed: ${line}`);
 		const binary = added === "-" || deleted === "-";
 		const additions = binary ? 0 : Number.parseInt(added ?? "", 10);
 		const deletions = binary ? 0 : Number.parseInt(deleted ?? "", 10);
-		if (!Number.isSafeInteger(additions) || !Number.isSafeInteger(deletions)) continue;
+		// 畸形行保守失败（外层归入 unassessable→high），不静默跳过——
+		// 跳过会低估行数、可能把风险降档，与模块自述"始终保守失败到
+		// high"的纪律相悖。
+		if (!Number.isSafeInteger(additions) || !Number.isSafeInteger(deletions) || additions < 0 || deletions < 0) throw new Error(`numstat line is malformed: ${line}`);
 		stats.push({ path, additions, deletions, binary, mode_only: additions + deletions === 0 });
 	}
 	return stats;

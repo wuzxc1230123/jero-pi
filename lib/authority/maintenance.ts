@@ -199,23 +199,39 @@ export function abandonJeroLineageV1(context: JeroAuthorityContextV1, input: Jer
 		discarded_work: { captured_lens_results: [...input.capturedLensResults], findings_present: input.findingsPresent },
 		binding_sha256: sha256Hex(input.maintainerAuthorization),
 	};
-	// 记日志的恰好一次终局转移（操作 “abandon”）；状态写入在内部加锁，
-	// 乐观修订号守卫对着它实际变更的记录重放资格推导。
-	const mutation = context.lineages.runOperation({
-		lineageId: input.lineage,
-		operation: "abandon",
-		idempotencyKey: `abandon-${input.lineage}-${record.revision}`,
-		requestHash: sha256Hex(jeroAbandonAuthorizationV1(input)),
-		apply: (current: JeroLineageStateFileV1) => {
-			if (TERMINAL_STATES.has(current.state.state)) throw new Error("not-abandonable");
-			if (current.revision !== record.revision) throw new Error("discarded-work-mismatch");
-			return {
-				draft: { state: { ...current.state, state: "invalidated" as JeroReviewStateName, invalidation_reason: input.reason }, request_journal: current.request_journal },
-				result: auditRecord,
-			};
-		},
-	});
-	appendMaintenanceV1(context, input.lineage, auditRecord);
+	// 记日志的恰好一次终局转移（操作 "abandon"）；状态写入在内部加锁，
+	// 乐观修订号守卫对着它实际变更的记录重放资格推导。锁内复检失败是
+	// 资格拒绝，以类型化 refused 收敛（镜像 acknowledge 的包装纪律），
+	// 不让裸 Error 逃出可辨识联合出参。
+	class JeroAbandonApplyRefusal extends Error {
+		readonly code: "not-abandonable" | "discarded-work-mismatch";
+		constructor(code: "not-abandonable" | "discarded-work-mismatch") { super(code); this.code = code; }
+	}
+	let mutation: ReturnType<typeof context.lineages.runOperation>;
+	try {
+		mutation = context.lineages.runOperation({
+			lineageId: input.lineage,
+			operation: "abandon",
+			idempotencyKey: `abandon-${input.lineage}-${record.revision}`,
+			requestHash: sha256Hex(jeroAbandonAuthorizationV1(input)),
+			apply: (current: JeroLineageStateFileV1) => {
+				if (TERMINAL_STATES.has(current.state.state)) throw new JeroAbandonApplyRefusal("not-abandonable");
+				if (current.revision !== record.revision) throw new JeroAbandonApplyRefusal("discarded-work-mismatch");
+				// 审计追加与状态变更同一权威锁作用域（与 recover 的 writeRecoveryV1
+				// 同律）：锁外的读改写会与并发 recover 的审计条目互相丢失更新。
+				appendMaintenanceV1(context, input.lineage, auditRecord);
+				return {
+					draft: { state: { ...current.state, state: "invalidated" as JeroReviewStateName, invalidation_reason: input.reason }, request_journal: current.request_journal },
+					result: auditRecord,
+				};
+			},
+		});
+	} catch (error) {
+		if (error instanceof JeroAbandonApplyRefusal) {
+			return { kind: "refused", code: error.code, detail: `the binding's eligibility no longer holds inside the authority lock (${error.code})` };
+		}
+		throw error;
+	}
 	return { kind: "abandoned", lineage: input.lineage, auditRecord: mutation.result as Record<string, unknown> };
 }
 

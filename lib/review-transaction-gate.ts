@@ -47,7 +47,6 @@ export interface ValidateReviewGateOptions {
 	repositoryCwd: string;
 	idempotencyKey: string;
 	scopeBudget: ReviewBudgetV1;
-	actualIntendedCommitTree?: string;
 }
 
 interface GateTargetInspection {
@@ -282,7 +281,6 @@ export function inspectGateTarget(
 	target: GateTargetV1,
 	receipt: ReceiptEnvelopeV1,
 	repositoryCwd: string,
-	actualIntendedCommitTree?: string,
 ): GateTargetInspection {
 	try {
 		if (!isRecord(target) || typeof target.kind !== "string") {
@@ -293,7 +291,9 @@ export function inspectGateTarget(
 				return { valid: false, matchesReceipt: false, reason: "Intended commit tree is unresolved." };
 			}
 			assertTreeObject(repositoryCwd, target.intended_commit_tree, "intended commit tree");
-			const actualTree = actualIntendedCommitTree ?? runGateGit(repositoryCwd, ["write-tree"]);
+			// "actual" 只来自仓库当前索引的实时 write-tree——调用方提供替代值
+			// 等于绕过索引验证（该参数曾是留给未来的 fail-open 后门，已删除）。
+			const actualTree = runGateGit(repositoryCwd, ["write-tree"]);
 			assertTreeObject(repositoryCwd, actualTree, "actual intended commit tree");
 			if (actualTree !== target.intended_commit_tree) {
 				return {
@@ -404,7 +404,6 @@ export function evaluateGateTarget(
 	receipt: ReceiptEnvelopeV1,
 	target: GateTargetV1,
 	repositoryCwd: string,
-	actualIntendedCommitTree?: string,
 ): GateResultV1 {
 	let targetHash: string;
 	try {
@@ -438,7 +437,6 @@ export function evaluateGateTarget(
 		target,
 		receipt,
 		repositoryRoot,
-		actualIntendedCommitTree,
 	);
 	if (!inspection.valid) {
 		return deniedGateResult(receipt.receipt_hash, targetHash, inspection.reason);

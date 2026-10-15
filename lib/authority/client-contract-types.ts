@@ -471,7 +471,9 @@ export interface NativeReviewConsentDeclinedResult {
 	kind: "declined";
 	targetIdentity: string;
 	projection: "workspace" | "staged";
-	riskLevel: "medium" | "high";
+	// 显式 declined 也可能落在低风险候选上（调用方预防性拒绝）——与
+	// JeroReviewStartResultV1 的 declined 分支同宽，线上枚举本就含 low。
+	riskLevel: "low" | "medium" | "high";
 	changedFiles: number;
 	changedLines: number;
 	consent: "declined_this_candidate";

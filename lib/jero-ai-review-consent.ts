@@ -65,7 +65,10 @@ export function validateNativeStartPolicyPath(cwd: string, value: unknown): Nati
 	}
 	try {
 		const canonicalPath = realpathSync(candidate);
-		if (canonicalPath !== candidate || !isStrictDescendantPath(policyRoot, canonicalPath)) return { reason: "policy-path-symlink" };
+		// win32 大小写不敏感：realpath 回磁盘实际大小写、调用方拼写保留
+		// 原大小写——仅大小写不同的两串是同一文件，不算 symlink。
+		const pathEquals = canonicalPath === candidate || (process.platform === "win32" && canonicalPath.toLowerCase() === candidate.toLowerCase());
+		if (!pathEquals || !isStrictDescendantPath(policyRoot, canonicalPath)) return { reason: "policy-path-symlink" };
 		return { policyPath: canonicalPath };
 	} catch {
 		return { reason: "policy-path-not-regular" };

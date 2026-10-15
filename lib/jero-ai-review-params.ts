@@ -397,6 +397,14 @@ export function requiredControllerString(
 	return value;
 }
 
+// win32 文件系统大小写不敏感：realpathSync 返回磁盘实际大小写，调用方
+// 拼写的段保留原大小写——仅大小写不同的两串是同一文件。按平台语义比较，
+// 否则合法输入被误判为 symlink（报因还指向完全不存在的攻击场景）。
+function canonicalPathEquals(left: string, right: string): boolean {
+	if (left === right) return true;
+	return process.platform === "win32" && left.toLowerCase() === right.toLowerCase();
+}
+
 export function readRepositoryControllerInput(inputPath: string, repositoryRoot: string): string {
 	const canonicalRoot = realpathSync(repositoryRoot);
 	const requestedPath = resolve(canonicalRoot, inputPath);
@@ -405,7 +413,7 @@ export function readRepositoryControllerInput(inputPath: string, repositoryRoot:
 		throw new Error("Review controller inputPath must be confined to the repository");
 	}
 	const stat = lstatSync(requestedPath);
-	if (!stat.isFile() || stat.isSymbolicLink() || realpathSync(requestedPath) !== requestedPath) {
+	if (!stat.isFile() || stat.isSymbolicLink() || !canonicalPathEquals(realpathSync(requestedPath), requestedPath)) {
 		throw new Error("Review controller inputPath must be a regular non-symlink file");
 	}
 	return readFileSync(requestedPath, "utf8");

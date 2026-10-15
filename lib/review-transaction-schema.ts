@@ -11,6 +11,7 @@ import {
 import {
 	type GateResult
 } from "./review-publication-gate.ts";
+import { compareCodepointsV1 } from "./review-canonical.ts";
 import {
 	REVIEW_PROJECTION,
 	type ReviewMode,
@@ -528,7 +529,9 @@ export function assertValidationEvidence(value: ValidationEvidenceV1): void {
 	}
 	if (!Array.isArray(value.follow_ups)) throw new ReviewIntegrityError("Follow-up evidence is invalid");
 	for (const followUp of value.follow_ups) assertFollowUp(followUp);
-	if (canonicalize(value.follow_ups) !== canonicalize([...value.follow_ups].toSorted((left, right) => left.id.localeCompare(right.id)))) {
+	// 有序性按码点序校验（与铸造侧同律）：localeCompare 的 collation 序
+	// 随环境漂移，校验环境与写入环境不一致时会误拒合法证据。
+	if (canonicalize(value.follow_ups) !== canonicalize([...value.follow_ups].toSorted((left, right) => compareCodepointsV1(left.id, right.id)))) {
 		throw new ReviewIntegrityError("Follow-up evidence must be ID-sorted");
 	}
 }

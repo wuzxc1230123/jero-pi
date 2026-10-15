@@ -46,7 +46,7 @@ test("child notification admissions require an exact acknowledgement and clean u
 	for (const listener of listeners.get("disconnect") ?? []) listener({});
 	assert.ok((await Promise.allSettled(inflight)).every((result) => result.status === "rejected"));
 	const afterDisconnect = messenger.notify("after disconnect");
-	void afterDisconnect.catch(() => {});
+	void afterDisconnect.catch(() => {}); // 吸收预期的断连拒绝（断言走下面的帧计数）。
 	await Promise.resolve();
 	assert.equal(frames.length, 10, "a disconnected messenger cannot send another notification");
 });
@@ -70,7 +70,7 @@ test("callback failures clear pending work but a closed messenger cannot retry",
 	messenger.close();
 	assert.ok(timers.every((timer) => timer.cancelled), "settled and closed work cancels every timer");
 	const afterClose = messenger.notify("after close");
-	void afterClose.catch(() => {});
+	void afterClose.catch(() => {}); // 吸收预期的关闭拒绝（断言走下面的回调计数）。
 	await Promise.resolve();
 	assert.equal(callbacks.length, 2, "a closed messenger cannot retry through its endpoint");
 	const exhausted = new ChildMessenger(endpoint, () => () => {});

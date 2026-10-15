@@ -238,6 +238,10 @@ export default function jeroAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = pr
 	let renderQueued = false;
 	let cancelClock: (() => void) | undefined;
 	const ownedTaskIds = new Set<string>();
+	// 逐任务的活动订阅退订函数：TaskStore 的订阅无逐出机制，丢弃退订句柄
+	// 会让监听器随启动任务数单调累积（数小时的编排会话是现实负载），
+	// 迟到的 reconcile 还会反复唤醒僵尸监听器做无效渲染请求。
+	const taskActivityUnsubscribers = new Map<string, () => void>();
 	const stoppingTaskIds = new Set<string>();
 	const yieldedTaskIds = new Set<string>();
 	const metricsNow = deps.metricsNow ?? (() => performance.now());
@@ -311,7 +315,7 @@ export default function jeroAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = pr
 	const persist = (task: TaskRecord) => {
 		void saveTask(tasksDir, task, store.thread(task.id))
 			.then(() => pruneHistory(tasksDir, loadAgentsConfig({ cwd: task.cwd, home: deps.home, agentHome }).historyMaxTasks))
-			.catch(() => {});
+			.catch(() => {}); // 持久化失败不上浮：任务记录已在内存态，下次会话重建。
 	};
 
 	// 后台结果过去作为 followUp 消息直接交给宿主，但宿主只在父代理
@@ -427,6 +431,8 @@ export default function jeroAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = pr
 			} catch { /* 指标绝不能打断任务收尾。 */ }
 			try {
 				ownedTaskIds.delete(task.id);
+				taskActivityUnsubscribers.get(task.id)?.();
+				taskActivityUnsubscribers.delete(task.id);
 				requestRender();
 				persist(task);
 				const yielded = yieldedTaskIds.delete(task.id);
@@ -756,7 +762,7 @@ export default function jeroAgents(pi: ExtensionAPI, env: NodeJS.ProcessEnv = pr
 		}, prepared);
 		if (observe) metricTasks.set(task.id, metrics);
 		ownedTaskIds.add(task.id);
-		store.subscribe(task.id, () => { publishActivity(); requestRender(); });
+		taskActivityUnsubscribers.set(task.id, store.subscribe(task.id, () => { publishActivity(); requestRender(); }));
 		if (request.mode === AGENT_MODE.BACKGROUND) return text(`Started ${task.agent} in the background as task ${task.id}. Use subagent_status or subagent_result with that id.`, taskDetails(task));
 		// 被宿主中止的工具调用（人类打断回合、超时）
 		// 否则会留下仍在运行的子进程，并且调用结束时没有结果也没有

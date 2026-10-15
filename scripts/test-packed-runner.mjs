@@ -39,7 +39,8 @@ function windowsNpmInvocation() {
 
 function runNpm(arguments_, options) {
 	const invocation = process.platform === "win32" ? windowsNpmInvocation() : { file: "npm", prefix: [] };
-	return execFileSync(invocation.file, [...invocation.prefix, ...arguments_], { ...options, env: isolatedEnv });
+	// npm install 挂起会无限期卡死 prepublishOnly——与仓库 spawn 超时纪律对齐。
+	return execFileSync(invocation.file, [...invocation.prefix, ...arguments_], { ...options, env: isolatedEnv, timeout: 600_000 });
 }
 
 try {
@@ -58,7 +59,9 @@ try {
 	const entry = packed[0];
 	// 零二进制姿态必须在打包产物层面成立：tarball 里不得出现任何可执行构件。
 	assert.ok(Array.isArray(entry.files) && entry.files.length > 0, "npm pack did not report the tarball file list");
-	const forbiddenSuffix = /\.(exe|dll|bin|node|wasm)$/i;
+	// 跨平台原生构件后缀一并禁止（so/dylib/cmd/bat/ps1）——零二进制姿态
+	// 不只针对当前开发平台。
+	const forbiddenSuffix = /\.(exe|dll|bin|node|wasm|so|dylib|cmd|bat|ps1)$/i;
 	for (const file of entry.files) {
 		assert.doesNotMatch(file.path, forbiddenSuffix, `packed package must not ship executable artifacts: ${file.path}`);
 	}

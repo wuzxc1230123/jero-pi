@@ -43,7 +43,7 @@ export async function readChangeSnapshot(path: string): Promise<ChangeSnapshot> 
 		return textSnapshot(new TextDecoder("utf-8", { fatal: true }).decode(buffer.subarray(0, bytesRead)));
 	} catch (error) {
 		return (error as NodeJS.ErrnoException).code === "ENOENT" ? { kind: "absent" } : unavailable("Snapshot unavailable.");
-	} finally { await file?.close().catch(() => {}); }
+	} finally { await file?.close().catch(() => {}); } // 关闭句柄失败不得掩盖主读取结果。
 }
 
 function validSnapshot(value: unknown): value is ChangeSnapshot {

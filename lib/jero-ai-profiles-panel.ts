@@ -4,7 +4,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import type { ExtensionContext, Theme } from "@earendil-works/pi-coding-agent";
-import { Key, isKeyRelease, matchesKey, truncateToWidth, type KeybindingsManager, type TuiMouseEvent, type TuiMouseEventResult } from "@earendil-works/pi-tui";
+import { Key, isKeyRelease, matchesKey, truncateToWidth, visibleWidth, type KeybindingsManager, type TuiMouseEvent, type TuiMouseEventResult } from "@earendil-works/pi-tui";
 import { normalizeModelConfig, type AgentModelConfig } from "./model-routing-authority.ts";
 import { bootstrapProfilesFile, buildProfileListItems, createProfile, deleteProfile, duplicateProfile, formatOrchestratorSelection, formatRoutingRow, parseProfileExportTextWithDrops, PROFILE_ORCHESTRATOR_KEY, profileExportPath, profileRoutingRows, profilesFilePath, readProfileOrchestrator, readProfilesFileResult, renameProfile, routingColumnWidths, serializeProfileExport, setActiveProfile, updateProfile, writeProfilesFileSync, type AgentProfilesFile, type ProfileListItem, type ProfileRoutingRow, type ProfilesParseDrops } from "./agent-profiles.ts";
 import { applyOrchestratorSettings, readOrchestratorSettings, restoreOrchestratorSettings, type OrchestratorSettingsReadResult } from "./profiles-orchestrator.ts";
@@ -363,10 +363,14 @@ export class ProfilesPanel implements OverlayComponent {
 
 	private fitPaneLine(line: string, width: number): string {
 		const visible = stripAnsi(line);
-		if (visible.length > width) {
+		// 判定与补空格都按显示宽度而非 UTF-16 码元：宽字符（CJK）行码元数
+		// ≤ width 但显示宽度可超出，右边框会被推出错位（截断分支本就是
+		// 宽度感知的，两个分支必须同尺度）。
+		const display = visibleWidth(visible);
+		if (display > width) {
 			return truncateToWidth(visible, Math.max(1, width), "…", true);
 		}
-		return `${line}${" ".repeat(Math.max(0, width - visible.length))}`;
+		return `${line}${" ".repeat(Math.max(0, width - display))}`;
 	}
 
 	private renderLine(text: string, width: number, tone?: PanelTone): string {

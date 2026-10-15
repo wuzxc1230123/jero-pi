@@ -20,6 +20,7 @@ import {
 	REVIEW_ROUTE,
 	type ReviewLens,
 } from "./authority/review-triggers.ts";
+import { compareCodepointsV1 } from "./review-canonical.ts";
 
 export { RESOLUTION_OUTCOME };
 
@@ -368,7 +369,7 @@ export function ordinaryValidatorRequest(
 			finding_id: regression.findingId,
 			evidence_hash: regression.evidenceHash,
 			passed: regression.passed,
-		})).toSorted((left, right) => left.finding_id.localeCompare(right.finding_id)),
+		})).toSorted((left, right) => compareCodepointsV1(left.finding_id, right.finding_id)),
 		original_criterion_regressions: [...proof.originalCriterionRegressions],
 		follow_ups: normalizeFollowUps(proof.followUps),
 	};
@@ -412,16 +413,37 @@ export function recordOrdinaryValidation(
 	if (canonicalHash(input.request) !== canonicalHash(expected)) {
 		throw new Error("Validator request must preserve the exact frozen scope");
 	}
-	if (!input.request.original_acceptance_tests.passed) throw new Error("Original acceptance tests must pass before validation");
 	const evidence: ValidationEvidenceV1 = {
 		original_acceptance_tests: structuredClone(input.request.original_acceptance_tests),
 		correction_regressions: structuredClone(input.request.correction_regressions),
 		original_criterion_regressions: [...input.request.original_criterion_regressions],
 		follow_ups: structuredClone(input.request.follow_ups),
 	};
+	// 证据层失败（原始验收未过/回归未过）是修复尝试的预期可能结果：记入
+	// 原因、照常落验证证据并转入终局验证相位（最终以 ESCALATED 收场）。
+	// 此前在此抛错会把血脉楔死在 FIX_COMPLETE——该相位的唯一出边就是本
+	// 转移，快照清理永不触发，只能破坏性重置。范围/形状伪造仍抛错。
+	const escalateFromEvidence = (reasons: readonly string[]): ReviewStateV1 => {
+		const next = cloneState(state);
+		next.validation_evidence = evidence;
+		increment(next, "validator_runs");
+		appendReasons(next, [...reasons]);
+		next.phase = REVIEW_PHASE.FINAL_VERIFICATION;
+		return next;
+	};
+	if (!input.request.original_acceptance_tests.passed) {
+		return escalateFromEvidence(["Original acceptance tests did not pass after the correction."]);
+	}
 	const regressionIds = evidence.correction_regressions.map(({ finding_id }) => finding_id);
-	if (canonicalHash(regressionIds) !== canonicalHash(expected.requested_ids) || evidence.correction_regressions.some((regression) => !regression.passed)) {
+	if (canonicalHash(regressionIds) !== canonicalHash(expected.requested_ids)) {
 		throw new Error("Correction regressions must pass once for every frozen finding ID");
+	}
+	if (evidence.correction_regressions.some((regression) => !regression.passed)) {
+		return escalateFromEvidence(
+			evidence.correction_regressions
+				.filter((regression) => !regression.passed)
+				.map((regression) => `Correction regression did not pass for ${regression.finding_id}.`),
+		);
 	}
 	const next = cloneState(state);
 	next.validation_evidence = evidence;
@@ -483,7 +505,7 @@ function normalizeFollowUps(input: readonly OrdinaryFollowUpInput[]): FollowUpOb
 		location,
 		summary,
 		evidence_hash: evidenceHash,
-	})).toSorted((left, right) => left.id.localeCompare(right.id));
+	})).toSorted((left, right) => compareCodepointsV1(left.id, right.id));
 	if (new Set(followUps.map(({ id }) => id)).size !== followUps.length) {
 		throw new Error("Follow-up IDs must be unique");
 	}

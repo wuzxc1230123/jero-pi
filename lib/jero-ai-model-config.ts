@@ -595,7 +595,10 @@ function updateSubagentModelProfileAtPath(
 			const parsed: unknown = JSON.parse(readFileSync(path, "utf8"));
 			if (isRecord(parsed)) config = { ...parsed };
 		} catch {
-			config = {};
+			// 文件存在但不可解析（BOM/截断/手改坏）：绝不清空重写——那会把
+			// 文件里其余顶层键无警告抹掉。拒绝触碰，向上报告（与
+			// migrateLegacyProjectModelOverrides 的守卫语义同律）。
+			throw new Error(`subagents 配置存在但不可解析，拒绝改写以保护既有内容：${path}`);
 		}
 	}
 	const modelProfiles = isRecord(config.model_profiles)
@@ -630,7 +633,8 @@ export async function updateSubagentModelProfileAtPathAsync(
 			const parsed: unknown = JSON.parse(await readFile(path, "utf8"));
 			if (isRecord(parsed)) config = { ...parsed };
 		} catch {
-			config = {};
+			// 同步孪生同律：不可解析的既有文件拒绝改写，不清空重写。
+			throw new Error(`subagents 配置存在但不可解析，拒绝改写以保护既有内容：${path}`);
 		}
 	}
 	const modelProfiles = isRecord(config.model_profiles)

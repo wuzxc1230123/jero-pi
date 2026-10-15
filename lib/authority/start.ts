@@ -109,7 +109,7 @@ export type JeroReviewStartResultV1 =
 	| { readonly kind: "refused"; readonly code: JeroReviewStartRefusalCode; readonly detail?: string }
 	| { readonly kind: "blocked-scope-action"; readonly reason: string; readonly expected_untracked_inventory: string; readonly projection: "workspace" | "staged" }
 	| { readonly kind: "consent_required"; readonly action: "consent_required"; readonly target_identity: string; readonly projection: "workspace" | "staged"; readonly risk_level: "medium" | "high"; readonly changed_files: number; readonly changed_lines: number; readonly risk_evidence: readonly string[] }
-	| { readonly kind: "declined"; readonly action: "declined"; readonly consent: "declined_this_candidate"; readonly target_identity: string; readonly projection: "workspace" | "staged"; readonly risk_level: "medium" | "high"; readonly changed_files: number; readonly changed_lines: number; readonly lineage_id: ""; readonly state: ""; readonly lenses_required: false; readonly selected_lenses: readonly []; readonly lens_bindings: readonly []; readonly correction_budget: 0 }
+	| { readonly kind: "declined"; readonly action: "declined"; readonly consent: "declined_this_candidate"; readonly target_identity: string; readonly projection: "workspace" | "staged"; readonly risk_level: JeroRiskLevel; readonly changed_files: number; readonly changed_lines: number; readonly lineage_id: ""; readonly state: ""; readonly lenses_required: false; readonly selected_lenses: readonly []; readonly lens_bindings: readonly []; readonly correction_budget: 0 }
 	| ({ readonly kind: "created" } & JeroStartAuthorityFieldsV1)
 	| ({ readonly kind: "resumed" } & JeroStartAuthorityFieldsV1)
 	| ({ readonly kind: "replayed" } & JeroStartAuthorityFieldsV1)

@@ -666,7 +666,10 @@ export async function installPackageAssets(
 			selected,
 		);
 		mkdirSync(dirname(registryPath), { recursive: true });
-		writeFileSync(registryPath, JSON.stringify(manifest, null, 2));
+		// 注册表走原子替换（与 updatePackageManagedSddAgentOwnership 同律）：
+		// 裸 writeFileSync 崩溃在半写窗口会留下损坏 JSON，此后所有安装把
+		// 包持有的已装文件误判为"用户修改"，且无法自愈。
+		replaceManagedAssetFileAtomically(registryPath, `${JSON.stringify(manifest, null, 2)}\n`);
 		return {
 			agents: agents.copied,
 			chains: chains.copied,

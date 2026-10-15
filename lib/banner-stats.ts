@@ -73,6 +73,9 @@ export function readGitBranch(cwd: string, run: typeof execFile = execFile): Pro
 			encoding: "utf8",
 			shell: false,
 			windowsHide: true,
+			// 与 shellGitRunner/session-worktree 同律的 5s 上限：网络盘/杀毒
+			// 扫描挂起时 Promise 永不 settle，横幅 GIT 字段永久停留初值。
+			timeout: 5_000,
 		}, (error, stdout) => {
 			if (error) {
 				resolve("Not a git repo");

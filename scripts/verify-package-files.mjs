@@ -632,6 +632,7 @@ async function main() {
 		cwd: root,
 		encoding: "utf8",
 		env: { ...process.env, NODE_NO_WARNINGS: "1" },
+		timeout: 120_000,
 	});
 	if (generatedRuntimeCheck.status !== 0) {
 		console.error("jero-pi generated runtime does not match its TypeScript sources:");

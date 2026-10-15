@@ -241,8 +241,20 @@ export function registerJeroReviewTools(context: JeroReviewToolContext): void {
 			// 提示失败绝不影响 inspect 的权威结果。
 			try {
 				if (parseReviewControllerParameters(parameters).operation === REVIEW_CONTROLLER_OPERATION.INSPECT && details.status === "ready") {
-					const hint = reviewTrivialityHint(assessJeroReviewRiskV1({ cwd: ctx.cwd }));
-					if (hint !== undefined) details.triviality_hint = hint;
+					// hint 评估 INSPECT 实际目标的 diff（显式 workspaceRoot/嵌套
+					// worktree 与会话 cwd 是不同的树），解析失败则跳过——
+					// 与下方 permissionWorkspaceRoot 同一模式。
+					let inspectRoot: string | undefined;
+					try {
+						const parsed = parseReviewControllerParameters(parameters);
+						inspectRoot = resolveReviewControllerWorkspaceRoot(parsed.workspaceRoot, ctx.cwd, candidateViews, parsed.lineageId);
+					} catch {
+						inspectRoot = undefined;
+					}
+					if (inspectRoot !== undefined) {
+						const hint = reviewTrivialityHint(assessJeroReviewRiskV1({ cwd: inspectRoot }));
+						if (hint !== undefined) details.triviality_hint = hint;
+					}
 				}
 			} catch { /* 提示是尽力而为的附加信息。 */ }
 			if (details.operation === REVIEW_CONTROLLER_OPERATION.ACKNOWLEDGE_APPROVED &&
