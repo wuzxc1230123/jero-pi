@@ -90,11 +90,34 @@ export class ReviewGraphObjectStoreV1 {
 			if (root.body.generation !== current.body.generation + 1 || root.body.predecessor_root_set_id !== current.root_set_id) throw new ReviewObjectStoreError("Root set is not a descendant of the current authority");
 		} else if (root.body.generation !== 0 || root.body.predecessor_root_set_id !== null) {
 			throw new ReviewObjectStoreError("Initial root set must be generation zero");
+		} else if (this.storeHasAnyRootObjectOtherThan(root.root_set_id)) {
+			// 读不到当前指针但存储已装有其他根集对象：非零历史存在的铁证。
+			// 此时放行会把权威指针切换到无前驱的新根——既有 lineage 从权威
+			// 视图静默消失。没有可验证的前驱链就拒绝发布。
+			throw new ReviewObjectStoreError("Root set publication cannot verify its predecessor chain while installed root objects exist without a readable current pointer");
 		}
 		this.writePointer(0, root, root.body.generation * 3);
 		this.writePointer(1, root, root.body.generation * 3 + 1);
 		this.writePointer(2, root, root.body.generation * 3 + 2);
 		if (this.readCurrent().root_set_id !== root.root_set_id) throw new ReviewObjectStoreError("Root publication did not produce a quorum");
+	}
+
+	/** 是否装有 excludeId 之外的根集对象（创世发布自身先落盘，须排除）。 */
+	private storeHasAnyRootObjectOtherThan(excludeId: string): boolean {
+		const base = join(this.root, "roots", "sha256");
+		let prefixes;
+		try {
+			prefixes = readdirSync(base, { withFileTypes: true });
+		} catch {
+			return false;
+		}
+		for (const prefix of prefixes) {
+			if (!prefix.isDirectory()) continue;
+			try {
+				if (readdirSync(join(base, prefix.name)).some((suffix) => `${prefix.name}${suffix}` !== excludeId)) return true;
+			} catch { /* 单前缀不可读不影响其余前缀的证据判定。 */ }
+		}
+		return false;
 	}
 
 	readCurrent(): ReviewRootSetEnvelopeV1 {
@@ -114,8 +137,37 @@ export class ReviewGraphObjectStoreV1 {
 		if (![options.store_epoch, options.authority_incarnation_id, options.reset_id, options.reset_authorization_hash].every((value) => DIGEST.test(value))) throw new ReviewObjectStoreError("Reset descriptor identities are invalid");
 		const descriptor: ReviewStoreDescriptorV1 = { schema: "jero-ai.review-store/v1", graph_format: "graph-v1", repository_id: this.#repositoryId, authority_id: this.#authorityId, store_epoch: options.store_epoch, authority_incarnation_id: options.authority_incarnation_id, initialization_kind: "destructive-reset", initialized_by_reset_id: options.reset_id, reset_authorization_hash: options.reset_authorization_hash };
 		const path = join(this.root, "STORE");
-		if (existsSync(path)) { if (canonicalJsonV1(parseCanonicalJsonV1(readFileSync(path))) !== canonicalJsonV1(descriptor)) throw new ReviewObjectStoreError("Store descriptor already exists with a different authority incarnation"); }
-		else { writeFileSync(path, canonicalJsonV1(descriptor), { flag: "wx", mode: 0o600 }); this.fsyncFile(path); this.fsyncDirectory(this.root); }
+		if (existsSync(path)) {
+			// 既有描述符的解析错误也按类型化错误呈现，不让 ReviewCanonicalError
+			// 裸漏给调用方。
+			let existing: string;
+			try {
+				existing = canonicalJsonV1(parseCanonicalJsonV1(readFileSync(path)));
+			} catch (error) {
+				throw new ReviewObjectStoreError(`Store descriptor is unreadable: ${error instanceof Error ? error.message : String(error)}`);
+			}
+			if (existing !== canonicalJsonV1(descriptor)) throw new ReviewObjectStoreError("Store descriptor already exists with a different authority incarnation");
+		} else {
+			// temp+fsync+link 安装（与 writePinnedRepositoryIdentityV1 同律）：
+			// 直写 `wx` 在崩溃/掉电窗口会留下空或半写的 STORE，此后读取与
+			// 重置永久 fail-closed 且不可自愈。link 的 EEXIST = 并发首装，读回
+			// 比对即可收敛。
+			const temporary = `${path}.${process.pid}.${Math.random().toString(16).slice(2)}.tmp`;
+			const bytes = canonicalJsonV1(descriptor);
+			try {
+				writeFileSync(temporary, bytes, { mode: 0o600, flag: "wx" });
+				this.fsyncFile(temporary);
+				try {
+					linkSync(temporary, path);
+					this.fsyncDirectory(this.root);
+				} catch (error) {
+					if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+					if (canonicalJsonV1(parseCanonicalJsonV1(readFileSync(path))) !== bytes) throw new ReviewObjectStoreError("Store descriptor already exists with a different authority incarnation");
+				}
+			} finally {
+				try { unlinkSync(temporary); } catch { /* 临时文件清理尽力而为：失败不得掩盖安装结果。 */ }
+			}
+		}
 		const root = this.installRootSet({ schema: "jero-ai.review-root-set/v1", repository_id: this.#repositoryId, authority_id: this.#authorityId, store_epoch: options.store_epoch, authority_incarnation_id: options.authority_incarnation_id, initialized_by_reset_id: options.reset_id, generation: 0, predecessor_root_set_id: null, lineages: [] });
 		this.publishRootSet(root);
 		return descriptor;

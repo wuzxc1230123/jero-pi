@@ -64,6 +64,9 @@ export function piCommand(proc: ProcessLike = process): PiCommand {
 // 被丢弃（pi 自身的解析错误反正会以响应形式到达）。
 export class JsonLines {
 	private buffer = "";
+	private poisoned = false;
+	/** 因超 1 MiB 行预算被整行丢弃的事件数（诊断用：截断不再静默）。 */
+	public truncatedLines = 0;
 	private readonly onValue: (value: unknown) => void;
 
 	constructor(onValue: (value: unknown) => void) {
@@ -74,11 +77,24 @@ export class JsonLines {
 		this.buffer += chunk;
 		const lines = this.buffer.split("\n");
 		this.buffer = lines.pop() ?? "";
-		// 子进程持续输出不含换行的字节流时，残留缓冲会无界增长；
-		// 超过 1 MiB 即判定协议违规并截断，避免宿主内存被拖垮。
-		if (this.buffer.length > 1024 * 1024) this.buffer = "";
+		// 子进程持续输出不含换行的字节流时，残留缓冲会无界增长；超过 1 MiB
+		// 判定协议违规。截断采用"毒化到行尾"：只丢行首会让行尾残段流入解析，
+		// 超大单行事件（如携带全部 messages 的 agent_end）被静默吞掉且无处
+		// 可见——整行作废并计数，让 settled-without-report 的诊断能点名截断。
+		if (this.buffer.length > 1024 * 1024) {
+			this.buffer = "";
+			if (!this.poisoned) {
+				this.poisoned = true;
+				this.truncatedLines += 1;
+			}
+		}
 		for (const raw of lines) {
 			const line = raw.endsWith("\r") ? raw.slice(0, -1) : raw;
+			if (this.poisoned) {
+				// 被截断行的行尾残段：整行丢弃，计数已在毒化时落账。
+				this.poisoned = false;
+				continue;
+			}
 			if (line.length === 0) continue;
 			try {
 				this.onValue(JSON.parse(line));

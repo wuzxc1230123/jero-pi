@@ -2,7 +2,7 @@
 // 自 lib/review-transaction.ts 拆分（机械平移，语义零改动）。
 
 import {
-	existsSync
+	existsSync, readdirSync
 } from "node:fs";
 import {
 	join,
@@ -298,7 +298,9 @@ export class ReviewTransactionStore {
 				receipt_hash: options.receipt.receipt_hash,
 				target_hash: targetHash,
 				repository_root: repositoryRoot,
-				actual_intended_commit_tree: options.actualIntendedCommitTree ?? null,
+				// 字段保留恒 null：历史日志条目按此形状铸 request_hash，删字段
+				// 会破坏跨版本重放的哈希比对。
+				actual_intended_commit_tree: null,
 			},
 			beforeReplay,
 			apply(state) {
@@ -308,7 +310,6 @@ export class ReviewTransactionStore {
 					options.receipt,
 					options.target,
 					repositoryRoot,
-					options.actualIntendedCommitTree,
 				);
 				if (evaluated.status !== GATE_RESULT.SCOPE_CHANGED) {
 					return { state, result: evaluated };
@@ -317,7 +318,6 @@ export class ReviewTransactionStore {
 					options.target,
 					options.receipt,
 					repositoryRoot,
-					options.actualIntendedCommitTree,
 				);
 				if (!inspection.targetTree) {
 					return {
@@ -463,10 +463,46 @@ export class ReviewTransactionStore {
 		return cloneCanonical(headState);
 	}
 
+	/** 目录树（限定深度）里是否存在任何文件——空目录骨架不算初始化证据。 */
+	private static directoryTreeHasFile(path: string, depth: number): boolean {
+		let entries;
+		try {
+			entries = readdirSync(path, { withFileTypes: true });
+		} catch {
+			return false;
+		}
+		for (const entry of entries) {
+			if (entry.isFile()) return true;
+			if (entry.isDirectory() && depth > 0 && ReviewTransactionStore.directoryTreeHasFile(join(path, entry.name), depth - 1)) return true;
+		}
+		return false;
+	}
+
+	/**
+	 * 既往初始化证据：STORE 描述符、任一已安装根集对象、任一事件对象。
+	 * readCurrent 失败 ≠ 未初始化——≥2 个 CURRENT 槽损坏或仲裁根对象损坏
+	 * 时同样抛错；若此时按 generation-0 重建根集，既有 lineage 会从权威
+	 * 视图静默消失（对象成为孤儿、无告警）。有证据即 fail-closed。
+	 */
+	private static graphStoreCarriesInitializationEvidence(graph: ReviewGraphObjectStoreV1): boolean {
+		if (existsSync(join(graph.root, "STORE"))) return true;
+		if (ReviewTransactionStore.directoryTreeHasFile(join(graph.root, "roots"), 2)) return true;
+		return ReviewTransactionStore.directoryTreeHasFile(join(graph.root, "objects"), 3);
+	}
+
 	private writeGraphState(next: ReviewStateV1, previous?: ReviewStateV1, eventContext?: { transition: string; input: unknown }): void {
 		const graph = this.#graphStore;
 		let current: ReturnType<ReviewGraphObjectStoreV1["readCurrent"]> | undefined;
-		try { current = graph.readCurrent(); } catch { /* 读不到当前指针视为未初始化，前驱校验在下方保守把关。 */ }
+		try { current = graph.readCurrent(); } catch (error) {
+			// 读不到当前指针时先区分"从未初始化"与"初始化后仲裁失效"：后者
+			// 携带证据（STORE/根集/事件对象），先尝试指针修复，仍不可读则
+			// 拒绝——绝不能把有历史的存储当新生存储重建（数据丢失无告警）。
+			if (ReviewTransactionStore.graphStoreCarriesInitializationEvidence(graph)) {
+				try { graph.repairCurrentPointers(); } catch { /* 修复失败：落到下方的完整性拒绝。 */ }
+				try { current = graph.readCurrent(); } catch { throw new ReviewIntegrityError(`Authoritative current pointer is unreadable while the store carries initialization evidence: ${error instanceof Error ? error.message : String(error)}`); }
+			}
+			// 无任何初始化证据：视为未初始化，前驱校验在下方保守把关。
+		}
 		const existing = current ? (current.body.lineages as Array<Record<string, unknown>>).find((value) => value.lineage_id === next.lineage_id && value.mode === "graph") : undefined;
 		if (previous && !existing) throw new ReviewIntegrityError("Graph predecessor is missing");
 		if (!previous && existing) throw new ReviewIntegrityError("Graph lineage already exists");

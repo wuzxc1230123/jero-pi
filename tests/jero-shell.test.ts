@@ -605,6 +605,30 @@ test("external editor receives the selected worktree as process cwd", () => {
 	assert.equal(cwd, "/linked");
 });
 
+test("external editor launch failure is reported (returns false), never silently swallowed", () => {
+	const host = { stop: () => {}, start: () => {}, requestRender: () => {} };
+	// spawnSync 返回 error（编辑器不存在/ENOENT）或非零退出：都必须返回
+	// false 让调用方显式提示——否则用户按键后 TUI 闪烁一下什么都没发生。
+	const errored = ((_command: string) => ({ error: new Error("spawn nvim ENOENT") })) as typeof import("node:child_process").spawnSync;
+	assert.equal(openInExternalEditor(host, "lib/a.ts", { EDITOR: "nvim" }, errored), false);
+	const failed = ((_command: string) => ({ status: 127 })) as typeof import("node:child_process").spawnSync;
+	assert.equal(openInExternalEditor(host, "lib/a.ts", { EDITOR: "nvim" }, failed), false);
+});
+
+test("external editor command honors a quoted executable path containing spaces", () => {
+	const events: string[] = [];
+	const spawn = ((command: string, args: string[]) => {
+		events.push(`${command}|${args.join(" ")}`);
+		return { status: 0 };
+	}) as typeof import("node:child_process").spawnSync;
+	const host = { stop: () => {}, start: () => {}, requestRender: () => {} };
+	openInExternalEditor(host, "lib/a.ts", { EDITOR: '"C:\\Program Files\\editor\\code.exe" --wait' }, spawn, undefined, "linux");
+	assert.deepEqual(events, ['C:\\Program Files\\editor\\code.exe|--wait lib/a.ts']);
+	// 无引号形态保持原空格分词行为。
+	openInExternalEditor(host, "lib/a.ts", { EDITOR: "vi -R" }, spawn, undefined, "linux");
+	assert.deepEqual(events, ['C:\\Program Files\\editor\\code.exe|--wait lib/a.ts', "vi|-R lib/a.ts"]);
+});
+
 test("changesShortcut defaults to alt+g and can be overridden or disabled", () => {
 	assert.equal(changesShortcut({}), "alt+g");
 	assert.equal(changesShortcut({ JERO_PI_SHELL_CHANGES_KEY: "ctrl+shift+g" }), "ctrl+shift+g");

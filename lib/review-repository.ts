@@ -53,7 +53,10 @@ export function reviewGitEnvironment(): NodeJS.ProcessEnv {
 		if (UNSAFE_GIT_ENVIRONMENT.has(normalizedKey) || /^GIT_CONFIG_(?:KEY|VALUE)_/.test(normalizedKey)) throw new ReviewRepositoryError("REVIEW_GIT_ENV_UNSAFE: inherited Git routing/configuration override is present");
 	}
 	const environment: NodeJS.ProcessEnv = {};
-	for (const [key, value] of Object.entries(process.env)) if (!key.startsWith("GIT_")) environment[key] = value;
+	// 剥剔与 throwlist 同用大写归一判断：Windows 环境变量查找大小写不敏感，
+	// `git_trace`/`git_dir` 这类奇大小写变体若按字面 `startsWith("GIT_")` 漏剥，
+	// 会被 git 按 GIT_TRACE/GIT_DIR 解读。
+	for (const [key, value] of Object.entries(process.env)) if (!key.toUpperCase().startsWith("GIT_")) environment[key] = value;
 	environment.GIT_CONFIG_NOSYSTEM = "1";
 	environment.GIT_CONFIG_GLOBAL = "/dev/null";
 	environment.GIT_CONFIG_SYSTEM = "/dev/null";
@@ -75,7 +78,10 @@ export function publicationProbeGitEnvironment(): NodeJS.ProcessEnv {
 function gitLines(cwd: string, args: string[]): string[] {
 	let output: string;
 	try {
-		output = execFileSync("git", ["-C", resolve(cwd), ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], shell: false, env: reviewGitEnvironment() });
+		// 身份铸造主路径（每次 store 访问都跑 rev-list 探测）：execFileSync 阻塞
+		// 整个事件循环，必须带超时——巨型/损坏仓库或文件系统卡顿时是"宿主整体
+		// 冻结"与"仅评审失败"的区别（AGENTS：spawnSync 一律带 timeout）。
+		output = execFileSync("git", ["-C", resolve(cwd), ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], shell: false, env: reviewGitEnvironment(), timeout: 10_000, maxBuffer: 64 * 1024 * 1024 });
 	} catch (error) {
 		if (error instanceof ReviewRepositoryError) throw error;
 		throw new ReviewRepositoryError("Unable to resolve Git repository authority");

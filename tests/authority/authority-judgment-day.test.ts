@@ -300,6 +300,34 @@ test("judge admission enforces distinct judge ids and canonical hash formats (NI
 	if (badResultHash.kind === "refused") assert.equal(badResultHash.code, "invalid-request");
 });
 
+test("judge admission decodes discovery rows at the boundary — malformed rows never wedge the lineage", (t) => {
+	// 裁判行是不可信输出：词汇外 severity/缺 status_at_freeze/多余键/null 行
+	// 必须在受理边界被类型化拒绝。若放行写入台账边车，此后每次读取都
+	// integrity-failed，而重受理被 reviewing 门拒绝——非终局血脉永久楔死。
+	const { harness, start } = startedJudgmentDay(t);
+	const cases: Array<{ label: string; row: unknown }> = [
+		{ label: "词汇外 severity", row: { ...row("JD-A-001"), severity: "MAJOR" } },
+		{ label: "缺 status_at_freeze", row: (() => { const { status_at_freeze: _ignored, ...rest } = row("JD-A-001") as unknown as Record<string, unknown>; return rest; })() },
+		{ label: "多余键", row: { ...row("JD-A-001"), summary: "extra" } },
+		{ label: "null 行", row: null },
+		{ label: "空 evidence_claim", row: { ...row("JD-A-001"), evidence_claim: "" } },
+	];
+	for (const { label, row: badRow } of cases) {
+		const refused = admitJeroJudgmentDayJudgesV1(harness.context, {
+			lineageId: start.lineage_id,
+			judges: [judge("judge-a", [badRow as never]), judge("judge-b", [])],
+		});
+		assert.equal(refused.kind, "refused", `${label} 必须在受理边界被拒绝`);
+		if (refused.kind === "refused") {
+			assert.equal(refused.code, "invalid-request", label);
+			assert.match(refused.detail ?? "", /admission boundary/, label);
+		}
+	}
+	// 全部拒绝后血脉仍停在 reviewing：干净的重新受理照常可行（不被楔死）。
+	const clean = admitJeroJudgmentDayJudgesV1(harness.context, { lineageId: start.lineage_id, judges: [judge("judge-a", [row("JD-A-001")]), judge("judge-b", [])] });
+	assert.equal(clean.kind, "judges_confirmed", "干净裁判行照常受理");
+});
+
 test("MA1: a tampered judgment-ledger sidecar refuses the discovery freeze with re-admit-the-judges", (t) => {
 	// Rows edited after confirm-judges (frozen_ledger_hash left as-is): the
 	// canonicalHash(rows) === frozen_ledger_hash probe fails.

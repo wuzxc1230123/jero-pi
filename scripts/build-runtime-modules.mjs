@@ -40,7 +40,8 @@ async function generatedBytes(name) {
 		.replace(/\.{2}\/([a-z0-9-]+)\.mjs(["\'])/g, "./$1.mjs$2")
 		// strip 模式会把纯类型具名导入擦成空导入（import {} from "..."），
 		// 它仍会在运行时加载目标模块——这里整条删除，类型只有 TS 侧需要。
-		.replace(/import\s*\{\s*\}\s*from\s*"[^"]+"\s*;/g, "")
+		// 单双引号都要认：仓库无 lint 钉引号风格，只认双引号就是盲区。
+		.replace(/import\s*\{\s*\}\s*from\s*(?:"[^"]+"|'[^']+')\s*;/g, "")
 		.replace(/[ \t]+$/gm, "")
 		.replace(/\s+$/u, "");
 	const generated = `${header}${javascript}\n`;
@@ -86,12 +87,14 @@ async function main() {
 	// 个相对 import 必须真实落在 runtime/ 内。未来有人引入指向 lib 根的
 	// 值导入时，这里立即报错，而不是让消费者在 import 时收到
 	// ERR_MODULE_NOT_FOUND——字节比较与打包对账都拦不住这类漂移。
+	// 单双引号都要认：删除规则认了双引号以外的形态，后校验必须同宽，
+	// 否则它给不出承诺的兜底。
 	for (const name of sources) {
 		const base = name.split("/").pop();
 		const generated = await readFile(join(root, "runtime", `${base}.mjs`), "utf8");
-		for (const specifier of generated.matchAll(/(?:from\s*|import\(\s*)"(\.[^"]+)"/g)) {
-			if (!existsSync(join(root, "runtime", specifier[1]))) {
-				throw new Error(`runtime/${base}.mjs imports "${specifier[1]}" which does not exist in runtime/`);
+		for (const specifier of generated.matchAll(/(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g)) {
+			if (!existsSync(join(root, "runtime", specifier[2]))) {
+				throw new Error(`runtime/${base}.mjs imports "${specifier[2]}" which does not exist in runtime/`);
 			}
 		}
 	}

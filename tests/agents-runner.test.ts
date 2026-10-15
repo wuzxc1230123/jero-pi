@@ -526,6 +526,23 @@ test("JsonLines splits on LF only, tolerates CRLF, and skips lines that are not 
 	assert.deepEqual(seen, [{ a: 1 }, { b: "x y" }, { c: 3 }]);
 });
 
+test("JsonLines poisons an oversized line to its end and counts it instead of parsing its tail fragment", () => {
+	const seen: unknown[] = [];
+	const lines = new JsonLines((value) => seen.push(value));
+	// 超 1 MiB 的单行事件分块到达（管道按高水位分块是常态）：行首累计越限
+	// 后整行毒化——行尾残段绝不流入解析（残段可能偶发解析成功造成半事件）。
+	const bigPrefix = `{"kind":"agent_end","messages":[${'"x"'.repeat(600_000)}`;
+	lines.push(bigPrefix);
+	assert.equal(lines.truncatedLines, 1);
+	lines.push(`,"tail":"more"}\n{"kind":"next"}\n`);
+	// 被截断行整行丢弃；其后的正常行照常送达。
+	assert.deepEqual(seen, [{ kind: "next" }]);
+	assert.equal(lines.truncatedLines, 1);
+	// 毒化状态不跨行泄漏：后续正常行不再被丢弃。
+	lines.push('{"ok":1}\n');
+	assert.deepEqual(seen, [{ kind: "next" }, { ok: 1 }]);
+});
+
 test("win32 cancellation terminates the process tree; POSIX uses the process group", async () => {
 	const runOnce = async (platform: NodeJS.Platform) => {
 		const children: FakeChild[] = [];

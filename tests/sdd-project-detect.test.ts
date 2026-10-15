@@ -76,6 +76,47 @@ test("detectProject refuses shell-metacharacter scope names instead of building 
 			assert.ok(!command.command.includes("cd x;"), `危险目录名不得生成可执行 cd 命令：${command.command}`);
 			assert.ok(command.command.includes("scope skipped") || !command.command.startsWith("cd "), `元字符 scope 只能是跳过通知：${command.command}`);
 		}
+		// 跳过通知是恒绿 echo，绝不许成为 primary testCommand（否则严格 TDD
+		// 门被静默解除、strict_tdd 还报 true）。
+		assert.notEqual(detection.testCommand, "echo \"SDD: scope skipped (unsafe characters in directory name); configure the command manually\"");
+		if (detection.testCommand === undefined) {
+			assert.match(renderConfig(detection), /^strict_tdd: false\n/);
+		}
+	} finally {
+		rmSync(base, { recursive: true, force: true });
+	}
+});
+
+test("win32 分隔符归一：嵌套包在所有平台都解析出真实测试命令（非跳过 echo）", () => {
+	const base = mkdtempSync(join(tmpdir(), "jero-sdd-nested-"));
+	try {
+		// 无根 package.json 的 monorepo：win32 上 relative() 曾产出反斜杠
+		// scope，被 UNSAFE_SCOPE 当元字符、primary testCommand 落成恒绿 echo
+		// 而 strict_tdd 仍为 true。归一化后所有平台行为一致。
+		mkdirSync(join(base, "packages", "foo"), { recursive: true });
+		writeFileSync(join(base, "packages", "foo", "package.json"), JSON.stringify({ name: "foo", scripts: { test: "node --test" } }));
+		writeFileSync(join(base, "README.md"), "# demo monorepo");
+		const detection = detectProject(base);
+		assert.equal(detection.testCommand, "cd packages/foo && npm test");
+		const config = renderConfig(detection);
+		assert.match(config, /^strict_tdd: true\n/);
+		assert.match(config, /scope: "packages\/foo"/);
+	} finally {
+		rmSync(base, { recursive: true, force: true });
+	}
+});
+
+test("win32 分隔符归一：pytest 标准布局在所有平台都检出测试命令", () => {
+	const base = mkdtempSync(join(tmpdir(), "jero-sdd-pytest-"));
+	try {
+		// tests/ 前缀匹配曾只认 `/`——win32 上反斜杠路径全部漏配，
+		// 同一项目跨平台 strict_tdd 判定相反。
+		mkdirSync(join(base, "tests"), { recursive: true });
+		writeFileSync(join(base, "pyproject.toml"), "[project]\nname = 'demo'\n");
+		writeFileSync(join(base, "tests", "test_demo.py"), "def test_ok():\n    assert True\n");
+		const detection = detectProject(base);
+		assert.equal(detection.testCommand, "pytest");
+		assert.match(renderConfig(detection), /^strict_tdd: true\n/);
 	} finally {
 		rmSync(base, { recursive: true, force: true });
 	}

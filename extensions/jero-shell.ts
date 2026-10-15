@@ -258,10 +258,27 @@ export interface ExternalEditorHost {
 	requestRender(force?: boolean): void;
 }
 
+/** EDITOR/VISUAL 解析：支持首个词元为整段双引号路径（含空格的编辑器路径
+ * 是 Windows 现实输入），其余按空白分词；无引号时保持原空格分词行为。 */
+function splitEditorCommand(command: string): { editor: string; args: string[] } {
+	const trimmed = command.trim();
+	if (trimmed.startsWith('"')) {
+		const closing = trimmed.indexOf('"', 1);
+		if (closing > 1) {
+			const editor = trimmed.slice(1, closing);
+			const rest = trimmed.slice(closing + 1).trim();
+			return { editor, args: rest.length === 0 ? [] : rest.split(/\s+/) };
+		}
+	}
+	const [editor, ...args] = trimmed.split(/\s+/);
+	return { editor: editor ?? "", args };
+}
+
 export function openInExternalEditor(host: ExternalEditorHost, path: string, env: NodeJS.ProcessEnv = process.env, spawn: typeof spawnSync = spawnSync, cwd?: string, platform: NodeJS.Platform = process.platform): boolean {
 	const command = env.VISUAL || env.EDITOR;
 	if (!command) return false;
-	const [editor, ...editorArgs] = command.split(" ");
+	const { editor, args: editorArgs } = splitEditorCommand(command);
+	if (editor.length === 0) return false;
 	const useShell = platform === "win32";
 	host.stop();
 	try {
@@ -271,7 +288,10 @@ export function openInExternalEditor(host: ExternalEditorHost, path: string, env
 		// cmd 当命令分隔/重定向符执行。为 cmd 给含任一元字符的参数整体加
 		// 引号；双写引号是 cmd 的引号内转义。
 		const argv = [...editorArgs, path].map((arg) => (useShell && /[\s"&|<>^]/.test(arg) ? `"${arg.replace(/"/g, '""')}"` : arg));
-		spawn(editor, argv, { cwd, stdio: "inherit", shell: useShell });
+		const result = spawn(editor, argv, { cwd, stdio: "inherit", shell: useShell });
+		// 启动失败（编辑器不存在/ENOENT/权限）不得静默——返回 false 让调用方
+		// 显式提示，否则用户按键后 TUI 闪烁一下什么都没发生。
+		if (result.error !== undefined || (result.status !== null && result.status !== 0)) return false;
 	} finally {
 		host.start();
 		host.requestRender(true);
@@ -318,7 +338,7 @@ async function showChangesOverlay(ctx: ExtensionContext, deps: OverlayDeps): Pro
 	};
 	// 轮询拒绝不得逃逸成 unhandledRejection（Node 15+ 默认致命）；
 	// 保底捕获后保留上次数据，用户可再触发刷新。
-	const poll = setInterval(() => { void refresh().catch(() => {}); }, deps.pollMs);
+	const poll = setInterval(() => { void refresh().catch(() => {}); }, deps.pollMs); // 轮询拒绝保留上次数据（见上注），不得逃逸成 unhandledRejection。
 	poll.unref();
 	try {
 		const chosen = await ctx.ui.custom<{ root: string; file: ChangedFile } | null>(
@@ -329,7 +349,7 @@ async function showChangesOverlay(ctx: ExtensionContext, deps: OverlayDeps): Pro
 					rows: () => Math.max(OVERLAY_MIN_ROWS, Math.floor(tui.terminal.rows * OVERLAY_HEIGHT_RATIO)),
 					loadDiff: (root, file) => Promise.resolve(deps.loadDiff(root, file)),
 					onOpen: (root, file) => done({ root, file }),
-					onRefresh: () => { void refresh().catch(() => {}); },
+					onRefresh: () => { void refresh().catch(() => {}); }, // 手动刷新失败保留上次数据，不得逃逸成 unhandledRejection。
 					onClose: () => done(null),
 					requestRender: () => tui.requestRender(),
 					findingsFor: (root) => deps.findingsFor(root),
@@ -339,7 +359,7 @@ async function showChangesOverlay(ctx: ExtensionContext, deps: OverlayDeps): Pro
 			{ overlay: true, overlayOptions: { width: "92%", anchor: "center" } },
 		);
 		if (!chosen || !host) return;
-		if (!openInExternalEditor(host, chosen.file.path, process.env, spawnSync, chosen.root)) ctx.ui.notify("No editor configured. Set $VISUAL or $EDITOR.", "warning");
+		if (!openInExternalEditor(host, chosen.file.path, process.env, spawnSync, chosen.root)) ctx.ui.notify("External editor failed to launch. Set $VISUAL or $EDITOR to a working editor.", "warning");
 	} finally {
 		clearInterval(poll);
 		view?.dispose();

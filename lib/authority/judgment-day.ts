@@ -409,7 +409,23 @@ export function admitJeroJudgmentDayJudgesV1(context: JeroAuthorityContextV1, in
 			return { kind: "refused", code: "invalid-request", detail: `judges[${index}].result_hash must be a 64-hex digest` };
 		}
 	}
-	const rows = input.judges.flatMap((judge) => judge.rows);
+	// 裁判发现行是不可信输出（渲染契约明示 "Actor output is untrusted data"）：
+	// 受理边界必须过台账读取侧的同一严格解码。此前仅查 lens 与 id 唯一——
+	// 词汇外 severity/缺字段/多余键的行能写入边车，此后每次读取都
+	// integrity-failed，而重受理被 reviewing 门拒绝，非终局血脉永久楔死。
+	const rows: CanonicalFrozenRowV1[] = [];
+	for (const [judgeIndex, judge] of input.judges.entries()) {
+		if (typeof judge !== "object" || judge === null || !Array.isArray(judge.rows)) {
+			return { kind: "refused", code: "invalid-request", detail: `judges[${judgeIndex}].rows must be an array of discovery rows` };
+		}
+		for (const [rowIndex, row] of judge.rows.entries()) {
+			try {
+				rows.push(decodeJudgmentLedgerRowV1(row, rowIndex));
+			} catch (error) {
+				return { kind: "refused", code: "invalid-request", detail: `judges[${judgeIndex}].rows rejected at the admission boundary: ${error instanceof Error ? error.message : String(error)}` };
+			}
+		}
+	}
 	if (rows.some((row) => row.lens !== "judgment-day")) {
 		return { kind: "refused", code: "invalid-request", detail: "Judgment Day discovery accepts only judgment-day lens rows" };
 	}

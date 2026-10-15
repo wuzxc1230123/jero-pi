@@ -216,6 +216,17 @@ export function projectJeroClosureToWireV1(closure: {
 	};
 }
 
+// 提供方调用词元的引号编码：解析端 splitNativeConsentInvocation 支持
+// "..." 逐字词元（引号内反斜杠原样保留，适配 UNC/盘符路径）。值含空白或
+// 单引号时必须包裹——否则按空白分词会截断，含空格的 cwd（Windows 用户
+// 目录常见）曾使同意应答恒失败于 consent-invocation-cwd-changed。值含
+// 双引号在解析文法下不可表示：在提问侧 fail-fast，好过应答侧绑定失败。
+function consentInvocationToken(value: string): string {
+	if (value.includes('"')) throw new TypeError(`Native consent invocation cannot encode a value containing a double quote: ${value}`);
+	if (/[\s']/.test(value)) return `"${value}"`;
+	return value;
+}
+
 export function projectJeroConsentEnvelopeV1(
 	consent: Extract<JeroReviewStartResultV1, { kind: "consent_required" }>,
 	invocation: { cwd: string; untrackedScope?: "exclude" | "select"; expectedUntrackedInventory?: string; intendedUntracked?: readonly string[] },
@@ -225,8 +236,8 @@ export function projectJeroConsentEnvelopeV1(
 	const reason = `this change gets a deeper review${touches}.`;
 	const selectionArguments = invocation.untrackedScope === undefined ? [] : [
 		`--untracked-scope=${invocation.untrackedScope}`,
-		`--expected-untracked-inventory=${invocation.expectedUntrackedInventory}`,
-		...(invocation.untrackedScope === "select" ? (invocation.intendedUntracked ?? []).map((path) => `--intended-untracked=${path}`) : []),
+		`--expected-untracked-inventory=${consentInvocationToken(String(invocation.expectedUntrackedInventory))}`,
+		...(invocation.untrackedScope === "select" ? (invocation.intendedUntracked ?? []).map((path) => `--intended-untracked=${consentInvocationToken(path)}`) : []),
 	];
 	const choice = (answer: "granted" | "declined", label: string, effect: string): ReviewConsentChoiceV2 => ({
 		answer,
@@ -234,7 +245,7 @@ export function projectJeroConsentEnvelopeV1(
 		effect,
 		invocation: ["jero-ai", "review", "start",
 			"--contract", WIRE_CONTRACT,
-			"--cwd", invocation.cwd,
+			"--cwd", consentInvocationToken(invocation.cwd),
 			"--target", consent.target_identity,
 			"--projection", consent.projection,
 			"--agent", "pi",

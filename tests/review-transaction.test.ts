@@ -44,6 +44,7 @@ import {
 	recordOrdinaryValidation,
 } from "../lib/review-policy-ordinary.ts";
 import { qualifiedReviewLockPlatform, testSnapshot } from "./review-test-fixtures.ts";
+import { resolveRepositoryAuthorityV1 } from "../lib/review-repository.ts";
 
 const TREE = {
 	BASE: "1".repeat(40),
@@ -535,4 +536,25 @@ test("tag PUSH CREATE accepts an annotated tag for an approved commit advertised
 	const drifted = evaluateGateTarget(receipt, tagPush("v1.0.0", tagObject, commit, tree), repository);
 	assert.equal(drifted.status, GATE_RESULT.DENY, drifted.reason);
 	assert.match(drifted.reason, /destination changed/i);
+});
+
+test("create() refuses to rebuild the root set when the current-pointer quorum is corrupted", (t) => {
+	const { root, store } = temporaryStore(t);
+	store.create(state(), "start-a");
+	// 推进一个世代：存储从此持有多个根集对象，“唯一创世”修复不再可用。
+	store.runReducerOperation({
+		lineageId: "lineage-a",
+		transition: REVIEW_TRANSITION.ORDINARY_DISCOVERY,
+		idempotencyKey: "freeze-1",
+		input: { rows: frozenRows().filter(({ lens }) => lens === REVIEW_LENS.RISK) },
+	});
+	const graphRoot = join(resolveRepositoryAuthorityV1(root).store_root, "graph-v1");
+	writeFileSync(join(graphRoot, "CURRENT.1"), "broken");
+	writeFileSync(join(graphRoot, "CURRENT.2"), "also-broken");
+	// 仲裁失效 ≠ 未初始化：新评审 create() 若按 generation-0 重建根集，
+	// 既有 lineage 会从权威视图静默消失（对象成孤儿、无告警）——必须 fail-closed。
+	assert.throws(
+		() => ReviewTransactionStore.forRepository(root, { mutationLockPlatform: qualifiedReviewLockPlatform() }).create(state("lineage-b"), "start-b"),
+		ReviewIntegrityError,
+	);
 });

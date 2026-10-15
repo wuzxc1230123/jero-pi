@@ -237,6 +237,55 @@ test("安装：用户改动保护——改动记录内文件即跳过，force �
 	}
 });
 
+test("安装：删除记录内文件也算漂移——不再谎报“最新”，force 恢复", () => {
+	const root = makeDir();
+	const project = makeDir();
+	try {
+		const bundle = makeBundle(root, "alpha-mod", { withSkills: true });
+		assert.equal(installBundle(project, bundle).kind, "installed");
+		// 用户删除模块本体文件与伴生 agents 文件：模块已残缺，重装必须显影
+		// 而不是 skipped-up-to-date。
+		rmSync(join(project, ".pi", "modules", "alpha-mod", "references", "deep.md"));
+		rmSync(join(project, ".pi", "agents", "alpha-mod-reviewer.md"));
+		const drifted = installBundle(project, bundle);
+		assert.equal(drifted.kind, "skipped-user-modified");
+		assert.match(drifted.detail, /已删除/);
+
+		const forced = installBundle(project, bundle, { force: true });
+		assert.equal(forced.kind, "installed");
+		assert.ok(existsSync(join(project, ".pi", "modules", "alpha-mod", "references", "deep.md")), "force 恢复被删的模块本体文件");
+		assert.ok(existsSync(join(project, ".pi", "agents", "alpha-mod-reviewer.md")), "force 恢复被删的伴生 agents 文件");
+	} finally {
+		cleanup(root);
+		cleanup(project);
+	}
+});
+
+test("安装记录：畸形形状（modules:null / 条目缺 files）按未安装处理，不再全线崩溃", () => {
+	const root = makeDir();
+	const project = makeDir();
+	try {
+		const bundle = makeBundle(root, "alpha-mod");
+		mkdirSync(join(project, ".pi"), { recursive: true });
+		// modules:null 陷阱：typeof null === "object"，旧校验放行后
+		// doctor/list/install 在 Object.entries(null) 上崩溃。
+		writeFileSync(join(project, MODULE_INSTALLS_REL_PATH), JSON.stringify({ schema: "jero.module-installs/v1", modules: null }));
+		assert.deepEqual(readModuleInstalls(project).modules, {});
+		assert.equal(installBundle(project, bundle).kind, "installed");
+
+		// 条目缺 files：同样按未安装处理（该条目被丢弃，重装重建记录）。
+		writeFileSync(join(project, MODULE_INSTALLS_REL_PATH), JSON.stringify({ schema: "jero.module-installs/v1", modules: { "alpha-mod": { version: "1.0.0" } } }));
+		const installs = readModuleInstalls(project);
+		assert.deepEqual(installs.modules, {});
+		// 既有落盘文件 + 无有效记录 = skipped-unmanaged 保护，不崩溃。
+		const outcome = installBundle(project, bundle);
+		assert.equal(outcome.kind, "skipped-unmanaged");
+	} finally {
+		cleanup(root);
+		cleanup(project);
+	}
+});
+
 test("安装：无记录的既有目录视为未托管，跳过；force 接管", () => {
 	const root = makeDir();
 	const project = makeDir();

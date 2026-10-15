@@ -20,6 +20,7 @@ import {
 	type RetainedPreLineageNativeUntrackedSelection
 } from "./jero-ai-review-consent.ts";
 import { canonicalReviewCaptureBinding } from "./jero-ai-review-select.ts";
+import { reviewGitEnvironment } from "./review-repository.ts";
 export function completeNativeStart(
 	operation: ReviewControllerOperation,
 	result: NativeStartResult,
@@ -246,8 +247,12 @@ export async function reconcileNativeMutationFailure(
 }
 
 function reviewWorkspaceGitIdentity(cwd: string): { toplevel: string; commonDir: string } {
+	// 每次评审工具调用都走这里：同步 spawn 必须带超时（坏网络盘/挂载点挂起时
+	// 是"宿主整体冻结"与"评审失败"的区别），且必须用 reviewGitEnvironment()
+	// 剥掉继承的 GIT_DIR/GIT_WORK_TREE/GIT_CONFIG_*——否则宿主侧解析出的工作区
+	// 根会与权威存储侧（已剥环境）漂移成不同 toplevel。与 runGateGit 同律。
 	const git = (...arguments_: string[]): string =>
-		execFileSync("git", arguments_, { cwd, encoding: "utf8" }).trim();
+		execFileSync("git", arguments_, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], shell: false, env: reviewGitEnvironment(), timeout: 10_000, maxBuffer: 64 * 1024 * 1024 }).trim();
 	const toplevel = realpathSync(git("rev-parse", "--show-toplevel"));
 	const commonDir = realpathSync(resolve(cwd, git("rev-parse", "--git-common-dir")));
 	return { toplevel, commonDir };

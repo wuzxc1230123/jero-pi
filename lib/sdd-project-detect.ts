@@ -8,7 +8,7 @@ import {
 	readFileSync,
 	readdirSync,
 } from "node:fs";
-import { basename, dirname, join, relative } from "node:path";
+import { basename, dirname, join, relative, sep } from "node:path";
 
 export const CONFIG_REL_PATH = "openspec/config.yaml";
 const MAX_SCAN_FILES = 20_000;
@@ -104,10 +104,19 @@ function walkProject(cwd: string): string[] {
 		for (const entry of entries) {
 			if (out.length >= MAX_SCAN_FILES) break;
 			if (entry.isDirectory()) {
-				if (!IGNORED_DIRS.has(entry.name)) stack.push(join(dir, entry.name));
+				// 大小写不敏感比较：Windows 文件系统上 Node_Modules/.GIT 与
+				// 正名一样该跳过——精确匹配会漏，巨型目录吃掉扫描预算后，
+				// 兄弟项目目录可能从未被访问（DFS 序），探测结果非确定。
+				if (![...IGNORED_DIRS].some((ignored) => ignored.toLowerCase() === entry.name.toLowerCase())) stack.push(join(dir, entry.name));
 				continue;
 			}
-			if (entry.isFile()) out.push(relative(cwd, join(dir, entry.name)));
+			if (entry.isFile()) {
+				// 路径统一以 `/` 呈现：下游全部匹配逻辑（filesInScope 前缀、
+				// tests/ 布局、配置文件回退、packageDirs 深度排序）都按 `/`
+				// 编写——win32 的 relative() 返回反斜杠，不在此归一会使整套
+				// 探测在 Windows 上连锁失效（嵌套包命令被跳过、strict_tdd 误判）。
+				out.push(relative(cwd, join(dir, entry.name)).split(sep).join("/"));
+			}
 		}
 	}
 	return out.sort();
@@ -293,6 +302,10 @@ function setPrimaryTest(
 	command: CommandInfo,
 	prefer = false,
 ): void {
+	// 跳过提示不是可执行的测试命令（恒绿 echo）：绝不许成为 primary
+	// testCommand——否则 apply/verify 的严格 TDD 门被静默解除（strict_tdd
+	// 由 testCommand 派生）。提示只留在层清单里可见，命令须手工配置。
+	if (command.command === SKIPPED_SCOPE_NOTICE) return;
 	if (!detection.testCommand || prefer) {
 		detection.testCommand = command.command;
 		detection.testFramework = command.framework;
@@ -601,16 +614,19 @@ function detectMakefile(cwd: string, detection: Detection): void {
 	} catch {
 		return;
 	}
-	if (/^test:/m.test(content)) {
+	// 词边界收紧：`^test:` 裸匹配会命中 `test:=VAR` 这类变量赋值行，为
+	// 不存在的目标生成命令；要求目标名后是空白或行尾。
+	if (/^test:[ \t]*(?:#.*)?$/m.test(content)) {
 		const info = {
 			scope: ".",
 			command: "make test",
-			framework: "pytest via Makefile",
+			// 任何栈的 Makefile 都可能有 test: 目标——不硬编码 pytest。
+			framework: "Makefile test target",
 		};
 		addUnique(detection.commands.unit, info);
 		setPrimaryTest(detection, info, true);
 	}
-	if (/^coverage:/m.test(content))
+	if (/^coverage:[ \t]*(?:#.*)?$/m.test(content))
 		addUnique(detection.commands.coverage, {
 			scope: ".",
 			command: "make coverage",
@@ -709,8 +725,11 @@ function pushCommandList(
 }
 
 export function renderConfig(detection: Detection): string {
-	const strictTdd = Boolean(detection.testCommand);
-	const testCommand = detection.testCommand ?? "";
+	// 防御面：万一 skip 提示经历史路径混入 testCommand，strict_tdd 也必须为
+	// false——恒绿 echo 不构成严格 TDD 门（setPrimaryTest 已在源头拒绝）。
+	const rawTestCommand = detection.testCommand ?? "";
+	const strictTdd = rawTestCommand !== "" && rawTestCommand !== SKIPPED_SCOPE_NOTICE;
+	const testCommand = strictTdd ? rawTestCommand : "";
 	const today = new Date().toISOString().slice(0, 10);
 	const context = renderContext(detection);
 	const unitLayer = detection.commands.unit

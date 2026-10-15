@@ -194,6 +194,8 @@ interface PendingReply {
 
 interface LiveTask {
 	child: ChildLike;
+	/** 子进程 stdout 的 JSONL 解析器（settled-without-report 诊断要读其截断计数）。 */
+	lines?: JsonLines;
 	observations?: ChildObservationBuffer;
 	observationGuard?: () => boolean;
 	observationPreparation?: () => boolean;
@@ -471,7 +473,7 @@ export class AgentRunner {
 			let ready = false;
 			live.observationPreparation = () => ready;
 			void Promise.resolve().then(() => this.live.get(id) === live && !live.terminal
-				? request.prepareResponseObservations!() : false).then(allowed => { ready = allowed === true; }).catch(() => {});
+				? request.prepareResponseObservations!() : false).then(allowed => { ready = allowed === true; }).catch(() => {}); // 观测准备失败按"未许可"处理（ready 保持 false）。
 		}
 		if (request.collectResponseObservations === true || request.prepareResponseObservations) {
 			live.observationGuard = request.canCollectResponseObservations;
@@ -502,6 +504,7 @@ export class AgentRunner {
 		child.stdin.on("error", () => {});
 		this.armStall(id, live);
 		const lines = new JsonLines((value) => this.receive(id, request, value));
+		live.lines = lines;
 		child.stdout.setEncoding("utf8");
 		child.stdout.on("data", (chunk: string) => lines.push(chunk));
 		child.stderr?.setEncoding("utf8");
@@ -740,7 +743,7 @@ export class AgentRunner {
 					try {
 						const evidence = (raw.result as { details?: { jeroSessionChange?: unknown } } | undefined)?.details?.jeroSessionChange;
 						const observed = isSessionChangeEvidence(evidence) && evidence.id === mutation.toolCallId ? { ...mutation, evidence: structuredClone(evidence) } : mutation;
-						void Promise.resolve(this.hooks.onSuccessfulMutation?.(task, observed)).catch(() => {});
+						void Promise.resolve(this.hooks.onSuccessfulMutation?.(task, observed)).catch(() => {}); // 记账钩子失败不得打断已成功的工具。
 					}
 					catch { /* 记账失败不得改写已成功的工具或停止子进程。 */ }
 				}
@@ -751,7 +754,15 @@ export class AgentRunner {
 				const terminal = this.store.get(id);
 				if (terminal?.error) this.requestStop(id, TASK_STATUS.FAILED, terminal.error);
 				else if (terminal?.result) this.requestStop(id, TASK_STATUS.COMPLETED, null);
-				else this.requestStop(id, TASK_STATUS.FAILED, "assistant settled without a final report");
+				else {
+					// 无终局报告的常见成因之一：超 1 MiB 的单行事件（agent_end 携带
+					// 全部 messages）被 JSONL 截断丢弃。把截断计数并入错误信息，
+					// 区分"子进程未产报告"与"报告被截断"，不再静默吞掉。
+					const truncated = live.lines?.truncatedLines ?? 0;
+					this.requestStop(id, TASK_STATUS.FAILED, truncated > 0
+						? `assistant settled without a final report (${truncated} oversized child RPC line${truncated === 1 ? "" : "s"} exceeded the 1 MiB line budget and were truncated)`
+						: "assistant settled without a final report");
+				}
 			}
 		}
 	}

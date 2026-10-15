@@ -261,3 +261,33 @@ test("P4b: pathological unbalanced-brace prose bails within the scan budget and 
 		/capture admission failed.*not valid JSON/,
 	);
 });
+
+test("parseValidatorFixCausedFindingsV1：发现行严格解码，畸形答案拒绝而非静默置空", async () => {
+	const { parseValidatorFixCausedFindingsV1 } = await import("../../lib/authority/capture-relay.ts");
+	// 缺省按空集受理（渲染契约恒含该键，缺失视为空答案）。
+	assert.deepEqual(parseValidatorFixCausedFindingsV1(undefined), { kind: "ok", rows: [] });
+	assert.deepEqual(parseValidatorFixCausedFindingsV1([]), { kind: "ok", rows: [] });
+	// 合法发现行逐字段往返（severity 封闭词汇、proof_refs 字符串数组）。
+	const decoded = parseValidatorFixCausedFindingsV1([
+		{ id: "FIXED-1", location: "src/a.ts:10", severity: "WARNING", claim: "修正引入的回归", proof_refs: ["cmd output"] },
+		{ claim: "最小行" },
+	]);
+	assert.equal(decoded.kind, "ok");
+	if (decoded.kind === "ok") {
+		assert.deepEqual(decoded.rows, [
+			{ id: "FIXED-1", location: "src/a.ts:10", severity: "WARNING", claim: "修正引入的回归", proof_refs: ["cmd output"] },
+			{ claim: "最小行" },
+		]);
+	}
+	// 畸形形态全部类型化拒绝：非数组/非对象行/未知键/词汇外 severity/非字符串字段。
+	for (const bad of [
+		"nope",
+		[null],
+		[{ summary: "x" }],
+		[{ severity: "MAJOR" }],
+		[{ claim: 42 }],
+		[{ proof_refs: [1] }],
+	] as unknown[]) {
+		assert.equal(parseValidatorFixCausedFindingsV1(bad).kind, "invalid", `必须拒绝：${JSON.stringify(bad)}`);
+	}
+});

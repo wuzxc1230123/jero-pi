@@ -166,16 +166,28 @@ function emptyInstalls(): ModuleInstallsFile {
 	return { schema: MODULE_INSTALLS_SCHEMA, modules: {} };
 }
 
+function isModuleInstallRecord(value: unknown): value is ModuleInstallRecord {
+	if (!isPlainRecord(value)) return false;
+	if (typeof value.version !== "string") return false;
+	if (!Array.isArray(value.files) || value.files.some((file) => !isPlainRecord(file) || typeof file.path !== "string" || typeof file.hash !== "string")) return false;
+	if (value.mcpWritten !== undefined && (!Array.isArray(value.mcpWritten) || value.mcpWritten.some((entry) => !isPlainRecord(entry) || typeof entry.name !== "string" || !isPlainRecord(entry.entry)))) return false;
+	return true;
+}
+
 /** 读安装记录；缺失/损坏按空记录处理（用户改动保护退化为 force 语义，/jero:module-list 会显影目录无记录态）。 */
 export function readModuleInstalls(projectRoot: string): ModuleInstallsFile {
 	try {
 		const parsed: unknown = JSON.parse(readFileSync(join(projectRoot, MODULE_INSTALLS_REL_PATH), "utf8"));
-		if (
-			typeof parsed === "object" && parsed !== null &&
-			(parsed as { schema?: unknown }).schema === MODULE_INSTALLS_SCHEMA &&
-			typeof (parsed as { modules?: unknown }).modules === "object"
-		) {
-			return parsed as ModuleInstallsFile;
+		if (isPlainRecord(parsed) && parsed.schema === MODULE_INSTALLS_SCHEMA && isPlainRecord(parsed.modules)) {
+			// 逐条目形状过滤：`modules: null`（typeof null === "object" 的陷阱）与
+			// 缺 version/files 的残缺条目按"未安装"处理——此前两者会让
+			// install/list/doctor 全线崩溃，--force 也救不回，唯一恢复手段是
+			// 手工删记录文件。被丢弃条目的既有文件由 skipped-unmanaged 保护。
+			const modules: Record<string, ModuleInstallRecord> = {};
+			for (const [token, record] of Object.entries(parsed.modules)) {
+				if (isModuleInstallRecord(record)) modules[token] = record;
+			}
+			return { schema: MODULE_INSTALLS_SCHEMA, modules };
 		}
 	} catch {
 		// 缺失/损坏：按空记录处理，重装即重建记录。
@@ -332,14 +344,17 @@ function toPosix(path: string): string {
 	return path.replaceAll("\\", "/");
 }
 
-function hashContent(content: string): string {
-	return createHash("sha256").update(content, "utf8").digest("hex");
+function hashContent(content: string | Buffer): string {
+	// 字节级哈希：束内文件可能是任意二进制（图标/字体等）——utf8 文本往返
+	// 会损坏内容且记录失真哈希；文本文件走 Buffer 与走字符串哈希字节一致，
+	// 既有安装记录保持可比。
+	return createHash("sha256").update(content).digest("hex");
 }
 
-function writeFileAtomic(dest: string, content: string): void {
+function writeFileAtomic(dest: string, content: string | Buffer): void {
 	mkdirSync(dirname(dest), { recursive: true });
 	const temp = `${dest}.jero-tmp`;
-	writeFileSync(temp, content, "utf8");
+	writeFileSync(temp, content);
 	renameSync(temp, dest);
 }
 
@@ -358,17 +373,24 @@ export type BundleInstallOutcome =
 	| { readonly kind: "skipped-user-modified"; readonly token: string; readonly detail: string }
 	| { readonly kind: "skipped-unmanaged"; readonly token: string; readonly detail: string };
 
-// 现有落盘文件与安装记录比对：记录外文件或哈希漂移 = 用户改动，指名返回。
+// 现有落盘文件与安装记录比对：记录外文件、哈希漂移、记录内文件被删除
+// = 用户改动/模块残缺，指名返回。删除方向只看本版仍分发的路径——旧版
+// 分发过而新版砍掉的文件是版本演化，不是用户删除。
 function userModifiedDetail(
 	existing: readonly { readonly projectRel: string; readonly hash: string }[],
 	record: ModuleInstallRecord,
+	plannedPaths: ReadonlySet<string>,
 ): string | undefined {
 	const recorded = new Map(record.files.map((file) => [file.path, file.hash]));
+	const onDisk = new Set(existing.map((file) => file.projectRel));
 	const offenses: string[] = [];
 	for (const file of existing) {
 		const expected = recorded.get(file.projectRel);
 		if (expected === undefined) offenses.push(`${file.projectRel}（记录外新增）`);
 		else if (expected !== file.hash) offenses.push(`${file.projectRel}（内容已改动）`);
+	}
+	for (const [path] of recorded) {
+		if (plannedPaths.has(path) && !onDisk.has(path)) offenses.push(`${path}（已删除）`);
 	}
 	if (offenses.length === 0) return undefined;
 	return offenses.slice(0, 3).join("、") + (offenses.length > 3 ? ` 等 ${offenses.length} 处` : "");
@@ -398,13 +420,13 @@ export function installBundle(
 	const existing: { projectRel: string; hash: string }[] = [];
 	if (existsSync(moduleDir)) {
 		for (const file of walkFiles(moduleDir, "")) {
-			existing.push({ projectRel: toPosix(`.pi/modules/${bundle.token}/${file.bundleRel}`), hash: hashContent(readFileSync(file.abs, "utf8")) });
+			existing.push({ projectRel: toPosix(`.pi/modules/${bundle.token}/${file.bundleRel}`), hash: hashContent(readFileSync(file.abs)) });
 		}
 	}
 	for (const item of planned) {
 		if (item.entry.bundleRel.startsWith("agents/") || item.entry.bundleRel.startsWith("skills/")) {
 			if (existsSync(item.target) && statSync(item.target).isFile()) {
-				existing.push({ projectRel: item.projectRel, hash: hashContent(readFileSync(item.target, "utf8")) });
+				existing.push({ projectRel: item.projectRel, hash: hashContent(readFileSync(item.target)) });
 			}
 		}
 	}
@@ -418,7 +440,7 @@ export function installBundle(
 			};
 		}
 		if (record !== undefined) {
-			const modified = userModifiedDetail(existing, record);
+			const modified = userModifiedDetail(existing, record, new Set(planned.map((item) => item.projectRel)));
 			if (modified !== undefined) {
 				return {
 					kind: "skipped-user-modified",
@@ -457,7 +479,7 @@ export function installBundle(
 			if (plannedPaths.has(file.path)) continue;
 			const stale = join(projectRoot, file.path);
 			try {
-				if (existsSync(stale) && hashContent(readFileSync(stale, "utf8")) === file.hash) {
+				if (existsSync(stale) && hashContent(readFileSync(stale)) === file.hash) {
 					rmSync(stale, { force: true });
 				}
 			} catch {
@@ -469,12 +491,28 @@ export function installBundle(
 	let agentCount = 0;
 	let skillCount = 0;
 	const recordFiles: { path: string; hash: string }[] = [];
-	for (const item of planned) {
-		writeFileAtomic(item.target, readFileSync(item.entry.abs, "utf8"));
-		recordFiles.push({ path: item.projectRel, hash: hashContent(readFileSync(item.entry.abs, "utf8")) });
-		if (item.entry.bundleRel.startsWith("agents/")) agentCount += 1;
-		else if (item.entry.bundleRel.startsWith("skills/")) skillCount += 1;
-		else bodyCount += 1;
+	const writtenTargets: string[] = [];
+	try {
+		for (const item of planned) {
+			// 拷贝与哈希都走 Buffer：束内可能是任意二进制文件，utf8 往返会损坏
+			// 内容并记录失真哈希。
+			const bytes = readFileSync(item.entry.abs);
+			writeFileAtomic(item.target, bytes);
+			writtenTargets.push(item.target);
+			recordFiles.push({ path: item.projectRel, hash: hashContent(bytes) });
+			if (item.entry.bundleRel.startsWith("agents/")) agentCount += 1;
+			else if (item.entry.bundleRel.startsWith("skills/")) skillCount += 1;
+			else bodyCount += 1;
+		}
+	} catch (error) {
+		// 中途失败的尽力清理：不留"无记录的半装目录"（那会落入
+		// skipped-unmanaged，非 --force 不可再装）。清理自身失败不掩盖
+		// 原始安装错误。
+		for (const target of writtenTargets) {
+			try { rmSync(target, { force: true }); } catch { /* 尽力而为。 */ }
+		}
+		try { rmSync(moduleDir, { recursive: true, force: true }); } catch { /* 尽力而为。 */ }
+		throw error;
 	}
 
 	const mcpMerge = runBundleMcpMerge(projectRoot, options, bundle);
@@ -523,7 +561,11 @@ export function moduleDoctorLines(projectRoot: string): string[] {
 		} else if (bundle.version !== record.version) {
 			lines.push(`warn: module ${token} installed ${record.version}, package bundle ${bundle.version} (/jero:install-module ${token} to upgrade)`);
 		} else {
-			lines.push(`pass: module ${token}@${record.version} up to date`);
+			// 版本一致≠健康：记录内文件可能已被用户删除（模块残缺），显影恢复路径。
+			const missing = record.files.filter((file) => !existsSync(join(projectRoot, file.path)));
+			lines.push(missing.length > 0
+				? `warn: module ${token}@${record.version} up to date but ${missing.length} recorded file(s) missing (/jero:install-module ${token} --force to restore)`
+				: `pass: module ${token}@${record.version} up to date`);
 		}
 	}
 	return lines;

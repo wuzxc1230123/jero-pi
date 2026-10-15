@@ -147,7 +147,22 @@ function recordManifestSha256V1(storeRoot: string, state: JeroReviewTransactionS
 	// （身份匹配保证了树的一致）。
 	const record = readJeroSnapshotRecordV1(storeRoot, state.snapshot.identity);
 	const executor = (file: string, args: readonly string[], options: ExecFileSyncOptions) =>
-		execFileSync(file, args, { ...options, encoding: "buffer", timeout: 60_000 }) as Buffer;
+		execFileSync(file, args, {
+			...options,
+			encoding: "buffer",
+			timeout: 60_000,
+			// 候选树对象只存在于快照的隔离对象库，仓库自身对象库解析不到——
+			// "从冻结快照对象存储只读重新派生"必须像 jeroCorrectionPathsV1 一样
+			// 挂 GIT_ALTERNATE_OBJECT_DIRECTORIES；env 以 reviewGitEnvironment()
+			// 为基底重建，剥掉经 options.env 透传的继承 GIT_* 路由（GIT_DIR/
+			// GIT_INDEX_FILE 等，candidateGit 以 process.env 为基底构建）。
+			// 树对树 diff 不受 autocrlf/eol/longpaths 配置影响，canonical
+			// GIT_CONFIG_* 三键无需保留。
+			env: {
+				...reviewGitEnvironment(),
+				GIT_ALTERNATE_OBJECT_DIRECTORIES: `${record.object_store.object_directory}${delimiter}${record.object_store.alternate_object_directory}`,
+			},
+		}) as Buffer;
 	const manifest = deriveChangedPathManifest(record.repository_root, state.base_tree, state.snapshot.candidate_tree, executor);
 	return digestChangedPathManifest(manifest);
 }

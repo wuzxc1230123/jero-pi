@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { resolveJeroAuthorityContextV1, type JeroAuthorityContextV1 } from "./review.ts";
 import { renderJeroCaptureBindingV1, decodeJeroReviewerResultEnvelopeV1, type JeroCaptureSlotV1 } from "./capture.ts";
 import type { JeroLensName } from "./protocol.ts";
-import type { JeroFindingClassificationSubmissionV1, JeroLensResultSubmissionV1 } from "./finalize.ts";
+import type { JeroFindingClassificationSubmissionV1, JeroFindingSubmissionRowV1, JeroLensResultSubmissionV1 } from "./finalize.ts";
 import { admitJeroReviewerResultV1 } from "./result-artifacts.ts";
 import { capturedJeroArtifactsCompleteV1, jeroReviewerResultsDirectoryV1 } from "./result-artifacts.ts";
 import { decodeJeroRefuterResolutionsV1 } from "./capture.ts";
@@ -270,8 +270,11 @@ export async function admitJeroCaptureResultForRelayV1(request: { readonly captu
 	const context = contextForRelayV1(request.targetCwd);
 	const raw = readFileSync(resultFile);
 	const envelopeBytes = extractReviewerEnvelopeBytesV1(raw);
-	decodeJeroReviewerResultEnvelopeV1(JSON.parse(envelopeBytes.toString("utf8")));
 	try {
+		// 预检在 try 内：不可解析的垃圾以 [invalid_request] 呈现，中继把它
+		// 归类为已证明的非变更（none），而不是让它以裸 SyntaxError 逃逸、
+		// 被降级为 unknown。
+		decodeJeroReviewerResultEnvelopeV1(JSON.parse(envelopeBytes.toString("utf8")));
 		const admitted = admitJeroReviewerResultV1(context, {
 			lineageId: tokens.lineage,
 			lens: tokens.lens as JeroLensName,
@@ -354,7 +357,9 @@ export async function admitJeroProviderRoleResultForRelayV1(request: { readonly 
 }
 
 function admitRefuterResolutionV1(context: import("./review.ts").JeroAuthorityContextV1, cwd: string | undefined, lineageId: string, raw: Buffer): string {
-	const body = JSON.parse(raw.toString("utf8")) as { resolutions?: unknown };
+	// 与评审员接缝同律：真机中继的模型输出可能带回围栏或散文前言
+	// （冒烟实测两类形态都发生过），先经围栏剥离再解析。
+	const body = JSON.parse(extractReviewerEnvelopeBytesV1(raw).toString("utf8")) as { resolutions?: unknown };
 	const resolutions = decodeJeroRefuterResolutionsV1({ resolutions: body.resolutions }).resolutions;
 	const loaded = context.lineages.load(lineageId);
 	if (loaded.kind !== "ok") throw new Error(`[invalid_request] the refuter admission could not reload lineage (${loaded.kind})`);
@@ -373,14 +378,55 @@ function admitRefuterResolutionV1(context: import("./review.ts").JeroAuthorityCo
 	return JSON.stringify({ kind: "composed", state: resolved.state, got: resolved.kind });
 }
 
+// validator 答案里的 fix_caused_findings 是不可信发现行（JeroFindingSubmissionRowV1
+// 严格子集）：非空时必须原样映射进 reviewValidateV1 的 fix_caused_result，由
+// validate.ts 升级 targeted_validator_rejected（§E"validator 不能新增发现"）。
+// 此前该对抗性证据被硬编码 `fix_caused_findings: []` 丢弃，权威的升级保证在
+// 生产中继路径不可达。缺省按空集受理（渲染契约恒含该键，缺失视为空答案）；
+// 存在但不可解码 → [invalid_request] 拒绝，绝不静默置空。
+export function parseValidatorFixCausedFindingsV1(value: unknown): { kind: "ok"; rows: JeroFindingSubmissionRowV1[] } | { kind: "invalid"; detail: string } {
+	if (value === undefined) return { kind: "ok", rows: [] };
+	if (!Array.isArray(value)) return { kind: "invalid", detail: "fix_caused_findings must be an array" };
+	const rows: JeroFindingSubmissionRowV1[] = [];
+	for (const [index, entry] of value.entries()) {
+		if (typeof entry !== "object" || entry === null || Array.isArray(entry)) return { kind: "invalid", detail: `fix_caused_findings[${index}] is not an object` };
+		const record = entry as Record<string, unknown>;
+		for (const key of Object.keys(record)) {
+			if (key !== "id" && key !== "location" && key !== "severity" && key !== "claim" && key !== "proof_refs") {
+				return { kind: "invalid", detail: `fix_caused_findings[${index}] carries unknown key ${JSON.stringify(key)}` };
+			}
+		}
+		if (record.id !== undefined && typeof record.id !== "string") return { kind: "invalid", detail: `fix_caused_findings[${index}].id is not a string` };
+		if (record.location !== undefined && typeof record.location !== "string") return { kind: "invalid", detail: `fix_caused_findings[${index}].location is not a string` };
+		if (record.severity !== undefined && !["BLOCKER", "CRITICAL", "WARNING", "SUGGESTION"].includes(record.severity as string)) {
+			return { kind: "invalid", detail: `fix_caused_findings[${index}].severity is outside the closed vocabulary` };
+		}
+		if (record.claim !== undefined && typeof record.claim !== "string") return { kind: "invalid", detail: `fix_caused_findings[${index}].claim is not a string` };
+		if (record.proof_refs !== undefined && (!Array.isArray(record.proof_refs) || record.proof_refs.some((ref) => typeof ref !== "string"))) {
+			return { kind: "invalid", detail: `fix_caused_findings[${index}].proof_refs is not a string array` };
+		}
+		rows.push({
+			...(record.id === undefined ? {} : { id: record.id as string }),
+			...(record.location === undefined ? {} : { location: record.location as string }),
+			...(record.severity === undefined ? {} : { severity: record.severity as JeroFindingSubmissionRowV1["severity"] }),
+			...(record.claim === undefined ? {} : { claim: record.claim as string }),
+			...(record.proof_refs === undefined ? {} : { proof_refs: record.proof_refs as string[] }),
+		});
+	}
+	return { kind: "ok", rows };
+}
+
 function admitValidatorAnswerV1(context: import("./review.ts").JeroAuthorityContextV1, cwd: string | undefined, lineageId: string, raw: Buffer): string {
 	// 答案形态即渲染契约的 JSON：request_hash、correction_ids、
 	// original_criteria{passed,evidence}、correction_regression
-	// {passed,evidence}、fix_caused_findings、follow_ups。
-	const answer = JSON.parse(raw.toString("utf8")) as { request_hash?: unknown; correction_ids?: unknown; original_criteria?: { passed?: unknown; evidence?: unknown }; correction_regression?: { passed?: unknown; evidence?: unknown } };
+	// {passed,evidence}、fix_caused_findings、follow_ups。与评审员接缝
+	// 同律：真机中继的输出可能带回围栏/前言，先剥离再解析。
+	const answer = JSON.parse(extractReviewerEnvelopeBytesV1(raw).toString("utf8")) as { request_hash?: unknown; correction_ids?: unknown; original_criteria?: { passed?: unknown; evidence?: unknown }; correction_regression?: { passed?: unknown; evidence?: unknown }; fix_caused_findings?: unknown };
 	if (typeof answer.request_hash !== "string" || !Array.isArray(answer.correction_ids) || typeof answer.original_criteria?.passed !== "boolean" || !Array.isArray(answer.original_criteria.evidence) || typeof answer.correction_regression?.passed !== "boolean" || !Array.isArray(answer.correction_regression.evidence)) {
 		throw new Error("[invalid_request] the validator answer does not carry the rendered contract shape");
 	}
+	const fixCaused = parseValidatorFixCausedFindingsV1(answer.fix_caused_findings);
+	if (fixCaused.kind === "invalid") throw new Error(`[invalid_request] the validator answer's fix_caused_findings does not decode: ${fixCaused.detail}`);
 	const validated = reviewValidateV1(context, {
 		cwd: cwd ?? "",
 		lineageId,
@@ -397,6 +443,7 @@ function admitValidatorAnswerV1(context: import("./review.ts").JeroAuthorityCont
 			fix_caused_findings: [],
 			follow_ups: [],
 		},
+		...(fixCaused.rows.length > 0 ? { fix_caused_result: fixCaused.rows } : {}),
 	});
 	if (validated.kind === "refused") throw new Error(`[invalid_request] validation admission refused: ${validated.code}${validated.detail === undefined ? "" : ` (${validated.detail})`}`);
 	if (validated.kind === "recapture_required") return JSON.stringify({ kind: "recapture_required", supersedes: validated.supersedes, guidance: validated.guidance });
