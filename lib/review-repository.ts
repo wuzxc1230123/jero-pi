@@ -335,3 +335,12 @@ export function resolveRepositoryAuthorityForRecoveryV1(cwd: string): Repository
 export function reviewStoreRootForRepositoryV1(cwd: string): string {
 	return resolve(resolveRepositoryAuthorityV1(cwd).store_root);
 }
+
+/** 只读存在探测：评审存储已钉住身份时返回其根，否则 undefined。
+ * 绝不创建或改写任何文件——resolveRepositoryAuthorityV1 会在未钉住时
+ * 写盘（钉身份），纯展示路径（如 TUI 发现投影）必须先经本探测确认
+ * 存在性，避免在从未运行过评审的仓库落下存储脚印。 */
+export function existingReviewStoreRootV1(cwd: string): string | undefined {
+	const probe = probeLiveRepositoryV1(cwd);
+	return readPinnedRepositoryIdentityV1(probe.storeRoot) === undefined ? undefined : probe.storeRoot;
+}

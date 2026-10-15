@@ -37,3 +37,21 @@
 #### SDD 编辑权限同意中继（强制）
 
 当原生 SDD 状态报告 `blocked(edit_authority_missing)` 时，其结构化输出可在可选的 `consent` 块中携带类型化的 `jero-ai.sdd-integration.consent/v1` 封套。在本契约下把该封套当作无损阻塞提示处理，纪律与评审同意中继相同。以当前会话语言一次性呈现完整封套：忠实地翻译标题、原因、`value`、缺失根证据、选择标签、每个选择的 `effect` 与偏离路径说明，同时保留原始选项、顺序、选择模式、精确允许答案域与答案令牌。绝不翻译或更改机器答案令牌（`granted`、`declined`）、命令、路径或调用。绝不摘要、重塑、重排、合并或省略任何部分。由人类决定：绝不代人类作答，绝不未经提示运行授权。仅在人类显式回答 `granted` 之后，逐字执行封套的精确授权调用，恰好一次，然后经原生 status 重入；被授权的根投影到 `allowedEditRoots`，该授权按变更生效、可审计、随归档消亡。回答 `declined` 时，运行封套的拒绝调用：不持久化任何内容，变更保持 `blocked(edit_authority_missing)`，阻塞原因同时指明两条出路（编辑 tasks.md 使每个工作单元都位于授权编辑根之内，或为本变更授予编辑权限）。不带 `consent` 块的阻塞状态指明同样的两条出路；中继它们并停止。
+
+#### Judgment Day 修复派发
+
+仅对显式激活的 Judgment Day 修复批次使用 `jd-fix-agent`，绝不作为词法或通用写者回退。Judgment Day 独立：它既不启用也不替代普通评审；单独请求的普通评审保持独立。独立的 Judgment Day 修复不需要 graph-v1 或原生评审 lineage。其派发携带此精确的运行时接受 Markdown 形状：`## Judgment Day activation` 只含 `User explicitly requested Judgment Day.`。用控制器授权的值替换示例 ID、冻结台账哈希、行数据与编辑面。纠正批次只含一轮（`1 of 2` 或 `2 of 2`）与一个小写 SHA-256。精确冻结发现行为每行一个 JSON 对象，仅使用权威行字段，并与授权 ID 精确匹配。
+
+```markdown
+## Judgment Day activation
+User explicitly requested Judgment Day.
+## Exact authorized severe IDs
+- `JD-A-001`
+## Judgment Day correction batch
+Round: 1 of 2.
+Frozen ledger SHA-256: `aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`
+## Exact frozen finding rows
+{"id":"JD-A-001","lens":"judgment-day","location":"path/to/authorized-file.ts:1","severity":"CRITICAL","status_at_freeze":"open","evidence_class":"deterministic","evidence_claim":"Concrete user-impact claim supported by the frozen location."}
+## Allowed edit surfaces
+path/to/authorized-file.ts
+```

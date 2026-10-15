@@ -335,7 +335,7 @@ export interface DiffFindingMarker {
 	readonly claim: string;
 }
 
-const FINDING_MARKER_PREFIX = "⚠ 评审发现";
+export const FINDING_MARKER_PREFIX = "⚠ 评审发现";
 const HUNK_HEADER_PATTERN = /^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/;
 
 /** 把冻结评审发现投影进统一 diff 文本——纯展示层，绝不改写权威数据。

@@ -5,6 +5,15 @@ jero-pi 尚未发布到 npm（版本停在 0.1.0 基线），本文件自重构�
 
 ## [Unreleased]
 
+### 优化路线图中等件三连：投影 TUI 接线 + 懒文档二级懒化 + 机制实效指标（2026-10-15）
+
+**批一投影纯函数的 TUI 就位、委派文档再瘦一层、归档回顾补上机制级实效回路；全部零流程改动、权威与 wire 面零触碰。**
+
+- **投影 TUI 接线**：`/jero:changes` 覆盖层现在把冻结评审发现投影进右栏 diff——`ChangesView`/`WorktreeChangesView` 新增注入式 `findingsFor`（按文件路径/工作树根），加载 diff 后经 `projectFindingsOntoDiff` 插标记行，`colorDiff` 把 ⚠ 标记行着 `warning` 色；无提供方时视图逐字节不变。发现来源新模块 `lib/shell-review-findings.ts`——只读读取器，身份层新原语 `existingReviewStoreRootV1`（只读存在探测：未钉身份返回 undefined，绝不写盘）先行门控，评审从未运行过的仓库打开覆盖层零存储脚印；谱系语义为最新携带冻结台账的 graph 谓系胜出（旧谱系发现=陈旧噪声），单谱系损坏跳过不拖垮展示；行映射 claim 取 `evidence_claim`。扩展层每次打开覆盖层按根取一次快照（瞬态浏览面，台账演进等下次打开）。钉测：读取器五测（非 git/无存储零脚印/行映射/最新谱系胜出/无台账回退）+ 视图四测（warning 着色/命中插入+范围外小节/无提供方恒等/工作树根域传播）。
+- **懒文档二级懒化**：委派文档（最宽触发的懒资产）再下沉两块——①Background Subagent Policy 协议体（策略 on 才需要的完整后台执行纪律）沉入新深懒文件 `orchestrator-background-subagents.md`（2024 B），原位留门控规则+指针；②Judgment Day 修复派发模板（显式激活才触发）沉入 `orchestrator-rare-protocols.md`（9060→10391 B），委派与 SDD 工作流两侧指针同步改指。委派文档 29408→27361 B（−7%，批三累计 37257→27361、−27%）；懒资产字节棘轮同步（新文件入 ceiling、工作流 +4 B 为指针重定向）。金样位置钉测迁移：review-ledger-contract 的 JD 金样断言改指 rare-protocols，委派/工作流双侧 doesNotMatch 防重述回潮；新文件入打包门清单（438 文件）。
+- **机制实效指标**：归档回顾五类升六类——新增「机制实效指标」：只汇总既有产物已记录的机制结果（验证报告结构二值清单失败项分布；修复记录 `remediate_verdict` 三态计数），两项皆缺失省略，绝不补造；只服务机制规则校准（清单升级阈值、裁决语义）。批一的漂移遥测实效是单机制回路，本条把同律推广到产物可考的机制面。连带修正 jero-reference 的陈旧计数（「三件套」→六类，2026-10-14 升五类时漏改）。
+- 验证：typecheck 0；相关域全绿（shell 三套 107 测 / 懒资产与契约六套 122 测 / artifact-language 21 / test:sdd 187 过 0 败）；打包门 438 文件 + 68 金向量；七门全绿（test-quality 0 命中 / empty-catch / authority-boundary 51 模块 / docs-manifest / review-naming / module-contract / runtime-modules 13 生成零漂移）；全量 2610 测 2598 过 0 败（跳过 12 = 既有基线，~11.8 分钟）。
+
 ### 优化批一 + 批二轻量件（2026-10-14）
 
 **四项中等优化 + 两项轻量件，全部零流程改动。**

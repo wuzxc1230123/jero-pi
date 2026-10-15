@@ -294,7 +294,7 @@ interactive 模式在阶段摘要中一并呈报台账。遥测不放宽任何�
 
 ## Judgment Day 修复路由
 
-Judgment Day 阶段角色绝不是通用回退。若通用写者链不可用，使用文档记载的原生通用回退或停止。Judgment Day 独立：它既不启用也不替代普通评审；单独请求的普通评审保持独立。独立的 Judgment Day 修复不需要 graph-v1 或原生评审 lineage。仅为显式的 Judgment Day 修复批次启动 `jd-fix-agent`；派发的精确运行时接受 Markdown 形状（`## Judgment Day activation` 起、冻结发现行 JSON 与允许编辑面的完整模板）单一来源于 `orchestrator-delegation.md` 的 `#### Judgment Day 修复派发`——启动前读该节原文执行，本文件不重述。
+Judgment Day 阶段角色绝不是通用回退。若通用写者链不可用，使用文档记载的原生通用回退或停止。Judgment Day 独立：它既不启用也不替代普通评审；单独请求的普通评审保持独立。独立的 Judgment Day 修复不需要 graph-v1 或原生评审 lineage。仅为显式的 Judgment Day 修复批次启动 `jd-fix-agent`；派发的精确运行时接受 Markdown 形状（`## Judgment Day activation` 起、冻结发现行 JSON 与允许编辑面的完整模板）单一来源于 `orchestrator-rare-protocols.md` 的 `#### Judgment Day 修复派发`——启动前读该节原文执行，本文件不重述。
 
 ## 子代理启动去重
 

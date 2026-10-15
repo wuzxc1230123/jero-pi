@@ -6,8 +6,9 @@ import { profilesFilePath, readProfilesFileResult } from "../lib/agent-profiles.
 import * as os from "node:os";
 import { join } from "node:path";
 import { renderShellBar, renderShellSidebarBar, shellEnabled, type ShellBarModel, type ShellBarTheme } from "../lib/shell-bar.ts";
-import { loadFileDiff, renderChangesWidget, shellGitRunner, type ChangedFile, type ChangesModel, type GitRunner, type WorktreeChanges } from "../lib/shell-changes.ts";
+import { loadFileDiff, renderChangesWidget, shellGitRunner, type ChangedFile, type ChangesModel, type DiffFindingMarker, type GitRunner, type WorktreeChanges } from "../lib/shell-changes.ts";
 import { WorktreeChangesView } from "../lib/shell-changes-view.ts";
+import { frozenFindingMarkersForRepository } from "../lib/shell-review-findings.ts";
 import { SessionWorktreeRegistry, resolveSessionWorktree, type WorktreeResolver } from "../lib/session-worktree-registry.ts";
 import { CARD_TONE, renderCard, type Card, type CardTheme } from "../lib/shell-card.ts";
 import { framePromptLines, PROMPT_HINT, PROMPT_STATE, withPromptHint, type PromptState } from "../lib/shell-prompt.ts";
@@ -303,6 +304,7 @@ interface OverlayDeps {
 	refresh(): Promise<ChangesModel>;
 	apply(ctx: ExtensionContext, model: ChangesModel): void;
 	pollMs: number;
+	findingsFor(root: string): ReadonlyArray<DiffFindingMarker>;
 }
 
 // 只刷新捕获到的会话模型。此处绝不读取实时文件或 Git。
@@ -330,6 +332,7 @@ async function showChangesOverlay(ctx: ExtensionContext, deps: OverlayDeps): Pro
 					onRefresh: () => { void refresh().catch(() => {}); },
 					onClose: () => done(null),
 					requestRender: () => tui.requestRender(),
+					findingsFor: (root) => deps.findingsFor(root),
 				});
 				return view;
 			},
@@ -574,7 +577,14 @@ export default function jeroShell(pi: ExtensionAPI, env: NodeJS.ProcessEnv = pro
 			ctx.ui.notify("No captured agent changes. Only successful write/edit operations from this session and its subagents are shown; shell changes are not attributed.", "info");
 			return;
 		}
-		await showChangesOverlay(ctx, { loadDiff: (root, file) => tracker.loadDiff(root, file), worktrees: () => tracker.worktrees, refresh: () => tracker.refresh(), apply: applyChanges, pollMs: changesPollMs(env) });
+		// 冻结发现按工作树根取一次快照：覆盖层是瞬态浏览面，打开期间的
+		// 台账演进等下次打开可见，不值得每个文件选择都付一次全量重放。
+		const findingsCache = new Map<string, ReadonlyArray<DiffFindingMarker>>();
+		const findingsFor = (root: string): ReadonlyArray<DiffFindingMarker> => {
+			if (!findingsCache.has(root)) findingsCache.set(root, frozenFindingMarkersForRepository(root));
+			return findingsCache.get(root)!;
+		};
+		await showChangesOverlay(ctx, { loadDiff: (root, file) => tracker.loadDiff(root, file), worktrees: () => tracker.worktrees, refresh: () => tracker.refresh(), apply: applyChanges, pollMs: changesPollMs(env), findingsFor });
 	};
 	pi.registerCommand(CHANGES_COMMAND_NAME, {
 		description: "Browse captured write/edit changes from this agent session and its subagents, excluding preexisting and external edits. Shell changes are not attributed. Press o to open $EDITOR.",

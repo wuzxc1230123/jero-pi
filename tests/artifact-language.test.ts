@@ -326,8 +326,8 @@ test("architecture patrol skill and router entry stay pinned", async () => {
 
 test("cross-surface conflict fixes stay pinned", async () => {
 	// 四代理评审的交叉面修复批：P2 复核量词收窄、轻量归档豁免、
-	// 威胁建模真实消费者、回顾五类（2026-10-14 增漂移遥测实效）、
-	// P0+manual 提前拦截、`?` 行双侧规则。
+	// 威胁建模真实消费者、回顾六类（2026-10-14 增漂移遥测实效，
+	// 2026-10-15 增机制实效指标）、P0+manual 提前拦截、`?` 行双侧规则。
 	const verify = await readFile(join(ROOT, "assets/agents/sdd-verify.md"), "utf8");
 	assert.match(verify, /重跑范围由「风险感知复核深度」节裁定/);
 	assert.match(verify, /apply 进度的 `Task Verify Evidence` 表是其执行证据，仅抽查存疑项/);
@@ -335,8 +335,8 @@ test("cross-surface conflict fixes stay pinned", async () => {
 
 	const archive = await readFile(join(ROOT, "assets/agents/sdd-archive.md"), "utf8");
 	assert.match(archive, /「不适用」的 `not_applicable` sync-report 即满足本条件/);
-	assert.match(archive, /提取五类回顾/);
-	assert.match(archive, /漂移遥测实效）；/);
+	assert.match(archive, /提取六类回顾/);
+	assert.match(archive, /漂移遥测实效 \/ 机制实效指标）；/);
 	assert.match(archive, /绝不倒推补造/);
 	assert.match(archive, /轻量路径下术语沉淀的唯一兜底/);
 

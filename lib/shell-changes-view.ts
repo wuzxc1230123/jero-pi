@@ -1,11 +1,12 @@
 import { Key, matchesKey, truncateToWidth, visibleWidth, type TuiMouseEvent, type TuiMouseEventResult } from "@earendil-works/pi-tui";
 import { sanitizeTerminalText } from "./terminal-theme.ts";
 import { basename } from "node:path";
-import { CHANGE_STATUS, changesSummary, type ChangedFile, type ChangesModel, type WorktreeChanges } from "./shell-changes.ts";
+import { CHANGE_STATUS, changesSummary, FINDING_MARKER_PREFIX, projectFindingsOntoDiff, type ChangedFile, type ChangesModel, type DiffFindingMarker, type WorktreeChanges } from "./shell-changes.ts";
 
 // Jero Shell 变更覆盖层：带框架的双栏视图，左栏是工作树的已变更
 // 文件，右栏是所选文件的 diff。Git 访问被注入，使组件无需仓库即可
-// 渲染。
+// 渲染。冻结评审发现经注入的 findingsFor 只读到达——本层只做展示
+// 投影（projectFindingsOntoDiff），不读权威存储。
 
 export interface ChangesViewTheme {
 	fg(color: string, text: string): string;
@@ -19,6 +20,8 @@ export interface ChangesViewDeps {
 	onClose(): void;
 	requestRender(): void;
 	backLabel?: string;
+	/** 按文件路径提供冻结评审发现；缺省无标记（纯 diff 视图不变）。 */
+	findingsFor?(path: string): ReadonlyArray<DiffFindingMarker>;
 }
 
 const ROLE = {
@@ -60,7 +63,8 @@ export function colorDiff(text: string, theme: ChangesViewTheme): string[] {
 		// 注入面（OSC-52 剪贴板外带/UI 伪造）；与 displayText 同律先剥。
 		const line = sanitizeTerminalText(raw);
 		if (line === "" || HEADER_PREFIXES.some((prefix) => line.startsWith(prefix))) continue;
-		if (line.startsWith("@@")) lines.push(theme.fg(ROLE.HUNK, line));
+		if (line.startsWith(FINDING_MARKER_PREFIX)) lines.push(theme.fg("warning", line));
+		else if (line.startsWith("@@")) lines.push(theme.fg(ROLE.HUNK, line));
 		else if (line.startsWith("+")) lines.push(theme.fg("toolDiffAdded", line));
 		else if (line.startsWith("-")) lines.push(theme.fg("toolDiffRemoved", line));
 		else lines.push(theme.fg("toolDiffContext", line));
@@ -141,6 +145,8 @@ export interface WorktreeChangesViewDeps {
 	onClose(): void;
 	onRefresh(): void;
 	requestRender(): void;
+	/** 按工作树根提供冻结评审发现（与路径无关；投影函数按 location 自行过滤）。 */
+	findingsFor?(root: string): ReadonlyArray<DiffFindingMarker>;
 }
 
 interface WorktreeRow {
@@ -315,6 +321,7 @@ export class WorktreeChangesView {
 		const row = this.visibleRows()[this.selected];
 		if (!row?.file || this.previews.has(rowKey(row))) return;
 		const { tree, file } = row;
+		const rootFindings = this.deps.findingsFor;
 		this.previews.set(rowKey(row), {
 			fingerprint: fingerprint(file),
 			view: new ChangesView({ files: [file], added: file.added, deleted: file.deleted }, {
@@ -322,6 +329,7 @@ export class WorktreeChangesView {
 				rows: () => typeof this.deps.rows === "function" ? this.deps.rows() : this.deps.rows,
 				loadDiff: (target) => this.deps.loadDiff(tree.root, target),
 				onOpen: (target) => this.deps.onOpen(tree.root, target),
+				findingsFor: rootFindings ? () => rootFindings(tree.root) : undefined,
 			}),
 		});
 	}
@@ -521,7 +529,8 @@ export class ChangesView {
 		void this.deps.loadDiff(file).then(
 			(text) => {
 				if (this.disposed) return;
-				this.diffs.set(file.path, colorDiff(text, this.deps.theme));
+				const findings = this.deps.findingsFor?.(file.path) ?? [];
+				this.diffs.set(file.path, colorDiff(projectFindingsOntoDiff(text, findings, file.path), this.deps.theme));
 				this.deps.requestRender();
 			},
 			() => {

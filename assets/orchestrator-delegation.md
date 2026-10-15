@@ -75,21 +75,7 @@
 
 #### Judgment Day 修复派发
 
-仅对显式激活的 Judgment Day 修复批次使用 `jd-fix-agent`，绝不作为词法或通用写者回退。Judgment Day 独立：它既不启用也不替代普通评审；单独请求的普通评审保持独立。独立的 Judgment Day 修复不需要 graph-v1 或原生评审 lineage。其派发携带此精确的运行时接受 Markdown 形状：`## Judgment Day activation` 只含 `User explicitly requested Judgment Day.`。用控制器授权的值替换示例 ID、冻结台账哈希、行数据与编辑面。纠正批次只含一轮（`1 of 2` 或 `2 of 2`）与一个小写 SHA-256。精确冻结发现行为每行一个 JSON 对象，仅使用权威行字段，并与授权 ID 精确匹配。
-
-```markdown
-## Judgment Day activation
-User explicitly requested Judgment Day.
-## Exact authorized severe IDs
-- `JD-A-001`
-## Judgment Day correction batch
-Round: 1 of 2.
-Frozen ledger SHA-256: `aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`
-## Exact frozen finding rows
-{"id":"JD-A-001","lens":"judgment-day","location":"path/to/authorized-file.ts:1","severity":"CRITICAL","status_at_freeze":"open","evidence_class":"deterministic","evidence_claim":"Concrete user-impact claim supported by the frozen location."}
-## Allowed edit surfaces
-path/to/authorized-file.ts
-```
+仅对显式激活的 Judgment Day 修复批次使用 `jd-fix-agent`，绝不作为词法或通用写者回退。Judgment Day 独立：它既不启用也不替代普通评审；单独请求的普通评审保持独立。独立的 Judgment Day 修复不需要 graph-v1 或原生评审谱系。完整派发协议——运行时接受的精确 Markdown 形状（`## Judgment Day activation` 起、冻结发现行 JSON 与允许编辑面的完整模板）及授权值替换规则——单一来源于 `orchestrator-rare-protocols.md` 的 `#### Judgment Day 修复派发`：显式激活时先读该文件再派发，本文件不重述。
 
 #### Pi 触发运行时绑定
 
@@ -131,17 +117,7 @@ path/to/authorized-file.ts
 <!-- jero-pi:background-subagents -->
 #### Background Subagent Policy
 
-后台执行受策略门控：常驻编排器提示渲染一行状态，`Background subagent policy: on|off (capability: ready|absent)`。若策略为 off 或 `subagent_run` 工具不可用，则每次委托都在前台运行——存在 `subagent_*` 工具时用 `mode: "task"`，否则用原生 `Agent` 回退——始终如此。
-
-当策略为 on 且 `subagent_run` 可用时：
-
-- 默认用 `subagent_run` 的 `mode: "background"`。它立即返回一个任务 id；终端保持空闲，人类可以继续输入。传入三到六个词的 `label` 为该工作命名。
-- 子代 `agent_end` 保留其最新答案但不等于完成：Pi 仍可能重试、压缩或运行排队的后续任务。仅在 `agent_settled` 时才把任务视为完成；仅那时释放其队列槽、发布其后台结果或终止它。若它先行退出，报告失败并以其保留的答案作为诊断。
-- 后台任务完成时，其结果以本会话中的一条消息到达（自定义类型 `jero-agents.result`，每任务一条），你空闲时它开启新回合。等待它：启动与任何不重叠的工作完成后即结束回合。绝不为等待完成而轮询、sleep 或调用 `subagent_status`/`subagent_result`。
-- 当其必需的验证或纠正后续仍在排队时，不要宣称实现已就绪或 RDD 就绪。在该宣称之前运行必需的聚焦验证，并保留正当的纠正后验证。这不发明普适的全量套件要求，也不把回执变成交付门。
-- 仅当子代理必须中途询问人类（任务模式对话框能到达人类；后台对话框被忽略）或人类要求等待时，才使用 `mode: "task"`。
-- 按工作所拥有的独立任务数启动；超出 `max_concurrency` 由运行器排队。不要重复启动或重复工作，不要重叠文件或主题。绝不在同一工作树中并行运行写者。
-- 已完成的任务跨重启持久；运行中的任务在 pi 退出时被停止，必须重新启动，绝不得声称已恢复。
+后台执行受策略门控：常驻编排器提示渲染一行状态，`Background subagent policy: on|off (capability: ready|absent)`。若策略为 off 或 `subagent_run` 工具不可用，则每次委托都在前台运行——存在 `subagent_*` 工具时用 `mode: "task"`，否则用原生 `Agent` 回退——始终如此。当策略为 on 且 `subagent_run` 可用时，完整后台执行协议（`agent_settled` 完成语义、结果到达、并发与持久化纪律）单一来源于 `orchestrator-background-subagents.md`——首次后台派发前先读该文件；本文件不重述。
 <!-- /jero-pi:background-subagents -->
 
 对通用非 SDD 探索与映射，先尝试已安装的包内 `jero-explore`。若该角色缺失或不可用，回退到 Pi 原生 `Agent`，施加同样的只读映射约束并报告回退。

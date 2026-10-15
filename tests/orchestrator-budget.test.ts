@@ -504,11 +504,17 @@ test("every compressed lazy-file pointer in the core still names the material it
 
 const LAZY_BYTE_CEILINGS: Readonly<Record<string, number>> = {
 	"orchestrator.md": 7422,
-	"orchestrator-delegation.md": 29408,
+	// 2026-10-15 二级懒化：Background Subagent Policy 协议体下沉新深懒
+	// 文件 orchestrator-background-subagents.md，JD 派发模板下沉
+	// rare-protocols——委派文档（最宽触发的懒资产）棘轮 29408 → 27361；
+	// 工作流 32061 → 32065 仅为 JD 指针重定向的 +4 字节（delegation →
+	// rare-protocols 文件名更长）。
+	"orchestrator-delegation.md": 27361,
+	"orchestrator-background-subagents.md": 2024,
 	"orchestrator-memory.md": 3124,
-	"orchestrator-rare-protocols.md": 9060,
+	"orchestrator-rare-protocols.md": 10391,
 	"orchestrator-skills.md": 3447,
-	"sdd-orchestrator-workflow.md": 32061,
+	"sdd-orchestrator-workflow.md": 32065,
 };
 
 test("lazy reference assets stay under their byte ceilings (ratchet: only explicit bumps)", () => {

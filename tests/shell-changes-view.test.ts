@@ -615,3 +615,47 @@ test("colorDiff strips terminal control sequences from repo-controlled diff body
 	assert.ok(!raw.includes("]52"), "OSC 载荷必须被剥除");
 	assert.ok(raw.includes("+safe line"), "正常内容保留");
 });
+
+test("colorDiff colors projected finding marker lines as warnings", () => {
+	const marked = ["@@ -1,2 +1,3 @@", " const a = 1;", "⚠ 评审发现 RISK-001 [CRITICAL] 注入风险"].join("\n");
+	assert.deepEqual(colorDiff(marked, taggedTheme).slice(-1), [
+		"<warning>⚠ 评审发现 RISK-001 [CRITICAL] 注入风险</warning>",
+	]);
+});
+
+test("ChangesView projects injected frozen findings into the diff pane", async () => {
+	const { view: component } = view({
+		findingsFor: (path) => path === "lib/a.ts" ? [
+			{ id: "RISK-001", location: "lib/a.ts:2", severity: "CRITICAL", claim: "注入风险" },
+			{ id: "RELIABILITY-002", location: "lib/a.ts:99", severity: "WARNING", claim: "范围外" },
+		] : [],
+	});
+	await settle();
+	const text = component.render(80).map(stripAnsi).join("\n");
+	const inRange = text.indexOf("+const b = 3;");
+	const marker = text.indexOf("⚠ 评审发现 RISK-001 [CRITICAL] 注入风险");
+	assert.ok(inRange >= 0 && marker > inRange, "命中行号的发现插在该行之后");
+	assert.ok(text.includes("⚠ 评审发现（不在本 diff 行范围内的发现）"), "范围外发现汇入文末小节");
+	assert.ok(text.includes("⚠ 评审发现 RELIABILITY-002 [WARNING] 范围外"));
+});
+
+test("ChangesView without a findings provider renders an unmarked diff", async () => {
+	const { view: component } = view();
+	await settle();
+	assert.ok(!component.render(80).map(stripAnsi).join("\n").includes("⚠ 评审发现"));
+});
+
+test("worktree previews receive root-scoped frozen findings", async () => {
+	const component = new WorktreeChangesView([{ root: "/main", model: changesModel([file("same.ts", 1, 0)]) }], {
+		theme: plainTheme, rows: 10,
+		loadDiff: async () => ["@@ -0,0 +1,1 @@", "+same"].join("\n"),
+		onOpen() {}, onClose() {}, requestRender() {}, onRefresh() {},
+		findingsFor: (root) => root === "/main" ? [{ id: "RISK-001", location: "same.ts:1", severity: "CRITICAL", claim: "投影" }] : [],
+	});
+	component.handleInput("\r");
+	component.handleInput("j");
+	await settle();
+	const text = component.render(100).map(stripAnsi).join("\n");
+	assert.ok(text.includes("+same"));
+	assert.ok(text.includes("⚠ 评审发现 RISK-001 [CRITICAL] 投影"), "根域发现经投影进入右栏");
+});

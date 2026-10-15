@@ -15,6 +15,7 @@ const root = join(fileURLToPath(new URL("..", import.meta.url)));
 
 const requiredPaths = [
 	"assets/orchestrator.md",
+	"assets/orchestrator-background-subagents.md",
 	"assets/orchestrator-delegation.md",
 	"assets/orchestrator-memory.md",
 	"assets/orchestrator-rare-protocols.md",
