@@ -48,11 +48,15 @@ function compile() {
 			cwd: packageRoot,
 			encoding: "utf8",
 			stdio: ["ignore", "pipe", "pipe"],
+			timeout: 300_000,
 		});
-		return "";
+		return { output: "", exitCode: 0 };
 	} catch (error) {
 		// tsc exits non-zero when it reports diagnostics and writes them to stdout.
-		return `${error.stdout ?? ""}${error.stderr ?? ""}`;
+		// 退出码与输出分开携带：非零退出但解析不出带位置前缀的诊断时，
+		// 说明是配置级错误（TS5058/TS18003）或编译器崩溃，必须在主流程 fail-closed，
+		// 不能当成"零诊断"的干净编译放行（否则整条门变成假绿灯）。
+		return { output: `${error.stdout ?? ""}${error.stderr ?? ""}`, exitCode: typeof error.status === "number" ? error.status : 1 };
 	}
 }
 
@@ -81,7 +85,16 @@ function writeBaseline(summary) {
 	writeFileSync(baselinePath, `${JSON.stringify(payload, null, 2)}\n`);
 }
 
-const summary = summarize(compile());
+const compiled = compile();
+const summary = summarize(compiled.output);
+
+if (compiled.exitCode !== 0 && summary.total === 0) {
+	console.error(`types: tsc exited with code ${compiled.exitCode} but no position-keyed diagnostics could be parsed — this is a compiler/config failure, not a clean compile.`);
+	const unparsed = compiled.output.split(/\r?\n/).filter((line) => line.trim() !== "").slice(0, REPORT_LIMIT);
+	if (unparsed.length === 0) console.error("  (tsc produced no captured output)");
+	for (const line of unparsed) console.error(`  ${line.slice(0, 200)}`);
+	process.exit(1);
+}
 
 if (process.argv.includes("--update")) {
 	writeBaseline(summary);
