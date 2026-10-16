@@ -88,13 +88,28 @@ export type JeroReviewStatusResultV1 =
 // 派生（spec §G 的血脉绑定投影——M2 的工作区漂移说明）。
 const CORRECTION_PHASE_STATES: ReadonlySet<string> = new Set(["fix_required", "fixing", "fix_validating", "ready_final_verification", "final_verifying"]);
 
-function readReceiptV1(context: JeroAuthorityContextV1, lineageId: string): JeroReceiptEnvelopeV1 | undefined {
+type JeroReceiptReadV1 =
+	| { readonly kind: "present"; readonly envelope: JeroReceiptEnvelopeV1 }
+	| { readonly kind: "missing" }
+	| { readonly kind: "corrupted"; readonly detail: string };
+
+function readReceiptV1(context: JeroAuthorityContextV1, lineageId: string): JeroReceiptReadV1 {
+	let raw: Buffer;
 	try {
-		const envelope = parseCanonicalJsonV1(readFileSync(jeroReceiptPathV1(context.store.store_root, lineageId))) as JeroReceiptEnvelopeV1;
+		raw = readFileSync(jeroReceiptPathV1(context.store.store_root, lineageId));
+	} catch (error) {
+		// ENOENT = 合法缺席（未发布）；其余读取故障与解析/完整性失败一样
+		// 按损坏显影——终局血脉的回执损坏不得被掩盖成 expected_missing
+		// （与 lineage-store 把不可读判 corrupted 的姿态一致）。
+		if ((error as NodeJS.ErrnoException).code === "ENOENT") return { kind: "missing" };
+		return { kind: "corrupted", detail: error instanceof Error ? error.message : String(error) };
+	}
+	try {
+		const envelope = parseCanonicalJsonV1(raw) as JeroReceiptEnvelopeV1;
 		assertJeroReceiptIntegrityV1(envelope);
-		return envelope;
-	} catch {
-		return undefined;
+		return { kind: "present", envelope };
+	} catch (error) {
+		return { kind: "corrupted", detail: error instanceof Error ? error.message : String(error) };
 	}
 }
 
@@ -179,7 +194,8 @@ function currentTargetStatusV1(context: JeroAuthorityContextV1, record: JeroLine
 		consumed,
 	});
 	const terminal = state.state === "approved" || state.state === "escalated" || state.state === "invalidated";
-	const receiptPresent = terminal && readReceiptV1(context, record.lineage_id) !== undefined;
+	const receiptRead = terminal ? readReceiptV1(context, record.lineage_id) : ({ kind: "missing" } as const);
+	const receiptPresent = receiptRead.kind === "present";
 	// 差异 #4：冻结块来自“记录”。只有身份匹配（非血脉绑定）的状态才可
 	// 以为早于该持久化字段的记录回退到活动清单摘要。
 	const frozenManifest = state.changed_path_manifest_sha256 ?? (lineageBound ? undefined : live.changed_path_manifest_sha256);
@@ -192,6 +208,9 @@ function currentTargetStatusV1(context: JeroAuthorityContextV1, record: JeroLine
 		// workspace。
 		projection: requestedProjection,
 		receipt: { status: consumed || terminal ? (receiptPresent ? "present" : "expected_missing") : "expected_missing" },
+		// 终局血脉的回执文件损坏（非缺席）：receipt 枚举保持封闭词汇，
+		// 经 corrupted_detail 指名——操作员据此区分"未发布"与"回执损坏"。
+		...(receiptRead.kind === "corrupted" ? { corrupted_detail: `receipt ${record.lineage_id}: ${receiptRead.detail}` } : {}),
 		action,
 		replayability: "not_replayable",
 		authority: {

@@ -10,9 +10,12 @@ import {
 } from "node:crypto";
 import {
 	chmodSync,
+	closeSync,
 	existsSync,
 	lstatSync,
 	mkdirSync,
+	openSync,
+	readSync,
 	readdirSync,
 	readFileSync,
 	readlinkSync,
@@ -650,7 +653,22 @@ export function entryContentHash(root: string, entry: CandidateTreeEntry): strin
 		return createHash("sha256").update(bytes).digest("hex");
 	}
 	if (!item.isFile() || item.isSymbolicLink()) throw new CandidateViewError("candidate view entry does not match its frozen tree");
-	return createHash("sha256").update(readFileSync(path)).digest("hex");
+	// 分块流式哈希：候选视图会物化完整仓库树，GB 级 blob 整文件读入内存
+	// 会造成内存尖峰甚至 OOM（assertRecordSafe 每次校验还要再读一遍）。
+	// 1 MiB 分块与整读产出逐字节相同的 sha256。
+	const digest = createHash("sha256");
+	const descriptor = openSync(path, "r");
+	try {
+		const chunk = Buffer.alloc(1024 * 1024);
+		for (;;) {
+			const read = readSync(descriptor, chunk, 0, chunk.length, null);
+			if (read === 0) break;
+			digest.update(read === chunk.length ? chunk : chunk.subarray(0, read));
+		}
+	} finally {
+		closeSync(descriptor);
+	}
+	return digest.digest("hex");
 }
 
 export function candidateDirectories(root: string, entries: readonly CandidateViewEntry[]): string[] {

@@ -200,6 +200,15 @@ export class ReviewTransactionStore {
 		});
 	}
 
+	/**
+	 * 两阶段事务的第一段：锁内落 PENDING 日志条目（completeReducerOperation
+	 * 完成第二段）。**本 API 族没有中止通道**——begin 之后、complete 之前
+	 * 进程崩溃会留下 PENDING 条目，此后该血脉的一切变更被
+	 * assertNoPendingOperation 与重放检查保守拒绝，且不存在 abort/补偿
+	 * 事件可清除它；这是设计取舍而非疏漏（生产路径只走锁内单步完成的
+	 * runReducerOperation，无此窗口；begin/complete 仅供测试构造中间态）。
+	 * 调用方必须能在残留 PENDING 时接受"血脉只读直至人工介入"的语义。
+	 */
 	beginReducerOperation<TRequest>(
 		options: BeginReducerOperationOptions<TRequest>,
 	): void {
