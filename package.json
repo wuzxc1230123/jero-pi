@@ -4,7 +4,7 @@
 	"description": "Pi coding-agent harness rebuilt on jero-pi: SDD/OpenSpec, subagents, strict TDD evidence, in-process review authority, persistent memory, zero native binaries.",
 	"license": "MIT",
 	"engines": {
-		"node": ">=22.7.0"
+		"node": ">=22.6.0"
 	},
 	"type": "module",
 	"keywords": [
@@ -94,7 +94,7 @@
 		"@juicesharp/rpiv-todo": "2.12.0",
 		"billion-context-pi": "0.1.83",
 		"pi-cache-optimizer": "2.8.24",
-		"pi-fovea": "0.31.4",
+		"pi-fovea": "0.31.5",
 		"pi-hashline-edit-pro": "6.2.0",
 		"pi-lens": "4.3.0",
 		"pi-web-access": "0.37.0"
