@@ -77,10 +77,10 @@ try {
 
 		if (!modelReady) {
 			const reason = "JERO_PI_SMOKE_PROVIDER/MODEL 未设";
-			for (const name of ["模型回复探针", "SDD 强制初始化（首次会话自动落 openspec/config.yaml）", "install-module 四束全链落盘（含 godot-ai 与 playwright 双 MCP 档合并）", "触发编译命中（种 go.mod/global.json/project.godot/App.vue → 覆盖层四束齐射）", "记忆四工具（写/读/列/搜）", "评审·同意与 START（谱系建成 reviewing）", "评审·捕获与结算（capture→终局→回执）"]) {
-			record(name, undefined, `${reason}，跳过模型相关面`);
-		}
-	} else {
+			for (const name of ["模型回复探针", "SDD 强制初始化（首次会话自动落 openspec/config.yaml）", "install-module 四束全链落盘（含 godot-ai 与 playwright 双 MCP 档合并）", "触发编译命中（种 go.mod/global.json/project.godot/App.vue → 覆盖层四束齐射）", "记忆四工具（写/读/列/搜）", "评审·同意与 START（谱系建成 reviewing）", "评审·捕获与结算（capture→终局→回执）", "评审·Judgment Day START（judgment_day 谱系建成）"]) {
+				record(name, undefined, `${reason}，跳过模型相关面`);
+			}
+		} else {
 		const baseArgs = ["-p", "-a", "--no-session", "--provider", provider, "--model", model];
 
 		// —— 面二：模型就绪（后续一切模型面的前置）+ SDD 强制初始化。
@@ -209,7 +209,47 @@ try {
 				}
 				record("评审·捕获与结算（capture→终局→回执）", terminalOk, terminalOk ? `谱系 ${String(targetLineageId).slice(0, 24)}… ${finalState}` : `谱系 ${targetLineageId} 终态=${finalState ?? "无"} 回执=${receiptLanded} 全谱系=${readLineageStates().map((s) => `${String(s.state?.lineage_id).slice(0, 8)}:${s.state?.state}`).join(",") || "无"}`);
 			}
-	}
+
+			// —— 面七：Judgment Day START（graph-v1 旧路径）。JD 的 START 走
+			// graph-v1 控制器而非原生权威路径：要求顶层 lineageId+idempotencyKey
+			// 与完整 START input 对象（mode/projection/policyHash/evidenceHash/
+			// budget）——调用形状按字面模板下发（真机实证：缺 idempotencyKey
+			// 时模型在错误上打转到超时，看似挂死）。裁判受理在宿主面尚无工具/
+			// CLI 接线（权威 facade 仅供单测直接驱动），本面覆盖实际接线的缝：
+			// 参数校验→控制器路由→graph-v1 create→judgment_day 谱系入根集。
+			// 深度 JD 生命周期（裁判受理→冻结→再判决）待宿主接线后扩展本面。
+			writeFileSync(join(sandbox, "src", "jd.ts"), "export const jdMarker = \"judgment-day-start\";\n");
+			git("add", "src/jd.ts");
+			const jdBudget = "{\"review_batches\":1,\"review_actors\":1,\"refuter_batches\":1,\"fix_batches\":1,\"validator_runs\":1,\"final_verifications\":1,\"judgment_rounds\":0,\"judge_runs\":0}";
+			const jdPrompt = `调用 jero_review 发起 Judgment Day 评审(操作员已预授权,出现同意封套直接 granted)。参数逐字使用:operation="start";lineageId="review-jd-smoke-0001";idempotencyKey="jd-smoke-start-1";input 为 JSON 字符串 {"mode":"judgment-day","projection":{"kind":"complete"},"policyHash":"${"a".repeat(64)}","evidenceHash":"${"b".repeat(64)}","budget":${jdBudget}}。工具返回后一行贴出 result 的 kind 即停,不要做任何其他操作。`;
+			const jdPhase = runPi([...baseArgs, jdPrompt], sandbox, {}, 600_000);
+			// graph-v1 谱系状态在根集对象里（events/roots），不在权威侧的
+			// lineages/<id>/review-state.json——从事务存储根（<commonDir>/
+			// jero-ai/reviews，legacy 回退 gentle-ai/reviews）的 CURRENT 指针
+			// 走到头事件的 payload.state 断言（盘面真相原则同律）。
+			const readGraphStates = () => {
+				const candidates = [join(sandbox, ".git", "jero-ai", "reviews", "graph-v1"), join(sandbox, ".git", "gentle-ai", "reviews", "graph-v1")];
+				const graphRoot = candidates.find((candidate) => existsSync(candidate));
+				if (graphRoot === undefined) return [];
+				try {
+					const pointer = JSON.parse(readFileSync(join(graphRoot, "CURRENT.0"), "utf8"));
+					const root = JSON.parse(readFileSync(join(graphRoot, "roots", "sha256", pointer.root_set_id.slice(0, 2), pointer.root_set_id.slice(2)), "utf8"));
+					return (root.body.lineages ?? []).flatMap((entry) => {
+						try {
+							const event = JSON.parse(readFileSync(join(graphRoot, "objects", "events", "sha256", entry.head_event_id.slice(0, 2), entry.head_event_id.slice(2)), "utf8"));
+							return [event.body.payload.state];
+						} catch {
+							return [];
+						}
+					});
+				} catch {
+					return [];
+				}
+			};
+			const jdLineage = readGraphStates().find((state) => state?.mode === "judgment-day");
+			const jdOk = jdLineage !== undefined;
+			record("评审·Judgment Day START（judgment_day 谱系建成）", jdOk, jdOk ? `graph 谱系 ${String(jdLineage.lineageId ?? jdLineage.lineage_id ?? "").slice(0, 24)}… mode=judgment-day` : `graph 谱系=无 退出码 ${jdPhase.status};尾部:${(jdPhase.stdout ?? "").slice(-300)}`);
+		}
 } catch (error) {
 	// 崩溃路径也要让 KEEP 有据可依：异常逃逸时 results 里可能还没有
 	// 任何失败面，只按失败面判断会把现场删掉。
