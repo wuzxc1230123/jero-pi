@@ -5,6 +5,13 @@ jero-pi 尚未发布到 npm（版本停在 0.1.0 基线），本文件自重构�
 
 ## [Unreleased]
 
+### 真机冒烟第七面（Judgment Day）+ pi-web-access 0.40.0 过门收编（2026-10-16）
+
+**冒烟扩到十面全过（JD START 链路盖成）；pi-web-access 升级按既定方案落地——自带修复版 SDK、审计归零。**
+
+- **真机冒烟第七面：Judgment Day START**（`05c628e`）：排查真机"挂死"实为模型在缺 `idempotencyKey` 的错误上打转到超时——JD 的 START 走 graph-v1 旧控制器路径（非原生权威路径），要求顶层 lineageId+idempotencyKey 与完整 START input 对象（mode/projection/policyHash/evidenceHash/budget），调用形状按字面模板下发后一次成功。断言从事务存储根（`<commonDir>/jero-ai/reviews`，legacy 回退 gentle-ai——与权威侧 `.git/jero-review` 是两个命名空间）读 CURRENT 指针→根集→头事件 payload.state。真机 10/10 全过。留档的结构性事实：JD 的裁判受理（`judgmentDay.confirmJudges`）在宿主面尚无工具/CLI 接线，深度 JD 生命周期（裁判受理→冻结→再判决）待接线后扩展本面。
+- **pi-web-access 0.37.0→0.40.0**（`894544c`，方案即上批留档）：0.40.0 自带精确钉版 SDK 1.32.1（修复 GHSA-6qxp-vccf-f47h），双侧 overrides（package.json npm + pnpm-workspace.yaml）同步抬 1.32.1 免遭强压回退。0.40.0 发布 10-13 07:25Z、本批执行时已过 pnpm `minimumReleaseAge: 4320` 72h 门（放行实证）。验证：冻结安装零漂移；SDK 全树 1.32.1 无回退残留；`pnpm audit --prod` 零已知漏洞；四工具名入口面（fetch_content/web_search/source_check/get_search_content）安装包内逐名核实；钉版守卫与退出预案同步；全量 2630 测 0 败 + harness + 七门 + 打包门。
+
 ### Dependabot 第二批收编 + pi-web-access 0.40.0 过门待批（2026-10-16）
 
 **两个新 PR 收编合入（pi-fovea 补丁、@types/node 类型补丁）；pi-web-access 0.40.0 评估完毕但距 pnpm 72h 龄期门差数小时，纪律性缓办（升级时须连动抬双侧 SDK overrides 至 1.32.1，方案已定）。**
