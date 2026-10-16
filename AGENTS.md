@@ -11,7 +11,7 @@
 ## 三条铁律
 
 1. **新评审域代码进 `lib/authority/`**（纯域：不 import extensions、不读 `process.env`、typed 入参/判别联合出参；`scripts/check-authority-boundary.mjs` 结构性强制）。外围前缀 `lib/review-*` 与 `lib/jero-ai-review-*` 是分阶段移植的化石，命名棘轮（`check:review-naming` + `review-naming-baseline.json`）只降不升——改动到这两个前缀的文件时顺手迁入 `authority/` 并 `--update` 基线。**身份层三件是永久宿主侧，不是迁移欠债**：`lib/review-canonical.ts`（上游 `domainHashV1` 的定义点）、`lib/review-lock.ts` 与 `lib/review-repository.ts`（其消费者，`repository_id`/`authority_id` 的铸造点）——边界门第三条规则刻意把上游身份命名空间挡在 authority 之外，authority 只消费它们铸好的身份值，勿尝试迁入。
-2. **测试夹具必须放 `<base>-shared.ts`**。`*.z2/z3/z4.test.ts` 是超长测试文件的机械分片（node:test 只在文件间并行，重文件需重平衡）；**分片之间禁止互相 import**——否则被导入分片的顶层 `test()` 注册会在导入方进程重跑，整套件成倍膨胀。新测试文件 ≤1000 行。
+2. **测试夹具必须放 `<base>-shared.ts`**。`*.z2/z3/z4.test.ts` 是超长测试文件的机械分片（node:test 只在文件间并行，重文件需重平衡）；**分片之间禁止互相 import**——否则被导入分片的顶层 `test()` 注册会在导入方进程重跑，整套件成倍膨胀。跨多个被测文件共享的纯助手文件（如 `tests/review-test-fixtures.ts`、`tests/agents-fake-child.ts`）不属分片夹具、命名自由，但**顶层同样不得注册 `test()`**（同一条膨胀纪律）。新测试文件 ≤1000 行。
 3. **`runtime/*.mjs` 是生成物，勿手改**。源清单（`lib/authority/wire-contract*`、`lib/authority/client-contract*` 等 13 个）变更后必须 `pnpm run build:runtime-modules`；漂移由 `--check`、import 存在性后校验与打包门三重拦截。
 
 ## 标准验证回路（按改动域选）
