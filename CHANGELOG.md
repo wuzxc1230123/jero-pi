@@ -5,6 +5,15 @@ jero-pi 尚未发布到 npm（版本停在 0.1.0 基线），本文件自重构�
 
 ## [Unreleased]
 
+### Dependabot 第二批收编 + pi-web-access 0.40.0 过门待批（2026-10-16）
+
+**两个新 PR 收编合入（pi-fovea 补丁、@types/node 类型补丁）；pi-web-access 0.40.0 评估完毕但距 pnpm 72h 龄期门差数小时，纪律性缓办（升级时须连动抬双侧 SDK overrides 至 1.32.1，方案已定）。**
+
+- **收编（2 PR）**：pi-fovea 0.31.4→0.31.5（补丁版、发布 10-10 过 3 天门、入口面零迁移；钉版守卫 `AUDITED_COMPANION_PINS` 与 dependency-exit-plan 版本列同步）；@types/node ^26.6.3→^26.6.5（devDep 类型补丁）。
+- **过程事故留档**：@types 收编时用分支 package.json 整文件覆盖，分支基于旧 main 导致 fovea 短暂回退 0.31.4（锁随之回退、companion 门 1 红）——当场发现并 amend 修正（门 6/6 复绿）。教训：多 PR 收编时对 manifest 做**字段级**合并，不整文件 checkout 分支版。
+- **pi-web-access 0.40.0 缓办（已定方案）**：0.37.0 精确钉 `@modelcontextprotocol/sdk` 1.27.1（GHSA-6qxp-vccf-f47h high，本仓 overrides 强压 1.31.0 防护）；0.40.0 自带精确钉版 SDK **1.32.1**（修复版）。升级方案：bump 0.40.0 + package.json npm overrides 与 pnpm-workspace.yaml 两侧同步抬 `@modelcontextprotocol/sdk: 1.32.1`（避免 pnpm 强压回 1.31.0 破坏依赖方），收编后跑 audit + 四工具名入口面核对（fetch_content/web_search/source_check/get_search_content）。缓办原因：0.40.0 发布于 10-13 07:25 UTC，距 pnpm `minimumReleaseAge: 4320`（72h，供应链防御）差数小时——不绕门；0.41.0（10-15）同批评估。
+- 验证：两 bump 各自冻结安装零漂移 + typecheck 0 + companion 门绿；批末全量 2630 测 0 败 + harness + 七门 + 打包门（438 文件 + 68 金向量）。
+
 ### 全仓专家审查修复批：P0 假绿灯 + P1 十九项 + P2 四十六项（2026-10-15）
 
 **12 域并行深审（生产代码 5.8 万行全覆盖 + 测试 6.3 万行抽查）产出 P0×1/P1×19/P2≈50，四批提交全部修复（P2 修 46、3 项论证放弃、1 项误报）；每批过域内测试，收尾三轮全量 + 七门 + 打包门 + 真机冒烟 9/9 全绿。**
